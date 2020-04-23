@@ -75,6 +75,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -112,7 +113,7 @@ class OnlineIndexUpdatesTest
 
         neoStores = storeFactory.openAllNeoStores( true );
         GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                immediate(), new CountsComputer( neoStores, pageCache, NULL, databaseLayout ), false, NULL, GBPTreeCountsStore.NO_MONITOR );
+                immediate(), new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE ), false, NULL, GBPTreeCountsStore.NO_MONITOR );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
@@ -351,7 +352,7 @@ class OnlineIndexUpdatesTest
             @Override
             public void start() throws IOException
             {
-                countsStore.start( PageCursorTracer.NULL );
+                countsStore.start( PageCursorTracer.NULL, INSTANCE );
             }
 
             @Override

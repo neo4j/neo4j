@@ -83,6 +83,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -142,9 +143,9 @@ public final class Recovery
      * @return helper recovery checker
      */
     public static RecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config,
-            StorageEngineFactory storageEngineFactory )
+            StorageEngineFactory storageEngineFactory, MemoryTracker memoryTracker )
     {
-        return new RecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, storageEngineFactory );
+        return new RecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, storageEngineFactory, memoryTracker );
     }
 
     /**
@@ -155,13 +156,13 @@ public final class Recovery
      * @return true if recovery is required, false otherwise.
      * @throws Exception
      */
-    public static boolean isRecoveryRequired( DatabaseLayout databaseLayout, Config config ) throws Exception
+    public static boolean isRecoveryRequired( DatabaseLayout databaseLayout, Config config, MemoryTracker memoryTracker ) throws Exception
     {
         requireNonNull( databaseLayout );
         requireNonNull( config );
         try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            return isRecoveryRequired( fs, databaseLayout, config );
+            return isRecoveryRequired( fs, databaseLayout, config, memoryTracker );
         }
     }
 
@@ -174,7 +175,7 @@ public final class Recovery
      * @param tracers underlying events tracers.
      * @throws Exception
      */
-    public static void performRecovery( DatabaseLayout databaseLayout, DatabaseTracers tracers ) throws Exception
+    public static void performRecovery( DatabaseLayout databaseLayout, DatabaseTracers tracers, MemoryTracker memoryTracker ) throws Exception
     {
         requireNonNull( databaseLayout );
         Config config = defaults();
@@ -182,7 +183,7 @@ public final class Recovery
                 JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
-            performRecovery( fs, pageCache, tracers, config, databaseLayout );
+            performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker );
         }
     }
 
@@ -196,7 +197,8 @@ public final class Recovery
      * @return true if recovery is required, false otherwise.
      * @throws Exception
      */
-    public static boolean isRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config ) throws Exception
+    public static boolean isRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config,
+            MemoryTracker memoryTracker ) throws Exception
     {
         requireNonNull( databaseLayout );
         requireNonNull( config );
@@ -205,7 +207,7 @@ public final class Recovery
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
             StorageEngineFactory storageEngineFactory = selectStorageEngine();
-            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty() );
+            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker );
         }
     }
 
@@ -221,9 +223,9 @@ public final class Recovery
      * @throws Exception
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
-            Config config, DatabaseLayout databaseLayout ) throws IOException
+            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine() );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine(), memoryTracker );
     }
 
     /**
@@ -240,7 +242,7 @@ public final class Recovery
      * @throws Exception
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config,
-            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory ) throws IOException
+            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, MemoryTracker memoryTracker ) throws IOException
     {
         requireNonNull( fs );
         requireNonNull( pageCache );
@@ -250,7 +252,7 @@ public final class Recovery
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
         performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, selectStorageEngine(), NullLogProvider.getInstance(), new Monitors(),
-                loadExtensions(), Optional.empty(), EMPTY_CHECKER );
+                loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker );
     }
 
     /**
@@ -271,10 +273,10 @@ public final class Recovery
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, LogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories,
-            Optional<LogTailScanner> providedLogScanner, RecoveryStartupChecker startupChecker ) throws IOException
+            Optional<LogTailScanner> providedLogScanner, RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker ) throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
-        if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogScanner ) )
+        if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogScanner, memoryTracker ) )
         {
             return;
         }
@@ -304,7 +306,7 @@ public final class Recovery
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ),
                 new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector, tracers.getPageCacheTracer(),
-                true );
+                true, memoryTracker );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
@@ -339,7 +341,8 @@ public final class Recovery
                 .build();
 
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
-        LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
+        LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles,
+                memoryTracker ) );
 
         validateStoreId( logTailScanner, storageEngine.getStoreId() );
 
@@ -453,11 +456,11 @@ public final class Recovery
     }
 
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
-            StorageEngineFactory storageEngineFactory, Config config, Optional<LogTailScanner> logTailScanner ) throws IOException
+            StorageEngineFactory storageEngineFactory, Config config, Optional<LogTailScanner> logTailScanner, MemoryTracker memoryTracker ) throws IOException
     {
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
         return logTailScanner.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logTailScanner.get() )
-                                          : requiredChecker.isRecoveryRequiredAt( databaseLayout );
+                                          : requiredChecker.isRecoveryRequiredAt( databaseLayout, memoryTracker );
     }
 
     private static PageCache getPageCache( Config config, FileSystemAbstraction fs, JobScheduler jobScheduler )

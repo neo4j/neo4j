@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -107,9 +106,11 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
 import static org.neo4j.consistency.newchecker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.newchecker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -173,7 +174,7 @@ class CheckerTestBase
         schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
         labelIndex = dependencies.resolveDependency( LabelScanStore.class );
         relationshipTypeIndex = dependencies.resolveDependency( RelationshipTypeScanStore.class );
-        cacheAccess = new DefaultCacheAccess( NumberArrayFactory.HEAP.newDynamicByteArray( 10_000, new byte[ByteArrayBitsManipulator.MAX_BYTES] ),
+        cacheAccess = new DefaultCacheAccess( NumberArrayFactory.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
                 Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
     }
@@ -227,7 +228,7 @@ class CheckerTestBase
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
         reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), cacheAccess ), report, monitor, PageCacheTracer.NULL );
-        countsState = new CountsState( neoStores, cacheAccess );
+        countsState = new CountsState( neoStores, cacheAccess, INSTANCE );
         NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );

@@ -90,6 +90,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 class IndexRecoveryIT
@@ -165,7 +166,7 @@ class IndexRecoveryIT
         {
             when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-            boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults() );
+            boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE );
             monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
             // When
             startDb();

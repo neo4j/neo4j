@@ -19,6 +19,9 @@
  */
 package org.neo4j.io.memory;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,8 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,7 +102,7 @@ class ByteBufferFactoryTest
     {
         // given
         ByteBufferFactory factory = new ByteBufferFactory( () -> HEAP_ALLOCATOR, 1024 );
-        factory.acquireThreadLocalBuffer();
+        factory.acquireThreadLocalBuffer(  );
 
         // when/then
         assertThrows( IllegalStateException.class, factory::acquireThreadLocalBuffer );
@@ -112,7 +114,7 @@ class ByteBufferFactoryTest
     {
         // given
         ByteBufferFactory factory = new ByteBufferFactory( () -> HEAP_ALLOCATOR, 1024 );
-        factory.acquireThreadLocalBuffer();
+        factory.acquireThreadLocalBuffer(  );
         factory.releaseThreadLocalBuffer();
 
         // when/then
@@ -121,7 +123,7 @@ class ByteBufferFactoryTest
     }
 
     @Test
-    void shouldShareThreadLocalBuffersStressfully() throws Throwable
+    void shouldShareThreadLocalBuffersLoggingIndexedIdGeneratorMonitorStressfully() throws Throwable
     {
         // given
         ByteBufferFactory factory = new ByteBufferFactory( () -> HEAP_ALLOCATOR, 1024 );
@@ -139,7 +141,7 @@ class ByteBufferFactoryTest
                 startLatch.await();
                 for ( int j = 0; j < 1000; j++ )
                 {
-                    ByteBuffer buffer = factory.acquireThreadLocalBuffer();
+                    ByteBuffer buffer = factory.acquireThreadLocalBuffer(  );
                     assertNotNull( buffer );
                     seen.add( buffer );
                     factory.releaseThreadLocalBuffer();
@@ -165,18 +167,20 @@ class ByteBufferFactoryTest
     @Test
     void byteBufferMustThrowOutOfBoundsAfterRelease()
     {
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES );
+        var tracker = new LocalMemoryTracker();
+        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
         buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer );
+        ByteBuffers.releaseBuffer( buffer, tracker );
         assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
     }
 
     @Test
     void doubleFreeOfByteBufferIsOkay()
     {
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES );
-        ByteBuffers.releaseBuffer( buffer );
-        ByteBuffers.releaseBuffer( buffer ); // This must not throw.
+        var tracker = new LocalMemoryTracker();
+        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
+        ByteBuffers.releaseBuffer( buffer, tracker );
+        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
         assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
     }
 }

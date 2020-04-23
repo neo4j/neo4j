@@ -41,4 +41,9 @@ public interface ScopedMemoryPool extends MemoryPool, AutoCloseable
      * Close and de-register specific memory pool
      */
     void close();
+
+    /**
+     * @return thread safe memory tracker for this pool
+     */
+    MemoryTracker getPoolMemoryTracker();
 }

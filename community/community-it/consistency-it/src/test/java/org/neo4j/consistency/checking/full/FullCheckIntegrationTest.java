@@ -160,6 +160,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
@@ -2329,7 +2330,7 @@ public class FullCheckIntegrationTest
     {
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
-        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, FormattedLog.toOutputStream( System.out ) );
+        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, INSTANCE, FormattedLog.toOutputStream( System.out ) );
     }
 
     protected NodeBasedMemoryLimiter.Factory memoryLimit()

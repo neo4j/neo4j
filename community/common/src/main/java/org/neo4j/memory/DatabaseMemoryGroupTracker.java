@@ -23,12 +23,14 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
 {
     private final GlobalMemoryGroupTracker parent;
     private final String name;
+    private final MemoryTracker memoryTracker;
 
     DatabaseMemoryGroupTracker( GlobalMemoryGroupTracker parent, String name, long limit, boolean strict )
     {
         super( new MemoryPoolImpl( limit, strict ) );
         this.parent = parent;
         this.name = name;
+        this.memoryTracker = new MemoryPoolTracker( this );
     }
 
     @Override
@@ -47,6 +49,15 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
     public void close()
     {
         parent.releasePool( this );
+        parent.releaseNative( usedNative() );
+        parent.releaseHeap( usedHeap() );
+        memoryTracker.close();
+    }
+
+    @Override
+    public MemoryTracker getPoolMemoryTracker()
+    {
+        return memoryTracker;
     }
 
     @Override
@@ -89,7 +100,7 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
     @Override
     public void releaseNative( long bytes )
     {
-        parent.releaseNative( bytes );
         super.releaseNative( bytes );
+        parent.releaseNative( bytes );
     }
 }

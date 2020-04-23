@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Stores longs in a {@link LongArray} provided by {@link NumberArrayFactory}.
@@ -31,9 +32,9 @@ public class LongCollisionValues implements CollisionValues
     private final LongArray cache;
     private long nextOffset;
 
-    public LongCollisionValues( NumberArrayFactory factory, long length )
+    public LongCollisionValues( NumberArrayFactory factory, long length, MemoryTracker memoryTracker )
     {
-        cache = factory.newLongArray( length, 0 );
+        cache = factory.newLongArray( length, 0, memoryTracker );
     }
 
     @Override

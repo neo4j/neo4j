@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.ThreadSafeMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
@@ -89,11 +89,19 @@ public class ConfiguringPageCacheFactory
 
     protected PageCache createPageCache()
     {
-        MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock );
+        long pageCacheMaxMemory = getPageCacheMaxMemory( config );
+        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false );
+        var memoryTracker = memoryPool.getPoolMemoryTracker();
+        MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock, memoryTracker );
     }
 
-    private MemoryAllocator buildMemoryAllocator( Config config )
+    private MemoryAllocator buildMemoryAllocator( long pageCacheMaxMemory, MemoryTracker memoryTracker )
+    {
+        return createAllocator( pageCacheMaxMemory, memoryTracker );
+    }
+
+    private long getPageCacheMaxMemory( Config config )
     {
         String pageCacheMemorySetting = config.get( pagecache_memory );
         if ( pageCacheMemorySetting == null )
@@ -105,9 +113,7 @@ public class ConfiguringPageCacheFactory
                       "Run `neo4j-admin memrec` for memory configuration suggestions." );
             pageCacheMemorySetting = "" + heuristic;
         }
-        long pageCacheMaxMemory = ByteUnit.parse( pageCacheMemorySetting );
-        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false );
-        return createAllocator( pageCacheMaxMemory, new ThreadSafeMemoryTracker( memoryPool, pageCacheMaxMemory, 0 ) );
+        return ByteUnit.parse( pageCacheMemorySetting );
     }
 
     public static long defaultHeuristicPageCacheMemory()

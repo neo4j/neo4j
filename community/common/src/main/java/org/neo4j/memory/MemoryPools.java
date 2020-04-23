@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 public final class MemoryPools
 {
     public static final ScopedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
@@ -121,6 +123,12 @@ public final class MemoryPools
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public MemoryTracker getPoolMemoryTracker()
+        {
+            return INSTANCE;
         }
 
         @Override

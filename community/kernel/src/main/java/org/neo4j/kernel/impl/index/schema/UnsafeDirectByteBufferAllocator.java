@@ -30,8 +30,10 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
+import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
+
 /**
- * Allocates {@link ByteBuffer} instances using {@link UnsafeUtil#newDirectByteBuffer(long, int)}/{@link UnsafeUtil#initDirectByteBuffer(Object, long, int)}
+ * Allocates {@link ByteBuffer} instances using {@link UnsafeUtil#newDirectByteBuffer(long, int)}/{@link UnsafeUtil#initDirectByteBuffer(ByteBuffer, long, int)}
  * and frees all allocated memory in {@link #close()}.
  */
 public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Allocator
@@ -51,9 +53,8 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         assertOpen();
         try
         {
-            var byteBuffer = ByteBuffers.allocateDirect( bufferSize );
+            var byteBuffer = ByteBuffers.allocateDirect( bufferSize, memoryTracker );
             allocations.add( byteBuffer );
-            memoryTracker.allocateNative( bufferSize );
             return byteBuffer;
         }
         catch ( NativeMemoryAllocationRefusedError allocationRefusedError )
@@ -69,11 +70,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
         // Idempotent close due to the way the population lifecycle works sometimes
         if ( !closed )
         {
-            allocations.forEach( buffer -> {
-                int capacity = buffer.capacity();
-                memoryTracker.releaseNative( capacity );
-                ByteBuffers.releaseBuffer( buffer );
-            } );
+            allocations.forEach( buffer -> releaseBuffer( buffer, memoryTracker ) );
             closed = true;
         }
     }

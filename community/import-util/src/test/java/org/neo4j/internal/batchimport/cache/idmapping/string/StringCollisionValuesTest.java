@@ -40,6 +40,7 @@ import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
 public class StringCollisionValuesTest
@@ -74,7 +75,7 @@ public class StringCollisionValuesTest
     public void shouldStoreAndLoadStrings()
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000 ) )
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000, INSTANCE ) )
         {
             // when
             long[] offsets = new long[100];
@@ -98,7 +99,7 @@ public class StringCollisionValuesTest
     public void shouldMoveOverToNextChunkOnNearEnd()
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000 ) )
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000, INSTANCE ) )
         {
             char[] chars = new char[PAGE_SIZE - 3];
             Arrays.fill( chars, 'a' );

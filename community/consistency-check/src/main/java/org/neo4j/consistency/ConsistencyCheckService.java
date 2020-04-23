@@ -72,7 +72,9 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -154,6 +156,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         var pageCacheTracer = PageCacheTracer.NULL;
+        var memoryTracker = EmptyMemoryTracker.INSTANCE;
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
                         EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
@@ -162,7 +165,7 @@ public class ConsistencyCheckService
         try
         {
             return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
-                    reportDir, consistencyFlags, pageCacheTracer );
+                    reportDir, consistencyFlags, pageCacheTracer, memoryTracker );
         }
         finally
         {
@@ -186,19 +189,19 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory, LogProvider logProvider,
-            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer )
-            throws ConsistencyCheckIncompleteException
+            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
-                defaultReportDir( config ), consistencyFlags, pageCacheTracer );
+                defaultReportDir( config ), consistencyFlags, pageCacheTracer, memoryTracker );
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer )
+            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
-        assertRecovered( databaseLayout, config, fileSystem );
+        assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
         Log log = logProvider.getLog( getClass() );
         config.set( GraphDatabaseSettings.read_only, true );
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
@@ -207,7 +210,7 @@ public class ConsistencyCheckService
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer );
-        CountsManager countsManager = new CountsManager( pageCache, fileSystem, databaseLayout, pageCacheTracer );
+        CountsManager countsManager = new CountsManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         life.add( countsManager );
@@ -269,7 +272,7 @@ public class ConsistencyCheckService
                     new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
-            summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, new DuplicatingLog( log, reportLog ) );
+            summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {
@@ -288,12 +291,12 @@ public class ConsistencyCheckService
         return Result.success( reportFile, summary );
     }
 
-    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem )
+    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
         try
         {
-            if ( isRecoveryRequired( fileSystem, databaseLayout, config ) )
+            if ( isRecoveryRequired( fileSystem, databaseLayout, config, memoryTracker ) )
             {
                 throw new IllegalStateException(
                         joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
@@ -383,7 +386,7 @@ public class ConsistencyCheckService
     private static class RebuildPreventingCountsInitializer implements CountsBuilder
     {
         @Override
-        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
         }
@@ -406,14 +409,17 @@ public class ConsistencyCheckService
         private final FileSystemAbstraction fileSystem;
         private final DatabaseLayout databaseLayout;
         private final PageCacheTracer pageCacheTracer;
+        private final MemoryTracker memoryTracker;
         private GBPTreeCountsStore counts;
 
-        CountsManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
+        CountsManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
+                MemoryTracker memoryTracker )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
             this.databaseLayout = databaseLayout;
             this.pageCacheTracer = pageCacheTracer;
+            this.memoryTracker = memoryTracker;
         }
 
         @Override
@@ -421,7 +427,7 @@ public class ConsistencyCheckService
         {
             counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
-            counts.start( NULL );
+            counts.start( NULL, memoryTracker );
             return counts;
         }
 

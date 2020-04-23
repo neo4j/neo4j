@@ -34,6 +34,7 @@ import org.neo4j.internal.counts.CountsKey;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS;
@@ -64,23 +65,23 @@ class CountsState implements AutoCloseable
     private final ConcurrentMap<CountsKey,AtomicLong> relationshipCountsStray = new ConcurrentHashMap<>();
     private final DynamicNodeLabelsCache dynamicNodeLabelsCache;
 
-    CountsState( NeoStores neoStores, CacheAccess cacheAccess )
+    CountsState( NeoStores neoStores, CacheAccess cacheAccess, MemoryTracker memoryTracker )
     {
         this( neoStores.getLabelTokenStore().getHighId(), neoStores.getRelationshipTypeTokenStore().getHighId(), neoStores.getNodeStore().getHighId(),
-                cacheAccess );
+                cacheAccess, memoryTracker );
     }
 
-    CountsState( long highLabelId, long highRelationshipTypeId, long highNodeId, CacheAccess cacheAccess )
+    CountsState( long highLabelId, long highRelationshipTypeId, long highNodeId, CacheAccess cacheAccess, MemoryTracker memoryTracker )
     {
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.highNodeId = highNodeId;
         this.cacheAccess = cacheAccess;
         var arrayFactory = NumberArrayFactory.OFF_HEAP;
-        this.nodeCounts = (OffHeapLongArray) arrayFactory.newLongArray( highLabelId + 1, 0 );
-        this.relationshipLabelCounts = arrayFactory.newLongArray( labelsCountsLength( highLabelId, highRelationshipTypeId ), 0 );
-        this.relationshipWildcardCounts = arrayFactory.newLongArray( wildcardCountsLength( highRelationshipTypeId ), 0 );
-        this.dynamicNodeLabelsCache = new DynamicNodeLabelsCache();
+        this.nodeCounts = (OffHeapLongArray) arrayFactory.newLongArray( highLabelId + 1, 0, memoryTracker );
+        this.relationshipLabelCounts = arrayFactory.newLongArray( labelsCountsLength( highLabelId, highRelationshipTypeId ), 0, memoryTracker );
+        this.relationshipWildcardCounts = arrayFactory.newLongArray( wildcardCountsLength( highRelationshipTypeId ), 0, memoryTracker );
+        this.dynamicNodeLabelsCache = new DynamicNodeLabelsCache( memoryTracker );
     }
 
     @Override
@@ -113,7 +114,7 @@ class CountsState implements AutoCloseable
         return new RelationshipCounter.NodeLabelsLookup()
         {
             private final CacheAccess.Client cacheAccessClient = cacheAccess.client();
-            private long[] labelsHolder = new long[20]; // should be big enough for most cases, right?
+            private final long[] labelsHolder = new long[20]; // should be big enough for most cases, right?
 
             @Override
             public long[] nodeLabels( long nodeId )
@@ -201,7 +202,7 @@ class CountsState implements AutoCloseable
     {
         return new CountsChecker()
         {
-            RelationshipCounter relationshipCounter = instantiateRelationshipCounter();
+            final RelationshipCounter relationshipCounter = instantiateRelationshipCounter();
 
             @Override
             public void visitNodeCount( int labelId, long count )

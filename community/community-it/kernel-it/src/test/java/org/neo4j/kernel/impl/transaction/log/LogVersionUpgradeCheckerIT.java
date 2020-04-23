@@ -54,6 +54,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_roo
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHECK_POINT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -143,7 +144,7 @@ class LogVersionUpgradeCheckerIT
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.selectStorageEngine().commandReaderFactory() );
         LogFiles logFiles =
                 LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withLogEntryReader( logEntryReader ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors(), INSTANCE );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )

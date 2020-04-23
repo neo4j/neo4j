@@ -145,6 +145,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
@@ -236,11 +238,13 @@ public class Database extends LifecycleAdapter
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
     private CheckpointerLifecycle checkpointerLifecycle;
+    private ScopedMemoryPool otherDatabasePool;
     private final GraphDatabaseFacade databaseFacade;
     private final FileLockerService fileLockerService;
     private final KernelTransactionFactory kernelTransactionFactory;
     private final DatabaseStartupController startupController;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
+    private final GlobalMemoryGroupTracker otherMemoryPool;
 
     public Database( DatabaseCreationContext context )
     {
@@ -251,6 +255,7 @@ public class Database extends LifecycleAdapter
         this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
         this.transactionsMemoryPool = context.getTransactionsMemoryPool();
+        this.otherMemoryPool = context.getOtherMemoryPool();
         this.databaseLogService = context.getDatabaseLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.internalLogProvider = context.getDatabaseLogService().getInternalLogProvider();
@@ -346,8 +351,12 @@ public class Database extends LifecycleAdapter
             life.add( watcherService );
             databaseDependencies.satisfyDependency( watcherService );
 
+            otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0 );
+            life.add( onStop( () -> otherDatabasePool.close() ) );
+            var otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
+
             // Upgrade the store before we begin
-            upgradeStore( databaseConfig, databasePageCache );
+            upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
 
             // Check the tail of transaction logs and validate version
             final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
@@ -357,6 +366,7 @@ public class Database extends LifecycleAdapter
                     .withDependencies( databaseDependencies )
                     .withLogProvider( internalLogProvider )
                     .withDatabaseTracers( tracers )
+                    .withMemoryTracker( otherDatabaseMemoryTracker )
                     .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                     .build();
 
@@ -367,7 +377,7 @@ public class Database extends LifecycleAdapter
 
             var pageCacheTracer = tracers.getPageCacheTracer();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ),
-                    internalLogProvider );
+                    internalLogProvider, otherDatabaseMemoryTracker );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             if ( storageExists )
@@ -376,7 +386,8 @@ public class Database extends LifecycleAdapter
             }
 
             performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
-                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ) );
+                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
+                    otherDatabaseMemoryTracker );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -386,7 +397,7 @@ public class Database extends LifecycleAdapter
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                    recoveryCleanupWorkCollector, pageCacheTracer, !storageExists );
+                    recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, otherDatabaseMemoryTracker );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -514,10 +525,10 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache )
+    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer() )
-                .createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(),
+                memoryTracker ).createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 
     /**

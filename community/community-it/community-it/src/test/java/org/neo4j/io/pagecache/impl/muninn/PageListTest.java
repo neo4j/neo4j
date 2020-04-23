@@ -60,6 +60,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.io.ByteUnit.MebiByte;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
 public class PageListTest
@@ -121,7 +122,7 @@ public class PageListTest
     public void setUp()
     {
         swappers = new SwapperSet();
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, INSTANCE );
         pageList = new PageList( pageIds.length, pageSize, mman, swappers, victimPage, ALIGNMENT );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
@@ -132,7 +133,7 @@ public class PageListTest
     public void mustExposePageCount()
     {
         int pageCount;
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, INSTANCE );
 
         pageCount = 3;
         assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount() ).isEqualTo( pageCount );
@@ -1183,7 +1184,7 @@ public class PageListTest
     public void mustExposeCachePageSize()
     {
         PageList list = new PageList( 0, 42, mman, swappers,
-                VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
+                VictimPageReference.getVictimPage( 42, INSTANCE ), ALIGNMENT );
         assertThat( list.getCachePageSize() ).isEqualTo( 42 );
     }
 

@@ -113,6 +113,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -146,7 +147,7 @@ class CsvInputBatchImportIT
                     new ParallelBatchImporter( databaseLayout, fileSystem, null, PageCacheTracer.NULL,
                             smallBatchSizeConfig(), NullLogService.getInstance(),
                             ExecutionMonitors.invisible(), EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY,
-                            TransactionLogsInitializer.INSTANCE );
+                            TransactionLogsInitializer.INSTANCE, INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 

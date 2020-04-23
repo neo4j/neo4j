@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
@@ -58,11 +59,12 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
+
+    private volatile PhysicalLogVersionedStoreChannel channel;
     private BufferScope bufferScope;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
-
-    private volatile PhysicalLogVersionedStoreChannel channel;
 
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -71,6 +73,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( logFiles );
         this.pageCacheTracer = context.getDatabaseTracers().getPageCacheTracer();
+        memoryTracker = context.getMemoryTracker();
     }
 
     @Override
@@ -88,7 +91,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        bufferScope = new BufferScope( calculateLogBufferSize() );
+        bufferScope = new BufferScope( calculateLogBufferSize(), memoryTracker );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, bufferScope.buffer );
     }
 
@@ -102,7 +105,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogPosition scrollOverCheckpointRecords() throws IOException
     {
         // scroll all over possible checkpoints
-        ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
+        ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel, memoryTracker );
         LogEntryReader logEntryReader = context.getLogEntryReader();
         LogEntry entry;
         do
@@ -250,7 +253,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         PhysicalLogVersionedStoreChannel logChannel = logFiles.openForVersion( position.getLogVersion() );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, logVersionBridge );
+        return new ReadAheadLogChannel( logChannel, logVersionBridge, memoryTracker );
     }
 
     @Override

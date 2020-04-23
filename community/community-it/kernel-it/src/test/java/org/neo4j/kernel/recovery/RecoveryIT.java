@@ -96,6 +96,7 @@ import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -580,7 +581,7 @@ class RecoveryIT
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( layout ) );
 
-        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout );
+        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE );
         assertFalse( isRecoveryRequired( layout ) );
 
         assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
@@ -702,7 +703,7 @@ class RecoveryIT
     {
         Config config = Config.newBuilder().set( enable_relationship_type_scan_store, enableRelationshipTypeScanStore() ).build();
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
-        performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout );
+        performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );
     }
 
@@ -714,7 +715,7 @@ class RecoveryIT
 
     private boolean isRecoveryRequired( DatabaseLayout layout, Config config ) throws Exception
     {
-        return Recovery.isRecoveryRequired( fileSystem, layout, config );
+        return Recovery.isRecoveryRequired( fileSystem, layout, config, INSTANCE );
     }
 
     private int countCheckPointsInTransactionLogs() throws IOException
@@ -871,10 +872,10 @@ class RecoveryIT
 
     private void verifyRecoveryTimestampPresent( GraphDatabaseAPI databaseAPI ) throws IOException
     {
-        GraphDatabaseService restartedDatabase = createDatabase();
+        GraphDatabaseAPI restartedDatabase = createDatabase();
         try
         {
-            PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
+            PageCache restartedCache = getDatabasePageCache( restartedDatabase );
             final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL );
             assertThat( record ).isGreaterThan( 0L );
         }

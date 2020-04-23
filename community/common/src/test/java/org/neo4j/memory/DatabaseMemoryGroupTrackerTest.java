@@ -20,12 +20,14 @@
 package org.neo4j.memory;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,8 +48,10 @@ class DatabaseMemoryGroupTrackerTest
     private static Stream<Arguments> arguments()
     {
         return Stream.of(
-                Arguments.of( new AllocationFacade( "heap", MemoryPool::usedHeap, MemoryPool::reserveHeap, MemoryPool::releaseHeap ) ),
-                Arguments.of( new AllocationFacade( "native", MemoryPool::usedNative, MemoryPool::reserveNative, MemoryPool::releaseNative ) )
+                Arguments.of( new AllocationFacade( "heap", MemoryPool::usedHeap, MemoryPool::reserveHeap, MemoryPool::releaseHeap,
+                        pool -> pool.getPoolMemoryTracker().estimatedHeapMemory() ) ),
+                Arguments.of( new AllocationFacade( "native", MemoryPool::usedNative, MemoryPool::reserveNative, MemoryPool::releaseNative,
+                        pool -> pool.getPoolMemoryTracker().usedNativeMemory() ) )
         );
     }
 
@@ -81,6 +85,51 @@ class DatabaseMemoryGroupTrackerTest
 
     @ParameterizedTest
     @MethodSource( "arguments" )
+    void trackMemoryWithDefaultTracker( AllocationFacade methods )
+    {
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 12 );
+        methods.reserve( subPool, 3 );
+
+        assertEquals( 3, methods.used( subPool ) );
+        assertEquals( 3, methods.trackedMemory( subPool ) );
+
+        methods.release( subPool, 3 );
+        assertEquals( 0, methods.trackedMemory( subPool ) );
+        subPool.close();
+    }
+
+    @Test
+    void trackedHeapFromPoolAndTrackerMatch()
+    {
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120 );
+
+        var memoryTracker = subPool.getPoolMemoryTracker();
+
+        memoryTracker.allocateHeap( 12 );
+
+        assertEquals( 12, subPool.usedHeap() );
+        assertEquals( 12, memoryTracker.estimatedHeapMemory() );
+
+        subPool.close();
+    }
+
+    @Test
+    void trackedNativeFromPoolAndTrackerMatch()
+    {
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120 );
+
+        var memoryTracker = subPool.getPoolMemoryTracker();
+
+        memoryTracker.allocateNative( 13 );
+
+        assertEquals( 13, subPool.usedNative() );
+        assertEquals( 13, memoryTracker.usedNativeMemory() );
+
+        subPool.close();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "arguments" )
     void respectLocalLimit( AllocationFacade methods )
     {
         ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
@@ -103,14 +152,16 @@ class DatabaseMemoryGroupTrackerTest
         final Function<ScopedMemoryPool,Long> used;
         final BiConsumer<ScopedMemoryPool,Long> reserve;
         final BiConsumer<ScopedMemoryPool,Long> release;
+        private final ToLongFunction<ScopedMemoryPool> trackedMemory;
 
         private AllocationFacade( String name, Function<ScopedMemoryPool,Long> used, BiConsumer<ScopedMemoryPool,Long> reserve,
-                BiConsumer<ScopedMemoryPool,Long> release )
+                BiConsumer<ScopedMemoryPool,Long> release, ToLongFunction<ScopedMemoryPool> trackedMemory )
         {
             this.name = name;
             this.used = used;
             this.reserve = reserve;
             this.release = release;
+            this.trackedMemory = trackedMemory;
         }
 
         long used( ScopedMemoryPool pool )
@@ -121,6 +172,11 @@ class DatabaseMemoryGroupTrackerTest
         void reserve( ScopedMemoryPool pool, long bytes )
         {
             reserve.accept( pool, bytes );
+        }
+
+        long trackedMemory( ScopedMemoryPool pool )
+        {
+            return trackedMemory.applyAsLong( pool );
         }
 
         void release( ScopedMemoryPool pool, long bytes )

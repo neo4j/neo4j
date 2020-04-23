@@ -64,6 +64,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -108,11 +109,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer )
+            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
         RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer,
-                batchImporterFactory );
+                batchImporterFactory, memoryTracker );
         IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config, cacheTracer );
         return List.of( recordStorageMigrator, idGeneratorMigrator );
     }
@@ -121,11 +122,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
+            MemoryTracker memoryTracker )
     {
         return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
                 indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, cacheTracer,
-                createStoreIfNotExists );
+                createStoreIfNotExists, memoryTracker );
     }
 
     @Override

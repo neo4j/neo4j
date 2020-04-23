@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
+import org.eclipse.collections.api.map.primitive.ObjectLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,12 +34,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.api.map.primitive.ObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -74,6 +75,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -753,7 +755,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         PhysicalLogVersionedStoreChannel storeChannel = logFiles.openForVersion( logVersion );
         storeChannel.position( startPosition.getByteOffset() );
-        return new ReadAheadLogChannel( storeChannel );
+        return new ReadAheadLogChannel( storeChannel, EmptyMemoryTracker.INSTANCE );
     }
 
     private LogPosition getLastReadablePosition( LogFile logFile ) throws IOException

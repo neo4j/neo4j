@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.memory.LocalMemoryTracker;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -270,7 +272,8 @@ class UnsafeUtilTest
     void mustSupportReadingAndWritingOfPrimitivesToMemory()
     {
         int sizeInBytes = 8;
-        long address = allocateMemory( sizeInBytes );
+        var tracker = new LocalMemoryTracker();
+        long address = allocateMemory( sizeInBytes, tracker );
         try
         {
             putByte( address, (byte) 1 );
@@ -345,7 +348,7 @@ class UnsafeUtilTest
         }
         finally
         {
-            free( address, sizeInBytes );
+            free( address, sizeInBytes, tracker );
         }
     }
 
@@ -500,7 +503,8 @@ class UnsafeUtilTest
     void directByteBufferCreationAndInitialisation() throws Exception
     {
         int sizeInBytes = 313;
-        long address = allocateMemory( sizeInBytes );
+        var tracker = new LocalMemoryTracker();
+        long address = allocateMemory( sizeInBytes, tracker );
         try
         {
             setMemory( address, sizeInBytes, (byte) 0 );
@@ -521,7 +525,7 @@ class UnsafeUtilTest
             a.limit( 202 );
 
             int sizeInBytes2 = 424;
-            long address2 = allocateMemory( sizeInBytes2 );
+            long address2 = allocateMemory( sizeInBytes2, tracker );
             try
             {
                 setMemory( address2, sizeInBytes2, (byte) 0 );
@@ -538,12 +542,12 @@ class UnsafeUtilTest
             }
             finally
             {
-                free( address2, sizeInBytes2 );
+                free( address2, sizeInBytes2, tracker );
             }
         }
         finally
         {
-            free( address, sizeInBytes );
+            free( address, sizeInBytes, tracker );
         }
     }
 
@@ -573,7 +577,8 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 2;
-        long p = allocateMemory( sizeInBytes );
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
         short value = (short) 0b11001100_10101010;
 
         // WHEN
@@ -581,7 +586,7 @@ class UnsafeUtilTest
         short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 
@@ -590,7 +595,8 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 4;
-        long p = allocateMemory( sizeInBytes );
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
         int value = 0b11001100_10101010_10011001_01100110;
 
         // WHEN
@@ -598,7 +604,7 @@ class UnsafeUtilTest
         int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 
@@ -607,7 +613,8 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 8;
-        long p = allocateMemory( sizeInBytes );
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
         long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
 
         // WHEN
@@ -615,7 +622,7 @@ class UnsafeUtilTest
         long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 

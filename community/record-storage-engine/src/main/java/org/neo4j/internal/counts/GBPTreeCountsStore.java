@@ -55,6 +55,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -155,7 +156,7 @@ public class GBPTreeCountsStore implements CountsStore
     // === Life cycle ===
 
     @Override
-    public void start( PageCursorTracer cursorTracer ) throws IOException
+    public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( initialCountsBuilder != null )
@@ -168,7 +169,7 @@ public class GBPTreeCountsStore implements CountsStore
             long txId = initialCountsBuilder.lastCommittedTxId();
             try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ), idSequence, txId ), lock ) )
             {
-                initialCountsBuilder.initialize( updater, cursorTracer );
+                initialCountsBuilder.initialize( updater, cursorTracer, memoryTracker );
             }
         }
         started = true;

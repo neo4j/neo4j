@@ -21,7 +21,11 @@ package org.neo4j.internal.batchimport.cache;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPools;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DynamicIntArrayTest
 {
@@ -30,7 +34,7 @@ class DynamicIntArrayTest
     {
         // GIVEN
         int defaultValue = 0;
-        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue );
+        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue, INSTANCE );
         array.set( 4, 5 );
 
         // WHEN
@@ -41,10 +45,42 @@ class DynamicIntArrayTest
     }
 
     @Test
+    void trackHeapMemoryOnArrayAllocations()
+    {
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        var longArray = NumberArrayFactory.HEAP.newDynamicLongArray( 10, 1, memoryTracker );
+
+        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
+
+        longArray.set( 0, 5 );
+
+        assertEquals( 80, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
+    }
+
+    @Test
+    void trackNativeMemoryOnArrayAllocations()
+    {
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        try ( var longArray = NumberArrayFactory.OFF_HEAP.newDynamicLongArray( 10, 1, memoryTracker ) )
+        {
+
+            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+            assertEquals( 0, memoryTracker.usedNativeMemory() );
+
+            longArray.set( 0, 5 );
+
+            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+            assertEquals( 80, memoryTracker.usedNativeMemory() );
+        }
+    }
+
+    @Test
     void shouldChunksAsNeeded()
     {
         // GIVEN
-        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0 );
+        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0, INSTANCE );
 
         // WHEN
         long index = 243;

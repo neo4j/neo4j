@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -54,11 +55,11 @@ class RecoveryRequiredChecker
         this.storageEngineFactory = storageEngineFactory;
     }
 
-    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
+    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
         LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         LogFiles logFiles = buildLogFiles( databaseLayout, reader );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors(), true );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors(), true, memoryTracker );
         return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }
 

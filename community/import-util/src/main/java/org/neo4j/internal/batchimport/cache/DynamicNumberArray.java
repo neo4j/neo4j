@@ -21,12 +21,14 @@ package org.neo4j.internal.batchimport.cache;
 
 import java.util.Arrays;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Base class for common functionality for any {@link NumberArray} where the data is dynamically growing,
  * where parts can live inside and parts off-heap.
  *
- * @see NumberArrayFactory#newDynamicLongArray(long, long)
- * @see NumberArrayFactory#newDynamicIntArray(long, int)
+ * @see NumberArrayFactory#newDynamicLongArray(long, long, MemoryTracker)
+ * @see NumberArrayFactory#newDynamicIntArray(long, int, MemoryTracker)
  */
 abstract class DynamicNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {

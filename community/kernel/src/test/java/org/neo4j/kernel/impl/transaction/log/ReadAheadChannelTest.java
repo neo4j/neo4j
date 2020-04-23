@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class ReadAheadChannelTest
@@ -301,7 +303,7 @@ class ReadAheadChannelTest
                     @Override
                     public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
                     {
-                        return new HookedReadAheadChannel( channel, allocateDirect( readAheadSize ) );
+                        return new HookedReadAheadChannel( channel, allocateDirect( readAheadSize, INSTANCE ) );
                     }
                 },
     }

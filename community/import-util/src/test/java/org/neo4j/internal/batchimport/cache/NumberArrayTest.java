@@ -42,6 +42,7 @@ import static java.lang.Integer.max;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NumberArrayTest extends NumberArrayPageCacheTestSupport
 {
@@ -126,19 +127,20 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         {
             String name = entry.getKey() + " => ";
             NumberArrayFactory factory = entry.getValue();
-            list.add( arrayData( name + "IntArray", factory.newIntArray( INDEXES, -1 ), random -> random.nextInt( 1_000_000_000 ),
+            list.add( arrayData( name + "IntArray", factory.newIntArray( INDEXES, -1, INSTANCE ), random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
-            list.add( arrayData( name + "DynamicIntArray", factory.newDynamicIntArray( CHUNK_SIZE, -1 ), random -> random.nextInt( 1_000_000_000 ),
+            list.add( arrayData( name + "DynamicIntArray", factory.newDynamicIntArray( CHUNK_SIZE, -1, INSTANCE ), random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
 
-            list.add( arrayData( name + "LongArray", factory.newLongArray( INDEXES, -1 ), random -> random.nextLong( 1_000_000_000 ),
+            list.add( arrayData( name + "LongArray", factory.newLongArray( INDEXES, -1, INSTANCE ), random -> random.nextLong( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
-            list.add( arrayData( name + "DynamicLongArray", factory.newDynamicLongArray( CHUNK_SIZE, -1 ), random -> random.nextLong( 1_000_000_000 ),
+            list.add( arrayData( name + "DynamicLongArray", factory.newDynamicLongArray( CHUNK_SIZE, -1, INSTANCE ), random -> random.nextLong( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
 
-            list.add( arrayData( name + "ByteArray5", factory.newByteArray( INDEXES, defaultByteArray( 5 ) ), random -> random.nextInt( 1_000_000_000 ),
+            list.add( arrayData( name + "ByteArray5", factory.newByteArray( INDEXES, defaultByteArray( 5 ), INSTANCE ),
+                    random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.setInt( index, 1, (Integer) value ), ( array, index ) -> array.getInt( index, 1 ) ) );
-            list.add( arrayData( name + "DynamicByteArray5", factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 5 ) ),
+            list.add( arrayData( name + "DynamicByteArray5", factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 5 ), INSTANCE ),
                     random -> random.nextInt( 1_000_000_000 ), ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
 
@@ -154,9 +156,9 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
             };
             Reader<ByteArray> reader = ( array, index ) -> new long[]{array.getLong( index, 0 ), array.getInt( index, 8 ), array.getShort( index, 12 ),
                     array.getByte( index, 14 )};
-            list.add( arrayData( name + "ByteArray15", factory.newByteArray( INDEXES, defaultByteArray( 15 ) ), valueGenerator, writer, reader ) );
-            list.add( arrayData( name + "DynamicByteArray15", factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 15 ) ), valueGenerator, writer,
-                    reader ) );
+            list.add( arrayData( name + "ByteArray15", factory.newByteArray( INDEXES, defaultByteArray( 15 ), INSTANCE ), valueGenerator, writer, reader ) );
+            list.add( arrayData( name + "DynamicByteArray15", factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 15 ), INSTANCE ),
+                    valueGenerator, writer, reader ) );
         }
         return list;
     }

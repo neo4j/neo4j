@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
@@ -60,11 +61,12 @@ public class ParallelBatchImporter implements BatchImporter
     private final JobScheduler jobScheduler;
     private final Collector badCollector;
     private final LogFilesInitializer logFilesInitializer;
+    private final MemoryTracker memoryTracker;
 
     public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer )
+            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer, MemoryTracker memoryTracker )
     {
         this.externalPageCache = externalPageCache;
         this.databaseLayout = databaseLayout;
@@ -80,15 +82,16 @@ public class ParallelBatchImporter implements BatchImporter
         this.jobScheduler = jobScheduler;
         this.badCollector = badCollector;
         this.logFilesInitializer = logFilesInitializer;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
     public void doImport( Input input ) throws IOException
     {
         try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, externalPageCache, pageCacheTracer, recordFormats,
-                      config, logService, additionalInitialIds, dbConfig, jobScheduler );
+                      config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker );
               ImportLogic logic = new ImportLogic( databaseLayout, store, config, dbConfig, logService,
-                      executionMonitor, recordFormats, badCollector, monitor, pageCacheTracer ) )
+                      executionMonitor, recordFormats, badCollector, monitor, pageCacheTracer, memoryTracker ) )
         {
             store.createNew();
             logic.initialize( input );

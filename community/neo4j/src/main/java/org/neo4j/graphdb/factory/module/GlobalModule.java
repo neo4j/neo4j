@@ -132,6 +132,7 @@ public class GlobalModule
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
+    private final GlobalMemoryGroupTracker otherMemoryPool;
 
     public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
     {
@@ -175,6 +176,7 @@ public class GlobalModule
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         memoryPools = new MemoryPools();
+        otherMemoryPool = memoryPools.pool( MemoryGroup.OTHER, 0 );
         transactionsMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ) );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
@@ -544,5 +546,10 @@ public class GlobalModule
     public GlobalMemoryGroupTracker getTransactionsMemoryPool()
     {
         return transactionsMemoryPool;
+    }
+
+    public GlobalMemoryGroupTracker getOtherMemoryPool()
+    {
+        return otherMemoryPool;
     }
 }

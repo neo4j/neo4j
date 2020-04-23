@@ -93,6 +93,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 @PageCacheExtension
@@ -554,14 +555,14 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
-                batchImporterFactory );
+                batchImporterFactory, INSTANCE );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem )
                 .withLogEntryReader( new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ) ).build();
         LogTailScanner logTailScanner =
-                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
         StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(),
                 logTailScanner, new LegacyTransactionLogsLocator( config, databaseLayout ), storageEngineFactory, pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
@@ -598,7 +599,7 @@ public class StoreUpgraderTest
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build();
         LogTailScanner tailScanner =
-                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
         LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         if ( logTailInformation.commitsAfterLastCheckpoint() )

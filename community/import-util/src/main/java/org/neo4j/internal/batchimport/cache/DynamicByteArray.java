@@ -21,16 +21,20 @@ package org.neo4j.internal.batchimport.cache;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.memory.MemoryTracker;
+
 public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements ByteArray
 {
     private final byte[] defaultValue;
     private final ByteBuffer defaultValueConvenienceBuffer;
+    private final MemoryTracker memoryTracker;
 
-    public DynamicByteArray( NumberArrayFactory factory, long chunkSize, byte[] defaultValue )
+    public DynamicByteArray( NumberArrayFactory factory, long chunkSize, byte[] defaultValue, MemoryTracker memoryTracker )
     {
         super( factory, chunkSize, new ByteArray[0] );
         this.defaultValue = defaultValue;
         this.defaultValueConvenienceBuffer = ByteBuffer.wrap( defaultValue );
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -165,6 +169,6 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     @Override
     protected ByteArray addChunk( long chunkSize, long base )
     {
-        return factory.newByteArray( chunkSize, defaultValue, base );
+        return factory.newByteArray( chunkSize, defaultValue, base, memoryTracker );
     }
 }

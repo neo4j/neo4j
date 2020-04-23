@@ -53,6 +53,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -113,7 +114,7 @@ public class ExecutionOrderIntegrationTest
 
         // when
         singlePass.execute( fixture.getInstantiatedPageCache(), fixture.directStoreAccess(),
-                new InconsistencyReport( logger, singlePassSummary ), fixture.counts().get(), NULL );
+                new InconsistencyReport( logger, singlePassSummary ), fixture.counts().get(), NULL, INSTANCE );
 
         // then
         verifyNoInteractions( logger );

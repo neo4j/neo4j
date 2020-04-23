@@ -45,6 +45,7 @@ import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -243,7 +244,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter, lockService,
-                    databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true );
+                    databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true,
+                    EmptyMemoryTracker.INSTANCE );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

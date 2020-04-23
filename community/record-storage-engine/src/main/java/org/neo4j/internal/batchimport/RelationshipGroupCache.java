@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Long.max;
 import static org.neo4j.io.ByteUnit.bytesToString;
@@ -60,10 +61,10 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     private long highCacheId;
     private final long maxCacheLength;
 
-    public RelationshipGroupCache( NumberArrayFactory arrayFactory, long maxMemory, long highNodeId )
+    public RelationshipGroupCache( NumberArrayFactory arrayFactory, long maxMemory, long highNodeId, MemoryTracker memoryTracker )
     {
-        this.offsets = arrayFactory.newDynamicLongArray( 100_000, 0 );
-        this.groupCountCache = arrayFactory.newByteArray( highNodeId, new byte[2] );
+        this.offsets = arrayFactory.newDynamicLongArray( 100_000, 0, memoryTracker );
+        this.groupCountCache = arrayFactory.newByteArray( highNodeId, new byte[2], memoryTracker );
         this.highNodeId = highNodeId;
 
         long memoryDedicatedToCounting = 2 * highNodeId;
@@ -75,7 +76,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                             bytesToString( memoryDedicatedToCounting ) + " was dedicated to group counting" );
         }
         maxCacheLength = memoryLeftForGroupCache / GROUP_ENTRY_SIZE;
-        this.cache = arrayFactory.newDynamicByteArray( max( 1_000, maxCacheLength / 100 ), new byte[GROUP_ENTRY_SIZE] );
+        this.cache = arrayFactory.newDynamicByteArray( max( 1_000, maxCacheLength / 100 ), new byte[GROUP_ENTRY_SIZE], memoryTracker );
     }
 
     /**

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -53,9 +54,10 @@ public class DatabaseMigratorFactory
     private final JobScheduler jobScheduler;
     private final NamedDatabaseId namedDatabaseId;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer )
+            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.config = config;
@@ -64,6 +66,7 @@ public class DatabaseMigratorFactory
         this.jobScheduler = jobScheduler;
         this.namedDatabaseId = namedDatabaseId;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
@@ -90,9 +93,9 @@ public class DatabaseMigratorFactory
         {
             throw new RuntimeException( e );
         }
-        final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
+        final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ), memoryTracker );
         return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator,
-                storageEngineFactory, pageCacheTracer );
+                storageEngineFactory, pageCacheTracer, memoryTracker );
     }
 
     private static class LegacyDatabaseLayout extends DatabaseLayout

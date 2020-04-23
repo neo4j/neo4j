@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 
 import static java.lang.Integer.min;
@@ -39,7 +40,7 @@ public class StringCollisionValues implements CollisionValues
     private long offset;
     private ByteArray current;
 
-    public StringCollisionValues( NumberArrayFactory factory, long length )
+    public StringCollisionValues( NumberArrayFactory factory, long length, MemoryTracker memoryTracker )
     {
         // Let's have length (also chunk size) be divisible by PAGE_SIZE, such that our calculations below
         // works for all NumberArray implementations.
@@ -50,7 +51,7 @@ public class StringCollisionValues implements CollisionValues
         }
 
         chunkSize = max( length, PAGE_SIZE );
-        cache = factory.newDynamicByteArray( chunkSize, new byte[1] );
+        cache = factory.newDynamicByteArray( chunkSize, new byte[1], memoryTracker );
         current = cache.at( 0 );
     }
 

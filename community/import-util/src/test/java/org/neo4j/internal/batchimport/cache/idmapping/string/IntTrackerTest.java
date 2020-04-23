@@ -28,6 +28,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 class IntTrackerTest
@@ -40,7 +41,8 @@ class IntTrackerTest
     {
         // given
         int length = 10_000;
-        try ( IntTracker tracker = new IntTracker( NumberArrayFactory.HEAP.newIntArray( length, IntTracker.DEFAULT_VALUE ) ) )
+        try ( IntTracker tracker = new IntTracker( NumberArrayFactory.HEAP.newIntArray( length, IntTracker.DEFAULT_VALUE, INSTANCE
+        ) ) )
         {
             // when
             long[] values = new long[length];

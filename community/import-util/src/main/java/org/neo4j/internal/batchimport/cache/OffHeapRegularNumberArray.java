@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Base class for common functionality for any {@link NumberArray} where the data lives off-heap.
  */
@@ -26,9 +28,9 @@ abstract class OffHeapRegularNumberArray<N extends NumberArray<N>> extends OffHe
 {
     protected final int shift;
 
-    protected OffHeapRegularNumberArray( long length, int shift, long base )
+    protected OffHeapRegularNumberArray( long length, int shift, long base, MemoryTracker memoryTracker )
     {
-        super( length, 1 << shift, base );
+        super( length, 1 << shift, base, memoryTracker );
         this.shift = shift;
     }
 

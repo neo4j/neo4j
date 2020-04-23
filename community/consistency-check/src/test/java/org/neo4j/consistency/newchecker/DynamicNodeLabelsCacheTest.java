@@ -27,6 +27,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 class DynamicNodeLabelsCacheTest
@@ -38,7 +39,7 @@ class DynamicNodeLabelsCacheTest
     void shouldPutAndGetLabels()
     {
         // given
-        DynamicNodeLabelsCache cache = new DynamicNodeLabelsCache();
+        DynamicNodeLabelsCache cache = new DynamicNodeLabelsCache( INSTANCE );
         long[] indexes = new long[1_000];
         long[][] expectedLabels = new long[indexes.length][];
 

@@ -66,6 +66,8 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
@@ -109,6 +111,7 @@ class CsvImporter implements Importer
     private final PrintStream stdOut;
     private final PrintStream stdErr;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     private CsvImporter( Builder b )
     {
@@ -130,6 +133,7 @@ class CsvImporter implements Importer
         this.relationshipFiles = requireNonNull( b.relationshipFiles );
         this.fileSystem = requireNonNull( b.fileSystem );
         this.pageCacheTracer = requireNonNull( b.pageCacheTracer );
+        this.memoryTracker = requireNonNull( b.memoryTracker );
         this.stdOut = requireNonNull( b.stdOut );
         this.stdErr = requireNonNull( b.stdErr );
     }
@@ -180,7 +184,7 @@ class CsvImporter implements Importer
                     databaseConfig,
                     RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
                     new PrintingImportLogicMonitor( stdOut, stdErr ),
-                    jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
+                    jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE, memoryTracker );
 
             printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
 
@@ -404,6 +408,7 @@ class CsvImporter implements Importer
         private final Map<String, List<File[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+        private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
 
@@ -514,6 +519,12 @@ class CsvImporter implements Importer
         Builder withPageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             this.pageCacheTracer = pageCacheTracer;
+            return this;
+        }
+
+        Builder withMemoryTracker( MemoryTracker memoryTracker )
+        {
+            this.memoryTracker = memoryTracker;
             return this;
         }
 

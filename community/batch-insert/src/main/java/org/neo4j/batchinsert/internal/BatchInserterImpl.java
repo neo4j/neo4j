@@ -162,7 +162,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -218,6 +220,7 @@ public class BatchInserterImpl implements BatchInserter
     private final SchemaRuleAccess schemaRuleAccess;
     private final PageCacheTracer pageCacheTracer;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -256,9 +259,9 @@ public class BatchInserterImpl implements BatchInserter
                 .fromConfig( fromConfig )
                 .build();
         this.fileSystem = fileSystem;
-
         pageCacheTracer = tracers.getPageCacheTracer();
         cursorTracer = pageCacheTracer.createPageCursorTracer( BATCH_INSERTER_TAG );
+        memoryTracker = EmptyMemoryTracker.INSTANCE;
         life = new LifeSupport();
         this.databaseLayout = databaseLayout;
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -603,10 +606,11 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void rebuildCounts( PageCacheTracer cacheTracer ) throws IOException
+    private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
-                new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ).close();
+                new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker ),
+                false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ).close();
     }
 
     private void createEmptyTransactionLog()
@@ -1082,7 +1086,7 @@ public class BatchInserterImpl implements BatchInserter
               locker;
               neoStores )
         {
-            rebuildCounts( pageCacheTracer );
+            rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );

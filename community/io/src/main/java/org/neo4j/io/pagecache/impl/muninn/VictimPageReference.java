@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.memory.MemoryTracker;
 
 class VictimPageReference
 {
@@ -31,14 +32,14 @@ class VictimPageReference
         // All state is static
     }
 
-    static synchronized long getVictimPage( int pageSize )
+    static synchronized long getVictimPage( int pageSize, MemoryTracker memoryTracker )
     {
         if ( victimPageSize < pageSize )
         {
             // Note that we NEVER free any old victim pages. This is important because we cannot tell
             // when we are done using them. Therefor, victim pages are allocated and stay allocated
             // until our process terminates.
-            victimPagePointer = UnsafeUtil.allocateMemory( pageSize );
+            victimPagePointer = UnsafeUtil.allocateMemory( pageSize, memoryTracker );
             victimPageSize = pageSize;
         }
         return victimPagePointer;

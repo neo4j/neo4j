@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralNeo4jLayoutExtension
 class TestStoreAccess
@@ -83,6 +84,6 @@ class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws Exception
     {
-        return isRecoveryRequired( fileSystem, databaseLayout, defaults() );
+        return isRecoveryRequired( fileSystem, databaseLayout, defaults(), INSTANCE );
     }
 }

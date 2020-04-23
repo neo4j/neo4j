@@ -44,6 +44,7 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -134,6 +135,7 @@ public class EncodingIdMapper implements IdMapper
     private final Encoder encoder;
     private final Radix radix;
     private final int processorsForParallelWork;
+    private final MemoryTracker memoryTracker;
     private final Comparator comparator;
 
     private ByteArray collisionNodeIdCache;
@@ -154,15 +156,16 @@ public class EncodingIdMapper implements IdMapper
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory,
-            PageCacheTracer pageCacheTracer )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, collisionValuesFactory, DEFAULT_CACHE_CHUNK_SIZE,
-                Runtime.getRuntime().availableProcessors() - 1, DEFAULT, pageCacheTracer );
+                Runtime.getRuntime().availableProcessors() - 1, DEFAULT, pageCacheTracer, memoryTracker );
     }
 
     EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory,
-            int chunkSize, int processorsForParallelWork, Comparator comparator, PageCacheTracer pageCacheTracer )
+            int chunkSize, int processorsForParallelWork, Comparator comparator, PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker )
     {
         this.radixFactory = radixFactory;
         this.monitor = monitor;
@@ -171,8 +174,9 @@ public class EncodingIdMapper implements IdMapper
         this.collisionValuesFactory = collisionValuesFactory;
         this.comparator = comparator;
         this.processorsForParallelWork = max( processorsForParallelWork, 1 );
-        this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
-        this.groupCache = GroupCache.select( cacheFactory, chunkSize, groups.size() );
+        this.memoryTracker = memoryTracker;
+        this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE, memoryTracker );
+        this.groupCache = GroupCache.select( cacheFactory, chunkSize, groups.size(), memoryTracker );
         this.groups = groups;
         this.encoder = encoder;
         this.radix = radixFactory.newInstance();
@@ -494,7 +498,7 @@ public class EncodingIdMapper implements IdMapper
     {
         progress.started( "RESOLVE (~" + pessimisticNumberOfCollisions + " collisions)" );
         Radix radix = radixFactory.newInstance();
-        collisionNodeIdCache = cacheFactory.newByteArray( pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE] );
+        collisionNodeIdCache = cacheFactory.newByteArray( pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE], memoryTracker );
         collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
         collisionValues = collisionValuesFactory.apply( pessimisticNumberOfCollisions );
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( IMPORT_COLLISION_INFO_TAG ) )

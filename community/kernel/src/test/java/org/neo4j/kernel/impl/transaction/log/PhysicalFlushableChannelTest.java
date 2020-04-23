@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
 
-import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -42,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 class PhysicalFlushableChannelTest
@@ -196,7 +198,7 @@ class PhysicalFlushableChannelTest
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
         PositionAwarePhysicalFlushableChecksumChannel channel =
-                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, allocateDirect( 1024 ) );
+                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, allocateDirect( 1024, INSTANCE ) );
         LogPositionMarker positionMarker = new LogPositionMarker();
         LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 

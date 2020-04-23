@@ -101,6 +101,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
@@ -183,7 +184,8 @@ public class ParallelBatchImporterTest
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
             fs, null, pageCacheTracer, config, NullLogService.getInstance(),
-            monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
+            monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE,
+                INSTANCE );
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();
         try

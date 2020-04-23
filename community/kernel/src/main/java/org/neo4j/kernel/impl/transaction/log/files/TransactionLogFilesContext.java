@@ -30,6 +30,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -47,11 +48,12 @@ class TransactionLogFilesContext
     private final DatabaseTracers databaseTracers;
     private final Supplier<StoreId> storeId;
     private final NativeAccess nativeAccess;
+    private final MemoryTracker memoryTracker;
 
     TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
             Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
-            LogProvider logProvider, DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess )
+            LogProvider logProvider, DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess, MemoryTracker memoryTracker )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -65,6 +67,7 @@ class TransactionLogFilesContext
         this.databaseTracers = databaseTracers;
         this.storeId = storeId;
         this.nativeAccess = nativeAccess;
+        this.memoryTracker = memoryTracker;
     }
 
     AtomicLong getRotationThreshold()
@@ -125,5 +128,10 @@ class TransactionLogFilesContext
     public StoreId getStoreId()
     {
         return storeId.get();
+    }
+
+    public MemoryTracker getMemoryTracker()
+    {
+        return memoryTracker;
     }
 }

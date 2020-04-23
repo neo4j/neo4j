@@ -43,6 +43,7 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.BufferScope;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
@@ -428,7 +429,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     private static long dumpFile( FileSystemAbstraction fs, File file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
-        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE );
+        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, EmptyMemoryTracker.INSTANCE );
               ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.buffer ) )
         {
             long range = -1;

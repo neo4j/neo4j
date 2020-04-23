@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class CheckNextRelTaskTest
 {
@@ -58,7 +59,7 @@ class CheckNextRelTaskTest
         StoreAccess storeAccess = new StoreAccess( neoStores );
         storeAccess.initialize();
 
-        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( highNodeId ), Counts.NONE, 1 );
+        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( highNodeId, INSTANCE ), Counts.NONE, 1 );
         CacheTask.CheckNextRel cacheTask = new CacheTask.CheckNextRel( Stage.SEQUENTIAL_FORWARD, cacheAccess, storeAccess, storeProcessor,
                 PageCacheTracer.NULL );
 

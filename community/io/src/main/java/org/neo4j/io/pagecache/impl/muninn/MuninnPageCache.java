@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -228,7 +229,8 @@ public class MuninnPageCache implements PageCache
                 PAGE_SIZE,
                 pageCacheTracer, versionContextSupplier,
                 jobScheduler,
-                Clocks.nanoClock() );
+                Clocks.nanoClock(),
+                EmptyMemoryTracker.INSTANCE );
     }
 
     /**
@@ -237,11 +239,12 @@ public class MuninnPageCache implements PageCache
      * @param memoryAllocator the source of native memory the page cache should use
      * @param pageCacheTracer global page cache tracer
      * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
+     * @param memoryTracker underlying buffers allocation memory tracker
      */
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker )
     {
-        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock );
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock, memoryTracker );
     }
 
     /**
@@ -251,7 +254,7 @@ public class MuninnPageCache implements PageCache
     @SuppressWarnings( "DeprecatedIsStillUsed" )
     @Deprecated
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, int cachePageSize, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -267,7 +270,7 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
-        this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
+        this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
         this.clock = clock;

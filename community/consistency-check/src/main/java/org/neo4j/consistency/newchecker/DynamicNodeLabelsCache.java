@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.cache.IntArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
 
@@ -33,8 +34,13 @@ import static java.lang.Math.toIntExact;
  */
 class DynamicNodeLabelsCache implements AutoCloseable
 {
-    private final IntArray cache = NumberArrayFactory.OFF_HEAP.newDynamicIntArray( 100_000, 0 );
+    private final IntArray cache;
     private final AtomicLong nextIndex = new AtomicLong();
+
+   DynamicNodeLabelsCache( MemoryTracker memoryTracker )
+    {
+        cache = NumberArrayFactory.OFF_HEAP.newDynamicIntArray( 100_000, 0, memoryTracker );
+    }
 
     long put( long[] labels )
     {

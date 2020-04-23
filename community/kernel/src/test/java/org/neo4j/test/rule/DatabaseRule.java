@@ -178,7 +178,7 @@ public class DatabaseRule extends ExternalResource
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
                 storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT, memoryPools,
-                memoryPools.pool( MemoryGroup.TRANSACTION, 0 ) ) );
+                memoryPools.pool( MemoryGroup.TRANSACTION, 0 ), memoryPools.pool( MemoryGroup.OTHER, 0 ) ) );
         return database;
     }
 
@@ -217,6 +217,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseStartupController startupController;
         private final MemoryPools memoryPools;
         private final GlobalMemoryGroupTracker transactionsMemoryPool;
+        private final GlobalMemoryGroupTracker otherMemoryPool;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final DatabaseLogService logService;
@@ -260,7 +261,7 @@ public class DatabaseRule extends ExternalResource
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
                 FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController, MemoryPools memoryPools,
-                GlobalMemoryGroupTracker transactionsMemoryPool )
+                GlobalMemoryGroupTracker transactionsMemoryPool, GlobalMemoryGroupTracker otherMemoryPool )
         {
             this.namedDatabaseId = namedDatabaseId;
             this.databaseLayout = databaseLayout;
@@ -269,6 +270,7 @@ public class DatabaseRule extends ExternalResource
             this.startupController = startupController;
             this.memoryPools = memoryPools;
             this.transactionsMemoryPool = transactionsMemoryPool;
+            this.otherMemoryPool = otherMemoryPool;
             this.databaseConfig = new DatabaseConfig( config, namedDatabaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), logService );
@@ -543,6 +545,12 @@ public class DatabaseRule extends ExternalResource
         public GlobalMemoryGroupTracker getTransactionsMemoryPool()
         {
             return transactionsMemoryPool;
+        }
+
+        @Override
+        public GlobalMemoryGroupTracker getOtherMemoryPool()
+        {
+            return otherMemoryPool;
         }
     }
 

@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 
@@ -35,25 +36,27 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
 {
     private final LogVersionBridge bridge;
     private final ByteBuffer buffer;
+    private final MemoryTracker memoryTracker;
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel )
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, MemoryTracker memoryTracker )
     {
-        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, allocateDirect( DEFAULT_READ_AHEAD_SIZE ) );
+        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, allocateDirect( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), memoryTracker );
     }
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker )
     {
-        this( startingChannel, bridge, allocateDirect( DEFAULT_READ_AHEAD_SIZE ) );
+        this( startingChannel, bridge, allocateDirect( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), memoryTracker );
     }
 
     /**
      * This constructor is private to ensure that the given buffer always comes form one of our own constructors.
      */
-    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ByteBuffer buffer )
+    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ByteBuffer buffer, MemoryTracker memoryTracker )
     {
         super( startingChannel, buffer );
         this.bridge = bridge;
         this.buffer = buffer;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -85,6 +88,6 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     public void close() throws IOException
     {
         super.close();
-        ByteBuffers.releaseBuffer( buffer );
+        ByteBuffers.releaseBuffer( buffer, memoryTracker );
     }
 }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
@@ -52,7 +53,7 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
      * before this call is made are considered recovery repairs from a previous non-clean shutdown.
      * @throws IOException any type of error happening when transitioning to started state.
      */
-    void start( PageCursorTracer cursorTracer ) throws IOException;
+    void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
 
     class NullCountsStore implements CountsStore
     {
@@ -68,7 +69,7 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
         }
 
         @Override
-        public void start( PageCursorTracer cursorTracer ) throws IOException
+        public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
         {   // no-op
         }
 

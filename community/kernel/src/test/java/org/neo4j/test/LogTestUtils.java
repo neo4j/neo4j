@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -109,7 +110,7 @@ public class LogTestUtils
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.getLogVersion(), logHeader.getLogFormatVersion(), file, channelNativeAccessor );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, EmptyMemoryTracker.INSTANCE );
             LogEntryReader entryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
             LogEntry entry;

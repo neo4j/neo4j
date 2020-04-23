@@ -46,6 +46,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_LABE
 import static org.neo4j.consistency.newchecker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -66,9 +67,9 @@ class CountsStateTest
     @BeforeEach
     void setUp()
     {
-        cacheAccess = new DefaultCacheAccess( HEAP.newByteArray( HIGH_NODE_ID, new byte[MAX_SLOT_BITS] ), Counts.NONE, 1 );
+        cacheAccess = new DefaultCacheAccess( HEAP.newByteArray( HIGH_NODE_ID, new byte[MAX_SLOT_BITS], INSTANCE ), Counts.NONE, 1 );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
-        countsState = new CountsState( HIGH_TOKEN_ID, HIGH_TOKEN_ID, HIGH_NODE_ID, cacheAccess );
+        countsState = new CountsState( HIGH_TOKEN_ID, HIGH_TOKEN_ID, HIGH_NODE_ID, cacheAccess, INSTANCE );
         noConsistencyReporter = mock( ConsistencyReporter.class );
         when( noConsistencyReporter.forCounts( any() ) ).thenReturn( mock( ConsistencyReport.CountsConsistencyReport.class ) );
         inconsistencyReporter = mock( ConsistencyReporter.class );

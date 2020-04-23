@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Off-heap version of {@link IntArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
@@ -29,9 +30,9 @@ public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> impleme
 {
     private final int defaultValue;
 
-    public OffHeapIntArray( long length, int defaultValue, long base )
+    public OffHeapIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
     {
-        super( length, 2, base );
+        super( length, 2, base, memoryTracker );
         this.defaultValue = defaultValue;
         clear();
     }

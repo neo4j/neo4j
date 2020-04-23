@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -73,6 +74,7 @@ import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
@@ -344,9 +346,9 @@ class GBPTreeCountsStoreTest
         TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
-                super.initialize( updater, cursorTracer );
+                super.initialize( updater, cursorTracer, memoryTracker );
                 updater.incrementNodeCount( labelId, 10 );
                 updater.incrementRelationshipCount( labelId, relationshipTypeId, labelId2, 14 );
             }
@@ -386,7 +388,7 @@ class GBPTreeCountsStoreTest
         instantiateCountsStore( new CountsBuilder()
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
                 updater.incrementNodeCount( labelId, 2 );
             }
@@ -402,7 +404,7 @@ class GBPTreeCountsStoreTest
         // applying this negative delta would have failed in the updater.
         incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
         verify( monitor ).ignoredTransaction( BASE_TX_ID + 2 );
-        countsStore.start( NULL );
+        countsStore.start( NULL, INSTANCE );
 
         // then
         assertEquals( 2, countsStore.nodeCount( labelId, NULL ) );
@@ -487,7 +489,7 @@ class GBPTreeCountsStoreTest
         countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
-        countsStore.start( NULL );
+        countsStore.start( NULL, INSTANCE );
 
         // then
         assertThrows( IllegalStateException.class, () -> countsStore.apply( BASE_TX_ID + 1, NULL ) );
@@ -500,7 +502,7 @@ class GBPTreeCountsStoreTest
         countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
-        countsStore.start( NULL );
+        countsStore.start( NULL, INSTANCE );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
         countsStore.checkpoint( UNLIMITED, NULL );
@@ -691,7 +693,7 @@ class GBPTreeCountsStoreTest
     private void openCountsStore( CountsBuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, false, NO_MONITOR );
-        countsStore.start( NULL );
+        countsStore.start( NULL, INSTANCE );
     }
 
     private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
@@ -727,7 +729,7 @@ class GBPTreeCountsStoreTest
         }
 
         @Override
-        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             initializeCalled = true;
         }

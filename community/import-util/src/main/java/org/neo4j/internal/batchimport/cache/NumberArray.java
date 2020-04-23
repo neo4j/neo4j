@@ -54,7 +54,7 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
     /**
      * Part of the nature of {@link NumberArray} is that {@link #length()} can be dynamically growing.
      * For that to work some implementations (those coming from e.g
-     * {@link NumberArrayFactory#newDynamicIntArray(long, int)} and such dynamic calls) has an indirection,
+     * {@link NumberArrayFactory#newDynamicIntArray(long, int, org.neo4j.memory.MemoryTracker)} and such dynamic calls) has an indirection,
      * one that is a bit costly when comparing to raw array access. In scenarios where there will be two or
      * more access to the same index in the array it will be more efficient to resolve this indirection once
      * and return the "raw" array for that given index so that it can be used directly in multiple calls,

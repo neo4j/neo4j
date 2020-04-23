@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.ByteUnit.GibiByte;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class LargePageListIT
 {
@@ -46,7 +47,7 @@ class LargePageListIT
 
         MemoryAllocator mman = MemoryAllocator.createAllocator( GibiByte.toBytes( 2 ), EmptyMemoryTracker.INSTANCE );
         SwapperSet swappers = new SwapperSet();
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, INSTANCE );
 
         PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage, Long.BYTES );
 

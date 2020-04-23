@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DynamicLongArrayTest
 {
@@ -30,7 +31,7 @@ class DynamicLongArrayTest
     {
         // GIVEN
         long defaultValue = 0;
-        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, defaultValue );
+        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, defaultValue, INSTANCE );
         array.set( 4, 5 );
 
         // WHEN
@@ -44,7 +45,7 @@ class DynamicLongArrayTest
     void shouldChunksAsNeeded()
     {
         // GIVEN
-        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0 );
+        LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0, INSTANCE );
 
         // WHEN
         long index = 243;

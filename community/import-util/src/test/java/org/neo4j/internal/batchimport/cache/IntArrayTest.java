@@ -40,6 +40,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicTest.stream;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class IntArrayTest extends NumberArrayPageCacheTestSupport
 {
@@ -67,7 +68,7 @@ class IntArrayTest extends NumberArrayPageCacheTestSupport
         {
             int length = random.nextInt( 100_000 ) + 100;
             int defaultValue = random.nextInt( 2 ) - 1; // 0 or -1
-            try ( IntArray array = factory.newIntArray( length, defaultValue ) )
+            try ( IntArray array = factory.newIntArray( length, defaultValue, INSTANCE ) )
             {
                 int[] expected = new int[length];
                 Arrays.fill( expected, defaultValue );
@@ -106,7 +107,7 @@ class IntArrayTest extends NumberArrayPageCacheTestSupport
         return DynamicTest.stream( arrayFactories(), getNumberArrayFactoryName(), factory ->
         {
             // GIVEN
-            NumberArray<?> array = factory.newIntArray( 10, -1 );
+            NumberArray<?> array = factory.newIntArray( 10, -1, INSTANCE );
 
             // WHEN
             array.close();

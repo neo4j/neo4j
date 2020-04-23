@@ -40,6 +40,8 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 class SequenceLockStressIT
 {
     private static ExecutorService executor;
@@ -48,7 +50,7 @@ class SequenceLockStressIT
     @BeforeAll
     static void initialise()
     {
-        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
+        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES, INSTANCE );
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
     }
 
@@ -56,7 +58,7 @@ class SequenceLockStressIT
     static void cleanup()
     {
         executor.shutdown();
-        UnsafeUtil.free( lockAddr, Long.BYTES );
+        UnsafeUtil.free( lockAddr, Long.BYTES, INSTANCE );
     }
 
     @BeforeEach

@@ -58,6 +58,7 @@ import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFro
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Uses all available shortcuts to as quickly as possible import as much data as possible. Usage of this
@@ -168,7 +169,7 @@ public class QuickImport
                         importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
-                        TransactionLogsInitializer.INSTANCE );
+                        TransactionLogsInitializer.INSTANCE, INSTANCE );
             }
             consumer.doImport( input );
         }

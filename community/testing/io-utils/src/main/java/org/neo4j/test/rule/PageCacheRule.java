@@ -103,8 +103,9 @@ public class PageCacheRule extends ExternalResource
         PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
 
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
+        var memoryTracker = new LocalMemoryTracker();
         MemoryAllocator mman = MemoryAllocator.createAllocator( parse( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) ),
-                new LocalMemoryTracker() );
+                memoryTracker );
         initializeJobScheduler();
         if ( clock == null )
         {
@@ -112,11 +113,11 @@ public class PageCacheRule extends ExternalResource
         }
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

@@ -38,6 +38,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.NO_MONITOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -67,7 +68,7 @@ class PageCacheLongArrayTest
     {
         File directory = testDirectory.homeDir();
         NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, NULL, directory, false, NO_MONITOR );
-        try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
+        try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0, INSTANCE ) )
         {
             verifyBehaviour( array );
         }

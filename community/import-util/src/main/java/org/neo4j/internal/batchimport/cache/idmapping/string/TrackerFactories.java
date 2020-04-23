@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Common {@link TrackerFactory} implementations.
  */
@@ -29,12 +31,13 @@ public class TrackerFactories
     }
 
     /**
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link TrackerFactory} creating different {@link Tracker} instances depending on size.
      */
-    public static TrackerFactory dynamic()
+    public static TrackerFactory dynamic( MemoryTracker memoryTracker )
     {
         return ( arrayFactory, size ) -> size > IntTracker.MAX_ID
-                ? new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) )
-                : new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) );
+                ? new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE, memoryTracker ) )
+                : new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE, memoryTracker ) );
     }
 }

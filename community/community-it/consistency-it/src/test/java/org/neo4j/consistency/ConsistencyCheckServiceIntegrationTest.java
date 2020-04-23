@@ -77,7 +77,6 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -85,6 +84,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -163,7 +163,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService( new Date() );
         var pageCacheTracer = new DefaultPageCacheTracer();
         var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), ProgressMonitorFactory.NONE,
-                NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT, pageCacheTracer );
+                NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT, pageCacheTracer, INSTANCE );
 
         assertFalse( result.isSuccessful() );
         assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );

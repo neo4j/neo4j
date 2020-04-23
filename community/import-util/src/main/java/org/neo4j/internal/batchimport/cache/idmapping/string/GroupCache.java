@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedByte;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedShort;
@@ -64,9 +65,9 @@ public interface GroupCache extends AutoCloseable
     {
         private final ByteArray array;
 
-        public ByteGroupCache( NumberArrayFactory factory, int chunkSize )
+        public ByteGroupCache( NumberArrayFactory factory, int chunkSize, MemoryTracker memoryTracker )
         {
-            array = factory.newDynamicByteArray( chunkSize, new byte[Byte.BYTES] );
+            array = factory.newDynamicByteArray( chunkSize, new byte[Byte.BYTES], memoryTracker );
         }
 
         @Override
@@ -92,9 +93,9 @@ public interface GroupCache extends AutoCloseable
     {
         private final ByteArray array;
 
-        public ShortGroupCache( NumberArrayFactory factory, int chunkSize )
+        public ShortGroupCache( NumberArrayFactory factory, int chunkSize, MemoryTracker memoryTracker )
         {
-            array = factory.newDynamicByteArray( chunkSize, new byte[Short.BYTES] );
+            array = factory.newDynamicByteArray( chunkSize, new byte[Short.BYTES], memoryTracker );
         }
 
         @Override
@@ -116,7 +117,7 @@ public interface GroupCache extends AutoCloseable
         }
     }
 
-    static GroupCache select( NumberArrayFactory factory, int chunkSize, int numberOfGroups )
+    static GroupCache select( NumberArrayFactory factory, int chunkSize, int numberOfGroups, MemoryTracker memoryTracker )
     {
         if ( numberOfGroups == 0 )
         {
@@ -124,11 +125,11 @@ public interface GroupCache extends AutoCloseable
         }
         if ( numberOfGroups <= 0x100 )
         {
-            return new ByteGroupCache( factory, chunkSize );
+            return new ByteGroupCache( factory, chunkSize, memoryTracker );
         }
         if ( numberOfGroups <= 0x10000 )
         {
-            return new ShortGroupCache( factory, chunkSize );
+            return new ShortGroupCache( factory, chunkSize, memoryTracker );
         }
         throw new IllegalArgumentException( "Max allowed groups is " + 0xFFFF + ", but wanted " + numberOfGroups );
     }

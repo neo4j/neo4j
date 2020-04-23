@@ -39,9 +39,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -83,6 +83,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
@@ -139,7 +140,8 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory,
+                INSTANCE )
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
@@ -163,7 +165,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
@@ -195,7 +197,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
-        var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory );
+        var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
@@ -225,7 +227,8 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory,
+                INSTANCE )
         {
             @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
@@ -250,7 +253,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
@@ -271,7 +274,7 @@ public class StoreUpgraderInterruptionTestIT
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build();
         LogTailScanner logTailScanner =
-                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors() );
+                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
         StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner,
                 legacyTransactionLogsLocator, new RecordStorageEngineFactory(), NULL );
         for ( StoreMigrationParticipant participant : participants )

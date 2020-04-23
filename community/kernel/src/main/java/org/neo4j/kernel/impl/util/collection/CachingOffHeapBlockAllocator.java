@@ -30,6 +30,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.internal.helpers.Numbers.log2floor;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
@@ -135,7 +136,7 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
             MemoryBlock block;
             while ( (block = cache.poll()) != null )
             {
-                UnsafeUtil.free( block.addr, block.size );
+                UnsafeUtil.free( block.addr, block.size, INSTANCE );
             }
         }
     }

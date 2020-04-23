@@ -48,6 +48,7 @@ import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.EmptyLogFilesInitializer;
+import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -107,6 +108,7 @@ import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionId;
@@ -121,7 +123,6 @@ import org.neo4j.token.api.TokenNotFoundException;
 import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
@@ -169,10 +170,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final JobScheduler jobScheduler;
     private final PageCacheTracer cacheTracer;
     private final BatchImporterFactory batchImporterFactory;
+    private final MemoryTracker memoryTracker;
 
     public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
-            BatchImporterFactory batchImporterFactory )
+            BatchImporterFactory batchImporterFactory, MemoryTracker memoryTracker )
     {
         super( "Store files" );
         this.fileSystem = fileSystem;
@@ -182,6 +184,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         this.jobScheduler = jobScheduler;
         this.cacheTracer = cacheTracer;
         this.batchImporterFactory = batchImporterFactory;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -254,7 +257,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
             {
-                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorTracer );
+                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorTracer, memoryTracker );
             }
         }
     }
@@ -264,17 +267,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Instead of a rebuild this could have been done by reading the old counts store, but since we don't want any of that complex
      * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
      */
-    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, PageCursorTracer cursorTracer )
-            throws IOException
+    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat,
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
     {
         // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
         StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
                 GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
-                        new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout ), false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+                        new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker ), false, cacheTracer,
+                        GBPTreeCountsStore.NO_MONITOR ) )
         {
-            countsStore.start( cursorTracer );
+            countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( IOLimiter.UNLIMITED, cursorTracer );
         }
     }
@@ -450,8 +454,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = batchImporterFactory.instantiate( migrationDirectoryStructure,
                     fileSystem, pageCache, cacheTracer, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector,
-                    EmptyLogFilesInitializer.INSTANCE );
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, badCollector,
+                    EmptyLogFilesInitializer.INSTANCE, memoryTracker );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +

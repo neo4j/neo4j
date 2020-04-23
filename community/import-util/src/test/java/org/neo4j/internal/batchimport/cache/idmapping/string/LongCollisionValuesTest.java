@@ -36,6 +36,7 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHO
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.OFF_HEAP;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 class LongCollisionValuesTest
@@ -53,7 +54,7 @@ class LongCollisionValuesTest
     void shouldStoreAndLoadLongs( NumberArrayFactory factory )
     {
         // given
-        try ( LongCollisionValues values = new LongCollisionValues( factory, 100 ) )
+        try ( LongCollisionValues values = new LongCollisionValues( factory, 100, INSTANCE ) )
         {
             // when
             long[] offsets = new long[100];

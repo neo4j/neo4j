@@ -26,7 +26,9 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.longThat;
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RelationshipCountsProcessorTest
 {
@@ -68,10 +71,10 @@ class RelationshipCountsProcessorTest
         NumberArrayFactory numberArrayFactory = mock( NumberArrayFactory.class );
 
         // When
-        new RelationshipCountsProcessor( nodeLabelCache, labelCount, relTypeCount, countsUpdater, numberArrayFactory );
+        new RelationshipCountsProcessor( nodeLabelCache, labelCount, relTypeCount, countsUpdater, numberArrayFactory, INSTANCE );
 
         // Then
-        verify( numberArrayFactory, times( 2 ) ).newLongArray( longThat( new IsNonNegativeLong() ), anyLong() );
+        verify( numberArrayFactory, times( 2 ) ).newLongArray( longThat( new IsNonNegativeLong() ), anyLong(), any( MemoryTracker.class ) );
     }
 
     @Test
@@ -88,7 +91,7 @@ class RelationshipCountsProcessorTest
         when( nodeLabelCache.get( eq( client ), eq( 4L ) ) ).thenReturn( new long[]{} );
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
-                relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
+                relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, INSTANCE );
 
         countsProcessor.process( record( 1, 0, 3 ), NULL );
         countsProcessor.process( record( 2, 1, 4 ), NULL );

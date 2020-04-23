@@ -87,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
@@ -351,7 +352,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         long version = logFiles.getHighestLogVersion();
 
         try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
+                ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel, INSTANCE );
                 LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
         {
             LogEntry entry;

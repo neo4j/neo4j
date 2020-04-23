@@ -72,6 +72,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -145,7 +146,7 @@ public class DetectAllRelationshipInconsistenciesIT
                             NodeBasedMemoryLimiter.DEFAULT );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
             ConsistencySummaryStatistics summary = checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts,
-                    PageCacheTracer.NULL, logProvider.getLog( FullCheck.class ) );
+                    PageCacheTracer.NULL, INSTANCE, logProvider.getLog( FullCheck.class ) );
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
 
             assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );

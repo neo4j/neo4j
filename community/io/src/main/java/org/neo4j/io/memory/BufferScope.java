@@ -21,21 +21,25 @@ package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * A life-time scope for the contained direct byte buffer.
  */
 public final class BufferScope implements AutoCloseable
 {
     public final ByteBuffer buffer;
+    private final MemoryTracker memoryTracker;
 
-    public BufferScope( int capacity )
+    public BufferScope( int capacity, MemoryTracker memoryTracker )
     {
-        buffer = ByteBuffers.allocateDirect( capacity );
+        buffer = ByteBuffers.allocateDirect( capacity, memoryTracker );
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
     public void close()
     {
-        ByteBuffers.releaseBuffer( buffer );
+        ByteBuffers.releaseBuffer( buffer, memoryTracker );
     }
 }

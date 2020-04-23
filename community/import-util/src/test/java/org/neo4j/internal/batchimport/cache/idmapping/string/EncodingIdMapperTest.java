@@ -65,6 +65,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
 public class EncodingIdMapperTest
@@ -415,7 +416,7 @@ public class EncodingIdMapperTest
             groups.getOrCreate( "Group " + i );
         }
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
-                numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions ) );
+                numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE ) );
         final AtomicReference<Group> group = new AtomicReference<>();
         PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
         {
@@ -602,7 +603,7 @@ public class EncodingIdMapperTest
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, PageCacheTracer pageCacheTracer )
     {
         return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ), 1_000, processors,
-                ParallelSort.DEFAULT, pageCacheTracer );
+                ParallelSort.DEFAULT, pageCacheTracer, INSTANCE );
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
@@ -619,21 +620,21 @@ public class EncodingIdMapperTest
             LongFunction<CollisionValues> collisionValuesFactory )
     {
         return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
-                collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL );
+                collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL, INSTANCE );
     }
 
     private LongFunction<CollisionValues> autoDetect( Encoder encoder )
     {
         return numberOfCollisions -> encoder instanceof LongEncoder
-                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions )
-                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions );
+                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE )
+                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE );
 
     }
 
     private static final TrackerFactory RANDOM_TRACKER_FACTORY =
             ( arrayFactory, size ) -> System.currentTimeMillis() % 2 == 0
-                    ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
-                    : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
+                    ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE, INSTANCE ) )
+                    : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE, INSTANCE ) );
 
     private static class ValueGenerator implements PropertyValueLookup
     {

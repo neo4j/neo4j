@@ -96,6 +96,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
@@ -4901,7 +4902,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect( filePageSize );
+        ByteBuffer buffer = allocateDirect( filePageSize, INSTANCE );
         try
         {
             File file = file( "a" );
@@ -4915,7 +4916,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            releaseBuffer( buffer );
+            releaseBuffer( buffer, INSTANCE );
         }
     }
 
@@ -4938,7 +4939,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect( filePageSize );
+        ByteBuffer buffer = allocateDirect( filePageSize, INSTANCE );
         try
         {
             File file = file( "a" );
@@ -4952,7 +4953,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            releaseBuffer( buffer );
+            releaseBuffer( buffer, INSTANCE );
         }
     }
 
@@ -5052,7 +5053,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToReadOnlyDirectByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer allocation = allocateDirect( filePageSize );
+        ByteBuffer allocation = allocateDirect( filePageSize, INSTANCE );
         try
         {
             ByteBuffer buf = allocation.asReadOnlyBuffer();
@@ -5065,7 +5066,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            releaseBuffer( allocation );
+            releaseBuffer( allocation, INSTANCE );
         }
     }
 

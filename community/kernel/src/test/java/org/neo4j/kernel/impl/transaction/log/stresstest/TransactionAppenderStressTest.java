@@ -47,6 +47,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 public class TransactionAppenderStressTest
@@ -139,7 +140,7 @@ public class TransactionAppenderStressTest
                     .withLogEntryReader( logEntryReader() )
                     .build();
             PhysicalLogVersionedStoreChannel channel = logFiles.openForVersion( version );
-            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFiles ) );
+            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFiles ), INSTANCE );
         }
     }
 }

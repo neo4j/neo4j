@@ -17,27 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.memory;
+package org.neo4j.io.memory;
 
-public enum MemoryGroup
+import org.junit.jupiter.api.Test;
+
+import org.neo4j.memory.LocalMemoryTracker;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.MemoryPools.NO_TRACKING;
+
+class BufferScopeTest
 {
-    TRANSACTION( "Transaction" ),
-    NETTY( "Netty" ),
-    PAGE_CACHE( "Page Cache" ),
-    OTHER( "Other" ),
-    REPLICATION_BUFFERS( "Replication Buffers" ),
-    QUERY_CACHE( "Query Cache" ),
-    NO_TRACKING( "No Tracking" );
-
-    private final String name;
-
-    MemoryGroup( String name )
+    @Test
+    void trackBufferScopeMemoryAllocation()
     {
-        this.name = name;
-    }
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
+        try ( BufferScope bufferScope = new BufferScope( 100, memoryTracker ) )
+        {
+            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+            assertEquals( 100, memoryTracker.usedNativeMemory() );
+        }
 
-    public String getName()
-    {
-        return name;
+        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 }

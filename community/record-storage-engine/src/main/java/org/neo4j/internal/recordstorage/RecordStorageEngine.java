@@ -70,6 +70,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -120,6 +121,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
+    private final MemoryTracker memoryTracker;
     private final GBPTreeCountsStore countsStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
@@ -145,7 +147,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IdController idController,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             PageCacheTracer cacheTracer,
-            boolean createStoreIfNotExists )
+            boolean createStoreIfNotExists,
+            MemoryTracker memoryTracker )
     {
         this.databaseLayout = databaseLayout;
         this.tokenHolders = tokenHolders;
@@ -155,6 +158,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.idController = idController;
         this.cacheTracer = cacheTracer;
+        this.memoryTracker = memoryTracker;
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
@@ -233,10 +237,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 
                 @Override
-                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
                 {
                     log.warn( "Missing counts store, rebuilding it." );
-                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout ).initialize( updater, cursorTracer );
+                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker ).initialize( updater, cursorTracer, memoryTracker );
                     log.warn( "Counts store rebuild completed." );
                 }
 
@@ -391,7 +395,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try ( var cursor = cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) )
         {
             neoStores.start( cursor );
-            countsStore.start( cursor );
+            countsStore.start( cursor, memoryTracker );
             idController.start();
         }
     }

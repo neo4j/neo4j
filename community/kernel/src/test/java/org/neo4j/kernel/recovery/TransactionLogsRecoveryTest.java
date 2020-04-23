@@ -96,6 +96,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -527,7 +528,7 @@ class TransactionLogsRecoveryTest
 
     private LogTailScanner getTailScanner( LogFiles logFiles, LogEntryReader reader )
     {
-        return new LogTailScanner( logFiles, reader, monitors, false );
+        return new LogTailScanner( logFiles, reader, monitors, false, INSTANCE );
     }
 
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException

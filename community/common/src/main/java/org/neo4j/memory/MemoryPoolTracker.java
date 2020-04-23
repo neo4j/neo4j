@@ -17,72 +17,62 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.unsafe;
+package org.neo4j.memory;
 
-import java.util.concurrent.atomic.LongAdder;
-
-import org.neo4j.memory.MemoryTracker;
-
-/**
- * Global memory tracker that can be used in a global multi threaded context to record
- * allocation and de-allocation of native memory.
- * @see MemoryTracker
- */
-public final class GlobalMemoryTracker implements MemoryTracker
+class MemoryPoolTracker implements MemoryTracker
 {
-    public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
+    private final ScopedMemoryPool pool;
 
-    private final LongAdder allocatedBytesNative = new LongAdder();
-    private final LongAdder allocatedBytesHeap = new LongAdder();
-
-    private GlobalMemoryTracker()
+    MemoryPoolTracker( ScopedMemoryPool pool )
     {
+        this.pool = pool;
     }
 
     @Override
     public long usedNativeMemory()
     {
-        return allocatedBytesNative.sum();
+        return pool.usedNative();
     }
 
     @Override
     public long estimatedHeapMemory()
     {
-        return allocatedBytesHeap.sum();
+        return pool.usedHeap();
     }
 
     @Override
     public void allocateNative( long bytes )
     {
-        allocatedBytesNative.add( bytes );
+        pool.reserveNative( bytes );
     }
 
     @Override
     public void releaseNative( long bytes )
     {
-        allocatedBytesNative.add( -bytes );
+        pool.releaseNative( bytes );
     }
 
     @Override
     public void allocateHeap( long bytes )
     {
-        allocatedBytesHeap.add( bytes );
+        pool.reserveHeap( bytes );
     }
 
     @Override
     public void releaseHeap( long bytes )
     {
-        allocatedBytesHeap.add( -bytes );
+        pool.releaseHeap( bytes );
     }
 
     @Override
     public long heapHighWaterMark()
     {
-        throw new UnsupportedOperationException( "Global memory tracker does not support high water mark." );
+        return -1;
     }
 
     @Override
     public void reset()
     {
+
     }
 }

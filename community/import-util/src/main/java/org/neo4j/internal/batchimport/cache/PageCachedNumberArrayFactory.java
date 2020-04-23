@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -50,7 +51,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     }
 
     @Override
-    public IntArray newIntArray( long length, int defaultValue, long base )
+    public IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
     {
         try
         {
@@ -65,7 +66,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     }
 
     @Override
-    public LongArray newLongArray( long length, long defaultValue, long base )
+    public LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker )
     {
         try
         {
@@ -80,7 +81,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     }
 
     @Override
-    public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+    public ByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker )
     {
         try
         {

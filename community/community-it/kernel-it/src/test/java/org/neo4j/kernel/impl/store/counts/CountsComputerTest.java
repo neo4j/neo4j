@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
@@ -104,7 +105,7 @@ class CountsComputerTest
             var pageCacheTracer = new DefaultPageCacheTracer();
             var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" );
 
-            countsStore.start( cursorTracer );
+            countsStore.start( cursorTracer, INSTANCE );
 
             assertThat( cursorTracer.pins() ).isEqualTo( 1 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
@@ -329,7 +330,7 @@ class CountsComputerTest
     {
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            store.start( NULL );
+            store.start( NULL, INSTANCE );
             assertEquals( BASE_TX_ID, store.txId() );
             // check that nothing is stored in the counts store by trying all combinations of tokens in the lower range
             for ( int s = 0; s < 10; s++ )
@@ -385,10 +386,10 @@ class CountsComputerTest
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
                     lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
-                    progressReporter, PageCacheTracer.NULL );
+                    progressReporter, PageCacheTracer.NULL, INSTANCE );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
-                countsStore.start( NULL );
+                countsStore.start( NULL, INSTANCE );
                 countsStore.checkpoint( IOLimiter.UNLIMITED, NULL );
             }
             catch ( IOException e )

@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -263,10 +263,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
-            Config dbConfig, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
+            Config dbConfig, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
-        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, pageCacheTracer, jobScheduler );
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, pageCacheTracer::bytesWritten, pageCacheTracer );
@@ -288,11 +288,13 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return dbConfig;
     }
 
-    private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, PageCacheTracer tracer, JobScheduler jobScheduler )
+    private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, PageCacheTracer tracer, JobScheduler jobScheduler,
+            MemoryTracker memoryTracker )
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-        MemoryAllocator memoryAllocator = createAllocator( ByteUnit.parse( config.get( pagecache_memory ) ), EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock() );
+        MemoryAllocator memoryAllocator = createAllocator( ByteUnit.parse( config.get( pagecache_memory ) ), memoryTracker );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
+                memoryTracker );
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
@@ -357,12 +359,12 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipGroupStore();
     }
 
-    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer )
+    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
-            countsStore.start( cursorTracer );
+            countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( UNLIMITED, cursorTracer );
         }
         catch ( IOException e )

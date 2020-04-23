@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -69,7 +70,7 @@ public interface StorageEngineFactory
      * @return StoreMigrationParticipant for migration.
      */
     List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer );
+            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
@@ -79,7 +80,8 @@ public interface StorageEngineFactory
     StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth,
-            LogProvider logProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists );
+            LogProvider logProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
+            MemoryTracker memoryTracker );
 
     /**
      * Lists files of a specific storage location.

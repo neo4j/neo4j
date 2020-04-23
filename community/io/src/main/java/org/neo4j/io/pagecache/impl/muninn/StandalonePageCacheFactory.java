@@ -62,6 +62,7 @@ public final class StandalonePageCacheFactory
     {
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( MebiByte.toBytes( 8 ), EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock() );
+        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock(),
+                EmptyMemoryTracker.INSTANCE );
     }
 }

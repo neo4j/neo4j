@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -69,26 +70,28 @@ public class LogTailScanner
     private final LogTailScannerMonitor monitor;
     private final boolean failOnCorruptedLogFiles;
     private final Log log;
+    private final MemoryTracker memoryTracker;
 
-    public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
+    public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors, MemoryTracker memoryTracker )
     {
-        this( logFiles, logEntryReader, monitors, false );
+        this( logFiles, logEntryReader, monitors, false, memoryTracker );
     }
 
-    public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors, boolean failOnCorruptedLogFiles )
+    public LogTailScanner( LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors, boolean failOnCorruptedLogFiles, MemoryTracker memoryTracker )
     {
-        this( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles, NullLogProvider.getInstance() );
+        this( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles, NullLogProvider.getInstance(), memoryTracker );
     }
 
     public LogTailScanner( LogFiles logFiles,
                            LogEntryReader logEntryReader, Monitors monitors,
-                           boolean failOnCorruptedLogFiles, LogProvider log )
+                           boolean failOnCorruptedLogFiles, LogProvider log, MemoryTracker memoryTracker )
     {
         this.logFiles = logFiles;
         this.logEntryReader = logEntryReader;
         this.monitor = monitors.newMonitor( LogTailScannerMonitor.class );
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.log = log.getLog( getClass() );
+        this.memoryTracker = memoryTracker;
     }
 
     private LogTailInformation findLogTail() throws IOException
@@ -111,7 +114,7 @@ public class LogTailScanner
             CheckPoint latestCheckPoint = null;
             StoreId storeId = StoreId.UNKNOWN;
             try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( channel ) ) )
+                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( channel, memoryTracker ) ) )
             {
                 LogHeader logHeader = logFiles.extractHeader( version );
                 storeId = logHeader.getStoreId();
@@ -288,7 +291,7 @@ public class LogTailScanner
                 try ( LogVersionedStoreChannel storeChannel = logFiles.openForVersion( logVersion ) )
                 {
                     storeChannel.position( currentPosition.getByteOffset() );
-                    try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( storeChannel ) ) )
+                    try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( storeChannel, memoryTracker ) ) )
                     {
                         while ( cursor.next() )
                         {

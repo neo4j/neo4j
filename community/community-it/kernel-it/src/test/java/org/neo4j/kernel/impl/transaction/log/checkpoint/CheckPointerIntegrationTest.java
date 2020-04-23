@@ -68,6 +68,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 @EphemeralNeo4jLayoutExtension
@@ -316,7 +317,7 @@ class CheckPointerIntegrationTest
             for (; version >= INITIAL_LOG_VERSION && logFiles.versionExists( version ); version-- )
             {
                 LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                ReadableClosablePositionAwareChecksumChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
+                ReadableClosablePositionAwareChecksumChannel recoveredDataChannel = new ReadAheadLogChannel( channel, INSTANCE );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {

@@ -27,6 +27,7 @@ import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.statistics.Counts.Type;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
@@ -53,9 +54,9 @@ public class DefaultCacheAccess implements CacheAccess
     private final Counts counts;
     private long pivotId;
 
-    public static ByteArray defaultByteArray( long highNodeId )
+    public static ByteArray defaultByteArray( long highNodeId, MemoryTracker memoryTracker )
     {
-        return AUTO_WITHOUT_PAGECACHE.newByteArray( highNodeId, new byte[ByteArrayBitsManipulator.MAX_BYTES] );
+        return AUTO_WITHOUT_PAGECACHE.newByteArray( highNodeId, new byte[ByteArrayBitsManipulator.MAX_BYTES], memoryTracker );
     }
 
     public DefaultCacheAccess( ByteArray array, Counts counts, int threads )

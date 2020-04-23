@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Defragments {@link RelationshipGroupRecord} so that they end up sequential per node in the group store.
@@ -49,6 +50,7 @@ public class RelationshipGroupDefragmenter
     private final Monitor monitor;
     private final NumberArrayFactory numberArrayFactory;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     public interface Monitor
     {
@@ -69,19 +71,20 @@ public class RelationshipGroupDefragmenter
     }
 
     public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor,
-            NumberArrayFactory numberArrayFactory, PageCacheTracer pageCacheTracer )
+            NumberArrayFactory numberArrayFactory, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.config = config;
         this.executionMonitor = executionMonitor;
         this.monitor = monitor;
         this.numberArrayFactory = numberArrayFactory;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     public void run( long memoryWeCanHoldForCertain, BatchingNeoStores neoStore, long highNodeId )
     {
         try ( RelationshipGroupCache groupCache =
-                new RelationshipGroupCache( numberArrayFactory, memoryWeCanHoldForCertain, highNodeId ) )
+                new RelationshipGroupCache( numberArrayFactory, memoryWeCanHoldForCertain, highNodeId, memoryTracker ) )
         {
             // Read from the temporary relationship group store...
             RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();

@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -85,6 +87,7 @@ public class LogFilesBuilder
     private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
+    private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
     private StoreId storeId;
     private NativeAccess nativeAccess;
 
@@ -206,6 +209,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withMemoryTracker( MemoryTracker memoryTracker )
+    {
+        this.memoryTracker = memoryTracker;
+        return this;
+    }
+
     public LogFilesBuilder withNativeAccess( NativeAccess nativeAccess )
     {
         this.nativeAccess = nativeAccess;
@@ -266,7 +275,7 @@ public class LogFilesBuilder
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
-                logProvider, databaseTracers, storeIdSupplier, nativeAccess );
+                logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker );
     }
 
     private NativeAccess getNativeAccess()

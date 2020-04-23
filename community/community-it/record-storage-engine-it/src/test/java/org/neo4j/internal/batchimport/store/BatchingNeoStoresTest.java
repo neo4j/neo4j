@@ -108,6 +108,7 @@ import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipT
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
@@ -140,7 +141,7 @@ class BatchingNeoStoresTest
             {
                 RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
                 try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
-                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL ) )
+                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL, INSTANCE ) )
                 {
                     store.createNew();
                 }
@@ -164,7 +165,7 @@ class BatchingNeoStoresTest
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
-              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL ) )
+              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL, INSTANCE ) )
         {
             store.createNew();
 
@@ -343,7 +344,7 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
-                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true ) );
+                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE ) );
             // Create the relationship type token
             TxState txState = new TxState();
             Monitors monitors = new Monitors();

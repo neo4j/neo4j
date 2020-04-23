@@ -42,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -93,8 +94,8 @@ class HumanUnderstandableExecutionMonitorIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             new ParallelBatchImporter( databaseLayout, fileSystem, pageCache, NULL, Configuration.DEFAULT, NullLogService.getInstance(), monitor,
-                    EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE )
-                    .doImport( input );
+                    EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE,
+                    EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then
             progress.assertAllProgressReachedEnd();

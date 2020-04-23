@@ -49,6 +49,8 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -115,6 +117,7 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
 
         Config config = loadNeo4jConfig( ctx.homeDir(), ctx.confDir(), additionalConfig );
+        var memoryTracker = EmptyMemoryTracker.INSTANCE;
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -126,7 +129,7 @@ public class CheckConsistencyCommand extends AbstractCommand
             checkDatabaseExistence( databaseLayout );
             try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
             {
-                checkDbState( databaseLayout, config );
+                checkDbState( databaseLayout, config, memoryTracker );
                 // Only output progress indicator if a console receives the output
                 ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
                 if ( System.console() != null )
@@ -174,9 +177,9 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration )
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration, memoryTracker ) )
         {
             throw new CommandFailedException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the consistency check.",
@@ -184,11 +187,11 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration )
+    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration );
+            return isRecoveryRequired( databaseLayout, additionalConfiguration, memoryTracker );
         }
         catch ( Exception e )
         {

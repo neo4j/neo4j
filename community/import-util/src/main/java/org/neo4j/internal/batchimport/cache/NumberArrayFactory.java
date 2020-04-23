@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -64,21 +65,21 @@ public interface NumberArrayFactory
     NumberArrayFactory HEAP = new Adapter()
     {
         @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
+        public IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new HeapIntArray( toIntExact( length ), defaultValue, base );
+            return new HeapIntArray( toIntExact( length ), defaultValue, base, memoryTracker );
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
+        public LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new HeapLongArray( toIntExact( length ), defaultValue, base );
+            return new HeapLongArray( toIntExact( length ), defaultValue, base, memoryTracker );
         }
 
         @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        public HeapByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new HeapByteArray( toIntExact( length ), defaultValue, base );
+            return new HeapByteArray( toIntExact( length ), defaultValue, base, memoryTracker );
         }
 
         @Override
@@ -94,21 +95,21 @@ public interface NumberArrayFactory
     NumberArrayFactory OFF_HEAP = new Adapter()
     {
         @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
+        public IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new OffHeapIntArray( length, defaultValue, base );
+            return new OffHeapIntArray( length, defaultValue, base, memoryTracker );
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
+        public LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new OffHeapLongArray( length, defaultValue, base );
+            return new OffHeapLongArray( length, defaultValue, base, memoryTracker );
         }
 
         @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return new OffHeapByteArray( length, defaultValue, base );
+            return new OffHeapByteArray( length, defaultValue, base, memoryTracker );
         }
 
         @Override
@@ -120,7 +121,7 @@ public interface NumberArrayFactory
 
     /**
      * Used as part of the fallback strategy for {@link Auto}. Tries to split up fixed-size arrays
-     * ({@link #newLongArray(long, long)} and {@link #newIntArray(long, int)} into smaller chunks where
+     * ({@link #newLongArray(long, long, MemoryTracker)} and {@link #newIntArray(long, int, MemoryTracker)} into smaller chunks where
      * some can live on heap and some off heap.
      */
     NumberArrayFactory CHUNKED_FIXED_SIZE = new ChunkedNumberArrayFactory( NumberArrayFactory.NO_MONITOR );
@@ -206,21 +207,21 @@ public interface NumberArrayFactory
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
+        public LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return tryAllocate( length, 8, f -> f.newLongArray( length, defaultValue, base ) );
+            return tryAllocate( length, 8, f -> f.newLongArray( length, defaultValue, base, memoryTracker ) );
         }
 
         @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
+        public IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return tryAllocate( length, 4, f -> f.newIntArray( length, defaultValue, base ) );
+            return tryAllocate( length, 4, f -> f.newIntArray( length, defaultValue, base, memoryTracker ) );
         }
 
         @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker )
         {
-            return tryAllocate( length, defaultValue.length, f -> f.newByteArray( length, defaultValue, base ) );
+            return tryAllocate( length, defaultValue.length, f -> f.newByteArray( length, defaultValue, base, memoryTracker ) );
         }
 
         private <T extends NumberArray<? extends T>> T tryAllocate( long length, int itemSize,
@@ -271,77 +272,86 @@ public interface NumberArrayFactory
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link IntArray}.
      */
-    default IntArray newIntArray( long length, int defaultValue )
+    default IntArray newIntArray( long length, int defaultValue, MemoryTracker memoryTracker )
     {
-        return newIntArray( length, defaultValue, 0 );
+        return newIntArray( length, defaultValue, 0, memoryTracker );
     }
 
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
      * @param base base index to rebase all requested indexes with.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link IntArray}.
      */
-    IntArray newIntArray( long length, int defaultValue, long base );
+    IntArray newIntArray( long length, int defaultValue, long base, MemoryTracker memoryTracker );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return dynamically growing {@link IntArray}.
      */
-    IntArray newDynamicIntArray( long chunkSize, int defaultValue );
+    IntArray newDynamicIntArray( long chunkSize, int defaultValue, MemoryTracker memoryTracker );
 
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link LongArray}.
      */
-    default LongArray newLongArray( long length, long defaultValue )
+    default LongArray newLongArray( long length, long defaultValue, MemoryTracker memoryTracker )
     {
-        return newLongArray( length, defaultValue, 0 );
+        return newLongArray( length, defaultValue, 0, memoryTracker );
     }
 
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
      * @param base base index to rebase all requested indexes with.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link LongArray}.
      */
-    LongArray newLongArray( long length, long defaultValue, long base );
+    LongArray newLongArray( long length, long defaultValue, long base, MemoryTracker memoryTracker );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return dynamically growing {@link LongArray}.
      */
-    LongArray newDynamicLongArray( long chunkSize, long defaultValue );
+    LongArray newDynamicLongArray( long chunkSize, long defaultValue, MemoryTracker memoryTracker );
 
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link ByteArray}.
      */
-    default ByteArray newByteArray( long length, byte[] defaultValue )
+    default ByteArray newByteArray( long length, byte[] defaultValue, MemoryTracker memoryTracker )
     {
-        return newByteArray( length, defaultValue, 0 );
+        return newByteArray( length, defaultValue, 0, memoryTracker );
     }
 
     /**
      * @param length size of the array.
      * @param defaultValue value which will represent unset values.
      * @param base base index to rebase all requested indexes with.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return a fixed size {@link ByteArray}.
      */
-    ByteArray newByteArray( long length, byte[] defaultValue, long base );
+    ByteArray newByteArray( long length, byte[] defaultValue, long base, MemoryTracker memoryTracker );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
      * @param defaultValue value which will represent unset values.
+     * @param memoryTracker underlying buffers allocation memory tracker
      * @return dynamically growing {@link ByteArray}.
      */
-    ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue );
+    ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue, MemoryTracker memoryTracker );
 
     /**
      * Implements the dynamic array methods, because they are the same in most implementations.
@@ -350,21 +360,21 @@ public interface NumberArrayFactory
     abstract class Adapter implements NumberArrayFactory
     {
         @Override
-        public IntArray newDynamicIntArray( long chunkSize, int defaultValue )
+        public IntArray newDynamicIntArray( long chunkSize, int defaultValue, MemoryTracker memoryTracker )
         {
-            return new DynamicIntArray( this, chunkSize, defaultValue );
+            return new DynamicIntArray( this, chunkSize, defaultValue, memoryTracker );
         }
 
         @Override
-        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
+        public LongArray newDynamicLongArray( long chunkSize, long defaultValue, MemoryTracker memoryTracker )
         {
-            return new DynamicLongArray( this, chunkSize, defaultValue );
+            return new DynamicLongArray( this, chunkSize, defaultValue, memoryTracker );
         }
 
         @Override
-        public ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue )
+        public ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue, MemoryTracker memoryTracker )
         {
-            return new DynamicByteArray( this, chunkSize, defaultValue );
+            return new DynamicByteArray( this, chunkSize, defaultValue, memoryTracker );
         }
     }
 }

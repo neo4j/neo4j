@@ -32,6 +32,7 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DefaultClientTest
 {
@@ -54,7 +55,7 @@ class DefaultClientTest
     {
         int threads = 2;
         DefaultCounts counts = new DefaultCounts( threads );
-        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( (long) 100 ), counts, threads );
+        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( 100, INSTANCE ), counts, threads );
         cacheAccess.prepareForProcessingOfSingleStore( 34 );
 
         CacheAccess.Client client1 = cacheAccess.client();

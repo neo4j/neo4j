@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
 
@@ -72,9 +73,9 @@ public final class ByteBuffers
      * @param capacity byte buffer capacity
      * @return byte buffer with requested size
      */
-    public static ByteBuffer allocateDirect( int capacity )
+    public static ByteBuffer allocateDirect( int capacity, MemoryTracker memoryTracker )
     {
-        return UnsafeUtil.allocateByteBuffer( capacity );
+        return UnsafeUtil.allocateByteBuffer( capacity, memoryTracker );
     }
 
     /**
@@ -82,12 +83,12 @@ public final class ByteBuffers
      * Noop for on heap buffers
      * @param byteBuffer byte buffer to release
      */
-    public static void releaseBuffer( ByteBuffer byteBuffer )
+    public static void releaseBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
     {
         if ( !byteBuffer.isDirect() )
         {
             return;
         }
-        UnsafeUtil.freeByteBuffer( byteBuffer );
+        UnsafeUtil.freeByteBuffer( byteBuffer, memoryTracker );
     }
 }

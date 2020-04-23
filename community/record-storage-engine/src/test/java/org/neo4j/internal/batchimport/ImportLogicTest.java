@@ -35,6 +35,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -79,7 +80,7 @@ class ImportLogicTest
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, EmptyMemoryTracker.INSTANCE ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -96,7 +97,7 @@ class ImportLogicTest
         int denseNodeThreshold = 5;
         int numberOfNodes = 100;
         int numberOfTypes = 10;
-        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold );
+        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold, EmptyMemoryTracker.INSTANCE );
         cache.setNodeCount( numberOfNodes + 1 );
         Direction[] directions = Direction.values();
         for ( int i = 0; i < numberOfNodes; i++ )
@@ -158,7 +159,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, EmptyMemoryTracker.INSTANCE ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

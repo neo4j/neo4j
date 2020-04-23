@@ -140,4 +140,6 @@ public interface DatabaseCreationContext
     DatabaseStartupController getStartupController();
 
     GlobalMemoryGroupTracker getTransactionsMemoryPool();
+
+    GlobalMemoryGroupTracker getOtherMemoryPool();
 }

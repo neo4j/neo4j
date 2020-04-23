@@ -69,6 +69,7 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @EphemeralPageCacheExtension
@@ -114,7 +115,7 @@ class LogTailScannerTest
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         logProvider = new AssertableLogProvider();
-        tailScanner = new LogTailScanner( logFiles, reader, monitors, false, logProvider );
+        tailScanner = new LogTailScanner( logFiles, reader, monitors, false, logProvider, INSTANCE );
     }
 
     @Test
@@ -658,7 +659,7 @@ class LogTailScannerTest
 
         FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
         {
-            super( logFiles, logEntryReader, monitors );
+            super( logFiles, logEntryReader, monitors, INSTANCE );
             this.txId = txId;
         }
 

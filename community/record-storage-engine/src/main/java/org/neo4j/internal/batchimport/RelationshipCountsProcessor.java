@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.recordstorage.RelationshipCounter.MANUAL_INCREMENTER;
 import static org.neo4j.internal.recordstorage.RelationshipCounter.labelsCountsLength;
@@ -49,13 +50,13 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
 
     public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
-            NumberArrayFactory cacheFactory )
+            NumberArrayFactory cacheFactory, MemoryTracker memoryTracker )
     {
         this.countsUpdater = countsUpdater;
         this.anyLabel = highLabelId;
         this.anyRelationshipType = highRelationshipTypeId;
-        this.labelsCounts = cacheFactory.newLongArray( labelsCountsLength( highLabelId, highRelationshipTypeId ), 0 );
-        this.wildcardCounts = cacheFactory.newLongArray( wildcardCountsLength( highRelationshipTypeId ), 0 );
+        this.labelsCounts = cacheFactory.newLongArray( labelsCountsLength( highLabelId, highRelationshipTypeId ), 0, memoryTracker );
+        this.wildcardCounts = cacheFactory.newLongArray( wildcardCountsLength( highRelationshipTypeId ), 0, memoryTracker );
 
         NodeLabelsCache.Client nodeLabelsClient = nodeLabelCache.newClient();
         RelationshipCounter.NodeLabelsLookup nodeLabelLookup = nodeId -> nodeLabelCache.get( nodeLabelsClient, nodeId );

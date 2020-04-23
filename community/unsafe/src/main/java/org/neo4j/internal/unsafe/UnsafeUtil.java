@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.unsafe;
 
+import com.sun.jna.Native;
+import sun.misc.Unsafe;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -36,9 +39,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.sun.jna.Native;
 import org.neo4j.memory.MemoryTracker;
-import sun.misc.Unsafe;
 
 import static java.lang.Long.compareUnsigned;
 import static java.lang.String.format;
@@ -422,11 +423,11 @@ public final class UnsafeUtil
      * Allocates a {@link ByteBuffer}
      * @param size The size of the buffer to allocate
      */
-    public static ByteBuffer allocateByteBuffer( int size )
+    public static ByteBuffer allocateByteBuffer( int size, MemoryTracker memoryTracker )
     {
         try
         {
-            long addr = allocateMemory( size );
+            long addr = allocateMemory( size, memoryTracker );
             setMemory( addr, size, (byte) 0 );
             return newDirectByteBuffer( addr, size );
         }
@@ -438,9 +439,9 @@ public final class UnsafeUtil
 
     /**
      * Allocates a {@link ByteBuffer}
-     * @param byteBuffer The ByteBuffer to free, allocated by {@link #allocateByteBuffer(int)}
+     * @param byteBuffer The ByteBuffer to free, allocated by {@link #allocateByteBuffer(int, MemoryTracker)}
      */
-    public static void freeByteBuffer( ByteBuffer byteBuffer )
+    public static void freeByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
     {
         int bytes = byteBuffer.capacity();
         long addr = getDirectByteBufferAddress( byteBuffer );
@@ -457,7 +458,7 @@ public final class UnsafeUtil
         unsafe.putLong( byteBuffer, directByteBufferAddressOffset, 0 );
 
         // Free the buffer.
-        free( addr, bytes );
+        free( addr, bytes, memoryTracker );
     }
 
     /**
@@ -478,16 +479,16 @@ public final class UnsafeUtil
      *
      * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes ) throws NativeMemoryAllocationRefusedError
+    public static long allocateMemory( long bytes, MemoryTracker memoryTracker ) throws NativeMemoryAllocationRefusedError
     {
         final long pointer = Native.malloc( bytes );
         if ( pointer == 0 )
         {
-            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedNativeMemory() );
+            throw new NativeMemoryAllocationRefusedError( bytes, memoryTracker.usedNativeMemory() );
         }
 
         addAllocatedPointer( pointer, bytes );
-        GlobalMemoryTracker.INSTANCE.allocateNative( bytes );
+        memoryTracker.allocateNative( bytes );
         if ( DIRTY_MEMORY )
         {
             setMemory( pointer, bytes, (byte) 0xA5 );
@@ -496,38 +497,13 @@ public final class UnsafeUtil
     }
 
     /**
-     * Allocate a block of memory of the given size in bytes and update memory allocation tracker accordingly.
-     * <p>
-     * The memory is aligned such that it can be used for any data type.
-     * The memory is uninitialised, so it may contain random garbage, or it may not.
-     * @return a pointer to the allocated memory
-     */
-    public static long allocateMemory( long bytes, MemoryTracker allocationTracker ) throws NativeMemoryAllocationRefusedError
-    {
-        assert allocationTracker != GlobalMemoryTracker.INSTANCE;
-        final long pointer = allocateMemory( bytes );
-        allocationTracker.allocateNative( bytes );
-        return pointer;
-    }
-
-    /**
      * Free the memory that was allocated with {@link #allocateMemory} and update memory allocation tracker accordingly.
      */
-    public static void free( long pointer, long bytes, MemoryTracker allocationTracker )
-    {
-        assert allocationTracker != GlobalMemoryTracker.INSTANCE;
-        free( pointer, bytes );
-        allocationTracker.releaseNative( bytes );
-    }
-
-    /**
-     * Free the memory that was allocated with {@link #allocateMemory}.
-     */
-    public static void free( long pointer, long bytes )
+    public static void free( long pointer, long bytes, MemoryTracker memoryTracker )
     {
         checkFree( pointer );
         Native.free( pointer );
-        GlobalMemoryTracker.INSTANCE.releaseNative( bytes );
+        memoryTracker.releaseNative( bytes );
     }
 
     private static void addAllocatedPointer( long pointer, long sizeInBytes )

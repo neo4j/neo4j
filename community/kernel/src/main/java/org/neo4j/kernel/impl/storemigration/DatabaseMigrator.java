@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -51,10 +52,11 @@ public class DatabaseMigrator
     private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     public DatabaseMigrator( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
             LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator,
-            StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
+            StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.config = config;
@@ -67,6 +69,7 @@ public class DatabaseMigrator
         this.legacyLogsLocator = legacyLogsLocator;
         this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     /**
@@ -81,7 +84,8 @@ public class DatabaseMigrator
                 tailScanner, legacyLogsLocator, storageEngineFactory, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
-        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer );
+        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer,
+                memoryTracker );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,

@@ -111,6 +111,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final LeaseService leaseService;
     private final DatabaseStartupController startupController;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
+    private final GlobalMemoryGroupTracker otherMemoryPool;
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -125,6 +126,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
+        this.otherMemoryPool = globalModule.getOtherMemoryPool();
         this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( namedDatabaseId.name() );
         this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
@@ -393,6 +395,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public GlobalMemoryGroupTracker getTransactionsMemoryPool()
     {
         return transactionsMemoryPool;
+    }
+
+    @Override
+    public GlobalMemoryGroupTracker getOtherMemoryPool()
+    {
+        return otherMemoryPool;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )

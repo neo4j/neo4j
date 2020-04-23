@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_BITS;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_VALUE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 class ByteArrayBitsManipulatorTest
@@ -45,7 +46,7 @@ class ByteArrayBitsManipulatorTest
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES], INSTANCE ) )
         {
             // when
             for ( int i = 0; i < actual.length; i++ )
@@ -67,7 +68,7 @@ class ByteArrayBitsManipulatorTest
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, MAX_SLOT_BITS, 1, 1, 1, 1 );
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES], INSTANCE ) )
         {
             // when
             for ( int i = 0; i < actual.length; i++ )
@@ -91,7 +92,7 @@ class ByteArrayBitsManipulatorTest
     {
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( 2, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( 2, new byte[MAX_BYTES], INSTANCE ) )
         {
             // when
             put( manipulator, array, 0, -1, 0 );

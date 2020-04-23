@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class ProcessRelationshipCountsDataStepTest
 {
@@ -89,7 +90,7 @@ class ProcessRelationshipCountsDataStepTest
         when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
         when( config.maxMemoryUsage() ).thenReturn( maxMemory );
         return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId,
-            mock( CountsAccessor.Updater.class ), NumberArrayFactory.OFF_HEAP, ProgressReporter.SILENT, PageCacheTracer.NULL );
+            mock( CountsAccessor.Updater.class ), NumberArrayFactory.OFF_HEAP, ProgressReporter.SILENT, PageCacheTracer.NULL, INSTANCE );
     }
 
     private NodeLabelsCache nodeLabelsCache( long sizeInBytes )

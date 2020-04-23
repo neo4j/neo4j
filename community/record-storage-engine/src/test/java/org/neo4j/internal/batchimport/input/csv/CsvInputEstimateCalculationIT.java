@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -164,7 +165,7 @@ class CsvInputEstimateCalculationIT
         {
             new ParallelBatchImporter( databaseLayout, fs, null, PageCacheTracer.NULL, PBI_CONFIG, NullLogService.getInstance(),
                     invisible(), EMPTY, config, format, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    EmptyLogFilesInitializer.INSTANCE ).doImport( input );
+                    EmptyLogFilesInitializer.INSTANCE, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then compare estimates with actual disk sizes
             VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;

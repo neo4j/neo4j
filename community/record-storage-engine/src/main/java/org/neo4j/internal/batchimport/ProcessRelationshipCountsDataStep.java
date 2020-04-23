@@ -33,6 +33,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
@@ -50,11 +51,12 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     private final CountsAccessor.Updater countsUpdater;
     private final NumberArrayFactory cacheFactory;
     private final ProgressReporter progressMonitor;
+    private final MemoryTracker memoryTracker;
 
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
             highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer )
+            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         super( control, "COUNT", config, numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), pageCacheTracer );
         this.cache = cache;
@@ -63,6 +65,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
         this.countsUpdater = countsUpdater;
         this.cacheFactory = cacheFactory;
         this.progressMonitor = progressReporter;
+        this.memoryTracker = memoryTracker;
     }
 
     /**
@@ -107,7 +110,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     {
         // This is OK since in this step implementation we use TaskExecutor which sticks to its threads deterministically.
         return processors.computeIfAbsent( Thread.currentThread(),
-                k -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
+                k -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ) );
     }
 
     @Override

@@ -19,20 +19,24 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Dynamically growing {@link LongArray}. Is given a chunk size and chunks are added as higher and higher
  * items are requested.
  *
- * @see NumberArrayFactory#newDynamicIntArray(long, int)
+ * @see NumberArrayFactory#newDynamicIntArray(long, int, org.neo4j.memory.MemoryTracker)
  */
 public class DynamicIntArray extends DynamicNumberArray<IntArray> implements IntArray
 {
     private final int defaultValue;
+    private final MemoryTracker memoryTracker;
 
-    public DynamicIntArray( NumberArrayFactory factory, long chunkSize, int defaultValue )
+    public DynamicIntArray( NumberArrayFactory factory, long chunkSize, int defaultValue, MemoryTracker memoryTracker )
     {
         super( factory, chunkSize, new IntArray[0] );
         this.defaultValue = defaultValue;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -51,6 +55,6 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     @Override
     protected IntArray addChunk( long chunkSize, long base )
     {
-        return factory.newIntArray( chunkSize, defaultValue, base );
+        return factory.newIntArray( chunkSize, defaultValue, base, memoryTracker );
     }
 }

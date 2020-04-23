@@ -50,6 +50,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Logs all monitor calls into a {@link FlushableChannel}.
@@ -388,7 +389,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private static void dumpFile( FileSystemAbstraction fs, File file, Dumper dumper ) throws IOException
     {
         dumper.file( file );
-        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE );
+        try ( BufferScope bufferScope = new BufferScope( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, INSTANCE );
               var channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.buffer ) )
         {
             while ( true )

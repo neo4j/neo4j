@@ -95,6 +95,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -123,6 +124,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public abstract class GraphStoreFixture implements AutoCloseable
 {
@@ -273,7 +275,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                         new CountsBuilder()
                         {
                             @Override
-                            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer )
+                            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
                             {
                                 throw new UnsupportedOperationException( "Should not be rebuilt" );
                             }
@@ -284,7 +286,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                                 return 0;
                             }
                         }, true, PageCacheTracer.NULL, NO_MONITOR );
-                counts.start( NULL );
+                counts.start( NULL, INSTANCE );
             }
             return counts;
         };

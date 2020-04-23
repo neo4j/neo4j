@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.BigIdTracker;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
@@ -87,6 +88,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private ByteArray array;
     private byte[] chunkChangedArray;
     private final int denseNodeThreshold;
+    private final MemoryTracker memoryTracker;
     private final RelGroupCache relGroupCache;
     private long highNodeId;
     // This cache participates in scans backwards and forwards, marking entities as changed in the process.
@@ -99,18 +101,19 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private final AtomicInteger bigCountsCursor = new AtomicInteger();
     private long numberOfDenseNodes;
 
-    public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
+    public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, MemoryTracker memoryTracker )
     {
-        this( arrayFactory, denseNodeThreshold, CHUNK_SIZE, 0 );
+        this( arrayFactory, denseNodeThreshold, CHUNK_SIZE, 0, memoryTracker );
     }
 
-    NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, int chunkSize, long base )
+    NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, int chunkSize, long base, MemoryTracker memoryTracker )
     {
         this.arrayFactory = arrayFactory;
         this.chunkSize = chunkSize;
         this.denseNodeThreshold = denseNodeThreshold;
-        this.bigCounts = arrayFactory.newDynamicLongArray( 1_000, 0 );
-        this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base );
+        this.memoryTracker = memoryTracker;
+        this.bigCounts = arrayFactory.newDynamicLongArray( 1_000, 0, memoryTracker );
+        this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base, memoryTracker );
     }
 
     private static byte[] minusOneBytes( int length )
@@ -235,7 +238,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         }
 
         this.highNodeId = nodeCount;
-        this.array = arrayFactory.newByteArray( highNodeId, minusOneBytes( ID_AND_COUNT_SIZE ) );
+        this.array = arrayFactory.newByteArray( highNodeId, minusOneBytes( ID_AND_COUNT_SIZE ), memoryTracker );
         this.chunkChangedArray = new byte[chunkOf( nodeCount ) + 1];
     }
 
@@ -562,12 +565,12 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         private final ByteArray array;
         private final AtomicLong nextFreeId;
 
-        RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize, long base )
+        RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize, long base, MemoryTracker memoryTracker )
         {
             this.chunkSize = chunkSize;
             this.base = base;
             assert chunkSize > 0;
-            this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE );
+            this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE, memoryTracker );
             this.nextFreeId = new AtomicLong( base );
         }
 

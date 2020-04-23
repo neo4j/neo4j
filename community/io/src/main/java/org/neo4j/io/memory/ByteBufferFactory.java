@@ -32,7 +32,7 @@ import org.neo4j.util.Preconditions;
  *     <li>{@link #globalAllocator() Global buffers} which will be closed when this factory {@link #close() closes}</li>
  *     <li>{@link #newLocalAllocator() Local buffers} where caller gets a new {@link Allocator} and gets the responsibility of its
  *     life cycle, i.e. allocations from it and must call {@link Allocator#close()} close on it after use</li>
- *     <li>{@link #acquireThreadLocalBuffer() Thread-local buffers} created lazily on first call by any given thread into this buffer factory.
+ *     <li>{@link #acquireThreadLocalBuffer()} Thread-local buffers} created lazily on first call by any given thread into this buffer factory.
  *     These buffers are allocated from the global allocator on first use and then only cleared and handed out on further requests.
  *     After use it must be {@link #releaseThreadLocalBuffer() released} so that other code paths in that thread's execution can acquire it.</li>
  * </ul>
@@ -79,7 +79,7 @@ public class ByteBufferFactory implements AutoCloseable
     }
 
     /**
-     * Releases a previously {@link #acquireThreadLocalBuffer() acquired} thread-local buffer.
+     * Releases a previously {@link #acquireThreadLocalBuffer()} acquired} thread-local buffer.
      */
     public void releaseThreadLocalBuffer()
     {
