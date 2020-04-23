@@ -26,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public final class MemoryPools
 {
     public static final ScopedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
-    private final List<ScopedMemoryPool> pools = new CopyOnWriteArrayList<>();
+    private final List<GlobalMemoryGroupTracker> pools = new CopyOnWriteArrayList<>();
 
     public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit )
     {
@@ -40,17 +40,17 @@ public final class MemoryPools
         return pool;
     }
 
-    public void registerPool( ScopedMemoryPool pool )
+    public void registerPool( GlobalMemoryGroupTracker pool )
     {
         pools.add( pool );
     }
 
-    public boolean unregisterPool( ScopedMemoryPool pool )
+    public boolean unregisterPool( GlobalMemoryGroupTracker pool )
     {
         return pools.remove( pool );
     }
 
-    public List<ScopedMemoryPool> getPools()
+    public List<GlobalMemoryGroupTracker> getPools()
     {
         return new ArrayList<>( pools );
     }

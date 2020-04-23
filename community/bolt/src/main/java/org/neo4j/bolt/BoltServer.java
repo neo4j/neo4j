@@ -130,11 +130,10 @@ public class BoltServer extends LifecycleAdapter
         if ( config.get( BoltConnector.enabled ) )
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
-            var boltMemoryPool = new BoltNettyMemoryPool( NETTY_BUF_ALLOCATOR.metric() );
-            memoryPools.registerPool( boltMemoryPool );
+            var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                     createProtocolInitializer( boltProtocolFactory, throttleGroup, log, NETTY_BUF_ALLOCATOR ), connectorPortRegister, logService );
-            life.add( new BoltMemoryPoolLifeCycleAdapter( memoryPools, boltMemoryPool ) );
+            life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
             life.add( server );
             log.info( "Bolt server loaded" );
         }
@@ -245,19 +244,16 @@ public class BoltServer extends LifecycleAdapter
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter
     {
-        private final MemoryPools memoryPools;
         private final BoltNettyMemoryPool pool;
 
-        private BoltMemoryPoolLifeCycleAdapter( MemoryPools memoryPools, BoltNettyMemoryPool pool )
+        private BoltMemoryPoolLifeCycleAdapter( BoltNettyMemoryPool pool )
         {
-            this.memoryPools = memoryPools;
             this.pool = pool;
         }
 
         @Override
         public void shutdown()
         {
-            memoryPools.unregisterPool( pool );
             pool.close();
         }
     }

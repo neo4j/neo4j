@@ -21,30 +21,20 @@ package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBufAllocatorMetric;
 
-import org.neo4j.memory.MemoryGroup;
-import org.neo4j.memory.ScopedMemoryPool;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryPools;
 
 import static org.neo4j.memory.MemoryGroup.NETTY;
 
-public class BoltNettyMemoryPool implements ScopedMemoryPool
+public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
 {
     private final ByteBufAllocatorMetric allocatorMetric;
 
-    public BoltNettyMemoryPool( ByteBufAllocatorMetric allocatorMetric )
+    public BoltNettyMemoryPool( MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric )
     {
+        super( memoryPools, NETTY, 0, false );
         this.allocatorMetric = allocatorMetric;
-    }
-
-    @Override
-    public MemoryGroup group()
-    {
-        return NETTY;
-    }
-
-    @Override
-    public void close()
-    {
-
+        memoryPools.registerPool( this );
     }
 
     @Override
@@ -72,12 +62,6 @@ public class BoltNettyMemoryPool implements ScopedMemoryPool
     }
 
     @Override
-    public long totalSize()
-    {
-        return 0;
-    }
-
-    @Override
     public long usedHeap()
     {
         return allocatorMetric.usedHeapMemory();
@@ -87,12 +71,6 @@ public class BoltNettyMemoryPool implements ScopedMemoryPool
     public long usedNative()
     {
         return allocatorMetric.usedDirectMemory();
-    }
-
-    @Override
-    public long free()
-    {
-        return 0;
     }
 
     @Override

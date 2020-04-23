@@ -23,6 +23,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.MemoryPools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,7 +39,7 @@ class BoltNettyMemoryPoolIT
         assertEquals(0, allocatorMetric.usedDirectMemory() );
         assertEquals(0, allocatorMetric.usedDirectMemory() );
 
-        var memoryTracker = new BoltNettyMemoryPool( allocatorMetric );
+        var memoryTracker = new BoltNettyMemoryPool( new MemoryPools(), allocatorMetric );
         var buffer = bufAllocator.buffer( requestedSize );
         try
         {
@@ -63,7 +64,7 @@ class BoltNettyMemoryPoolIT
         assertEquals(0, allocatorMetric.usedDirectMemory() );
         assertEquals(0, allocatorMetric.usedDirectMemory() );
 
-        var memoryTracker = new BoltNettyMemoryPool( allocatorMetric );
+        var memoryTracker = new BoltNettyMemoryPool( new MemoryPools(), allocatorMetric );
         var buffer = bufAllocator.buffer( requestedSize );
         try
         {
