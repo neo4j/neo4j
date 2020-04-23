@@ -45,11 +45,11 @@ public class LiteralInterpreterTest
 
         assertEquals( 8L, x.newOctalInteger( POS, "010", false ) );
         assertEquals( -8L, x.newOctalInteger( POS, "010", true ) );
-        assertEquals( Long.MIN_VALUE, x.newOctalInteger( POS, Long.toString( Long.MIN_VALUE, 8 ).substring( 1 ), true ) );
+        assertEquals( Long.MIN_VALUE, x.newOctalInteger( POS, "0" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 ), true ) );
 
         assertEquals( 255L, x.newHexInteger( POS, "0xff", false ) );
         assertEquals( -255L, x.newHexInteger( POS, "0xff", true ) );
-        assertEquals( Long.MIN_VALUE, x.newHexInteger( POS, Long.toString( Long.MIN_VALUE, 16 ).substring( 1 ), true ) );
+        assertEquals( Long.MIN_VALUE, x.newHexInteger( POS, "0x" + Long.toString( Long.MIN_VALUE, 16 ).substring( 1 ), true ) );
 
         assertEquals( 0.0d, x.newDouble( POS, "0.0" ) );
         assertEquals( 0.0d, x.newDouble( POS, "0.0e0" ) );

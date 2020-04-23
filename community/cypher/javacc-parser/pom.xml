@@ -87,7 +87,7 @@
                             <javadocFriendlyComments>true</javadocFriendlyComments>
                             <packageName>org.neo4j.cypher.internal.parser.javacc</packageName>
                             <sourceDirectory>src/main/java/org/neo4j/cypher/internal/parser/javacc</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources/javacc1</outputDirectory>
+                            <outputDirectory>${project.build.directory}/generated-sources/javacc</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

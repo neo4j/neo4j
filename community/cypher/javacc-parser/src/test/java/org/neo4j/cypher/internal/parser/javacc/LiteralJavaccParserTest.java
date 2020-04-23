@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.LiteralInterpreter;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,7 +44,7 @@ public class LiteralJavaccParserTest
     private final LiteralInterpreter interpreter = new LiteralInterpreter();
 
     @Test
-    public void shouldInterpretNumbers() throws ParseException
+    void shouldInterpretNumbers() throws ParseException
     {
         assertEquals( 0L, parseLiteral( "0" ) );
         assertEquals( 12345L, parseLiteral( "12345" ) );
@@ -58,9 +54,11 @@ public class LiteralJavaccParserTest
 
         assertEquals( 8L, parseLiteral( "010" ) );
         assertEquals( -8L, parseLiteral( "-010" ) );
+        assertEquals( Long.MIN_VALUE, parseLiteral( "-01000000000000000000000" ) );
 
         assertEquals( 255L, parseLiteral( "0xff" ) );
         assertEquals( -255L, parseLiteral( "-0xff" ) );
+        assertEquals( Long.MIN_VALUE, parseLiteral( "-0x8000000000000000" ) );
 
         assertEquals( 0L, parseLiteral( "0" ) );
         assertEquals( 0.0d, parseLiteral( "0.0" ) );
@@ -72,33 +70,37 @@ public class LiteralJavaccParserTest
     }
 
     @Test
-    public void shouldInterpretString() throws ParseException
+    void shouldInterpretString() throws ParseException
     {
         assertEquals( "a string", parseLiteral( "'a string'" ) );
+
+        assertEquals( "ÅÄü", parseLiteral( "'ÅÄü'" ) );
+        assertEquals( "Ελληνικά", parseLiteral( "'Ελληνικά'" ) );
+        assertEquals( "\uD83D\uDCA9", parseLiteral( "'\uD83D\uDCA9'" ) );
     }
 
     @Test
-    public void shouldInterpretNull() throws ParseException
+    void shouldInterpretNull() throws ParseException
     {
         assertNull( parseLiteral( "null" ) );
     }
 
     @Test
-    public void shouldInterpretBoolean() throws ParseException
+    void shouldInterpretBoolean() throws ParseException
     {
         assertEquals( true, parseLiteral( "true" ) );
         assertEquals( false, parseLiteral( "false" ) );
     }
 
     @Test
-    public void shouldInterpretList() throws ParseException
+    void shouldInterpretList() throws ParseException
     {
         assertThat( (List<?>)parseLiteral( "[1,2,3]" ), contains( 1L, 2L, 3L ) );
         assertThat( (List<?>)parseLiteral( " [ 1, 2, 3 ] " ), contains( 1L, 2L, 3L ) );
     }
 
     @Test
-    public void shouldInterpretNestedList() throws ParseException
+    void shouldInterpretNestedList() throws ParseException
     {
         List<?> list1 = (List<?>) parseLiteral( "[1,[2,[3]]]" );
 
@@ -115,7 +117,7 @@ public class LiteralJavaccParserTest
     }
 
     @Test
-    public void shouldInterpretMap() throws ParseException
+    void shouldInterpretMap() throws ParseException
     {
         assertThat( (Map<?,?>)parseLiteral( "{}}" ), anEmptyMap() );
         assertThat( (Map<?,?>) parseLiteral( "{age: 2}" ),
@@ -134,7 +136,7 @@ public class LiteralJavaccParserTest
     }
 
     @Test
-    public void shouldInterpretNestedMap() throws ParseException
+    void shouldInterpretNestedMap() throws ParseException
     {
         Map<?,?> map1 = (Map<?,?>) parseLiteral( "{k1: 1, map2: {k2: 2, map3: {k3: 3}}}" );
 
