@@ -24,24 +24,34 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ArrayBuffer
 
 class CollectFunction(value:Expression, operatorId: Id) extends AggregationFunction {
-  val collection = new ArrayBuffer[AnyValue]()
+  private var collection = new ArrayBuffer[AnyValue]()
+  private var scopedMemoryTracker: ScopedMemoryTracker = _
 
   override def apply(data: ReadableRow, state:QueryState): Unit = {
+    if (scopedMemoryTracker == null) {
+      scopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+    }
     value(data, state) match {
       case IsNoValue() =>
       case v    =>
         collection += v
-        state.memoryTracker.allocated(v, operatorId.x)
+        scopedMemoryTracker.allocateHeap(v.estimatedHeapUsage())
     }
   }
 
   override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = collection.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
+  override def recordMemoryDeallocation(): Unit = {
+    collection = null
+    if (scopedMemoryTracker != null) {
+      scopedMemoryTracker.close()
+    }
+  }
 }

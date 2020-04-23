@@ -23,7 +23,6 @@ import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.MutableSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
@@ -44,7 +43,7 @@ public final class HeapTrackingCollections
         return HeapTrackingIntObjectHashMap.createIntObjectHashMap( memoryTracker );
     }
 
-    public static MutableLongSet newLongSet( MemoryTracker memoryTracker )
+    public static HeapTrackingLongHashSet newLongSet( MemoryTracker memoryTracker )
     {
         return HeapTrackingLongHashSet.createLongHashSet( memoryTracker );
     }

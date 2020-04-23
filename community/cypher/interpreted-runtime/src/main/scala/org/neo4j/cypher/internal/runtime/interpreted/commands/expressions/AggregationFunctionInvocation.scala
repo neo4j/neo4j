@@ -45,7 +45,7 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
       aggregator(state).update(argValues)
     }
 
-    override def recordMemoryDeallocation(state: QueryState): Unit = ()
+    override def recordMemoryDeallocation(): Unit = ()
 
     private def aggregator(state: QueryState) = {
       if (inner == null) {

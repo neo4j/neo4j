@@ -41,11 +41,11 @@ class DistinctFunction(value: Expression, inner: AggregationFunction, operatorId
 
   override def result(state: QueryState): AnyValue = inner.result(state)
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = {
+  override def recordMemoryDeallocation(): Unit = {
     if (seen != null) {
       seen.close()
       seen = null
     }
-    inner.recordMemoryDeallocation(state)
+    inner.recordMemoryDeallocation()
   }
 }

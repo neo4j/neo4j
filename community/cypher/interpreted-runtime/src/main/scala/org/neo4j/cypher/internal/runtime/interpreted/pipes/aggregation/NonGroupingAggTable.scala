@@ -39,8 +39,12 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length)
 
   override def clear(): Unit = {
+    // TODO: Use a ScopedMemoryTracker instead
     var i = 0
     while (i < aggregationFunctions.length) {
+      if (aggregationFunctions(i) != null) {
+        aggregationFunctions(i).recordMemoryDeallocation()
+      }
       aggregationFunctions(i) = aggregations(i).expression.createAggregationFunction(operatorId)
       i += 1
     }

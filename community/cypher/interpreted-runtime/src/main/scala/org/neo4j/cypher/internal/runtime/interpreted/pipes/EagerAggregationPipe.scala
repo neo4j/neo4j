@@ -37,6 +37,18 @@ case class EagerAggregationPipe(source: Pipe,
     while (input.hasNext) {
       table.processRow(input.next())
     }
-    table.result()
+    val resultIter = table.result()
+    new Iterator[CypherRow]() {
+      override def hasNext: Boolean = {
+        val resultIterHasNext = resultIter.hasNext
+        if (!resultIterHasNext) {
+          table.clear()
+        }
+        resultIterHasNext
+      }
+
+      override def next(): CypherRow =
+        resultIter.next()
+    }
   }
 }

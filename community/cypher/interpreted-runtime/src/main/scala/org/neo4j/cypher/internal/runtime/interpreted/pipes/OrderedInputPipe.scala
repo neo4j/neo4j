@@ -47,10 +47,15 @@ trait OrderedInputPipe {
     new Iterator[CypherRow] {
       private var processNextChunk = true
 
-      override def hasNext: Boolean =
-        inputState.resultRowsOfChunk.hasNext ||
+      override def hasNext: Boolean = {
+        val _hasNext = inputState.resultRowsOfChunk.hasNext ||
           (processNextChunk && (
             inputState.firstRowOfNextChunk != null || input.hasNext))
+        if (!_hasNext) {
+          receiver.clear()
+        }
+        _hasNext
+      }
 
       override def next(): CypherRow = {
         if (inputState.firstRowOfNextChunk == null && inputState.resultRowsOfChunk.isEmpty) {

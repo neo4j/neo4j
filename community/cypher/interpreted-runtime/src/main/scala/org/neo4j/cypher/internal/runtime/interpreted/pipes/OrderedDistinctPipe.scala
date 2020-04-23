@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection.DistinctSet
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.mutable
 
 /**
   * Specialization of [[DistinctPipe]] that leverages the order of some grouping columns.
@@ -48,10 +47,11 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
-    var seen = mutable.Set[AnyValue]()
+    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    var seen: DistinctSet[AnyValue] = DistinctSet.createDistinctSet[AnyValue](memoryTracker)
     var currentOrderedGroupingValue: AnyValue = null
 
-    input.filter { ctx =>
+    val resultIter = input.filter { ctx =>
       var i = 0
       while (i < groupingColumns.length) {
         ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
@@ -63,14 +63,23 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 
       if (currentOrderedGroupingValue == null || currentOrderedGroupingValue != orderedGroupingValues) {
         currentOrderedGroupingValue = orderedGroupingValues
-        seen.foreach(x => state.memoryTracker.deallocated(x, id.x))
-        seen = mutable.Set[AnyValue]()
+        seen.close()
+        seen = DistinctSet.createDistinctSet[AnyValue](memoryTracker)
       }
       val added = seen.add(unorderedGroupingValues)
-      if (added) {
-        state.memoryTracker.allocated(unorderedGroupingValues, id.x)
-      }
       added
+    }
+    new Iterator[CypherRow]() {
+      override def hasNext: Boolean = {
+        val resultIterHasNext = resultIter.hasNext
+        if (!resultIterHasNext) {
+          seen.close()
+        }
+        resultIterHasNext
+      }
+
+      override def next(): CypherRow =
+        resultIter.next()
     }
   }
 

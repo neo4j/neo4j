@@ -29,7 +29,7 @@ import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
- * A specialized set used for distinct query operators.
+ * A specialized heap tracking set used for distinct query operators.
  * @param <T> element type
  */
 public class DistinctSet<T extends Measurable> implements AutoCloseable
@@ -69,7 +69,7 @@ public class DistinctSet<T extends Measurable> implements AutoCloseable
     @Override
     public void close()
     {
-        distinctSet.close();
+        // No need to close distinctSet individually since it uses scopedMemoryTracker anyway
         scopedMemoryTracker.close();
     }
 }

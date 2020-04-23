@@ -33,6 +33,6 @@ class CountStarFunction extends AggregationFunction {
 
   override def result(state: QueryState): AnyValue = Values.longValue(count)
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = ()
+  override def recordMemoryDeallocation(): Unit = ()
 }
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Numeri
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -34,8 +35,12 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   protected var temp: Vector[AnyValue] = Vector[AnyValue]()
   protected var count: Int = 0
   protected var perc: Double = 0
+  private var scopedMemoryTracker: ScopedMemoryTracker = _
 
   override def apply(data: ReadableRow, state: QueryState) {
+    if (scopedMemoryTracker == null) {
+      scopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+    }
     actOnNumber(value(data, state), number => {
       if (count < 1) {
         perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()
@@ -45,11 +50,16 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       }
       count += 1
       temp = temp :+ number
-      state.memoryTracker.allocated(number, operatorId.x)
+      scopedMemoryTracker.allocateHeap(number.estimatedHeapUsage()) // TODO: Heap tracking collection
     })
   }
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = temp.foreach(x => state.memoryTracker.deallocated(x, operatorId.x))
+  override def recordMemoryDeallocation(): Unit = {
+    temp = null
+    if (scopedMemoryTracker != null) {
+      scopedMemoryTracker.close()
+    }
+  }
 }
 
 class PercentileContFunction(value: Expression, percentile: Expression, operatorId: Id)

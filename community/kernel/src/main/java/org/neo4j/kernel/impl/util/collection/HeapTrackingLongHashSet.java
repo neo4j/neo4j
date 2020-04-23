@@ -29,7 +29,7 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable
+public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongHashSet.class );
     private static final int DEFAULT_INITIAL_CAPACITY = 16;

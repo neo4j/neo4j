@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -38,6 +39,7 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   private var temp = Vector[Double]()
   private var count:Int = 0
   private var total:Double = 0
+  private var memoryTracker: MemoryTracker = _
 
   override def result(state: QueryState): AnyValue = {
     if(count < 2) {
@@ -56,13 +58,18 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   }
 
   override def apply(data: ReadableRow, state: QueryState) {
+    if (memoryTracker == null) {
+      memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
+    }
     actOnNumber(value(data, state), number => {
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()
-      state.memoryTracker.allocated(java.lang.Double.BYTES, operatorId.x)
+      memoryTracker.allocateHeap(java.lang.Double.BYTES) // TODO: Heap tracking collection
     })
   }
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = state.memoryTracker.deallocated(java.lang.Double.BYTES * temp.size, operatorId.x)
+  override def recordMemoryDeallocation(): Unit = {
+    memoryTracker.releaseHeap(java.lang.Double.BYTES * temp.size)
+  }
 }

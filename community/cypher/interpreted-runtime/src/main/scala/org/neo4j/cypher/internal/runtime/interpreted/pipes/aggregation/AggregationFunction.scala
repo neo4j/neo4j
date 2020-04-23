@@ -42,6 +42,6 @@ abstract class AggregationFunction {
   /**
    * Record de-allocation of memory used by this function.
    */
-  def recordMemoryDeallocation(state: QueryState): Unit
+  def recordMemoryDeallocation(): Unit
 }
 

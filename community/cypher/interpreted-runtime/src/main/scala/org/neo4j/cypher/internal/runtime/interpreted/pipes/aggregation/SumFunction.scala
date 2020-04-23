@@ -43,7 +43,7 @@ class SumFunction(val value: Expression)
 
   }
 
-  override def recordMemoryDeallocation(state: QueryState): Unit = ()
+  override def recordMemoryDeallocation(): Unit = ()
 
   override def apply(data: ReadableRow, state: QueryState) {
     val vl = value(data, state)
