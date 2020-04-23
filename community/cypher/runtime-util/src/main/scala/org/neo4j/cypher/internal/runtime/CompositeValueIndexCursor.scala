@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import java.util.Comparator
+
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.ValueComparator
 import org.neo4j.values.storable.Values.COMPARATOR
 
 import scala.annotation.tailrec
@@ -76,10 +79,28 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
 }
 
 object CompositeValueIndexCursor {
+  private def compare(x: NodeValueIndexCursor, y: NodeValueIndexCursor, comparator: Comparator[Value]): Int = {
+    val np = x.numberOfProperties()
+    require(y.numberOfProperties() == np)
+    var i = 0
+    while (i < np) {
+      val cmp = comparator.compare(x.propertyValue(i), y.propertyValue(i))
+      if (cmp != 0) {
+        return cmp
+      }
+      i += 1
+    }
+    0
+  }
+
+  private val REVERSE_COMPARATOR = new Comparator[Value] {
+    override def compare(o1: Value, o2: Value): Int = -COMPARATOR.compare(o1, o2)
+  }
   private val ASCENDING: Ordering[NodeValueIndexCursor] =
-    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => -COMPARATOR.compare(x.propertyValue(0), y.propertyValue(0))
+    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => compare(x, y, REVERSE_COMPARATOR)
+
   private val DESCENDING: Ordering[NodeValueIndexCursor] =
-    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => COMPARATOR.compare(x.propertyValue(0), y.propertyValue(0))
+    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => compare(x, y, COMPARATOR)
 
   def ascending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new MergeSortCursor(cursors, ASCENDING)
   def descending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new MergeSortCursor(cursors, DESCENDING)
