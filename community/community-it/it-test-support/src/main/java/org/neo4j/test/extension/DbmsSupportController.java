@@ -54,7 +54,6 @@ public class DbmsSupportController
     private static final String DBMS_KEY = "service";
     private static final String CONTROLLER_KEY = "controller";
     private static final ExtensionContext.Namespace DBMS_NAMESPACE = ExtensionContext.Namespace.create( "org", "neo4j", "dbms" );
-    private static final String TEST_DIRECTORY_EXTENSION_KEY = "testDirectoryExtension";
 
     private final ExtensionContext context;
     private final TestInstances testInstances;
@@ -78,12 +77,12 @@ public class DbmsSupportController
         return getStore( context ).remove( CONTROLLER_KEY, DbmsSupportController.class );
     }
 
-    public final void startDbms() throws Exception
+    public final void startDbms()
     {
         startDbms( UnaryOperator.identity() );
     }
 
-    public void startDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback ) throws Exception
+    public void startDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
     {
         // Find closest configuration
         TestConfiguration configuration = getConfigurationFromAnnotations(
@@ -121,27 +120,6 @@ public class DbmsSupportController
     {
         stopDatabase();
         startDatabase( databaseName );
-    }
-
-    /**
-     * Inject our own managed test directory into the context.
-     */
-    public void injectManagedTestDirectory() throws Exception
-    {
-        TestDirectorySupportExtension testDirectorySupportExtension = new TestDirectorySupportExtension();
-        for ( Object instance : testInstances.getAllInstances() )
-        {
-            testDirectorySupportExtension.postProcessTestInstance( instance, context );
-        }
-        testDirectorySupportExtension.prepare( context );
-        getStore( context ).put( TEST_DIRECTORY_EXTENSION_KEY, testDirectorySupportExtension );
-    }
-
-    public void removeManagedTestDirectory()
-    {
-        TestDirectorySupportExtension testDirectorySupportExtension =
-                getStore( context ).remove( TEST_DIRECTORY_EXTENSION_KEY, TestDirectorySupportExtension.class );
-        testDirectorySupportExtension.cleanUp( context );
     }
 
     public TestDirectory getTestDirectory()
