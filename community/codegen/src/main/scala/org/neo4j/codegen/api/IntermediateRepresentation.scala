@@ -129,7 +129,7 @@ case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRe
   * @param array array to load from
   * @param offset offset to load from
   */
-case class ArrayLoad(array: IntermediateRepresentation, offset: Int) extends IntermediateRepresentation
+case class ArrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Set a value in an array at the given offset
@@ -691,6 +691,9 @@ object IntermediateRepresentation {
     ArrayLiteral(typeRef(t), values.toArray)
 
   def arrayLoad(array: IntermediateRepresentation, offset: Int): IntermediateRepresentation =
+    ArrayLoad(array, constant(offset))
+
+  def arrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation): IntermediateRepresentation =
     ArrayLoad(array, offset)
 
   def arraySet(array: IntermediateRepresentation, offset: IntermediateRepresentation, value: IntermediateRepresentation): IntermediateRepresentation =

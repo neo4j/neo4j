@@ -208,7 +208,7 @@ object CodeGeneration {
      codegen.Expression.arrayLength(compileExpression(array, block))
 
     // array[offset]
-    case ArrayLoad(array, offset) => codegen.Expression.arrayLoad(compileExpression(array, block), constant(offset))
+    case ArrayLoad(array, offset) => codegen.Expression.arrayLoad(compileExpression(array, block), compileExpression(offset, block))
 
     //Foo.BAR
     case GetStatic(owner, typ, name) => getStatic(staticField(owner.getOrElse(block.classGenerator().handle()), typ, name))
