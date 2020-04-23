@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 class ContainerIndexTest extends SemanticFunSuite {
 
-  val dummyString = DummyExpression(CTString)
-  val dummyInteger = DummyExpression(CTInteger)
-  val dummyNode = DummyExpression(CTNode)
-  val dummyAny = DummyExpression(CTAny)
-  val dummyList = DummyExpression(CTList(CTNode) | CTList(CTString))
+  private val dummyString = DummyExpression(CTString)
+  private val dummyInteger = DummyExpression(CTInteger)
+  private val dummyNode = DummyExpression(CTNode)
+  private val dummyAny = DummyExpression(CTAny)
+  private val dummyList = DummyExpression(CTList(CTNode) | CTList(CTString))
 
   test("should detect list lookup") {
     val lhs = dummyList
@@ -90,6 +90,13 @@ class ContainerIndexTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))
+  }
+
+  test("should raise error if looking up not from a container") {
+    val index = ContainerIndex(dummyInteger, dummyInteger)(DummyPosition(10))
+
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
+    result.errors should equal(Seq(SemanticError("Type mismatch: expected List<T> but was Integer", index.idx.position)))
   }
 
   private def assertIsList(spec: TypeSpec) = {

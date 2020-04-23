@@ -433,9 +433,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                   val mapLookup = exprIsMap || idxIsString
 
                   if (listLookup && !mapLookup) {
-                    expectType(CTList(CTAny).covariant, x.expr) chain
-                      expectType(CTInteger.covariant, x.idx) chain
-                      specifyType(types(x.expr)(_).unwrapLists, x)
+                    expectType(CTList(CTAny).covariant, x.expr) ifOkChain
+                      specifyType(types(x.expr)(_).unwrapLists, x) chain
+                      expectType(CTInteger.covariant, x.idx)
                   }
                   else if (!listLookup && mapLookup) {
                     expectType(CTMap.covariant, x.expr) chain
