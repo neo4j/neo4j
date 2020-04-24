@@ -522,10 +522,10 @@ public class ImportLogic implements Closeable
                             neoStore.getLabelRepository().getHighId(),
                             updater, progressMonitor.startSection( "Nodes" ), neoStore.getLabelScanStore(), pageCacheTracer, memoryUsageStats ) );
                     // Count label-[type]->label
-                    executeStage( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
+                    executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
-                            progressMonitor.startSection( "Relationships" ), pageCacheTracer, memoryTracker ) );
+                            progressMonitor.startSection( "Relationships" ), neoStore.getRelationshipTypeScanStore(), pageCacheTracer, memoryTracker ) );
                 }
 
                 @Override

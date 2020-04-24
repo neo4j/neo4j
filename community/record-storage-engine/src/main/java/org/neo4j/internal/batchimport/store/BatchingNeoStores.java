@@ -43,6 +43,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -130,6 +131,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private LifeSupport life = new LifeSupport();
     private LabelScanStore labelScanStore;
+    private RelationshipTypeScanStore relationshipTypeScanStore;
     private PageCacheFlusher flusher;
     private boolean doubleRelationshipRecordUnits;
 
@@ -233,6 +235,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(),
                 pageCacheTracer );
         life.add( labelScanStore );
+        relationshipTypeScanStore = TokenScanStore
+                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(), neo4jConfig,
+                        pageCacheTracer );
+        life.add( relationshipTypeScanStore );
     }
 
     private void instantiateStores() throws IOException
@@ -431,6 +437,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return labelScanStore;
     }
 
+    public RelationshipTypeScanStore getRelationshipTypeScanStore()
+    {
+        return relationshipTypeScanStore;
+    }
+
     public NeoStores getNeoStores()
     {
         return neoStores;
@@ -498,6 +509,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( labelScanStore != null )
         {
             labelScanStore.force( UNLIMITED, cursorTracer );
+        }
+        if ( relationshipTypeScanStore != null )
+        {
+            relationshipTypeScanStore.force( UNLIMITED, cursorTracer );
         }
     }
 
