@@ -68,7 +68,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 .out( "description", Neo4jTypes.NTString )
                 .out( "attributes", Neo4jTypes.NTMap )
                 .mode( Mode.DBMS )
-                .description( "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"" )
+                .description( "Query JMX management data by domain and name. For instance, \"*:*\"" )
                 .systemProcedure()
                 .build() );
         this.jmxServer = jmxServer;
@@ -113,8 +113,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                   "'%s' is an invalid JMX name pattern. Valid queries should use " +
                   "the syntax outlined in the javax.management.ObjectName API documentation." +
-                  "For instance, try 'org.neo4j:*' to find all JMX beans of the 'org.neo4j' " +
-                  "domain, or '*:*' to find every JMX bean.", query );
+                  "For instance, use '*:*' to find all JMX beans.", query );
         }
     }
 

@@ -97,7 +97,7 @@ public interface ProcedureITBase
                 proc( "dbms.components", "() :: (name :: STRING?, versions :: LIST? OF" + " STRING?, edition :: STRING?)",
                         "List DBMS components and their versions.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.queryJmx", "(query :: STRING?) :: (name :: STRING?, " + "description :: STRING?, attributes :: MAP?)",
-                        "Query JMX management data by domain and name." + " For instance, \"org.neo4j:*\"",
+                        "Query JMX management data by domain and name." + " For instance, \"*:*\"",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.createLabel", "(newLabel :: STRING?) :: VOID", "Create a label", stringArray(  "publisher", "architect", "admin" ), "WRITE",
                         false ),
