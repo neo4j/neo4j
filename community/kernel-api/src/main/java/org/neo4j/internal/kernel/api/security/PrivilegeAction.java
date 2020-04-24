@@ -37,6 +37,9 @@ public enum PrivilegeAction
     SET_LABEL,
     REMOVE_LABEL,
 
+    CREATE_ELEMENT,
+    DELETE_ELEMENT,
+
     /** Execute procedure/view with elevated access */
     EXECUTE,
 
@@ -271,6 +274,8 @@ public enum PrivilegeAction
                     {
                     case SET_LABEL:
                     case REMOVE_LABEL:
+                    case CREATE_ELEMENT:
+                    case DELETE_ELEMENT:
                         return true;
                     default:
                         return this == action;
@@ -286,14 +291,11 @@ public enum PrivilegeAction
                     switch ( action )
                     {
                     case READ:
-                    case WRITE:
                     case TRAVERSE:
                     case MATCH:
-                    case SET_LABEL:
-                    case REMOVE_LABEL:
                         return true;
                     default:
-                        return this == action;
+                        return WRITE.satisfies( action ) || this == action;
                     }
                 }
             },

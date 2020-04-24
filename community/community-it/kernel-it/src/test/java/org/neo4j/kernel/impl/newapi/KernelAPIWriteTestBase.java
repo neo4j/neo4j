@@ -67,10 +67,20 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homeDir() );
+            testSupport.setup( testDirectory.homeDir(), this::createSystemGraph );
             graphDb = testSupport.graphBackdoor();
         }
         testSupport.clearGraph();
+    }
+
+    /**
+     * Setup privileges in the system graph which all test in the class will be using. The graph is only built once,
+     * regardless of the number of tests.
+     *
+     * @param graphDb a graph API which should be used to build the system test graph
+     */
+    public void createSystemGraph( GraphDatabaseService graphDb )
+    {
     }
 
     protected KernelTransaction beginTransaction() throws TransactionFailureException

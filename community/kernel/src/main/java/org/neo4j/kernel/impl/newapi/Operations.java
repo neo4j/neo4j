@@ -20,12 +20,15 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -46,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -177,7 +181,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long nodeCreate()
     {
-        assertAllowsWrites();
+        assertAllowsCreateNode( null );
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
@@ -188,11 +192,11 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long nodeCreateWithLabels( int[] labels ) throws ConstraintValidationException
     {
-        assertAllowsWrites();
         if ( labels == null || labels.length == 0 )
         {
             return nodeCreate();
         }
+        assertAllowsCreateNode( labels );
 
         // We don't need to check the node for existence, like we do in nodeAddLabel, because we just created it.
         // We also don't need to check if the node already has some of the labels, because we know it has none.
@@ -229,7 +233,6 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean nodeDelete( long node )
     {
-        assertAllowsWrites();
         ktx.assertOpen();
         return nodeDelete( node, true );
     }
@@ -237,7 +240,6 @@ public class Operations implements Write, SchemaWrite
     @Override
     public int nodeDetachDelete( final long nodeId )
     {
-        assertAllowsWrites();
         ktx.assertOpen();
         var deleter = new DetachingRelationshipDeleter( relId -> relationshipDelete( relId, false ) );
 
@@ -251,7 +253,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
-        assertAllowsWrites();
+        assertAllowsCreateRelationship( relationshipType );
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
@@ -269,7 +271,6 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean relationshipDelete( long relationship )
     {
-        assertAllowsWrites();
         ktx.assertOpen();
         return relationshipDelete( relationship, true );
     }
@@ -288,7 +289,11 @@ public class Operations implements Write, SchemaWrite
             //label already there, nothing to do
             return false;
         }
-        assertAllowsSetLabel(nodeLabel);
+        LongSet removed = ktx.txState().nodeStateLabelDiffSets( node ).getRemoved();
+        if ( !removed.contains( nodeLabel ) )
+        {
+            assertAllowsSetLabel(nodeLabel);
+        }
 
         checkConstraintsAndAddLabelToNode( node, nodeLabel );
         return true;
@@ -379,6 +384,7 @@ public class Operations implements Write, SchemaWrite
         {
             acquireSharedNodeLabelLocks();
 
+            assertAllowsDeleteNode( nodeCursor::labels );
             ktx.txState().nodeDoDelete( node );
             return true;
         }
@@ -423,6 +429,7 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
+                assertAllowsDeleteRelationship( relationshipCursor.type() );
                 txState.relationshipDoDelete( relationship, relationshipCursor.type(),
                         relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
@@ -559,7 +566,12 @@ public class Operations implements Write, SchemaWrite
             //the label wasn't there, nothing to do
             return false;
         }
-        assertAllowsRemoveLabel(labelId);
+
+        LongSet added = ktx.txState().nodeStateLabelDiffSets( node ).getAdded();
+        if ( !added.contains( labelId ) )
+        {
+            assertAllowsRemoveLabel(labelId);
+        }
 
         sharedSchemaLock( ResourceTypes.LABEL, labelId );
         ktx.txState().nodeDoRemoveLabel( labelId, node );
@@ -1501,6 +1513,47 @@ public class Operations implements Write, SchemaWrite
         if ( !accessMode.allowsWrites() )
         {
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.", ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsCreateNode( int[] labelIds )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsCreateNode( labelIds ) )
+        {
+            String labels = null == labelIds ? "" : Arrays.stream( labelIds ).mapToObj( token::labelGetName ).collect( Collectors.joining( "," ) );
+            throw accessMode.onViolation( format( "Create node with labels '%s' is not allowed for %s.", labels, ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsDeleteNode( Supplier<TokenSet> labelSupplier )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsDeleteNode( labelSupplier ) )
+        {
+            String labels = Arrays.stream( labelSupplier.get().all() ).mapToObj( id -> token.labelGetName( (int) id ) ).collect( Collectors.joining( "," ) );
+            throw accessMode.onViolation( format( "Delete node with labels '%s' is not allowed for %s.", labels, ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsCreateRelationship( int relType )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsCreateRelationship( relType ) )
+        {
+            throw accessMode.onViolation( format( "Create relationship with type '%s' is not allowed for %s.", token.relationshipTypeGetName( relType ),
+                            ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsDeleteRelationship( int relType )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsDeleteRelationship( relType ) )
+        {
+            throw accessMode
+                    .onViolation( format( "Delete relationship with type '%s' is not allowed for %s.", token.relationshipTypeGetName( relType ),
+                    ktx.securityContext().description() ) );
         }
     }
 

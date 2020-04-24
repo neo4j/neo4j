@@ -37,6 +37,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_DATABASE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ELEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_PROPERTYKEY;
@@ -46,6 +47,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_USER
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DBMS_ACTIONS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DELETE_ELEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
@@ -91,8 +93,8 @@ class PrivilegeActionTest
         expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
-        expected.put( WRITE, Set.of(SET_LABEL, REMOVE_LABEL) );
-        expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH, SET_LABEL, REMOVE_LABEL ) );
+        expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT ) );
+        expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
         expected.put( MATCH, Set.of( TRAVERSE, READ ) );
         expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );

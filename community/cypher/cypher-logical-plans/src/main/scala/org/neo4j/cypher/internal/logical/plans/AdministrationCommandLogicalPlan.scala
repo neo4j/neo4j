@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
@@ -90,6 +91,10 @@ case class GrantDatabaseAction(source: PrivilegePlan, action: AdminAction, datab
 case class DenyDatabaseAction(source: PrivilegePlan, action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeDatabaseAction(source: PrivilegePlan, action: AdminAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
+case class GrantGraphAction(source: PrivilegePlan, action: GraphAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class DenyGraphAction(source: PrivilegePlan, action: GraphAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class RevokeGraphAction(source: PrivilegePlan, action: GraphAction, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
 case class GrantTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
@@ -101,10 +106,6 @@ case class RevokeRead(source: PrivilegePlan, resource: ActionResource, database:
 case class GrantMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-
-case class GrantWrite(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class DenyWrite(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class RevokeWrite(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class GrantSetLabel(source: PrivilegePlan, database: GraphScope, labels: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenySetLabel(source: PrivilegePlan, database: GraphScope, labels: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))

@@ -38,12 +38,14 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
@@ -59,6 +61,7 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.internal.kernel.api.security
 
 object AdminActionMapper {
@@ -76,6 +79,11 @@ object AdminActionMapper {
     case CreateNodeLabelAction => security.PrivilegeAction.CREATE_LABEL
     case CreateRelationshipTypeAction => security.PrivilegeAction.CREATE_RELTYPE
     case CreatePropertyKeyAction => security.PrivilegeAction.CREATE_PROPERTYKEY
+
+    case WriteAction => security.PrivilegeAction.WRITE
+
+    case CreateElementAction => security.PrivilegeAction.CREATE_ELEMENT
+    case DeleteElementAction => security.PrivilegeAction.DELETE_ELEMENT
 
     case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
 

@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
@@ -76,7 +77,6 @@ import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraversePrivilege
-import org.neo4j.cypher.internal.ast.WritePrivilege
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
@@ -298,30 +298,31 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@GrantPrivilege(WritePrivilege(), _, graphScopes, segments, roleNames) =>
+      // GRANT _ ON GRAPH foo _ TO role
+      case c@GrantPrivilege(GraphPrivilege(action), _, graphScopes, segments, roleNames) =>
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
           (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment, graphScope)) => plans.GrantWrite(source, graphScope, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.GrantGraphAction(source, action, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // DENY WRITE ON GRAPH foo ELEMENTS * (*) TO role
-      case c@DenyPrivilege(WritePrivilege(), _, graphScopes, segments, roleNames) =>
+      // DENY _ ON GRAPH foo _ TO role
+      case c@DenyPrivilege(GraphPrivilege(action), _, graphScopes, segments, roleNames) =>
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
           (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment, graphScope)) => plans.DenyWrite(source, graphScope, segment, roleName)
+          case (source, (roleName, segment, graphScope)) => plans.DenyGraphAction(source, action, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE WRITE ON GRAPH foo ELEMENTS * (*) FROM role
-      case c@RevokePrivilege(WritePrivilege(), _, graphScopes, segments, roleNames, revokeType) =>
+      // REVOKE _ ON GRAPH foo _ FROM role
+      case c@RevokePrivilege(GraphPrivilege(action), _, graphScopes, segments, roleNames, revokeType) =>
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; segment <- segments.simplify) yield {
           (roleName, segment, graphScope)
         }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, (roleName, segment, graphScope)) => planRevokes(source, revokeType, (s, r) => plans.RevokeWrite(s, graphScope, segment, roleName, r))
+          case (source, (roleName, segment, graphScope)) =>
+            planRevokes(source, revokeType, (s, r) => plans.RevokeGraphAction(s, action, graphScope, segment, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 

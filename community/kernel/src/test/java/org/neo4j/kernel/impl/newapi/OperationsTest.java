@@ -1247,12 +1247,6 @@ class OperationsTest
         when( sctx.mode() ).thenReturn( AccessMode.Static.READ );
 
         // when
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreate() );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDelete( 0L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDetachDelete( 0L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipCreate( 1L, 2, 3L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipDelete( 0L ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
@@ -1268,12 +1262,6 @@ class OperationsTest
         when( sctx.mode() ).thenReturn( AccessMode.Static.ACCESS );
 
         // when
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreate() );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDelete( 0L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeDetachDelete( 0L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipCreate( 1L, 2, 3L ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipDelete( 0L ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
         assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
@@ -1294,12 +1282,6 @@ class OperationsTest
         when( storageReader.nodeExists( anyLong(), any() ) ).thenReturn( false );
 
         // then
-        assertAuthorized( () -> operations.nodeCreate() );
-        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
-        assertAuthorized( () -> operations.nodeDelete( 0L ) );
-        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
-        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
-        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
         assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
         assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
         assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
@@ -1317,12 +1299,6 @@ class OperationsTest
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
 
         // then
-        assertAuthorized( () -> operations.nodeCreate() );
-        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
-        assertAuthorized( () -> operations.nodeDelete( 0L ) );
-        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
-        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
-        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
         assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
         assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
         assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
@@ -1340,12 +1316,6 @@ class OperationsTest
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
 
         // then
-        assertAuthorized( () -> operations.nodeCreate() );
-        assertAuthorized( () -> operations.nodeCreateWithLabels( new int[]{1, 2, 3} ) );
-        assertAuthorized( () -> operations.nodeDelete( 0L ) );
-        assertAuthorized( () -> operations.nodeDetachDelete( 15L ) );
-        assertAuthorized( () -> operations.relationshipCreate( 1L, 2, 3L ) );
-        assertAuthorized( () -> operations.relationshipDelete( 0L ) );
         assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
         assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
         assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );

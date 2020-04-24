@@ -152,6 +152,30 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsCreateNode( int[] labelIds )
+    {
+        return original.allowsCreateNode( labelIds ) && wrapping.allowsCreateNode( labelIds );
+    }
+
+    @Override
+    public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
+    {
+        return original.allowsDeleteNode( labelSupplier ) && wrapping.allowsDeleteNode( labelSupplier );
+    }
+
+    @Override
+    public boolean allowsCreateRelationship( int relType )
+    {
+        return original.allowsCreateRelationship( relType ) && wrapping.allowsCreateRelationship( relType );
+    }
+
+    @Override
+    public boolean allowsDeleteRelationship( int relType )
+    {
+        return original.allowsDeleteRelationship( relType ) && wrapping.allowsDeleteRelationship( relType );
+    }
+
+    @Override
     public String name()
     {
         return original.name() + " restricted to " + wrapping.name();

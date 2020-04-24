@@ -749,6 +749,27 @@ class PrettifierIT extends CypherFunSuite {
           s"$action write on graph foo, $$bar elements * $preposition role" ->
             s"$action WRITE ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role",
 
+          s"$action create on graph * $preposition role" ->
+            s"$action CREATE ON GRAPH * ELEMENTS * $preposition role",
+
+          s"$action create on graph * elements * $preposition role" ->
+            s"$action CREATE ON GRAPH * ELEMENTS * $preposition role",
+
+          s"$action create on graph foo $preposition role" ->
+            s"$action CREATE ON GRAPH foo ELEMENTS * $preposition role",
+
+          s"$action create on graph $$foo $preposition role" ->
+            s"$action CREATE ON GRAPH $$foo ELEMENTS * $preposition role",
+
+          s"$action create on graph foo nodes * $preposition role" ->
+            s"$action CREATE ON GRAPH foo NODES * $preposition role",
+
+          s"$action create on graphs FoO relationships * $preposition $$role" ->
+            s"$action CREATE ON GRAPH FoO RELATIONSHIPS * $preposition $$role",
+
+          s"$action create on graph foo, $$bar relationship * $preposition role" ->
+            s"$action CREATE ON GRAPHS foo, $$bar RELATIONSHIPS * $preposition role",
+
           s"$action set label label on graph * $preposition role" ->
             s"$action SET LABEL label ON GRAPH * $preposition role",
 

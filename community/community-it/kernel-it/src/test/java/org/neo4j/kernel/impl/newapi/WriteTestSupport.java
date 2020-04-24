@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.io.File;
+import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -35,6 +36,7 @@ import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class WriteTestSupport implements KernelAPIWriteTestSupport
 {
@@ -42,9 +44,11 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     protected DatabaseManagementService managementService;
 
     @Override
-    public void setup( File storeDir )
+    public void setup( File storeDir, Consumer<GraphDatabaseService> sysCreate )
     {
-        db = newDb( storeDir );
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
+        managementService = configure( databaseManagementServiceBuilder ).build();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( KernelTransaction tx = beginTransaction() )
         {
             //We are creating these dummy tokens so that that the ones that we actually use don't get
@@ -58,14 +62,14 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
         {
             throw new AssertionError( "Failed to setup database", e );
         }
+
+        GraphDatabaseService sysDb = managementService.database( SYSTEM_DATABASE_NAME );
+        sysCreate.accept( sysDb );
     }
 
-    protected GraphDatabaseService newDb( File storeDir )
+    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
-        builder = configure( builder );
-        managementService = builder.impermanent().build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
     }
 
     protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )

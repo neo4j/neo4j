@@ -155,6 +155,30 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsCreateNode( int[] labelIds )
+    {
+        return allowWrite;
+    }
+
+    @Override
+    public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
+    {
+        return allowWrite;
+    }
+
+    @Override
+    public boolean allowsCreateRelationship( int relType )
+    {
+        return allowWrite;
+    }
+
+    @Override
+    public boolean allowsDeleteRelationship( int relType )
+    {
+        return allowWrite;
+    }
+
+    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         return new AuthorizationViolationException( "Forbidden in testAccessMode" );

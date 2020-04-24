@@ -81,12 +81,12 @@ import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
+import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
 import org.neo4j.cypher.internal.logical.plans.DenyMatch
 import org.neo4j.cypher.internal.logical.plans.DenyRead
 import org.neo4j.cypher.internal.logical.plans.DenyRemoveLabel
 import org.neo4j.cypher.internal.logical.plans.DenySetLabel
 import org.neo4j.cypher.internal.logical.plans.DenyTraverse
-import org.neo4j.cypher.internal.logical.plans.DenyWrite
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
@@ -121,13 +121,13 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
+import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantMatch
 import org.neo4j.cypher.internal.logical.plans.GrantRead
 import org.neo4j.cypher.internal.logical.plans.GrantRemoveLabel
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.GrantSetLabel
 import org.neo4j.cypher.internal.logical.plans.GrantTraverse
-import org.neo4j.cypher.internal.logical.plans.GrantWrite
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -178,13 +178,13 @@ import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
+import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
 import org.neo4j.cypher.internal.logical.plans.RevokeMatch
 import org.neo4j.cypher.internal.logical.plans.RevokeRead
 import org.neo4j.cypher.internal.logical.plans.RevokeRemoveLabel
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.RevokeSetLabel
 import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
-import org.neo4j.cypher.internal.logical.plans.RevokeWrite
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
@@ -691,6 +691,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = extractDatabaseArguments(action, database, qualifier, roleName)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children, arguments, variables)
 
+      case GrantGraphAction(_, action, database, qualifier, roleName) =>
+        val dbName = extractGraphScope(database)
+        val qualifierText = Prettifier.extractQualifierPart(qualifier)
+        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case DenyGraphAction(_, action, database, qualifier, roleName) =>
+        val dbName = extractGraphScope(database)
+        val qualifierText = Prettifier.extractQualifierPart(qualifier)
+        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
+      case RevokeGraphAction(_, action, database, qualifier, roleName, revokeType) =>
+        val dbName = extractGraphScope(database)
+        val qualifierText = Prettifier.extractQualifierPart(qualifier)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
+
       case GrantTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
         val qualifierText = Prettifier.extractQualifierPart(qualifier)
@@ -731,21 +746,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children,
           Seq(Database(dbName), Resource(resourceText), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
-
-      case GrantWrite(_, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, "GrantWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
-
-      case DenyWrite(_, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, "DenyWrite", children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
-
-      case RevokeWrite(_, database, qualifier, roleName, revokeType) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeWrite", revokeType), children, Seq(Database(dbName), Qualifier(qualifierText), getAnnotatedRoleArgument(roleName)), variables)
 
       case GrantSetLabel(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)

@@ -198,6 +198,30 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsCreateNode( int[] labelIds )
+        {
+            return write;
+        }
+
+        @Override
+        public boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier )
+        {
+            return write;
+        }
+
+        @Override
+        public boolean allowsCreateRelationship( int relType )
+        {
+            return write;
+        }
+
+        @Override
+        public boolean allowsDeleteRelationship( int relType )
+        {
+            return write;
+        }
+
+        @Override
         public AuthorizationViolationException onViolation( String msg )
         {
             return new AuthorizationViolationException( msg );
@@ -256,6 +280,14 @@ public interface AccessMode
     boolean allowsSetLabel( long labelId );
 
     boolean allowsRemoveLabel( long labelId );
+
+    boolean allowsCreateNode( int[] labelIds );
+
+    boolean allowsDeleteNode( Supplier<TokenSet> labelSupplier );
+
+    boolean allowsCreateRelationship( int relType );
+
+    boolean allowsDeleteRelationship( int relType );
 
     AuthorizationViolationException onViolation( String msg );
     String name();

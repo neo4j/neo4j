@@ -195,7 +195,7 @@ class JavaProceduresTest
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 1L );
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 2L );
             assertQueryGetsValue( server, "CALL countNodes", 3L );
-            assertQueryGetsError( server, "CALL willFail", "Write operations are not allowed" );
+            assertQueryGetsError( server, "CALL willFail", "Create node with labels '' is not allowed" );
         }
     }
 
