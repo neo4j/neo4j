@@ -192,17 +192,11 @@ public interface ProcedureITBase
         ArrayList<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
         result.addAll( List.of(
                 // enterprise only functions
-                proc( "dbms.listPoolsExt",
-                        "() :: (group :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
-                                "nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, " +
-                                "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
-                        "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.listPools",
                         "() :: (group :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
                                 "nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, " +
                                 "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
-                        "List all memory pools currently registered at this instance that are visible to the user.",
+                        "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.listTransactions",
                         "() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?," +
