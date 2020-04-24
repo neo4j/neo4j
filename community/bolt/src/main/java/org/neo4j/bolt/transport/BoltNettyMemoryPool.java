@@ -74,6 +74,12 @@ public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
     }
 
     @Override
+    public long totalUsed()
+    {
+        return usedHeap() + usedNative();
+    }
+
+    @Override
     public void setSize( long size )
     {
 
