@@ -19,36 +19,4 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.scalatest.FunSuiteLike
-
-class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with TestName {
-
-  test("RETURN 1 AS x") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN 'apoks\\tf\\np' AS x") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN \"apoks\\tf\\np\" AS x") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN 'hi' AS `call`") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN '\uD83D\uDCA9' AS `turd`") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN NOT true") {
-    assertSameAST(testName)
-  }
-
-  test("RETURN filter (x IN [1,2,3] WHERE x = 2) AS k") {
-    assertSameAST(testName)
-  }
-}
+class Neo4jASTConstructionException(msg: String) extends RuntimeException(msg)

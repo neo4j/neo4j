@@ -77,6 +77,14 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-javacc-parser</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

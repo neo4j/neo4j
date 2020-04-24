@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import java.util
+import java.util.stream.Collectors
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -186,6 +187,9 @@ class Neo4jASTFactory(query: String)
   private lazy val lines = query.split(System.lineSeparator())
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
+    if (clauses.isEmpty) {
+      throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
+    }
     val pos = clauses.get(0).position
     Query(None, SingleQuery(clauses.asScala.toList)(pos))(pos)
   }
@@ -194,9 +198,17 @@ class Neo4jASTFactory(query: String)
                         lhs: Query,
                         rhs: Query,
                         all: Boolean): Query = {
+    val rhsQuery =
+      rhs.part match {
+        case x: SingleQuery => x
+        case other =>
+          throw new Neo4jASTConstructionException(
+            s"The Neo4j AST encodes Unions as a left-deep tree, so the rhs query must always be a SingleQuery. Got `$other`")
+      }
+
     val union =
-      if (all) UnionAll(lhs.part, rhs.part.asInstanceOf[SingleQuery])(p)
-      else     UnionDistinct(lhs.part, rhs.part.asInstanceOf[SingleQuery])(p)
+      if (all) UnionAll(lhs.part, rhsQuery)(p)
+      else     UnionDistinct(lhs.part, rhsQuery)(p)
     Query(None, union)(p)
   }
 
@@ -416,7 +428,6 @@ class Neo4jASTFactory(query: String)
       pathLength match {
         case null => None
         case None => Some(None)
-        //        case Some(Range(None, None)) => Some(None)
         case Some(r) => Some(Some(r))
       }
 
@@ -471,15 +482,20 @@ class Neo4jASTFactory(query: String)
                           keys: util.List[String],
                           values: util.List[Expression]): Expression = {
 
+    if (keys.size() != values.size()) {
+      throw new Neo4jASTConstructionException(
+        s"Map have the same number of keys and values, but got keys `${pretty(keys)}` and values `${pretty(values)}`")
+    }
+
     var i = 0
-    val sb = Seq.newBuilder[(PropertyKeyName, Expression)]
+    val pairs = new Array[(PropertyKeyName, Expression)](keys.size())
 
     while (i < keys.size()) {
-      sb += PropertyKeyName(keys.get(i))(p) -> values.get(i)
+      pairs(i) = PropertyKeyName(keys.get(i))(p) -> values.get(i)
       i += 1
     }
 
-    MapExpression(sb.result())(p)
+    MapExpression(pairs)(p)
   }
 
   override def hasLabels(subject: Expression,
@@ -685,6 +701,11 @@ class Neo4jASTFactory(query: String)
                               thens: util.List[Expression],
                               elze: Expression): Expression = {
 
+    if (whens.size() != thens.size()) {
+      throw new Neo4jASTConstructionException(
+        s"Case expressions have the same number of whens and thens, but got whens `${pretty(whens)}` and thens `${pretty(thens)}`")
+    }
+
     val alternatives = new Array[(Expression, Expression)](whens.size())
     var i = 0
     while (i < whens.size()) {
@@ -695,4 +716,8 @@ class Neo4jASTFactory(query: String)
   }
 
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)
+
+  private def pretty[T <: AnyRef](ts: util.List[T]): String = {
+    ts.stream().map[String](t => t.toString).collect(Collectors.joining( "," ))
+  }
 }

@@ -149,6 +149,19 @@ public interface ASTFactory<STATEMENT,
                                      PATH_LENGTH pathLength,
                                      EXPRESSION properties );
 
+    /**
+     * Create a path-length object used to specify path lengths for variable length patterns.
+     *
+     * Note that paths will be reported in a quite specific manner:
+     *     Cypher       minLength   maxLength
+     *     ----------------------------------
+     *     [*]          null        null
+     *     [*2]         "2"         "2"
+     *     [*2..]       "2"         ""
+     *     [*..3]       ""          "3"
+     *     [*2..3]      "2"         "3"
+     *     [*..]        ""          ""      <- separate from [*] to allow specific error messages
+     */
     PATH_LENGTH pathLength( POS p, String minLength, String maxLength );
 
     CLAUSE loadCsvClause( POS p, boolean headers, EXPRESSION source, VARIABLE v, String fieldTerminator );
