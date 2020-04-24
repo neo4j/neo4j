@@ -33,8 +33,6 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-
 /**
  * Tracer for cache activity.
  */
@@ -347,16 +345,51 @@ class QueryCache[QUERY_REP <: AnyRef,
 
 object QueryCache {
   val NOT_PRESENT: ExecutableQuery = null
-  type ParameterTypeMap = Map[String, Class[_]]
+
+  /**
+    * Representation of the query parameter types for a query invocation.
+    *
+    * This class receives a hashCode which is precomputed by [[extractParameterTypeMap()]], because it
+    * is much faster to pre-compute the hash than to call `resultMap.hashCode()`.
+    */
+  class ParameterTypeMap private[QueryCache](private val resultMap: java.util.Map[String, Class[_]], _hashCode: Int) {
+    override def hashCode(): Int = _hashCode
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case other: ParameterTypeMap =>
+          val otherMap = other.resultMap
+          if (resultMap.size() == otherMap.size()) {
+            otherMap.forEach((otherKey, otherValue) => {
+              val value = resultMap.get(otherKey)
+              if (!otherValue.equals(value)) {
+                return false
+              }
+            })
+            true
+          } else {
+            false
+          }
+      }
+    }
+  }
+
+  object ParameterTypeMap {
+    final val empty = new ParameterTypeMap(new java.util.HashMap(), 0)
+  }
 
   /**
    * Use this method to extract ParameterTypeMap from MapValue that represents parameters
    */
-  def extractParameterTypeMap(value: MapValue): ParameterTypeMap = {
-    val resultMap = Map.newBuilder[String, Class[_]]
-    for(key <- value.keySet().iterator().asScala) {
-      resultMap += ((key, value.get(key).getClass))
-    }
-    resultMap.result()
+  def extractParameterTypeMap(mapValue: MapValue): ParameterTypeMap = {
+    val resultMap = new java.util.HashMap[String, Class[_]]
+    var hashCode = 0
+    mapValue.foreach(
+      (key, value) => {
+        resultMap.put(key, value.getClass)
+        hashCode = hashCode ^ (key.hashCode + 31 * value.hashCode())
+      }
+    )
+    new ParameterTypeMap(resultMap, hashCode)
   }
 }

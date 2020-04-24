@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.mockito.MockitoSugar
 
 class QueryCacheTest extends CypherFunSuite {
@@ -315,6 +317,40 @@ class QueryCacheTest extends CypherFunSuite {
     o.verify(tracer, times(96)).queryCacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
+
+  test("parameterTypeMap should equal") {
+    val params1 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
+    val params2 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    typeMap1.hashCode() shouldBe typeMap2.hashCode()
+    typeMap1 should equal(typeMap2)
+    typeMap2 should equal(typeMap1)
+  }
+
+  test("parameterTypeMap should not equal") {
+    val params = Seq(
+      VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
+      VirtualValues.map(Array("a", "b", "d"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
+      VirtualValues.map(Array("a", "b", "d"), Array(Values.of("ho"), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))),
+      VirtualValues.map(Array("a", "b", "d"), Array(Values.of("ho"), Values.of("hi"), VirtualValues.map(Array("key"), Array(Values.of(true))))),
+      VirtualValues.map(Array("a", "b"),      Array(Values.of("ho"), Values.of("hi")))
+    )
+
+    for {
+      p1 <- params
+      p2 <- params
+    } {
+      if (p1 != p2) {
+        withClue(s"    $p1\n != $p2\n") {
+          val typeMap1 = QueryCache.extractParameterTypeMap(p1)
+          val typeMap2 = QueryCache.extractParameterTypeMap(p2)
+          typeMap1.hashCode() shouldNot be(typeMap2.hashCode())
+          typeMap1 shouldNot equal(typeMap2)
+        }
+      }
+    }
+  }
 }
 
 object QueryCacheTest extends MockitoSugar {
@@ -326,7 +362,7 @@ object QueryCacheTest extends MockitoSugar {
 
   val TC: TransactionalContext = mock[TransactionalContext]
   type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
-  type Key = Pair[String, Map[String, Class[_]]]
+  type Key = Pair[String, ParameterTypeMap]
 
   private val RECOMPILE_LIMIT = 2
   def compilerWithExpressionCodeGenOption(key: Key): CompilerWithExpressionCodeGenOption[MyValue] = new CompilerWithExpressionCodeGenOption[MyValue] {
@@ -339,7 +375,7 @@ object QueryCacheTest extends MockitoSugar {
       else None
   }
 
-  def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
+  def newKey(string: String): Key = Pair.of(string, ParameterTypeMap.empty)
 
   def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(), size: Int = 10): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
     new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](size, stalenessCaller, tracer)

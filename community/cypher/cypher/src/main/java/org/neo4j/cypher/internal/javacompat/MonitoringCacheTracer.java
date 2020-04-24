@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import scala.Option;
-import scala.collection.immutable.Map;
 
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
+import org.neo4j.cypher.internal.QueryCache;
 import org.neo4j.internal.helpers.collection.Pair;
 
 /**
@@ -38,7 +38,7 @@ import org.neo4j.internal.helpers.collection.Pair;
  *  in the same superclass, the monitor callbacks would always be invoked from both caches. So we need this
  *  awful mumbo-jumbo in order to monitor specifically one of the two caches only.
  */
-public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.collection.immutable.Map<String, Class<?>>>>
+public class MonitoringCacheTracer implements CacheTracer<Pair<String,QueryCache.ParameterTypeMap>>
 {
     private final ExecutionEngineQueryCacheMonitor monitor;
 
@@ -48,31 +48,31 @@ public class MonitoringCacheTracer implements CacheTracer<Pair<String,scala.coll
     }
 
     @Override
-    public void queryCacheHit( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, String metaData )
+    public void queryCacheHit( Pair<String,QueryCache.ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheHit( queryKey );
     }
 
     @Override
-    public void queryCacheMiss( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, String metaData )
+    public void queryCacheMiss( Pair<String,QueryCache.ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
     }
 
     @Override
-    public void queryCompile( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    public void queryCompile( Pair<String,QueryCache.ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheCompile( queryKey );
     }
 
     @Override
-    public void queryCompileWithExpressionCodeGen( Pair<String,Map<String,Class<?>>> queryKey, String metaData )
+    public void queryCompileWithExpressionCodeGen( Pair<String,QueryCache.ParameterTypeMap> queryKey, String metaData )
     {
         monitor.cacheCompileWithExpressionCodeGen( queryKey );
     }
 
     @Override
-    public void queryCacheStale( Pair<String,scala.collection.immutable.Map<String, Class<?>>> queryKey, int secondsSincePlan, String metaData,
+    public void queryCacheStale( Pair<String,QueryCache.ParameterTypeMap> queryKey, int secondsSincePlan, String metaData,
                                  Option<String> maybeReason )
     {
         monitor.cacheDiscard( queryKey, metaData, secondsSincePlan, maybeReason );
