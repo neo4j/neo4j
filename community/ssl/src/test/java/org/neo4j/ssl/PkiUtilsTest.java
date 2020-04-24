@@ -121,12 +121,7 @@ class PkiUtilsTest
         try ( InputStream is = in.openStream();
                 OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile, false ) )
         {
-            while ( is.available() > 0 )
-            {
-                byte[] buf = new byte[8192];
-                int nBytes = is.read( buf );
-                os.write( buf, 0, nBytes );
-            }
+            is.transferTo( os );
         }
     }
 }

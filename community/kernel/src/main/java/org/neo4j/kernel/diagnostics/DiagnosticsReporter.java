@@ -77,8 +77,7 @@ public class DiagnosticsReporter
         }
 
         progress.setTotalSteps( sources.size() );
-        try ( OutputStream out = newOutputStream( destination, CREATE_NEW, WRITE );
-                ZipOutputStream zip = new ZipOutputStream( new BufferedOutputStream( out ), UTF_8 ) )
+        try ( ZipOutputStream zip = new ZipOutputStream( new BufferedOutputStream( newOutputStream( destination, CREATE_NEW, WRITE ) ), UTF_8 ) )
         {
             writeDiagnostics( zip, sources, progress );
         }

@@ -166,10 +166,9 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
 
             // Write new signature
             final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION );
-            try ( Writer writer = file.openWriter();
-                    BufferedWriter out = new BufferedWriter( writer ) )
+            try ( BufferedWriter writer = new BufferedWriter( file.openWriter() ) )
             {
-                out.write( newSignature );
+                writer.write( newSignature );
             }
 
             if ( !testExecution )
