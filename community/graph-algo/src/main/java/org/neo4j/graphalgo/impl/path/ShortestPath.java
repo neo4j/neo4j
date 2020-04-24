@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -627,12 +628,12 @@ public class ShortestPath implements PathFinder<Path>
     private static Collection<Path> hitToPaths( EvaluationContext context, Hit hit, Node start, Node end, boolean stopAsap )
     {
         Collection<Path> paths = new ArrayList<>();
-        Iterable<LinkedList<Relationship>> startPaths = getPaths( context, hit.connectingNode, hit.start, stopAsap );
-        Iterable<LinkedList<Relationship>> endPaths = getPaths( context, hit.connectingNode, hit.end, stopAsap );
-        for ( LinkedList<Relationship> startPath : startPaths )
+        Iterable<List<Relationship>> startPaths = getPaths( context, hit.connectingNode, hit.start, stopAsap );
+        Iterable<List<Relationship>> endPaths = getPaths( context, hit.connectingNode, hit.end, stopAsap );
+        for ( List<Relationship> startPath : startPaths )
         {
             PathImpl.Builder startBuilder = toBuilder( start, startPath );
-            for ( LinkedList<Relationship> endPath : endPaths )
+            for ( List<Relationship> endPath : endPaths )
             {
                 PathImpl.Builder endBuilder = toBuilder( end, endPath );
                 Path path = startBuilder.build( endBuilder );
@@ -642,13 +643,13 @@ public class ShortestPath implements PathFinder<Path>
         return paths;
     }
 
-    private static Iterable<LinkedList<Relationship>> getPaths( EvaluationContext context, Node connectingNode, DirectionData data,
+    private static Iterable<List<Relationship>> getPaths( EvaluationContext context, Node connectingNode, DirectionData data,
             boolean stopAsap )
     {
         LevelData levelData = data.visitedNodes.get( connectingNode );
         if ( levelData.depth == 0 )
         {
-            Collection<LinkedList<Relationship>> result = new ArrayList<>();
+            Collection<List<Relationship>> result = new ArrayList<>();
             result.add( new LinkedList<>() );
             return result;
         }
@@ -693,14 +694,14 @@ public class ShortestPath implements PathFinder<Path>
         return new IterableWrapper<>( set )
         {
             @Override
-            protected LinkedList<Relationship> underlyingObjectToObject( PathData object )
+            protected List<Relationship> underlyingObjectToObject( PathData object )
             {
                 return object.rels;
             }
         };
     }
 
-    private static Builder toBuilder( Node startNode, LinkedList<Relationship> rels )
+    private static Builder toBuilder( Node startNode, List<Relationship> rels )
     {
         PathImpl.Builder builder = new PathImpl.Builder( startNode );
         for ( Relationship rel : rels )

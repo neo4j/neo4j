@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -237,7 +238,7 @@ class DatabaseFileListingTest
 
     private static void filesInStoreDirAre( DatabaseLayout databaseLayout, String[] filenames, String[] dirs )
     {
-        ArrayList<File> files = new ArrayList<>();
+        List<File> files = new ArrayList<>();
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
         when( databaseLayout.listDatabaseFiles(any()) ).thenReturn( files.toArray( new File[0] ) );
@@ -245,7 +246,7 @@ class DatabaseFileListingTest
 
     private static ResourceIterator<File> scanStoreFilesAre( TokenScanStore labelScanStore, String[] fileNames )
     {
-        ArrayList<File> files = new ArrayList<>();
+        List<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
         ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
         when( labelScanStore.snapshotStoreFiles() ).thenReturn( snapshot );
@@ -255,7 +256,7 @@ class DatabaseFileListingTest
     private static ResourceIterator<File> indexFilesAre( IndexingService indexingService, String[] fileNames )
             throws IOException
     {
-        ArrayList<File> files = new ArrayList<>();
+        List<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
         ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
         when( indexingService.snapshotIndexFiles() ).thenReturn( snapshot );
@@ -272,7 +273,7 @@ class DatabaseFileListingTest
         }
     }
 
-    private static void mockFiles( String[] filenames, ArrayList<File> files, boolean isDirectories )
+    private static void mockFiles( String[] filenames, List<File> files, boolean isDirectories )
     {
         for ( String filename : filenames )
         {

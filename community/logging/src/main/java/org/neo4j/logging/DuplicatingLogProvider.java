@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -79,8 +80,8 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
 
     private DuplicatingLog buildLog( Function<LogProvider, Log> logConstructor )
     {
-        ArrayList<Log> logs = new ArrayList<>( logProviders.size() );
-        HashMap<LogProvider, Log> providedLogs = new HashMap<>();
+        List<Log> logs = new ArrayList<>( logProviders.size() );
+        Map<LogProvider, Log> providedLogs = new HashMap<>();
         for ( LogProvider logProvider : logProviders )
         {
             Log log = logConstructor.apply( logProvider );

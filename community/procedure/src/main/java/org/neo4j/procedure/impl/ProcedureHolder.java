@@ -38,7 +38,7 @@ class ProcedureHolder<T>
 {
     private final Map<QualifiedName,Integer> nameToId = new HashMap<>();
     private final Map<QualifiedName,Integer> caseInsensitiveName2Id = new HashMap<>();
-    private final ArrayList<T> store = new ArrayList<>();
+    private final List<T> store = new ArrayList<>();
 
     T get( QualifiedName name )
     {

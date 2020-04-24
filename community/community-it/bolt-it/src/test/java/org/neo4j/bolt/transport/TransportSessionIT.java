@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.testing.TestNotification;
@@ -306,8 +307,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
-        HashMap<String,Object> params = new HashMap<>();
-        HashMap<String,Object> inner = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
+        Map<String,Object> inner = new HashMap<>();
         inner.put( null, 42L );
         inner.put( "foo", 1337L );
         params.put( "p", inner );

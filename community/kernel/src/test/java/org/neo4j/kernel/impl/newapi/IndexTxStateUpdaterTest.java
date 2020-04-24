@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -139,7 +140,7 @@ class IndexTxStateUpdaterTest
             return descriptors;
         } );
 
-        HashMap<Integer,Value> map = new HashMap<>();
+        Map<Integer,Value> map = new HashMap<>();
         map.put( propId1, Values.of( "hi1" ) );
         map.put( propId2, Values.of( "hi2" ) );
         map.put( propId3, Values.of( "hi3" ) );

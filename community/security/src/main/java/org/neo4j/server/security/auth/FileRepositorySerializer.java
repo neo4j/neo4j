@@ -51,7 +51,7 @@ public abstract class FileRepositorySerializer<S>
 
     private static List<String> readFromFile( FileSystemAbstraction fs, File file ) throws IOException
     {
-        ArrayList<String> lines = new ArrayList<>();
+        List<String> lines = new ArrayList<>();
 
         try ( BufferedReader r = new BufferedReader( fs.openAsReader( file, UTF_8 ) ) )
         {

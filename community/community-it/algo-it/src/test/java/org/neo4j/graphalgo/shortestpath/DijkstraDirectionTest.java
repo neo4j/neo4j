@@ -23,6 +23,7 @@ import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
@@ -106,7 +107,7 @@ class DijkstraDirectionTest extends Neo4jAlgoTestCase
             Relationship r5 = graph.makeEdge( transaction, "e", "f" );
             Relationship r6 = graph.makeEdge( transaction, "g", "f" );
             Relationship r7 = graph.makeEdge( transaction, "g", "end" );
-            HashMap<Relationship,Direction> dirs = new HashMap<>();
+            Map<Relationship,Direction> dirs = new HashMap<>();
             Dijkstra<Double> dijkstra = new Dijkstra<>( (double) 0, graph.getNode( transaction, "start" ), graph.getNode( transaction, "end" ),
                     new DirectionSavingCostEvaluator( dirs ), new DoubleAdder(), Double::compareTo, Direction.BOTH, MyRelTypes.R1 );
             dijkstra.getCost();
@@ -123,9 +124,9 @@ class DijkstraDirectionTest extends Neo4jAlgoTestCase
 
     static class DirectionSavingCostEvaluator implements CostEvaluator<Double>
     {
-        HashMap<Relationship, Direction> dirs;
+        Map<Relationship, Direction> dirs;
 
-        DirectionSavingCostEvaluator( HashMap<Relationship,Direction> dirs )
+        DirectionSavingCostEvaluator( Map<Relationship,Direction> dirs )
         {
             super();
             this.dirs = dirs;

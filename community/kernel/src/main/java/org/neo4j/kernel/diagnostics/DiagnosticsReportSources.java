@@ -67,7 +67,7 @@ public final class DiagnosticsReportSources
     public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile( String destination,
             FileSystemAbstraction fs, File file )
     {
-        ArrayList<DiagnosticsReportSource> files = new ArrayList<>();
+        List<DiagnosticsReportSource> files = new ArrayList<>();
 
         files.add( newDiagnosticsFile( destination, fs, file ) );
 

@@ -52,7 +52,7 @@ public final class ReflectionUtil
 
     public static List<Field> getAllFields( Class<?> baseClazz )
     {
-        ArrayList<Field> fields = new ArrayList<>();
+        List<Field> fields = new ArrayList<>();
         Class<?> clazz = baseClazz;
         do
         {

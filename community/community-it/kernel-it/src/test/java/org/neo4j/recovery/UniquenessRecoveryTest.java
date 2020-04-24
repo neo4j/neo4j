@@ -317,7 +317,7 @@ public class UniquenessRecoveryTest
     @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> configurations()
     {
-        ArrayList<Object[]> configurations = new ArrayList<>();
+        List<Object[]> configurations = new ArrayList<>();
         if ( EXHAUSTIVE )
         {
             for ( int killSignal : KILL_SIGNALS )

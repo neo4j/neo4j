@@ -97,7 +97,7 @@ public class ParameterizedSuiteRunner extends Suite
 
         Class<?>[] suiteClasses()
         {
-            ArrayList<Class<?>> classes = new ArrayList<>( parameterizations.keySet() );
+            List<Class<?>> classes = new ArrayList<>( parameterizations.keySet() );
             for ( Method method : suiteClass.getMethods() )
             {
                 if ( method.getAnnotation( Test.class ) != null )

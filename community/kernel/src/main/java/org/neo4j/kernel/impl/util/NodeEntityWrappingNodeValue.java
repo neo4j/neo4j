@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.Label;
@@ -119,7 +120,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue
                 l = labels;
                 if ( l == null )
                 {
-                    ArrayList<String> ls = new ArrayList<>();
+                    List<String> ls = new ArrayList<>();
                     for ( Label label : node.getLabels() )
                     {
                         ls.add( label.name() );

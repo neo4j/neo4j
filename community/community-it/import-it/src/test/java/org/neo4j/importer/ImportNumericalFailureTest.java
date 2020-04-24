@@ -53,7 +53,7 @@ class ImportNumericalFailureTest
 
     static List<String[]> parameters()
     {
-        ArrayList<String[]> params = new ArrayList<>();
+        List<String[]> params = new ArrayList<>();
 
         for ( String type : Arrays.asList( "int", "long", "short", "byte", "float", "double" ) )
         {

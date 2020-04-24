@@ -152,7 +152,7 @@ class PrivilegeActionTest
         return notChildren;
     }
 
-    private void removeChildren( PrivilegeAction action, HashSet<PrivilegeAction> notChildren )
+    private void removeChildren( PrivilegeAction action, Set<PrivilegeAction> notChildren )
     {
         notChildren.remove( action );
         if ( expected.containsKey( action ) )

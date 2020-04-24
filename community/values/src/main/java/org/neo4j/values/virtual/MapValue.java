@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.StreamSupport;
 
@@ -412,7 +413,7 @@ public abstract class MapValue extends VirtualValue
            {
                private boolean iteratingMap2;
                private Iterator<String> iterator = map1.keySet().iterator();
-               private HashSet<String> seen = new HashSet<>();
+               private Set<String> seen = new HashSet<>();
 
                @Override
                protected String fetchNextOrNull()
@@ -442,7 +443,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
         {
-            HashSet<String> seen = new HashSet<>();
+            Set<String> seen = new HashSet<>();
             ThrowingBiConsumer<String,AnyValue,E> consume = ( key, value ) ->
             {
                 if ( seen.add( key ) )
@@ -479,7 +480,7 @@ public abstract class MapValue extends VirtualValue
         public int size()
         {
             int[] size = {0};
-            HashSet<String> seen = new HashSet<>();
+            Set<String> seen = new HashSet<>();
             ThrowingBiConsumer<String,AnyValue,RuntimeException> consume = ( key, value ) ->
             {
                 if ( seen.add( key ) )

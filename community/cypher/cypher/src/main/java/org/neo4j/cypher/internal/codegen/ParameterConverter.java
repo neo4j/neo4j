@@ -32,6 +32,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -403,7 +404,7 @@ class ParameterConverter extends ReferenceEntityValueWriter<RuntimeException>
     {
         private String key;
         private boolean isKey = true;
-        private final HashMap<String,Object> map;
+        private final Map<String,Object> map;
 
         MapWriter( int size )
         {

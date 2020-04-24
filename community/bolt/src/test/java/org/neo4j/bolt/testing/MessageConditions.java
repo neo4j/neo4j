@@ -70,7 +70,7 @@ public class MessageConditions
     private static Map<String,Object> toRawMap( MapValue mapValue )
     {
         Deserializer deserializer = new Deserializer();
-        HashMap<String,Object> map = new HashMap<>( mapValue.size() );
+        Map<String,Object> map = new HashMap<>( mapValue.size() );
         mapValue.foreach( ( key, value ) ->
         {
             value.writeTo( deserializer );

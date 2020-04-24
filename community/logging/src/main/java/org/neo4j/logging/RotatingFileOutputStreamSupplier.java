@@ -374,7 +374,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
      */
     public static List<File> getAllArchives( FileSystemAbstraction fileSystem,  File outputFile )
     {
-        ArrayList<File> ret = new ArrayList<>();
+        List<File> ret = new ArrayList<>();
         int i = 1;
         while ( true )
         {

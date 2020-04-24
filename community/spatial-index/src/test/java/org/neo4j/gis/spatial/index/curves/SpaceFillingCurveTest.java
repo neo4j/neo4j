@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.logging.FormattedLog;
@@ -963,8 +964,8 @@ public class SpaceFillingCurveTest
     //
     private static List<SpaceFillingCurve.LongRange> tilesNotTouchingOuterRing( SpaceFillingCurve curve )
     {
-        ArrayList<SpaceFillingCurve.LongRange> expected = new ArrayList<>();
-        HashSet<Long> outerRing = new HashSet<>();
+        List<SpaceFillingCurve.LongRange> expected = new ArrayList<>();
+        Set<Long> outerRing = new HashSet<>();
         for ( int x = 0; x < curve.getWidth(); x++ )
         {
             // Adding top and bottom rows

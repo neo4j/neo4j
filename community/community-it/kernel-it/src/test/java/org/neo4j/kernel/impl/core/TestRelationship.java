@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -361,7 +362,7 @@ class TestRelationship extends AbstractNeo4jTestCase
 
     private Relationship[] getRelationshipArray( Iterable<Relationship> relsIterable )
     {
-        ArrayList<Relationship> relList = new ArrayList<>();
+        List<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
         {
             relList.add( rel );

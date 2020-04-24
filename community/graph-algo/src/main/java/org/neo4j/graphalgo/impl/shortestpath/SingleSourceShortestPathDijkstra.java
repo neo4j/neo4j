@@ -62,16 +62,16 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         reset();
     }
 
-    protected HashMap<Node,CostType> distances = new HashMap<>();
+    protected Map<Node,CostType> distances = new HashMap<>();
 
     @Override
     public void reset()
     {
         super.reset();
         distances = new HashMap<>();
-        HashMap<Node,CostType> seen1 = new HashMap<>();
-        HashMap<Node,CostType> seen2 = new HashMap<>();
-        HashMap<Node,CostType> dists2 = new HashMap<>();
+        Map<Node,CostType> seen1 = new HashMap<>();
+        Map<Node,CostType> seen2 = new HashMap<>();
+        Map<Node,CostType> dists2 = new HashMap<>();
         dijkstraIterator = new DijkstraIterator( startNode, predecessors1, seen1,
             seen2, distances, dists2, false );
     }

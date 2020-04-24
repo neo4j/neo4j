@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -243,7 +244,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         private final double writePercentage;
         private final AtomicReference<ReaderInstruction> currentReaderInstruction;
         private final boolean partitionedSeek;
-        TreeSet<Long> readersShouldSee;
+        SortedSet<Long> readersShouldSee;
 
         // Progress
         private final AtomicBoolean endSignal;
@@ -284,7 +285,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             iterationFinished();
         }
 
-        void prepareIndex( GBPTree<KEY,VALUE> index, TreeSet<Long> dataInIndex,
+        void prepareIndex( GBPTree<KEY,VALUE> index, Set<Long> dataInIndex,
                 Queue<Long> toRemove, Queue<Long> toAdd, Random random ) throws IOException
         {
             List<Long> fullRange = LongStream.range( minRange, maxRange ).boxed().collect( Collectors.toList() );
@@ -318,18 +319,18 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             currentReaderInstruction.set( newReaderInstruction( minRange, maxRange, readersShouldSee ) );
         }
 
-        void updateRecentlyInsertedData( TreeSet<Long> readersShouldSee, List<UpdateOperation> updateBatch )
+        void updateRecentlyInsertedData( Set<Long> readersShouldSee, List<UpdateOperation> updateBatch )
         {
             updateBatch.stream().filter( UpdateOperation::isInsert ).forEach( uo -> uo.applyToSet( readersShouldSee ) );
         }
 
-        void updateWithSoonToBeRemovedData( TreeSet<Long> readersShouldSee, List<UpdateOperation> updateBatch )
+        void updateWithSoonToBeRemovedData( Set<Long> readersShouldSee, List<UpdateOperation> updateBatch )
         {
             updateBatch.stream().filter( uo -> !uo.isInsert() ).forEach( uo -> uo.applyToSet( readersShouldSee ) );
         }
 
         private ReaderInstruction newReaderInstruction( long minRange, long maxRange,
-                TreeSet<Long> readersShouldSee )
+                Set<Long> readersShouldSee )
         {
             return forwardsSeek ?
                    new ReaderInstruction( minRange, maxRange, readersShouldSee, partitionedSeek ) :
@@ -637,10 +638,10 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     {
         private final long startRange;
         private final long endRange;
-        private final TreeSet<Long> expectToSee;
+        private final Set<Long> expectToSee;
         private final boolean partitionedSeek;
 
-        ReaderInstruction( long startRange, long endRange, TreeSet<Long> expectToSee, boolean partitionedSeek )
+        ReaderInstruction( long startRange, long endRange, Set<Long> expectToSee, boolean partitionedSeek )
         {
             this.startRange = startRange;
             this.endRange = endRange;
@@ -658,7 +659,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             return endRange;
         }
 
-        TreeSet<Long> expectToSee()
+        Set<Long> expectToSee()
         {
             return expectToSee;
         }

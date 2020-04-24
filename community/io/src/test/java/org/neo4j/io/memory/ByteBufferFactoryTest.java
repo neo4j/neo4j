@@ -134,7 +134,7 @@ class ByteBufferFactoryTest
         List<Set<ByteBuffer>> seenBuffers = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
-            HashSet<ByteBuffer> seen = new HashSet<>();
+            Set<ByteBuffer> seen = new HashSet<>();
             seenBuffers.add( seen );
             futures.add( executor.submit( () ->
             {

@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -95,7 +96,7 @@ public final class VirtualValues
     {
         assert keys.length == values.length;
         long payloadSize = 0;
-        HashMap<String,AnyValue> map = new HashMap<>( (int) ((float) keys.length / 0.75f + 1.0f) );
+        Map<String,AnyValue> map = new HashMap<>( (int) ((float) keys.length / 0.75f + 1.0f) );
         for ( int i = 0; i < keys.length; i++ )
         {
             String key = keys[i];

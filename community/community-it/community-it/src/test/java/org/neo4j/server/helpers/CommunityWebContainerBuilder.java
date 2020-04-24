@@ -64,7 +64,7 @@ public class CommunityWebContainerBuilder
     private String dataDir;
     private String dbUri = "/db";
     private String restUri = "/db/data";
-    private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
+    private final Map<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
     static

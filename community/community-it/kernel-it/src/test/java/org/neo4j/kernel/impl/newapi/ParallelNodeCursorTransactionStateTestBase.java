@@ -307,7 +307,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            ArrayList<Future<LongList>> futures = new ArrayList<>();
+            List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );

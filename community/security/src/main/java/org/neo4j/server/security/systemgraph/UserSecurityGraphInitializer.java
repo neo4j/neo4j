@@ -140,9 +140,9 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         }
     }
 
-    protected static ArrayList<Node> findInitialNodes( Transaction tx, Label label )
+    protected static List<Node> findInitialNodes( Transaction tx, Label label )
     {
-        ArrayList<Node> nodeList = new ArrayList<>();
+        List<Node> nodeList = new ArrayList<>();
         final ResourceIterator<Node> nodes = tx.findNodes( label );
         nodes.forEachRemaining( nodeList::add );
         nodes.close();

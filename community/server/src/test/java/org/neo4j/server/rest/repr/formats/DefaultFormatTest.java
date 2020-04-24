@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
@@ -43,7 +44,7 @@ public class DefaultFormatTest
     public void setUp()
     {
         JsonFormat inner = new JsonFormat();
-        ArrayList<MediaType> supported = new ArrayList<>();
+        List<MediaType> supported = new ArrayList<>();
         MediaType requested = MediaType.APPLICATION_JSON_TYPE;
         input = new DefaultFormat( inner, supported, requested );
     }

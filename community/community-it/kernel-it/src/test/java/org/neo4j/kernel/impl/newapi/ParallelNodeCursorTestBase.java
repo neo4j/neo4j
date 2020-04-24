@@ -224,7 +224,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            ArrayList<Future<LongList>> futures = new ArrayList<>();
+            List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );

@@ -149,7 +149,7 @@ public abstract class CompiledConversionUtils
         else if ( value.getClass().isArray() )
         {
             int len = Array.getLength( value );
-            HashSet<Object> collection = new HashSet<>( len );
+            Set<Object> collection = new HashSet<>( len );
             for ( int i = 0; i < len; i++ )
             {
                 collection.add( Array.get( value, i ) );

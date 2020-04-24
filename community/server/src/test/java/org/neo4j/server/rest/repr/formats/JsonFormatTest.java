@@ -148,7 +148,7 @@ class JsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                ArrayList<Representation> maps = new ArrayList<>();
+                List<Representation> maps = new ArrayList<>();
                 maps.add( new MappingRepresentation( "map" )
                 {
 

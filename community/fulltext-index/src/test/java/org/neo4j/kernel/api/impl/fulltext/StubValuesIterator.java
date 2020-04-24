@@ -20,13 +20,14 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 class StubValuesIterator implements ValuesIterator
 {
-    private ArrayList<Long> entityIds = new ArrayList<>();
-    private ArrayList<Float> scores = new ArrayList<>();
+    private List<Long> entityIds = new ArrayList<>();
+    private List<Float> scores = new ArrayList<>();
     private int nextIndex;
 
     public StubValuesIterator add( long entityId, float score )

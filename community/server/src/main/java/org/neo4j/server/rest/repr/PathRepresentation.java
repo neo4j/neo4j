@@ -21,6 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -92,7 +93,7 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation // 
     @Mapping( "directions" )
     public ListRepresentation directions()
     {
-        ArrayList<String> directionStrings = new ArrayList<>();
+        List<String> directionStrings = new ArrayList<>();
 
         Iterator<Node> nodeIterator = path.nodes().iterator();
         Iterator<Relationship> relationshipIterator = path.relationships().iterator();

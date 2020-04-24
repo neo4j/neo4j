@@ -192,7 +192,7 @@ public class BuiltInProcedures
         SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
         List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
 
-        ArrayList<IndexResult> result = new ArrayList<>();
+        List<IndexResult> result = new ArrayList<>();
         for ( IndexDescriptor index : indexes )
         {
             IndexResult indexResult;

@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -326,7 +327,7 @@ public class GraphDescription implements GraphDefinition
         {
             NODE preexistingNode = nodes.get( name );
             // Join with any new labels
-            HashSet<String> joinedLabels = new HashSet<>( asList( labels ) );
+            Set<String> joinedLabels = new HashSet<>( asList( labels ) );
             for ( LABEL label : preexistingNode.labels() )
             {
                 joinedLabels.add( label.value() );

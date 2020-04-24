@@ -92,7 +92,7 @@ public class SchemaProcedure
                     Map<String,Object> properties = new HashMap<>();
 
                     Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
-                    ArrayList<String> indexes = new ArrayList<>();
+                    List<String> indexes = new ArrayList<>();
                     while ( indexReferences.hasNext() )
                     {
                         IndexDescriptor index = indexReferences.next();
@@ -105,7 +105,7 @@ public class SchemaProcedure
                     properties.put( "indexes", indexes );
 
                     Iterator<ConstraintDescriptor> nodePropertyConstraintIterator = schemaRead.constraintsGetForLabel( labelId );
-                    ArrayList<String> constraints = new ArrayList<>();
+                    List<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
                         ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
@@ -343,7 +343,7 @@ public class SchemaProcedure
     private static class VirtualNodeHack implements Node
     {
 
-        private final HashMap<String,Object> propertyMap = new HashMap<>();
+        private final Map<String,Object> propertyMap = new HashMap<>();
 
         private static final AtomicLong MIN_ID = new AtomicLong( -1 );
         private final long id;

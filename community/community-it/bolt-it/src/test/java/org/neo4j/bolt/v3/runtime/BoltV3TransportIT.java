@@ -332,8 +332,8 @@ public class BoltV3TransportIT extends BoltV3TransportBase
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
-        HashMap<String,Object> params = new HashMap<>();
-        HashMap<String,Object> inner = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
+        Map<String,Object> inner = new HashMap<>();
         inner.put( null, 42L );
         inner.put( "foo", 1337L );
         params.put( "p", inner );

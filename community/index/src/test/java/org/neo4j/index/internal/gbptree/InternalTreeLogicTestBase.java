@@ -1000,7 +1000,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         KEY oldSplitter = keyAt( 0, INTERNAL );
         KEY rightmostKeyInLeftSubtree = rightmostInternalKeyInSubtree( root.id(), 0 );
 
-        ArrayList<KEY> allKeysInOldLeftAndOldRight = new ArrayList<>();
+        List<KEY> allKeysInOldLeftAndOldRight = new ArrayList<>();
         goTo( readCursor, oldLeft );
         allKeys( readCursor, allKeysInOldLeftAndOldRight, LEAF );
         goTo( readCursor, oldRight );

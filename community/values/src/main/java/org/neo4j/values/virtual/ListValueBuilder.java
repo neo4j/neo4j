@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -98,7 +99,7 @@ public abstract class ListValueBuilder
 
     public static class UnknownSizeListValueBuilder extends ListValueBuilder implements Measurable
     {
-        private final ArrayList<AnyValue> values = new ArrayList<>();
+        private final List<AnyValue> values = new ArrayList<>();
 
         @Override
         void internalAdd( AnyValue value )

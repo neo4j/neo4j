@@ -129,7 +129,7 @@ public class User
     {
         private String name;
         private Credential credential;
-        private TreeSet<String> flags = new TreeSet<>();
+        private SortedSet<String> flags = new TreeSet<>();
 
         public Builder( String name, Credential credential )
         {

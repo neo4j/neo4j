@@ -435,7 +435,7 @@ public final class Iterators
     @SafeVarargs
     public static <T> Set<T> asUniqueSet( T... items )
     {
-        HashSet<T> set = new HashSet<>();
+        Set<T> set = new HashSet<>();
         for ( T item : items )
         {
             addUnique( set, item );
@@ -452,7 +452,7 @@ public final class Iterators
      */
     public static <T> Set<T> asUniqueSet( Iterator<T> items )
     {
-        HashSet<T> set = new HashSet<>();
+        Set<T> set = new HashSet<>();
         while ( items.hasNext() )
         {
             addUnique( set, items.next() );
@@ -462,7 +462,7 @@ public final class Iterators
 
     public static <T> SortedSet<T> asSortedSet( Comparator<T> comparator, T... items )
     {
-        TreeSet<T> set = new TreeSet<>( comparator );
+        SortedSet<T> set = new TreeSet<>( comparator );
         Collections.addAll( set, items );
         return set;
     }

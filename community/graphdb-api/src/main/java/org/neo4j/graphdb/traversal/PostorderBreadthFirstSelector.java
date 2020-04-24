@@ -55,7 +55,7 @@ class PostorderBreadthFirstSelector implements BranchSelector
 
     private Iterator<TraversalBranch> gatherSourceIterator( TraversalContext metadata )
     {
-        LinkedList<TraversalBranch> queue = new LinkedList<>();
+        List<TraversalBranch> queue = new LinkedList<>();
         queue.add( current.next( expander, metadata ) );
         while ( true )
         {

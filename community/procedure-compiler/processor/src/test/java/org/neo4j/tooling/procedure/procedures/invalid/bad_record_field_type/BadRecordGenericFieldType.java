@@ -44,7 +44,7 @@ public class BadRecordGenericFieldType
     public List<Relationship> okType11;
     public List<Object> okType12;
     public Map<String,Object> okType13;
-    public HashMap<String,Object> okType14;
-    public ArrayList<Boolean> okType15;
-    public ArrayList<Object> okType16;
+    public Map<String,Object> okType14;
+    public List<Boolean> okType15;
+    public List<Object> okType16;
 }

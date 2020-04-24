@@ -219,7 +219,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                 return targetedTypes;
             }
         }
-        ArrayList<ValueType> result = new ArrayList<>( Arrays.asList( targetedTypes ) );
+        List<ValueType> result = new ArrayList<>( Arrays.asList( targetedTypes ) );
         ValueType highCardinalityType = randomRule.randomValues().among( RandomValues.excluding( lowCardinalityArray ) );
         result.add( highCardinalityType );
         return result.toArray( new ValueType[0] );

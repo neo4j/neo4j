@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -817,8 +818,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue distinct()
     {
         long keptValuesHeapSize = 0;
-        HashSet<AnyValue> seen = new HashSet<>();
-        ArrayList<AnyValue> kept = new ArrayList<>();
+        Set<AnyValue> seen = new HashSet<>();
+        List<AnyValue> kept = new ArrayList<>();
         for ( AnyValue value : this )
         {
             if ( seen.add( value ) )
@@ -832,7 +833,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     private AnyValue[] iterationAsArray()
     {
-        ArrayList<AnyValue> values = new ArrayList<>();
+        List<AnyValue> values = new ArrayList<>();
         int size = 0;
         for ( AnyValue value : this )
         {

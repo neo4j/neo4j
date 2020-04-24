@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -57,7 +58,7 @@ class NodeSchemaMatcherTest
     @BeforeEach
     void setup()
     {
-        HashMap<Integer,Value> map = new HashMap<>();
+        Map<Integer,Value> map = new HashMap<>();
         map.put( propId1, stringValue( "hello" ) );
         map.put( propId2, stringValue( "world" ) );
         map.put( unIndexedPropId, stringValue( "!" ) );

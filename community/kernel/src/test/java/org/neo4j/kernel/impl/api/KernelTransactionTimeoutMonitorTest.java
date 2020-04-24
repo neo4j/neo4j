@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -60,7 +61,7 @@ class KernelTransactionTimeoutMonitorTest
     @Test
     void terminateExpiredTransactions()
     {
-        HashSet<KernelTransactionHandle> transactions = new HashSet<>();
+        Set<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 3, 1, 3 );
         KernelTransactionImplementation tx2 = prepareTxMock( 4, 1, 8 );
         KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1, fakeClock );
@@ -97,7 +98,7 @@ class KernelTransactionTimeoutMonitorTest
     @Test
     void skipTransactionWithoutTimeout()
     {
-        HashSet<KernelTransactionHandle> transactions = new HashSet<>();
+        Set<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 7, 3, 0 );
         KernelTransactionImplementation tx2 = prepareTxMock( 8, 4, 0 );
         KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle( tx1, fakeClock );

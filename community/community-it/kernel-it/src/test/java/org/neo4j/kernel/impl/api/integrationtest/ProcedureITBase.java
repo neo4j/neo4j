@@ -193,7 +193,7 @@ public interface ProcedureITBase
 
     default List<Object[]> getExpectedEnterpriseProcs()
     {
-        ArrayList<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
+        List<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
         result.addAll( List.of(
                 // enterprise only functions
                 proc( "dbms.listPools",

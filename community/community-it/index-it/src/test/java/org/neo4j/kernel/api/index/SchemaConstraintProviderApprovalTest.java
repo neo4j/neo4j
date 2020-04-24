@@ -155,7 +155,7 @@ public abstract class SchemaConstraintProviderApprovalTest
 
     private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )
     {
-        HashMap<TestValue, Set<Object>> results = new HashMap<>();
+        Map<TestValue, Set<Object>> results = new HashMap<>();
         try ( Transaction tx = db.beginTx() )
         {
             for ( TestValue value : TestValue.values() )
@@ -178,7 +178,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         }
     }
 
-    private static void addToResults( Transaction transaction, HashMap<TestValue,Set<Object>> results, TestValue value )
+    private static void addToResults( Transaction transaction, Map<TestValue,Set<Object>> results, TestValue value )
     {
         ResourceIterator<Node> foundNodes = transaction.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
         Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );

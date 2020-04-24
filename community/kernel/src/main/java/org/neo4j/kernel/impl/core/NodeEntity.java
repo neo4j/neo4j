@@ -617,7 +617,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             singleNode( transaction, nodes );
             TokenSet tokenSet = nodes.labels();
             TokenRead tokenRead = transaction.tokenRead();
-            ArrayList<Label> list = new ArrayList<>( tokenSet.numberOfTokens() );
+            List<Label> list = new ArrayList<>( tokenSet.numberOfTokens() );
             for ( int i = 0; i < tokenSet.numberOfTokens(); i++ )
             {
                 list.add( label( tokenRead.nodeLabelName( tokenSet.token( i ) ) ) );

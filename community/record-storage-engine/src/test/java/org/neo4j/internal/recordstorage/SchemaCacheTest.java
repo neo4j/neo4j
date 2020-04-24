@@ -552,7 +552,7 @@ class SchemaCacheTest
                 return IndexValueCapability.NO;
             }
         };
-        ArrayList<IndexDescriptor> completed = new ArrayList<>();
+        List<IndexDescriptor> completed = new ArrayList<>();
         IndexConfigCompleter completer = index ->
         {
             completed.add( index );
