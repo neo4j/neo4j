@@ -550,7 +550,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val predicatesInfo = if (predicates.isEmpty) "" else s" WHERE ${predicates.map(PlanDescriptionArgumentSerializer.asPrettyString).mkString(" AND ")}"
 
         val pathName = maybePathName match {
-          case Some(p) if !p.unnamed => s"$p = "
+          case Some(p) => s"$p = "
           case _ => ""
         }
 
@@ -1039,7 +1039,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   private def nodeCountFromCountStoreInfo(ident: String, labelNames: List[Option[LabelName]]): String = {
     val labels = labelNames.flatten.map(_.name)
     val node = labels.map(":" + _).mkString
-    s"count( ($node) )" + (if (ident.unnamed) "" else s" AS $ident")
+    s"count( ($node) ) AS $ident"
   }
 
   private def relationshipCountFromCountStoreInfo(ident: String,
@@ -1049,7 +1049,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val start = startLabel.map(_.name).map(l => ":" + l).mkString
     val end = endLabel.map(_.name).map(l => ":" + l).mkString
     val types = typeNames.map(_.name).mkString(":", "|", "")
-    s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
+    s"count( ($start)-[$types]->($end) ) AS $ident"
   }
 
   private def relationshipByIdSeekInfo(idName: String, relIds: SeekableArgs, startNode: String, endNode: String, isDirectional: Boolean): String = {
@@ -1111,12 +1111,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _ => s"*$minLength..${maxLength.getOrElse("")}"
     }
 
-    val relName = maybeRelName match {
-      case Some(name) if !name.unnamed => name
-      case _ => ""
-    }
+    val relName = maybeRelName.getOrElse("")
     val relInfo = if (lengthDescr == "" && relTypes.isEmpty && relName.isEmpty) "" else s"[$relName$types$lengthDescr]"
-    s"(${if (from.unnamed) "" else from})$left$relInfo$right(${if (to.unnamed) "" else to})"
+    s"($from)$left$relInfo$right($to)"
   }
 
   private def indexInfoString(idName: String,
@@ -1244,7 +1241,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
     s"CONSTRAINT$name ON $entityInfo ASSERT $leftAssertion$propertyString$rightAssertion"
   }
-
 
   private def setPropertyInfo(idName: String,
                               expression: Expression,
