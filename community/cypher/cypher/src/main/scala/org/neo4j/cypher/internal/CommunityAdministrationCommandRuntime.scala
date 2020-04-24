@@ -163,8 +163,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           val user = runtimeValue(userName, params)
           throw new CantCompileQueryException(s"Failed to alter the specified user '$user': 'SET STATUS' is not available in community edition.")
         })
-      }
-      else {
+      } else {
         makeAlterUserExecutionPlan(userName, password, requirePasswordChange, suspended = None)(sourcePlan, normalExecutionEngine)
       }
 

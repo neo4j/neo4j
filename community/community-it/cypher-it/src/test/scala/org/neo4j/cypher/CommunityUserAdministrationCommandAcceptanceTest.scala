@@ -405,7 +405,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     ))
 
     // WHEN
-    executeOnSystem("bob", "bar",  "DROP USER alice")
+    executeOnSystem("bob", "bar", "DROP USER alice")
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j"), user("bob", passwordChangeRequired = false)))
@@ -496,7 +496,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   // Tests for altering users
 
- test("should alter user password") {
+  test("should alter user password") {
     // GIVEN
     prepareUser("foo", "bar")
 
@@ -631,7 +631,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail on altering user status from community") {
-    assertFailure("ALTER USER neo4j SET STATUS ACTIVE","Failed to alter the specified user 'neo4j': 'SET STATUS' is not available in community edition.")
+    assertFailure("ALTER USER neo4j SET STATUS ACTIVE", "Failed to alter the specified user 'neo4j': 'SET STATUS' is not available in community edition.")
     assertFailure("ALTER USER neo4j SET PASSWORD 'xxx' SET STATUS SUSPENDED", "Failed to alter the specified user 'neo4j': 'SET STATUS' is not available in community edition.")
   }
 
@@ -894,7 +894,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // WHEN
     val e = the[AuthorizationViolationException] thrownBy {
-      executeOn( DEFAULT_DATABASE_NAME, "foo", "bar", "MATCH (n) RETURN n")
+      executeOn(DEFAULT_DATABASE_NAME, "foo", "bar", "MATCH (n) RETURN n")
     }
 
     // THEN
