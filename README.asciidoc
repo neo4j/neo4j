@@ -59,12 +59,6 @@ in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want 
 
 instead.
 
-Or, if you are not interested in the tarballs and just want to run Neo4j you can instead run a `mvn clean install -DminimalBuild` and then `cd` into `community/server` and run:
-
-  mvn clean compile exec:java
-
-to start Neo4j.
-
 == Neo4j Desktop ==
 
 Neo4j Desktop is a convenient way for developers to work with local Neo4j databases.
