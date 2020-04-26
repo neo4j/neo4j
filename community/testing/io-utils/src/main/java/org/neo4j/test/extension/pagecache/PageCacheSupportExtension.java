@@ -30,13 +30,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.test.extension.FileSystemExtension;
-import org.neo4j.test.extension.StatefullFieldExtension;
+import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.PageCacheRule;
 
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class PageCacheSupportExtension extends StatefullFieldExtension<PageCache>
+public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
 {
     private static final String PAGE_CACHE = "pageCache";
     private static final Namespace PAGE_CACHE_NAMESPACE = Namespace.create( PAGE_CACHE );

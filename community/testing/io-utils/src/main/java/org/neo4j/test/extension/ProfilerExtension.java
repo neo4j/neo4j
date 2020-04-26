@@ -63,7 +63,7 @@ import org.neo4j.test.rule.TestDirectory;
  *
  * @see Profiler The Profiler interface, for more information on how to use the injected profiler instance.
  */
-public class ProfilerExtension extends StatefullFieldExtension<Profiler> implements BeforeEachCallback, AfterEachCallback
+public class ProfilerExtension extends StatefulFieldExtension<Profiler> implements BeforeEachCallback, AfterEachCallback
 {
     static final String PROFILER_KEY = "profiler";
     static final Namespace PROFILER_NAMESPACE = Namespace.create( PROFILER_KEY );

@@ -24,9 +24,9 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import org.neo4j.test.extension.StatefullFieldExtension;
+import org.neo4j.test.extension.StatefulFieldExtension;
 
-public class ThreadingExtension extends StatefullFieldExtension<ThreadingRule>
+public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
         implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
     private static final String THREADING = "threading";

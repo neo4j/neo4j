@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefullFieldExtension<T>
+public abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefulFieldExtension<T>
 {
     public static final String FILE_SYSTEM = "fileSystem";
     public static final Namespace FILE_SYSTEM_NAMESPACE = Namespace.create( FILE_SYSTEM );

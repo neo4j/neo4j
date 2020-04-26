@@ -35,7 +35,7 @@ import org.neo4j.test.rule.RandomRule.Seed;
 import static java.lang.String.format;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 
-public class RandomExtension extends StatefullFieldExtension<RandomRule> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
+public class RandomExtension extends StatefulFieldExtension<RandomRule> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
 {
     private static final String RANDOM = "random";
     private static final Namespace RANDOM_NAMESPACE = Namespace.create( RANDOM );
