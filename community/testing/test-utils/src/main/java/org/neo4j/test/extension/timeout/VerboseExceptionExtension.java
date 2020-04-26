@@ -23,12 +23,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.IncompleteExecutionException;
 
-import org.neo4j.test.extension.StatefullFieldExtension;
+import org.neo4j.test.extension.StatefulFieldExtension;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.utils.DumpUtils.threadDump;
 
-public class VerboseExceptionExtension extends StatefullFieldExtension<Void> implements TestExecutionExceptionHandler
+public class VerboseExceptionExtension extends StatefulFieldExtension<Void> implements TestExecutionExceptionHandler
 {
     private static final String VERBOSE_EXCEPTION = "verboseTimeout";
     private static final ExtensionContext.Namespace VERBOSE_EXCEPTION_NAMESPACE = ExtensionContext.Namespace.create( VERBOSE_EXCEPTION );

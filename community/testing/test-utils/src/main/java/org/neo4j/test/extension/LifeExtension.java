@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public class LifeExtension extends StatefullFieldExtension<LifeSupport> implements AfterEachCallback, BeforeEachCallback
+public class LifeExtension extends StatefulFieldExtension<LifeSupport> implements AfterEachCallback, BeforeEachCallback
 {
     private static final String LIFE = "life";
     private static final Namespace LIFE_NAMESPACE = Namespace.create( LIFE );

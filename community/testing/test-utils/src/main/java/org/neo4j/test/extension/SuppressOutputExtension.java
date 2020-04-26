@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 import org.neo4j.test.rule.SuppressOutput;
 
-public class SuppressOutputExtension extends StatefullFieldExtension<SuppressOutput> implements BeforeEachCallback, AfterEachCallback
+public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutput> implements BeforeEachCallback, AfterEachCallback
 {
     static final String SUPPRESS_OUTPUT = "suppressOutput";
     static final Namespace SUPPRESS_OUTPUT_NAMESPACE = Namespace.create( SUPPRESS_OUTPUT );

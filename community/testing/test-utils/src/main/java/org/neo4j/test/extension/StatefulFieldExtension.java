@@ -32,7 +32,7 @@ import java.util.List;
 import static java.lang.String.format;
 import static org.neo4j.test.ReflectionUtil.getAllFields;
 
-public abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
+public abstract class StatefulFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
 {
     protected abstract String getFieldKey();
 

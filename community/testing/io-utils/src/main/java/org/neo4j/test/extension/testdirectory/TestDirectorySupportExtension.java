@@ -34,7 +34,7 @@ import java.lang.reflect.Method;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.FileSystemExtension;
-import org.neo4j.test.extension.StatefullFieldExtension;
+import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Boolean.TRUE;
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
-public class TestDirectorySupportExtension extends StatefullFieldExtension<TestDirectory>
+public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDirectory>
         implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback, TestExecutionExceptionHandler
 {
     public static final String TEST_DIRECTORY = "testDirectory";
