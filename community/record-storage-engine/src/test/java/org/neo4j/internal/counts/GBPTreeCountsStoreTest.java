@@ -28,8 +28,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.StandardOpenOption;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -44,6 +47,7 @@ import org.neo4j.counts.CountsVisitor;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -64,8 +68,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
@@ -499,6 +506,42 @@ class GBPTreeCountsStoreTest
 
         // then
         assertFalse( fs.fileExists( file ) );
+    }
+
+    @Test
+    void shouldDeleteAndMarkForRebuildOnCorruptStore() throws Exception
+    {
+        // given
+        try ( CountsAccessor.Updater updater = countsStore.apply( BASE_TX_ID + 1 ) )
+        {
+            updater.incrementNodeCount( LABEL_ID_1, 9 );
+        }
+        closeCountsStore();
+        try ( StoreChannel channel = fs.open( countsStoreFile(), Set.of( StandardOpenOption.WRITE ) ) )
+        {
+            ByteBuffer buffer = ByteBuffer.wrap( new byte[8192] );
+            for ( int i = 0; buffer.hasRemaining(); i++ )
+            {
+                buffer.put( (byte) i );
+            }
+            buffer.flip();
+            channel.writeAll( buffer, 0 );
+        }
+
+        // when
+        CountsBuilder countsBuilder = mock( CountsBuilder.class );
+        when( countsBuilder.lastCommittedTxId() ).thenReturn( BASE_TX_ID );
+        doAnswer( invocationOnMock ->
+        {
+            CountsAccessor.Updater updater = invocationOnMock.getArgument( 0, CountsAccessor.Updater.class );
+            updater.incrementNodeCount( LABEL_ID_1, 3 );
+            return null;
+        } ).when( countsBuilder ).initialize( any() );
+        openCountsStore( countsBuilder );
+
+        // then rebuild store instead of throwing exception
+        verify( countsBuilder ).initialize( any() );
+        assertEquals( 3, countsStore.nodeCount( LABEL_ID_1 ) );
     }
 
     private void incrementNodeCount( long txId, int labelId, int delta )
