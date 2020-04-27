@@ -26,12 +26,19 @@ sealed abstract class Argument extends Product {
   def name: String = productPrefix
 }
 
+case class PrettyString private[plandescription](prettifiedString: String) {
+  override def toString: String = prettifiedString
+}
+
 object Arguments {
+
   object Details {
-    def apply(details: String): Details = Details(Seq(details))
+    def apply(details: PrettyString): Details = {
+      Details(Seq(details))
+    }
   }
 
-  case class Details(info: Seq[String]) extends Argument
+  case class Details(info: Seq[PrettyString]) extends Argument
 
   case class Time(value: Long) extends Argument
 

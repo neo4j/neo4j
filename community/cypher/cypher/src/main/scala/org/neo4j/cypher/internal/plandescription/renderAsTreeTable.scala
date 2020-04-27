@@ -178,7 +178,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)), columns)
     case Order(providedOrder) => mapping(ORDER, Left(PlanDescriptionArgumentSerializer.serializeProvidedOrder(providedOrder)), columns)
     case Details(detailsList) => {
-      val truncatedDetails = formatDetails(detailsList.toList, MAX_DETAILS_COLUMN_WIDTH)
+      val truncatedDetails = formatDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
       mapping(DETAILS, Left(truncatedDetails), columns)
     }
     case _ => None

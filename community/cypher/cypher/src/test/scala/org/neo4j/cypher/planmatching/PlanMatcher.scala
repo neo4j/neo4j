@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.NoChildren
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionImpl
+import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.neo4j.cypher.internal.plandescription.SingleChild
 import org.neo4j.cypher.internal.plandescription.TwoChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -401,7 +402,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val dbHitsArg = dbHits.map(m => DbHits(m.expectedValue)).toSeq
     val orderArg = order.map(m => Order(m.expected)).toSeq
     val otherArgs = other
-      .map(_.expected.toSeq.map(str => Details(PlanDescriptionArgumentSerializer.asPrettyString(JustForToStringExpression(str)))))
+      .map(_.expected.toSeq.map(str => Details(PrettyStringCreator(JustForToStringExpression(str)))))
       .getOrElse(Seq.empty)
 
     val children = (lhsDesc, rhsDesc) match {

@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -238,7 +239,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("single node is represented nicely") {
     val arguments = Seq(
-      Details("details"),
+      details("details"),
       Rows(42),
       DbHits(33),
       EstimatedRows(1))
@@ -256,7 +257,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("extra details are not a problem") {
     val arguments = Seq(
-      Details(Seq("a", "b")),
+      details(Seq("a", "b")),
       Rows(42),
       DbHits(33),
       EstimatedRows(1))
@@ -274,7 +275,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("super many details stretches the column") {
     val arguments = Seq(
-      Details(Seq("aaaaa", "bbbbb", "ccccc", "ddddd", "eeeee", "fffff")),
+      details(Seq("aaaaa", "bbbbb", "ccccc", "ddddd", "eeeee", "fffff")),
       Rows(42),
       DbHits(33),
       EstimatedRows(1))
@@ -306,7 +307,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("pipeline information is rendered in correct column") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
-    val args2 = Seq(Rows(2), DbHits(633), Details("Index stuff"), PipelineInfo(52, true), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), details("Index stuff"), PipelineInfo(52, true), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))
@@ -324,7 +325,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("plan information is rendered on the corresponding row to the tree") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
-    val args2 = Seq(Rows(2), DbHits(633), Details("Index stuff"), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), details("Index stuff"), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))
@@ -362,7 +363,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       Rows(42),
       DbHits(33),
       Planner("COST"),
-      Details("`id`"),
+      details("`id`"),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(id, "NAME", NoChildren, arguments, Set("n"))
@@ -381,7 +382,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       "NodeByLabelScan",
       NoChildren,
       Seq(
-        Details("n:Foo"),
+        details("n:Foo"),
         EstimatedRows(0.00123456789)),
       Set.empty)
     val planDescr2 = PlanDescriptionImpl(
@@ -389,7 +390,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       "NodeByLabelScan",
       NoChildren,
       Seq(
-        Details("n:Foo"),
+        details("n:Foo"),
         EstimatedRows(1.23456789)),
       Set.empty)
 
@@ -525,7 +526,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   test("compact only the sufficiently similar pair of two similar pairs of nodes with many repeating variables") {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
 
-    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details("var_a:123")), Set())
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details("var_a:123")), Set())
     val p1 = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq.empty, repeating)
     val p2 = PlanDescriptionImpl(id, "OPERATOR", SingleChild(p1), Seq.empty, repeating + "var_A" + "var_B")
     val p3 = PlanDescriptionImpl(id, "OPERATOR", SingleChild(p2), Seq.empty, Set("var_a"))
@@ -545,7 +546,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("compact only the sufficiently similar pair of two similar pairs of nodes with many repeating variables and many columns") {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
-    val l = Details("var_a:123")
+    val l = details("var_a:123")
     val t = Time(12345678)
     val r = Rows(2)
     val d = DbHits(2)
@@ -570,7 +571,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("do not compact two similar pairs of nodes with non-empty detail column and many repeating variables and many columns") {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
-    val l = Details("var_a:123")
+    val l = details("var_a:123")
     val t = Time(12345678)
     val r = Rows(2)
     val d = DbHits(2)
@@ -673,8 +674,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   }
 
   test("should compact long details rows") {
-    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details((0 until 100).map(_.toString))), Set())
-    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(Details((0 until 5).map(_.toString))), Set())
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details((0 until 100).map(_.toString))), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
       """+----------+---------------------------------------------------------------------------------------------------+
