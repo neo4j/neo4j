@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
@@ -47,6 +48,7 @@ import scala.collection.mutable.ArrayBuffer
 object renderAsTreeTable extends (InternalPlanDescription => String) {
   val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
   val OPERATOR = "Operator"
+  val DETAILS = "Details"
   private val ESTIMATED_ROWS = "Estimated Rows"
   private val ROWS = "Rows"
   private val HITS = "DB Hits"
@@ -56,12 +58,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val PAGE_CACHE_HIT_RATIO = "Page Cache Hit Ratio"
   private val TIME = "Time (ms)"
   private val ORDER = "Order"
-  val VARIABLES = "Variables"
-  val MAX_VARIABLE_COLUMN_WIDTH = 100
+  val MAX_DETAILS_COLUMN_WIDTH = 100
   private val OTHER = "Other"
-  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
-    ORDER, VARIABLES, OTHER)
+  private val HEADERS = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
+    ORDER, OTHER)
   private val newLine = System.lineSeparator()
+  private val SEPARATOR = ", "
+  private val ELLIPSIS = "..."
+  private val SUFFIX = s"$SEPARATOR$ELLIPSIS"
 
   def apply(plan: InternalPlanDescription): String = {
 
@@ -69,14 +73,11 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     val lines = accumulate(plan, columns)
 
     def compactLine(line: Line, previous: Seq[(Line, CompactedLine)]) = {
-      val repeatedVariables = if (previous.nonEmpty) previous.head._1.variables.intersect(line.variables) else Set.empty[String]
-      CompactedLine(line, repeatedVariables)
+      CompactedLine(line)
     }
 
     val compactedLines = lines.reverse.foldLeft(Seq.empty[(Line, CompactedLine)]) { (acc, line) =>
       val compacted = compactLine(line, acc)
-      if (compacted.formattedVariables.nonEmpty)
-        update(columns, VARIABLES, compacted.formattedVariables.length)
       (line, compacted) +: acc
     } map (_._2)
 
@@ -105,7 +106,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       result.append("+").append(newLine)
     }
 
-    for ( line <- Seq(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap, Set(VARIABLES))) ++ compactedLines ) {
+    for ( line <- Seq(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap)) ++ compactedLines ) {
       divider(line)
       for ( header <- headers ) {
         val detail = line(header)
@@ -137,7 +138,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
       val line = level.line + plan.name
       mapping(OPERATOR, Left(line), columns)
-      lines.append(Line(line, details(plan, columns), plan.variables, level.connector))
+      lines.append(Line(line, operatorDetails(plan, columns), level.connector))
       plan.children match {
         case NoChildren =>
         case SingleChild(inner) => stack.push((compactPlan(inner), level.child))
@@ -154,8 +155,11 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     def compactPlanAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription):
     Seq[InternalPlanDescription] = {
       plan.children match {
-        case SingleChild(inner) if otherFields(plan).isEmpty && otherFields(inner).isEmpty && inner.name == plan.name =>
-          compactPlanAcc(acc :+ plan, inner)
+        case SingleChild(inner) if !plan.arguments.exists(_.isInstanceOf[Details]) &&
+                                   !inner.arguments.exists(_.isInstanceOf[Details]) &&
+                                   otherFields(plan).isEmpty &&
+                                   otherFields(inner).isEmpty &&
+                                   inner.name == plan.name => compactPlanAcc(acc :+ plan, inner)
         case _ => acc :+ plan
       }
     }
@@ -163,7 +167,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     CompactedPlanDescription.create(similar)
   }
 
-  private def details(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Justified] = description.arguments.flatMap {
+  private def operatorDetails(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Justified] = description.arguments.flatMap {
     case EstimatedRows(count) => mapping(ESTIMATED_ROWS, Right(format(count)), columns)
     case Rows(count) => mapping(ROWS, Right(count.toString), columns)
     case DbHits(count) => mapping(HITS, Right(count.toString), columns)
@@ -173,9 +177,41 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)), columns)
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)), columns)
     case Order(providedOrder) => mapping(ORDER, Left(PlanDescriptionArgumentSerializer.serializeProvidedOrder(providedOrder)), columns)
+    case Details(detailsList) => {
+      val truncatedDetails = formatDetails(detailsList.toList, MAX_DETAILS_COLUMN_WIDTH)
+      mapping(DETAILS, Left(truncatedDetails), columns)
+    }
     case _ => None
   }.toMap + (
     OTHER -> Left(other(description, columns)))
+
+  protected[plandescription] def formatDetails(details: List[String], length: Int): String = {
+    if (details.isEmpty) ""
+    else if (details.head.length > length) details.head.substring(0, length - ELLIPSIS.length) + ELLIPSIS
+    else rest("", details, length)
+  }
+
+  @scala.annotation.tailrec
+  private def rest(alreadyFormatted: String, list: List[String], remainingLength: Int): String = {
+    list match {
+      case Nil => alreadyFormatted ++ ""
+      case head :: Nil =>
+        if (head.length > remainingLength) alreadyFormatted ++ ELLIPSIS
+        else alreadyFormatted ++ head
+      case head :: last :: Nil =>
+        if (head.length + SEPARATOR.length + last.length > remainingLength && head.length + SUFFIX.length > remainingLength)
+          // We can't fit "head, last", and we can't fit "head, ..." either. Since there is nothing to come after last, we can add head unless both cases do not fit.
+          alreadyFormatted ++ ELLIPSIS
+        else
+          rest(alreadyFormatted ++ head ++ SEPARATOR, List(last), remainingLength - head.length - SEPARATOR.length)
+      case head :: next :: tail =>
+        if (head.length + SEPARATOR.length + next.length > remainingLength || head.length + SUFFIX.length > remainingLength)
+          // Either "head, next" or "head, ..." does not fit. Since there is more to come after next, we have to stop in either cases.
+          alreadyFormatted ++ ELLIPSIS
+        else
+          rest(alreadyFormatted ++ head ++ SEPARATOR, next :: tail, remainingLength - head.length - SEPARATOR.length)
+    }
+  }
 
   private def mapping(key: String, value: Justified, columns: mutable.Map[String,Int]) = {
     update(columns, key, value.length)
@@ -206,7 +242,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[ByteCode] &&
         !x.isInstanceOf[Time] &&
         !x.isInstanceOf[RuntimeImpl] &&
-        !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
+        !x.isInstanceOf[Version] &&
+        !x.isInstanceOf[Details] => PlanDescriptionArgumentSerializer.serialize(x)
     }
   }
 
@@ -225,67 +262,18 @@ trait LineDetails extends (String => Justified) {
   def connection: Option[String]
 }
 
-case class Line(tree: String, details: Map[String, Justified], variables: Set[String], connection: Option[String] =
-None) extends LineDetails {
+case class Line(tree: String, allColumns: Map[String, Justified], connection: Option[String] = None) extends LineDetails {
   def apply(key: String): Justified = if (key == renderAsTreeTable.OPERATOR) {
     Left(tree)
   } else {
-    details.getOrElse(key, Left(""))
+    allColumns.getOrElse(key, Left(""))
   }
 }
 
-case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails {
-  val varSep = ", "
-  val typeSep = " -- "
-  val suffix = ", ..."
-  val formattedVariables: String = formatVariables(renderAsTreeTable.MAX_VARIABLE_COLUMN_WIDTH)
-
-  def apply(key: String): Justified = if (key == renderAsTreeTable.VARIABLES)
-    Left(formattedVariables)
-  else
-    line(key)
+case class CompactedLine(line: Line) extends LineDetails {
+  def apply(key: String): Justified = line(key)
 
   def connection: Option[String] = line.connection
-
-  private def formattedVars(vars: List[String], prefix: String = "") = vars match {
-    case v :: Nil => List(prefix + v)
-    case v :: tail => List(prefix + v) ++ tail.map(v => varSep + v)
-    case _ => vars
-  }
-
-  def formatVariables(length: Int): String = {
-    val newVars = (line.variables -- repeated).toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
-    val oldVars = repeated.toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
-    val all = if(newVars.nonEmpty)
-      formattedVars(newVars) ++ formattedVars(oldVars, typeSep)
-    else
-      formattedVars(oldVars)
-    all.length match {
-      case 0 => ""
-      case 1 => all.head
-      case _ => all.head + formatting(all.tail, length - all.head.length)
-    }
-  }
-
-  private def formatWithTail(variable: String, tail: List[String], length: Int) =
-    if (variable.length + tail.head.length + (if (tail.length > 1) suffix.length else 0) <= length)
-      variable + formatting(tail, length - variable.length)
-    else if (variable.length + suffix.length <= length)
-      variable + suffix
-    else
-      suffix
-
-  private def formatting(variables: List[String], length: Int): String =
-    variables match {
-      case variable :: Nil =>
-        if (variable.length <= length)
-          variable
-        else
-          suffix
-      case variable :: tail => formatWithTail(variable, tail, length)
-      case _ => ""
-    }
-
 }
 
 sealed abstract class Justified(text:String) {

@@ -191,19 +191,19 @@ case class Prettifier(
 
       case CreateIndexNewSyntax(variable, LabelName(label), properties, Some(name), _) =>
         val propString = properties.map(p => s"${p.map.asInstanceOf[Variable].name}.${p.propertyKey.name}").mkString("(", ", ", ")")
-        s"CREATE INDEX ${Prettifier.escapeName(name)} FOR (${variable.name}:$label) ON $propString"
+        s"CREATE INDEX ${ExpressionStringifier.backtick(name)} FOR (${variable.name}:$label) ON $propString"
 
       case DropIndex(LabelName(label), properties, _) =>
         s"DROP INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
 
       case DropIndexOnName(name, _) =>
-        s"DROP INDEX ${Prettifier.escapeName(name)}"
+        s"DROP INDEX ${ExpressionStringifier.backtick(name)}"
 
       case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, None, _) =>
         s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
 
       case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, Some(name), _) =>
-        s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
+        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS NODE KEY"
@@ -212,7 +212,7 @@ case class Prettifier(
         s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
       case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, Some(name), _) =>
-        s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
@@ -221,7 +221,7 @@ case class Prettifier(
         s"CREATE CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
       case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, Some(name), _) =>
-        s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
+        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
         s"DROP CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
@@ -230,13 +230,13 @@ case class Prettifier(
         s"CREATE CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
       case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, Some(name), _) =>
-        s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
+        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
         s"DROP CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
       case DropConstraintOnName(name, _) =>
-        s"DROP CONSTRAINT ${Prettifier.escapeName(name)}"
+        s"DROP CONSTRAINT ${ExpressionStringifier.backtick(name)}"
     }
     useString + commandString
   }
@@ -739,7 +739,7 @@ object Prettifier {
 
   def extractLabelScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): String = {
     val labelNames = qualifier match {
-      case LabelsQualifier(names) => names.map(escapeName).mkString(", ")
+      case LabelsQualifier(names) => names.map(ExpressionStringifier.backtick(_)).mkString(", ")
       case LabelAllQualifier() => "*"
     }
     val (dbString, _, multipleDbs) = extractDbScope(dbScope)
@@ -749,8 +749,8 @@ object Prettifier {
 
   def extractScope(resource: ActionResource, dbScope: List[GraphScope], qualifier: PrivilegeQualifier): (String, String) = {
     val resourceName = resource match {
-      case PropertyResource(name) => escapeName(name)
-      case PropertiesResource(names) => names.map(escapeName).mkString(", ")
+      case PropertyResource(name) => ExpressionStringifier.backtick(name)
+      case PropertiesResource(names) => names.map(ExpressionStringifier.backtick(_)).mkString(", ")
       case AllResource() => "*"
       case _ => "<unknown>"
     }
@@ -783,11 +783,11 @@ object Prettifier {
   }
 
   def extractQualifierPart(qualifier: PrivilegeQualifier): String = qualifier match {
-    case LabelQualifier(name)          => "NODE " + escapeName(name)
-    case LabelsQualifier(names)        => "NODES " + names.map(escapeName).mkString(", ")
+    case LabelQualifier(name)          => "NODE " + ExpressionStringifier.backtick(name)
+    case LabelsQualifier(names)        => "NODES " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
     case LabelAllQualifier()           => "NODES *"
-    case RelationshipQualifier(name)   => "RELATIONSHIP " + escapeName(name)
-    case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
+    case RelationshipQualifier(name)   => "RELATIONSHIP " + ExpressionStringifier.backtick(name)
+    case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
     case RelationshipAllQualifier()    => "RELATIONSHIPS *"
     case ElementsAllQualifier()        => "ELEMENTS *"
     case UsersQualifier(names)         => "(" + names.map(escapeName).mkString(", ") + ")"
@@ -804,33 +804,15 @@ object Prettifier {
     case namedGraphScopes => (escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name }), false, true)
   }
 
-  /*
-   * Some strings (identifiers) were escaped with back-ticks to allow non-identifier characters
-   * When printing these again, the knowledge of the back-ticks is lost, but the same test for
-   * non-identifier characters can be used to recover that knowledge.
-   */
-  def escapeName(name: String): String = {
-    if (name.isEmpty)
-      name
-    else {
-      val c = name.chars().toArray.toSeq
-      if (Character.isJavaIdentifierStart(c.head) && Character.getType(c.head) != Character.CURRENCY_SYMBOL &&
-        (c.tail.isEmpty || c.tail.forall(Character.isJavaIdentifierPart)))
-        name
-      else
-        s"`$name`"
-    }
-  }
-
   def escapeName(name: Either[String, Parameter]): String = name match {
-    case Left(s) => escapeName(s)
-    case Right(p) => s"$$${escapeName(p.name)}"
+    case Left(s) => ExpressionStringifier.backtick(s)
+    case Right(p) => s"$$${ExpressionStringifier.backtick(p.name)}"
   }
 
   def escapePassword(password: Expression): String = password match {
     case _: SensitiveStringLiteral => "'******'"
     case _: SensitiveAutoParameter => "'******'"
-    case param: Parameter => s"$$${escapeName(param.name)}"
+    case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
   }
 
   def escapeNames(names: Seq[Either[String, Parameter]]): String = names.map(escapeName).mkString(", ")
