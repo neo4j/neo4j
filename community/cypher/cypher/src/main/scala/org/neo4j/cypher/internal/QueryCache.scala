@@ -372,6 +372,10 @@ object QueryCache {
           }
       }
     }
+
+    // Implemented to simplify testing
+    override def toString: String =
+      scala.collection.JavaConverters.mapAsScalaMap(resultMap).toString
   }
 
   object ParameterTypeMap {
