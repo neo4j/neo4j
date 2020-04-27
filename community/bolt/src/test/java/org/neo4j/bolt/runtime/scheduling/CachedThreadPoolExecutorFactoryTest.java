@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -39,24 +38,22 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory.SYNCHRONOUS_QUEUE;
 import static org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory.UNBOUNDED_QUEUE;
 
-@RunWith( Parameterized.class )
 public class CachedThreadPoolExecutorFactoryTest
 {
     private static final int TEST_BOUNDED_QUEUE_SIZE = 5;
@@ -64,20 +61,14 @@ public class CachedThreadPoolExecutorFactoryTest
     private final ExecutorFactory factory = new CachedThreadPoolExecutorFactory();
     private ExecutorService executorService;
 
-    @Parameter( 0 )
-    public int queueSize;
-
-    @Parameter( 1 )
-    public String name;
-
-    @Parameters( name = "{1}" )
-    public static List<Object[]> parameters()
+    private static Stream<Arguments> argumentsProvider()
     {
-        return Arrays.asList( new Object[]{UNBOUNDED_QUEUE, "Unbounded Queue"}, new Object[]{SYNCHRONOUS_QUEUE, "Synchronous Queue"},
-                new Object[]{TEST_BOUNDED_QUEUE_SIZE, "Bounded Queue"} );
+        return Stream.of( Arguments.of( UNBOUNDED_QUEUE, "Unbounded Queue" ), Arguments.of( SYNCHRONOUS_QUEUE, "Synchronous Queue" ),
+                Arguments.of( TEST_BOUNDED_QUEUE_SIZE, "Bounded Queue" ) );
+
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( executorService != null && !executorService.isTerminated() )
@@ -86,8 +77,9 @@ public class CachedThreadPoolExecutorFactoryTest
         }
     }
 
-    @Test
-    public void createShouldAssignCorrectQueue()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void createShouldAssignCorrectQueue( int queueSize, String name )
     {
         executorService = factory.create( 0, 1, Duration.ZERO, queueSize, false, newThreadFactory() );
 
@@ -114,8 +106,9 @@ public class CachedThreadPoolExecutorFactoryTest
         }
     }
 
-    @Test
-    public void createShouldCreateExecutor()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void createShouldCreateExecutor( int queueSize, String name )
     {
         executorService = factory.create( 0, 1, Duration.ZERO, queueSize, false, newThreadFactory() );
 

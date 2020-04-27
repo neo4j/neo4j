@@ -19,17 +19,19 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -43,75 +45,73 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
-@RunWith( Parameterized.class )
 public class DiscoveryServiceTest
 {
-    @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<Object[]> data()
+    private static Stream<Arguments> argumentsProvider()
     {
-        List<Object[]> cases = new ArrayList<>();
+        List<Arguments> cases = new ArrayList<>();
 
         // Default config
-        cases.add( new Object[]{"http://localhost:7474", "http://localhost:7474", null, null, "bolt://localhost:7687"} );
-        cases.add( new Object[]{"https://localhost:7473", "https://localhost:7473", null, null, "bolt://localhost:7687"} );
-        cases.add( new Object[]{"http://www.example.com", "http://www.example.com", null, null, "bolt://www.example.com:7687"} );
+        cases.add( Arguments.of( "http://localhost:7474", "http://localhost:7474", null, null, "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "https://localhost:7473", "https://localhost:7473", null, null, "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "http://www.example.com", "http://www.example.com", null, null, "bolt://www.example.com:7687" ) );
 
         // Default config + default listen address 0.0.0.0
-        cases.add( new Object[]{"http://localhost:7474 - 0.0.0.0", "http://localhost:7474", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
-                "bolt://localhost:7687"} );
-        cases.add( new Object[]{"https://localhost:7473 - 0.0.0.0", "https://localhost:7473", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
-                "bolt://localhost:7687"} );
-        cases.add( new Object[]{"http://www.example.com - 0.0.0.0", "http://www.example.com", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
-                "bolt://www.example.com:7687"} );
+        cases.add( Arguments.of( "http://localhost:7474 - 0.0.0.0", "http://localhost:7474", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
+                "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "https://localhost:7473 - 0.0.0.0", "https://localhost:7473", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
+                "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "http://www.example.com - 0.0.0.0", "http://www.example.com", null, overrideWithDefaultListenAddress( "0.0.0.0" ),
+                "bolt://www.example.com:7687" ) );
 
         // Default config + default listen address ::
         cases.add(
-                new Object[]{"http://localhost:7474 - ::", "http://localhost:7474", null, overrideWithDefaultListenAddress( "::" ), "bolt://localhost:7687"} );
-        cases.add( new Object[]{"https://localhost:7473 - ::", "https://localhost:7473", null, overrideWithDefaultListenAddress( "::" ),
-                "bolt://localhost:7687"} );
-        cases.add( new Object[]{"http://www.example.com - ::", "http://www.example.com", null, overrideWithDefaultListenAddress( "::" ),
-                "bolt://www.example.com:7687"} );
+                Arguments.of( "http://localhost:7474 - ::", "http://localhost:7474", null, overrideWithDefaultListenAddress( "::" ), "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "https://localhost:7473 - ::", "https://localhost:7473", null, overrideWithDefaultListenAddress( "::" ),
+                "bolt://localhost:7687" ) );
+        cases.add( Arguments.of( "http://www.example.com - ::", "http://www.example.com", null, overrideWithDefaultListenAddress( "::" ),
+                "bolt://www.example.com:7687" ) );
 
         // Default config + bolt listen address [::]:8888
-        cases.add( new Object[]{"http://localhost:7474 - [::]:8888", "http://localhost:7474", null,
-                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://localhost:8888"} );
-        cases.add( new Object[]{"https://localhost:7473 - [::]:8888", "https://localhost:7473", null,
-                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://localhost:8888"} );
-        cases.add( new Object[]{"http://www.example.com - [::]:8888", "http://www.example.com", null,
-                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://www.example.com:8888"} );
+        cases.add( Arguments.of( "http://localhost:7474 - [::]:8888", "http://localhost:7474", null,
+                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://localhost:8888" ) );
+        cases.add( Arguments.of( "https://localhost:7473 - [::]:8888", "https://localhost:7473", null,
+                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://localhost:8888" ) );
+        cases.add( Arguments.of( "http://www.example.com - [::]:8888", "http://www.example.com", null,
+                combineConfigOverriders( overrideWithDefaultListenAddress( "::" ), overrideWithListenAddress( "::", 8888 ) ), "bolt://www.example.com:8888" ) );
 
         // Default config + advertised address
         cases.add(
-                new Object[]{"http://www.example.com (advertised 1)", "http://www.example.com", null, overrideWithAdvertisedAddress( "www.example.com", 8898 ),
-                        "bolt://www.example.com:8898"} );
+                Arguments.of( "http://www.example.com (advertised 1)", "http://www.example.com", null, overrideWithAdvertisedAddress( "www.example.com", 8898 ),
+                        "bolt://www.example.com:8898" ) );
         cases.add(
-                new Object[]{"http://www.example.com (advertised 2)", "http://www.example.com", null, overrideWithAdvertisedAddress( "www2.example.com", 7576 ),
-                        "bolt://www2.example.com:7576"} );
+                Arguments.of( "http://www.example.com (advertised 2)", "http://www.example.com", null, overrideWithAdvertisedAddress( "www2.example.com", 7576 ),
+                        "bolt://www2.example.com:7576" ) );
 
         // Default config + advertised address with port 0
-        cases.add( new Object[]{"http://www.example.com (advertised 3)", "http://www.example.com", register( "bolt", "localhost", 9999 ),
-                overrideWithAdvertisedAddress( "www2.example.com", 0 ), "bolt://www2.example.com:9999"} );
+        cases.add( Arguments.of( "http://www.example.com (advertised 3)", "http://www.example.com", register( "bolt", "localhost", 9999 ),
+                overrideWithAdvertisedAddress( "www2.example.com", 0 ), "bolt://www2.example.com:9999" ) );
 
         // Default config + discoverable address
-        cases.add( new Object[]{"http://www.example.com (discoverable 1)", "http://www.example.com", null,
-                overrideWithDiscoverable( "bolt://www.notanexample.com:7777" ), "bolt://www.notanexample.com:7777"} );
-        cases.add( new Object[]{"http://www.example.com (discoverable 2)", "http://www.example.com", null,
-                overrideWithDiscoverable( "something://www.notanexample.com:7777" ), "something://www.notanexample.com:7777"} );
+        cases.add( Arguments.of( "http://www.example.com (discoverable 1)", "http://www.example.com", null,
+                overrideWithDiscoverable( "bolt://www.notanexample.com:7777" ), "bolt://www.notanexample.com:7777" ) );
+        cases.add( Arguments.of( "http://www.example.com (discoverable 2)", "http://www.example.com", null,
+                overrideWithDiscoverable( "something://www.notanexample.com:7777" ), "something://www.notanexample.com:7777" ) );
 
         // Default config + discoverable address + advertised address
-        cases.add( new Object[]{"http://www.example.com (discoverable and advertised 1)", "http://www.example.com", null,
+        cases.add( Arguments.of( "http://www.example.com (discoverable and advertised 1)", "http://www.example.com", null,
                 combineConfigOverriders( overrideWithDiscoverable( "bolt://www.notanexample.com:7777" ),
-                        overrideWithAdvertisedAddress( "www.notanexample2.com", 8888 ) ), "bolt://www.notanexample.com:7777"} );
-        cases.add( new Object[]{"http://www.example.com (discoverable and advertised 2)", "http://www.example.com", null,
+                        overrideWithAdvertisedAddress( "www.notanexample2.com", 8888 ) ), "bolt://www.notanexample.com:7777" ) );
+        cases.add( Arguments.of( "http://www.example.com (discoverable and advertised 2)", "http://www.example.com", null,
                 combineConfigOverriders( overrideWithAdvertisedAddress( "www.notanexample2.com", 8888 ),
-                        overrideWithDiscoverable( "bolt://www.notanexample.com:7777" ) ), "bolt://www.notanexample.com:7777"} );
+                        overrideWithDiscoverable( "bolt://www.notanexample.com:7777" ) ), "bolt://www.notanexample.com:7777" ) );
 
-        return cases;
+        return cases.stream();
     }
 
     private final ConnectorPortRegister portRegistry = mock( ConnectorPortRegister.class );
@@ -124,8 +124,8 @@ public class DiscoveryServiceTest
     private String expectedDatabaseUri;
     private String expectedBoltUri;
 
-    public DiscoveryServiceTest( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
-            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Throwable
+    public void init( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws URISyntaxException
     {
         this.baseUri = new URI( baseUri );
         this.dbUri = new URI( "/db" );
@@ -134,11 +134,7 @@ public class DiscoveryServiceTest
 
         this.expectedDatabaseUri = this.baseUri.resolve( this.dbUri ).toString();
         this.expectedBoltUri = expectedBoltUri;
-    }
 
-    @Before
-    public void setUp()
-    {
         if ( portRegistryOverrider != null )
         {
             portRegistryOverrider.accept( portRegistry );
@@ -174,10 +170,14 @@ public class DiscoveryServiceTest
                 communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ) );
     }
 
-    @Test
-    public void shouldReturnValidJSON() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnValidJSON( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
+        init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
+
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
@@ -193,36 +193,52 @@ public class DiscoveryServiceTest
         return uriInfo;
     }
 
-    @Test
-    public void shouldReturnBoltDirectURI() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnBoltDirectURI( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
+        init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
+
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json ).contains( "\"bolt_direct\" : \"" + expectedBoltUri );
     }
 
-    @Test
-    public void shouldReturnTxURI() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnTxURI( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
+        init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
+
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json ).contains( "\"transaction\" : \"" + expectedDatabaseUri + "/" );
     }
 
-    @Test
-    public void shouldNotReturnManagementURI() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldNotReturnManagementURI( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Exception
     {
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
+        init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
+
+        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json ).doesNotContain( "\"management\"" );
     }
 
-    @Test
-    public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
+            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Exception
     {
+        init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
+
         Config config = Config.defaults( ServerSettings.browser_path, URI.create( "/browser/" ) );
 
-        String baseUri = "http://www.example.com:5435";
+        baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ) ),
                 communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ) );
 

@@ -23,8 +23,4 @@ import org.neo4j.kernel.api.index.IndexProviderApprovalTest;
 
 public class DatabaseIndexIndexProviderApprovalTest extends IndexProviderApprovalTest
 {
-    public DatabaseIndexIndexProviderApprovalTest( TestValue value )
-    {
-        super( value );
-    }
 }

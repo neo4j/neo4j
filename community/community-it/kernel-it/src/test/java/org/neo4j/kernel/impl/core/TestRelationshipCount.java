@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -51,37 +51,30 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@RunWith( Parameterized.class )
 public class TestRelationshipCount
 {
     private static DatabaseManagementService managementService;
 
-    @Parameterized.Parameters( name = "denseNodeThreshold={0}" )
-    public static Collection<Object[]> data()
+    private static Stream<Arguments> argumentsProvider()
     {
-        Collection<Object[]> data = new ArrayList<>();
         int max = GraphDatabaseSettings.dense_node_threshold.defaultValue();
-        for ( int i = 1; i < max; i++ )
-        {
-            data.add( new Object[] {i} );
-        }
-        return data;
+        return IntStream.range( 1, max ).mapToObj( Arguments::of );
     }
 
     private static GraphDatabaseAPI db;
     private Transaction tx;
 
-    @AfterClass
+    @AfterAll
     public static void shutdownDb()
     {
         managementService.shutdown();
     }
 
-    public TestRelationshipCount( final int denseNodeThreshold )
+    public void init( final int denseNodeThreshold )
     {
         // This code below basically turns "db" into a ClassRule, but per dense node threshold
         if ( db == null || db.getDependencyResolver().resolveDependency( Config.class )
@@ -95,11 +88,37 @@ public class TestRelationshipCount
                         .setConfig( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold ).build();
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         }
+
+        newTransaction();
     }
 
-    @Test
-    public void convertNodeToDense()
+    public void newTransaction()
     {
+        if ( tx != null )
+        {
+            closeTransaction();
+        }
+        tx = getGraphDb().beginTx();
+    }
+
+    @AfterEach
+    public void closeTransaction()
+    {
+        assert tx != null;
+        tx.commit();
+    }
+
+    private GraphDatabaseService getGraphDb()
+    {
+        return db;
+    }
+
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void convertNodeToDense( int denseNodeThreshold )
+    {
+        init( denseNodeThreshold );
+
         Node node = tx.createNode();
         EnumMap<MyRelTypes,Set<Relationship>> rels = new EnumMap<>( MyRelTypes.class );
         for ( MyRelTypes type : MyRelTypes.values() )
@@ -136,15 +155,21 @@ public class TestRelationshipCount
         return result;
     }
 
-    @Test
-    public void testGetRelationshipTypesOnDiscreteNode()
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void testGetRelationshipTypesOnDiscreteNode( int denseNodeThreshold )
     {
+        init( denseNodeThreshold );
+
         testGetRelationshipTypes( tx.createNode(), new HashSet<>() );
     }
 
-    @Test
-    public void testGetRelationshipTypesOnDenseNode()
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void testGetRelationshipTypesOnDenseNode( int denseNodeThreshold )
     {
+        init( denseNodeThreshold );
+
         Node node = tx.createNode();
         Node otherNode = tx.createNode();
         for ( int i = 0; i < 300; i++ )
@@ -212,9 +237,12 @@ public class TestRelationshipCount
         };
     }
 
-    @Test
-    public void withoutLoops()
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void withoutLoops( int denseNodeThreshold )
     {
+        init( denseNodeThreshold );
+
         Node node1 = tx.createNode();
         Node node2 = tx.createNode();
         assertEquals( 0, node1.getDegree() );
@@ -286,9 +314,12 @@ public class TestRelationshipCount
         newTransaction();
     }
 
-    @Test
-    public void withLoops()
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void withLoops( int denseNodeThreshold )
     {
+        init( denseNodeThreshold );
+
         // Just to make sure it doesn't work by accident what with ids aligning with count
         for ( int i = 0; i < 10; i++ )
         {
@@ -318,9 +349,12 @@ public class TestRelationshipCount
         assertEquals( 1, node.getDegree() );
     }
 
-    @Test
-    public void ensureRightDegree()
+    @ParameterizedTest( name = "denseNodeThreshold={0}" )
+    @MethodSource( "argumentsProvider" )
+    public void ensureRightDegree( int denseNodeThreshold )
     {
+        init( denseNodeThreshold );
+
         for ( int initialSize : new int[] { 0, 95, 200 } )
         {
             ensureRightDegree( initialSize,
@@ -605,27 +639,5 @@ public class TestRelationshipCount
         {
             this.measure = measure;
         }
-    }
-
-    @Before
-    public void newTransaction()
-    {
-        if ( tx != null )
-        {
-            closeTransaction();
-        }
-        tx = getGraphDb().beginTx();
-    }
-
-    @After
-    public void closeTransaction()
-    {
-        assert tx != null;
-        tx.commit();
-    }
-
-    private GraphDatabaseService getGraphDb()
-    {
-        return db;
     }
 }
