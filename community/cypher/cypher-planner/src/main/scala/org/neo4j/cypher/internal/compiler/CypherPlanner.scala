@@ -57,9 +57,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
     else if (context.debugOptions.contains("tostring"))
-      planPipeLine(sequencer) andThen DebugPrinter
+      planPipeLine(sequencer, readPropertiesFromCursor = context.config.readPropertiesFromCursor) andThen DebugPrinter
     else
-      planPipeLine(sequencer)
+      planPipeLine(sequencer, readPropertiesFromCursor = context.config.readPropertiesFromCursor)
 
     pipeLine.transform(state, context)
   }

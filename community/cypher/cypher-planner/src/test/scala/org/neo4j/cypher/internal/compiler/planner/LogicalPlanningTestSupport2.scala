@@ -98,6 +98,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   self: CypherFunSuite =>
 
   val pushdownPropertyReads: Boolean = true
+  val readPropertiesFromCursor: Boolean = false
 
   val parser = new CypherParser
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
@@ -131,7 +132,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     // if you ever want to have parameters in here, fix the map
     parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty)) andThen
       prepareForCaching andThen
-      planPipeLine(newPlain, pushdownPropertyReads)
+      planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads, readPropertiesFromCursor = readPropertiesFromCursor)
   }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
