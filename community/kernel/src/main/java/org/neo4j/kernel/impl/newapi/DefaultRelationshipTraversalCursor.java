@@ -242,6 +242,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             direction = null;
             filterInitialized = false;
             lazySelection = false;
+            mode = null;
             storeCursor.close();
 
             pool.accept( this );

@@ -182,6 +182,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             labels = null;
             read = null;
             removed = null;
+            accessMode = null;
 
             pool.accept( this );
         }

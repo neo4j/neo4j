@@ -190,6 +190,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
         if ( !isClosed() )
         {
             read = null;
+            accessMode = null;
             storeCursor.reset();
 
             if ( pool != null )

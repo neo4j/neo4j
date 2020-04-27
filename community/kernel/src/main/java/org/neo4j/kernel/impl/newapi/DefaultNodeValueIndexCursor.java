@@ -418,6 +418,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.query = null;
             this.values = null;
             this.read = null;
+            this.accessMode = null;
             this.added = ImmutableEmptyLongIterator.INSTANCE;
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
