@@ -20,14 +20,10 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +58,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
  * Indexes should always produce the same result as scanning all nodes and checking properties. By extending this
  * class in the index provider module, all value types will be checked against the index provider.
  */
-@RunWith( value = Parameterized.class )
 public abstract class IndexProviderApprovalTest
 {
     // These are the values that will be checked.
@@ -125,20 +120,7 @@ public abstract class IndexProviderApprovalTest
     private static Map<TestValue, Set<Object>> noIndexRun;
     private static Map<TestValue, Set<Object>> indexRun;
 
-    private final TestValue currentValue;
-
-    public IndexProviderApprovalTest( TestValue value )
-    {
-        currentValue = value;
-    }
-
-    @Parameters( name = "{0}" )
-    public static Collection<TestValue> data()
-    {
-        return Arrays.asList( TestValue.values() );
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void init()
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
@@ -166,8 +148,9 @@ public abstract class IndexProviderApprovalTest
         return value;
     };
 
-    @Test
-    public void test()
+    @ParameterizedTest
+    @EnumSource( TestValue.class )
+    public void test( TestValue currentValue )
     {
         Set<Object> noIndexResult = Iterables.asSet( noIndexRun.get( currentValue ) );
         Set<Object> indexResult = Iterables.asSet( indexRun.get( currentValue ) );

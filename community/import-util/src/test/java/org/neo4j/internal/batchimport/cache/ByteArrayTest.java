@@ -19,37 +19,30 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
-@RunWith( Parameterized.class )
 public class ByteArrayTest extends NumberArrayPageCacheTestSupport
 {
     private static final byte[] DEFAULT = new byte[50];
     private static final int LENGTH = 1_000;
     private static Fixture fixture;
 
-    @Parameters
-    public static Collection<Supplier<ByteArray>> data() throws IOException
+    private static Stream<Arguments> argumentsProvider() throws IOException
     {
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
@@ -57,45 +50,40 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
-        return Arrays.asList(
-                () -> NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> NumberArrayFactory.OFF_HEAP.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> autoWithPageCacheFallback.newByteArray( LENGTH, DEFAULT ),
-                () -> autoWithPageCacheFallback.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> pageCacheArrayFactory.newByteArray( LENGTH, DEFAULT ),
-                () -> pageCacheArrayFactory.newDynamicByteArray( chunkSize, DEFAULT )
+        return Stream.of(
+                Arguments.of( NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT ) ),
+                Arguments.of( NumberArrayFactory.HEAP.newDynamicByteArray( chunkSize, DEFAULT ) ),
+                Arguments.of( NumberArrayFactory.OFF_HEAP.newByteArray( LENGTH, DEFAULT ) ),
+                Arguments.of( NumberArrayFactory.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT ) ),
+                Arguments.of( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT ) ),
+                Arguments.of( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT ) ),
+                Arguments.of( autoWithPageCacheFallback.newByteArray( LENGTH, DEFAULT ) ),
+                Arguments.of( autoWithPageCacheFallback.newDynamicByteArray( chunkSize, DEFAULT ) ),
+                Arguments.of( pageCacheArrayFactory.newByteArray( LENGTH, DEFAULT ) ),
+                Arguments.of( pageCacheArrayFactory.newDynamicByteArray( chunkSize, DEFAULT ) )
         );
     }
 
-    @AfterClass
+    @AfterAll
     public static void closeFixture() throws Exception
     {
         fixture.close();
     }
 
-    @Parameter
-    public Supplier<ByteArray> factory;
     private ByteArray array;
 
-    @Before
-    public void before()
-    {
-        array = factory.get();
-    }
-
-    @After
+    @AfterEach
     public void after()
     {
         array.close();
     }
 
-    @Test
-    public void shouldSetAndGetBasicTypes()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldSetAndGetBasicTypes( ByteArray array )
     {
+        this.array = array;
+
         int index = 0;
         byte[] actualBytes = new byte[DEFAULT.length];
         byte[] expectedBytes = new byte[actualBytes.length];
@@ -154,9 +142,12 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         assertArrayEquals( actualBytes, scratchBuffer );
     }
 
-    @Test
-    public void shouldDetectMinusOneFor3ByteInts()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldDetectMinusOneFor3ByteInts( ByteArray array )
     {
+        this.array = array;
+
         // WHEN
         array.set3ByteInt( 10, 2, -1 );
         array.set3ByteInt( 10, 5, -1 );
@@ -166,9 +157,12 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         assertEquals( -1L, array.get3ByteInt( 10, 5 ) );
     }
 
-    @Test
-    public void shouldDetectMinusOneFor5ByteLongs()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldDetectMinusOneFor5ByteLongs( ByteArray array )
     {
+        this.array = array;
+
         // WHEN
         array.set5ByteLong( 10, 2, -1 );
         array.set5ByteLong( 10, 7, -1 );
@@ -178,9 +172,12 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         assertEquals( -1L, array.get5ByteLong( 10, 7 ) );
     }
 
-    @Test
-    public void shouldDetectMinusOneFor6ByteLongs()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldDetectMinusOneFor6ByteLongs( ByteArray array )
     {
+        this.array = array;
+
         // WHEN
         array.set6ByteLong( 10, 2, -1 );
         array.set6ByteLong( 10, 8, -1 );
@@ -190,9 +187,12 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         assertEquals( -1L, array.get6ByteLong( 10, 8 ) );
     }
 
-    @Test
-    public void shouldHandleMultipleCallsToClose()
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldHandleMultipleCallsToClose( ByteArray array )
     {
+        this.array = array;
+
         // WHEN
         array.close();
 

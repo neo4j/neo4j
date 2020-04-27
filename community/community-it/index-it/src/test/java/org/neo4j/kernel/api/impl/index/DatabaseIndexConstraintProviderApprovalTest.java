@@ -23,8 +23,4 @@ import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
 
 public class DatabaseIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {
-    public DatabaseIndexConstraintProviderApprovalTest( TestValue value )
-    {
-        super( value );
-    }
 }
