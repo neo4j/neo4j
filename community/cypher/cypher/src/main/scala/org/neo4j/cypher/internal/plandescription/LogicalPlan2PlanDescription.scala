@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.NamedGraphScope
@@ -792,8 +794,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case CreateDatabase(_, dbName) =>
         PlanDescriptionImpl(id, "CreateDatabase", children, Seq(Details(escapeName(dbName))), variables)
 
-      case DropDatabase(_, dbName) =>
-        PlanDescriptionImpl(id, "DropDatabase", children, Seq(Details(escapeName(dbName))), variables)
+      case DropDatabase(_, dbName, additionalAction) =>
+        PlanDescriptionImpl(id, "DropDatabase", children, Seq(Details(Seq(escapeName(dbName), additionalAction.name))), variables)
 
       case StartDatabase(_, dbName) =>
         PlanDescriptionImpl(id, "StartDatabase", children, Seq(Details(escapeName(dbName))), variables)

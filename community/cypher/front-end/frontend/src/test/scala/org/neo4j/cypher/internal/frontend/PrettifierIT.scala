@@ -540,13 +540,19 @@ class PrettifierIT extends CypherFunSuite {
         "CREATE DATABASE `graph.db`",
 
       "catalog DROP database foO_Bar_42" ->
-        "DROP DATABASE foO_Bar_42",
+        "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
       "DROP database $foo" ->
-        "DROP DATABASE $foo",
+        "DROP DATABASE $foo DESTROY DATA",
 
       "catalog DROP database foO_Bar_42 if EXISTS" ->
-        "DROP DATABASE foO_Bar_42 IF EXISTS",
+        "DROP DATABASE foO_Bar_42 IF EXISTS DESTROY DATA",
+
+      "DROP database foO_Bar_42 dump Data" ->
+        "DROP DATABASE foO_Bar_42 DUMP DATA",
+
+      "DROP database foO_Bar_42 Destroy DATA" ->
+        "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
       "catalog start database foO_Bar_42" ->
         "START DATABASE foO_Bar_42",

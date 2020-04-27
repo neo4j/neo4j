@@ -45,34 +45,44 @@ sealed trait AdministrationCommand extends CatalogDDL {
     this.useGraphVar = useGraph
     this
   }
+
   def isReadOnly: Boolean
 
   override def semanticCheck: SemanticCheck =
       requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position) chain
       when(useGraphVar.isDefined)(SemanticError(s"The `USE` clause is not supported for Administration Commands.", position))
 }
+
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = true
+
   def returnColumnNames: List[String]
 
   override def returnColumns: List[LogicalVariable] = returnColumnNames.map(name => Variable(name)(position))
 }
+
 sealed trait WriteAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = false
+
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
 sealed trait MultiGraphDDL extends CatalogDDL {
   override def returnColumns: List[LogicalVariable] = List.empty
+
   //TODO Refine to split between multigraph and views
   override def semanticCheck: SemanticCheck =
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
 trait IfExistsDo
+
 final case class IfExistsReplace() extends IfExistsDo
+
 final case class IfExistsDoNothing() extends IfExistsDo
+
 final case class IfExistsThrowError() extends IfExistsDo
+
 final case class IfExistsInvalidSyntax() extends IfExistsDo
 
 final case class ShowUsers()(val position: InputPosition) extends ReadAdministrationCommand {
@@ -184,7 +194,8 @@ final case class DropRole(roleName: Either[String, Parameter], ifExists: Boolean
       SemanticState.recordCurrentScope(this)
 }
 
-final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])
+                                  (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "GRANT ROLE"
 
@@ -194,7 +205,8 @@ final case class GrantRolesToUsers(roleNames: Seq[Either[String, Parameter]], us
   }
 }
 
-final case class RevokeRolesFromUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class RevokeRolesFromUsers(roleNames: Seq[Either[String, Parameter]], userNames: Seq[Either[String, Parameter]])
+                                     (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "REVOKE ROLE"
 
@@ -331,75 +343,121 @@ sealed trait AdminAction {
 abstract class DatabaseAction(override val name: String) extends AdminAction
 
 case object StartDatabaseAction extends DatabaseAction("START")
+
 case object StopDatabaseAction extends DatabaseAction("STOP")
 
 case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
+
 case object AccessDatabaseAction extends DatabaseAction("ACCESS")
 
 abstract class IndexManagementAction(override val name: String) extends DatabaseAction(name)
+
 case object AllIndexActions extends IndexManagementAction("INDEX MANAGEMENT")
+
 case object CreateIndexAction extends IndexManagementAction("CREATE INDEX")
+
 case object DropIndexAction extends IndexManagementAction("DROP INDEX")
 
 abstract class ConstraintManagementAction(override val name: String) extends DatabaseAction(name)
+
 case object AllConstraintActions extends ConstraintManagementAction("CONSTRAINT MANAGEMENT")
+
 case object CreateConstraintAction extends ConstraintManagementAction("CREATE CONSTRAINT")
+
 case object DropConstraintAction extends ConstraintManagementAction("DROP CONSTRAINT")
 
 abstract class NameManagementAction(override val name: String) extends DatabaseAction(name)
+
 case object AllTokenActions extends NameManagementAction("NAME MANAGEMENT")
+
 case object CreateNodeLabelAction extends NameManagementAction("CREATE NEW NODE LABEL")
+
 case object CreateRelationshipTypeAction extends NameManagementAction("CREATE NEW RELATIONSHIP TYPE")
+
 case object CreatePropertyKeyAction extends NameManagementAction("CREATE NEW PROPERTY NAME")
 
 abstract class TransactionManagementAction(override val name: String) extends DatabaseAction(name)
+
 case object AllTransactionActions extends TransactionManagementAction("TRANSACTION MANAGEMENT")
+
 case object ShowTransactionAction extends TransactionManagementAction("SHOW TRANSACTION")
+
 case object TerminateTransactionAction extends TransactionManagementAction("TERMINATE TRANSACTION")
 
 abstract class DbmsAdminAction(override val name: String) extends AdminAction
 
 case object AllAdminAction extends DbmsAdminAction("ALL ADMIN PRIVILEGES")
+
 case object AllDbmsAction extends DbmsAdminAction("ALL DBMS PRIVILEGES")
 
 abstract class UserManagementAction(override val name: String) extends DbmsAdminAction(name)
+
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")
+
 case object ShowUserAction extends UserManagementAction("SHOW USER")
+
 case object CreateUserAction extends UserManagementAction("CREATE USER")
+
 case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
+
 case object SetPasswordsAction extends UserManagementAction("SET PASSWORDS")
+
 case object AlterUserAction extends UserManagementAction("ALTER USER")
+
 case object DropUserAction extends UserManagementAction("DROP USER")
 
 abstract class RoleManagementAction(override val name: String) extends DbmsAdminAction(name)
+
 case object AllRoleActions extends RoleManagementAction("ROLE MANAGEMENT")
+
 case object ShowRoleAction extends RoleManagementAction("SHOW ROLE")
+
 case object CreateRoleAction extends RoleManagementAction("CREATE ROLE")
+
 case object DropRoleAction extends RoleManagementAction("DROP ROLE")
+
 case object AssignRoleAction extends RoleManagementAction("ASSIGN ROLE")
+
 case object RemoveRoleAction extends RoleManagementAction("REMOVE ROLE")
 
 abstract class DatabaseManagementAction(override val name: String) extends DbmsAdminAction(name)
+
 case object AllDatabaseManagementActions extends DatabaseManagementAction("DATABASE MANAGEMENT")
+
 case object CreateDatabaseAction extends DatabaseManagementAction("CREATE DATABASE")
+
 case object DropDatabaseAction extends DatabaseManagementAction("DROP DATABASE")
 
 abstract class PrivilegeManagementAction(override val name: String) extends DbmsAdminAction(name)
+
 case object AllPrivilegeActions extends PrivilegeManagementAction("PRIVILEGE MANAGEMENT")
+
 case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEGE")
+
 case object AssignPrivilegeAction extends PrivilegeManagementAction("ASSIGN PRIVILEGE")
+
 case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIVILEGE")
 
 abstract class GraphAction(override val name: String, val planName: String) extends AdminAction
+
 case object ReadAction extends GraphAction("READ", "Read")
+
 case object MatchAction extends GraphAction("MATCH", "Match")
+
 case object MergeAdminAction extends GraphAction("MERGE", "Merge")
+
 case object TraverseAction extends GraphAction("TRAVERSE", "Traverse")
+
 case object CreateElementAction extends GraphAction("CREATE", "CreateElement")
+
 case object DeleteElementAction extends GraphAction("DELETE", "DeleteElement")
+
 case object SetLabelAction extends GraphAction("SET LABEL", "SetLabel")
+
 case object RemoveLabelAction extends GraphAction("REMOVE LABEL", "RemoveLabel")
+
 case object WriteAction extends GraphAction("WRITE", "Write")
+
 case object SetPropertyAction extends GraphAction("SET PROPERTY", "SetProperty")
 case object AllGraphAction extends GraphAction("ALL GRAPH PRIVILEGES", "AllGraphPrivileges")
 
@@ -407,30 +465,66 @@ object GrantPrivilege {
 
   def dbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames)
-  def databaseAction(action: DatabaseAction, scope: List[GraphScope], roleNames: Seq[Either[String, Parameter]], qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => GrantPrivilege =
-    GrantPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames )
-  def graphAction(action: GraphAction, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
+
+  def databaseAction(action: DatabaseAction,
+                     scope: List[GraphScope],
+                     roleNames: Seq[Either[String, Parameter]],
+                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => GrantPrivilege =
+    GrantPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
+
+  def graphAction(action: GraphAction,
+                  resource: Option[ActionResource],
+                  scope: List[GraphScope],
+                  qualifier: PrivilegeQualifier,
+                  roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
+
   def traverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
-  def read(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
+
+  def read(resource: ActionResource,
+           scope: List[GraphScope],
+           qualifier: PrivilegeQualifier,
+           roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
-  def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
+
+  def asMatch(resource: ActionResource,
+              scope: List[GraphScope],
+              qualifier: PrivilegeQualifier,
+              roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
 }
 
 object DenyPrivilege {
   def dbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames)
-  def databaseAction(action: DatabaseAction, scope: List[GraphScope], roleNames: Seq[Either[String, Parameter]], qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => DenyPrivilege =
+
+  def databaseAction(action: DatabaseAction,
+                     scope: List[GraphScope],
+                     roleNames: Seq[Either[String, Parameter]],
+                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => DenyPrivilege =
     DenyPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
-  def graphAction(action: GraphAction, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
+
+  def graphAction(action: GraphAction,
+                  resource: Option[ActionResource],
+                  scope: List[GraphScope],
+                  qualifier: PrivilegeQualifier,
+                  roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
+
   def traverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
-  def read(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
+
+  def read(resource: ActionResource,
+           scope: List[GraphScope],
+           qualifier: PrivilegeQualifier,
+           roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
-  def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
+
+  def asMatch(resource: ActionResource,
+              scope: List[GraphScope],
+              qualifier: PrivilegeQualifier,
+              roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
 }
 
@@ -438,43 +532,91 @@ object RevokePrivilege {
   // Revoke of grant
   def grantedDbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames, RevokeGrantType()(InputPosition.NONE))
+
   def grantedDatabaseAction(action: DatabaseAction, scope: List[GraphScope], roleNames: Seq[Either[String, Parameter]], qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => RevokePrivilege  =
     RevokePrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
-  def grantedGraphAction(action: GraphAction, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def grantedGraphAction(action: GraphAction,
+                         resource: Option[ActionResource],
+                         scope: List[GraphScope],
+                         qualifier: PrivilegeQualifier,
+                         roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+
   def grantedTraverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
-  def grantedRead(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def grantedRead(resource: ActionResource,
+                  scope: List[GraphScope],
+                  qualifier: PrivilegeQualifier,
+                  roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
-  def grantedAsMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def grantedAsMatch(resource: ActionResource,
+                     scope: List[GraphScope],
+                     qualifier: PrivilegeQualifier,
+                     roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
 
   // Revoke of deny
   def deniedDbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames, RevokeDenyType()(InputPosition.NONE))
+
   def deniedDatabaseAction(action: DatabaseAction, scope: List[GraphScope], roleNames: Seq[Either[String, Parameter]], qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => RevokePrivilege =
     RevokePrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
-  def deniedGraphAction(action: GraphAction, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def deniedGraphAction(action: GraphAction,
+                        resource: Option[ActionResource],
+                        scope: List[GraphScope],
+                        qualifier: PrivilegeQualifier,
+                        roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+
   def deniedTraverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
-  def deniedRead(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def deniedRead(resource: ActionResource,
+                 scope: List[GraphScope],
+                 qualifier: PrivilegeQualifier,
+                 roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
-  def deniedAsMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def deniedAsMatch(resource: ActionResource,
+                    scope: List[GraphScope],
+                    qualifier: PrivilegeQualifier,
+                    roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
 
   // Revoke
   def dbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames, RevokeBothType()(InputPosition.NONE))
-  def databaseAction(action: DatabaseAction, scope: List[GraphScope], roleNames: Seq[Either[String, Parameter]], qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => RevokePrivilege =
+
+  def databaseAction(action: DatabaseAction,
+                     scope: List[GraphScope],
+                     roleNames: Seq[Either[String, Parameter]],
+                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => RevokePrivilege =
     RevokePrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
-  def graphAction(action: GraphAction, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def graphAction(action: GraphAction,
+                  resource: Option[ActionResource],
+                  scope: List[GraphScope],
+                  qualifier: PrivilegeQualifier,
+                  roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
+
   def traverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
-  def read(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
-    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames,RevokeBothType()(InputPosition.NONE))
-  def asMatch(resource: ActionResource, scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+
+  def read(resource: ActionResource,
+           scope: List[GraphScope],
+           qualifier: PrivilegeQualifier,
+           roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
+    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
+
+  def asMatch(resource: ActionResource,
+              scope: List[GraphScope],
+              qualifier: PrivilegeQualifier,
+              roleNames: Seq[Either[String, Parameter]]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, RevokeBothType()(InputPosition.NONE))
 }
 
@@ -486,14 +628,22 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: Priv
       SemanticState.recordCurrentScope(this)
 }
 
-final case class GrantPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]])
+final case class GrantPrivilege(privilege: PrivilegeType,
+                                resource: Option[ActionResource],
+                                scope: List[GraphScope],
+                                qualifier: PrivilegeQualifier,
+                                roleNames: Seq[Either[String, Parameter]])
                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"GRANT ${privilege.name}"
 }
 
-final case class DenyPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]])
-                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
+final case class DenyPrivilege(privilege: PrivilegeType,
+                               resource: Option[ActionResource],
+                               scope: List[GraphScope],
+                               qualifier: PrivilegeQualifier,
+                               roleNames: Seq[Either[String, Parameter]])
+                              (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"DENY ${privilege.name}"
 
@@ -505,7 +655,11 @@ final case class DenyPrivilege(privilege: PrivilegeType, resource: Option[Action
   }
 }
 
-final case class RevokePrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]],
+final case class RevokePrivilege(privilege: PrivilegeType,
+                                 resource: Option[ActionResource],
+                                 scope: List[GraphScope],
+                                 qualifier: PrivilegeQualifier,
+                                 roleNames: Seq[Either[String, Parameter]],
                                  revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name: String = {
@@ -530,7 +684,7 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
   override def name = "SHOW PRIVILEGE"
 
   override def returnColumnNames: List[String] = List("access", "action", "resource", "graph", "segment", "role") ++ (scope match {
-    case _ : ShowUserPrivileges => List("user")
+    case _: ShowUserPrivileges => List("user")
     case _ => List.empty
   })
 
@@ -589,7 +743,16 @@ final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: I
   }
 }
 
-final case class DropDatabase(dbName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
+sealed abstract class DropDatabaseAdditionalAction(val name: String)
+
+case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")
+
+case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
+
+final case class DropDatabase(dbName: Either[String, Parameter],
+                              ifExists: Boolean,
+                              additionalAction: DropDatabaseAdditionalAction)
+                             (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "DROP DATABASE"
 
@@ -622,7 +785,7 @@ object CreateGraph {
 }
 
 final case class CreateGraph(graphName: CatalogName, query: QueryPart)
-  (val position: InputPosition) extends MultiGraphDDL {
+                            (val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG CREATE GRAPH"
 
@@ -647,7 +810,7 @@ object CreateView {
 }
 
 final case class CreateView(graphName: CatalogName, params: Seq[Parameter], query: QueryPart, innerQString: String)
-  (val position: InputPosition) extends MultiGraphDDL {
+                           (val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG CREATE VIEW/QUERY"
 

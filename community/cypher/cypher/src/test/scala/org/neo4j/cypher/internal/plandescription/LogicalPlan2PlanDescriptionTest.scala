@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.LabelsQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertyResource
@@ -1111,8 +1113,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),
       planDescription(id, "CreateDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
 
-    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1")), 1.0),
-      planDescription(id, "DropDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
+    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DestroyData), 1.0),
+      planDescription(id, "DropDatabase", SingleChild(privLhsPD), Seq(details(Seq("db1", "DESTROY DATA"))), Set.empty))
+
+    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0),
+      planDescription(id, "DropDatabase", SingleChild(privLhsPD), Seq(details(Seq("db1", "DUMP DATA"))), Set.empty))
 
     assertGood(attach(StartDatabase(privLhsLP, util.Left("db1")), 1.0),
       planDescription(id, "StartDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))

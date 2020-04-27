@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropGraph
@@ -58,6 +59,7 @@ import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropView
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
@@ -399,9 +401,13 @@ case class Prettifier(
           case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}"
         }
 
-      case x @ DropDatabase(dbName, ifExists) =>
-        if (ifExists) s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS"
-        else s"${x.name} ${Prettifier.escapeName(dbName)}"
+      case x @ DropDatabase(dbName, ifExists, additionalAction) =>
+        (ifExists, additionalAction) match {
+          case (false, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA"
+          case (true, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA"
+          case (false, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA"
+          case (true, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA"
+        }
 
       case x @ StartDatabase(dbName) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}"

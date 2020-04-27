@@ -28,7 +28,9 @@ import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
+import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -134,6 +136,10 @@ object Additions {
       // revoke fine-grained
       case p@RevokePrivilege(GraphPrivilege(action), _, _, _, _, _) if !action.equals(WriteAction) =>
         throw cypherExceptionFactory.syntaxException(errorMessage(action), p.position)
+
+      // remove database dump data
+      case p@DropDatabase(_,_,DumpData) =>
+        throw cypherExceptionFactory.syntaxException("Dumping data when dropping databases is not supported in this Cypher version.", p.position)
     }
   }
 

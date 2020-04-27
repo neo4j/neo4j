@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropRole
@@ -408,17 +409,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName)
+          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName, DestroyData)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
           case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
 
-      // DROP DATABASE foo [IF EXISTS]
-      case DropDatabase(dbName, ifExists) =>
+      // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
+      case DropDatabase(dbName, ifExists, additionalAction) =>
         val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else admin
-        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName))
+        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
