@@ -386,8 +386,9 @@ object QueryCache {
     var hashCode = 0
     mapValue.foreach(
       (key, value) => {
-        resultMap.put(key, value.getClass)
-        hashCode = hashCode ^ (key.hashCode + 31 * value.hashCode())
+        val valueClass = value.getClass
+        resultMap.put(key, valueClass)
+        hashCode = hashCode ^ (key.hashCode + 31 * valueClass.hashCode())
       }
     )
     new ParameterTypeMap(resultMap, hashCode)

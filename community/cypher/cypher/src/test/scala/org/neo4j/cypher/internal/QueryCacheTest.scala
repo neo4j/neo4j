@@ -318,9 +318,19 @@ class QueryCacheTest extends CypherFunSuite {
     verifyNoMoreInteractions(tracer)
   }
 
-  test("parameterTypeMap should equal") {
+  test("parameterTypeMap should equal if same parameters") {
     val params1 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
     val params2 = VirtualValues.map(Array("a", "b", "c"), Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true))))
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    typeMap1.hashCode() shouldBe typeMap2.hashCode()
+    typeMap1 should equal(typeMap2)
+    typeMap2 should equal(typeMap1)
+  }
+
+  test("parameterTypeMap should equal if same types but different values") {
+    val params1 = VirtualValues.map(Array("a"), Array(Values.of("a")));
+    val params2 = VirtualValues.map(Array("a"), Array(Values.of("b")));
     val typeMap1 = QueryCache.extractParameterTypeMap(params1)
     val typeMap2 = QueryCache.extractParameterTypeMap(params2)
     typeMap1.hashCode() shouldBe typeMap2.hashCode()
