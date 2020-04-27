@@ -383,7 +383,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU. " +
                   "Calling `dbms.listQueries` will display the time. " +
-                  "This can also be logged in the query log by using `log_queries_detailed_time_logging_enabled`." )
+                  "This can also be logged in the query log by using `dbms.logs.query.time_logging_enabled`." )
     @Dynamic
     public static final Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, FALSE );
 

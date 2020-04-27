@@ -316,6 +316,11 @@
                     <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                     <code>java.class.nonPublicPartOfAPI</code>
                   </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_cpu_time</new>
+                    <justification>Updating setting description for documentation</justification>
+                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
