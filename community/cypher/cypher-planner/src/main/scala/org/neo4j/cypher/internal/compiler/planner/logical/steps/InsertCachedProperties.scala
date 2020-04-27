@@ -175,14 +175,14 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
 
     var currentTypes = from.semanticTable().types
 
-    // In the second step we rewrite both properties and index plans
+    // In the second step we rewrite both properties as well as plans that will cache properties, i.e. index plans and expands
     val propertyRewriter = bottomUp(Rewriter.lift {
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop@Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, canReadFromCursor, usages, entityType)) if usages > 1 || (canGetFromIndex | canReadFromCursor) =>
+          case Some(PropertyUsages(canGetFromIndex, canReadFromCursor, usages, entityType)) if usages > 1 || (canGetFromIndex || canReadFromCursor) =>
             // Use the original variable name for the cached property
             val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType)(prop.position)
             // Register the new variables in the semantic table
