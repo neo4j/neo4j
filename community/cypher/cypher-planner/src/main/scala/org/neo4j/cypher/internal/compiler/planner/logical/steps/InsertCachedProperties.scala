@@ -45,6 +45,8 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
+import scala.collection.mutable
+
 /**
  * A logical plan rewriter that also changes the semantic table (thus a Transformer).
  *
@@ -176,6 +178,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
     var currentTypes = from.semanticTable().types
 
     // In the second step we rewrite both properties as well as plans that will cache properties, i.e. index plans and expands
+    val alreadyCachedFromCursor = mutable.Set.empty[CursorProperty]
     val propertyRewriter = bottomUp(Rewriter.lift {
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop@Property(v: Variable, propertyKeyName) =>
@@ -220,8 +223,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
             CursorProperty(r, RELATIONSHIP_TYPE, prop)
         }
 
-        e.withNodeProperties(nodePropsToCache.toList:_*)
-          .withRelationshipProperties(relPropsToCache.toList:_*)
+        e.withNodeProperties(nodePropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
+          .withRelationshipProperties(relPropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
 
       case e:OptionalExpand if readPropertiesFromCursor =>
         val nodePropsToCache = acc.properties.collect {
@@ -233,8 +236,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
             CursorProperty(r, RELATIONSHIP_TYPE, prop)
         }
 
-        e.withNodeProperties(nodePropsToCache.toList:_*)
-          .withRelationshipProperties(relPropsToCache.toList:_*)
+        e.withNodeProperties(nodePropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
+          .withRelationshipProperties(relPropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]

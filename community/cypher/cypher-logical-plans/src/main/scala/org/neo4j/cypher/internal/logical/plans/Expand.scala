@@ -50,12 +50,12 @@ case class Expand(source: LogicalPlan,
     copy(expandProperties =
       expandProperties
         .map(_.withNodeProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))
+        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(nodeProperties = props)) else None))
   def withRelationshipProperties(props: CursorProperty*): Expand =
     copy(expandProperties =
       expandProperties
         .map(_.withRelationshipProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(relProperties = props))))
+        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(relProperties = props)) else None))
 }
 
 /**

@@ -523,6 +523,32 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedXProp) should be(initialTable.types(xProp))
   }
 
+  test("should not cache properties a second time for multiple expands") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
+      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
+    val plan =
+      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
+        Expand(
+          Expand(Argument(), "x", OUTGOING, Seq.empty, "m", "n"),
+          "x", OUTGOING, Seq.empty, "m", "n")
+      )
+    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
+
+    newPlan should equal(
+      Selection(
+        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
+        Expand(
+          Expand(
+            Argument(),
+            "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
+              nodeProperties = Seq(CursorProperty("x", NODE_TYPE, prop))))),
+          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = None)
+      )
+    )
+    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
+    newTable.types(cachedXProp) should be(initialTable.types(xProp))
+  }
+
   private def replace(plan: LogicalPlan, initialTable: SemanticTable, readFromCursor: Boolean = false): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
     val resultState = InsertCachedProperties(pushdownPropertyReads = false, readFromCursor).transform(state, mock[PlannerContext])
