@@ -70,6 +70,8 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   }
 
   override def recordMemoryDeallocation(): Unit = {
-    memoryTracker.releaseHeap(java.lang.Double.BYTES * temp.size)
+    if (memoryTracker != null) {
+      memoryTracker.releaseHeap(java.lang.Double.BYTES * temp.size)
+    }
   }
 }
