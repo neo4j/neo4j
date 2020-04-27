@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.ascending
 import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.descending
 import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor.unordered
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.storable.Values
