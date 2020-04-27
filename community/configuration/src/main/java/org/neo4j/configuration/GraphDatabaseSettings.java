@@ -446,6 +446,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         DISABLED, DEFAULT, ALL
     }
 
+    @Description( "When enabled property reads will - as much as possible - be pushed down to be read at the same time as we are " +
+                  "visiting a node or relationship. This means that in some cases we will read properties at a higher cardinality point" +
+                  " which will lead to worse performance. However depending on the store format and how expensive the property read will be " +
+                  "this can also be beneficial since it will lead to less work find nodes and relationships from the store." )
     @Internal
     public static final Setting<Boolean> cypher_read_properties_from_cursor =
             newBuilder( "unsupported.cypher.read_properties_from_cursor", BOOL, false).build();
