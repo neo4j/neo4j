@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
   * For every source row, traverse all the relationships of 'from' which fulfill the
@@ -50,12 +51,12 @@ case class Expand(source: LogicalPlan,
     copy(expandProperties =
       expandProperties
         .map(_.withNodeProperties(props:_*))
-        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(nodeProperties = props)) else None))
+        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(nodeProperties = props)) else None))(SameId(this.id))
   def withRelationshipProperties(props: CursorProperty*): Expand =
     copy(expandProperties =
       expandProperties
         .map(_.withRelationshipProperties(props:_*))
-        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(relProperties = props)) else None))
+        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(relProperties = props)) else None))(SameId(this.id))
 }
 
 /**
@@ -83,12 +84,12 @@ case class OptionalExpand(source: LogicalPlan,
     copy(expandProperties =
       expandProperties
         .map(_.withNodeProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))
+        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))(SameId(this.id))
   def withRelationshipProperties(props: CursorProperty*): OptionalExpand =
     copy(expandProperties =
       expandProperties
         .map(_.withRelationshipProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(relProperties = props))))
+        .orElse(Some(ExpandCursorProperties(relProperties = props))))(SameId(this.id))
 }
 
 /**
