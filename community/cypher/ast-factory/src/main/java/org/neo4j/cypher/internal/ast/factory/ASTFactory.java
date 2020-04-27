@@ -61,7 +61,7 @@ public interface ASTFactory<STATEMENT,
     {
         private NULL()
         {
-            throw new IllegalStateException("This class should not be instantiated, use `null` instead.");
+            throw new IllegalStateException( "This class should not be instantiated, use `null` instead." );
         }
     }
 
