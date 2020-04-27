@@ -254,8 +254,6 @@ public class DefaultBoltConnection implements BoltConnection
 
             // assert only if we'll stay alive
             assert willClose() || !machine.hasOpenStatement();
-            // we processed all pending messages, let's flush underlying channel
-            messageWriter.flush();
         }
         catch ( BoltConnectionAuthFatality ex )
         {

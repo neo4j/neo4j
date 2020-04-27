@@ -26,23 +26,23 @@ import org.neo4j.time.SystemNanoClock;
 public class MessageWriterTimer
 {
     private final SystemNanoClock clock;
-    private final Duration keepAliveInterval;
+    private final long keepAliveNano;
 
-    private long expirationNano;
+    private volatile long startNano;
 
-    public MessageWriterTimer( SystemNanoClock clock, Duration keepAliveInterval )
+    public MessageWriterTimer( SystemNanoClock clock, Duration keepAlive )
     {
         this.clock = clock;
-        this.keepAliveInterval = keepAliveInterval;
+        this.keepAliveNano = keepAlive.toNanos();
     }
 
     public void reset()
     {
-        expirationNano = clock.nanos() + keepAliveInterval.toNanos();
+        startNano = clock.nanos();
     }
 
     public boolean isTimedOut()
     {
-        return clock.nanos() >= expirationNano;
+        return clock.nanos() - startNano > keepAliveNano;
     }
 }

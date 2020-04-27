@@ -34,6 +34,8 @@ import org.neo4j.values.AnyValue;
 
 /**
  * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
+ * All methods need to be synchronized because both bolt worker threads and also bolt keep-alive thread could try
+ * to write to the output at the same time.
  */
 public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
 {
@@ -69,22 +71,29 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     }
 
     @Override
-    public synchronized void keepAlive() throws IOException
+    public void keepAlive() throws IOException
     {
+        // Double-check locking. The timeout variable inside timer is volatile.
         if ( timer.isTimedOut() )
         {
-            if ( inRecord )
+            synchronized ( this )
             {
-                shouldFlushAfterRecord = true;
-                return;
+                if ( timer.isTimedOut() )
+                {
+                    if ( inRecord )
+                    {
+                        shouldFlushAfterRecord = true;
+                        return;
+                    }
+                    writeNoop();
+                    flush();
+                }
             }
-            writeNoop();
-            flush();
         }
     }
 
     @Override
-    public void initKeepAliveTimer()
+    public synchronized void initKeepAliveTimer()
     {
         timer.reset();
     }

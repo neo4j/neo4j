@@ -90,19 +90,19 @@ public final class BoltConnector implements SettingsDeclaration
     public static final Setting<Integer> unsupported_thread_pool_queue_size =
             newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
 
-    @Description( "The maximum time to wait to send a NOOP on connections waiting for responses from active " +
-                  "ongoing works." )
+    @Description( "The maximum time to wait before sending a NOOP on connections waiting for responses from active " +
+                  "ongoing queries." )
     @Internal
     public static final Setting<Duration> connection_keep_alive =
             newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 10 ) )
                     .build();
 
-    @Description( "The interval between every scheduled keep-alive check on all connections with active works. " +
-                  "Non-positive duration turns off keep-alvie service." )
+    @Description( "The interval between every scheduled keep-alive check on all connections with active queries. " +
+                  "Zero duration turns off keep-alive service." )
     @Internal
     public static final Setting<Duration> connection_keep_alive_scheduling_interval =
             newBuilder( "dbms.connector.bolt.connection_keep_alive_scheduling_interval", DURATION,
-                    ofMinutes( 5 ) ).build();
+                    ofMinutes( 0 ) ).build();
 
     @Description( "The maximum time to wait for a user to finish authentication before closing the connection." )
     @Internal

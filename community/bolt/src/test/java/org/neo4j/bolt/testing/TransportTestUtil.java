@@ -220,13 +220,20 @@ public class TransportTestUtil
     @SafeVarargs
     public final <T extends TransportConnection> Consumer<T> eventuallyReceives( Consumer<ResponseMessage>... messagesConsumers )
     {
+        return eventuallyReceives( false, () -> {}, messagesConsumers );
+    }
+
+    @SafeVarargs
+    public final <T extends TransportConnection> Consumer<T> eventuallyReceives( boolean allowNoOp,
+            Runnable noOpCallback, Consumer<ResponseMessage>... messagesConsumers )
+    {
         return connection ->
         {
             try
             {
                 for ( Consumer<ResponseMessage> messageCondition : messagesConsumers )
                 {
-                    var message = receiveOneResponseMessage( connection );
+                    var message = receiveOneResponseMessage( allowNoOp, noOpCallback, connection );
                     assertThat( message ).satisfies( messageCondition );
                 }
             }
@@ -399,15 +406,29 @@ public class TransportTestUtil
     public <T extends TransportConnection> ResponseMessage receiveOneResponseMessage( T conn ) throws IOException,
             InterruptedException
     {
+        return receiveOneResponseMessage( false, () -> {}, conn );
+    }
+
+    public <T extends TransportConnection> ResponseMessage receiveOneResponseMessage( boolean allowNoOp,
+            Runnable noOpCallback, T conn )
+            throws IOException, InterruptedException
+    {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         while ( true )
         {
             int size = receiveChunkHeader( conn );
+            while ( allowNoOp && size == 0 )
+            {
+                size = receiveChunkHeader( conn );
+                noOpCallback.run();
+            }
 
             if ( size > 0 )
             {
                 byte[] received = conn.recv( size );
                 bytes.write( received );
+                // Once this message started, then there should never be a NOOP
+                allowNoOp = false;
             }
             else
             {

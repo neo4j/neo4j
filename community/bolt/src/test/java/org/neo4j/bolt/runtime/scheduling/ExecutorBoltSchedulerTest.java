@@ -107,20 +107,45 @@ class ExecutorBoltSchedulerTest
                 Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, Duration.ofMillis( 10 ) );
         boltScheduler.init();
         boltScheduler.created( connection );
-        boltScheduler.enqueued( connection, Jobs.noop() );
 
         // When
         boltScheduler.start();
+        boltScheduler.enqueued( connection, Jobs.noop() );
 
         // Then
         Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
         Predicates.await( scheduledCondition::get, 1, MINUTES );
+        verify( connection ).initKeepAliveTimer();
         verify( connection, atLeastOnce() ).keepAlive();
         exitCondition.set( true );
         Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
         boltScheduler.stop();
         boltScheduler.shutdown();
+    }
+
+    @Test
+    void nonPositiveScheduleIntervalShouldTurnOffKeepAliveService() throws Throwable
+    {
+        // Given
+        var id = UUID.randomUUID().toString();
+        var exitCondition = new AtomicBoolean();
+        var connection = newConnection( id );
+        when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
+
+        boltScheduler.init();
+        boltScheduler.created( connection );
+
+        // When
+        boltScheduler.start();
+        boltScheduler.enqueued( connection, Jobs.noop() );
+
+        // Then
+        Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
+        verify( connection, never() ).initKeepAliveTimer();
+        verify( connection, never() ).keepAlive();
+        exitCondition.set( true );
+        Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
     }
 
     @Test

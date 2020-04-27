@@ -100,6 +100,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     {
         threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, true,
                 new NameAppendingThreadFactory( connector, scheduler.threadFactory( Group.BOLT_WORKER ) ) );
+        log.debug( "Initialized bolt thread pool." );
     }
 
     @Override
@@ -111,7 +112,6 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         }
         else
         {
-            log.debug( "Initialized bolt thread pool." );
             keepAliveService = Executors.newSingleThreadScheduledExecutor();
             keepAliveService.scheduleAtFixedRate( () -> {
                 for ( var id : activeWorkItems.keySet() )
@@ -212,7 +212,11 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
 
     private void handleSubmission( BoltConnection connection )
     {
-        connection.initKeepAliveTimer();
+        if ( keepAliveService != null )
+        {
+            // Only init timer if the service is enabled.
+            connection.initKeepAliveTimer();
+        }
         activeWorkItems.computeIfAbsent( connection.id(),
                 key -> scheduleBatchOrHandleError( connection ).whenCompleteAsync( ( result, error ) -> handleCompletion( connection, result, error ),
                         forkJoinPool ) );

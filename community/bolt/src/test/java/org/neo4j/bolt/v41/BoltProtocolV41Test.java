@@ -21,20 +21,26 @@ package org.neo4j.bolt.v41;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.BoltChannel;
+import java.time.Duration;
+
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
+import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class BoltProtocolV41Test
 {
@@ -43,9 +49,7 @@ class BoltProtocolV41Test
     @Test
     void shouldCreatePackForBoltV41()
     {
-        BoltProtocolV41 protocolV41 =
-                new BoltProtocolV41( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                                    bookmarksParser, NullLogService.getInstance() );
+        BoltProtocolV41 protocolV41 = createProtocolV41();
 
         assertThat( protocolV41.createPack() ).isInstanceOf( Neo4jPackV2.class );
     }
@@ -53,21 +57,34 @@ class BoltProtocolV41Test
     @Test
     void shouldVersionReturnBoltV41()
     {
-        BoltProtocolV41 protocolV41 =
-                new BoltProtocolV41( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                                    bookmarksParser, NullLogService.getInstance() );
-
+        BoltProtocolV41 protocolV41 = createProtocolV41();
         assertThat( protocolV41.version() ).isEqualTo( new BoltProtocolVersion( 4, 1 ) );
     }
 
     @Test
     void shouldCreateMessageReaderForBoltV41()
     {
-        BoltProtocolV41 protocolV41 =
-                new BoltProtocolV41( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                                    bookmarksParser, NullLogService.getInstance() );
+        BoltProtocolV41 protocolV41 = createProtocolV41();
 
-        assertThat( protocolV41.createMessageReader( mock( BoltChannel.class ), mock( Neo4jPack.class ), mock( BoltConnection.class ), bookmarksParser,
-                                                    NullLogService.getInstance() ) ).isInstanceOf( BoltRequestMessageReaderV41.class );
+        assertThat( protocolV41.createMessageReader( mock( BoltConnection.class ),
+                mock( BoltResponseMessageWriter.class ),
+                bookmarksParser, NullLogService.getInstance() ) ).isInstanceOf( BoltRequestMessageReaderV41.class );
     }
+
+    @Test
+    void shouldCreateMessageWriterForBoltV41()
+    {
+        BoltProtocolV41 protocolV41 = createProtocolV41();
+
+        assertThat( protocolV41.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance() ) )
+                .isInstanceOf( BoltResponseMessageWriterV41.class );
+    }
+
+    private BoltProtocolV41 createProtocolV41()
+    {
+        return new BoltProtocolV41( newTestBoltChannel(), ( ch, st, mr ) -> mock( BoltConnection.class ),
+                mock( BoltStateMachineFactory.class ), bookmarksParser, NullLogService.getInstance(),
+                mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
+    }
+
 }
