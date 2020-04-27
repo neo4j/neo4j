@@ -109,6 +109,14 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .argument()
       .build())
 
+  testPlan("expand with caching of properties",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .expand("(x)-[r]->(y)", expandMode = ExpandAll, projectedDir = OUTGOING, cacheNodeProperties = Seq("n1"),
+        cacheRelProperties = Seq("r1", "r2"))
+      .argument()
+      .build())
+
   testPlan("shortestPath",
     new TestPlanBuilder()
       .produceResults("x")
@@ -153,6 +161,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
   testPlan("optionalExpandAll",
     new TestPlanBuilder()
       .produceResults("x")
+      .optionalExpandAll("(x)-[r]->(y)", cacheRelProperties = Seq("r1", "r2", "r3"))
       .optionalExpandAll("(x)-[r]->(y)")
       .optionalExpandAll("(x)-[r]->(y)", Some("y.num > 20"))
       .argument()
