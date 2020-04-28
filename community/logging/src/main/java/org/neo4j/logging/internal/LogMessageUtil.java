@@ -33,7 +33,7 @@ public final class LogMessageUtil
 
     /**
      * Replace SLF4J-style placeholders like {@code {}} with {@link String#format(String, Object...)} placeholders like {@code %s} in the given string.
-     * This is nessesary for logging adapters that redirect SLF4J loggers to neo4j {@link Log}. Former uses {@code {}} while later {@code %s}.
+     * This is necessary for logging adapters that redirect SLF4J loggers to neo4j {@link Log}. Former uses {@code {}} while later {@code %s}.
      *
      * @param template the message template to modify.
      * @return new message template which can be safely formatted using {@link String#format(String, Object...)}.

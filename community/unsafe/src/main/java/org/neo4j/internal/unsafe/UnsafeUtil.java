@@ -1097,7 +1097,7 @@ public final class UnsafeUtil
      * <p>
      * Remember to restore the old value so other tests in the same JVM get the benefit of native access checks.
      * <p>
-     * The changing of this setting is completely unsynchronised, so you have to order this modification before and
+     * The changing of this setting is completely unsynchronized, so you have to order this modification before and
      * after the tests that you want to run without native access checks.
      *
      * @param newSetting The new setting.

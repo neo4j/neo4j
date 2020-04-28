@@ -63,7 +63,7 @@ public interface QueryExecution extends QuerySubscription
     /**
      * A backdoor for handling results that are more efficiently handled via a ResultVisitor than via a QuerySubscriber.
      *
-     * Should only be called after first checking that {@link #isVisitable} returs <code>true</code>
+     * Should only be called after first checking that {@link #isVisitable} returns <code>true</code>
      * @param visitor the provided visitor
      * @param <VisitationException> the exception type declared by the visitor
      * @deprecated will be removed once the compiled runtime is removed.

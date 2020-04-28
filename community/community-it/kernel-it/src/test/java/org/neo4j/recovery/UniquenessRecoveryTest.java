@@ -66,7 +66,7 @@ public class UniquenessRecoveryTest
     public static final boolean EXHAUSTIVE = getBoolean( param( "exhaustive" ) );
 
     /** these are all the kill signals that causes a JVM to exit */
-    private static final int[] KILL_SIGNALS = {1/*SIGHUP - should run exit hooks*/, 2/*SIGING - should run exit hooks*/,
+    private static final int[] KILL_SIGNALS = {1/*SIGHUP - should run exit hooks*/, 2/*SIGINT - should run exit hooks*/,
             /*skip 3 (SIGQUIT) - it only causes a thread dump*/
             // none of these permit exit hooks to run:
             4/*SIGILL*/, 5, 6/*SIGABRT*/, 7, 8/*SIGFPE*/, 9/*SIGKILL*/, 10/*SIGBUS*/, 11/*SIGSEGV*/, 12, 14,

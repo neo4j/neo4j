@@ -81,7 +81,7 @@ public abstract class ThreadAhead extends Thread implements Closeable
     {
         if ( ioException != null )
         {
-            throw new IOException( "Error occured in read-ahead thread", ioException );
+            throw new IOException( "Error occurred in read-ahead thread", ioException );
         }
     }
 

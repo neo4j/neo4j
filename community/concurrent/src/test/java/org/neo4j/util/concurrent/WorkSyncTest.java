@@ -123,7 +123,7 @@ class WorkSyncTest
         }
     }
 
-    private static class UnsynchronisedAdder
+    private static class UnsynchronizedAdder
     {
         // The volatile modifier prevents hoisting and reordering optimisations that could *hide* races
         private volatile long value;
@@ -149,8 +149,8 @@ class WorkSyncTest
         }
     }
 
-    private UnsynchronisedAdder sum = new UnsynchronisedAdder();
-    private UnsynchronisedAdder count = new UnsynchronisedAdder();
+    private UnsynchronizedAdder sum = new UnsynchronizedAdder();
+    private UnsynchronizedAdder count = new UnsynchronizedAdder();
     private Adder adder = new Adder();
     private WorkSync<Adder,AddWork> sync = new WorkSync<>( adder );
     private Semaphore semaphore = new Semaphore( Integer.MAX_VALUE );

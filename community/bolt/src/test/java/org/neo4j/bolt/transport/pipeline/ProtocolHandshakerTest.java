@@ -132,7 +132,7 @@ class ProtocolHandshakerTest
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
                 new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 1}, // second choise - protocol 1
+                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
                 new byte[]{0, 0, 0, 0}, // third choice - no protocol
                 new byte[]{0, 0, 0, 0}, // fourth choice - no protocol
                 new byte[]{1, 2, 3, 4} ); // this is a message
@@ -193,7 +193,7 @@ class ProtocolHandshakerTest
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
                 new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choise - protocol 1
+                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
                 new byte[]{0, 0, 0, 3}, // third choice - no protocol
                 new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
@@ -218,7 +218,7 @@ class ProtocolHandshakerTest
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
                 new byte[]{(byte) 0xDE, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF}, // preamble
                 new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choise - protocol 1
+                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
                 new byte[]{0, 0, 0, 3}, // third choice - no protocol
                 new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
@@ -241,7 +241,7 @@ class ProtocolHandshakerTest
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
                 new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choise - protocol 1
+                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
                 new byte[]{0, 0, 0, 3}, // third choice - no protocol
                 new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );

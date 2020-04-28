@@ -56,7 +56,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private static final int SUBMITTED = 1;
     private static final int FAILED = 2;
 
-    // Access is synchronised via the PriorityBlockingQueue in TimeBasedTaskScheduler:
+    // Access is synchronized via the PriorityBlockingQueue in TimeBasedTaskScheduler:
     // - Write to this field happens before the handle is added to the queue.
     // - Reads of this field happens after the handle has been read from the queue.
     // - Reads of this field for the purpose of ordering the queue are either thread local,

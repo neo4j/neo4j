@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 class ProcedureHolder<T>
 {
     private final Map<QualifiedName,Integer> nameToId = new HashMap<>();
-    private final Map<QualifiedName,Integer> caseInsensitveName2Id = new HashMap<>();
+    private final Map<QualifiedName,Integer> caseInsensitiveName2Id = new HashMap<>();
     private final ArrayList<T> store = new ArrayList<>();
 
     T get( QualifiedName name )
@@ -62,11 +62,11 @@ class ProcedureHolder<T>
         nameToId.put( name, id );
         if ( caseInsensitive )
         {
-            caseInsensitveName2Id.put( toLowerCaseName( name ), id );
+            caseInsensitiveName2Id.put( toLowerCaseName( name ), id );
         }
         else
         {
-            caseInsensitveName2Id.remove( toLowerCaseName( name ) );
+            caseInsensitiveName2Id.remove( toLowerCaseName( name ) );
         }
     }
 
@@ -92,7 +92,7 @@ class ProcedureHolder<T>
         if ( id == null )
         { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
             QualifiedName lowerCaseName = toLowerCaseName( name );
-            id = caseInsensitveName2Id.get( lowerCaseName );
+            id = caseInsensitiveName2Id.get( lowerCaseName );
         }
         return id;
     }

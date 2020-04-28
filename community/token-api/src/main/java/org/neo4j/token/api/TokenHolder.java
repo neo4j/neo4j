@@ -84,7 +84,7 @@ public interface TokenHolder
     /**
      * Resolve the ids of the given token {@code names} into the array for {@code ids}.
      * <p>
-     * Any tokens that don't already have an id will not be resolved, and the corrosponding entry in the {@code ids}
+     * Any tokens that don't already have an id will not be resolved, and the corresponding entry in the {@code ids}
      * array will be left untouched. If you wish for those unresolved id entries to end up with the {@link TokenConstants#NO_TOKEN}
      * value, you must first fill the array with that value before calling this method.
      * <p>

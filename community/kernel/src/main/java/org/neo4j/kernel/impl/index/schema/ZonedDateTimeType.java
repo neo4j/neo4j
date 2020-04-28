@@ -40,7 +40,7 @@ class ZonedDateTimeType extends Type
     private static final int ZONE_ID_MASK = 0x00FF_FFFF;
     // This is used to determine if the value is negative (after applying the bitmask)
     private static final int ZONE_ID_HIGH = 0x0080_0000;
-    // This is ised to restore masked negative offsets to their real value
+    // This is used to restore masked negative offsets to their real value
     private static final int ZONE_ID_EXT =  0xFF00_0000;
 
     // Affected key state:

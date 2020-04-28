@@ -65,7 +65,7 @@ class VisibleMigrationProgressMonitorTest
     }
 
     @Test
-    void reportStartStopOftransactionLogsMigration()
+    void reportStartStopOfTransactionLogsMigration()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( getClass() );

@@ -43,7 +43,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
-    private LogEntryParserSet parsetSet = LogEntryVersion.LATEST;
+    private LogEntryParserSet parserSet = LogEntryVersion.LATEST;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
@@ -84,9 +84,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     return null;
                 }
-                if ( parsetSet == null || parsetSet.version() != versionCode )
+                if ( parserSet == null || parserSet.version() != versionCode )
                 {
-                    parsetSet = selector.select( versionCode );
+                    parserSet = selector.select( versionCode );
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.
                     resetChannelPosition( channel );
@@ -100,7 +100,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 LogEntry entry;
                 try
                 {
-                    entryReader = parsetSet.select( typeCode );
+                    entryReader = parserSet.select( typeCode );
                     entry = entryReader.parse( versionCode, channel, positionMarker, commandReaderFactory );
                 }
                 catch ( ReadPastEndException e )

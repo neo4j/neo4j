@@ -119,7 +119,7 @@ public final class IOUtils
     }
 
     /**
-     * Close all ofthe given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
+     * Close all of the given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
      * attached. The remaining closeables will still be closed, in that case, and if they in turn throw any exceptions then these will be attached as
      * suppressed exceptions.
      *
@@ -136,7 +136,7 @@ public final class IOUtils
     }
 
     /**
-     * Close all ofthe given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
+     * Close all of the given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
      * attached. The remaining closeables will still be closed, in that case, and if they in turn throw any exceptions then these will be attached as
      * suppressed exceptions.
      *

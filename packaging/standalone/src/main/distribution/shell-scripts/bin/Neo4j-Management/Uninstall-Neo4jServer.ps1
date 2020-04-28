@@ -35,7 +35,7 @@ Uninstall the Neo4j Windows Windows Service for the Neo4j installation at $Serve
 .OUTPUTS
 System.Int32
 0 = Service is uninstalled or did not exist
-non-zero = an error occured
+non-zero = an error occurred
 
 .NOTES
 This function is private to the powershell module
