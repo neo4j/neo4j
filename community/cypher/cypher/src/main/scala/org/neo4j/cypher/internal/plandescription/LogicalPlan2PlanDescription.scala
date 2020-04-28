@@ -1172,7 +1172,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def projectedExpressionInfo(expressions: Map[String, Expression], ordered: IndexedSeq[PrettyString] = IndexedSeq.empty): Seq[PrettyString] = {
     expressions.toList.map { case (k, v) =>
-      val key = PrettyStringCreator(PlanDescriptionArgumentSerializer.removeGeneratedNames(k))
+      val key = PrettyStringCreator(k)
       val value = PrettyStringCreator(v)
       (key, value)
     }.sortBy {

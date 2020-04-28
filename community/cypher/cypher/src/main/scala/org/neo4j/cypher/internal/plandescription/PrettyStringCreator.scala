@@ -23,18 +23,59 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SymbolicName
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 object PrettyStringCreator {
+  private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
+  private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
+  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION|REL|NODE)(\d+)""".r
+  private val removeGeneratedNamesRewriter = topDown(Rewriter.lift {
+    case s: String => removeGeneratedNames(s)
+  })
+
   def raw(s: String): PrettyString = PrettyString(s)
 
-  def apply(s: SymbolicName): PrettyString = PrettyString(PlanDescriptionArgumentSerializer.asPrettyString(s))
+  def apply(s: SymbolicName): PrettyString = PrettyString(if (s == null) {
+    "null"
+  } else {
+    stringifier(removeGeneratedNamesOnTree(s))
+  })
 
-  def apply(n: Namespace): PrettyString = PrettyString(PlanDescriptionArgumentSerializer.asPrettyString(n))
+  def apply(n: Namespace): PrettyString = PrettyString(if (n == null) {
+    "null"
+  } else {
+    stringifier(removeGeneratedNamesOnTree(n))
+  })
 
-  def apply(expr: Expression): PrettyString = PrettyString(PlanDescriptionArgumentSerializer.asPrettyString(expr))
+  def apply(expr: Expression): PrettyString = PrettyString(if (expr == null) {
+    "null"
+  } else {
+    stringifier(removeGeneratedNamesOnTree(expr))
+  })
 
-  // TODO should we simply add removeGeneratedNames here?
-  def apply(variableName: String): PrettyString = PrettyString(ExpressionStringifier.backtick(variableName))
+  def apply(variableName: String): PrettyString = PrettyString(ExpressionStringifier.backtick(removeGeneratedNames(variableName)))
+
+  def removeGeneratedNames(s: String): String = {
+    val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon_${m group 2}")
+    deduplicateVariableNames(named)
+  }
+
+  private def removeGeneratedNamesOnTree[M <: AnyRef](a: M): M = {
+    removeGeneratedNamesRewriter.apply(a).asInstanceOf[M]
+  }
+
+  private def deduplicateVariableNames(in: String): String = {
+    val sb = new StringBuilder
+    var i = 0
+    for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
+      sb ++= in.substring(i, m.start)
+      sb ++= m.group(1)
+      i = m.end
+    }
+    sb ++= in.substring(i)
+    sb.toString()
+  }
 
   implicit class PrettyStringInterpolator(val sc: StringContext) extends AnyVal {
     def pretty(args: PrettyString*): PrettyString = {

@@ -31,7 +31,7 @@ import scala.util.matching.Regex
  */
 trait VariablesMatcher extends Matcher[InternalPlanDescription] {
   val expected: Set[String]
-  def planVars(plan: InternalPlanDescription): Set[String] = plan.variables.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
+  def planVars(plan: InternalPlanDescription): Set[String] = plan.variables.map(PrettyStringCreator.removeGeneratedNames)
 }
 
 /**

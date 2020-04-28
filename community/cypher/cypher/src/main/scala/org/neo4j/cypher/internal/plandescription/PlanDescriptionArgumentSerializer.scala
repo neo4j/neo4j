@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
@@ -45,38 +41,13 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringMaker
 
 object PlanDescriptionArgumentSerializer {
-  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION|REL|NODE)(\d+)""".r
-  private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
-  private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
-  private val removeGeneratedNamesRewriter = topDown(Rewriter.lift {
-    case s: String => removeGeneratedNames(s)
-  })
-  def asPrettyString(e: expressions.Expression): String =
-    if (e == null)
-      "null"
-    else
-      stringifier(removeGeneratedNamesOnTree(e))
-
-  def asPrettyString(s: SymbolicName): String =
-    if (s == null)
-      "null"
-    else
-      stringifier(removeGeneratedNamesOnTree(s))
-
-  def asPrettyString(n: Namespace): String =
-    if (n == null)
-      "null"
-    else
-      stringifier(removeGeneratedNamesOnTree(n))
 
   def serialize(arg: Argument): AnyRef = {
-
     arg match {
-      case Details(info) => info.mkString(", ")
+      case Details(info) => info.mkPrettyString(", ").prettifiedString
       case DbHits(value) => Long.box(value)
       case Memory(value) => Long.box(value)
       case GlobalMemory(value) => Long.box(value)
@@ -110,26 +81,5 @@ object PlanDescriptionArgumentSerializer {
       val direction = if (col.isAscending) "ASC" else "DESC"
       s"${removeGeneratedNames(col.expression.asCanonicalStringVal)} $direction"
     }).mkString(", ")
-  }
-
-  def removeGeneratedNames(s: String): String = {
-    val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
-    deduplicateVariableNames(named)
-  }
-
-  def removeGeneratedNamesOnTree[M <: AnyRef](a: M): M = {
-    removeGeneratedNamesRewriter.apply(a).asInstanceOf[M]
-  }
-
-  def deduplicateVariableNames(in: String): String = {
-    val sb = new StringBuilder
-    var i = 0
-    for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
-      sb ++= in.substring(i, m.start)
-      sb ++= m.group(1)
-      i = m.end
-    }
-    sb ++= in.substring(i)
-    sb.toString()
   }
 }
