@@ -20,7 +20,6 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -31,7 +30,7 @@ import scala.util.matching.Regex
  */
 trait VariablesMatcher extends Matcher[InternalPlanDescription] {
   val expected: Set[String]
-  def planVars(plan: InternalPlanDescription): Set[String] = plan.variables.map(PrettyStringCreator.removeGeneratedNames)
+  def planVars(plan: InternalPlanDescription): Set[String] = plan.variables.map(_.prettifiedString)
 }
 
 /**

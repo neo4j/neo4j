@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.NoChildren
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionImpl
+import org.neo4j.cypher.internal.plandescription.PrettyString
 import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.neo4j.cypher.internal.plandescription.SingleChild
 import org.neo4j.cypher.internal.plandescription.TwoChildren
@@ -389,7 +390,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
 
   override def toPlanDescription: InternalPlanDescription = {
     val nameDesc = name.fold("???")(_.expectedName)
-    val variablesDesc = variables.fold(Set.empty[String])(_.expected)
+    val variablesDesc = variables.fold(Set.empty[PrettyString])(_.expected.map(PrettyStringCreator.raw))
     val lhsDesc = lhs.map(_.toPlanDescription)
     val rhsDesc = rhs.map(_.toPlanDescription)
     val estRowArg = estimatedRows.map(m => EstimatedRows(m.expectedValue)).toSeq

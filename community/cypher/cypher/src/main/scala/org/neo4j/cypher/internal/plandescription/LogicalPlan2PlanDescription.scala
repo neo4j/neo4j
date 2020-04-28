@@ -274,7 +274,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)
 
     val id = plan.id
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
 
     val result: InternalPlanDescription = plan match {
       case AllNodesScan(idName, _) =>
@@ -436,7 +436,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.rhs.isEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
@@ -834,7 +834,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
@@ -866,7 +866,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
 
       case row: plans.Argument =>
-        ArgumentPlanDescription(id = plan.id, Seq.empty, row.argumentIds)
+        ArgumentPlanDescription(id = plan.id, Seq.empty, variables)
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
