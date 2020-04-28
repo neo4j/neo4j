@@ -250,6 +250,22 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     }
 
     @Override
+    public boolean shouldStickOnThread()
+    {
+        // Currently, we're doing our best to keep things together
+        // We should not switch threads when there's an active statement (executing/streaming)
+        // Also, we're currently sticking to the thread when there's an open transaction due to
+        // cursor errors we receive when a transaction is picked up by another thread linearly.
+        return statementProcessor().hasTransaction() || statementProcessor().hasOpenStatement();
+    }
+
+    @Override
+    public boolean hasOpenStatement()
+    {
+        return statementProcessor().hasOpenStatement();
+    }
+
+    @Override
     public boolean reset() throws BoltConnectionFatality
     {
         try
