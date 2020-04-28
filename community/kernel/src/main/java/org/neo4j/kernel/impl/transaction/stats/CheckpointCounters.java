@@ -28,7 +28,7 @@ public interface CheckpointCounters
     long numberOfCheckPoints();
 
     /**
-     * Accumulated duration in milliseconds of all occured checkpoints
+     * Accumulated duration in milliseconds of all occurred checkpoints
      * @return accumulated checkpoints duration in milliseconds
      */
     long checkPointAccumulatedTotalTimeMillis();

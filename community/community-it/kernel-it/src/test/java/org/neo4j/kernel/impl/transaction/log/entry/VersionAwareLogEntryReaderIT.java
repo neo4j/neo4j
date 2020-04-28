@@ -169,7 +169,7 @@ class VersionAwareLogEntryReaderIT
                 assertEquals( 4, logPosition.getLogVersion() );
                 assertEquals( 5, logPosition.getByteOffset() );
 
-                // set positon to the end of the buffer to cause channel switch on next byte read
+                // set position to the end of the buffer to cause channel switch on next byte read
                 ((PositionableChannel) logChannel).setCurrentPosition( checkpointsEndDataOffset );
 
                 while ( entryReader.readLogEntry( logChannel ) != null )

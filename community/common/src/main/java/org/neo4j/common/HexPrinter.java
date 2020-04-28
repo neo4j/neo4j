@@ -129,7 +129,7 @@ public class HexPrinter
     }
 
     /**
-     * Using no line number, 8 bytes per group, 32 bytes per line, 4-space separator as default formating to
+     * Using no line number, 8 bytes per group, 32 bytes per line, 4-space separator as default formatting to
      * print bytes as hex. Output looks like:
      * <p>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08

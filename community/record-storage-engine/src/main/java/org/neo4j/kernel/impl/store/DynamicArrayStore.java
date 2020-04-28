@@ -76,7 +76,7 @@ import static java.lang.System.arraycopy;
  *             <li>Byte 0: PropertyType.STRING</li>
  *             <li>Bytes 1 to 4: 32bit Int length of string array</li>
  *         </ul>
- *         This is followed by a byte[] composed of a 4 byte header containing the length of the byte[] representstion of the string, and then those bytes.
+ *         This is followed by a byte[] composed of a 4 byte header containing the length of the byte[] representation of the string, and then those bytes.
  *     </li>
  *     <li>
  *         Arrays of Geometries starting with a 6 byte header:

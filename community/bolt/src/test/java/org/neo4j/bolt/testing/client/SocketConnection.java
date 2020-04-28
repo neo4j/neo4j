@@ -53,7 +53,7 @@ public class SocketConnection implements TransportConnection
     @Override
     public TransportConnection connect( HostnamePort address ) throws IOException
     {
-        socket.setSoTimeout( 30000 * 1000 ); // TOOD
+        socket.setSoTimeout( 30000 * 1000 ); // TODO
 
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
         in = socket.getInputStream();

@@ -327,8 +327,8 @@ public enum PrivilegeAction
             };
 
     /**
-     * @return true if this action satifies the specified action. For example any broad-scope action satisfies many other actions, but a narrow scope action
-     * satifies only itself.
+     * @return true if this action satisfies the specified action. For example any broad-scope action satisfies many other actions, but a narrow scope action
+     * satisfies only itself.
      */
     public boolean satisfies( PrivilegeAction action )
     {

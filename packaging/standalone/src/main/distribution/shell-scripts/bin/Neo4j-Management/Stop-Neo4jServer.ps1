@@ -35,7 +35,7 @@ Stop the Neo4j Windows Windows Service for the Neo4j installation at $ServerObje
 .OUTPUTS
 System.Int32
 0 = Service was stopped and not running
-non-zero = an error occured
+non-zero = an error occurred
 
 .NOTES
 This function is private to the powershell module

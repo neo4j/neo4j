@@ -158,9 +158,9 @@ public class ProcedureTest
     @Test
     void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorProcedure.class ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WeirdConstructorProcedure.class ) );
         assertThat( exception.getMessage() ).isEqualTo(
-                "Unable to find a usable public no-argument constructor in the class `WierdConstructorProcedure`. Please add a " +
+                "Unable to find a usable public no-argument constructor in the class `WeirdConstructorProcedure`. Please add a " +
                         "valid, public constructor, recompile the class and try again." );
     }
 
@@ -492,9 +492,9 @@ public class ProcedureTest
         }
     }
 
-    public static class WierdConstructorProcedure
+    public static class WeirdConstructorProcedure
     {
-        public WierdConstructorProcedure( WierdConstructorProcedure wat )
+        public WeirdConstructorProcedure( WeirdConstructorProcedure wat )
         {
 
         }

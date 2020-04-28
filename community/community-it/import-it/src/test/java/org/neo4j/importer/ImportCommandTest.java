@@ -1887,7 +1887,7 @@ class ImportCommandTest
                 "--relationships", relationshipData.getAbsolutePath() );
 
         String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
-        assertEquals( 3, occurencesOf( badContents, "is missing data" ), badContents );
+        assertEquals( 3, occurrencesOf( badContents, "is missing data" ), badContents );
     }
 
     @Test
@@ -2061,7 +2061,7 @@ class ImportCommandTest
               " to have at least one line containing the string '" + string + "'" );
     }
 
-    private static int occurencesOf( String text, String lookFor )
+    private static int occurrencesOf( String text, String lookFor )
     {
         int index = -1;
         int count = -1;

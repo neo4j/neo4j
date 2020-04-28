@@ -49,7 +49,7 @@ class EstimationSanityCheckerTest
     }
 
     @Test
-    void shouldWarnAboutCounthigherThanCapacity()
+    void shouldWarnAboutCountHigherThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
