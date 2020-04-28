@@ -61,15 +61,20 @@ class ByteCodeGenerator extends CodeGenerator
     @Override
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
-        List<ByteCodes> byteCodes = new ArrayList<>( classes.size() );
-        for ( ClassByteCodeWriter writer : classes.values() )
+        List<ByteCodes> byteCodes;
+        synchronized ( this )
         {
-            byteCodes.add( writer.toByteCodes() );
-        }
-        ByteCodeChecker checker = configuration.bytecodeChecker();
-        if ( checker != null )
-        {
-            checker.check( classpathLoader, byteCodes );
+            byteCodes = new ArrayList<>( classes.size() );
+            for ( ClassByteCodeWriter writer : classes.values() )
+            {
+                byteCodes.add( writer.toByteCodes() );
+            }
+            ByteCodeChecker checker = configuration.bytecodeChecker();
+            if ( checker != null )
+            {
+                checker.check( classpathLoader, byteCodes );
+            }
+            classes.clear();
         }
         return byteCodes;
     }

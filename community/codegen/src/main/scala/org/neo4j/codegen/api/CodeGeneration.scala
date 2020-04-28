@@ -95,10 +95,13 @@ object CodeGeneration {
     def bytecode: Seq[(String, String)] = _bytecode
   }
 
-  def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator): Class[T] = {
-    val handle = compileClassDeclaration(c, generator)
+  def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator): ClassHandle = {
+    compileClassDeclaration(c, generator)
+  }
+
+  def loadAndSetConstants[T](handle: ClassHandle, declaration: ClassDeclaration[T]): Class[T] = {
     val clazz = handle.loadClass()
-    setConstants(clazz, c.fields)
+    setConstants(clazz, declaration.fields)
     clazz.asInstanceOf[Class[T]]
   }
 

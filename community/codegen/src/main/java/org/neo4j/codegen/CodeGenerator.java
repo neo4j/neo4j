@@ -30,7 +30,7 @@ public abstract class CodeGenerator
 {
     private final CodeLoader loader;
     private long generation;
-    private long classes;
+    private long openClassCount;
     private ByteCodeVisitor byteCodeVisitor = DO_NOTHING;
 
     public static CodeGenerator generateCode( CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
@@ -73,7 +73,7 @@ public abstract class CodeGenerator
 
     private synchronized ClassHandle makeHandle( String packageName, String name, TypeReference parent )
     {
-        classes++;
+        openClassCount++;
         return new ClassHandle( packageName, name, parent, this, generation );
     }
 
@@ -115,7 +115,7 @@ public abstract class CodeGenerator
 
     synchronized void closeClass()
     {
-        classes--;
+        openClassCount--;
     }
 
     void setByteCodeVisitor( ByteCodeVisitor visitor )
@@ -127,7 +127,7 @@ public abstract class CodeGenerator
     {
         if ( generation == this.generation )
         {
-            if ( classes != 0 )
+            if ( openClassCount != 0 )
             {
                 throw new IllegalStateException( "Compilation has not completed." );
             }
