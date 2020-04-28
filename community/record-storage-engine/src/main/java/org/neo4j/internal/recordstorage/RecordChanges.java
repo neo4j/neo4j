@@ -74,12 +74,6 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     }
 
     @Override
-    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
-    {
-        setRecord( key, newRecord, additionalData, cursorTracer );
-    }
-
-    @Override
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
     {
         RecordChange<RECORD, ADDITIONAL> recordChange =

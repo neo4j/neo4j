@@ -61,12 +61,6 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<RE
     }
 
     @Override
-    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
-    {
-        delegate.setTo( key, newRecord, additionalData, cursorTracer );
-    }
-
-    @Override
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
     {
         return delegate.setRecord( key, record, additionalData, cursorTracer );

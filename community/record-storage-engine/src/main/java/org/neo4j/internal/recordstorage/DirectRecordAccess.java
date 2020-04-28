@@ -82,12 +82,6 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
-    {
-        throw new UnsupportedOperationException( "Not supported" );
-    }
-
-    @Override
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Not supported" );

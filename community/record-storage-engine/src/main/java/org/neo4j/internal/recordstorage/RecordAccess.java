@@ -40,9 +40,6 @@ public interface RecordAccess<RECORD,ADDITIONAL>
 
     RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
-    @Deprecated
-    void setTo( long key, RECORD newRecord, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
-
     RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
     /**
