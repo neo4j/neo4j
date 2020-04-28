@@ -133,8 +133,8 @@ class RecoveryIT
     @Test
     void recoveryNotRequiredWhenDatabaseNotFound() throws Exception
     {
-            DatabaseLayout absentDatabase = neo4jLayout.databaseLayout( "absent" );
-            assertFalse( isRecoveryRequired( absentDatabase ) );
+        DatabaseLayout absentDatabase = neo4jLayout.databaseLayout( "absent" );
+        assertFalse( isRecoveryRequired( absentDatabase ) );
     }
 
     @Test
@@ -622,6 +622,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         Monitors monitors = new Monitors();
+        var guardExtensionFactory = new GlobalGuardConsumerTestExtensionFactory();
         var recoveryMonitor = new RecoveryMonitor()
         {
             private final AtomicBoolean reverseCompleted = new AtomicBoolean();
@@ -630,7 +631,7 @@ class RecoveryIT
             @Override
             public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
             {
-                GlobalGuardConsumer.globalGuard.stop();
+                guardExtensionFactory.getProvidedGuardConsumer().globalGuard.stop();
                 reverseCompleted.set( true );
             }
 
@@ -652,14 +653,14 @@ class RecoveryIT
         };
         monitors.addMonitorListener( recoveryMonitor );
         var service = builderWithRelationshipTypeScanStoreSet( layout.getNeo4jLayout() )
-                .addExtension( new GlobalGuardConsumerTestExtensionFactory() )
+                .addExtension( guardExtensionFactory )
                 .setMonitors( monitors ).build();
         try
         {
             var database = service.database( layout.getDatabaseName() );
             assertTrue( recoveryMonitor.isReverseCompleted() );
             assertFalse( recoveryMonitor.isRecoveryCompleted() );
-            assertFalse( GlobalGuardConsumer.globalGuard.isAvailable() );
+            assertFalse( guardExtensionFactory.getProvidedGuardConsumer().globalGuard.isAvailable() );
             assertFalse( database.isAvailable( 0 ) );
             var e = assertThrows( Exception.class, database::beginTx );
             assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
@@ -885,12 +886,14 @@ class RecoveryIT
         }
     }
 
-    private static class GlobalGuardConsumerTestExtensionFactory extends ExtensionFactory<GlobalGuardConsumerTestExtensionFactory.Dependencies>
+    interface Dependencies
     {
-        interface Dependencies
-        {
-            CompositeDatabaseAvailabilityGuard globalGuard();
-        }
+        CompositeDatabaseAvailabilityGuard globalGuard();
+    }
+
+    private static class GlobalGuardConsumerTestExtensionFactory extends ExtensionFactory<Dependencies>
+    {
+        private GlobalGuardConsumer providedConsumer;
 
         GlobalGuardConsumerTestExtensionFactory()
         {
@@ -900,15 +903,21 @@ class RecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
         {
-            return new GlobalGuardConsumer( dependencies );
+            providedConsumer = new GlobalGuardConsumer( dependencies );
+            return providedConsumer;
+        }
+
+        public GlobalGuardConsumer getProvidedGuardConsumer()
+        {
+            return providedConsumer;
         }
     }
 
     private static class GlobalGuardConsumer extends LifecycleAdapter
     {
-        private static CompositeDatabaseAvailabilityGuard globalGuard;
+        private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-        GlobalGuardConsumer( GlobalGuardConsumerTestExtensionFactory.Dependencies dependencies )
+        GlobalGuardConsumer( Dependencies dependencies )
         {
             globalGuard = dependencies.globalGuard();
         }
