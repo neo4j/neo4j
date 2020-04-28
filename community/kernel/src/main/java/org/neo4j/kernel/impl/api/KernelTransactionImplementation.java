@@ -562,7 +562,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( closed )
         {
-            throw new NotInTransactionException( "This transaction has already been closed. " );
+            throw new NotInTransactionException( "This transaction has already been closed." );
         }
     }
 
@@ -996,8 +996,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             operations.release();
             pageCursorTracer.reportEvents();
             initializationTrace = null;
-            memoryTracker.reset();
             pool.release( this );
+            memoryTracker.reset();
         }
         finally
         {
