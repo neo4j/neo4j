@@ -201,6 +201,11 @@ public class ServerUserLogTest
             @Override
             protected GraphFactory createGraphFactory( Config config )
             {
+                config.augment( stringMap(
+                        "dbms.connector.bolt.listen_address", ":0",
+                        "dbms.connector.http.listen_address", ":0",
+                        "dbms.connector.https.listen_address", ":0"
+                ) );
                 return new CommunityGraphFactory();
             }
 
