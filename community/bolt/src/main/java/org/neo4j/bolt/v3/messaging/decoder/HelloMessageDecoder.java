@@ -58,7 +58,7 @@ public class HelloMessageDecoder implements RequestMessageDecoder
         return new HelloMessage( meta );
     }
 
-    private static Map<String,Object> readMetaDataMap( Neo4jPack.Unpacker unpacker ) throws IOException
+    protected static Map<String,Object> readMetaDataMap( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         var metaDataMapValue = unpacker.unpackMap();
         var writer = new PrimitiveOnlyValueWriter();

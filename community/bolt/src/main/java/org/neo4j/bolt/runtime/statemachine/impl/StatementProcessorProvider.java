@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 
 public class StatementProcessorProvider
 {
@@ -35,19 +36,21 @@ public class StatementProcessorProvider
     private final AuthenticationResult authResult;
     private final TransactionStateMachineSPIProvider spiProvider;
     private final StatementProcessorReleaseManager resourceReleaseManger;
+    private final RoutingContext routingContext;
 
     public StatementProcessorProvider( AuthenticationResult authResult, TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock,
-            StatementProcessorReleaseManager releaseManager )
+                                       StatementProcessorReleaseManager releaseManager, RoutingContext routingContext )
     {
         this.authResult = authResult;
         this.spiProvider = transactionSpiProvider;
         this.clock = clock;
         this.resourceReleaseManger = releaseManager;
+        this.routingContext = routingContext;
     }
 
     public StatementProcessor getStatementProcessor( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
     {
         TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManger );
-        return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock );
+        return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock, routingContext );
     }
 }

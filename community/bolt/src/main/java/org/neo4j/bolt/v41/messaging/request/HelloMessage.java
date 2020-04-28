@@ -17,24 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4.messaging;
+package org.neo4j.bolt.v41.messaging.request;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.values.virtual.MapValue;
+import java.util.Map;
 
-public class DiscardMessage extends AbstractStreamingMessage
+import org.neo4j.bolt.v41.messaging.RoutingContext;
+
+public class HelloMessage extends org.neo4j.bolt.v3.messaging.request.HelloMessage
 {
-    public static final byte SIGNATURE = 0x2F;
-    private static final String NAME = "DISCARD";
+    public static final String ROUTING = "routing";
+    private final RoutingContext routingContext;
 
-    public DiscardMessage( MapValue meta ) throws BoltIOException
+    public HelloMessage( Map<String,Object> meta, RoutingContext routingContext )
     {
-        super( meta, NAME );
+        super( meta );
+        this.routingContext = routingContext;
     }
 
-    @Override
-    String name()
+    public RoutingContext routingContext()
     {
-        return NAME;
+        return routingContext;
     }
 }

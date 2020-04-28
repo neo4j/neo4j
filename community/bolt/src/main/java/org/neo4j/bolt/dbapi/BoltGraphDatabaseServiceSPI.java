@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -36,7 +37,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 public interface BoltGraphDatabaseServiceSPI
 {
     BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
-            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata );
+            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext );
 
     boolean isPeriodicCommit( String query );
 

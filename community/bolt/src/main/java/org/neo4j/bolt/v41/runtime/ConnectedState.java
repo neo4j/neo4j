@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime;
+package org.neo4j.bolt.v41.runtime;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.bolt.v41.messaging.request.HelloMessage;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
@@ -55,8 +54,9 @@ public class ConnectedState implements BoltStateMachineState
             HelloMessage helloMessage = (HelloMessage) message;
             String userAgent = helloMessage.userAgent();
             Map<String,Object> authToken = helloMessage.authToken();
+            RoutingContext routingContext = helloMessage.routingContext();
 
-            if ( processAuthentication( userAgent, authToken, context, new RoutingContext( false, Collections.emptyMap() ) ) )
+            if ( processAuthentication( userAgent, authToken, context, routingContext ) )
             {
                 context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
                 return readyState;

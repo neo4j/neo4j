@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,8 +91,8 @@ class TransactionStateMachineTest
     {
         FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        mutableState = new MutableTransactionState( AUTH_DISABLED, clock );
-        stateMachine = new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, clock );
+        mutableState = new MutableTransactionState( AUTH_DISABLED, clock, null );
+        stateMachine = new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, clock, null );
     }
 
     @Test
@@ -181,7 +182,7 @@ class TransactionStateMachineTest
         doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any() , anyString(), any() ) ).thenReturn( resultHandle );
         when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
 
@@ -370,7 +371,7 @@ class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
         final BoltTransaction periodicTransaction = mock( BoltTransaction.class );
-        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
+        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -382,7 +383,7 @@ class TransactionStateMachineTest
         InOrder inOrder = inOrder( stateMachineSPI );
         inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
         // implicit transaction was started for periodic query execution
-        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any(), any() );
+        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any(), any(), any() );
         // periodic commit query was executed after specific transaction started
         inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
     }
@@ -450,7 +451,7 @@ class TransactionStateMachineTest
 
     private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
     {
-        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock() );
+        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock(), null );
     }
 
     private static MapValue map( Object... keyValues )
@@ -463,7 +464,7 @@ class TransactionStateMachineTest
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
@@ -474,7 +475,7 @@ class TransactionStateMachineTest
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;

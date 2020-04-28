@@ -174,7 +174,7 @@ class DatabaseServiceBookmarkTest
 
     private void begin( BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks )
     {
-        dbSpi.beginTransaction( null, null, null, bookmarks, null, null, null );
+        dbSpi.beginTransaction( null, null, null, bookmarks, null, null, null, null );
     }
 
     private static TransactionIdStore fixedTxIdStore( long lastClosedTransactionId )

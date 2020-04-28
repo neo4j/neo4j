@@ -24,7 +24,7 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
-import org.neo4j.bolt.v3.runtime.ConnectedState;
+import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.bolt.v4.runtime.FailedState;
@@ -41,7 +41,7 @@ public class BoltStateMachineV41 extends AbstractBoltStateMachine
     @Override
     protected States buildStates()
     {
-        ConnectedState connected = new ConnectedState();
+        ConnectedState connected = new ConnectedState(); //v4.1
         ReadyState ready = new ReadyState(); // v4
         AutoCommitState autoCommitState = new AutoCommitState(); // v4
         InTransactionState inTransaction = new InTransactionState(); // v4

@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
+import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
@@ -33,6 +34,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
@@ -99,10 +101,10 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     }
 
     @Override
-    public void initStatementProcessorProvider( AuthenticationResult authResult )
+    public void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this ) );
+        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this, routingContext ) );
     }
 
     /**

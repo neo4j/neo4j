@@ -30,7 +30,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
-import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
+import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -63,6 +63,6 @@ public class BoltProtocolV41 extends AbstractBoltProtocol
                                                             BookmarksParser bookmarksParser, LogService logging )
     {
         BoltResponseMessageWriterV3 responseWriter = new BoltResponseMessageWriterV3( neo4jPack, connection.output(), logging );
-        return new BoltRequestMessageReaderV4( connection, responseWriter, bookmarksParser, logging );
+        return new BoltRequestMessageReaderV41( connection, responseWriter, bookmarksParser, logging );
     }
 }

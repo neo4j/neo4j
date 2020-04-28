@@ -59,10 +59,10 @@ class TransactionStateMachineV3SPITest
         var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ) );
 
         // When
-        spi.beginTransaction( null,  bookmarks, null, null, null );
+        spi.beginTransaction( null,  bookmarks, null, null, null, null );
 
         // Then
-        verify( dbSpi ).beginTransaction( any(), any(),any(), eq(bookmarks), any(), any(), any());
+        verify( dbSpi ).beginTransaction( any(), any(),any(), eq(bookmarks), any(), any(), any(), any());
     }
 
     @Test
@@ -94,7 +94,8 @@ class TransactionStateMachineV3SPITest
 
         var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ), new BookmarkWithPrefix( 4242L ) );
 
-        assertThrows( IllegalArgumentException.class, () -> spi.beginTransaction( null,  bookmarks, null, null, null ) );
+        assertThrows( IllegalArgumentException.class, () ->
+                spi.beginTransaction( null,  bookmarks, null, null, null, null ) );
     }
 
     private static class TestAbstractTransactionStateMachineSPI extends TransactionStateMachineV3SPI

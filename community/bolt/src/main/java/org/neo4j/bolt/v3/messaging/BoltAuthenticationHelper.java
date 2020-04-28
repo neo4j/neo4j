@@ -25,11 +25,13 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.values.storable.Values;
 
 public class BoltAuthenticationHelper
 {
-    public static boolean processAuthentication( String userAgent, Map<String,Object> authToken, StateMachineContext context ) throws BoltConnectionFatality
+    public static boolean processAuthentication( String userAgent, Map<String,Object> authToken, StateMachineContext context,
+                                                RoutingContext routingContext ) throws BoltConnectionFatality
     {
         try
         {
@@ -38,7 +40,7 @@ public class BoltAuthenticationHelper
             AuthenticationResult authResult = boltSpi.authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
             context.authenticatedAsUser( username, userAgent );
-            context.initStatementProcessorProvider( authResult );
+            context.initStatementProcessorProvider( authResult, routingContext );
 
             if ( authResult.credentialsExpired() )
             {
