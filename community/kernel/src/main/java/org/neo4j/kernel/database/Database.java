@@ -352,7 +352,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( watcherService );
 
             otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0 );
-            life.add( onStop( () -> otherDatabasePool.close() ) );
+            life.add( onShutdown( () -> otherDatabasePool.close() ) );
             var otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
 
             // Upgrade the store before we begin
@@ -486,7 +486,7 @@ public class Database extends LifecycleAdapter
             msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
             try
             {
-                executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ) );
+                executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
             }
             catch ( Exception closeException )
             {
@@ -1004,6 +1004,14 @@ public class Database extends LifecycleAdapter
         if ( storageEngine != null )
         {
             storageEngine.forceClose();
+        }
+    }
+
+    private static void safePoolRelease( ScopedMemoryPool pool )
+    {
+        if ( pool != null )
+        {
+            pool.close();
         }
     }
 

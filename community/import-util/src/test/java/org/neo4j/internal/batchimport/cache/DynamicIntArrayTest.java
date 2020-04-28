@@ -55,7 +55,7 @@ class DynamicIntArrayTest
 
         longArray.set( 0, 5 );
 
-        assertEquals( 80, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 96, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
