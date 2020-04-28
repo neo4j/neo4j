@@ -68,7 +68,7 @@ public class LoggingMonitor implements IndexProvider.Monitor
             long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
     {
         StringJoiner joiner =
-                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexFile, index ) + " ", "" );
+                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexFile, index ) + ' ', "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of tree nodes: " + numberOfTreeNodes );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );

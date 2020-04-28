@@ -123,7 +123,7 @@ public abstract class Neo4jAlgoTestCase
         {
             if ( !expectation.remove( element ) )
             {
-                fail( "unexpected element <" + element + ">" );
+                fail( "unexpected element <" + element + '>' );
             }
         }
         if ( !expectation.isEmpty() )

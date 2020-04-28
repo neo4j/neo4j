@@ -295,7 +295,7 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
             @Override
             public String toString()
             {
-                return "INITIALIZE(" + Arrays.toString( keys ) + ")";
+                return "INITIALIZE(" + Arrays.toString( keys ) + ')';
             }
         }
 
@@ -334,7 +334,7 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
             public String toString()
             {
                 String scoreHex = Integer.toHexString( Float.floatToRawIntBits( score ) );
-                return "Node(" + reference + ", " + score + " (" + scoreHex + ")" + "," + Arrays.toString( values ) + ")";
+                return "Node(" + reference + ", " + score + " (" + scoreHex + ')' + ',' + Arrays.toString( values ) + ')';
             }
         }
 

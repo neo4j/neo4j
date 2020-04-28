@@ -107,14 +107,14 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
             DynamicRecord actualNameRecord = actualNRs.next();
             DynamicRecord expectedNameRecord = expectedNRs.next();
 
-            assertThat( actualNameRecord.getData() ).as( "[" + i + "]getData" ).isEqualTo( expectedNameRecord.getData() );
-            assertThat( actualNameRecord.getLength() ).as( "[" + i + "]getLength" ).isEqualTo( expectedNameRecord.getLength() );
-            assertThat( actualNameRecord.getNextBlock() ).as( "[" + i + "]getNextBlock" ).isEqualTo( expectedNameRecord.getNextBlock() );
-            assertThat( actualNameRecord.getType() ).as( "[" + i + "]getType" ).isEqualTo( expectedNameRecord.getType() );
-            assertThat( actualNameRecord.getId() ).as( "[" + i + "]getId" ).isEqualTo( expectedNameRecord.getId() );
-            assertThat( actualNameRecord.getId() ).as( "[" + i + "]getLongId" ).isEqualTo( expectedNameRecord.getId() );
-            assertThat( actualNameRecord.isStartRecord() ).as( "[" + i + "]isStartRecord" ).isEqualTo( expectedNameRecord.isStartRecord() );
-            assertThat( actualNameRecord.inUse() ).as( "[" + i + "]inUse" ).isEqualTo( expectedNameRecord.inUse() );
+            assertThat( actualNameRecord.getData() ).as( '[' + i + "]getData" ).isEqualTo( expectedNameRecord.getData() );
+            assertThat( actualNameRecord.getLength() ).as( '[' + i + "]getLength" ).isEqualTo( expectedNameRecord.getLength() );
+            assertThat( actualNameRecord.getNextBlock() ).as( '[' + i + "]getNextBlock" ).isEqualTo( expectedNameRecord.getNextBlock() );
+            assertThat( actualNameRecord.getType() ).as( '[' + i + "]getType" ).isEqualTo( expectedNameRecord.getType() );
+            assertThat( actualNameRecord.getId() ).as( '[' + i + "]getId" ).isEqualTo( expectedNameRecord.getId() );
+            assertThat( actualNameRecord.getId() ).as( '[' + i + "]getLongId" ).isEqualTo( expectedNameRecord.getId() );
+            assertThat( actualNameRecord.isStartRecord() ).as( '[' + i + "]isStartRecord" ).isEqualTo( expectedNameRecord.isStartRecord() );
+            assertThat( actualNameRecord.inUse() ).as( '[' + i + "]inUse" ).isEqualTo( expectedNameRecord.inUse() );
             i++;
         }
     }

@@ -50,7 +50,7 @@ class EphemeralFileChannel extends FileChannel implements EphemeralPositionable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + openedAt.getFilename() + "]";
+        return getClass().getSimpleName() + '[' + openedAt.getFilename() + ']';
     }
 
     private void checkIfClosedOrInterrupted() throws IOException

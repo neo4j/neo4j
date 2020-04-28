@@ -78,7 +78,7 @@ public class UniquenessRecoveryTest
 
     private static String param( String name )
     {
-        return UniquenessRecoveryTest.class.getName() + "." + name;
+        return UniquenessRecoveryTest.class.getName() + '.' + name;
     }
 
     @Rule
@@ -115,7 +115,7 @@ public class UniquenessRecoveryTest
         System.out.println( "in path: " + path );
         ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true",
                 "-Dforce_create_constraint=" + config.force_create_constraint,
-                "-D" + param( "use_cypher" ) + "=" + USE_CYPHER,
+                "-D" + param( "use_cypher" ) + '=' + USE_CYPHER,
                 "-cp", System.getProperty( "java.class.path" ),
                 getClass().getName(), path.getPath() );
         prototype.environment().put( "JAVA_HOME", System.getProperty( "java.home" ) );

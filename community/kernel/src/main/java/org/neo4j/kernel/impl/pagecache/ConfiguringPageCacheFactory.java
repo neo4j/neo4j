@@ -165,7 +165,7 @@ public class ConfiguringPageCacheFactory
         long maxVmUsageMb = ByteUnit.Byte.toMebiBytes( Runtime.getRuntime().maxMemory() );
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
-                     " Page cache: " + pageCacheMemory + ".";
+                     " Page cache: " + pageCacheMemory + '.';
 
         log.info( msg );
     }

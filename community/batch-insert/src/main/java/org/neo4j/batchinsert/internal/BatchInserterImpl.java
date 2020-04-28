@@ -293,7 +293,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 dumpConfiguration( config );
             }
-            msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+            msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ')' );
             life.start();
             neoStores = sf.openAllNeoStores( true );
             neoStores.verifyStoreOk();
@@ -680,7 +680,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         else
         {
-            throw new IllegalArgumentException( "Don't know how to check the name of " + schemaish + "." );
+            throw new IllegalArgumentException( "Don't know how to check the name of " + schemaish + '.' );
         }
         if ( name == null || (name = name.trim()).isEmpty() || name.isBlank() )
         {
@@ -1093,7 +1093,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new RuntimeException( e );
         }
-        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
+        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ')' );
     }
 
     private LabelScanStore buildLabelIndex() throws IOException
@@ -1113,7 +1113,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public String toString()
     {
-        return "EmbeddedBatchInserter[" + databaseLayout + "]";
+        return "EmbeddedBatchInserter[" + databaseLayout + ']';
     }
 
     private Map<String, Object> getPropertyChain( long nextProp )

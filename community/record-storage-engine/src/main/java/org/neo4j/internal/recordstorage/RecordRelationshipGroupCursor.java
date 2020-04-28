@@ -146,7 +146,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         }
         else
         {
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString() + "]";
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString() + ']';
         }
     }
 

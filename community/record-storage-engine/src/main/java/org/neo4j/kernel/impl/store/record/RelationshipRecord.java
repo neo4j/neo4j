@@ -192,7 +192,7 @@ public class RelationshipRecord extends PrimitiveRecord
                ",prop=" + getNextProp() +
                ",secondaryUnitId=" + getSecondaryUnitId() +
                (firstInFirstChain ? ", sFirst" : ",!sFirst") +
-               (firstInSecondChain ? ", tFirst" : ",!tFirst") + "]";
+               (firstInSecondChain ? ", tFirst" : ",!tFirst") + ']';
     }
 
     @Override

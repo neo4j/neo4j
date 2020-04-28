@@ -67,7 +67,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         }
         throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + namedDatabaseId.name() +
                                                            " because Bolt is not enabled. Please update your configuration for '" +
-                                                           BoltConnector.enabled.name() + "'" );
+                                                           BoltConnector.enabled.name() + '\'' );
     }
 
     private void assertDatabaseIsOperational( NamedDatabaseId namedDatabaseId ) throws ProcedureException

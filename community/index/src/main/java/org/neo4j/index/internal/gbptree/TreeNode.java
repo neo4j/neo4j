@@ -182,7 +182,7 @@ abstract class TreeNode<KEY,VALUE>
     {
         if ( count < 0 )
         {
-            throw new IllegalArgumentException( "Invalid key count, " + count + ". On tree node " + cursor.getCurrentPageId() + "." );
+            throw new IllegalArgumentException( "Invalid key count, " + count + ". On tree node " + cursor.getCurrentPageId() + '.' );
         }
         cursor.putInt( BYTE_POS_KEYCOUNT, count );
     }

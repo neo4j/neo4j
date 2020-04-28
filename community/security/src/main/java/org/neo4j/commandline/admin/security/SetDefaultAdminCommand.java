@@ -77,7 +77,7 @@ public class SetDefaultAdminCommand extends AbstractCommand
             throw new RuntimeException( e );
         }
 
-        ctx.out().println( "default admin user set to '" + username + "'" );
+        ctx.out().println( "default admin user set to '" + username + '\'' );
     }
 
     @VisibleForTesting

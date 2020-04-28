@@ -486,7 +486,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public String toString()
     {
-        return "Node[" + this.getId() + "]";
+        return "Node[" + this.getId() + ']';
     }
 
     @Override

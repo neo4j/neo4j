@@ -42,7 +42,7 @@ public interface FileRepository
         {
             String message = "The repository file '" + file.getAbsolutePath() + "' has been marked as migrated. " +
                     "If you are sure that you want use this repository you need to manually rename the file '" +
-                    migratedFile.getAbsolutePath() + "' to '" + file.getName() + "'";
+                    migratedFile.getAbsolutePath() + "' to '" + file.getName() + '\'';
             log.error( message );
             throw new IllegalStateException( message );
         }

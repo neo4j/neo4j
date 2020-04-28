@@ -226,7 +226,7 @@ class EphemeralFileData
     @Override
     public String toString()
     {
-        return "EphemeralFileData[size: " + fileAsBuffer.getSize() + "]";
+        return "EphemeralFileData[size: " + fileAsBuffer.getSize() + ']';
     }
 
     long getLastModified()

@@ -175,7 +175,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[job:" + job + "]";
+        return getClass().getSimpleName() + "[job:" + job + ']';
     }
 
     private abstract static class PopulatingIndexUpdater implements IndexUpdater

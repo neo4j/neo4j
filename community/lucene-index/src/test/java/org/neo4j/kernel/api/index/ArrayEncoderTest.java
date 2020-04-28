@@ -159,7 +159,7 @@ class ArrayEncoderTest
                 {
                     String encoded = encodeFunction.apply( inputValue );
                     assertEquals( first, encoded, "Each attempt at encoding should yield the same result. Turns out that first one was '"
-                            + first + "', yet another one was '" + encoded + "'" );
+                            + first + "', yet another one was '" + encoded + '\'' );
                 }
             } );
         }

@@ -53,7 +53,7 @@ class ActorsManager
 
     Actor createActor( String name )
     {
-        ActorImpl actor = new ActorImpl( threadGroup, "Actor:" + managerName + "." + name );
+        ActorImpl actor = new ActorImpl( threadGroup, "Actor:" + managerName + '.' + name );
         actors.offer( actor );
         return actor;
     }

@@ -40,6 +40,6 @@ final class BaseUri
 
     public URI uri( String packageName, String simpleClassName, JavaFileObject.Kind kind )
     {
-        return URI.create( prefix + packageName.replace( '.', '/' ) + "/" + simpleClassName + kind.extension );
+        return URI.create( prefix + packageName.replace( '.', '/' ) + '/' + simpleClassName + kind.extension );
     }
 }

@@ -234,7 +234,7 @@ public abstract class IndexCommand extends Command
         @Override
         public String toString()
         {
-            return "AddNode[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId + ", value:" + value + "]";
+            return "AddNode[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId + ", value:" + value + ']';
         }
 
         @Override
@@ -321,7 +321,7 @@ public abstract class IndexCommand extends Command
         public String toString()
         {
             return "AddRelationship[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId +
-                    ", value:" + value + "(" + (value != null ? value.getClass().getSimpleName() : "null") + ")" +
+                    ", value:" + value + '(' + (value != null ? value.getClass().getSimpleName() : "null") + ')' +
                     ", startNode:" + startNode +
                     ", endNode:" + endNode +
                     "]";
@@ -381,7 +381,7 @@ public abstract class IndexCommand extends Command
         @Override
         public String toString()
         {
-            return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).nameToLowerCase() + "]";
+            return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).nameToLowerCase() + ']';
         }
 
         @Override

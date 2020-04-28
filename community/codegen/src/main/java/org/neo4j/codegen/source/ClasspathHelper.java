@@ -94,7 +94,7 @@ final class ClasspathHelper
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Failed to get canonical path for: '" + path + "'", e );
+            throw new RuntimeException( "Failed to get canonical path for: '" + path + '\'', e );
         }
     }
 

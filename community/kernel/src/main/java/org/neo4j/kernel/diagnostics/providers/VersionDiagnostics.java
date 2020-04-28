@@ -40,7 +40,7 @@ public class VersionDiagnostics extends NamedDiagnosticsProvider
     @Override
     public void dump( Logger logger )
     {
-        logger.log( "DBMS: " + databaseInfo + " " + storeId );
+        logger.log( "DBMS: " + databaseInfo + ' ' + storeId );
         logger.log( "Kernel version: " + Version.getKernelVersion() );
     }
 }

@@ -121,11 +121,11 @@ public class SyntaxException extends Neo4jException
 
     private void buildErrorString( StringBuilder builder, String element, int currentOffset )
     {
-        builder.append( "\"" )
+        builder.append( '"' )
                .append( element.stripTrailing() ) // removes potential \r at the end
-               .append( "\"" )
+               .append( '"' )
                .append( lineSeparator() )
                .append( " ".repeat( currentOffset + 1 ) ) // extra space to compensate for an opening quote
-               .append( "^" );
+               .append( '^' );
     }
 }

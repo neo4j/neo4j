@@ -141,7 +141,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void breaks( String labelName )
     {
-        indent().append( "break " + labelName + ";\n" );
+        indent().append( "break " ).append( labelName ).append( ";\n" );
     }
 
     @Override
@@ -171,7 +171,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     {
         if ( labelName != null && !labelName.isEmpty() )
         {
-            indent().append( labelName + ":\n" );
+            indent().append( labelName ).append( ":\n" );
         }
         indent().append( "while( " );
         test.accept( this );
@@ -222,7 +222,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         levels.pop();
         indent().append( "}\n" );
         indent().append( "catch ( " )
-                .append( exception.type().fullName() ).append( " " )
+                .append( exception.type().fullName() ).append( ' ' )
                 .append( exception.name() )
                 .append( " )\n" );
         indent().append( "{\n" );
@@ -374,7 +374,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void getStatic( FieldReference field )
     {
-        append( field.owner().fullName() ).append( "." ).append( field.name() );
+        append( field.owner().fullName() ).append( '.' ).append( field.name() );
     }
 
     @Override
@@ -549,7 +549,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newArray( TypeReference type, int size )
     {
-        append( "new " ).append( type.fullName() ).append( "[" ).append( size ).append( "]" );
+        append( "new " ).append( type.fullName() ).append( '[' ).append( size ).append( ']' );
     }
 
     @Override

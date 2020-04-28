@@ -70,7 +70,7 @@ public class ThresholdConfigParser
         String[] tokens = configValue.split( " " );
         if ( tokens.length == 0 )
         {
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
+            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + '\'' );
         }
 
         final String boolOrNumber = tokens[0];

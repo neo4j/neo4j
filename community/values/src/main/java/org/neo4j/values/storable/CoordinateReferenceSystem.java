@@ -49,7 +49,7 @@ public class CoordinateReferenceSystem implements CRS
                 return type;
             }
         }
-        throw new InvalidArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
+        throw new InvalidArgumentException( "Unknown coordinate reference system: " + tableId + '-' + code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )

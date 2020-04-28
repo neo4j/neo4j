@@ -163,7 +163,7 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        String denseInfo = (dense ? "group" : "rel") + "=" + nextRel;
+        String denseInfo = (dense ? "group" : "rel") + '=' + nextRel;
         String lightHeavyInfo = isLight ? "light" :
                                 dynamicLabelRecords.isEmpty() ?
                                 "heavy" : "heavy,dynlabels=" + dynamicLabelRecords;
@@ -171,11 +171,11 @@ public class NodeRecord extends PrimitiveRecord
         return "Node[" + getId() +
                ",used=" + inUse() +
                ",created=" + isCreated() +
-               "," + denseInfo +
+               ',' + denseInfo +
                ",prop=" + getNextProp() +
                ",labels=" + parseLabelsField( this ) +
-               "," + lightHeavyInfo +
-               ",secondaryUnitId=" + getSecondaryUnitId() + "]";
+               ',' + lightHeavyInfo +
+               ",secondaryUnitId=" + getSecondaryUnitId() + ']';
     }
 
     @Override

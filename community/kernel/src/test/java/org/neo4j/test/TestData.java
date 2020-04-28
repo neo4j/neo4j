@@ -219,7 +219,7 @@ public class TestData<T> implements TestRule
             StringBuilder documentation = new StringBuilder();
             for ( int i = start; i <= end; i++ )
             {
-                documentation.append( EMPTY.equals( lines[i] ) ? EMPTY : lines[i].substring( indent ) ).append( "\n" );
+                documentation.append( EMPTY.equals( lines[i] ) ? EMPTY : lines[i].substring( indent ) ).append( '\n' );
             }
             doc = documentation.toString();
         }
@@ -229,7 +229,7 @@ public class TestData<T> implements TestRule
         }
         if ( title == null )
         {
-            title = methodName.replace( "_", " " );
+            title = methodName.replace( '_', ' ' );
         }
         return new Lazy( graph, title, doc );
     }

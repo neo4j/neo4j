@@ -45,7 +45,7 @@ public final class ByteCodeUtils
         builder.append( "[".repeat( Math.max( 0, reference.arrayDepth() ) ) );
         if ( reference.arrayDepth() > 0 )
         {
-            builder.append( "L" );
+            builder.append( 'L' );
         }
         if ( !reference.packageName().isEmpty() )
         {
@@ -59,7 +59,7 @@ public final class ByteCodeUtils
         builder.append( reference.name() );
         if ( reference.isArray() )
         {
-            builder.append( ";" );
+            builder.append( ';' );
         }
         return builder.toString();
     }
@@ -97,12 +97,12 @@ public final class ByteCodeUtils
     public static String desc( MethodReference reference )
     {
         StringBuilder builder = new StringBuilder();
-        builder.append( "(" );
+        builder.append( '(' );
         for ( TypeReference parameter : reference.parameters() )
         {
             internalType( builder, parameter, false );
         }
-        builder.append( ")" );
+        builder.append( ')' );
         internalType( builder, reference.returns(), false );
 
         return builder.toString();
@@ -144,25 +144,25 @@ public final class ByteCodeUtils
         List<MethodDeclaration.TypeParameter> typeParameters = declaration.typeParameters();
         if ( showErasure && !typeParameters.isEmpty() )
         {
-            builder.append( "<" );
+            builder.append( '<' );
             for ( MethodDeclaration.TypeParameter typeParameter : typeParameters )
             {
-                builder.append( typeParameter.name() ).append( ":" );
+                builder.append( typeParameter.name() ).append( ':' );
                 internalType( builder, typeParameter.extendsBound(), true );
             }
-            builder.append( ">" );
+            builder.append( '>' );
         }
-        builder.append( "(" );
+        builder.append( '(' );
         for ( Parameter parameter : declaration.parameters() )
         {
             internalType( builder, parameter.type(), showErasure );
         }
-        builder.append( ")" );
+        builder.append( ')' );
         internalType( builder, declaration.returnType(), showErasure );
         List<TypeReference> throwsList = declaration.throwsList();
         if ( showErasure && throwsList.stream().anyMatch( TypeReference::isTypeParameter ) )
         {
-            builder.append( "^" );
+            builder.append( '^' );
             throwsList.forEach( t -> internalType( builder, t, false ) );
         }
         return builder.toString();
@@ -181,45 +181,45 @@ public final class ByteCodeUtils
         switch ( name )
         {
         case "int":
-            builder.append( "I" );
+            builder.append( 'I' );
             break;
         case "long":
-            builder.append( "J" );
+            builder.append( 'J' );
             break;
         case "byte":
-            builder.append( "B" );
+            builder.append( 'B' );
             break;
         case "short":
-            builder.append( "S" );
+            builder.append( 'S' );
             break;
         case "char":
-            builder.append( "C" );
+            builder.append( 'C' );
             break;
         case "float":
-            builder.append( "F" );
+            builder.append( 'F' );
             break;
         case "double":
-            builder.append( "D" );
+            builder.append( 'D' );
             break;
         case "boolean":
-            builder.append( "Z" );
+            builder.append( 'Z' );
             break;
         case "void":
-            builder.append( "V" );
+            builder.append( 'V' );
             break;
 
         default:
             if ( reference.isTypeParameter() )
             {
-                builder.append( "T" ).append( name );
+                builder.append( 'T' ).append( name );
             }
             else
             {
-                builder.append( "L" );
+                builder.append( 'L' );
                 String packageName = reference.packageName().replaceAll( "\\.", "\\/" );
                 if ( !packageName.isEmpty() )
                 {
-                    builder.append( packageName ).append( "/" );
+                    builder.append( packageName ).append( '/' );
                 }
                 for ( TypeReference parent : reference.declaringClasses() )
                 {
@@ -231,11 +231,11 @@ public final class ByteCodeUtils
             List<TypeReference> parameters = reference.parameters();
             if ( showErasure && !parameters.isEmpty() )
             {
-                builder.append( "<" );
+                builder.append( '<' );
                 parameters.forEach( p -> internalType( builder, p, true ) );
-                builder.append( ">" );
+                builder.append( '>' );
             }
-            builder.append( ";" );
+            builder.append( ';' );
 
         }
         return builder;
@@ -277,9 +277,9 @@ public final class ByteCodeUtils
         catch ( NoSuchMethodException e )
         {
             String[] allMethods = stream( clazz.getMethods() ).map( Method::toString ).toArray( String[]::new );
-            String methodName = methodReference.returns().fullName() + " " + methodReference.name() + "(" +
+            String methodName = methodReference.returns().fullName() + ' ' + methodReference.name() + '(' +
                                 join( ", ", stream( methodReference.parameters() ).map( TypeReference::fullName )
-                                        .toArray( String[]::new ) ) + ")";
+                                        .toArray( String[]::new ) ) + ')';
             throw new AssertionError( format( "%s does not exists.%n Class %s has the following methods:%n%s",
                     methodName,
                     clazz.getCanonicalName(),

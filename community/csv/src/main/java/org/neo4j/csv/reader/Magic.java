@@ -199,6 +199,6 @@ public class Magic
     @Override
     public String toString()
     {
-        return "Magic[" + description + ", " + Arrays.toString( bytes ) + "]";
+        return "Magic[" + description + ", " + Arrays.toString( bytes ) + ']';
     }
 }

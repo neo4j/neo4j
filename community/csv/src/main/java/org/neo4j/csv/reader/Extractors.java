@@ -189,7 +189,7 @@ public class Extractors
         Extractor<?> instance = instances.get( name.toUpperCase() );
         if ( instance == null )
         {
-            throw new IllegalArgumentException( "'" + name + "'" );
+            throw new IllegalArgumentException( '\'' + name + '\'' );
         }
         return instance;
     }
@@ -713,7 +713,7 @@ public class Extractors
             }
             catch ( NumberFormatException ignored )
             {
-                throw new NumberFormatException( "Not a number: \"" + String.valueOf( data, offset, length ) + "\"" );
+                throw new NumberFormatException( "Not a number: \"" + String.valueOf( data, offset, length ) + '"' );
             }
             return true;
         }
@@ -756,7 +756,7 @@ public class Extractors
             }
             catch ( NumberFormatException ignored )
             {
-                throw new NumberFormatException( "Not a number: \"" + String.valueOf( data, offset, length ) + "\"" );
+                throw new NumberFormatException( "Not a number: \"" + String.valueOf( data, offset, length ) + '"' );
             }
             return true;
         }
@@ -1233,7 +1233,7 @@ public class Extractors
         if ( length < 1 )
         {
             throw new NumberFormatException(
-                    "Not an integer: \"" + String.valueOf( data, originalOffset, fullLength ) + "\"" );
+                    "Not an integer: \"" + String.valueOf( data, originalOffset, fullLength ) + '"' );
         }
 
         try
@@ -1246,7 +1246,7 @@ public class Extractors
         catch ( NumberFormatException ignored )
         {
             throw new NumberFormatException(
-                    "Not an integer: \"" + String.valueOf( data, originalOffset, fullLength ) + "\"" );
+                    "Not an integer: \"" + String.valueOf( data, originalOffset, fullLength ) + '"' );
         }
 
         return negate ? -result : result;

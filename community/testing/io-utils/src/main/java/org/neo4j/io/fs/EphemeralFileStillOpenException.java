@@ -26,7 +26,7 @@ class EphemeralFileStillOpenException extends Exception
 
     EphemeralFileStillOpenException( String filename )
     {
-        super( "File still open: [" + filename + "]" );
+        super( "File still open: [" + filename + ']' );
         this.filename = filename;
     }
 

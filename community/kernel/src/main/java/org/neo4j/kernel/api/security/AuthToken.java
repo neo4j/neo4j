@@ -46,7 +46,7 @@ public interface AuthToken
         Object value = authToken.get( key );
         if ( value == null )
         {
-            throw invalidToken( "missing key `" + key + "`" );
+            throw invalidToken( "missing key `" + key + '`' );
         }
         else if ( !(value instanceof String) )
         {
@@ -61,7 +61,7 @@ public interface AuthToken
         Object value = authToken.get( key );
         if ( value == null )
         {
-            throw invalidToken( "missing key `" + key + "`" );
+            throw invalidToken( "missing key `" + key + '`' );
         }
         else if ( !(value instanceof byte[]) )
         {

@@ -69,6 +69,6 @@ public final class EntryTimespanThreshold implements Threshold
     @Override
     public String toString()
     {
-        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + " " + timeUnit.name().toLowerCase( Locale.ROOT );
+        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + ' ' + timeUnit.name().toLowerCase( Locale.ROOT );
     }
 }

@@ -138,7 +138,7 @@ public class LogPruningImpl implements LogPruning
             String pruned = fromVersion == NO_VERSION ? "No log version pruned" :
                             fromVersion == toVersion ? "Pruned log version " + fromVersion :
                             "Pruned log versions " + fromVersion + " through " + toVersion;
-            return pruned + ". The strategy used was '" + strategy + "'. " + "Last checkpoint was made in log version " + upToVersion + ".";
+            return pruned + ". The strategy used was '" + strategy + "'. " + "Last checkpoint was made in log version " + upToVersion + '.';
         }
     }
 }

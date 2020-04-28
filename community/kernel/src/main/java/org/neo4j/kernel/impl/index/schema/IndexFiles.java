@@ -111,7 +111,7 @@ public abstract class IndexFiles
         {
             try
             {
-                ZipUtils.zip( fs, directory, new File( directory.getParent(), "archive-" + directory.getName() + "-" + System.currentTimeMillis() + ".zip" ) );
+                ZipUtils.zip( fs, directory, new File( directory.getParent(), "archive-" + directory.getName() + '-' + System.currentTimeMillis() + ".zip" ) );
             }
             catch ( IOException e )
             {

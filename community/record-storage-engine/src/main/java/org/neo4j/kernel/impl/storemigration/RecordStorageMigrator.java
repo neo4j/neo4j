@@ -332,7 +332,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             if ( split.length != numberOfCounters )
             {
                 throw new IllegalArgumentException( "Unexpected number of tx counters '" + numberOfCounters +
-                                                    "', file contains: '" + line + "'" );
+                                                    "', file contains: '" + line + '\'' );
             }
             long[] counters = new long[numberOfCounters];
             for ( int i = 0; i < split.length; i++ )
@@ -839,7 +839,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             while ( takenNames.containsKey( name ) )
             {
                 count++;
-                name = originalName + "_" + count;
+                name = originalName + '_' + count;
             }
             rule = (T) rule.withName( name );
             takenNames.put( name, rule );

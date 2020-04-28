@@ -181,7 +181,7 @@ public enum SourceCode implements CodeGeneratorOption
 
         private Path path( TypeReference reference )
         {
-            return path.resolve( reference.packageName().replace( '.', '/' ) + "/" + reference.name() + ".java" );
+            return path.resolve( reference.packageName().replace( '.', '/' ) + '/' + reference.name() + ".java" );
         }
     }
 

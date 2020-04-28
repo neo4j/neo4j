@@ -88,7 +88,7 @@ public interface CheckPointThreshold
         catch ( NoSuchElementException e )
         {
             logProvider.getLog( CheckPointThreshold.class ).warn(
-                    "Could not load check point policy '" + check_point_policy.name() + "=" + policyName + "'. " +
+                    "Could not load check point policy '" + check_point_policy.name() + '=' + policyName + "'. " +
                     "Using default policy instead.", e );
             policy = new PeriodicThresholdPolicy();
         }

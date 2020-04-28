@@ -139,7 +139,7 @@ public abstract class IndexDirectoryStructure
 
     static String fileNameFriendly( IndexProviderDescriptor descriptor )
     {
-        return fileNameFriendly( descriptor.getKey() + "-" + descriptor.getVersion() );
+        return fileNameFriendly( descriptor.getKey() + '-' + descriptor.getVersion() );
     }
 
     private static final IndexDirectoryStructure NO_DIRECTORY_STRUCTURE = new IndexDirectoryStructure()

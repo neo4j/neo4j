@@ -60,7 +60,7 @@ public class Parameter
     {
         result.append( "Parameter[ " );
         type.writeTo( result );
-        return result.append( " " ).append( name ).append( " ]" );
+        return result.append( ' ' ).append( name ).append( " ]" );
     }
 
     public TypeReference type()
@@ -147,12 +147,12 @@ public class Parameter
         case "native":
         case "super":
         case "while":
-            throw new IllegalArgumentException( "'" + name + "' is a java keyword" );
+            throw new IllegalArgumentException( '\'' + name + "' is a java keyword" );
         case "this":
         case "null":
         case "true":
         case "false":
-            throw new IllegalArgumentException( "'" + name + "' is a reserved name" );
+            throw new IllegalArgumentException( '\'' + name + "' is a reserved name" );
         default:
             break;
         }

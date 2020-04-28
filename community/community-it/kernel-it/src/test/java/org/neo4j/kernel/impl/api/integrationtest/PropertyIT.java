@@ -78,7 +78,7 @@ class PropertyIT extends KernelIntegrationTest
 
         // When
         var e = assertThrows( EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty( rel, prop1 ) );
-        assertThat( e.getMessage() ).isEqualTo( "Unable to load RELATIONSHIP with id " + rel + "." );
+        assertThat( e.getMessage() ).isEqualTo( "Unable to load RELATIONSHIP with id " + rel + '.' );
         commit();
     }
 

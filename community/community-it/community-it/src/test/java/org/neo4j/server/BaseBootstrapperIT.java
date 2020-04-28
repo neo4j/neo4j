@@ -231,13 +231,13 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, SettingValueParsers.TRUE ) : "",
                 "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
 
-                "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
+                "-c", HttpConnector.enabled.name() + '=' + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",
 
-                "-c", HttpsConnector.enabled.name() + "=" + httpsEnabled,
+                "-c", HttpsConnector.enabled.name() + '=' + httpsEnabled,
                 "-c", HttpsConnector.listen_address.name() + "=localhost:0",
 
-                "-c", BoltConnector.enabled.name() + "=" + boltEnabled,
+                "-c", BoltConnector.enabled.name() + '=' + boltEnabled,
                 "-c", BoltConnector.listen_address.name() + "=localhost:0" };
         var allConfigOptions = ArrayUtils.addAll( config, getAdditionalArguments() );
         int resultCode = NeoBootstrapper.start( bootstrapper, allConfigOptions );
@@ -253,7 +253,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
     protected String configOption( Setting<?> setting, String value )
     {
-        return setting.name() + "=" + value;
+        return setting.name() + '=' + value;
     }
 
     protected static String[] withConnectorsOnRandomPortsConfig( String... otherConfigs )
@@ -262,7 +262,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet()
                 .stream()
-                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .map( entry -> entry.getKey() + '=' + entry.getValue() )
                 .flatMap( config -> Stream.of( "-c", config ) );
 
         return Stream.concat( configs, connectorsConfig ).toArray( String[]::new );

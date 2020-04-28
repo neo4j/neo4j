@@ -380,7 +380,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         else
         {
             return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
-                   ", underlying record=" + super.toString() + "]";
+                   ", underlying record=" + super.toString() + ']';
         }
     }
 

@@ -94,7 +94,7 @@ public class SchemaRuleException extends SchemaKernelException
             if ( indexType != IndexType.BTREE )
             {
                 String indexTypeName = indexType.name().toLowerCase();
-                return indexTypeName + " " + tagType + " index";
+                return indexTypeName + ' ' + tagType + " index";
             }
             else
             {

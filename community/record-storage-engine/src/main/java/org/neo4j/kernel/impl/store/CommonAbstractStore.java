@@ -825,7 +825,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     void logVersions( Logger logger )
     {
-        logger.log( getTypeDescriptor() + " " + storeVersion );
+        logger.log( getTypeDescriptor() + ' ' + storeVersion );
     }
 
     void logIdUsage( Logger logger, PageCursorTracer cursorTracer )

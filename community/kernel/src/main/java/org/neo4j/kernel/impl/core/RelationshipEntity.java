@@ -212,7 +212,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         {
             return start;
         }
-        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
+        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + ']' );
     }
 
     @Override
@@ -512,7 +512,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
             // back to noting the relationship type id.
         }
-        relType = "RELTYPE(" + type + ")";
+        relType = "RELTYPE(" + type + ')';
         return format( "(?)-[%s,%d]->(?)", relType, getId() );
     }
 

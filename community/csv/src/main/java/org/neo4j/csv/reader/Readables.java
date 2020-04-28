@@ -266,7 +266,7 @@ public class Readables
 
             if ( found == null )
             {
-                throw new IOException( "No suitable file found in zip file " + zipFile.getName() + "." +
+                throw new IOException( "No suitable file found in zip file " + zipFile.getName() + '.' +
                         (!unsuitableEntries.isEmpty() ?
                                 " Although found these unsuitable entries " + unsuitableEntries : "" ) );
             }

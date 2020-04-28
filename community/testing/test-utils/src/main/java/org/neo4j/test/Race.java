@@ -246,7 +246,7 @@ public class Race
                 waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
                 if ( waitedSoFar >= maxWaitTimeMillis )
                 {
-                    throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
+                    throw new TimeoutException( "Didn't complete after " + maxWaitTime + ' ' + unit );
                 }
             }
             if ( contestant.error != null )

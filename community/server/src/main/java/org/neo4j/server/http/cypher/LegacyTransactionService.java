@@ -35,7 +35,7 @@ import org.neo4j.logging.Log;
 public class LegacyTransactionService extends AbstractCypherResource
 {
     private static final String TRANSACTION = "transaction";
-    static final String DB_TRANSACTION_PATH = "/" + TRANSACTION;
+    static final String DB_TRANSACTION_PATH = '/' + TRANSACTION;
 
     public LegacyTransactionService(
             @Context Config config,

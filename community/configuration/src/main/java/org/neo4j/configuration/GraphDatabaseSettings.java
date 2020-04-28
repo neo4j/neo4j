@@ -716,7 +716,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
         private static String toProviderName( String providerName, String providerVersion )
         {
-            return providerName + "-" + providerVersion;
+            return providerName + '-' + providerVersion;
         }
     }
 

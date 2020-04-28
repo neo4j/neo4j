@@ -81,7 +81,7 @@ class ParallelExecution
 
     private void run( String taskName, int numberOfThreads, ThrowingRunnable... runnables ) throws Exception
     {
-        var pool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + "-" + taskName ) );
+        var pool = Executors.newFixedThreadPool( numberOfThreads, new NamedThreadFactory( getClass().getSimpleName() + '-' + taskName ) );
         try
         {
             List<InternalTask> tasks = Arrays.stream( runnables ).map( InternalTask::new ).collect( Collectors.toList() );

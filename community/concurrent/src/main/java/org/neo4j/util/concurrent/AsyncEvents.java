@@ -193,7 +193,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
 
         Sentinel( String identifier )
         {
-            this.str = "AsyncEvent/Sentinel[" + identifier + "]";
+            this.str = "AsyncEvent/Sentinel[" + identifier + ']';
         }
 
         @Override

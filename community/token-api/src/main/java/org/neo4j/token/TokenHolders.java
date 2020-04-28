@@ -74,7 +74,7 @@ public class TokenHolders implements TokenNameLookup
         }
         catch ( TokenNotFoundException e )
         {
-            return "[no such label: " + labelId + "]";
+            return "[no such label: " + labelId + ']';
         }
     }
 
@@ -87,7 +87,7 @@ public class TokenHolders implements TokenNameLookup
         }
         catch ( TokenNotFoundException e )
         {
-            return "[no such relationship type: " + relationshipTypeId + "]";
+            return "[no such relationship type: " + relationshipTypeId + ']';
         }
     }
 
@@ -100,7 +100,7 @@ public class TokenHolders implements TokenNameLookup
         }
         catch ( TokenNotFoundException e )
         {
-            return "[no such property key: " + propertyKeyId + "]";
+            return "[no such property key: " + propertyKeyId + ']';
         }
     }
 
@@ -114,19 +114,19 @@ public class TokenHolders implements TokenNameLookup
             @Override
             public String labelGetName( int labelId )
             {
-                return TokenHolders.this.labelGetName( labelId ) + "[" + labelId + "]";
+                return TokenHolders.this.labelGetName( labelId ) + '[' + labelId + ']';
             }
 
             @Override
             public String relationshipTypeGetName( int relationshipTypeId )
             {
-                return TokenHolders.this.relationshipTypeGetName( relationshipTypeId ) + "[" + relationshipTypeId + "]";
+                return TokenHolders.this.relationshipTypeGetName( relationshipTypeId ) + '[' + relationshipTypeId + ']';
             }
 
             @Override
             public String propertyKeyGetName( int propertyKeyId )
             {
-                return TokenHolders.this.propertyKeyGetName( propertyKeyId ) + "[" + propertyKeyId + "]";
+                return TokenHolders.this.propertyKeyGetName( propertyKeyId ) + '[' + propertyKeyId + ']';
             }
         };
     }

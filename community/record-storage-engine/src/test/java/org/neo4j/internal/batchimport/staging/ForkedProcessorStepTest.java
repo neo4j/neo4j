@@ -442,7 +442,7 @@ class ForkedProcessorStepTest
             assertEquals( batch.processed.length, count );
             if ( !received.compareAndSet( ticket - 1, ticket ) )
             {
-                fail( "Hmm " + ticket + " " + received.get() );
+                fail( "Hmm " + ticket + ' ' + received.get() );
             }
             return 0;
         }

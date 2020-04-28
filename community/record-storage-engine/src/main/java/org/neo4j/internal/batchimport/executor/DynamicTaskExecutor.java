@@ -95,7 +95,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
                     for ( int i = processors.length; i < requestedNumber; i++ )
                     {
-                        newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                        newProcessors[i] = new Processor( processorThreadNamePrefix + '-' + i );
                     }
                     this.processors = newProcessors;
                 }

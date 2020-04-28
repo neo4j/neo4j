@@ -146,7 +146,7 @@ public class IndexBackupIT
                             describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
                     secondSnapshotFileNames.contains( fileName ) );
             String path = FilenameUtils.getFullPath( fileName );
-            assertTrue( "Snapshot should contain files for index in path: " + path + "." +
+            assertTrue( "Snapshot should contain files for index in path: " + path + '.' +
                             describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
                     secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ) );
             assertTrue( format( "Snapshot segment file '%s' should exist.", fileName ),

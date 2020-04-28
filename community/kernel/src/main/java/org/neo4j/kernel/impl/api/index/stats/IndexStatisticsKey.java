@@ -71,7 +71,7 @@ class IndexStatisticsKey implements Comparable<IndexStatisticsKey>
     @Override
     public String toString()
     {
-        return "[indexId:" + indexId + "]";
+        return "[indexId:" + indexId + ']';
     }
 
     @Override

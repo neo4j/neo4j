@@ -117,7 +117,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder( getClass().getSimpleName() + ":" );
+        StringBuilder builder = new StringBuilder( getClass().getSimpleName() + ':' );
         builder.append( format( "%n  pageCacheMemory:%s", bytesToString( pageCacheMemory ) ) );
         builder.append( format( "%n  jvmMemory:%s", bytesToString( jvmMemory ) ) );
         builder.append( format( "%n  machineMemory:%s", bytesToString( machineMemory ) ) );

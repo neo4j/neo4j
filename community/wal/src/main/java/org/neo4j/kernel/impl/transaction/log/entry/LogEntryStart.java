@@ -83,11 +83,11 @@ public class LogEntryStart extends AbstractLogEntry
     public String toString( TimeZone timeZone )
     {
         return "Start[" +
-                "time=" + timestamp( timeWritten, timeZone ) + "," +
-                "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
-                "previousChecksum=" + previousChecksum + "," +
-                "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +
-                (additionalHeader == null ? "" : Arrays.toString( additionalHeader ) ) + "," +
+                "time=" + timestamp( timeWritten, timeZone ) + ',' +
+                "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + ',' +
+                "previousChecksum=" + previousChecksum + ',' +
+                "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + ',' +
+                (additionalHeader == null ? "" : Arrays.toString( additionalHeader ) ) + ',' +
                 "position=" + startPosition +
                 "]";
     }

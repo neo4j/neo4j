@@ -115,6 +115,6 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
         {
             return requestURI;
         }
-        return requestURI + "?" + queryString;
+        return requestURI + '?' + queryString;
     }
 }

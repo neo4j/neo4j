@@ -338,7 +338,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
             }
             catch ( TokenNotFoundException e )
             {
-                throw new IllegalArgumentException( "Schema references non-existing property key token id: " + propertyId + ".", e );
+                throw new IllegalArgumentException( "Schema references non-existing property key token id: " + propertyId + '.', e );
             }
         }
     }

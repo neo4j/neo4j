@@ -55,7 +55,7 @@ public class QualifiedName
     @Override
     public String toString()
     {
-        String strNamespace = namespace.length > 0 ? Iterables.toString( asList( namespace ), "." ) + "." : "";
+        String strNamespace = namespace.length > 0 ? Iterables.toString( asList( namespace ), "." ) + '.' : "";
         return String.format( "%s%s", strNamespace, name );
     }
 

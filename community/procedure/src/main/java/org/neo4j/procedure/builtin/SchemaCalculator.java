@@ -110,7 +110,7 @@ public class SchemaCalculator
         {
             // lookup typ name
             String name = relMappings.relationshipTypIdToRelationshipName.get( typeId );
-            name = ":`" + name + "`";  // escaping
+            name = ":`" + name + '`';  // escaping
 
             // lookup property value types
             MutableIntSet propertyIds = relMappings.relationshipTypeIdToPropertyKeys.get( typeId );
@@ -157,7 +157,7 @@ public class SchemaCalculator
             StringBuilder labelsConcatenator = new StringBuilder();
             for ( String item : labelNames )
             {
-                labelsConcatenator.append( ":`" ).append( item ).append( "`" );
+                labelsConcatenator.append( ":`" ).append( item ).append( '`' );
             }
             String labels = labelsConcatenator.toString();
 

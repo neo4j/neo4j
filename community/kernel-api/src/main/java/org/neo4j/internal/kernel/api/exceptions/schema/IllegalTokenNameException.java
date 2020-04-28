@@ -28,6 +28,6 @@ public class IllegalTokenNameException extends SchemaKernelException
         super( Status.Schema.TokenNameError,
                 String.format( "%s is not a valid token name. " +
                                 "Token names cannot be empty, or contain any null-bytes or back-ticks.",
-                tokenName != null ? "'" + tokenName + "'" : "Null" ) );
+                tokenName != null ? "'" + tokenName + '\'' : "Null" ) );
     }
 }

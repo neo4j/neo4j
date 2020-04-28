@@ -79,7 +79,7 @@ public final class IndexConfig
         case TEMPORAL_ARRAY:
         case UNKNOWN:
         case NO_CATEGORY:
-            throw new IllegalArgumentException( "Value type not support in index configuration: " + value + "." );
+            throw new IllegalArgumentException( "Value type not support in index configuration: " + value + '.' );
         default:
             // Otherwise everything is fine.
         }

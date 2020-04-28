@@ -123,14 +123,14 @@ public class FulltextIndexReader implements IndexReader
                 {
                     IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( scp.contains().stringValue() );
-                    Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
+                    Term term = new Term( propertyNames[0], '*' + searchTerm + '*' );
                     query = new WildcardQuery( term );
                 }
                 else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix )
                 {
                     IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
-                    Term term = new Term( propertyNames[0], "*" + searchTerm );
+                    Term term = new Term( propertyNames[0], '*' + searchTerm );
                     query = new WildcardQuery( term );
                 }
                 else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix )
@@ -327,7 +327,7 @@ public class FulltextIndexReader implements IndexReader
 
         if ( !reason.equals( "" ) )
         {
-            throw new IllegalStateException( "This fulltext index does not have support for Cypher semantics because " + reason + "." );
+            throw new IllegalStateException( "This fulltext index does not have support for Cypher semantics because " + reason + '.' );
         }
     }
 }

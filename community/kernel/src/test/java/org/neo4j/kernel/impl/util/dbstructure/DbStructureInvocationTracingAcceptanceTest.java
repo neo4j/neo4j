@@ -60,7 +60,7 @@ class DbStructureInvocationTracingAcceptanceTest
 {
     private static final String packageName = "org.neo4j.kernel.impl.util.data";
     private static final String className = "XXYYZZData";
-    private static final String classNameWithPackage = packageName + "." + className;
+    private static final String classNameWithPackage = packageName + '.' + className;
     public static final IndexDescriptor INDEX_PERSON_AGE = TestIndexDescriptorFactory.forLabel( 0, 1 );
     public static final IndexDescriptor INDEX_PERSON_NAME_LASTNAME = TestIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 );
     public static final UniquenessConstraintDescriptor CONSTRAINT_PARTY_NAME = ConstraintDescriptorFactory.uniqueForLabel( 1, 0 );
@@ -193,7 +193,7 @@ class DbStructureInvocationTracingAcceptanceTest
             for ( Diagnostic<?> diagnostic : diagnostics )
             {
                 builder.append( diagnostic );
-                builder.append( "\n" );
+                builder.append( '\n' );
             }
             throw new AssertionError( builder.toString() );
         }

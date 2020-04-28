@@ -87,7 +87,7 @@ public abstract class Pair<T1, T2>
     @Override
     public String toString()
     {
-        return "(" + first() + ", " + other() + ")";
+        return "(" + first() + ", " + other() + ')';
     }
 
     @Override

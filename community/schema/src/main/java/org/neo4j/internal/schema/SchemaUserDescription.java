@@ -40,7 +40,7 @@ public final class SchemaUserDescription
         String prefix = entityType == RELATIONSHIP ? "-[" : "(";
         String suffix = entityType == RELATIONSHIP ? "]-" : ")";
         IntFunction<String> lookup = entityType == NODE ? tokenNameLookup::labelGetName : tokenNameLookup::relationshipTypeGetName;
-        return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) + " " +
+        return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) + ' ' +
                 TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds, '{', '}' ) + suffix;
     }
 
@@ -98,7 +98,7 @@ public final class SchemaUserDescription
     {
         if ( name != null )
         {
-            joiner.add( "name='" + name + "'" );
+            joiner.add( "name='" + name + '\'' );
         }
     }
 
@@ -108,17 +108,17 @@ public final class SchemaUserDescription
         maybeAddName( name, joiner );
         addType( indexType( isUnique, indexType ), joiner );
         addSchema( tokenNameLookup, schema, joiner );
-        joiner.add( "indexProvider='" + indexProvider.name() + "'" );
+        joiner.add( "indexProvider='" + indexProvider.name() + '\'' );
     }
 
     private static String indexType( boolean isUnique, IndexType indexType )
     {
-        return (isUnique ? "UNIQUE" : "GENERAL") + " " + indexType;
+        return (isUnique ? "UNIQUE" : "GENERAL") + ' ' + indexType;
     }
 
     private static void addType( String type, StringJoiner joiner )
     {
-        joiner.add( "type='" + type + "'" );
+        joiner.add( "type='" + type + '\'' );
     }
 
     private static void addSchema( TokenNameLookup tokenNameLookup, SchemaDescriptor schema, StringJoiner joiner )

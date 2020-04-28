@@ -156,7 +156,7 @@ public class DefaultFormat extends RepresentationFormat
         {
             if ( missing.size() == 1 )
             {
-                throw new InvalidArgumentsException( "Missing required key: \"" + missing.iterator().next() + "\"" );
+                throw new InvalidArgumentsException( "Missing required key: \"" + missing.iterator().next() + '"' );
             }
             else
             {

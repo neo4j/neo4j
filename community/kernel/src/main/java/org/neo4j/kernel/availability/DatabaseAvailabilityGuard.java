@@ -257,7 +257,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         if ( requirements > 0 )
         {
             String causes = requirementSet.stream().map( AvailabilityRequirement::description ).collect( joining( ", " ) );
-            return requirements + " reasons for blocking: " + causes + ".";
+            return requirements + " reasons for blocking: " + causes + '.';
         }
         return "No blocking components";
     }

@@ -1447,7 +1447,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     public String toString()
     {
-        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + ", inlineKeyValueSizeCap:" + inlineKeyValueSizeCap + "]";
+        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + ", inlineKeyValueSizeCap:" + inlineKeyValueSizeCap + ']';
     }
 
     private String asString( PageCursor cursor, boolean includeValue, boolean includeAllocSpace,
@@ -1463,7 +1463,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // HEADER
         int allocOffset = getAllocOffset( cursor );
         int deadSpace = getDeadSpace( cursor );
-        String additionalHeader = "{" + cursor.getCurrentPageId() + "} [allocOffset=" + allocOffset + " deadSpace=" + deadSpace + "] ";
+        String additionalHeader = '{' + cursor.getCurrentPageId() + "} [allocOffset=" + allocOffset + " deadSpace=" + deadSpace + "] ";
 
         // OFFSET ARRAY
         String offsetArray = readOffsetArray( cursor, stableGeneration, unstableGeneration, type );
@@ -1535,7 +1535,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
 
         cursor.setOffset( currentOffset );
-        return additionalHeader + offsetArray + " " + allocSpace + " " + keys;
+        return additionalHeader + offsetArray + ' ' + allocSpace + ' ' + keys;
     }
 
     @SuppressWarnings( "unused" )
@@ -1670,10 +1670,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             if ( b != 0 )
             {
-                return "v" + endOfOffsetArray + ">" + bytesToRead + "|" + Arrays.toString( allocSpace );
+                return 'v' + endOfOffsetArray + '>' + bytesToRead + '|' + Arrays.toString( allocSpace );
             }
         }
-        return "v" + endOfOffsetArray + ">" + bytesToRead + "|[0...]";
+        return 'v' + endOfOffsetArray + '>' + bytesToRead + "|[0...]";
     }
 
     private String readOffsetArray( PageCursor cursor, long stableGeneration, long unstableGeneration, Type type )
@@ -1685,7 +1685,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             if ( type == INTERNAL )
             {
                 long childPointer = GenerationSafePointerPair.pointer( childAt( cursor, i, stableGeneration, unstableGeneration ) );
-                offsetArray.add( "/" + Long.toString( childPointer ) + "\\" );
+                offsetArray.add( "/" + childPointer + '\\' );
             }
             cursor.setOffset( keyPosOffset( i, type ) );
             offsetArray.add( Integer.toString( DynamicSizeUtil.readKeyOffset( cursor ) ) );
@@ -1693,7 +1693,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         if ( type == INTERNAL )
         {
             long childPointer = GenerationSafePointerPair.pointer( childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
-            offsetArray.add( "/" + Long.toString( childPointer ) + "\\" );
+            offsetArray.add( "/" + childPointer + '\\' );
         }
         return offsetArray.toString();
     }

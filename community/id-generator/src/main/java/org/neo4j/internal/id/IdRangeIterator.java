@@ -107,6 +107,6 @@ public class IdRangeIterator implements IdSequence
     public String toString()
     {
         return "IdRangeIterator[start:" + start + ", length:" + length + ", position:" + position + ", defrag:" +
-                Arrays.toString( defrag ) + "]";
+                Arrays.toString( defrag ) + ']';
     }
 }

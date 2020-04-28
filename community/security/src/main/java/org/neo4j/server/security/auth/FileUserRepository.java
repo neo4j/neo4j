@@ -118,7 +118,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
         // Delete the file
         if ( !fileSystem.deleteFile( authFile ) )
         {
-            throw new IOException( "Failed to delete file '" + authFile.getAbsolutePath() + "'" );
+            throw new IOException( "Failed to delete file '" + authFile.getAbsolutePath() + '\'' );
         }
     }
 

@@ -105,7 +105,7 @@ class ExtractorsTest
         // GIVEN
         Extractors extractors = new Extractors( ';' );
         long[] longData = new long[] {112233,4455,66778899};
-        String data = toString( longData, ';' ) + ";";
+        String data = toString( longData, ';' ) + ';';
 
         // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
         assertThrows( NumberFormatException.class, () -> extractors.longArray().extract( data.toCharArray(), 0, data.length(), false ) );

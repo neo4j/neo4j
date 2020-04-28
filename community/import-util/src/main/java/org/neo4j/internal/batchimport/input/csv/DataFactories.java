@@ -420,7 +420,7 @@ public class DataFactories
                 }
                 else if ( isRecognizedType( typeSpec ) )
                 {
-                    throw new HeaderException( "Unexpected node header type '" + typeSpec + "'" );
+                    throw new HeaderException( "Unexpected node header type '" + typeSpec + '\'' );
                 }
                 else
                 {
@@ -486,7 +486,7 @@ public class DataFactories
                 }
                 else if ( isRecognizedType( typeSpec ) )
                 {
-                    throw new HeaderException( "Unexpected relationship header type '" + typeSpec + "'" );
+                    throw new HeaderException( "Unexpected relationship header type '" + typeSpec + '\'' );
                 }
                 else
                 {

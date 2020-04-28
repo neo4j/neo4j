@@ -197,7 +197,7 @@ class TransactionIT extends BoltStateMachineV4StateTestBase
         {
             var recorder = new BoltResponseRecorder();
             latch.release();
-            var bookmark = bookmarkPrefix + ":" + dbVersionAfterWrite;
+            var bookmark = bookmarkPrefix + ':' + dbVersionAfterWrite;
 
             machine.process( begin( env.databaseIdRepository(), asMapValue( singletonMap( "bookmarks", List.of( bookmark ) ) ) ), recorder );
             machine.process( run( "MATCH (n:A) RETURN n.prop" ), recorder );

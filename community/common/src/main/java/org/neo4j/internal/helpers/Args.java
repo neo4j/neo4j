@@ -107,7 +107,7 @@ public class Args
         @Override
         public String toString()
         {
-            return "Option[" + value + (metadata != null ? ", " + metadata : "") + "]";
+            return "Option[" + value + (metadata != null ? ", " + metadata : "") + ']';
         }
     }
 
@@ -208,7 +208,7 @@ public class Args
         }
         else if ( values.size() > 1 )
         {
-            throw new IllegalArgumentException( "There are multiple values for '" + key + "'" );
+            throw new IllegalArgumentException( "There are multiple values for '" + key + '\'' );
         }
         return values.get( 0 ).value();
     }
@@ -366,7 +366,7 @@ public class Args
                         : entry.getKey();
                 String value = option.value();
                 String quote = key.contains( " " ) || (value != null && value.contains( " " )) ? " " : "";
-                list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : "") );
+                list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? '=' + value + quote : "") );
             }
         }
         return list.toArray( new String[0] );

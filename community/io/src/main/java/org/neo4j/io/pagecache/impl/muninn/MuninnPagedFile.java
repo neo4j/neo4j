@@ -163,7 +163,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + swapper.file() + ", reference count = " + getRefCount() + "]";
+        return getClass().getSimpleName() + '[' + swapper.file() + ", reference count = " + getRefCount() + ']';
     }
 
     @Override

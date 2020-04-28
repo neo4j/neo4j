@@ -104,7 +104,7 @@ public class ByteArrayBitsManipulator
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + Bits.numbersToBitString( new long[] {mask << bitOffset} ) + "]";
+            return getClass().getSimpleName() + '[' + Bits.numbersToBitString( new long[] {mask << bitOffset} ) + ']';
         }
     }
 

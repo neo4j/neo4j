@@ -131,7 +131,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
     {
         String hostName = InetAddress.getLocalHost().getHostName();
         String safeFilename = hostName.replaceAll( "[^a-zA-Z0-9._]+", "_" );
-        return safeFilename + "-" + LocalDateTime.now().format( filenameDateTimeFormatter ) + ".zip";
+        return safeFilename + '-' + LocalDateTime.now().format( filenameDateTimeFormatter ) + ".zip";
     }
 
     private DiagnosticsReporterProgress buildProgress()

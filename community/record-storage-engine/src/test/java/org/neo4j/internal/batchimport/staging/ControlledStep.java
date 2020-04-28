@@ -209,6 +209,6 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + name() + ", " + stats + "]";
+        return getClass().getSimpleName() + '[' + name() + ", " + stats + ']';
     }
 }

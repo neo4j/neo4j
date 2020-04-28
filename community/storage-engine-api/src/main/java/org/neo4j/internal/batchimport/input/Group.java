@@ -66,7 +66,7 @@ public interface Group
         @Override
         public String toString()
         {
-            return "(" + name + "," + id + ")";
+            return '(' + name + ',' + id + ')';
         }
 
         @Override

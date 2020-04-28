@@ -184,7 +184,7 @@ class HostnamePortTest
         for ( String part : host1Parts )
         {
             int partnum = Integer.parseInt( part );
-            host2.append( ++partnum % 256 + "." );
+            host2.append( ++partnum % 256 + '.' );
         }
         host2.deleteCharAt( host2.length() - 1 );
 

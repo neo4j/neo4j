@@ -62,7 +62,7 @@ public class SchemaRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        return "SchemaRecord[" + getId() + ",used=" + inUse() + ",nextProp=" + nextProp + ",constraint=" + constraint + "]";
+        return "SchemaRecord[" + getId() + ",used=" + inUse() + ",nextProp=" + nextProp + ",constraint=" + constraint + ']';
     }
 
     public boolean isConstraint()

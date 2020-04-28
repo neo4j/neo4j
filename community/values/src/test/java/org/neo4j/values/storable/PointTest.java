@@ -316,19 +316,19 @@ class PointTest
                                 Boolean xx = (invalidRange || undefinedMin || undefinedMax) ? null : x > minx && y > miny && x < maxx && y < maxy;
                                 // inclusive:inclusive
                                 assertThat( point.withinRange( min, true, max, true ) ).as(
-                                        "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, true, {" + maxx + "," + maxy + "}, true" ).isEqualTo(
+                                        '{' + x + ',' + y + "}.withinRange({" + minx + ',' + miny + "}, true, {" + maxx + ',' + maxy + "}, true" ).isEqualTo(
                                         ii );
                                 // inclusive:exclusive
                                 assertThat( point.withinRange( min, true, max, false ) ).as(
-                                        "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, true, {" + maxx + "," + maxy + "}, false" ).isEqualTo(
+                                        '{' + x + ',' + y + "}.withinRange({" + minx + ',' + miny + "}, true, {" + maxx + ',' + maxy + "}, false" ).isEqualTo(
                                         ix );
                                 // exclusive:inclusive
                                 assertThat( point.withinRange( min, false, max, true ) ).as(
-                                        "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, false, {" + maxx + "," + maxy + "}, true" ).isEqualTo(
+                                        '{' + x + ',' + y + "}.withinRange({" + minx + ',' + miny + "}, false, {" + maxx + ',' + maxy + "}, true" ).isEqualTo(
                                         xi );
                                 // exclusive:exclusive
                                 assertThat( point.withinRange( min, false, max, false ) ).as(
-                                        "{" + x + "," + y + "}.withinRange({" + minx + "," + miny + "}, false, {" + maxx + "," + maxy + "}, false" ).isEqualTo(
+                                        '{' + x + ',' + y + "}.withinRange({" + minx + ',' + miny + "}, false, {" + maxx + ',' + maxy + "}, false" ).isEqualTo(
                                         xx );
                             }
                         }

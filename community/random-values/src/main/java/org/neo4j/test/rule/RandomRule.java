@@ -119,7 +119,7 @@ public class RandomRule implements TestRule
 
             private void enhanceFailureWithSeed( Throwable t )
             {
-                Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed + "L" );
+                Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed + 'L' );
             }
         };
     }

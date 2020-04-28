@@ -59,7 +59,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     {
         if ( id < 0 )
         {
-            throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
+            throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + '.' );
         }
         name = SchemaRule.sanitiseName( name );
         requireNonNull( schema, "The schema of an index cannot be null." );
@@ -210,12 +210,12 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         if ( !isUnique() )
         {
             throw new IllegalStateException(
-                    "Cannot assign an owning constraint id (in this case " + owningConstraintId + ") to a non-unique index: " + this + "." );
+                    "Cannot assign an owning constraint id (in this case " + owningConstraintId + ") to a non-unique index: " + this + '.' );
         }
         if ( owningConstraintId < 0 )
         {
             throw new IllegalArgumentException(
-                    "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + "." );
+                    "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + '.' );
         }
         return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
     }

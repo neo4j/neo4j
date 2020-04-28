@@ -204,7 +204,7 @@ public final class FeatureToggles
 
     private static String toggle( String key, String value )
     {
-        return "-D" + key + "=" + value;
+        return "-D" + key + '=' + value;
     }
 
     private FeatureToggles()
@@ -213,12 +213,12 @@ public final class FeatureToggles
 
     private static String name( Class<?> location, String name )
     {
-        return location.getCanonicalName() + "." + name;
+        return location.getCanonicalName() + '.' + name;
     }
 
     private static String name( Package location, String name )
     {
-        return location.getName() + "." + name;
+        return location.getName() + '.' + name;
     }
 
     private static boolean booleanProperty( String flag, boolean defaultValue )

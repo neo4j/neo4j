@@ -223,6 +223,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public String toString()
     {
-        return "KernelTransactionImplementationHandle{txReuseCount=" + txReuseCount + ", tx=" + tx + "}";
+        return "KernelTransactionImplementationHandle{txReuseCount=" + txReuseCount + ", tx=" + tx + '}';
     }
 }

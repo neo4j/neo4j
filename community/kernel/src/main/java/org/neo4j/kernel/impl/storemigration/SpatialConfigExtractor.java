@@ -100,12 +100,12 @@ final class SpatialConfigExtractor
                     }
                     catch ( BufferUnderflowException e )
                     {
-                        logExtractionFailure( "Got an exception, " + e + ".", log, spatialFile.getIndexFile() );
+                        logExtractionFailure( "Got an exception, " + e + '.', log, spatialFile.getIndexFile() );
                     }
                 }
                 else
                 {
-                    logExtractionFailure( "Spatial index file is of an unknown type, typeId=" + state + ".", log, spatialFile.getIndexFile() );
+                    logExtractionFailure( "Spatial index file is of an unknown type, typeId=" + state + '.', log, spatialFile.getIndexFile() );
                 }
             }
             else

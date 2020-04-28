@@ -207,7 +207,7 @@ class RecoveryCorruptedTransactionLogIT
         assertThat( logProvider )
                 .containsMessages( "Fail to read transaction log version 0.",
                 "Fail to read transaction log version 0. " +
-                "Last valid transaction start offset is: " + (5570 + HEADER_OFFSET) + "." );
+                "Last valid transaction start offset is: " + (5570 + HEADER_OFFSET) + '.' );
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
     }
 
@@ -220,7 +220,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
                                                                   "Fail to read first transaction of log version 0.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + '}',
                 "Fail to recover all transactions. Any later transactions after position LogPosition{logVersion=0, " +
                         "byteOffset=" + HEADER_OFFSET + "} are unreadable and will be truncated." );
 
@@ -265,7 +265,7 @@ class RecoveryCorruptedTransactionLogIT
         try
         {
             assertThat( logProvider ).containsMessages( "Recovery required from position " +
-                            "LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET) + "}" )
+                            "LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET) + '}' )
                     .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
                     .hasMessageContaining( "Transaction log files with version 0 has some data available after last readable log entry. " +
                             "Last readable position " + (1040 + HEADER_OFFSET) );
@@ -342,7 +342,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertEquals( originalLogDataLength + 2 * CHECKPOINT_COMMAND_SIZE, fileSystem.getFileSize( firstLogFile ) );
 
-        assertThat( logProvider ).containsMessages( "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET)  + "}" )
+        assertThat( logProvider ).containsMessages( "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET)  + '}' )
                 .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
                 .hasMessage( "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " + (1040 + HEADER_OFFSET) +
                         " but " + (1090 + HEADER_OFFSET) + " is available." );
@@ -453,7 +453,7 @@ class RecoveryCorruptedTransactionLogIT
         startStopDbRecoveryOfCorruptedLogs();
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET  + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET  + '}',
                 "Fail to recover all transactions.",
                 "Any later transaction after LogPosition{logVersion=0, byteOffset=" + (6139 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
@@ -494,7 +494,7 @@ class RecoveryCorruptedTransactionLogIT
         startStopDbRecoveryOfCorruptedLogs();
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 3.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + '}',
                 "Fail to recover all transactions.",
                 "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4552 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
@@ -533,7 +533,7 @@ class RecoveryCorruptedTransactionLogIT
         startStopDbRecoveryOfCorruptedLogs();
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 3.",
-                "Recovery required from position LogPosition{logVersion=3, byteOffset=" + (569 + HEADER_OFFSET) + "}",
+                "Recovery required from position LogPosition{logVersion=3, byteOffset=" + (569 + HEADER_OFFSET) + '}',
                 "Fail to recover all transactions.",
                 "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4574 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
@@ -564,7 +564,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 5.",
                 "Fail to read first transaction of log version 5.",
-                "Recovery required from position LogPosition{logVersion=5, byteOffset=" + (569 + HEADER_OFFSET) + "}",
+                "Recovery required from position LogPosition{logVersion=5, byteOffset=" + (569 + HEADER_OFFSET) + '}',
                 "Fail to recover all transactions. " +
                 "Any later transactions after position LogPosition{logVersion=5, byteOffset=" + (569 + HEADER_OFFSET) + "} " +
                 "are unreadable and will be truncated." );

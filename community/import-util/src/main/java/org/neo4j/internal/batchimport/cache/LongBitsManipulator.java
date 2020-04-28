@@ -76,7 +76,7 @@ public class LongBitsManipulator
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + Bits.numbersToBitString( new long[] {maxValue << bitOffset} ) + "]";
+            return getClass().getSimpleName() + '[' + Bits.numbersToBitString( new long[] {maxValue << bitOffset} ) + ']';
         }
     }
 

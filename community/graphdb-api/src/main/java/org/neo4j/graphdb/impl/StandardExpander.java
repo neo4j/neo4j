@@ -295,7 +295,7 @@ public abstract class StandardExpander implements PathExpander
         Exclusion( Direction direction )
         {
             this.direction = direction;
-            this.string = "!" + name() + ":";
+            this.string = '!' + name() + ':';
         }
 
         @Override
@@ -569,7 +569,7 @@ public abstract class StandardExpander implements PathExpander
             result.append( "; filter:" );
             for ( Filter filter : filters )
             {
-                result.append( " " );
+                result.append( ' ' );
                 result.append( filter );
             }
         }
@@ -725,7 +725,7 @@ public abstract class StandardExpander implements PathExpander
     {
         StringBuilder result = new StringBuilder( "Expander[" );
         buildString( result );
-        result.append( "]" );
+        result.append( ']' );
         return result.toString();
     }
 

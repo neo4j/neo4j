@@ -69,7 +69,7 @@ public class LogEntryCommit extends AbstractLogEntry
     @Override
     public String toString( TimeZone timeZone )
     {
-        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + ", checksum=" + checksum + "]";
+        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + ", checksum=" + checksum + ']';
     }
 
     @Override

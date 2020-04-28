@@ -278,7 +278,7 @@ class CsvImporter implements Importer
         Configuration configuration, PrintStream out )
     {
         out.println( "Neo4j version: " + Version.getNeo4jVersion() );
-        out.println( "Importing the contents of these files into " + storeDir + ":" );
+        out.println( "Importing the contents of these files into " + storeDir + ':' );
         printInputFiles( "Nodes", nodesFiles, out );
         printInputFiles( "Relationships", relationshipsFiles, out );
         out.println();
@@ -299,7 +299,7 @@ class CsvImporter implements Importer
             return;
         }
 
-        out.println( name + ":" );
+        out.println( name + ':' );
 
         inputFiles.forEach( ( k, files ) ->
         {

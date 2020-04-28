@@ -63,7 +63,7 @@ public class ThreadTestUtils
             currentState = thread.getState();
             if ( System.currentTimeMillis() > deadline )
             {
-                throw new AssertionError( "Timed out waiting for thread state of <" + set + ">: " + thread + " (state = " + thread.getState() + ")" );
+                throw new AssertionError( "Timed out waiting for thread state of <" + set + ">: " + thread + " (state = " + thread.getState() + ')' );
             }
         }
         while ( !set.contains( currentState ) || !positionFilter.test( thread.getStackTrace() ) );

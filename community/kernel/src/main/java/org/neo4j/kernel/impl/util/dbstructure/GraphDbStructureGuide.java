@@ -254,6 +254,6 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private String colon( String name )
     {
-        return  name.isEmpty() ? name : (":" + name);
+        return name.isEmpty() ? name : ':' + name;
     }
 }

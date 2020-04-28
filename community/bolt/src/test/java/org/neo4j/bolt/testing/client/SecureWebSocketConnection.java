@@ -29,7 +29,7 @@ public class SecureWebSocketConnection extends WebSocketConnection
 {
     public SecureWebSocketConnection()
     {
-        super( createTestClientSupplier(), address -> URI.create( "wss://" + address.getHost() + ":" + address.getPort() ) );
+        super( createTestClientSupplier(), address -> URI.create( "wss://" + address.getHost() + ':' + address.getPort() ) );
     }
 
     private static Supplier<WebSocketClient> createTestClientSupplier()

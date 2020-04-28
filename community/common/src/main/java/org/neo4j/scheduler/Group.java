@@ -136,7 +136,7 @@ public enum Group
      */
     public String threadName()
     {
-        return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
+        return "neo4j." + groupName() + '-' + threadCounter.incrementAndGet();
     }
 
     public ExecutorService buildExecutorService( SchedulerThreadFactory factory, int parallelism )

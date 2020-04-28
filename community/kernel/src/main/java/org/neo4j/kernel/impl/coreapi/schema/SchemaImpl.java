@@ -216,7 +216,7 @@ public class SchemaImpl implements Schema
 
         SchemaRead schemaRead = transaction.schemaRead();
         Iterable<IndexDescriptor> iterable = () -> Iterators.iterator( schemaRead.indexGetForName( indexName ) );
-        if ( awaitIndexesOnline( iterable, index -> "`" + indexName + "`", duration, unit, false ) )
+        if ( awaitIndexesOnline( iterable, index -> '`' + indexName + '`', duration, unit, false ) )
         {
             throw new IllegalStateException( "Expected index to come online within a reasonable time." );
         }
@@ -390,7 +390,7 @@ public class SchemaImpl implements Schema
 
     private NotFoundException newIndexNotFoundException( IndexDefinition index, KernelException e )
     {
-        return new NotFoundException( "No index was found corresponding to " + index + ".", e );
+        return new NotFoundException( "No index was found corresponding to " + index + '.', e );
     }
 
     @Override
@@ -517,7 +517,7 @@ public class SchemaImpl implements Schema
         }
         else
         {
-            throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + "." );
+            throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + '.' );
         }
 
         Iterator<IndexDescriptor> iterator = schemaRead.index( schema );
@@ -548,7 +548,7 @@ public class SchemaImpl implements Schema
             int tokenId = getTokenId.applyAsInt( tokenName );
             if ( tokenId == TokenRead.NO_TOKEN )
             {
-                throw new NotFoundException( tokenTypeName + " " + tokenName + " not found." );
+                throw new NotFoundException( tokenTypeName + ' ' + tokenName + " not found." );
             }
             tokenIds[i] = tokenId;
         }
@@ -782,7 +782,7 @@ public class SchemaImpl implements Schema
         {
             if ( indexType != null && indexType != IndexType.BTREE )
             {
-                throw new IllegalArgumentException( constraintType + " constraints cannot be created with index type " + indexType + "." );
+                throw new IllegalArgumentException( constraintType + " constraints cannot be created with index type " + indexType + '.' );
             }
         }
 

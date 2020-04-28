@@ -87,7 +87,7 @@ class MultiExecutionMonitorTest
         @Override
         public String toString()
         {
-            return "[" + name + ":" + timesPolled + "]";
+            return '[' + name + ':' + timesPolled + ']';
         }
     }
 }

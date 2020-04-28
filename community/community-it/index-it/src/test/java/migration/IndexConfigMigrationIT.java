@@ -350,7 +350,7 @@ class IndexConfigMigrationIT
         try ( Transaction tx = db.beginTx() )
         {
             String indexPattern = format( "\":%s(%s)\"", label.name(), propKey );
-            String indexProvider = "\"" + providerName + "\"";
+            String indexProvider = '"' + providerName + '"';
             tx.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
             tx.commit();
         }
@@ -401,7 +401,7 @@ class IndexConfigMigrationIT
     private static String asConfigString( Map<String,Value> configMap )
     {
         StringJoiner joiner = new StringJoiner( ", ", "{", "}" );
-        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + "\"" ) );
+        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + '"' ) );
         return joiner.toString();
     }
 

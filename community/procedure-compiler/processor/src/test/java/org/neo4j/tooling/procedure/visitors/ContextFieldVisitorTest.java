@@ -57,7 +57,7 @@ public class ContextFieldVisitorTest
                     Log.class.getName() + ">, <" +
                     TerminationGuard.class.getName() + ">, <" +
                     SecurityContext.class.getName() + ">, <" +
-                    Transaction.class.getName() + ">" );
+                    Transaction.class.getName() + '>' );
 
     @Rule
     public CompilationRule compilationRule = new CompilationRule();

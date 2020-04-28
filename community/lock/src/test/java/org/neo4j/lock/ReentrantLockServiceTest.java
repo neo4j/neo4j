@@ -134,17 +134,17 @@ class ReentrantLockServiceTest
         try ( Lock lock = first = locks.acquireNodeLock( 666, WRITE_LOCK ) )
         {
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
+            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + ']', lock.toString() );
 
             // when
             try ( Lock inner = second = locks.acquireNodeLock( 666, WRITE_LOCK ) )
             {
-                assertEquals( "LockedNode[id=666; HELD_BY=2*" + currentThread + "]", lock.toString() );
+                assertEquals( "LockedNode[id=666; HELD_BY=2*" + currentThread + ']', lock.toString() );
                 assertEquals( lock.toString(), inner.toString() );
             }
 
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
+            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + ']', lock.toString() );
             assertEquals( "LockedNode[id=666; RELEASED]", second.toString() );
         }
 

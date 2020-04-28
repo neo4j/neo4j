@@ -107,7 +107,7 @@ public class ProfilerExtension extends StatefulFieldExtension<Profiler> implemen
             profiler.finish();
             if ( context.getExecutionException().isPresent() )
             {
-                String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
+                String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + '.' + context.getDisplayName();
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 profiler.printProfile( new PrintStream( buffer, false, StandardCharsets.UTF_8 ), displayName );
                 buffer.writeTo( System.err );

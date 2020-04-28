@@ -143,7 +143,7 @@ class LoggingIndexedIdGeneratorMonitorTest
                 clock.forward( 1, SECONDS );
                 monitor.markSessionDone();
                 File parentFile = file.getAbsoluteFile().getParentFile();
-                File[] files = parentFile.listFiles( pathname -> pathname.getName().startsWith( file.getName() + "-" ) );
+                File[] files = parentFile.listFiles( pathname -> pathname.getName().startsWith( file.getName() + '-' ) );
                 assertEquals( min( i + 1, 4 ), files.length );
             }
         }

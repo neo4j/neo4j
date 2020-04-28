@@ -107,7 +107,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                         exact( 101, update.values()[1] ),
                         exact( 102, update.values()[2] ),
                         exact( 103, update.values()[3] ) );
-                assertEquals( update.describe( tokens ) + " " + hits, 1, hits.size() );
+                assertEquals( update.describe( tokens ) + ' ' + hits, 1, hits.size() );
                 assertThat( single( hits ), equalTo( update.getEntityId() ) );
             }
         }

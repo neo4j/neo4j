@@ -608,6 +608,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     public String toString()
     {
         return "TreeNodeFixedSize[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount() + ", leafMax:" + leafMaxKeyCount() + ", " +
-                "keySize:" + keySize() + ", valueSize:" + valueSize + "]";
+                "keySize:" + keySize() + ", valueSize:" + valueSize + ']';
     }
 }

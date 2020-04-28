@@ -191,7 +191,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
             if ( !name.equals( customNameAsMetaData ) )
             {
                 cursor.setCursorException( "Name '" + name +
-                        "' doesn't match expected '" + customNameAsMetaData + "'" );
+                        "' doesn't match expected '" + customNameAsMetaData + '\'' );
                 return;
             }
         }

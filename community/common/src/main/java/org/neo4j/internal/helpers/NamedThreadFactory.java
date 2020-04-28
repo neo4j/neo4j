@@ -100,7 +100,7 @@ public class NamedThreadFactory implements ThreadFactory
     {
         int id = threadCounter.getAndIncrement();
 
-        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id )
+        Thread result = new Thread( group, runnable, threadNamePrefix + '-' + id )
         {
             @Override
             public void run()

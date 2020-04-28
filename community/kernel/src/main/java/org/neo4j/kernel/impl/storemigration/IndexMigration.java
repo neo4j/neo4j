@@ -206,12 +206,12 @@ enum IndexMigration
      */
     private static File directoryRootByProviderKeyAndVersion( File databaseStoreDir, String providerKey, String providerVersion )
     {
-        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey + "-" + providerVersion ) );
+        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey + '-' + providerVersion ) );
     }
 
     private static File directoryBySubProvider( File parentProviderDir, String providerKey, String providerVersion )
     {
-        return path( parentProviderDir, fileNameFriendly( providerKey + "-" + providerVersion ) );
+        return path( parentProviderDir, fileNameFriendly( providerKey + '-' + providerVersion ) );
     }
 
     private static String fileNameFriendly( String name )
@@ -228,7 +228,7 @@ enum IndexMigration
                 return provider;
             }
         }
-        throw new IllegalArgumentException( "Can not find old index provider " + providerKey + "-" + providerVersion );
+        throw new IllegalArgumentException( "Can not find old index provider " + providerKey + '-' + providerVersion );
     }
 
     public static IndexMigration[] retired()

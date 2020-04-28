@@ -280,7 +280,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         assert hasSpaceFor( block ) :
                 "Exceeded capacity of property record " + this
                 + ". My current size is reported as " + size() + "The added block was " + block +
-                " (note that size is " + block.getSize() + ")";
+                " (note that size is " + block.getSize() + ')';
 
         blockRecords[blockRecordsCursor++] = block;
     }
@@ -399,7 +399,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             }
         }
 
-        buf.append( "]" );
+        buf.append( ']' );
         return buf.toString();
     }
 

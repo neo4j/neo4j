@@ -57,7 +57,7 @@ public class DataCollectorProcedures
     @Admin
     @SystemProcedure
     @Description( "Retrieve statistical data about the current database. Valid sections are '" +
-                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "', '" + Sections.META + "'" )
+                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "', '" + Sections.META + '\'' )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section,
                                             @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config )
@@ -133,7 +133,7 @@ public class DataCollectorProcedures
 
     @Admin
     @SystemProcedure
-    @Description( "Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
+    @Description( "Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + '\'' )
     @Procedure( name = "db.stats.collect", mode = Mode.READ )
     public Stream<ActionResult> collect( @Name( value = "section" ) String section,
                                          @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config ) throws InvalidArgumentsException
@@ -149,7 +149,7 @@ public class DataCollectorProcedures
 
     @Admin
     @SystemProcedure
-    @Description( "Stop data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
+    @Description( "Stop data collection of a given data section. Valid sections are '" + Sections.QUERIES + '\'' )
     @Procedure( name = "db.stats.stop", mode = Mode.READ )
     public Stream<ActionResult> stop( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
@@ -164,7 +164,7 @@ public class DataCollectorProcedures
 
     @Admin
     @SystemProcedure
-    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
+    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + '\'' )
     @Procedure( name = "db.stats.clear", mode = Mode.READ )
     public Stream<ActionResult> clear( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {

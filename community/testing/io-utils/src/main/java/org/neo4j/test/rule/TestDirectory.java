@@ -321,7 +321,7 @@ public class TestDirectory extends ExternalResource
             String part = parts[i];
             if ( part.length() > targetPartLength )
             {
-                parts[i] = part.substring( 0, targetPartLength - 1 ) + "~";
+                parts[i] = part.substring( 0, targetPartLength - 1 ) + '~';
             }
         }
         return String.join( ".", parts );

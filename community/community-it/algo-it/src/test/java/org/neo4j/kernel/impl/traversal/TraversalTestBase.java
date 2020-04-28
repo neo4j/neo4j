@@ -189,8 +189,8 @@ abstract class TraversalTestBase
         @Override
         public String represent( Relationship item )
         {
-            return nodes.represent( item.getStartNode() ) + " "
-                   + rel.represent( item ) + " "
+            return nodes.represent( item.getStartNode() ) + ' '
+                   + rel.represent( item ) + ' '
                    + nodes.represent( item.getEndNode() );
         }
     }
@@ -272,7 +272,7 @@ abstract class TraversalTestBase
         {
             if ( !expectation.remove( element ) )
             {
-                fail( "unexpected element <" + element + ">" );
+                fail( "unexpected element <" + element + '>' );
             }
         }
         if ( !expectation.isEmpty() )

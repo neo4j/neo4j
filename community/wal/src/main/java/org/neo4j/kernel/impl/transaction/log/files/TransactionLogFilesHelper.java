@@ -64,7 +64,7 @@ public class TransactionLogFilesHelper
         int index = historyLogFilename.lastIndexOf( VERSION_SUFFIX );
         if ( index == -1 )
         {
-            throw new RuntimeException( "Invalid log file '" + historyLogFilename + "'" );
+            throw new RuntimeException( "Invalid log file '" + historyLogFilename + '\'' );
         }
         return Long.parseLong( historyLogFilename.substring( index + VERSION_SUFFIX.length() ) );
     }

@@ -76,7 +76,7 @@ public final class DiagnosticsReportSources
         {
             String name = archive.getName();
             String n = name.substring( name.lastIndexOf( '.' ) );
-            files.add( newDiagnosticsFile( destination + "." + n, fs, archive ) );
+            files.add( newDiagnosticsFile( destination + '.' + n, fs, archive ) );
         }
         return files;
     }

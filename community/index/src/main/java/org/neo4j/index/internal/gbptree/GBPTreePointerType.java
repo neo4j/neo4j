@@ -132,7 +132,7 @@ public interface GBPTreePointerType
         @Override
         public String toString()
         {
-            return "child(" + pos + ")";
+            return "child(" + pos + ')';
         }
 
         @Override

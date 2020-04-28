@@ -384,14 +384,14 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                                        + "W(?<shortWeek>[0-9]{2})(?<shortDOW>[0-9])?|" // week date
                                        + (QUARTER_DATES ? "Q(?<shortQuarter>[0-9])(?<shortDOQ>[0-9]{2})?|" : "")
                                        // quarter date
-                                       + "(?<shortDOY>[0-9]{3}))" + "|" // ordinal date
+                                       + "(?<shortDOY>[0-9]{3}))" + '|' // ordinal date
                                        // long formats - includes dashes:
                                        + "(?<longYear>(?:[0-9]{4}|[+-][0-9]{1,9}))(?:"
                                        + "-(?<longMonth>[0-9]{1,2})(?:-(?<longDay>[0-9]{1,2}))?|" // calendar date
                                        + "-W(?<longWeek>[0-9]{1,2})(?:-(?<longDOW>[0-9]))?|" // week date
                                        + (QUARTER_DATES ? "-Q(?<longQuarter>[0-9])(?:-(?<longDOQ>[0-9]{1,2}))?|" : "")
                                        // quarter date
-                                       + "-(?<longDOY>[0-9]{3}))?" + ")"; // ordinal date
+                                       + "-(?<longDOY>[0-9]{3}))?" + ')'; // ordinal date
     private static final Pattern PATTERN = Pattern.compile( DATE_PATTERN );
 
     /**

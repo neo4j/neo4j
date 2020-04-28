@@ -53,18 +53,18 @@ public class MediaTypeNotSupportedException extends WebApplicationException
         {
             message.append( "Request format: " )
                     .append( requested[0] )
-                    .append( "\n" );
+                    .append( '\n' );
         }
         else
         {
             message.append( "Requested formats:\n" );
             for ( int i = 0; i < requested.length; i++ )
             {
-                message.append( " " )
+                message.append( ' ' )
                         .append( i )
                         .append( ". " );
                 message.append( requested[i] )
-                        .append( "\n" );
+                        .append( '\n' );
             }
         }
         message.append( "Supported representation formats:" );

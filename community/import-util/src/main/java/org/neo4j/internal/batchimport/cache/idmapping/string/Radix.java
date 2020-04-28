@@ -54,7 +54,7 @@ public abstract class Radix
     @Override
     public java.lang.String toString()
     {
-        return Radix.class.getSimpleName() + "." + getClass().getSimpleName();
+        return Radix.class.getSimpleName() + '.' + getClass().getSimpleName();
     }
 
     public static class String extends Radix

@@ -79,7 +79,7 @@ public class Paths
         @Override
         public String nodeRepresentation( Path path, Node node )
         {
-            return "(" + node.getId() + ")";
+            return "(" + node.getId() + ')';
         }
 
         @Override
@@ -96,8 +96,8 @@ public class Paths
             {
                 suffix = "->";
             }
-            return prefix + "[" + relationship.getType().name() + "," +
-                    relationship.getId() + "]" + suffix;
+            return prefix + '[' + relationship.getType().name() + ',' +
+                    relationship.getId() + ']' + suffix;
         }
     }
 
@@ -176,7 +176,7 @@ public class Paths
             @Override
             public String nodeRepresentation( Path path, Node node )
             {
-                return "(" + node.getProperty( nodePropertyKey, node.getId() ) + ")";
+                return "(" + node.getProperty( nodePropertyKey, node.getId() ) + ')';
             }
 
             @Override
@@ -207,8 +207,8 @@ public class Paths
             {
                 String representation = representation( node );
                 return "(" + (nodeId ? node.getId() : "") +
-                       (nodeId && !representation.equals( "" ) ? "," : "") +
-                       representation + ")";
+                       (nodeId && !representation.isEmpty() ? "," : "") +
+                       representation + ')';
             }
 
             private String representation( Entity entity )
@@ -221,7 +221,7 @@ public class Paths
                     {
                         if ( builder.length() > 0 )
                         {
-                            builder.append( "," );
+                            builder.append( ',' );
                         }
                         builder.append( value );
                     }
@@ -236,20 +236,20 @@ public class Paths
                 StringBuilder builder = new StringBuilder();
                 if ( direction.equals( Direction.INCOMING ) )
                 {
-                    builder.append( "<" );
+                    builder.append( '<' );
                 }
-                builder.append( "-[" + (relId ? relationship.getId() : "") );
+                builder.append( "-[" ).append( relId ? relationship.getId() : "" );
                 String representation = representation( relationship );
-                if ( relId && !representation.equals( "" ) )
+                if ( relId && !representation.isEmpty() )
                 {
-                    builder.append( "," );
+                    builder.append( ',' );
                 }
                 builder.append( representation );
                 builder.append( "]-" );
 
                 if ( direction.equals( Direction.OUTGOING ) )
                 {
-                    builder.append( ">" );
+                    builder.append( '>' );
                 }
                 return builder.toString();
             }

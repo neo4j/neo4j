@@ -134,7 +134,7 @@ public class LuceneDocumentStructure
     public static Query newWildCardStringQuery( String searchFor )
     {
         String searchTerm = QueryParser.escape( searchFor );
-        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm + "*" );
+        Term term = new Term( ValueEncoding.String.key( 0 ), '*' + searchTerm + '*' );
 
         return new WildcardQuery( term );
     }
@@ -148,7 +148,7 @@ public class LuceneDocumentStructure
     public static Query newSuffixStringQuery( String suffix )
     {
         String searchTerm = QueryParser.escape( suffix );
-        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm );
+        Term term = new Term( ValueEncoding.String.key( 0 ), '*' + searchTerm );
 
         return new WildcardQuery( term );
     }

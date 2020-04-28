@@ -188,7 +188,7 @@ class TransactionLogFilesTest
 
         // when
         RuntimeException exception = assertThrows( RuntimeException.class, () -> logFiles.getLogVersion( file ) );
-        assertEquals( "Invalid log file '" + file.getName() + "'", exception.getMessage() );
+        assertEquals( "Invalid log file '" + file.getName() + '\'', exception.getMessage() );
     }
 
     @Test
@@ -280,6 +280,6 @@ class TransactionLogFilesTest
 
     private String getVersionedLogFileName( String filename, String version )
     {
-        return filename + "." + version;
+        return filename + '.' + version;
     }
 }

@@ -100,7 +100,7 @@ class PropertyEntryImpl<T> implements PropertyEntry<T>
     public String toString()
     {
         return "PropertyEntry[entity=" + entity + ", key=" + key + ", value=" + value + ", valueBeforeTx="
-                + valueBeforeTx + "]";
+                + valueBeforeTx + ']';
     }
 
     public static <T> void assertEqualsMaybeNull( Object o1, Object o2, T entity, String key )

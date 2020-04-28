@@ -232,7 +232,7 @@ public class TransportTestUtil
             }
             catch ( Exception e )
             {
-                throw new RuntimeException( "Messages[" + Arrays.toString( messagesConsumers ) + "]", e );
+                throw new RuntimeException( "Messages[" + Arrays.toString( messagesConsumers ) + ']', e );
             }
         };
     }
@@ -262,7 +262,7 @@ public class TransportTestUtil
             }
             catch ( Exception e )
             {
-                throw new RuntimeException( "Messages[" + Arrays.toString( messagesConsumers ) + "]", e );
+                throw new RuntimeException( "Messages[" + Arrays.toString( messagesConsumers ) + ']', e );
             }
         };
     }

@@ -530,15 +530,15 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             switch ( typeName )
             {
             case "java.lang.Byte":
-                return "(byte)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+                return "(byte)" + value + " at offset " + offset + " (instead of " + insteadOf + ')';
             case "java.lang.Short":
-                return "(short)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+                return "(short)" + value + " at offset " + offset + " (instead of " + insteadOf + ')';
             case "java.lang.Integer":
-                return "(int)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+                return "(int)" + value + " at offset " + offset + " (instead of " + insteadOf + ')';
             case "java.lang.Long":
-                return "(long)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+                return "(long)" + value + " at offset " + offset + " (instead of " + insteadOf + ')';
             default:
-                return "(" + typeName + ")" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+                return '(' + typeName + ')' + value + " at offset " + offset + " (instead of " + insteadOf + ')';
             }
         }
 

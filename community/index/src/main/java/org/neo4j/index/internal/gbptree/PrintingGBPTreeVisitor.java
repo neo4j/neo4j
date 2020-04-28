@@ -88,7 +88,7 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
     {
         if ( printPosition )
         {
-            out.print( "#" + i + " " );
+            out.print( "#" + i + ' ' );
         }
     }
 
@@ -144,7 +144,7 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
     {
         if ( printFreelist )
         {
-            out.print( "[" + generation + "," + pageId + "] " );
+            out.print( '[' + generation + ',' + pageId + "] " );
         }
     }
 }

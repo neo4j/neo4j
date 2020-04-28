@@ -179,7 +179,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
 
     private IllegalStateException conversionException( Class<? extends ConstraintDescriptor> targetType )
     {
-        return new IllegalStateException( "Cannot cast this schema to a " + targetType + " because it does not match that structure: " + this + "." );
+        return new IllegalStateException( "Cannot cast this schema to a " + targetType + " because it does not match that structure: " + this + '.' );
     }
 
     @Override

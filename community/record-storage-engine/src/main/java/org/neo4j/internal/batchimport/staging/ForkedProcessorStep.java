@@ -264,7 +264,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 
         ForkedProcessor( int id, Unit startingUnit )
         {
-            super( name() + "-" + id );
+            super( name() + '-' + id );
             this.id = id;
             this.current = startingUnit;
             start();

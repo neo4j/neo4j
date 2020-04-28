@@ -572,7 +572,7 @@ public interface Status
         @Override
         public String toString()
         {
-            return "Status.Code[" + serialize() + "]";
+            return "Status.Code[" + serialize() + ']';
         }
 
         /**

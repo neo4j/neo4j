@@ -123,7 +123,7 @@ public abstract class FormatCompatibilityVerifier
                         "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
                 globalDir.file( zipName ),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) +
-                        pathify( getClass().getPackage().getName() + "." ) + zipName ) );
+                        pathify( getClass().getPackage().getName() + '.' ) + zipName ) );
     }
 
     private void unzip( String zipName, File storeFile ) throws IOException

@@ -51,7 +51,7 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
             return new NodeKeyConstraintCreator( actions, name, label, propertyKeys, indexType, indexConfig );
         }
         throw new UnsupportedOperationException(
-                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
+                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + '.' );
     }
 
     @Override
@@ -91,7 +91,7 @@ public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCr
         if ( indexType != null )
         {
             throw new IllegalArgumentException( "Node property existence constraints cannot be created with an index type. " +
-                    "Was given index type " + indexType + "." );
+                    "Was given index type " + indexType + '.' );
         }
         if ( indexConfig != null )
         {

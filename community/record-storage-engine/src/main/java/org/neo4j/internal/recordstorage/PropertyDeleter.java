@@ -129,7 +129,7 @@ public class PropertyDeleter
             throw new IllegalStateException( "Property with index["
                                              + propertyKey
                                              + "] is not present in property["
-                                             + propertyId + "]" );
+                                             + propertyId + ']' );
         }
 
         for ( DynamicRecord valueRecord : block.getValueRecords() )

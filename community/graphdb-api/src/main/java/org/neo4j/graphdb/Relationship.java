@@ -220,6 +220,6 @@ public interface Relationship extends Entity
         {
             return start;
         }
-        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
+        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + ']' );
     }
 }

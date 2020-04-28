@@ -165,7 +165,7 @@ public class PushToCloudCommand extends AbstractCommand
         Matcher matcher = pattern.matcher( boltURI );
         if ( !matcher.matches() )
         {
-            throw new CommandFailedException( "Invalid Bolt URI '" + boltURI + "'" );
+            throw new CommandFailedException( "Invalid Bolt URI '" + boltURI + '\'' );
         }
 
         String databaseId = matcher.group( 1 );
@@ -192,7 +192,7 @@ public class PushToCloudCommand extends AbstractCommand
         else
         {
 
-            Path dumpFile = to != null ? to.toPath() : ctx.homeDir().resolve( "dump-of-" + database + "-" + currentTimeMillis() );
+            Path dumpFile = to != null ? to.toPath() : ctx.homeDir().resolve( "dump-of-" + database + '-' + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
             {
                 throw new CommandFailedException( format( "The provided dump-to target '%s' file already exists", dumpFile ) );

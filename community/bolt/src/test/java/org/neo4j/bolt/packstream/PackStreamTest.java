@@ -893,7 +893,7 @@ class PackStreamTest
             marker32 = PackStream.BYTES_32;
             break;
         default:
-            throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+            throw new IllegalArgumentException( "Unsupported type: " + type + '.' );
         }
 
         byte[] input = new byte[]{marker32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
@@ -917,7 +917,7 @@ class PackStreamTest
             unpacker.unpackBytesHeader();
             break;
         default:
-            throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+            throw new IllegalArgumentException( "Unsupported type: " + type + '.' );
         }
     }
 
@@ -944,7 +944,7 @@ class PackStreamTest
                 packer.packStringHeader( size );
                 break;
             default:
-                throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+                throw new IllegalArgumentException( "Unsupported type: " + type + '.' );
             }
             packer.flush();
 
@@ -966,7 +966,7 @@ class PackStreamTest
                 value = unpacker.unpackStringHeader();
                 break;
             default:
-                throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+                throw new IllegalArgumentException( "Unsupported type: " + type + '.' );
             }
 
             assertThat( value ).isEqualTo( size );

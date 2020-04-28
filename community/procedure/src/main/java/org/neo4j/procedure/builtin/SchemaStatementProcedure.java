@@ -281,7 +281,7 @@ public final class SchemaStatementProcedure
         if ( configValue instanceof StringValue )
         {
             final StringValue stringValue = (StringValue) configValue;
-            return "'" + stringValue.stringValue() + "'";
+            return '\'' + stringValue.stringValue() + '\'';
         }
         throw new IllegalArgumentException( "Could not convert config value '" + configValue + "' to config string." );
     }
@@ -304,12 +304,12 @@ public final class SchemaStatementProcedure
         if ( configValue instanceof BooleanValue )
         {
             final BooleanValue booleanValue = (BooleanValue) configValue;
-            return "'" + booleanValue.booleanValue() + "'";
+            return "'" + booleanValue.booleanValue() + '\'';
         }
         if ( configValue instanceof StringValue )
         {
             final StringValue stringValue = (StringValue) configValue;
-            return "'" + stringValue.stringValue() + "'";
+            return '\'' + stringValue.stringValue() + '\'';
         }
         throw new IllegalArgumentException( "Could not convert config value '" + configValue + "' to config string." );
     }
@@ -319,7 +319,7 @@ public final class SchemaStatementProcedure
         StringJoiner properties = arrayStringJoiner();
         for ( int propertyId : schema.getPropertyIds() )
         {
-            properties.add( "'" + tokenRead.propertyKeyName( propertyId ) + "'" );
+            properties.add( '\'' + tokenRead.propertyKeyName( propertyId ) + '\'' );
         }
         return properties.toString();
     }
@@ -331,11 +331,11 @@ public final class SchemaStatementProcedure
         {
             if ( EntityType.NODE.equals( schema.entityType() ) )
             {
-                labelsOrRelTypes.add( "'" + tokenRead.nodeLabelName( entityTokenId ) + "'" );
+                labelsOrRelTypes.add( '\'' + tokenRead.nodeLabelName( entityTokenId ) + '\'' );
             }
             else
             {
-                labelsOrRelTypes.add( "'" + tokenRead.relationshipTypeName( entityTokenId ) + "'" );
+                labelsOrRelTypes.add( '\'' + tokenRead.relationshipTypeName( entityTokenId ) + '\'' );
             }
         }
         return labelsOrRelTypes.toString();

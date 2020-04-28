@@ -33,19 +33,19 @@ public class InMemoryTokens implements TokenNameLookup
     @Override
     public String labelGetName( int labelId )
     {
-        return labels.getOrDefault( labelId, "[" + labelId + "]" );
+        return labels.getOrDefault( labelId, "[" + labelId + ']' );
     }
 
     @Override
     public String relationshipTypeGetName( int relationshipTypeId )
     {
-        return relationshipTypes.getOrDefault( relationshipTypeId, "[" + relationshipTypeId + "]" );
+        return relationshipTypes.getOrDefault( relationshipTypeId, "[" + relationshipTypeId + ']' );
     }
 
     @Override
     public String propertyKeyGetName( int propertyKeyId )
     {
-        return propertyKeys.getOrDefault( propertyKeyId, "[" + propertyKeyId + "]" );
+        return propertyKeys.getOrDefault( propertyKeyId, "[" + propertyKeyId + ']' );
     }
 
     public InMemoryTokens label( int id, String name )

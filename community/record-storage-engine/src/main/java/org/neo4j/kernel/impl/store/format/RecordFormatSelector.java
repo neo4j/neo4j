@@ -103,7 +103,7 @@ public class RecordFormatSelector
                 return format;
             }
         }
-        throw new IllegalArgumentException( "Unknown store version '" + storeVersion + "'" );
+        throw new IllegalArgumentException( "Unknown store version '" + storeVersion + '\'' );
     }
 
     /**

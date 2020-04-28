@@ -324,7 +324,7 @@ class CommonAbstractStoreBehaviourTest
         @Override
         public String toString()
         {
-            return "IntRecord[" + getId() + "](" + value + ")";
+            return "IntRecord[" + getId() + "](" + value + ')';
         }
     }
 

@@ -1345,7 +1345,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
     private static String alreadyExistsIndexMessage( String indexName )
     {
-        return "There already exists an index called '" + indexName + "'";
+        return "There already exists an index called '" + indexName + '\'';
     }
 
     private static String thereAlreadyExistsConstraintMessage( String constraintName )

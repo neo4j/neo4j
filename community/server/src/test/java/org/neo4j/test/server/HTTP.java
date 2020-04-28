@@ -333,16 +333,16 @@ public final class HTTP
         public String toString()
         {
             var sb = new StringBuilder();
-            sb.append( "HTTP " ).append( response.statusCode() ).append( "\n" );
+            sb.append( "HTTP " ).append( response.statusCode() ).append( '\n' );
             for ( var headerEntry : response.headers().map().entrySet() )
             {
                 for ( var headerValue : headerEntry.getValue() )
                 {
-                    sb.append( headerEntry.getKey() ).append( ": " ).append( headerValue ).append( "\n" );
+                    sb.append( headerEntry.getKey() ).append( ": " ).append( headerValue ).append( '\n' );
                 }
             }
-            sb.append( "\n" );
-            sb.append( entity ).append( "\n" );
+            sb.append( '\n' );
+            sb.append( entity ).append( '\n' );
 
             return sb.toString();
         }

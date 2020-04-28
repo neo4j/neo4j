@@ -757,7 +757,15 @@ class BufferedCharSeekerTest
                         }
                     }
                     expected.add( value );
-                    builder.append( quote ? "\"" + value + "\"" : value );
+                    if ( quote )
+                    {
+                        builder.append( '"' );
+                    }
+                    builder.append( value );
+                    if ( quote )
+                    {
+                        builder.append( '"' );
+                    }
                 }
                 else
                 {
@@ -915,7 +923,7 @@ class BufferedCharSeekerTest
             {
                 builder.append( i > 0 ? delimiterString : "" ) .append( line[i] );
             }
-            builder.append( "\n" );
+            builder.append( '\n' );
         }
         return builder.toString();
     }

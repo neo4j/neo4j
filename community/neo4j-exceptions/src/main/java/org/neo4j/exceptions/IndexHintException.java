@@ -43,6 +43,6 @@ public class IndexHintException extends Neo4jException
         return String.format( "%s\nLabel: `%s`\nProperty name: %s}",
                               message,
                               label,
-        properties.stream().map( p -> "'" + p + "'").collect( Collectors.joining( ",") ) );
+        properties.stream().map( p -> '\'' + p + '\'').collect( Collectors.joining( ",") ) );
     }
 }

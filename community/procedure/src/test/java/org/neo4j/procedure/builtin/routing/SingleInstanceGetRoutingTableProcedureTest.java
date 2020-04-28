@@ -109,7 +109,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var exception = assertThrows( ProcedureException.class, () -> proc.invoke( ID, MapValue.EMPTY ) );
 
         assertEquals( Status.Procedure.ProcedureCallFailed, exception.status() );
-        assertThat( exception ).hasMessageEndingWith( " Please update your configuration for '" + BoltConnector.enabled.name() + "'" );
+        assertThat( exception ).hasMessageEndingWith( " Please update your configuration for '" + BoltConnector.enabled.name() + '\'' );
     }
 
     @Test

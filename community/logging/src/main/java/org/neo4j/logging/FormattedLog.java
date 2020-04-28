@@ -379,10 +379,10 @@ public class FormattedLog extends AbstractLog
         this.levelRef = new AtomicReference<>( level );
         this.autoFlush = autoFlush;
 
-        String debugPrefix = ( category != null && !category.isEmpty() ) ? "DEBUG [" + category + "]" : "DEBUG";
-        String infoPrefix = ( category != null && !category.isEmpty() ) ? "INFO [" + category + "]" : "INFO ";
-        String warnPrefix = ( category != null && !category.isEmpty() ) ? "WARN [" + category + "]" : "WARN ";
-        String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + "]" : "ERROR";
+        String debugPrefix = ( category != null && !category.isEmpty() ) ? "DEBUG [" + category + ']' : "DEBUG";
+        String infoPrefix = ( category != null && !category.isEmpty() ) ? "INFO [" + category + ']' : "INFO ";
+        String warnPrefix = ( category != null && !category.isEmpty() ) ? "WARN [" + category + ']' : "WARN ";
+        String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + ']' : "ERROR";
 
         this.debugLogger = new FormattedLogger( this, writerSupplier, debugPrefix, dateTimeFormatter,
                 dateTimeSupplier );

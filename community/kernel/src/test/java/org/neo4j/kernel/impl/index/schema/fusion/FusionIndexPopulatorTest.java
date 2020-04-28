@@ -329,7 +329,7 @@ abstract class FusionIndexPopulatorTest
         List<UncheckedIOException> failures = new ArrayList<>();
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            UncheckedIOException failure = new UncheckedIOException( new IOException( "FAILURE[" + alivePopulator + "]" ) );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "FAILURE[" + alivePopulator + ']' ) );
             failures.add( failure );
             doThrow( failure ).when( alivePopulator ).close( anyBoolean(), any() );
         }

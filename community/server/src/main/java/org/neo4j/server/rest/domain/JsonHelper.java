@@ -91,7 +91,7 @@ public class JsonHelper
                jsonObject instanceof Boolean) )
         {
             throw new PropertyValueException(
-                    "Unsupported value type " + jsonObject.getClass() + "."
+                    "Unsupported value type " + jsonObject.getClass() + '.'
                     + " Supported value types are all java primitives (byte, char, short, int, "
                     + "long, float, double) and String, as well as arrays of all those types" );
         }

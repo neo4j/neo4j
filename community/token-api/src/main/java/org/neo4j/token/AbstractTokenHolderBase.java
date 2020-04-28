@@ -129,7 +129,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         {
             NamedToken alternative = tokenRegistry.getToken( id );
             throw new TokenNotFoundException( "Internal token for id " + id + " not found" +
-                    ( alternative != null ? ", but a public token exists on that id: " + alternative + "." : "." ) );
+                    ( alternative != null ? ", but a public token exists on that id: " + alternative + '.' : "." ) );
         }
         return result;
     }

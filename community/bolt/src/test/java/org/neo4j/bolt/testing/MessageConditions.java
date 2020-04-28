@@ -118,7 +118,7 @@ public class MessageConditions
                 }
             }
             return true;
-        }, "MessageList" + Arrays.asList( conditions ) + "]" );
+        }, "MessageList" + Arrays.asList( conditions ) + ']' );
     }
 
     public static Consumer<ResponseMessage> hasNotification( Notification notification )

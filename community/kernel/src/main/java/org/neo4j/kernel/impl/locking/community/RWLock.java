@@ -578,9 +578,9 @@ public class RWLock
         while ( wElements.hasNext() )
         {
             LockRequest lockRequest = wElements.next();
-            logger.log( "[" + lockRequest.waitingThread + "("
+            logger.log( "[" + lockRequest.waitingThread + '('
                         + lockRequest.element.readCount + "r," + lockRequest.element.writeCount + "w),"
-                        + lockRequest.lockType + "]" );
+                        + lockRequest.lockType + ']' );
             if ( wElements.hasNext() )
             {
                 logger.log( "," );
@@ -594,7 +594,7 @@ public class RWLock
         logger.log( "Locking transactions:" );
         for ( TxLockElement tle : txLockElementMap.values() )
         {
-            logger.log( "" + tle.tx + "(" + tle.readCount + "r,"
+            logger.log( "" + tle.tx + '(' + tle.readCount + "r,"
                         + tle.writeCount + "w)" );
         }
         return true;
@@ -604,25 +604,25 @@ public class RWLock
     {
         StringBuilder sb = new StringBuilder( this.toString() );
         sb.append( " Total lock count: readCount=" ).append( totalReadCount ).append( " writeCount=" )
-          .append( totalWriteCount ).append( " for " ).append( resource ).append( "\n" )
-          .append( "Waiting list:" + "\n" );
+          .append( totalWriteCount ).append( " for " ).append( resource ).append( '\n' )
+          .append( "Waiting list:" ).append( '\n' );
         Iterator<LockRequest> wElements = waitingThreadList.iterator();
         while ( wElements.hasNext() )
         {
             LockRequest lockRequest = wElements.next();
-            sb.append( "[" ).append( lockRequest.waitingThread ).append( "(" ).append( lockRequest.element.readCount )
+            sb.append( '[' ).append( lockRequest.waitingThread ).append( '(' ).append( lockRequest.element.readCount )
               .append( "r," ).append( lockRequest.element.writeCount ).append( "w)," ).append( lockRequest.lockType )
               .append( "]\n" );
             if ( wElements.hasNext() )
             {
-                sb.append( "," );
+                sb.append( ',' );
             }
         }
 
         sb.append( "Locking transactions:\n" );
         for ( TxLockElement tle : txLockElementMap.values() )
         {
-            sb.append( tle.tx ).append( "(" ).append( tle.readCount ).append( "r," )
+            sb.append( tle.tx ).append( '(' ).append( tle.readCount ).append( "r," )
               .append( tle.writeCount ).append( "w)\n" );
         }
         return sb.toString();
@@ -662,7 +662,7 @@ public class RWLock
     @Override
     public String toString()
     {
-        return "RWLock[" + resource + ", hash=" + hashCode() + "]";
+        return "RWLock[" + resource + ", hash=" + hashCode() + ']';
     }
 
     private void registerReadLockAcquired( Object tx, TxLockElement tle )

@@ -479,7 +479,7 @@ public abstract class SpaceFillingCurve
         @Override
         public String toString()
         {
-            return "LongRange(" + min + "," + max + ")";
+            return "LongRange(" + min + ',' + max + ')';
         }
     }
 }

@@ -256,7 +256,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         List<NodeAndValue> firstBatch = new ArrayList<>();
         for ( int i = 0; i < nbrOfNodes; i++ )
         {
-            firstBatch.add( new NodeAndValue( nodeId++, stringValue( prefix + i + " " + i ) ) );
+            firstBatch.add( new NodeAndValue( nodeId++, stringValue( prefix + i + ' ' + i ) ) );
         }
 
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->

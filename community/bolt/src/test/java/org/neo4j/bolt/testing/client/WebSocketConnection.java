@@ -59,7 +59,7 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
 
     public WebSocketConnection()
     {
-        this( WebSocketClient::new, address -> URI.create( "ws://" + address.getHost() + ":" + address.getPort() ) );
+        this( WebSocketClient::new, address -> URI.create( "ws://" + address.getHost() + ':' + address.getPort() ) );
     }
 
     public WebSocketConnection( Supplier<WebSocketClient> clientSupplier, Function<HostnamePort,URI> uriGenerator )

@@ -83,7 +83,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
             validateRelationshipTypeIds( entityTokens );
             break;
         default:
-            throw new IllegalArgumentException( "Unknown entity type: " + entityType + "." );
+            throw new IllegalArgumentException( "Unknown entity type: " + entityType + '.' );
         }
         validatePropertyIds( propertyKeyIds );
 
@@ -178,7 +178,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
 
     private IllegalStateException cannotCastException( String descriptorType )
     {
-        return new IllegalStateException( "Cannot cast this schema to a " + descriptorType + " because it does not match that structure: " + this + "." );
+        return new IllegalStateException( "Cannot cast this schema to a " + descriptorType + " because it does not match that structure: " + this + '.' );
     }
 
     @Override

@@ -69,11 +69,11 @@ class ImportNumericalFailureTest
                 final String error;
                 if ( type.equals( "float" ) || type.equals( "double" ) )
                 {
-                    error = "Not a number: \"" + val + "\"";
+                    error = "Not a number: \"" + val + '"';
                 }
                 else
                 {
-                    error = "Not an integer: \"" + val + "\"";
+                    error = "Not an integer: \"" + val + '"';
                 }
 
                 String[] args = new String[3];

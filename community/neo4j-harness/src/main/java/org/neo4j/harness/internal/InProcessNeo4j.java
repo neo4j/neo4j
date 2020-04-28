@@ -182,7 +182,7 @@ public class InProcessNeo4j implements Neo4j
     private URI connectorUri( String scheme, String connectorName )
     {
         HostnamePort hostPort = connectorPortRegister.getLocalAddress( connectorName );
-        return URI.create( scheme + "://" + hostPort + "/" );
+        return URI.create( scheme + "://" + hostPort + '/' );
     }
 
     private ConnectorPortRegister connectorPortRegister()

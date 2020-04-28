@@ -204,7 +204,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         else
         {
             return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + filterType +
-                    ", underlying record=" + super.toString() + "]";
+                    ", underlying record=" + super.toString() + ']';
         }
     }
 

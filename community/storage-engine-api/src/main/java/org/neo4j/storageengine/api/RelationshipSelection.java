@@ -164,7 +164,7 @@ public abstract class RelationshipSelection
         @Override
         public String toString()
         {
-            return "RelationshipSelection[" + "type=" + type + ", " + direction + "]";
+            return "RelationshipSelection[" + "type=" + type + ", " + direction + ']';
         }
     }
 
@@ -213,7 +213,7 @@ public abstract class RelationshipSelection
         @Override
         public String toString()
         {
-            return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + "]";
+            return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + ']';
         }
 
         private boolean existsEarlier( int[] types, int i )
@@ -258,7 +258,7 @@ public abstract class RelationshipSelection
         @Override
         public String toString()
         {
-            return "RelationshipSelection[" + direction + "]";
+            return "RelationshipSelection[" + direction + ']';
         }
     }
 

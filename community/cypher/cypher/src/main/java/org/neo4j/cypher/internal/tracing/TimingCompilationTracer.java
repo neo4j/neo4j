@@ -133,7 +133,7 @@ public class TimingCompilationTracer implements CompilationTracer
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + queryString + "]";
+            return getClass().getSimpleName() + '[' + queryString + ']';
         }
 
         @Override
@@ -176,7 +176,7 @@ public class TimingCompilationTracer implements CompilationTracer
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + compilationPhase + "]";
+            return getClass().getSimpleName() + '[' + compilationPhase + ']';
         }
 
         @Override

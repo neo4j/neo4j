@@ -1632,7 +1632,7 @@ class GBPTreeTest
             } );
             assertThat( e.getMessage() ).contains(
                     "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
-                            "Loop occurred when restarting search from root from page " + corruptChild + "." );
+                            "Loop occurred when restarting search from root from page " + corruptChild + '.' );
         }
     }
 

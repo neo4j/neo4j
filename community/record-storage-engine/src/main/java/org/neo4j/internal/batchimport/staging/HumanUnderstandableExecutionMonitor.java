@@ -397,7 +397,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void printStageHeader( String name, Object... data )
     {
-        System.out.println( name + " " + date( TimeZone.getDefault() ) );
+        System.out.println( name + ' ' + date( TimeZone.getDefault() ) );
         if ( data.length > 0 )
         {
             for ( int i = 0; i < data.length; )

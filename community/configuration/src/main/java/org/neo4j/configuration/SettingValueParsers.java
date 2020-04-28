@@ -349,7 +349,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "a duration (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
+            return "a duration (" + TimeUtil.VALID_TIME_DESCRIPTION + ')';
         }
 
         @Override
@@ -376,7 +376,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "a duration-range <min-max> (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
+            return "a duration-range <min-max> (" + TimeUtil.VALID_TIME_DESCRIPTION + ')';
         }
 
         @Override
@@ -731,7 +731,7 @@ public final class SettingValueParsers
             else
             {
                 throw new IllegalArgumentException(
-                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
+                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + '\'' );
             }
         }
 

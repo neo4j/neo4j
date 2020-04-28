@@ -141,7 +141,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
                 String name =
                         (isBottleNeck ? "*" : "") +
                         stats.toString( additionalStatsLevel ) + (step.processors( 0 ) > 1
-                        ? "(" + step.processors( 0 ) + ")"
+                        ? "(" + step.processors( 0 ) + ')'
                         : "");
                 int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
                 char backgroundChar = step.processors( 0 ) > 1 ? '=' : '-';
@@ -161,7 +161,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         }
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
-        builder.append( "]" ).append( fitInProgress( progress ) );
+        builder.append( ']' ).append( fitInProgress( progress ) );
     }
 
     private static String fitInProgress( long value )

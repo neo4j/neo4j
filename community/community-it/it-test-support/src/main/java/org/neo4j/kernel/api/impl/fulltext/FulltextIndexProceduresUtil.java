@@ -75,7 +75,7 @@ public final class FulltextIndexProceduresUtil
     public static String asConfigString( Map<String,Value> configMap )
     {
         StringJoiner joiner = new StringJoiner( ", ", "{", "}" );
-        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + "\"" ) );
+        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + '"' ) );
         return joiner.toString();
     }
 }

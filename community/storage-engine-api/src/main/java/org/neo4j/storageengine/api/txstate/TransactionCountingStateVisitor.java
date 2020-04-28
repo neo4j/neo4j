@@ -107,7 +107,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         relationshipCursor.single( id );
         if ( !relationshipCursor.next() )
         {
-            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
+            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + ']' );
         }
         updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
         super.visitDeletedRelationship( id );

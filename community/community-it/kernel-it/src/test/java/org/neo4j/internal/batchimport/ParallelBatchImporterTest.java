@@ -437,7 +437,7 @@ public class ParallelBatchImporterTest
                         // some (very few) of those. Skip it.
                         String name = (String) propertyOf( input, "id" );
                         Relationship relationship = relationshipByName.get( name );
-                        assertNotNull( relationship, "Expected there to be a relationship with name '" + name + "'" );
+                        assertNotNull( relationship, "Expected there to be a relationship with name '" + name + '\'' );
                         assertEquals( nodeByInputId.get( uniqueId( input.startIdGroup, input.objectStartId ) ),
                             relationship.getStartNode() );
                         assertEquals( nodeByInputId.get( uniqueId( input.endIdGroup, input.objectEndId ) ),
@@ -466,7 +466,7 @@ public class ParallelBatchImporterTest
 
     private static String uniqueId( Group group, Object id )
     {
-        return group.name() + "_" + id;
+        return group.name() + '_' + id;
     }
 
     private static Object propertyOf( InputEntity input, String key )

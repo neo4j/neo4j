@@ -212,7 +212,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + ']';
     }
 
     @Override

@@ -64,7 +64,7 @@ public class EntityTokenUpdate
     public String toString()
     {
         return getClass().getSimpleName() + "[entity:" + entityId + ", tokensBefore:" + Arrays.toString( tokensBefore ) +
-                ", tokensAfter:" + Arrays.toString( tokensAfter ) + "]";
+                ", tokensAfter:" + Arrays.toString( tokensAfter ) + ']';
     }
 
     public static EntityTokenUpdate tokenChanges( long entityId, long[] tokensBeforeChange, long[] tokensAfterChange )

@@ -406,7 +406,7 @@ public final class OffHeapPageLock
         long cnt = (s & CNT_MASK) >> SEQ_BITS;
         long seq = s & SEQ_MASK;
         return "OffHeapPageLock[" +
-               "Flush: " + flush + ", Excl: " + excl + ", Mod: " + mod + ", Ws: " + cnt + ", S: " + seq + "]";
+               "Flush: " + flush + ", Excl: " + excl + ", Mod: " + mod + ", Ws: " + cnt + ", S: " + seq + ']';
     }
 
     static String toString( long address )

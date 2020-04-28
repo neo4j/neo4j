@@ -236,7 +236,7 @@ class GraphExtractionWriterTest
         assertEquals( properties.length, props.size(), "length( Node[" + id + "].properties )" );
         for ( Property property : properties )
         {
-            assertJsonEquals( "Node[" + id + "].properties[" + property.key() + "]",
+            assertJsonEquals( "Node[" + id + "].properties[" + property.key() + ']',
                               property.value(), props.get( property.key() ) );
         }
     }
@@ -253,7 +253,7 @@ class GraphExtractionWriterTest
         assertEquals( properties.length, props.size(), "length( Relationship[" + id + "].properties )" );
         for ( Property property : properties )
         {
-            assertJsonEquals( "Relationship[" + id + "].properties[" + property.key() + "]",
+            assertJsonEquals( "Relationship[" + id + "].properties[" + property.key() + ']',
                               property.value(), props.get( property.key() ) );
         }
     }

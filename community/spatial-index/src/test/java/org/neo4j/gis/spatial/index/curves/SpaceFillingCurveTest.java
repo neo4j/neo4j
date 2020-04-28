@@ -953,7 +953,7 @@ public class SpaceFillingCurveTest
             previous = point;
         }
         int badness = (int) (100 * badCount / (curve.getValueWidth() - 1));
-        assertThat( badness ).as( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + "%" ).isLessThanOrEqualTo(
+        assertThat( badness ).as( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + '%' ).isLessThanOrEqualTo(
                 badnessThresholdPercentage );
         logger.debug( String.format( "Bad distance count for level: %d (%d/%d = %d%%)", level, badCount, curve.getValueWidth() - 1, badness ) );
     }

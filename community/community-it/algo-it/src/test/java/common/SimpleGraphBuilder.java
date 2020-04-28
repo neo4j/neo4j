@@ -122,7 +122,7 @@ public class SimpleGraphBuilder
         {
             if ( property.getKey().equals( KEY_ID ) )
             {
-                throw new RuntimeException( "Can't use '" + property.getKey() + "'" );
+                throw new RuntimeException( "Can't use '" + property.getKey() + '\'' );
             }
             node.setProperty( property.getKey(), property.getValue() );
         }

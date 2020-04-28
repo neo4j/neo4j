@@ -90,7 +90,7 @@ public class TransactionId
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{" +
+        return getClass().getSimpleName() + '{' +
                 "transactionId=" + transactionId +
                 ", checksum=" + checksum +
                 ", commitTimestamp=" + commitTimestamp +

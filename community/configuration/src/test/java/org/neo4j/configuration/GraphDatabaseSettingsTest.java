@@ -173,7 +173,7 @@ class GraphDatabaseSettingsTest
             {
                 Config config = Config.defaults( GraphDatabaseSettings.bookmark_ready_timeout, DURATION.parse( value ) );
                 config.get( GraphDatabaseSettings.bookmark_ready_timeout );
-            }, "Exception expected for value '" + value + "'" );
+            }, "Exception expected for value '" + value + '\'' );
         }
     }
 

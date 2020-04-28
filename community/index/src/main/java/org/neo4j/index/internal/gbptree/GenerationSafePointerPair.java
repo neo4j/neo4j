@@ -429,7 +429,7 @@ class GenerationSafePointerPair
         }
         else
         {
-            return "Unknown[" + bits + "]";
+            return "Unknown[" + bits + ']';
         }
     }
 
@@ -448,7 +448,7 @@ class GenerationSafePointerPair
         case CRASH: return "CRASH";
         case BROKEN: return "BROKEN";
         case EMPTY: return "EMPTY";
-        default: return "Unknown[" + pointerState + "]";
+        default: return "Unknown[" + pointerState + ']';
         }
     }
 

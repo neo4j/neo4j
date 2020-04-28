@@ -60,6 +60,6 @@ class TokenScanKey
     @Override
     public String toString()
     {
-        return "[token:" + tokenId + ",range:" + idRange + "]";
+        return "[token:" + tokenId + ",range:" + idRange + ']';
     }
 }

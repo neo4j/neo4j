@@ -131,7 +131,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         if ( contentTypes.length > 0 )
         {
             resultDataContents = ", 'resultDataContents': [" + Arrays.stream( contentTypes )
-                    .map( unquoted -> format( "'%s'", unquoted ) ).collect( joining( "," ) ) + "]";
+                    .map( unquoted -> format( "'%s'", unquoted ) ).collect( joining( "," ) ) + ']';
         }
         return POST( txCommitUri(), quotedJson( format( "{'statements': [{'statement': '%s'%s}]}", query, resultDataContents) ) );
     }

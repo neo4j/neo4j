@@ -55,7 +55,7 @@ public class Workers<R extends Runnable> implements Iterable<R>
      */
     public void start( R toRun )
     {
-        Worker worker = new Worker( names + "-" + workers.size(), toRun );
+        Worker worker = new Worker( names + '-' + workers.size(), toRun );
         worker.start();
         workers.add( worker );
     }

@@ -679,7 +679,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     @Override
     public String toString()
     {
-        return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
+        return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + ']';
     }
 
     @Override

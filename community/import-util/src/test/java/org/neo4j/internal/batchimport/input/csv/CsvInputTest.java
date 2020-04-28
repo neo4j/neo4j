@@ -866,8 +866,8 @@ public class CsvInputTest
         Group startNodeGroup = groups.getOrCreate( "StartGroup" );
         Group endNodeGroup = groups.getOrCreate( "EndGroup" );
         Iterable<DataFactory> nodeHeader = dataIterable(
-                data( ":ID(" + startNodeGroup.name() + ")" ),
-                data( ":ID(" + endNodeGroup.name() + ")" ) );
+                data( ":ID(" + startNodeGroup.name() + ')' ),
+                data( ":ID(" + endNodeGroup.name() + ')' ) );
         Input input = new CsvInput( nodeHeader, defaultFormatNodeFileHeader(),
                 data,
                 header( entry( null, Type.START_ID, startNodeGroup.name(), CsvInput.idExtractor( idType, extractors ) ),

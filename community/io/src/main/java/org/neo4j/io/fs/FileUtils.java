@@ -180,7 +180,7 @@ public final class FileUtils
                     catch ( Exception e )
                     {
                         notEmpty.addSuppressed( e );
-                        return "(could not list directory: " + e.getMessage() + ")";
+                        return "(could not list directory: " + e.getMessage() + ')';
                     }
                 }
             } );

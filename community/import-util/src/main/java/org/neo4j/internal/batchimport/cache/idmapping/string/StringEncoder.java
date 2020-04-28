@@ -176,6 +176,6 @@ public class StringEncoder implements Encoder
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + numCodes + "]";
+        return getClass().getSimpleName() + '[' + numCodes + ']';
     }
 }

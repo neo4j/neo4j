@@ -211,6 +211,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public String toString()
     {
-        return databaseInfo + " [" + databaseLayout() + "]";
+        return databaseInfo + " [" + databaseLayout() + ']';
     }
 }

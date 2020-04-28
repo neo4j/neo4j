@@ -315,7 +315,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             + "(?<longHour>[0-9]{2}):(?<longMinute>[0-9]{2})"
             + "(?::(?<longSecond>[0-9]{2})(?:[.,](?<longSub>[0-9]{1,9}))?)?))?";
     private static final Pattern PATTERN = Pattern.compile(
-            "(?<sign>[-+]?)P(?:" + UNIT_BASED_PATTERN + "|" + DATE_BASED_PATTERN + ")",
+            "(?<sign>[-+]?)P(?:" + UNIT_BASED_PATTERN + '|' + DATE_BASED_PATTERN + ')',
             CASE_INSENSITIVE );
 
     private static DurationValue parse( Matcher matcher )
@@ -498,7 +498,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private static double parseFractional( String input, int pos )
     {
         return parseDouble( input.charAt( pos ) == '.' ? input :
-                (input.substring( 0, pos ) + "." + input.substring( pos + 1 )) );
+                (input.substring( 0, pos ) + '.' + input.substring( pos + 1 )) );
     }
 
     private static int fractionPoint( String field )

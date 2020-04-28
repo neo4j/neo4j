@@ -91,7 +91,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         if ( (count & ~0xFFFF) != 0 )
         {
             throw new IllegalStateException(
-                    "Invalid number of relationship groups for node " + nodeId + " " + count );
+                    "Invalid number of relationship groups for node " + nodeId + ' ' + count );
         }
         groupCountCache.setShort( nodeId, 0, (short) count );
     }

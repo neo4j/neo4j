@@ -37,7 +37,7 @@ class JavaSourceFile extends SimpleJavaFileObject
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + toUri() + "]";
+        return getClass().getSimpleName() + '[' + toUri() + ']';
     }
 
     @Override

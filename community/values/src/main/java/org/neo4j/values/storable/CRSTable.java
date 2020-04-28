@@ -49,12 +49,12 @@ public enum CRSTable
         assert lowerCase( name );
         this.name = name;
         this.tableId = tableId;
-        this.prefix = tableId == 0 ? "crs://" + name + "/" : "http://spatialreference.org/ref/" + name + "/";
+        this.prefix = tableId == 0 ? "crs://" + name + '/' : "http://spatialreference.org/ref/" + name + '/';
     }
 
     public String href( int code )
     {
-        return prefix + code + "/";
+        return prefix + code + '/';
     }
 
     private boolean lowerCase( String string )

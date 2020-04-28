@@ -91,8 +91,8 @@ class BigPropertyIndexValidationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( "CREATE (n:" + LABEL + ")" );
-                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" ) );
+                tx.execute( "CREATE (n:" + LABEL + ')' );
+                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + '"' ) );
                 tx.commit();
             }
             //Check that the database is empty.

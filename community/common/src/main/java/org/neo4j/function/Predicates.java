@@ -190,7 +190,7 @@ public final class Predicates
         if ( !tryAwaitEx( condition, timeout, unit, pollInterval, pollUnit ) )
         {
             throw new TimeoutException(
-                    "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted." );
+                    "Waited for " + timeout + ' ' + unit + ", but " + condition + " was not accepted." );
         }
     }
 

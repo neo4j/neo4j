@@ -283,7 +283,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
             int element = 0;
             for ( StackTraceElement[] traceElements : openCloseTraces )
             {
-                printStream.println( StringUtils.center( "*StackTrace " + element + "*", separatorLength, paddingString ) );
+                printStream.println( StringUtils.center( "*StackTrace " + element + '*', separatorLength, paddingString ) );
                 for ( StackTraceElement traceElement : traceElements )
                 {
                     printStream.println( "\tat " + traceElement );

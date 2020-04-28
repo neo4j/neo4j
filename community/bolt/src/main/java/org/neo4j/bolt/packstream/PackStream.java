@@ -545,7 +545,7 @@ public class PackStream
             case INT_32:
                 return in.readInt();
             case INT_64:
-                throw new Overflow( "Unexpectedly large Integer value unpacked (" + in.readLong() + ")" );
+                throw new Overflow( "Unexpectedly large Integer value unpacked (" + in.readLong() + ')' );
             default:
                 throw new Unexpected( PackType.INTEGER, markerByte );
             }

@@ -253,14 +253,14 @@ public class DbmsSupportController
                 if ( parameterTypes.length != 1 || !parameterTypes[0].isAssignableFrom( TestDatabaseManagementServiceBuilder.class ) )
                 {
                     throw new IllegalArgumentException( "The method '" + callback + "', must take one parameter that is assignable from " +
-                            TestDatabaseManagementServiceBuilder.class.getSimpleName() + "." );
+                            TestDatabaseManagementServiceBuilder.class.getSimpleName() + '.' );
                 }
 
                 // Make sure we have the required annotation
                 if ( declaredMethod.getAnnotation( ExtensionCallback.class ) == null )
                 {
                     throw new IllegalArgumentException(
-                            "The method '" + callback + "', must be annotated with " + ExtensionCallback.class.getSimpleName() + "." );
+                            "The method '" + callback + "', must be annotated with " + ExtensionCallback.class.getSimpleName() + '.' );
                 }
 
                 // All match, try calling it
@@ -316,7 +316,7 @@ public class DbmsSupportController
 
         if ( annotations.length > 1 )
         {
-            throw new IllegalArgumentException( "Multiple DBMS annotations found for the configuration: " + Arrays.toString( annotations ) + "." );
+            throw new IllegalArgumentException( "Multiple DBMS annotations found for the configuration: " + Arrays.toString( annotations ) + '.' );
         }
 
         if ( annotations.length == 1 )

@@ -130,12 +130,12 @@ public class IndexTxStateLookupTest
     {
         int length = Array.getLength( arrayObject );
         String type = arrayObject.getClass().getComponentType().getSimpleName();
-        StringBuilder builder = new StringBuilder( "(" + type + ") {" );
+        StringBuilder builder = new StringBuilder().append( '(' ).append( type ).append( ") {" );
         for ( int i = 0; i < length; i++ )
         {
             builder.append( i > 0 ? "," : "" ).append( Array.get( arrayObject, i ) );
         }
-        return builder.append( "}" ).toString();
+        return builder.append( '}' ).toString();
     }
 
     private static Object convert( int value, Class<?> type )

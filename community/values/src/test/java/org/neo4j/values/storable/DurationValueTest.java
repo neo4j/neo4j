@@ -222,17 +222,17 @@ class DurationValueTest
 
     private void assertParsesOne( String prefix, String suffix, int months, int days, int seconds )
     {
-        assertEquals( duration( months, days, seconds, 0 ), parse( prefix + "1" + suffix ) );
-        assertEquals( duration( months, days, seconds, 0 ), parse( "+" + prefix + "1" + suffix ) );
+        assertEquals( duration( months, days, seconds, 0 ), parse( prefix + '1' + suffix ) );
+        assertEquals( duration( months, days, seconds, 0 ), parse( '+' + prefix + '1' + suffix ) );
         assertEquals( duration( months, days, seconds, 0 ), parse( prefix + "+1" + suffix ) );
-        assertEquals( duration( months, days, seconds, 0 ), parse( "+" + prefix + "+1" + suffix ) );
+        assertEquals( duration( months, days, seconds, 0 ), parse( '+' + prefix + "+1" + suffix ) );
 
-        assertEquals( duration( -months, -days, -seconds, 0 ), parse( "-" + prefix + "1" + suffix ) );
+        assertEquals( duration( -months, -days, -seconds, 0 ), parse( '-' + prefix + '1' + suffix ) );
         assertEquals( duration( -months, -days, -seconds, 0 ), parse( prefix + "-1" + suffix ) );
-        assertEquals( duration( -months, -days, -seconds, 0 ), parse( "+" + prefix + "-1" + suffix ) );
-        assertEquals( duration( -months, -days, -seconds, 0 ), parse( "-" + prefix + "+1" + suffix ) );
+        assertEquals( duration( -months, -days, -seconds, 0 ), parse( '+' + prefix + "-1" + suffix ) );
+        assertEquals( duration( -months, -days, -seconds, 0 ), parse( '-' + prefix + "+1" + suffix ) );
 
-        assertEquals( duration( months, days, seconds, 0 ), parse( "-" + prefix + "-1" + suffix ) );
+        assertEquals( duration( months, days, seconds, 0 ), parse( '-' + prefix + "-1" + suffix ) );
     }
 
     @Test
@@ -259,7 +259,7 @@ class DurationValueTest
         for ( String s : new String[]{"Y", "M", "W", "D"} )
         {
             assertThrows( TemporalParseException.class, () -> parse( "P-" + s ) );
-            assertThrows( TemporalParseException.class, () -> parse( "P1" + s + "T" ) );
+            assertThrows( TemporalParseException.class, () -> parse( "P1" + s + 'T' ) );
         }
         for ( String s : new String[]{"H", "M", "S"} )
         {

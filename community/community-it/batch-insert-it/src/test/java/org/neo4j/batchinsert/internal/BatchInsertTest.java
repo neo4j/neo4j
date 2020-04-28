@@ -374,9 +374,9 @@ class BatchInsertTest
         for ( String key : properties.keySet() )
         {
             assertTrue( inserter.nodeHasProperty( theNode, key ) );
-            assertFalse( inserter.nodeHasProperty( theNode, key + "-" ) );
+            assertFalse( inserter.nodeHasProperty( theNode, key + '-' ) );
             assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-            assertFalse( inserter.relationshipHasProperty( relationship, key + "-" ) );
+            assertFalse( inserter.relationshipHasProperty( relationship, key + '-' ) );
         }
         inserter.shutdown();
     }

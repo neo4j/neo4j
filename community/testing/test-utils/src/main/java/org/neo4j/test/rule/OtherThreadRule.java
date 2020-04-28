@@ -145,7 +145,7 @@ public class OtherThreadRule<STATE> implements TestRule
             public void evaluate() throws Throwable
             {
                 String threadName = name != null
-                        ? name + "-" + description.getDisplayName()
+                        ? name + '-' + description.getDisplayName()
                         : description.getDisplayName();
                 init( threadName );
                 try

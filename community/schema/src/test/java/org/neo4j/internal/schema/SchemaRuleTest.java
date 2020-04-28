@@ -209,10 +209,10 @@ class SchemaRuleTest
     void sanitiseNameMustRejectReservedNames()
     {
         Set<String> reservedNames = ReservedSchemaRuleNames.getReservedNames();
-        reservedNames = reservedNames.stream().flatMap( n -> Stream.of( " " + n, n, n + " " ) ).collect( Collectors.toSet() );
+        reservedNames = reservedNames.stream().flatMap( n -> Stream.of( ' ' + n, n, n + ' ' ) ).collect( Collectors.toSet() );
         for ( String reservedName : reservedNames )
         {
-            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( reservedName ), "reserved name: '" + reservedName + "'" );
+            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( reservedName ), "reserved name: '" + reservedName + '\'' );
         }
     }
 
@@ -223,7 +223,7 @@ class SchemaRuleTest
 
         for ( String invalidName : invalidNames )
         {
-            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( invalidName ), "invalid name: '" + invalidName + "'" );
+            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( invalidName ), "invalid name: '" + invalidName + '\'' );
         }
     }
 

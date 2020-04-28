@@ -65,7 +65,7 @@ public class InteractiveProgress implements DiagnosticsReporterProgress
     @Override
     public void started( long currentStepIndex, String target )
     {
-        this.prefix = currentStepIndex + "/" + totalSteps;
+        this.prefix = currentStepIndex + '/' + totalSteps;
         this.suffix = target;
         percentChanged( 0 );
     }

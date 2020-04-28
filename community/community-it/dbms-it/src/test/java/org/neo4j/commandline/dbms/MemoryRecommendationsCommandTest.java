@@ -222,10 +222,10 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( initialHeapSize.name() + "=" + heap );
-        verify( output ).println( maxHeapSize.name() + "=" + heap );
-        verify( output ).println( pagecache_memory.name() + "=" + pagecache );
-        verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
+        verify( output ).println( initialHeapSize.name() + '=' + heap );
+        verify( output ).println( maxHeapSize.name() + '=' + heap );
+        verify( output ).println( pagecache_memory.name() + '=' + pagecache );
+        verify( output ).println( tx_state_max_off_heap_memory.name() + '=' + offHeap );
     }
 
     @Test
@@ -249,10 +249,10 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( initialHeapSize.name() + "=" + heap );
-        verify( output ).println( maxHeapSize.name() + "=" + heap );
-        verify( output ).println( pagecache_memory.name() + "=" + pagecache );
-        verify( output, never() ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
+        verify( output ).println( initialHeapSize.name() + '=' + heap );
+        verify( output ).println( maxHeapSize.name() + '=' + heap );
+        verify( output ).println( pagecache_memory.name() + '=' + pagecache );
+        verify( output, never() ).println( tx_state_max_off_heap_memory.name() + '=' + offHeap );
     }
 
     @Test
@@ -298,9 +298,9 @@ class MemoryRecommendationsCommandTest
         command.execute();
 
         // then
-        verify( output ).println( contains( initialHeapSize.name() + "=" + heap ) );
-        verify( output ).println( contains( maxHeapSize.name() + "=" + heap ) );
-        verify( output ).println( contains( pagecache_memory.name() + "=" + pagecache ) );
+        verify( output ).println( contains( initialHeapSize.name() + '=' + heap ) );
+        verify( output ).println( contains( maxHeapSize.name() + '=' + heap ) );
+        verify( output ).println( contains( pagecache_memory.name() + '=' + pagecache ) );
 
         long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
         long[] systemSizes = calculatePageCacheFileSize( systemLayout );

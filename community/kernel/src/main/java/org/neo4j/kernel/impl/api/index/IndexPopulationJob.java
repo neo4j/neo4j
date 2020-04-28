@@ -208,7 +208,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
+        return getClass().getSimpleName() + "[populator:" + multiPopulator + ']';
     }
 
     /**

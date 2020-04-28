@@ -121,11 +121,11 @@ class KernelTokenTest
         for ( String invalidName : invalidNames )
         {
             assertThrows( IllegalTokenNameException.class, () -> kernelToken.labelGetOrCreateForName( invalidName ),
-                    "label name should be invalid: '" + invalidName + "'" );
+                    "label name should be invalid: '" + invalidName + '\'' );
             assertThrows( IllegalTokenNameException.class, () -> kernelToken.relationshipTypeGetOrCreateForName( invalidName ),
-                    "relationship type name should be invalid: '" + invalidName + "'" );
+                    "relationship type name should be invalid: '" + invalidName + '\'' );
             assertThrows( IllegalTokenNameException.class, () -> kernelToken.propertyKeyGetOrCreateForName( invalidName ),
-                    "property key name name should be invalid: '" + invalidName + "'" );
+                    "property key name name should be invalid: '" + invalidName + '\'' );
         }
     }
 

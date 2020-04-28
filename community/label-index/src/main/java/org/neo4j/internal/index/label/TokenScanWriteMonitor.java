@@ -241,7 +241,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             // Prune
             long time = currentTimeMillis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getName() + "-" ) ) )
+            for ( File file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getName() + '-' ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -307,7 +307,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     private File timestampedFile()
     {
-        return new File( storeDir, file.getName() + "-" + currentTimeMillis() );
+        return new File( storeDir, file.getName() + '-' + currentTimeMillis() );
     }
 
     /**

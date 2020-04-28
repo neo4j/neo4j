@@ -257,7 +257,7 @@ public final class Iterators
             if ( iterator.hasNext() )
             {
                 throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
-                        + result + "' and the second element is '" + iterator.next() + "'" );
+                        + result + "' and the second element is '" + iterator.next() + '\'' );
             }
             return result;
         }

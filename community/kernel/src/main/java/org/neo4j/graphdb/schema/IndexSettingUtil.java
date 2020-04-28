@@ -195,7 +195,7 @@ public class IndexSettingUtil
         {
             throw new IllegalArgumentException( "Invalid value type for '" + indexSetting.getSettingName() + "' setting. " +
                     "Expected a value of type " + type.getName() + ", " +
-                    "but got value '" + value + "' of type " + (value == null ? "null" : value.getClass().getName()) + ".", e );
+                    "but got value '" + value + "' of type " + (value == null ? "null" : value.getClass().getName()) + '.', e );
         }
         throw new UnsupportedOperationException(
                 "Should not happen. Missing parser for type " + type.getSimpleName() + ". This type is used by indexSetting " + indexSetting.getSettingName() );

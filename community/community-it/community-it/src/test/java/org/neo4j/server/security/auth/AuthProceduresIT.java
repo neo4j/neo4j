@@ -355,7 +355,7 @@ public class AuthProceduresIT
             }
             else
             {
-                fail( "Expected notifications from '" + query + "'" );
+                fail( "Expected notifications from '" + query + '\'' );
             }
 
             tx.commit();
@@ -421,7 +421,7 @@ public class AuthProceduresIT
         for ( Map<String, Object> row : result )
         {
             String key = (String) row.get( keyKey );
-            assertTrue( expected.containsKey( key ), "Unexpected key '" + key + "'" );
+            assertTrue( expected.containsKey( key ), "Unexpected key '" + key + '\'' );
 
             assertTrue( row.containsKey( valueKey ), "Value key '" + valueKey + "' not found in results" );
             Object objectValue = row.get( valueKey );

@@ -367,7 +367,7 @@ public class DocValuesCollector extends SimpleCollector
                         if ( valueDoc != nextDoc )
                         {
                             throw new RuntimeException( "Document id and document value iterators are out of sync. Id iterator gave me document " + nextDoc +
-                                    ", while the value iterator gave me document " + valueDoc + "." );
+                                    ", while the value iterator gave me document " + valueDoc + '.' );
                         }
                         next = currentDocValues.longValue();
                         return true;
@@ -463,7 +463,7 @@ public class DocValuesCollector extends SimpleCollector
                     }
                     throw new IllegalStateException(
                             "The field '" + field + "' is not indexed properly, expected NumericDV, but got '" +
-                            actual + "'" );
+                            actual + '\'' );
                 }
                 return dv;
             }
@@ -662,7 +662,7 @@ public class DocValuesCollector extends SimpleCollector
                     if ( valueDocId != docID )
                     {
                         throw new RuntimeException( "Expected doc values and doc scores to iterate together, but score doc id is " + docID +
-                                ", and value doc id is " + valueDocId + "." );
+                                ", and value doc id is " + valueDocId + '.' );
                     }
                     currentValue = docValues.longValue();
                 }

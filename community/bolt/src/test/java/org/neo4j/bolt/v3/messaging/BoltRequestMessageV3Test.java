@@ -173,7 +173,7 @@ class BoltRequestMessageV3Test
         }
         catch ( Throwable e )
         {
-            throw new AssertionError( "Failed to unpack message, wire data was:\n" + serialized + "[" + bytes.length + "b]", e );
+            throw new AssertionError( "Failed to unpack message, wire data was:\n" + serialized + '[' + bytes.length + "b]", e );
         }
 
         return (T) messages.get( 0 );

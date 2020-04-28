@@ -192,7 +192,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
                ", with " + countCommands() + " commands in this transaction" +
                ", lease " + tr.getLeaseId() +
                ", latest committed transaction id when started was " + tr.getLatestCommittedTxWhenStarted() +
-               ", additional header bytes: " + HexPrinter.hex( tr.additionalHeader(), Integer.MAX_VALUE, "" ) + "}";
+               ", additional header bytes: " + HexPrinter.hex( tr.additionalHeader(), Integer.MAX_VALUE, "" ) + '}';
     }
 
     private String countCommands()
@@ -216,7 +216,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         }
         catch ( Throwable e )
         {
-            return "(unable to count: " + e.getMessage() + ")";
+            return "(unable to count: " + e.getMessage() + ')';
         }
     }
 

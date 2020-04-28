@@ -547,7 +547,7 @@ public class TestRelationshipCount
         }
 
         fail( "Couldn't find " + (direction == Direction.BOTH ? "loop" : "non-loop") + " relationship " +
-                type.name() + " " + direction + " to delete" );
+                type.name() + ' ' + direction + " to delete" );
     }
 
     private boolean isLoop( Relationship r )

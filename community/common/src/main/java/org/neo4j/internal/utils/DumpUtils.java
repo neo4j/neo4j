@@ -65,7 +65,7 @@ public final class DumpUtils
         for ( ThreadInfo threadInfo : threadInfos )
         {
             sb.append( String.format( "\"%s\" #%d\n", threadInfo.getThreadName(), threadInfo.getThreadId() ) );
-            sb.append( "   java.lang.Thread.State: " ).append( threadInfo.getThreadState() ).append( "\n" );
+            sb.append( "   java.lang.Thread.State: " ).append( threadInfo.getThreadState() ).append( '\n' );
 
             StackTraceElement[] stackTrace = threadInfo.getStackTrace();
             for ( int i = 0; i < stackTrace.length; i++ )

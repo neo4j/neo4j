@@ -229,7 +229,7 @@ public class BuiltInProcedures
         }
         if ( index == null )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
+            throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + '"' );
         }
 
         final IndexDetailResult indexDetailResult = asIndexDetails( tokenRead, schemaRead, index );

@@ -459,7 +459,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + "]";
+        return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + ']';
     }
 
     private void assertOpen() throws IndexProxyAlreadyClosedKernelException

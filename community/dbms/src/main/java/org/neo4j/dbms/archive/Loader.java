@@ -206,7 +206,7 @@ public class Loader
         }
         else
         {
-            throw new IOException( "Cannot read archive meta-data. I don't recognise this archive version: " + version + "." );
+            throw new IOException( "Cannot read archive meta-data. I don't recognise this archive version: " + version + '.' );
         }
     }
 

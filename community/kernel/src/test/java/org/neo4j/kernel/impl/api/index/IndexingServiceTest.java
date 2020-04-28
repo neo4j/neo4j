@@ -648,7 +648,7 @@ class IndexingServiceTest
 
         // then
         assertThat( internalLogProvider ).forLevel( INFO )
-                .containsMessages( "Manual trigger for sampling all indexes [" + mode + "]" );
+                .containsMessages( "Manual trigger for sampling all indexes [" + mode + ']' );
     }
 
     @Test
@@ -670,7 +670,7 @@ class IndexingServiceTest
         // then
         String userDescription = index.userDescription( nameLookup );
         assertThat( internalLogProvider ).forLevel( INFO )
-                .containsMessages( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" );
+                .containsMessages( "Manual trigger for sampling index " + userDescription + " [" + mode + ']' );
     }
 
     @Test

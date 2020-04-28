@@ -130,7 +130,7 @@ class ArgsTest
         // WHEN
         int value = args.interpretOption( "arg", key ->
         {
-            throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+            throw new IllegalArgumentException( "Missing argument '" + key + '\'' );
         }, Integer::parseInt, validator );
 
         // THEN
@@ -150,7 +150,7 @@ class ArgsTest
         // WHEN
         int value = args.interpretOrphan( 0, key ->
         {
-            throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+            throw new IllegalArgumentException( "Missing argument '" + key + '\'' );
         }, Integer::parseInt, validator );
 
         // THEN
@@ -222,7 +222,7 @@ class ArgsTest
         Collection<Args.Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
                 key ->
                 {
-                    throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+                    throw new IllegalArgumentException( "Missing argument '" + key + '\'' );
                 }, value -> value );
 
         // THEN

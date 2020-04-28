@@ -125,7 +125,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + name + " @ " + processor.getStage() + ", " +
-                store + ":" + store.getHighId() + "]";
+        return getClass().getSimpleName() + '[' + name + " @ " + processor.getStage() + ", " +
+                store + ':' + store.getHighId() + ']';
     }
 }

@@ -70,7 +70,7 @@ class StringsTest
     @Test
     void testJoiningLines()
     {
-        assertEquals( "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c",
+        assertEquals( 'a' + System.lineSeparator() + 'b' + System.lineSeparator() + 'c',
                 Strings.joinAsLines( "a", "b", "c" ) );
     }
 }

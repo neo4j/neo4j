@@ -176,7 +176,7 @@ public class IndexDefineCommand extends Command
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
+        return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + ']';
     }
 
     @Override

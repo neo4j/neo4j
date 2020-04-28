@@ -36,7 +36,7 @@ class RepresentationTestBase
 
     static void assertUriMatches( String expectedRegex, String actualUri )
     {
-        assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">", actualUri.matches( expectedRegex ) );
+        assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + '>', actualUri.matches( expectedRegex ) );
     }
 
     static String uriPattern( String subPath )

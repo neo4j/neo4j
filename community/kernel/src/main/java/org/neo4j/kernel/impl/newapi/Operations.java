@@ -1436,7 +1436,7 @@ public class Operations implements Write, SchemaWrite
             if ( prototype.getIndexType() != IndexType.BTREE )
             {
                 throw new CreateConstraintFailureException(
-                        constraint, "Cannot create backing constraint index with index type " + prototype.getIndexType() + "." );
+                        constraint, "Cannot create backing constraint index with index type " + prototype.getIndexType() + '.' );
             }
             if ( prototype.schema().isFulltextSchemaDescriptor() )
             {

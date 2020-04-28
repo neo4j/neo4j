@@ -131,7 +131,7 @@ public final class RepresentationType
             throw new IllegalArgumentException( "type may not be null" );
         }
         this.valueName = type;
-        this.listName = type + "s";
+        this.listName = type + 's';
         this.extend = null;
     }
 

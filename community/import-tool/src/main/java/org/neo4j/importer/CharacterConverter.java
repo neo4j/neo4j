@@ -61,6 +61,6 @@ public class CharacterConverter implements Function<String,Character>
             return value.charAt( 0 );
         }
 
-        throw new IllegalArgumentException( "Unsupported character '" + value + "'" );
+        throw new IllegalArgumentException( "Unsupported character '" + value + '\'' );
     }
 }

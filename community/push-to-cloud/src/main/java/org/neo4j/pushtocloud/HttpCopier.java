@@ -114,14 +114,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
         int dashIndex = range.indexOf( '-' );
         if ( !range.startsWith( "bytes=" ) || dashIndex == -1 )
         {
-            throw new CommandFailedException( "Unexpected response when asking where to resume upload from. got '" + range + "'" );
+            throw new CommandFailedException( "Unexpected response when asking where to resume upload from. got '" + range + '\'' );
         }
         return Long.parseLong( range.substring( dashIndex + 1 ) ) + 1;
     }
 
     private static String base64Encode( String username, char[] password )
     {
-        String plainToken = new StringBuilder( username ).append( ":" ).append( password ).toString();
+        String plainToken = new StringBuilder( username ).append( ':' ).append( password ).toString();
         return Base64.getEncoder().encodeToString( plainToken.getBytes() );
     }
 
@@ -147,7 +147,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
         catch ( MalformedURLException e )
         {
-            throw new RuntimeException( "Malformed URL '" + urlString + "'", e );
+            throw new RuntimeException( "Malformed URL '" + urlString + '\'', e );
         }
     }
 

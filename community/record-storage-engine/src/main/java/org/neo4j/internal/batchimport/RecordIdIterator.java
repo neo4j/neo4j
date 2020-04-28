@@ -100,7 +100,7 @@ public interface RecordIdIterator
         @Override
         public String toString()
         {
-            return "[" + lowIncluded + "-" + highExcluded + "[";
+            return "[" + lowIncluded + '-' + highExcluded + '[';
         }
     }
 
@@ -142,7 +142,7 @@ public interface RecordIdIterator
         @Override
         public String toString()
         {
-            return "]" + highExcluded + "-" + lowIncluded + "]";
+            return "]" + highExcluded + '-' + lowIncluded + ']';
         }
     }
 }

@@ -231,7 +231,7 @@ class SettingMigratorsTest
             String expectedWarning = "Use of deprecated setting dbms.index.default_schema_provider.";
             if ( !"native-btree-1.0".equals( oldSchemaProvider ) )
             {
-                expectedWarning += " Value migrated from " + oldSchemaProvider + " to " + migrationMap.get( oldSchemaProvider ) + ".";
+                expectedWarning += " Value migrated from " + oldSchemaProvider + " to " + migrationMap.get( oldSchemaProvider ) + '.';
             }
             assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages( expectedWarning );
         }

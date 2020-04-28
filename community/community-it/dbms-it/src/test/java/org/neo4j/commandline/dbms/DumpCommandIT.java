@@ -295,7 +295,7 @@ class DumpCommandIT
     void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/" + DEFAULT_DATABASE_NAME );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + '/' + DEFAULT_DATABASE_NAME );
         Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
         putStoreInDirectory( buildConfig(), databaseDir );

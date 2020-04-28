@@ -258,7 +258,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             // Prune
             long time = clock.millis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( file.getParentFile(), ( dir, name ) -> name.startsWith( file.getName() + "-" ) ) )
+            for ( File file : fs.listFiles( file.getParentFile(), ( dir, name ) -> name.startsWith( file.getName() + '-' ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -329,7 +329,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
     private File timestampedFile()
     {
-        return new File( file.getParentFile(), file.getName() + "-" + clock.millis() );
+        return new File( file.getParentFile(), file.getName() + '-' + clock.millis() );
     }
 
     static long millisOf( File file )

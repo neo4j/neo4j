@@ -170,7 +170,7 @@ class PageCursorUtil
     {
         if ( !cursor.next( pageId ) )
         {
-            throw new IllegalStateException( "Could not go to page:" + pageId + " [" + messageOnError + "]" );
+            throw new IllegalStateException( "Could not go to page:" + pageId + " [" + messageOnError + ']' );
         }
     }
 }

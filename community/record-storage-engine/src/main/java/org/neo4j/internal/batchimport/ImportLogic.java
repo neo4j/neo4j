@@ -392,7 +392,7 @@ public class ImportLogic implements Closeable
         String range = typesToLinkThisRound.size() == 1
                 ? String.valueOf( oneBased( startingFromType ) )
                 : oneBased( startingFromType ) + "-" + (startingFromType + typesImported);
-        String topic = " " + range + "/" + relationshipTypeDistribution.getNumberOfRelationshipTypes();
+        String topic = ' ' + range + '/' + relationshipTypeDistribution.getNumberOfRelationshipTypes();
         int nodeTypes = thisIsTheFirstRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
         Predicate<RelationshipRecord> readFilter = thisIsTheFirstRound
                 ? alwaysTrue() // optimization when all rels are imported in this round

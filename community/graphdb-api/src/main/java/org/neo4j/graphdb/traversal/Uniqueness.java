@@ -220,7 +220,7 @@ public enum Uniqueness implements UniquenessFactory
         if ( !isDecimalNumber )
         {
             throw new IllegalArgumentException( "Doesn't accept non-decimal values"
-                    + ", like '" + parameter + "'" );
+                    + ", like '" + parameter + '\'' );
         }
     }
 }

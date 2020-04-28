@@ -157,7 +157,7 @@ public class SslResourceBuilder
 
     private static URL resource( String filename, int keyId )
     {
-        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + String.valueOf( keyId ) + "/" + filename );
+        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + String.valueOf( keyId ) + '/' + filename );
     }
 
     private static URL resource( String filename )

@@ -65,6 +65,6 @@ public class SchemaStateKey
     @Override
     public String toString()
     {
-        return "SchemaStateKey(" + id + ")";
+        return "SchemaStateKey(" + id + ')';
     }
 }

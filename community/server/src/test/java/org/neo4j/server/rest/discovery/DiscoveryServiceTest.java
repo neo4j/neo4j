@@ -206,7 +206,7 @@ public class DiscoveryServiceTest
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( baseUri ) );
         String json = new String( (byte[]) response.getEntity() );
-        assertThat( json ).contains( "\"transaction\" : \"" + expectedDatabaseUri + "/" );
+        assertThat( json ).contains( "\"transaction\" : \"" + expectedDatabaseUri + '/' );
     }
 
     @Test

@@ -932,7 +932,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private String reprValue( Object value )
     {
-        return value instanceof String ? "\"" + value + "\"" : String.valueOf( value );
+        return value instanceof String ? "\"" + value + '"' : String.valueOf( value );
     }
 
     private String reprNode( Node node )

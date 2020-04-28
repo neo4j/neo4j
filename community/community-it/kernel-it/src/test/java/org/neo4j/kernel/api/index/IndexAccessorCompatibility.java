@@ -179,7 +179,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             }
             else
             {
-                fail( "Unexpected order " + order + " (count = " + count + ")" );
+                fail( "Unexpected order " + order + " (count = " + count + ')' );
             }
             prevValues = values;
         }

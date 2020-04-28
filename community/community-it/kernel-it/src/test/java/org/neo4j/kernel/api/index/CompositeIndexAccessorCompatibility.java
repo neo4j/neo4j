@@ -670,7 +670,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             // then
             List<Long> hits = query( exact( 0, update.values()[0] ), exact( 1, update.values()[1] ) );
-            assertEquals( update.describe( tokenNameLookup ) + " " + hits, 1, hits.size() );
+            assertEquals( update.describe( tokenNameLookup ) + ' ' + hits, 1, hits.size() );
             assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
     }

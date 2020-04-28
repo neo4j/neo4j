@@ -363,9 +363,9 @@ class CompositeCountsTest
             long nodeCount = countsForRelationship( tx, lhs, type, rhs );
             tx.commit();
             return new MatchingRelationships( String.format( "(%s)-%s->(%s)",
-                                                             lhs == null ? "" : ":" + lhs.name(),
-                                                             type == null ? "" : "[:" + type.name() + "]",
-                                                             rhs == null ? "" : ":" + rhs.name() ), nodeCount );
+                                                             lhs == null ? "" : ':' + lhs.name(),
+                                                             type == null ? "" : "[:" + type.name() + ']',
+                                                             rhs == null ? "" : ':' + rhs.name() ), nodeCount );
         }
     }
 

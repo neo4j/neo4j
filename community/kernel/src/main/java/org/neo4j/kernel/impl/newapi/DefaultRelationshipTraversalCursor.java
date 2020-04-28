@@ -229,7 +229,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         else
         {
             return "RelationshipTraversalCursor[id=" + storeCursor.entityReference() +
-                    ", " + storeCursor + "]";
+                    ", " + storeCursor + ']';
         }
     }
 }

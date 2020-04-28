@@ -108,7 +108,7 @@ public abstract class ExtensionTestBase
                                 Log.class.getName() + ">, <" +
                                 TerminationGuard.class.getName() + ">, <" +
                                 SecurityContext.class.getName() + ">, <" +
-                                Transaction.class.getName() + ">" )
+                                Transaction.class.getName() + '>' )
                 .in( sproc ).onLine( 33 );
     }
 }

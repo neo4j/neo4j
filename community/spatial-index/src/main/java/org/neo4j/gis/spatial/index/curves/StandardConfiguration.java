@@ -78,7 +78,7 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "(" + extraLevels + ")";
+        return getClass().getSimpleName() + '(' + extraLevels + ')';
     }
 
     @Override

@@ -458,7 +458,7 @@ class TransactionEventsIT
                     Object value = graph.randomPropertyValue();
                     node.setProperty( key, value );
                     expectations.assignedProperty( node, key, value, valueBefore );
-                    debug( node + " " + key + "=" + value + " prev " + valueBefore );
+                    debug( node + " " + key + '=' + value + " prev " + valueBefore );
                 }
             }
         },
@@ -476,7 +476,7 @@ class TransactionEventsIT
                     {
                         Object valueBefore = node.removeProperty( key );
                         expectations.removedProperty( node, key, valueBefore );
-                        debug( node + " " + key + "=" + valueBefore );
+                        debug( node + " " + key + '=' + valueBefore );
                     }
                 }
             }
@@ -495,7 +495,7 @@ class TransactionEventsIT
                     Object value = graph.randomPropertyValue();
                     relationship.setProperty( key, value );
                     expectations.assignedProperty( relationship, key, value, valueBefore );
-                    debug( relationship + " " + key + "=" + value + " prev " + valueBefore );
+                    debug( relationship + " " + key + '=' + value + " prev " + valueBefore );
                 }
             }
         },
@@ -513,7 +513,7 @@ class TransactionEventsIT
                     {
                         Object valueBefore = relationship.removeProperty( key );
                         expectations.removedProperty( relationship, key, valueBefore );
-                        debug( relationship + " " + key + "=" + valueBefore );
+                        debug( relationship + " " + key + '=' + valueBefore );
                     }
                 }
             }

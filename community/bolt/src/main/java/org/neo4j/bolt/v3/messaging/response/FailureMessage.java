@@ -84,7 +84,7 @@ public class FailureMessage implements ResponseMessage
     @Override
     public String toString()
     {
-        return "FAILURE " + status + " " + message;
+        return "FAILURE " + status + ' ' + message;
     }
 
 }

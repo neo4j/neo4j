@@ -304,7 +304,7 @@ class GenerationSafePointerTest
         @Override
         public String toString()
         {
-            return "[generation:" + generation + ",p:" + pointer + "]";
+            return "[generation:" + generation + ",p:" + pointer + ']';
         }
     }
 }

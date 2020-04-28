@@ -42,7 +42,7 @@ public final class TokenIdPrettyPrinter
 
     public static String relationshipType( int id )
     {
-        return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
+        return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + ']');
     }
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
@@ -68,7 +68,7 @@ public final class TokenIdPrettyPrinter
             String name = lookup.apply( id );
             if ( name.contains( ":" ) )
             {
-                name = '`' + name + "`";
+                name = '`' + name + '`';
             }
             entityJoiner.add( name );
         }

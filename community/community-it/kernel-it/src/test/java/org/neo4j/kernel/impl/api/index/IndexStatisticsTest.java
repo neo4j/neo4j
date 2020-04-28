@@ -393,7 +393,7 @@ public class IndexStatisticsTest
                     }
                     if ( !found )
                     {
-                        mismatches.add( "Index is missing entry for " + name + " " + node );
+                        mismatches.add( "Index is missing entry for " + name + ' ' + node );
                     }
                 }
                 if ( !mismatches.isEmpty() )

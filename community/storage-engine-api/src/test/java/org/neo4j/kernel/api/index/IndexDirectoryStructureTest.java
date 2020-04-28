@@ -42,8 +42,8 @@ class IndexDirectoryStructureTest
     void shouldSeeCorrectDirectoriesForProvider()
     {
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
-                path( baseIndexDirectory, provider.getKey() + "-" +  provider.getVersion(), String.valueOf( indexId ) ) );
+                path( baseIndexDirectory, provider.getKey() + '-' + provider.getVersion() ),
+                path( baseIndexDirectory, provider.getKey() + '-' +  provider.getVersion(), String.valueOf( indexId ) ) );
     }
 
     @Test
@@ -52,9 +52,9 @@ class IndexDirectoryStructureTest
         IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
         IndexProviderDescriptor subProvider = new IndexProviderDescriptor( "sub", "0.3" );
         assertCorrectDirectories( directoriesBySubProvider( parentStructure ).forProvider( subProvider ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion(),
-                        String.valueOf( indexId ), subProvider.getKey() + "-" + subProvider.getVersion() ) );
+                path( baseIndexDirectory, provider.getKey() + '-' + provider.getVersion() ),
+                path( baseIndexDirectory, provider.getKey() + '-' + provider.getVersion(),
+                        String.valueOf( indexId ), subProvider.getKey() + '-' + subProvider.getVersion() ) );
     }
 
     @Test

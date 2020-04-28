@@ -359,7 +359,7 @@ public class GraphDescription implements GraphDefinition
                 String[] components = line.split( " " );
                 if ( components.length != 3 )
                 {
-                    throw new IllegalArgumentException( "syntax error: \"" + line + "\"" );
+                    throw new IllegalArgumentException( "syntax error: \"" + line + '"' );
                 }
 
                 String startName = parseAndCreateNodeIfAbsent( nodes, defined( components[0] ) );

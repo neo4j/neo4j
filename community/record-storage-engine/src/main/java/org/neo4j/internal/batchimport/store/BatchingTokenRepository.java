@@ -103,7 +103,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
             return (Integer) key;
         }
         throw new IllegalArgumentException( "Expected either a String or Integer for property key, but was '" +
-                key + "'" + ", " + key.getClass() );
+                key + '\'' + ", " + key.getClass() );
     }
 
     @Override

@@ -93,7 +93,7 @@ abstract class CommunityProcedureITBase extends KernelIntegrationTest implements
         StringBuilder result = new StringBuilder();
         for ( AnyValue anyValue : array )
         {
-            result.append( anyValue ).append( "\n" );
+            result.append( anyValue ).append( '\n' );
         }
         return result.toString();
     }

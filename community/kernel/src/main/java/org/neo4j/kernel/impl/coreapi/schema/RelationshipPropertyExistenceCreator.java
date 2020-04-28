@@ -53,7 +53,7 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
         if ( indexType != null )
         {
             throw new IllegalArgumentException( "Relationship property existence constraints cannot be created with an index type. " +
-                    "Was given index type " + indexType + "." );
+                    "Was given index type " + indexType + '.' );
         }
         if ( indexConfig != null )
         {

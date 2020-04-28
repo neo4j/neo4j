@@ -232,7 +232,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
         print( "# Assuming the system is dedicated to running Neo4j and has " + ByteUnit.bytesToString( memory ) + " of memory," );
-        print( "# we recommend a heap size of around " + heap + ", and a page cache of around " + pagecache + "," );
+        print( "# we recommend a heap size of around " + heap + ", and a page cache of around " + pagecache + ',' );
         print( "# and that about " + os + " is left for the operating system, and the native memory" );
         print( "# needed by Lucene and Netty." );
         print( "#" );
@@ -257,12 +257,12 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# involves a full GC, which is desirable to avoid." );
         print( "#" );
         print( "# Based on the above, the following memory settings are recommended:" );
-        print( initialHeapSize.name() + "=" + heap );
-        print( maxHeapSize.name() + "=" + heap );
-        print( pagecache_memory.name() + "=" + pagecache );
+        print( initialHeapSize.name() + '=' + heap );
+        print( maxHeapSize.name() + '=' + heap );
+        print( pagecache_memory.name() + '=' + pagecache );
         if ( offHeapMemory != 0 )
         {
-            print( tx_state_max_off_heap_memory.name() + "=" + txState );
+            print( tx_state_max_off_heap_memory.name() + '=' + txState );
         }
         print( "#" );
         print( "# It is also recommended turning out-of-memory errors into full crashes," );

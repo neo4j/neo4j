@@ -248,7 +248,7 @@ class RelationshipTestSupport
 
     static String computeKey( String type, Direction direction )
     {
-        return type + "-" + direction;
+        return type + '-' + direction;
     }
 
     private static final BiFunction<Transaction,Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(

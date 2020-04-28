@@ -48,7 +48,7 @@ public class NeoStoreRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" +
+        return getClass().getSimpleName() + '[' +
                 "used=" + inUse() +
                 ",prop=" + getNextProp() +
                 "]";

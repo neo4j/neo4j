@@ -232,7 +232,7 @@ abstract class FusionIndexProviderTest
         List<String> failureMessages = new ArrayList<>();
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            String failureMessage = "FAILURE[" + aliveProvider + "]";
+            String failureMessage = "FAILURE[" + aliveProvider + ']';
             failureMessages.add( failureMessage );
             when( aliveProvider.getPopulationFailure( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( failureMessage );
         }

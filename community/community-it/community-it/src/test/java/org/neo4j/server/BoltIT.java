@@ -97,7 +97,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
 
         // Then
         Map<String,Object> map = JsonHelper.jsonToMap( response.body() );
-        assertThat( String.valueOf( map.get( "bolt_direct" ) ) ).contains( "bolt://" + host + ":" + 9999 );
+        assertThat( String.valueOf( map.get( "bolt_direct" ) ) ).contains( "bolt://" + host + ':' + 9999 );
     }
 
     private void startServerWithBoltEnabled() throws IOException
@@ -110,8 +110,8 @@ public class BoltIT extends ExclusiveWebContainerTestBase
         testWebContainer = serverOnRandomPorts()
                 .withProperty( BoltConnector.enabled.name(), TRUE )
                 .withProperty( BoltConnector.encryption_level.name(), "DISABLED" )
-                .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort )
-                .withProperty( BoltConnector.listen_address.name(), listenHost + ":" + listenPort )
+                .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ':' + advertisedPort )
+                .withProperty( BoltConnector.listen_address.name(), listenHost + ':' + listenPort )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
     }
 

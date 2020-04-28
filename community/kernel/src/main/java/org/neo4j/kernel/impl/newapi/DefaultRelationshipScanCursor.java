@@ -165,7 +165,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             return "RelationshipScanCursor[id=" + storeCursor.entityReference() +
                     ", open state with: single=" + single +
                     ", type=" + type +
-                    ", " + storeCursor + "]";
+                    ", " + storeCursor + ']';
         }
     }
 

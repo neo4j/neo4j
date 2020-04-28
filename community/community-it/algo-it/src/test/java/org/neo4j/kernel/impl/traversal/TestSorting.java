@@ -84,6 +84,6 @@ class TestSorting extends TraversalTestBase
 
     private static String triplet( String i, String type, String you )
     {
-        return i + " " + type + " " + you;
+        return i + ' ' + type + ' ' + you;
     }
 }

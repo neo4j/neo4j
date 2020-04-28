@@ -87,8 +87,8 @@ public abstract class AbstractTestBase
         @Override
         public String represent( Relationship item )
         {
-            return nodes.represent( item.getStartNode() ) + " "
-                   + rel.represent( item ) + " "
+            return nodes.represent( item.getStartNode() ) + ' '
+                   + rel.represent( item ) + ' '
                    + nodes.represent( item.getEndNode() );
         }
     }

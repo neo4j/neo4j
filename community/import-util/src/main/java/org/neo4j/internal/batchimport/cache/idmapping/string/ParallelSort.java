@@ -158,7 +158,7 @@ public class ParallelSort
         }
         if ( error != null )
         {
-            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ),
+            throw new AssertionError( error.getMessage() + '\n' + dumpBuckets( rangeParams, bucketRange, bucketIndex ),
                     error );
         }
         return rangeParams;
@@ -170,17 +170,17 @@ public class ParallelSort
         builder.append( "rangeParams:\n" );
         for ( long[] range : rangeParams )
         {
-            builder.append( "  " ).append( Arrays.toString( range ) ).append( "\n" );
+            builder.append( "  " ).append( Arrays.toString( range ) ).append( '\n' );
         }
         builder.append( "bucketRange:\n" );
         for ( int range : bucketRange )
         {
-            builder.append( "  " ).append( range ).append( "\n" );
+            builder.append( "  " ).append( range ).append( '\n' );
         }
         builder.append( "bucketIndex:\n" );
         for ( long index : bucketIndex )
         {
-            builder.append( "  " ).append( index ).append( "\n" );
+            builder.append( "  " ).append( index ).append( '\n' );
         }
         return builder.toString();
     }

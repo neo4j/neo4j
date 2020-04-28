@@ -128,7 +128,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[target:" + target + "]";
+        return getClass().getSimpleName() + "[target:" + target + ']';
     }
 
     @Override

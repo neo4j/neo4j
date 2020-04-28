@@ -59,7 +59,7 @@ public abstract class BaseCommandReader implements CommandReader
 
     protected IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
     {
-        String message = "Unknown command type[" + commandType + "]";
+        String message = "Unknown command type[" + commandType + ']';
         if ( channel instanceof PositionAwareChannel )
         {
             PositionAwareChannel logChannel = (PositionAwareChannel) channel;

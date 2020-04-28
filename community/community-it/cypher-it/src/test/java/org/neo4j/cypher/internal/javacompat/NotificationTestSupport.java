@@ -170,7 +170,7 @@ public class NotificationTestSupport
             try ( Transaction transaction = db.beginTx() )
             {
                 //when
-                try ( Result result = transaction.execute( version + " " + query ) )
+                try ( Result result = transaction.execute( version + ' ' + query ) )
                 {
 
                     //then

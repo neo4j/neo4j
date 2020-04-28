@@ -165,7 +165,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             String typeName = parameterType.getSimpleName();
             throw new IllegalArgumentException( typeName
                                                 + " may not be null, use "
-                                                + typeName + "." + defaultName
+                                                + typeName + '.' + defaultName
                                                 + " instead." );
         }
     }

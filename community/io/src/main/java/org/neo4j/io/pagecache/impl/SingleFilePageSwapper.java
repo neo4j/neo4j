@@ -237,7 +237,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static String formatSwapInErrorMessage( long fileOffset, int filePageSize, int readTotal )
     {
-        return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + ".";
+        return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + '.';
     }
 
     private int swapOut( long bufferAddress, long fileOffset ) throws IOException

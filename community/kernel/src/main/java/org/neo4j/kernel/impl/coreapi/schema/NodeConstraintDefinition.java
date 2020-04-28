@@ -87,12 +87,12 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         String nodeVariable = label.name().toLowerCase();
         if ( propertyKeys.length == 1 )
         {
-            return nodeVariable + "." + propertyKeys[0];
+            return nodeVariable + '.' + propertyKeys[0];
         }
         else
         {
-            return "(" + Arrays.stream( propertyKeys ).map( p -> nodeVariable + "." + p )
-                    .collect( Collectors.joining( "," ) ) + ")";
+            return '(' + Arrays.stream( propertyKeys ).map( p -> nodeVariable + '.' + p )
+                    .collect( Collectors.joining( "," ) ) + ')';
         }
     }
 

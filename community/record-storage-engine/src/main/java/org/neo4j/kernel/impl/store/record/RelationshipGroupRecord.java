@@ -196,7 +196,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
                ",next=" + next +
                ",used=" + inUse() +
                ",owner=" + getOwningNode() +
-               ",secondaryUnitId=" + getSecondaryUnitId() + "]";
+               ",secondaryUnitId=" + getSecondaryUnitId() + ']';
     }
 
     @Override

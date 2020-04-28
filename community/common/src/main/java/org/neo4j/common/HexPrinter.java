@@ -280,7 +280,7 @@ public class HexPrinter
         {
             // a new line and line number enabled
             out.append( lineNumberPrefix );
-            out.printf( "0x%0" + maxLineNumberDigits + "X", currentLineNumber );
+            out.printf( "0x%0" + maxLineNumberDigits + 'X', currentLineNumber );
             out.append( lineNumberSuffix );
         }
         bytesOnThisLine++;

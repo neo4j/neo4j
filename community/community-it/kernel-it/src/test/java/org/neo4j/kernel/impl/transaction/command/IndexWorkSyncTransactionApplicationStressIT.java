@@ -123,7 +123,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
     private static Value propertyValue( int id, int progress )
     {
-        return Values.of( id + "_" + progress );
+        return Values.of( id + '_' + progress );
     }
 
     private static TransactionToApply tx( Collection<StorageCommand> commands )

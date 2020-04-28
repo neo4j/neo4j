@@ -201,7 +201,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     public String toString()
     {
         return super.toString() + "[fileName:" + storageFile.getName() +
-                ", blockSize:" + getRecordDataSize() + "]";
+                ", blockSize:" + getRecordDataSize() + ']';
     }
 
     Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,

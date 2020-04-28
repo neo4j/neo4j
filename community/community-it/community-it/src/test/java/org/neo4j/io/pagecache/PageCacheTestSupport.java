@@ -240,8 +240,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
     {
         int estimatedPageId = estimateId( actualBytes );
-        assertThat( actualBytes ).as( "Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId +
-                ", a difference of " + Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
+        assertThat( actualBytes ).as( "Page id: " + pageId + ' ' + "(based on record data, it should have been " + estimatedPageId +
+                ", a difference of " + Math.abs( pageId - estimatedPageId ) + ')' ).containsExactly( expectedBytes );
     }
 
     protected int estimateId( byte[] record )

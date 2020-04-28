@@ -109,7 +109,7 @@ class FileWatchIT
         deleteFile( databaseLayout.databaseDirectory(), fileName );
         deletionListener.awaitDeletionNotification();
 
-        assertThat( logProvider ).containsMessages( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getName() +
+        assertThat( logProvider ).containsMessages( '\'' + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getName() +
                 "' database was deleted while it was running." );
     }
 
@@ -223,7 +223,7 @@ class FileWatchIT
 
         eventListener.awaitDeletionNotification();
 
-        assertThat( logProvider ).containsMessages( "'" + storeDirectoryName + "' which belongs to the '" +
+        assertThat( logProvider ).containsMessages( '\'' + storeDirectoryName + "' which belongs to the '" +
                 databaseLayout.databaseDirectory().getName() + "' database was deleted while it was running." );
     }
 

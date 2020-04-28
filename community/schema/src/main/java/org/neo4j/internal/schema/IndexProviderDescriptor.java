@@ -66,7 +66,7 @@ public class IndexProviderDescriptor
      */
     public String name()
     {
-        return key + "-" + version;
+        return key + '-' + version;
     }
 
     @Override
@@ -89,6 +89,6 @@ public class IndexProviderDescriptor
     @Override
     public String toString()
     {
-        return "{key=" + key + ", version=" + version + "}";
+        return "{key=" + key + ", version=" + version + '}';
     }
 }

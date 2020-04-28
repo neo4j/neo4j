@@ -184,7 +184,7 @@ public class StageExecution implements StageControl, AutoCloseable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + name() + "]";
+        return getClass().getSimpleName() + '[' + name() + ']';
     }
 
     @Override

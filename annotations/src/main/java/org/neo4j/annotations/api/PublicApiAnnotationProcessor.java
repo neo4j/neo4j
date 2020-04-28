@@ -586,7 +586,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             }
             while ( parent.getNestingKind().isNested() );
 
-            assertAnnotated( element, parent, element.getQualifiedName() + "'s parent, " + parent.getQualifiedName() + "," );
+            assertAnnotated( element, parent, element.getQualifiedName() + "'s parent, " + parent.getQualifiedName() + ',' );
         }
         else
         {

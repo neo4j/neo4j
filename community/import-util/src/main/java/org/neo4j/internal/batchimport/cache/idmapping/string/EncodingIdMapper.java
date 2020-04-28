@@ -368,7 +368,7 @@ public class EncodingIdMapper implements IdMapper
             {
             case GT: throw new IllegalStateException( "Unsorted data, a > b Failure:[" + i + "] " +
                     Long.toHexString( eIdA ) + " > " + Long.toHexString( eIdB ) + " | " +
-                    radixOf( eIdA ) + ":" + radixOf( eIdB ) );
+                    radixOf( eIdA ) + ':' + radixOf( eIdB ) );
             case EQ:
                 // Here we have two equal encoded values. First let's check if they are in the same id space.
                 long collision = sameGroupDetector.collisionWithinSameGroup(
@@ -853,7 +853,7 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + encoder + "," + radix + "]";
+        return getClass().getSimpleName() + '[' + encoder + ',' + radix + ']';
     }
 
     @Override

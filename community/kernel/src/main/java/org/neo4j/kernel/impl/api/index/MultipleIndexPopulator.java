@@ -560,7 +560,7 @@ public class MultipleIndexPopulator
                 .collect( joining( ", ", "[", "]" ) );
 
         return "MultipleIndexPopulator{activeTasks=" + activeTasks + ", " +
-                "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
+                "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + '}';
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater

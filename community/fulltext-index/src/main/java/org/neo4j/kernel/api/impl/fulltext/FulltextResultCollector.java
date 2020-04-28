@@ -151,7 +151,7 @@ class FulltextResultCollector implements Collector
             }
             else
             {
-                throw new RuntimeException( "No document value for document id " + doc + "." );
+                throw new RuntimeException( "No document value for document id " + doc + '.' );
             }
         }
     }

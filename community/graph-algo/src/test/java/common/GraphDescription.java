@@ -44,8 +44,7 @@ public class GraphDescription implements GraphDefinition
             String[] parts = rel.split( " " );
             if ( parts.length != 3 )
             {
-                throw new IllegalArgumentException( "syntax error: \"" + rel
-                                                    + "\"" );
+                throw new IllegalArgumentException( "syntax error: \"" + rel + '"' );
             }
             start = parts[0];
             type = RelationshipType.withName( parts[1] );

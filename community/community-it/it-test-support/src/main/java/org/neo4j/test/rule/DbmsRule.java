@@ -284,7 +284,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         if ( database != null )
         {
             // Database already started
-            throw new IllegalStateException( "Wanted to set " + key + "=" + value + ", but database has already been started" );
+            throw new IllegalStateException( "Wanted to set " + key + '=' + value + ", but database has already been started" );
         }
         if ( databaseBuilder != null )
         {

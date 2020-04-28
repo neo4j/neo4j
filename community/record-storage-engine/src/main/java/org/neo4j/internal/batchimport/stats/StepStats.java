@@ -114,7 +114,7 @@ public class StepStats implements StatsProvider
             if ( detailLevel.ordinal() >= stat.detailLevel().ordinal() )
             {
                 builder.append( i++ > 0 ? " " : "" )
-                       .append( key.shortName() != null ? key.shortName() + ":" : "" )
+                       .append( key.shortName() != null ? key.shortName() + ':' : "" )
                        .append( stat );
             }
         }

@@ -112,7 +112,7 @@ class TruncatedQuerySnapshot
         @Override
         public AnyValue mapPath( PathValue value )
         {
-            return Values.stringValue( "§PATH[" + value.size() + "]" );
+            return Values.stringValue( "§PATH[" + value.size() + ']' );
         }
 
         @Override
@@ -140,7 +140,7 @@ class TruncatedQuerySnapshot
         @Override
         public AnyValue mapMap( MapValue map )
         {
-            return Values.stringValue( "§MAP[" + map.size() + "]" );
+            return Values.stringValue( "§MAP[" + map.size() + ']' );
         }
 
         @Override
@@ -152,7 +152,7 @@ class TruncatedQuerySnapshot
         @Override
         public AnyValue mapSequence( SequenceValue value )
         {
-            return Values.stringValue( "§LIST[" + value.length() + "]" );
+            return Values.stringValue( "§LIST[" + value.length() + ']' );
         }
 
         @Override

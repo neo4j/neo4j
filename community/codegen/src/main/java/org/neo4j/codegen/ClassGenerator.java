@@ -104,7 +104,7 @@ public class ClassGenerator implements AutoCloseable
         }
         else if ( fields.containsKey( name ) )
         {
-            throw new IllegalArgumentException( handle + " already has a field '" + name + "'" );
+            throw new IllegalArgumentException( handle + " already has a field '" + name + '\'' );
         }
         FieldReference field = new FieldReference( modifiers, handle, type, name );
         fields.put( name, field );

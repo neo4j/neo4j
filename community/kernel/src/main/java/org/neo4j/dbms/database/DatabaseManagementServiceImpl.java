@@ -69,25 +69,25 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     @Override
     public void createDatabase( String name )
     {
-        systemDatabaseExecute( "CREATE DATABASE `" + name + "`" );
+        systemDatabaseExecute( "CREATE DATABASE `" + name + '`' );
     }
 
     @Override
     public void dropDatabase( String name )
     {
-        systemDatabaseExecute( "DROP DATABASE `" + name + "`" );
+        systemDatabaseExecute( "DROP DATABASE `" + name + '`' );
     }
 
     @Override
     public void startDatabase( String name )
     {
-        systemDatabaseExecute( "START DATABASE `" + name + "`" );
+        systemDatabaseExecute( "START DATABASE `" + name + '`' );
     }
 
     @Override
     public void shutdownDatabase( String name )
     {
-        systemDatabaseExecute( "STOP DATABASE `" + name + "`" );
+        systemDatabaseExecute( "STOP DATABASE `" + name + '`' );
     }
 
     @Override

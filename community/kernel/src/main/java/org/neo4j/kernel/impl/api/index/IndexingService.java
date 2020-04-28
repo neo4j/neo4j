@@ -669,7 +669,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     public void triggerIndexSampling( IndexSamplingMode mode )
     {
-        internalLog.info( "Manual trigger for sampling all indexes [" + mode + "]" );
+        internalLog.info( "Manual trigger for sampling all indexes [" + mode + ']' );
         monitor.indexSamplingTriggered( mode );
         samplingController.sampleIndexes( mode );
     }
@@ -677,7 +677,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public void triggerIndexSampling( IndexDescriptor index, IndexSamplingMode mode )
     {
         String description = index.userDescription( tokenNameLookup );
-        internalLog.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
+        internalLog.info( "Manual trigger for sampling index " + description + " [" + mode + ']' );
         samplingController.sampleIndex( index.getId(), mode );
     }
 
@@ -750,7 +750,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 try
                 {
                     IndexProxy proxy = indexMapRef.getIndexProxy( id );
-                    throw new UnderlyingStorageException( "Unable to " + name + " " + proxy, e );
+                    throw new UnderlyingStorageException( "Unable to " + name + ' ' + proxy, e );
                 }
                 catch ( IndexNotFoundKernelException infe )
                 {
@@ -868,7 +868,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             {
                 anyDeprecated.setTrue();
                 int numberOfIndexes = indexLogRecords.size();
-                joiner.add( indexProviderDescriptor.name() + " (" + numberOfIndexes + (numberOfIndexes == 1 ? " index" : " indexes") + ")" );
+                joiner.add( indexProviderDescriptor.name() + " (" + numberOfIndexes + (numberOfIndexes == 1 ? " index" : " indexes") + ')' );
             }
         } );
         if ( anyDeprecated.getValue() )

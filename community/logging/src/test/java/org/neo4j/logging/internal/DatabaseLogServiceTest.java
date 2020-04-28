@@ -193,6 +193,6 @@ class DatabaseLogServiceTest
 
     private static String testLogContext( String message )
     {
-        return "[" + TEST_PREFIX + "] " + message;
+        return '[' + TEST_PREFIX + "] " + message;
     }
 }

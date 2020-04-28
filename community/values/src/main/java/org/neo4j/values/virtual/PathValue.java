@@ -129,7 +129,7 @@ public abstract class PathValue extends VirtualValue
     {
         NodeValue[] nodes = nodes();
         RelationshipValue[] relationships = relationships();
-        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + '{' );
         int i = 0;
         for ( ; i < relationships.length; i++ )
         {

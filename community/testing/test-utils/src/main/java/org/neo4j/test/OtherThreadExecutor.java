@@ -184,7 +184,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     @Override
     public Thread newThread( Runnable r )
     {
-        Thread newThread = new Thread( r, getClass().getName() + ":" + name )
+        Thread newThread = new Thread( r, getClass().getName() + ':' + name )
         {
             @Override
             public void run()

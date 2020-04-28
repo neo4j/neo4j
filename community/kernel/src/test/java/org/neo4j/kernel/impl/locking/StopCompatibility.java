@@ -588,7 +588,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     private void assertNoLocksHeld()
     {
         locks.accept( ( resourceType, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
-                fail( "Unexpected lock on " + resourceType + " " + resourceId ) );
+                fail( "Unexpected lock on " + resourceType + ' ' + resourceId ) );
     }
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception

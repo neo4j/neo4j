@@ -119,14 +119,14 @@ public class Header
         {
             if ( optionalParameter == null )
             {
-                return (name != null ? name : "") + ":" + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
-                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+                return (name != null ? name : "") + ':' + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
+                        (group() != Group.GLOBAL ? '(' + group().name() + ')' : "");
             }
             else
             {
-                return (name != null ? name : "") + ":" +
-                        (type == Type.PROPERTY ? extractor.name().toLowerCase() + "[" + optionalParameter + "]" : type.name()) +
-                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+                return (name != null ? name : "") + ':' +
+                        (type == Type.PROPERTY ? extractor.name().toLowerCase() + '[' + optionalParameter + ']' : type.name()) +
+                        (group() != Group.GLOBAL ? '(' + group().name() + ')' : "");
             }
         }
 

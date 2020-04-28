@@ -283,7 +283,7 @@ public enum ByteUnit
 
     private static IllegalArgumentException invalidFormat( String text )
     {
-        return new IllegalArgumentException( "Invalid number format: '" + text + "'" );
+        return new IllegalArgumentException( "Invalid number format: '" + text + '\'' );
     }
 
     private static Map<String,ByteUnit> listUnits()

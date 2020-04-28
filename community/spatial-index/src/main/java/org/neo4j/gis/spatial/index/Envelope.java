@@ -348,17 +348,17 @@ public class Envelope
             {
                 if ( sb.length() > 0 )
                 {
-                    sb.append( "," );
+                    sb.append( ',' );
                 }
                 else
                 {
-                    sb.append( "(" );
+                    sb.append( '(' );
                 }
                 sb.append( val );
             }
             if ( sb.length() > 0 )
             {
-                sb.append( ")" );
+                sb.append( ')' );
             }
         }
         return sb.toString();

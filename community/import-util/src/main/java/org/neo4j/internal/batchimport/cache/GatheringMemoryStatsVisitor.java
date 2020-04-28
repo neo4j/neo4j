@@ -61,7 +61,7 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
     @Override
     public String toString()
     {
-        return "Memory usage[heap:" + ByteUnit.bytesToString( heapUsage ) + ", off-heap:" + ByteUnit.bytesToString( offHeapUsage ) + "]";
+        return "Memory usage[heap:" + ByteUnit.bytesToString( heapUsage ) + ", off-heap:" + ByteUnit.bytesToString( offHeapUsage ) + ']';
     }
 
     public static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )

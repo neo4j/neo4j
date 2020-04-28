@@ -111,7 +111,7 @@ public class SpaceFillingCurveSettings
         }
         else
         {
-            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + dimensions + "D" );
+            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + dimensions + 'D' );
         }
     }
 

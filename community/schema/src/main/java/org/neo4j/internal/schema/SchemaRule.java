@@ -68,7 +68,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
         if ( ReservedSchemaRuleNames.contains( name ) )
         {
             throw new IllegalArgumentException( "The index name '" + name + "' is reserved, and cannot be used. " +
-                    "The reserved names are " + ReservedSchemaRuleNames.getReservedNames() + "." );
+                    "The reserved names are " + ReservedSchemaRuleNames.getReservedNames() + '.' );
         }
         return name;
     }
@@ -107,7 +107,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             key = hf.update( key, constraint.type().ordinal() );
             return String.format( "constraint_%x", hf.toInt( hf.finalise( key ) ) );
         }
-        throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + "." );
+        throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + '.' );
     }
 
     /**

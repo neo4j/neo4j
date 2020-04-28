@@ -99,10 +99,10 @@ public final class SettingMigrators
             default:
             }
 
-            String warning = "Use of deprecated setting " + INDEX_PROVIDER_SETTING + ".";
+            String warning = "Use of deprecated setting " + INDEX_PROVIDER_SETTING + '.';
             if ( migratedValue )
             {
-                warning += " Value migrated from " + oldSchemaProvider + " to " + newSchemaProvider + ".";
+                warning += " Value migrated from " + oldSchemaProvider + " to " + newSchemaProvider + '.';
             }
             log.warn( warning );
             values.put( INDEX_PROVIDER_SETTING, newSchemaProvider );

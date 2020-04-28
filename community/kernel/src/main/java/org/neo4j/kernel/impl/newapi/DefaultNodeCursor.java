@@ -388,7 +388,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         }
         else
         {
-            return "NodeCursor[id=" + nodeReference() + ", " + storeCursor + "]";
+            return "NodeCursor[id=" + nodeReference() + ", " + storeCursor + ']';
         }
     }
 

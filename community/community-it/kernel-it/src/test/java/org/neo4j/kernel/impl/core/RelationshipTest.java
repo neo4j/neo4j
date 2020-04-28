@@ -121,7 +121,7 @@ public class RelationshipTest extends EntityTest
             String toString = relationship.toString();
 
             // THEN
-            assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")", toString );
+            assertEquals( '(' + start.getId() + ")-[" + type + ',' + relationship.getId() + "]->(" + end.getId() + ')', toString );
         }
     }
 

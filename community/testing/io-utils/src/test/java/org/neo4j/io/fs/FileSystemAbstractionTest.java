@@ -399,7 +399,7 @@ public abstract class FileSystemAbstractionTest
         ensureExists( b );
         File base = a.getParentFile();
         Set<File> set = fsa.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
-        assertThat( set ).as( "Files relative to base directory " + base ).contains( new File( "a" ), new File( "sub" + File.separator + "b" ) );
+        assertThat( set ).as( "Files relative to base directory " + base ).contains( new File( "a" ), new File( "sub" + File.separator + 'b' ) );
     }
 
     @Test
@@ -826,8 +826,8 @@ public abstract class FileSystemAbstractionTest
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
         int estimatedPageId = estimateId( actualBytes );
-        assertThat( actualBytes ).as( "Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId + ", a difference of " +
-                Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
+        assertThat( actualBytes ).as( "Page id: " + pageId + ' ' + "(based on record data, it should have been " + estimatedPageId + ", a difference of " +
+                Math.abs( pageId - estimatedPageId ) + ')' ).containsExactly( expectedBytes );
     }
 
     private int estimateId( byte[] record )

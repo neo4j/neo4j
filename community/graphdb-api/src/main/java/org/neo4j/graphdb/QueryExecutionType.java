@@ -229,7 +229,7 @@ public final class QueryExecutionType
 
         String toString( QueryType type )
         {
-            return name() + ":" + type.name();
+            return name() + ':' + type.name();
         }
     }
 }

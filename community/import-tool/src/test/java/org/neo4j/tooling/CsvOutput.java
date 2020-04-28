@@ -90,7 +90,7 @@ public class CsvOutput implements BatchImporter
                 int id = i;
                 executor.submit( (Callable<Void>) () -> {
                     StringDeserialization deserialization = new StringDeserialization( config );
-                    try ( PrintStream out = file( name + "-" + id + ".csv" );
+                    try ( PrintStream out = file( name + '-' + id + ".csv" );
                           InputChunk chunk = entities.newChunk() )
                     {
                         InputEntity entity = new InputEntity();

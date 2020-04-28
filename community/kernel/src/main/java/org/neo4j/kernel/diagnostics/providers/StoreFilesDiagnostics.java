@@ -93,7 +93,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             String filename = file.getName();
             if ( file.isDirectory() )
             {
-                logger.log( prefix + filename + ":" );
+                logger.log( prefix + filename + ':' );
                 size = logStoreFiles( logger, prefix + "  ", file, mappedCounter );
                 filename = "- Total";
             }
