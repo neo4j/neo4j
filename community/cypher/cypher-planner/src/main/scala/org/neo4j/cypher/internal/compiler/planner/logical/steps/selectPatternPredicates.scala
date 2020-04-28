@@ -70,7 +70,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
               case Not(Exists(_: PatternExpression)) => true
               case _ => false
             }
-            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None, interestingOrder, context)
+            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions.toSet, expressions.toSet, None, interestingOrder, context)
             context.logicalPlanProducer.solvePredicate(plan, onePredicate(solvedPredicates), context)
         }
       }
@@ -227,7 +227,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
     expressions.head
   else
-    Ors(expressions)(expressions.head.position)
+    Ors(expressions.toSeq)(expressions.head.position)
 
   private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression, solveds: Solveds) = {
     val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)

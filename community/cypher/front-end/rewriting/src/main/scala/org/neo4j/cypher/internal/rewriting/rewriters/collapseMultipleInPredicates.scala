@@ -61,7 +61,7 @@ case object collapseMultipleInPredicates extends Rewriter {
       // Return the original non-rewritten predicates with our new ones
       nonRewritable ++ flattenConst match {
         case head :: Nil => head
-        case l => Ors(l.toSet)(predicate.position)
+        case l => Ors(l)(predicate.position)
       }
   })
 }

@@ -54,9 +54,9 @@ trait PredicateTestSupport extends CypherTestSupport {
 
   def anExp(s: String) = StringLiteral(s)(pos)
   def and(p1: Expression, p2: Expression) = And(p1, p2)(pos)
-  def ands(predicates: Expression*) = Ands(predicates.toSet)(pos)
+  def ands(predicates: Expression*) = Ands(predicates)(pos)
   def or(p1: Expression, p2: Expression) = Or(p1, p2)(pos)
-  def ors(predicates: Expression*) = Ors(predicates.toSet)(pos)
+  def ors(predicates: Expression*) = Ors(predicates)(pos)
   def xor(p1: Expression, p2: Expression) = Xor(p1, p2)(pos)
   def not(e: Expression) = Not(e)(pos)
   def TRUE: Expression = True()(pos)

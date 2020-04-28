@@ -266,7 +266,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Some(Ands.create(Set(equals(prop("m", "prop"), literalInt(42)), hasLabels("m", "Y")))))
+        Some(Ands.create(Seq(equals(prop("m", "prop"), literalInt(42)), hasLabels("m", "Y")))))
     )
   }
 

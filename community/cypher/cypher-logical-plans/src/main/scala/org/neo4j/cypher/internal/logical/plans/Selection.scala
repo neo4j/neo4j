@@ -42,7 +42,7 @@ case class Selection(predicate: Ands,
 object Selection {
   def apply(predicates: Seq[Expression], source: LogicalPlan)(implicit idGen: IdGen): Selection =  {
     assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
-    Selection(Ands(predicates.toSet)(predicates.head.position), source)
+    Selection(Ands(predicates)(predicates.head.position), source)
   }
 }
 

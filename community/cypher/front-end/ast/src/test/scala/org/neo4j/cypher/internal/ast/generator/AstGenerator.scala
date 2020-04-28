@@ -514,7 +514,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     pairs = exprs.sliding(2)
     gens = pairs.map(p => _predicateComparisonPar(p.head, p.last)).toList
     chain <- sequence(gens)(Buildable.buildableCanBuildFrom)
-  } yield Ands(chain.toSet)(pos)
+  } yield Ands(chain)(pos)
 
   def _predicateUnary: Gen[Expression] = for {
     r <- _expression

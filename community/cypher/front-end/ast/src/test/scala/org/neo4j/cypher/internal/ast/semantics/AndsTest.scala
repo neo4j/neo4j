@@ -26,7 +26,7 @@ class AndsTest extends SemanticFunSuite {
     val dummyExpr1 = DummyExpression(CTBoolean, DummyPosition(1))
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
     val dummyExpr3 = DummyExpression(CTBoolean, DummyPosition(3))
-    val ands = Ands(Set(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
+    val ands = Ands(Seq(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
     val result = SemanticExpressionCheck.simple(ands)(SemanticState.clean)
 
     result.errors shouldBe empty

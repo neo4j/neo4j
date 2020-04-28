@@ -44,12 +44,12 @@ case object simplifySelections extends Rewriter {
     case Selection(Ands(preds), source) if isTrue(preds) => source
   })
 
-  private def isTrue(predicates: Set[Expression]): Boolean = predicates.forall {
+  private def isTrue(predicates: Seq[Expression]): Boolean = predicates.forall {
     case _:True => true
     case _ => false
   }
 
-  private def isFalse(predicates: Set[Expression]): Boolean = predicates.forall {
+  private def isFalse(predicates: Seq[Expression]): Boolean = predicates.forall {
     case _:False => true
     case _ => false
   }

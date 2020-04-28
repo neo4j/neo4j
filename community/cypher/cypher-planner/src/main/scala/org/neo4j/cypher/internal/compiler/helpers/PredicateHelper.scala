@@ -51,10 +51,10 @@ object PredicateHelper {
    */
   def coercePredicatesWithAnds(predicates: Seq[Expression]): Ands = {
     if (predicates.isEmpty) throw new InternalException("Selection need at least one predicate")
-    Ands(predicates.map(coerceToPredicate).toSet)(predicates.map(coerceToPredicate).head.position)
+    Ands(predicates.map(coerceToPredicate))(predicates.map(coerceToPredicate).head.position)
   }
 
-  def coercePredicates(predicates: Seq[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate).toSet)
+  def coercePredicates(predicates: Seq[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate))
 
   def coerceToPredicate(predicate: Expression): Expression = predicate match {
     case e: PatternExpression =>

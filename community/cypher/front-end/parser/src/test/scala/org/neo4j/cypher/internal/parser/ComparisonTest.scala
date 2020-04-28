@@ -38,4 +38,8 @@ class ComparisonTest extends ParserAstTest[org.neo4j.cypher.internal.expressions
   test("a > b > c > d") {
     yields(ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
   }
+
+  test("a < b > c = d <= e >= f ~ g") {
+    yields(ands(lt(id("a"), id("b")), gt(id("b"), id("c")), eq(id("c"), id("d")), lte(id("d"), id("e")), gte(id("e"), id("f")), equiv(id("f"), id("g"))))
+  }
 }

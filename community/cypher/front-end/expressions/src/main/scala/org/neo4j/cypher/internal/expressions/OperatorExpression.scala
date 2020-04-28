@@ -50,10 +50,17 @@ trait BinaryOperatorExpression extends OperatorExpression {
   }
 }
 
+/**
+ * An expression that can be chained, like for example `1 < x < 5`.
+ */
+trait ChainableBinaryOperatorExpression extends BinaryOperatorExpression {
+  self: Expression =>
+}
+
 trait MultiOperatorExpression  extends OperatorExpression {
   self: Expression =>
 
-  def exprs: Set[Expression]
+  def exprs: Seq[Expression]
 
   override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
 }

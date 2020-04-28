@@ -94,7 +94,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
 
       case tpe :: _ =>
-        val relTypeExprs = relTypes.map(relTypeAsStringLiteral).toSet
+        val relTypeExprs = relTypes.map(relTypeAsStringLiteral)
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
         val predicate = Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos)

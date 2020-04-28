@@ -653,7 +653,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Selection(
-      Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       ) => ()
     }
@@ -670,7 +670,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Selection(
-      Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one"))/* <- This is the subQuery */, _, _, _),
       ) => ()
     }

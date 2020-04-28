@@ -528,7 +528,7 @@ class Neo4jASTFactory(query: String)
                    lhs: Expression,
                    rhs: Expression): Expression = And(lhs, rhs)(p)
 
-  override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList.toSet)(exprs.get(0).position)
+  override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList)(exprs.get(0).position)
 
   override def not(e: Expression): Expression =
     e match {

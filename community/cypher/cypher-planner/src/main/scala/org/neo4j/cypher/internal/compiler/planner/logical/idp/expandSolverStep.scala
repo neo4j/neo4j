@@ -132,6 +132,6 @@ object expandSolverStep {
     if (predicates.isEmpty)
       None
     else
-      Some(VariablePredicate(Variable(tempVariableName)(InputPosition.NONE), Ands.create(predicates.toSet)))
+      Some(VariablePredicate(Variable(tempVariableName)(InputPosition.NONE), Ands.create(predicates)))
 
 }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.ChainableBinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
@@ -239,20 +240,14 @@ case class ExpressionStringifier(
 
       case Ands(expressions) =>
 
-        type BinOp = Expression with BinaryOperatorExpression
+        type ChainOp = Expression with ChainableBinaryOperatorExpression
 
-        def findChain: Option[List[BinOp]] =
-          expressions.toList
-            .collect {
-              case e: BinaryOperatorExpression => e
-            }
-            .permutations.find { chain =>
-            def hasAll = expressions.forall(chain.contains)
-
-            def aligns = chain.sliding(2).forall(p => p.head.rhs == p.last.lhs)
-
-            hasAll && aligns
-          }
+        def findChain: Option[List[ChainOp]] = {
+          val chainable = expressions.collect { case e: ChainableBinaryOperatorExpression => e }
+          def allChainable = chainable.size == expressions.size
+          def formsChain = chainable.sliding(2).forall(p => p.head.rhs == p.last.lhs)
+          if (allChainable && formsChain) Some(chainable.toList) else None
+        }
 
         findChain match {
           case Some(chain) =>

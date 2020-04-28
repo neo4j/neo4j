@@ -26,7 +26,7 @@ class OrsTest extends SemanticFunSuite {
     val dummyExpr1 = DummyExpression(CTBoolean, DummyPosition(1))
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
     val dummyExpr3 = DummyExpression(CTBoolean, DummyPosition(3))
-    val ors = Ors(Set(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
+    val ors = Ors(Seq(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
     val result = SemanticExpressionCheck.simple(ors)(SemanticState.clean)
 
     result.errors shouldBe empty

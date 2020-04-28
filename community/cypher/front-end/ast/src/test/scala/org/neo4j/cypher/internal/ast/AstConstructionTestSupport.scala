@@ -312,11 +312,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def xor(lhs: Expression, rhs: Expression): Xor = Xor(lhs, rhs)(pos)
 
-  def ors(expressions: Expression*): Ors = Ors(expressions.toSet)(pos)
+  def ors(expressions: Expression*): Ors = Ors(expressions)(pos)
 
   def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
 
-  def ands(expressions: Expression*): Ands = Ands(expressions.toSet)(pos)
+  def ands(expressions: Expression*): Ands = Ands(expressions)(pos)
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
