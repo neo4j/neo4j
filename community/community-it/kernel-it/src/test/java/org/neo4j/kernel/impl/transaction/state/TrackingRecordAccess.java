@@ -48,12 +48,6 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<RE
     }
 
     @Override
-    public void close()
-    {
-        delegate.close();
-    }
-
-    @Override
     public RecordProxy<RECORD,ADDITIONAL> getIfLoaded( long key )
     {
         RecordProxy<RECORD,ADDITIONAL> actual = delegate.getIfLoaded( key );

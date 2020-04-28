@@ -81,8 +81,6 @@ class RecordChangeSetTest
         changeSet.getSchemaRuleChanges().create( 1L, null, NULL ).forChangingLinkage();
         changeSet.getRelGroupRecords().create( 1L, 1, NULL ).forChangingLinkage();
 
-        changeSet.close();
-
         // THEN
         assertEquals( 0, changeSet.getNodeRecords().changeSize() );
         assertEquals( 0, changeSet.getPropertyRecords().changeSize() );

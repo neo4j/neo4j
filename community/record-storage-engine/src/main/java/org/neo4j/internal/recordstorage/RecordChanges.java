@@ -89,18 +89,6 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     }
 
     @Override
-    public void close()
-    {
-        boolean shouldCompact = recordChanges.size() <= 32;
-        recordChanges.clear();
-        if ( shouldCompact )
-        {
-            recordChanges.compact();
-        }
-        changeCounter.setValue( 0 );
-    }
-
-    @Override
     public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
     {
         if ( recordChanges.containsKey( key ) )

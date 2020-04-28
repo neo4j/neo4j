@@ -217,12 +217,6 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         }
     }
 
-    @Override
-    public void close()
-    {
-        commit();
-    }
-
     public void commit()
     {
         if ( changeCounter.intValue() == 0 )

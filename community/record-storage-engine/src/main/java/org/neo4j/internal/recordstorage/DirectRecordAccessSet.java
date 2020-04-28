@@ -124,23 +124,13 @@ public class DirectRecordAccessSet implements RecordAccessSet
         return relationshipTypeTokenRecords;
     }
 
-    @Override
-    public void close()
-    {
-        commit();
-        for ( DirectRecordAccess access : all )
-        {
-            access.close();
-        }
-        idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
-    }
-
     public void commit()
     {
-        for ( DirectRecordAccess<?,?> access : all )
+        for ( DirectRecordAccess access : all )
         {
             access.commit();
         }
+        idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
     }
 
     @Override

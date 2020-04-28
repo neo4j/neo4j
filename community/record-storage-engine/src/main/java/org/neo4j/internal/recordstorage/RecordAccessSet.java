@@ -51,6 +51,4 @@ public interface RecordAccessSet
     boolean hasChanges();
 
     int changeSize();
-
-    void close();
 }

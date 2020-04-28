@@ -52,11 +52,6 @@ public interface RecordAccess<RECORD,ADDITIONAL>
      */
     RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
 
-    /**
-     * Closes the record access.
-     */
-    void close();
-
     int changeSize();
 
     Iterable<RecordProxy<RECORD,ADDITIONAL>> changes();
