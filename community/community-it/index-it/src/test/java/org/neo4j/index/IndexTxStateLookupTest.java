@@ -19,58 +19,59 @@
  */
 package org.neo4j.index;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 
-@RunWith( Parameterized.class )
+@ImpermanentDbmsExtension
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public class IndexTxStateLookupTest
 {
     private static final String TRIGGER_LAZY = "this is supposed to be a really long property to trigger lazy loading";
     private static final Random random = new Random();
 
-    @SuppressWarnings( "RedundantStringConstructorCall" )
-    @Parameterized.Parameters( name = "store=<{0}> lookup=<{1}>" )
-    public static Iterable<Object[]> parameters()
+    protected static Stream<Arguments> argumentsProvider()
     {
-        List<Object[]> parameters = new ArrayList<>();
+        List<Arguments> parameters = new ArrayList<>();
         parameters.addAll( asList(
-                new Object[]{new String( "name" ), new String( "name" )},
-                new Object[]{7, 7L},
-                new Object[]{9L, 9},
-                new Object[]{2, 2.0},
-                new Object[]{3L, 3.0},
-                new Object[]{4, 4.0f},
-                new Object[]{5L, 5.0f},
-                new Object[]{12.0, 12},
-                new Object[]{13.0, 13L},
-                new Object[]{14.0f, 14},
-                new Object[]{15.0f, 15L},
-                new Object[]{2.5f, 2.5},
-                new Object[]{16.25, 16.25f},
-                new Object[]{stringArray( "a", "b", "c" ), charArray( 'a', 'b', 'c' )},
-                new Object[]{charArray( 'd', 'e', 'f' ), stringArray( "d", "e", "f" )},
-                new Object[]{splitStrings( TRIGGER_LAZY ), splitChars( TRIGGER_LAZY )},
-                new Object[]{splitChars( TRIGGER_LAZY ), splitStrings( TRIGGER_LAZY )},
-                new Object[]{stringArray( "foo", "bar" ), stringArray( "foo", "bar" )} ) );
+                Arguments.of( new String( "name" ), new String( "name" ) ),
+                Arguments.of( 7, 7L ),
+                Arguments.of( 9L, 9 ),
+                Arguments.of( 2, 2.0 ),
+                Arguments.of( 3L, 3.0 ),
+                Arguments.of( 4, 4.0f ),
+                Arguments.of( 5L, 5.0f ),
+                Arguments.of( 12.0, 12 ),
+                Arguments.of( 13.0, 13L ),
+                Arguments.of( 14.0f, 14 ),
+                Arguments.of( 15.0f, 15L ),
+                Arguments.of( 2.5f, 2.5 ),
+                Arguments.of( 16.25, 16.25f ),
+                Arguments.of( stringArray( "a", "b", "c" ), charArray( 'a', 'b', 'c' ) ),
+                Arguments.of( charArray( 'd', 'e', 'f' ), stringArray( "d", "e", "f" ) ),
+                Arguments.of( splitStrings( TRIGGER_LAZY ), splitChars( TRIGGER_LAZY ) ),
+                Arguments.of( splitChars( TRIGGER_LAZY ), splitStrings( TRIGGER_LAZY ) ),
+                Arguments.of( stringArray( "foo", "bar" ), stringArray( "foo", "bar" ) ) ) );
         Class[] numberTypes = {byte.class, short.class, int.class, long.class, float.class, double.class};
         for ( Class lhs : numberTypes )
         {
@@ -80,7 +81,7 @@ public class IndexTxStateLookupTest
                 parameters.add( randomNumbers( 200, lhs, rhs ) );
             }
         }
-        return parameters;
+        return parameters.stream();
     }
 
     private static class NamedObject
@@ -111,7 +112,7 @@ public class IndexTxStateLookupTest
         return new NamedObject( items, arrayToString( items ) );
     }
 
-    private static Object[] randomNumbers( int length, Class<?> lhsType, Class<?> rhsType )
+    private static Arguments randomNumbers( int length, Class<?> lhsType, Class<?> rhsType )
     {
         Object lhs = Array.newInstance( lhsType, length );
         Object rhs = Array.newInstance( rhsType, length );
@@ -121,9 +122,9 @@ public class IndexTxStateLookupTest
             Array.set( lhs, i, convert( value, lhsType ) );
             Array.set( rhs, i, convert( value, rhsType ) );
         }
-        return new Object[]{
+        return Arguments.of(
                 new NamedObject( lhs, arrayToString( lhs ) ),
-                new NamedObject( rhs, arrayToString( rhs ) )};
+                new NamedObject( rhs, arrayToString( rhs ) ) );
     }
 
     private static String arrayToString( Object arrayObject )
@@ -183,13 +184,13 @@ public class IndexTxStateLookupTest
         return charArray( result );
     }
 
-    @ClassRule
-    public static final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
-    private final Object store;
-    private final Object lookup;
+    private Object store;
+    private Object lookup;
 
-    public IndexTxStateLookupTest( Object store, Object lookup )
+    public void init( Object store, Object lookup )
     {
         this.store = realValue( store );
         this.lookup = realValue( lookup );
@@ -200,8 +201,8 @@ public class IndexTxStateLookupTest
         return object instanceof NamedObject ? ((NamedObject)object).object : object;
     }
 
-    @BeforeClass
-    public static void given()
+    @BeforeAll
+    public void given()
     {
         // database with an index on `(:Node).prop`
         try ( Transaction tx = db.beginTx() )
@@ -216,50 +217,59 @@ public class IndexTxStateLookupTest
         }
     }
 
-    @Test
-    public void lookupWithinTransaction()
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    public void lookupWithinTransaction( Object store, Object lookup )
     {
+        init( store, lookup );
+
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            tx.createNode( label( "Node" ) ).setProperty( "prop", store );
+            tx.createNode( label( "Node" ) ).setProperty( "prop", this.store );
 
             // then
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
 
             // no need to actually commit this node
         }
     }
 
-    @Test
-    public void lookupWithinTransactionWithCacheEviction()
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    public void lookupWithinTransactionWithCacheEviction( Object store, Object lookup )
     {
+        init( store, lookup );
+
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            tx.createNode( label( "Node" ) ).setProperty( "prop", store );
+            tx.createNode( label( "Node" ) ).setProperty( "prop", this.store );
 
             // then
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
 
             // no need to actually commit this node
         }
     }
 
-    @Test
-    public void lookupWithoutTransaction()
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    public void lookupWithoutTransaction( Object store, Object lookup )
     {
+        init( store, lookup );
+
         // when
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", store );
+            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", this.store );
             tx.commit();
         }
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
             tx.commit();
         }
         deleteNode( node );
@@ -274,20 +284,23 @@ public class IndexTxStateLookupTest
         }
     }
 
-    @Test
-    public void lookupWithoutTransactionWithCacheEviction()
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    public void lookupWithoutTransactionWithCacheEviction( Object store, Object lookup )
     {
+        init( store, lookup );
+
         // when
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", store );
+            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", this.store );
             tx.commit();
         }
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
             tx.commit();
         }
         deleteNode( node );

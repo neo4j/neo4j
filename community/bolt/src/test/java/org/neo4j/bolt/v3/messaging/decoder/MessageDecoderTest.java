@@ -21,10 +21,10 @@ package org.neo4j.bolt.v3.messaging.decoder;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -35,6 +35,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
@@ -63,9 +64,11 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -79,24 +82,18 @@ import static org.neo4j.bolt.testing.MessageConditions.serialize;
 import static org.neo4j.values.storable.Values.durationValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-@RunWith( Parameterized.class )
 public class MessageDecoderTest
 {
     private EmbeddedChannel channel;
 
-    @Parameterized.Parameter( 0 )
     public Neo4jPack packerUnderTest;
 
-    @Parameterized.Parameter( 1 )
-    public String name;
-
-    @Parameterized.Parameters( name = "{1}" )
-    public static Object[][] testParameters()
+    protected static Stream<Arguments> argumentsProvider()
     {
-        return new Object[][]{new Object[]{new Neo4jPackV1(), "V1"}, new Object[]{new Neo4jPackV2(), "V2"}};
+        return Stream.of( Arguments.of( new Neo4jPackV1() ), Arguments.of( new Neo4jPackV2() ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( channel != null )
@@ -105,9 +102,12 @@ public class MessageDecoderTest
         }
     }
 
-    @Test
-    public void shouldDispatchRequestMessage() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldDispatchRequestMessage( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
@@ -118,93 +118,126 @@ public class MessageDecoderTest
         verify( stateMachine ).process( eq( ResetMessage.INSTANCE ), any() );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnNodeParameter() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnNodeParameter( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         testUnpackableStructParametersWithKnownType( ALICE, "Node values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnRelationshipParameter() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnRelationshipParameter( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         testUnpackableStructParametersWithKnownType( ALICE_KNOWS_BOB, "Relationship values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnPathParameter() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnPathParameter( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         for ( PathValue path : ALL_PATHS )
         {
             testUnpackableStructParametersWithKnownType( path, "Path values cannot be unpacked with this version of bolt." );
         }
     }
 
-    @Test
-    public void shouldCallExternalErrorOnDuration() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnDuration( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), durationValue( Duration.ofDays( 10 ) ),
                 "Duration values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnDate() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnDate( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalDate.now() ),
                 "LocalDate values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnLocalTime() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnLocalTime( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalTime.now() ),
                 "LocalTime values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnTime() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnTime( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( OffsetTime.now() ),
                 "OffsetTime values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnLocalDateTime() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnLocalDateTime( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( LocalDateTime.now() ),
                 "LocalDateTime values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnDateTimeWithOffset() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnDateTimeWithOffset( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( OffsetDateTime.now() ),
                 "OffsetDateTime values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldCallExternalErrorOnDateTimeWithZoneName() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldCallExternalErrorOnDateTimeWithZoneName( Neo4jPack packerUnderTest ) throws Exception
     {
-        assumeThat( packerUnderTest.version() ).isEqualTo( 1L );
+        this.packerUnderTest = packerUnderTest;
+
+        assumeThat( packerUnderTest.version() ).isEqualTo( 1 );
 
         testUnpackableStructParametersWithKnownType( new Neo4jPackV2(), ValueUtils.of( ZonedDateTime.now() ),
                 "ZonedDateTime values cannot be unpacked with this version of bolt." );
     }
 
-    @Test
-    public void shouldThrowOnUnknownStructType() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldThrowOnUnknownStructType( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = packerUnderTest.newPacker( out );
         packer.packStructHeader( 2, RunMessage.SIGNATURE );
@@ -213,19 +246,16 @@ public class MessageDecoderTest
         packer.pack( "x" );
         packer.packStructHeader( 0, (byte) 'A' );
 
-        try
-        {
-            unpack( out.bytes() );
-        }
-        catch ( BoltIOException ex )
-        {
-            assertThat( ex.getMessage() ).isEqualTo( "Struct types of 0x41 are not recognized." );
-        }
+        var ex = assertThrows( BoltIOException.class, () -> unpack( out.bytes() ));
+        assertEquals( "Struct types of 0x41 are not recognized.", ex.getMessage() );
     }
 
-    @Test
-    public void shouldLogContentOfTheMessageOnIOError() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldLogContentOfTheMessageOnIOError( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         BoltConnection connection = mock( BoltConnection.class );
         BoltResponseMessageWriter responseMessageHandler = mock( BoltResponseMessageWriter.class );
 
@@ -240,21 +270,17 @@ public class MessageDecoderTest
         byte invalidMessageSignature = Byte.MAX_VALUE;
         byte[] messageBytes = packMessageWithSignature( invalidMessageSignature );
 
-        try
-        {
-            channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception ignore )
-        {
-        }
+        assertThrows( BoltIOException.class, () -> channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) ) );
 
         assertMessageHexDumpLogged( log, messageBytes );
     }
 
-    @Test
-    public void shouldLogContentOfTheMessageOnError() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldLogContentOfTheMessageOnError( Neo4jPack packerUnderTest ) throws Exception
     {
+        this.packerUnderTest = packerUnderTest;
+
         BoltRequestMessageReader requestMessageReader = mock( BoltRequestMessageReader.class );
         RuntimeException error = new RuntimeException( "Hello!" );
         doThrow( error ).when( requestMessageReader ).read( any() );
@@ -267,15 +293,8 @@ public class MessageDecoderTest
 
         byte[] messageBytes = packMessageWithSignature( RunMessage.SIGNATURE );
 
-        try
-        {
-            channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        var e = assertThrows( RuntimeException.class, () -> channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) ) );
+        assertEquals( error, e );
 
         assertMessageHexDumpLogged( log, messageBytes );
     }
@@ -301,7 +320,7 @@ public class MessageDecoderTest
         verify( stateMachine ).handleExternalFailure( eq( Neo4jError.from( Status.Statement.TypeError, expectedMessage ) ), any() );
     }
 
-    private void unpack( byte[] input ) throws IOException
+    private void unpack( byte[] input )
     {
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
