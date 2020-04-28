@@ -284,12 +284,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Validate all arguments") {
     assertGood(
       attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1), Order(ProvidedOrder.asc(varFor("a"))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
+      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1), Order(PrettyStringCreator.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
       validateAllArgs = true)
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), EstimatedRows(1), Order(ProvidedOrder.asc(varFor("  REL111"))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("  REL111")),
+      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), EstimatedRows(1), Order(PrettyStringCreator.raw("anon_111 ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("  REL111")),
       validateAllArgs = true)
 
     assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3),
@@ -301,15 +301,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("AllNodesScan") {
     assertGood(
       attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(PrettyStringCreator.raw("a ASC"))), Set("a")))
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), Order(ProvidedOrder.asc(varFor("anon_111")))), Set("  REL111")))
+      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), Order(PrettyStringCreator.raw("anon_111 ASC"))), Set("  REL111")))
 
     assertGood(
       attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
-      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), Order(ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo")))), Set("b")))
+      PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), Order(PrettyStringCreator.raw("b ASC, b.foo DESC"))), Set("b")))
   }
 
   test("NodeByLabelScan") {
@@ -887,50 +887,50 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // -- PruningVarExpand --
 
     // With nodePredicate and relationshipPredicate
-    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 1, 4, Some(nodePredicate), Some(relationshipPredicate)), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = 32 AND r.prop = 32"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "y")))
+    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 1, 4, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = 32 AND r.prop = 32")), Set("a", "y")))
 
     // With nodePredicate, without relationshipPredicate
-    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 2, 4, Some(nodePredicate), None), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = 32"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "y")))
+    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 2, 4, Some(nodePredicate), None), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = 32")), Set("a", "y")))
 
     // Without predicates, without relationship type
-    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, None, None), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[*2..4]->(y)"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "y")))
+    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, None, None), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[*2..4]->(y)")), Set("a", "y")))
 
     // -- VarExpand --
 
     // With unnamed variables, without predicates
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "  UNNAMED123", "  UNNAMED99", VarPatternLength(1, Some(1)), ExpandAll), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[anon_99:LIKES|LOVES]-(anon_123)"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "  UNNAMED99", "  UNNAMED123")))
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "  UNNAMED123", "  UNNAMED99", VarPatternLength(1, Some(1)), ExpandAll), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[anon_99:LIKES|LOVES]-(anon_123)")), Set("a", "  UNNAMED99", "  UNNAMED123")))
 
     // With nodePredicate and relationshipPredicate
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = 32 AND r.prop = 32"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "to", "rel")))
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = 32 AND r.prop = 32")), Set("a", "to", "rel")))
 
     // With nodePredicate, without relationshipPredicate, with length
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, Some(3)), ExpandAll, Some(nodePredicate)), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = 32"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "to", "rel")))
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, Some(3)), ExpandAll, Some(nodePredicate)), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = 32")), Set("a", "to", "rel")))
 
     // With unbounded length
-    assertGood(attach(VarExpand(lhsLP, "a", OUTGOING, OUTGOING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, None), ExpandAll), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[rel:LIKES|LOVES*2..]->(to)"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "to", "rel")))
+    assertGood(attach(VarExpand(lhsLP, "a", OUTGOING, OUTGOING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, None), ExpandAll), 1.0),
+      PlanDescriptionImpl(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[rel:LIKES|LOVES*2..]->(to)")), Set("a", "to", "rel")))
   }
 
   test("Updates") {
     // RemoveLabels
-    assertGood(attach(RemoveLabels(lhsLP, "x", Seq(label("L1"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(RemoveLabels(lhsLP, "x", Seq(label("L1"))), 1.0),
+      PlanDescriptionImpl(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x")))
 
-    assertGood(attach(RemoveLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1:L2"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(RemoveLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0),
+      PlanDescriptionImpl(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x")))
 
     // SetLabels
-    assertGood(attach(SetLabels(lhsLP, "x", Seq(label("L1"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetLabels(lhsLP, "x", Seq(label("L1"))), 1.0),
+      PlanDescriptionImpl(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x")))
 
-    assertGood(attach(SetLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetLabels(lhsLP, "x", Seq(label("L1"), label("L2"))), 1.0),
+      PlanDescriptionImpl(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x")))
 
     val map = MapExpression(Seq(
       (key("foo"), number("1")),
@@ -939,67 +939,67 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val prettifiedMapExpr = "{foo: 1, bar: 2}"
 
     // Set From Map
-    assertGood(attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetNodePropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0),
+      PlanDescriptionImpl(id, "SetNodePropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr")), Set("a", "x")))
 
-    assertGood(attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetNodePropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetNodePropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0),
+      PlanDescriptionImpl(id, "SetNodePropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr")), Set("a", "x")))
 
-    assertGood(attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = true), 1.0),
+      PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr")), Set("a", "x")))
 
-    assertGood(attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetRelationshipPropertiesFromMap(lhsLP, "x", map, removeOtherProps = false), 1.0),
+      PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr")), Set("a", "x")))
 
-    assertGood(attach(SetPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = true), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(SetPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = true), 1.0),
+      PlanDescriptionImpl(id, "SetPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr")), Set("a")))
 
-    assertGood(attach(SetPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = false), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(SetPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = false), 1.0),
+      PlanDescriptionImpl(id, "SetPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x += $prettifiedMapExpr")), Set("a")))
 
     // Set
-    assertGood(attach(SetProperty(lhsLP, varFor("x"), key("prop"), number("1")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(SetProperty(lhsLP, varFor("x"), key("prop"), number("1")), 1.0),
+      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a")))
 
-    assertGood(attach(SetNodeProperty(lhsLP, "x", key("prop"), number("1")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetNodeProperty(lhsLP, "x", key("prop"), number("1")), 1.0),
+      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a", "x")))
 
-    assertGood(attach(SetRelationshipProperty(lhsLP, "x", key("prop"), number("1")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(SetRelationshipProperty(lhsLP, "x", key("prop"), number("1")), 1.0),
+      PlanDescriptionImpl(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a", "x")))
   }
 
   test("Sort") {
     // Sort
-    assertGood(attach(Sort(lhsLP, Seq(Ascending("a"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "Sort", SingleChild(lhsPD), Seq(details("a ASC"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(Sort(lhsLP, Seq(Ascending("a"))), 1.0),
+      PlanDescriptionImpl(id, "Sort", SingleChild(lhsPD), Seq(details("a ASC")), Set("a")))
 
-    assertGood(attach(Sort(lhsLP, Seq(Descending("a"), Ascending("y"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "Sort", SingleChild(lhsPD), Seq(details("a DESC, y ASC"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(Sort(lhsLP, Seq(Descending("a"), Ascending("y"))), 1.0),
+      PlanDescriptionImpl(id, "Sort", SingleChild(lhsPD), Seq(details("a DESC, y ASC")), Set("a")))
 
     // Top
-    assertGood(attach(Top(lhsLP, Seq(Ascending("a")), number("3")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "Top", SingleChild(lhsPD), Seq(details("a ASC LIMIT 3"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(Top(lhsLP, Seq(Ascending("a")), number("3")), 1.0),
+      PlanDescriptionImpl(id, "Top", SingleChild(lhsPD), Seq(details("a ASC LIMIT 3")), Set("a")))
 
-    assertGood(attach(Top(lhsLP, Seq(Descending("a"), Ascending("y")), number("3")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "Top", SingleChild(lhsPD), Seq(details("a DESC, y ASC LIMIT 3"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(Top(lhsLP, Seq(Descending("a"), Ascending("y")), number("3")), 1.0),
+      PlanDescriptionImpl(id, "Top", SingleChild(lhsPD), Seq(details("a DESC, y ASC LIMIT 3")), Set("a")))
 
     // Partial Sort
-    assertGood(attach(PartialSort(lhsLP, Seq(Ascending("a")), Seq(Descending("y"))), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "PartialSort", SingleChild(lhsPD), Seq(details("a ASC, y DESC"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(PartialSort(lhsLP, Seq(Ascending("a")), Seq(Descending("y"))), 1.0),
+      PlanDescriptionImpl(id, "PartialSort", SingleChild(lhsPD), Seq(details("a ASC, y DESC")), Set("a")))
 
     // Partial Top
-    assertGood(attach(PartialTop(lhsLP, Seq(Ascending("a")), Seq(Descending("y")), number("3")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "PartialTop", SingleChild(lhsPD), Seq(details("a ASC, y DESC LIMIT 3"), Order(ProvidedOrder.asc(varFor("a")))), Set("a")))
+    assertGood(attach(PartialTop(lhsLP, Seq(Ascending("a")), Seq(Descending("y")), number("3")), 1.0),
+      PlanDescriptionImpl(id, "PartialTop", SingleChild(lhsPD), Seq(details("a ASC, y DESC LIMIT 3")), Set("a")))
   }
 
   test("Unwind") {
-    assertGood(attach(UnwindCollection(lhsLP, "x", varFor("list")), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "Unwind", SingleChild(lhsPD), Seq(details("list AS x"), Order(ProvidedOrder.asc(varFor("a")))), Set("a", "x")))
+    assertGood(attach(UnwindCollection(lhsLP, "x", varFor("list")), 1.0),
+      PlanDescriptionImpl(id, "Unwind", SingleChild(lhsPD), Seq(details("list AS x")), Set("a", "x")))
   }
 
   test("Admin") {
-    assertGood(attach(ShowUsers(privLhsLP), 1.0, ProvidedOrder.asc(varFor("a"))),
-      PlanDescriptionImpl(id, "ShowUsers", SingleChild(privLhsPD), Seq(Order(ProvidedOrder.asc(varFor("a")))), Set.empty))
+    assertGood(attach(ShowUsers(privLhsLP), 1.0),
+      PlanDescriptionImpl(id, "ShowUsers", SingleChild(privLhsPD), Seq(), Set.empty))
 
     assertGood(attach(CreateUser(privLhsLP, util.Left("name"), varFor("password"), requirePasswordChange = false, suspended = None), 1.0),
       PlanDescriptionImpl(id, "CreateUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))

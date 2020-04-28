@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SymbolicName
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
@@ -56,6 +58,8 @@ object PrettyStringCreator {
 
   def apply(variableName: String): PrettyString = PrettyString(ExpressionStringifier.backtick(removeGeneratedNames(variableName)))
 
+  def order(order: ProvidedOrder): Order = Order(PrettyString(serializeProvidedOrder(order)))
+
   def removeGeneratedNames(s: String): String = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon_${m group 2}")
     deduplicateVariableNames(named)
@@ -75,6 +79,13 @@ object PrettyStringCreator {
     }
     sb ++= in.substring(i)
     sb.toString()
+  }
+
+  private def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {
+    providedOrder.columns.map(col => {
+      val direction = if (col.isAscending) "ASC" else "DESC"
+      s"${removeGeneratedNames(col.expression.asCanonicalStringVal)} $direction"
+    }).mkString(", ")
   }
 
   implicit class PrettyStringInterpolator(val sc: StringContext) extends AnyVal {

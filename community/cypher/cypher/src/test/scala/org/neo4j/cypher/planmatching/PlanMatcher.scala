@@ -27,12 +27,10 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
-import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.NoChildren
-import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionImpl
 import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.neo4j.cypher.internal.plandescription.SingleChild
@@ -400,7 +398,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val memoryArg = memory.map(m => Memory(m.expectedValue)).toSeq
     val globalMemoryArg = memory.map(m => GlobalMemory(m.expectedValue)).toSeq
     val dbHitsArg = dbHits.map(m => DbHits(m.expectedValue)).toSeq
-    val orderArg = order.map(m => Order(m.expected)).toSeq
+    val orderArg = order.map(m => PrettyStringCreator.order(m.expected)).toSeq
     val otherArgs = other
       .map(_.expected.toSeq.map(str => Details(PrettyStringCreator(JustForToStringExpression(str)))))
       .getOrElse(Seq.empty)

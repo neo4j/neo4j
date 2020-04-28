@@ -19,17 +19,10 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
-import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
@@ -38,14 +31,4 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(Rows(12)) shouldBe a [java.lang.Number]
     serialize(EstimatedRows(12)) shouldBe a [java.lang.Number]
   }
-
-  test("should serialize provided order") {
-    serialize(Order(ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(prop("c","foo")))) should be("a ASC, b DESC, c.foo ASC")
-    serialize(Order(ProvidedOrder.empty)) should be("")
-    serialize(Order(ProvidedOrder.asc(varFor("  FRESHID42")))) should be("anon[42] ASC")
-  }
-
-  private val pos: InputPosition = DummyPosition(0)
-  private def varFor(name: String): Variable = Variable(name)(pos)
-  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

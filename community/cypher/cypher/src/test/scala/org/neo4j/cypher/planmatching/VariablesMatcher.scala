@@ -20,7 +20,7 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
+import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 

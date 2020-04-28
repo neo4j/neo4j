@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-
 sealed abstract class Argument extends Product {
 
   def name: String = productPrefix
@@ -50,7 +48,7 @@ object Arguments {
 
   case class GlobalMemory(value: Long) extends Argument
 
-  case class Order(order: ProvidedOrder) extends Argument
+  case class Order(order: PrettyString) extends Argument
 
   case class PageCacheHits(value: Long) extends Argument
 

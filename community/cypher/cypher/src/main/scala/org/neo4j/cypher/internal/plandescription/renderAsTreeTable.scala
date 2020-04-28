@@ -176,7 +176,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, Right(count.toString), columns)
     case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)), columns)
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)), columns)
-    case Order(providedOrder) => mapping(ORDER, Left(PlanDescriptionArgumentSerializer.serializeProvidedOrder(providedOrder)), columns)
+    case Order(providedOrder) => mapping(ORDER, Left(providedOrder.prettifiedString), columns)
     case Details(detailsList) => {
       val truncatedDetails = formatDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
       mapping(DETAILS, Left(truncatedDetails), columns)

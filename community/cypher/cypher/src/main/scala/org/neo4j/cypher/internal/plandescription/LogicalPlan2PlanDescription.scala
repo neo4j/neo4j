@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsersQualifier
-import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
@@ -235,13 +234,11 @@ import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
-import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
-import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.asPrettyString
 import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -932,7 +929,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       description
     }
     if (providedOrders.isDefinedAt(plan.id) && !providedOrders(plan.id).isEmpty) {
-      withEstRows.addArgument(Order(providedOrders(plan.id)))
+      withEstRows.addArgument(PrettyStringCreator.order(providedOrders(plan.id)))
     } else {
       withEstRows
     }

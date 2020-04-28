@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -57,7 +56,7 @@ object PlanDescriptionArgumentSerializer {
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)
       case EstimatedRows(value) => Double.box(value)
-      case Order(providedOrder) => serializeProvidedOrder(providedOrder)
+      case Order(providedOrder) => providedOrder.prettifiedString
       case Version(version) => version
       case Planner(planner) => planner
       case PlannerImpl(plannerName) => plannerName
@@ -74,12 +73,5 @@ object PlanDescriptionArgumentSerializer {
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
     }
-  }
-
-  def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {
-    providedOrder.columns.map(col => {
-      val direction = if (col.isAscending) "ASC" else "DESC"
-      s"${removeGeneratedNames(col.expression.asCanonicalStringVal)} $direction"
-    }).mkString(", ")
   }
 }
