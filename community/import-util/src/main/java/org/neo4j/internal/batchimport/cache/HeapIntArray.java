@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.cache;
 
 import java.util.Arrays;
 
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -36,7 +37,7 @@ public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
         super( Integer.BYTES, base );
         this.defaultValue = defaultValue;
         this.array = new int[length];
-        memoryTracker.allocateHeap( length * Integer.BYTES );
+        memoryTracker.allocateHeap( HeapEstimator.sizeOf( array ) );
         clear();
     }
 

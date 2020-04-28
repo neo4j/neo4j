@@ -53,17 +53,17 @@ class NumberArrayFactoryTest
     {
         var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
         HEAP.newByteArray( 10, new byte[]{0}, memoryTracker );
-        assertEquals( 10, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 32, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
 
         memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
         HEAP.newLongArray( 10,1, memoryTracker );
-        assertEquals( 80, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 96, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
 
         memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
         HEAP.newIntArray( 10,1, memoryTracker );
-        assertEquals( 40, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 56, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.cache;
 
 import java.util.Arrays;
 
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -36,7 +37,7 @@ public class HeapLongArray extends HeapNumberArray<LongArray> implements LongArr
         super( Long.BYTES, base );
         this.defaultValue = defaultValue;
         this.array = new long[length];
-        memoryTracker.allocateHeap( length * Long.BYTES );
+        memoryTracker.allocateHeap( HeapEstimator.sizeOf( array ) );
         clear();
     }
 
