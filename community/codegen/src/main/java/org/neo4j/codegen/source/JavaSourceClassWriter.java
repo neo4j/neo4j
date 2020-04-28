@@ -22,20 +22,23 @@ package org.neo4j.codegen.source;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import org.neo4j.codegen.ClassEmitter;
+import org.neo4j.codegen.ClassWriter;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
-import org.neo4j.codegen.MethodEmitter;
+import org.neo4j.codegen.MethodWriter;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
-class ClassSourceWriter implements ClassEmitter
+/**
+ * Writes java source classes.
+ */
+class JavaSourceClassWriter implements ClassWriter
 {
     private final StringBuilder target;
     final Configuration configuration;
 
-    ClassSourceWriter( StringBuilder target, Configuration configuration )
+    JavaSourceClassWriter( StringBuilder target, Configuration configuration )
     {
         this.target = target;
         this.configuration = configuration;
@@ -81,7 +84,7 @@ class ClassSourceWriter implements ClassEmitter
     }
 
     @Override
-    public MethodEmitter method( MethodDeclaration signature )
+    public MethodWriter method( MethodDeclaration signature )
     {
         StringBuilder target = new StringBuilder();
         if ( signature.isConstructor() )
@@ -89,7 +92,7 @@ class ClassSourceWriter implements ClassEmitter
             if ( signature.isStatic() )
             {
                 target.append( "    static\n    {\n" );
-                return new MethodSourceWriter( target, this, signature.isStatic() );
+                return new JavaSourceMethodWriter( target, this, signature.isStatic() );
             }
             else
             {
@@ -123,7 +126,7 @@ class ClassSourceWriter implements ClassEmitter
             sep = ", ";
         }
         target.append( "\n    {\n" );
-        return new MethodSourceWriter( target, this, signature.isStatic() );
+        return new JavaSourceMethodWriter( target, this, signature.isStatic() );
     }
 
     private static void typeParameters( StringBuilder target, MethodDeclaration method )
@@ -171,8 +174,7 @@ class ClassSourceWriter implements ClassEmitter
         if ( value != null )
         {
             append( " = " );
-            value.accept( new
-                    MethodSourceWriter( target, this, false ) );
+            value.accept( new JavaSourceMethodWriter( target, this, false ) );
         }
         append( ";\n" );
     }

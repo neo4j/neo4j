@@ -31,17 +31,20 @@ import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.TypeReference.NO_TYPES;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
+/**
+ * A ClassGenerator enrichs a ClassWriter with field management, and returns CodeBlocks instead of MethodWriters.
+ */
 public class ClassGenerator implements AutoCloseable
 {
     private final ClassHandle handle;
-    private ClassEmitter emitter;
+    private ClassWriter writer;
     private Map<String,FieldReference> fields;
     private boolean hasConstructor;
 
-    ClassGenerator( ClassHandle handle, ClassEmitter emitter )
+    ClassGenerator( ClassHandle handle, ClassWriter writer )
     {
         this.handle = handle;
-        this.emitter = emitter;
+        this.writer = writer;
     }
 
     @Override
@@ -51,9 +54,9 @@ public class ClassGenerator implements AutoCloseable
         {
             generate( MethodTemplate.constructor().invokeSuper().build() );
         }
-        emitter.done();
+        writer.done();
         handle.generator.closeClass();
-        emitter = InvalidState.CLASS_DONE;
+        writer = InvalidState.CLASS_DONE;
     }
 
     public ClassHandle handle()
@@ -108,7 +111,7 @@ public class ClassGenerator implements AutoCloseable
         }
         FieldReference field = new FieldReference( modifiers, handle, type, name );
         fields.put( name, field );
-        emitter.field( field, value );
+        writer.field( field, value );
         return field;
     }
 
@@ -162,7 +165,7 @@ public class ClassGenerator implements AutoCloseable
         {
             hasConstructor = true;
         }
-        return new CodeBlock( this, emitter.method( declaration ), declaration.parameters() );
+        return new CodeBlock( this, writer.method( declaration ), declaration.parameters() );
     }
 
     FieldReference getField( String name )

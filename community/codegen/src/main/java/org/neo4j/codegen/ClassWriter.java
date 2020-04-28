@@ -19,9 +19,12 @@
  */
 package org.neo4j.codegen;
 
-public interface ClassEmitter
+/**
+ * Writes classes into some serialized representation.
+ */
+public interface ClassWriter
 {
-    MethodEmitter method( MethodDeclaration method );
+    MethodWriter method( MethodDeclaration method );
 
     void field( FieldReference field, Expression value );
 

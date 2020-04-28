@@ -21,12 +21,12 @@ package org.neo4j.codegen;
 
 import java.util.function.Consumer;
 
-class InvalidState implements MethodEmitter
+class InvalidState implements MethodWriter
 {
-    public static final ClassEmitter CLASS_DONE = new ClassEmitter()
+    public static final ClassWriter CLASS_DONE = new ClassWriter()
     {
         @Override
-        public MethodEmitter method( MethodDeclaration method )
+        public MethodWriter method( MethodDeclaration method )
         {
             throw new IllegalStateException( "class done" );
         }
@@ -43,8 +43,8 @@ class InvalidState implements MethodEmitter
             throw new IllegalStateException( "class done" );
         }
     };
-    public static final MethodEmitter BLOCK_CLOSED = new InvalidState( "this block has been closed" );
-    public static final MethodEmitter IN_SUB_BLOCK = new InvalidState( "currently generating a sub-block of this block" );
+    public static final MethodWriter BLOCK_CLOSED = new InvalidState( "this block has been closed" );
+    public static final MethodWriter IN_SUB_BLOCK = new InvalidState( "currently generating a sub-block of this block" );
     private final String reason;
 
     private InvalidState( String reason )

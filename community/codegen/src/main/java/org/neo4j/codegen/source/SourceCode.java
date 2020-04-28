@@ -55,7 +55,7 @@ public enum SourceCode implements CodeGeneratorOption
         protected CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
                 throws CodeGenerationStrategyNotSupportedException
         {
-            return new SourceCodeGenerator( loader, configuration, configuration.sourceCompilerFor( this ) );
+            return new JavaSourceGenerator( loader, configuration, configuration.sourceCompilerFor( this ) );
         }
 
         @Override

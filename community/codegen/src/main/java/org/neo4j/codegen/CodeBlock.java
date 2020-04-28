@@ -26,11 +26,14 @@ import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
+/**
+ * Representation of a code block. Wraps a MethodWriter and adds management of local variables, and
+ * the ability to create nested code blocks.
+ */
 public class CodeBlock implements AutoCloseable
 {
-
     final ClassGenerator clazz;
-    private MethodEmitter emitter;
+    private MethodWriter writer;
     private final CodeBlock parent;
     private boolean done;
     private boolean continuableBlock;
@@ -45,21 +48,21 @@ public class CodeBlock implements AutoCloseable
     private CodeBlock( CodeBlock parent, boolean continuableBlock )
     {
         this.clazz = parent.clazz;
-        this.emitter = parent.emitter;
-        parent.emitter = InvalidState.IN_SUB_BLOCK;
+        this.writer = parent.writer;
+        parent.writer = InvalidState.IN_SUB_BLOCK;
         this.parent = parent;
         //copy over local variables from parent
         this.localVariables = copy( parent.localVariables );
         this.continuableBlock = continuableBlock;
     }
 
-    CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter... parameters )
+    CodeBlock( ClassGenerator clazz, MethodWriter writer, Parameter... parameters )
     {
         this.clazz = clazz;
-        this.emitter = emitter;
+        this.writer = writer;
         this.parent = null;
         this.continuableBlock = false;
-        if ( !emitter.isStatic() )
+        if ( !writer.isStatic() )
         {
             localVariables.createNew( clazz.handle(), "this" );
         }
@@ -85,27 +88,27 @@ public class CodeBlock implements AutoCloseable
         endBlock();
         if ( parent != null )
         {
-            parent.emitter = emitter;
+            parent.writer = writer;
         }
         else
         {
-            emitter.done();
+            writer.done();
         }
-        this.emitter = InvalidState.BLOCK_CLOSED;
+        this.writer = InvalidState.BLOCK_CLOSED;
     }
 
     private void endBlock()
     {
         if ( !done )
         {
-            emitter.endBlock();
+            writer.endBlock();
             done = true;
         }
     }
 
     public void expression( Expression expression )
     {
-        emitter.expression( expression );
+        writer.expression( expression );
     }
 
     public LocalVariable local( String name )
@@ -116,13 +119,13 @@ public class CodeBlock implements AutoCloseable
     public LocalVariable declare( TypeReference type, String name )
     {
         LocalVariable local = localVariables.createNew( type, name );
-        emitter.declare( local );
+        writer.declare( local );
         return local;
     }
 
     public void assign( LocalVariable local, Expression value )
     {
-        emitter.assignVariableInScope( local, value );
+        writer.assignVariableInScope( local, value );
     }
 
     public void assign( Class<?> type, String name, Expression value )
@@ -133,17 +136,17 @@ public class CodeBlock implements AutoCloseable
     public void assign( TypeReference type, String name, Expression value )
     {
         LocalVariable variable = localVariables.createNew( type, name );
-        emitter.assign( variable, value );
+        writer.assign( variable, value );
     }
 
     public void put( Expression target, FieldReference field, Expression value )
     {
-        emitter.put( target, field, value );
+        writer.put( target, field, value );
     }
 
     public void putStatic( FieldReference field, Expression value )
     {
-        emitter.putStatic( field, value );
+        writer.putStatic( field, value );
     }
 
     public Expression self()
@@ -158,7 +161,6 @@ public class CodeBlock implements AutoCloseable
 
     /*
      * Foreach is just syntactic sugar for a while loop.
-     *
      */
     public CodeBlock forEach( Parameter local, Expression iterable )
     {
@@ -177,64 +179,64 @@ public class CodeBlock implements AutoCloseable
 
     public CodeBlock whileLoop( Expression test )
     {
-        emitter.beginWhile( test, null );
+        writer.beginWhile( test, null );
         return new CodeBlock( this, true );
     }
 
     public CodeBlock whileLoop( Expression test, String labelName )
     {
-        emitter.beginWhile( test, labelName );
+        writer.beginWhile( test, labelName );
         return new CodeBlock( this, true );
     }
 
     public CodeBlock ifStatement( Expression test )
     {
-        emitter.beginIf( test );
+        writer.beginIf( test );
         return new CodeBlock( this );
     }
 
     public void ifElseStatement( Expression test, Consumer<CodeBlock> onTrue, Consumer<CodeBlock> onFalse )
     {
-        emitter.ifElseStatement( test, onTrue, onFalse, this );
+        writer.ifElseStatement( test, onTrue, onFalse, this );
     }
 
     public CodeBlock block()
     {
-        emitter.beginBlock();
+        writer.beginBlock();
         return new CodeBlock( this );
     }
 
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
-        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ), this );
+        writer.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ), this );
     }
 
     public void returns()
     {
-        emitter.returns();
+        writer.returns();
     }
 
     public void returns( Expression value )
     {
-        emitter.returns( value );
+        writer.returns( value );
     }
 
     public void continueIfPossible()
     {
         if ( continuableBlock )
         {
-            emitter.continues();
+            writer.continues();
         }
     }
 
     public void breaks( String labelName )
     {
-        emitter.breaks( labelName );
+        writer.breaks( labelName );
     }
 
     public void throwException( Expression exception )
     {
-        emitter.throwException( exception );
+        writer.throwException( exception );
     }
 
     public TypeReference owner()

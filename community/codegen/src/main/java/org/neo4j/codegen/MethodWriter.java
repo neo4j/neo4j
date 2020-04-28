@@ -21,7 +21,10 @@ package org.neo4j.codegen;
 
 import java.util.function.Consumer;
 
-public interface MethodEmitter
+/**
+ * Writes methods into some serialized representation.
+ */
+public interface MethodWriter
 {
     boolean isStatic();
 

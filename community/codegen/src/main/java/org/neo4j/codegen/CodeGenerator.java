@@ -50,6 +50,24 @@ public abstract class CodeGenerator
         this.loader = new CodeLoader( loader );
     }
 
+    private synchronized ClassHandle openClass( String packageName, String name, TypeReference parent )
+    {
+        openClassCount++;
+        return new ClassHandle( packageName, name, parent, this, generation );
+    }
+
+    synchronized void closeClass()
+    {
+        openClassCount--;
+    }
+
+    void setByteCodeVisitor( ByteCodeVisitor visitor )
+    {
+        this.byteCodeVisitor = visitor;
+    }
+
+    // GENERATE
+
     public ClassGenerator generateClass( String packageName, String name, Class<?> firstInterface, Class<?>... more )
     {
         return generateClass( packageName, name, typeReferences( firstInterface, more ) );
@@ -68,13 +86,7 @@ public abstract class CodeGenerator
     public ClassGenerator generateClass( TypeReference base, String packageName, String name,
             TypeReference... interfaces )
     {
-        return generateClass( makeHandle( packageName, name, base ), base, interfaces );
-    }
-
-    private synchronized ClassHandle makeHandle( String packageName, String name, TypeReference parent )
-    {
-        openClassCount++;
-        return new ClassHandle( packageName, name, parent, this, generation );
+        return generateClass( openClass( packageName, name, base ), base, interfaces );
     }
 
     private ClassGenerator generateClass( ClassHandle handle, TypeReference base, TypeReference... interfaces )
@@ -82,14 +94,16 @@ public abstract class CodeGenerator
         return new ClassGenerator( handle, generate( handle, base, interfaces ) );
     }
 
-    protected abstract ClassEmitter generate( TypeReference type, TypeReference base, TypeReference... interfaces );
+    protected abstract ClassWriter generate( TypeReference type, TypeReference base, TypeReference... interfaces );
+
+    // COMPILE AND LOAD
 
     protected abstract Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader )
             throws CompilationFailureException;
 
     synchronized Class<?> loadClass( String name, long generation ) throws CompilationFailureException
     {
-        addSources( generation );
+        compileAndStageForLoading( generation );
         try
         {
             return loader.findClass( name );
@@ -102,7 +116,7 @@ public abstract class CodeGenerator
 
     synchronized Class<?> loadAnonymousClass( String name, long generation ) throws CompilationFailureException
     {
-        addSources( generation );
+        compileAndStageForLoading( generation );
         try
         {
             return loader.defineAnonymousClass( name );
@@ -113,17 +127,7 @@ public abstract class CodeGenerator
         }
     }
 
-    synchronized void closeClass()
-    {
-        openClassCount--;
-    }
-
-    void setByteCodeVisitor( ByteCodeVisitor visitor )
-    {
-        this.byteCodeVisitor = visitor;
-    }
-
-    private void addSources( long generation ) throws CompilationFailureException
+    private void compileAndStageForLoading( long generation ) throws CompilationFailureException
     {
         if ( generation == this.generation )
         {
@@ -132,7 +136,7 @@ public abstract class CodeGenerator
                 throw new IllegalStateException( "Compilation has not completed." );
             }
             this.generation++;
-            loader.addSources( compile( loader.getParent() ), byteCodeVisitor );
+            loader.stageForLoading( compile( loader.getParent() ), byteCodeVisitor );
         }
     }
 }

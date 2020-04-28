@@ -32,7 +32,7 @@ import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodDeclaration;
-import org.neo4j.codegen.MethodEmitter;
+import org.neo4j.codegen.MethodWriter;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
@@ -60,14 +60,14 @@ import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 
-class MethodByteCodeEmitter implements MethodEmitter
+class ByteCodeMethodWriter implements MethodWriter
 {
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
     private final ExpressionVisitor expressionVisitor;
     private Deque<Block> stateStack = new LinkedList<>();
 
-    MethodByteCodeEmitter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore )
+    ByteCodeMethodWriter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore )
     {
         this.declaration = declaration;
         for ( Parameter parameter : declaration.parameters() )

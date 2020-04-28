@@ -29,21 +29,21 @@ import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
-import org.neo4j.codegen.MethodEmitter;
+import org.neo4j.codegen.MethodWriter;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.TypeReference;
 
-class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
+class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor
 {
     private static final Runnable BOTTOM = () -> { throw new IllegalStateException( "Popped too many levels!" ); };
     private static final Runnable LEVEL = () -> {};
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
-    private final ClassSourceWriter classSourceWriter;
+    private final JavaSourceClassWriter classSourceWriter;
     private final boolean isStatic;
     private final Deque<Runnable> levels = new LinkedList<>();
 
-    MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter, boolean isStatic )
+    JavaSourceMethodWriter( StringBuilder target, JavaSourceClassWriter classSourceWriter, boolean isStatic )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;
