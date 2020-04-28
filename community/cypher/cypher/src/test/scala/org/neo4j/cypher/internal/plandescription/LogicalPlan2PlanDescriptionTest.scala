@@ -230,7 +230,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringInterpolator
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -249,15 +249,15 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 object LogicalPlan2PlanDescriptionTest {
-  def details(infos: Seq[String]): Details = Details(infos.map(PrettyStringCreator.raw))
+  def details(infos: Seq[String]): Details = Details(infos.map(asPrettyString.raw))
 
-  def details(info: String): Details = Details(PrettyStringCreator.raw(info))
+  def details(info: String): Details = Details(asPrettyString.raw(info))
 
   def planDescription(id: Id,
                       name: String,
                       children: Children,
                       arguments: Seq[Argument],
-                      variables: Set[String]): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(PrettyStringCreator.raw))
+                      variables: Set[String]): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(asPrettyString.raw))
 }
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
@@ -292,12 +292,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Validate all arguments") {
     assertGood(
       attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1), Order(PrettyStringCreator.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1), Order(asPrettyString.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
       validateAllArgs = true)
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), EstimatedRows(1), Order(PrettyStringCreator.raw("anon_111 ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("anon_111")),
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), EstimatedRows(1), Order(asPrettyString.raw("anon_111 ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("anon_111")),
       validateAllArgs = true)
 
     assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3),
@@ -309,15 +309,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("AllNodesScan") {
     assertGood(
       attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(PrettyStringCreator.raw("a ASC"))), Set("a")))
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(asPrettyString.raw("a ASC"))), Set("a")))
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), Order(PrettyStringCreator.raw("anon_111 ASC"))), Set("anon_111")))
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), Order(asPrettyString.raw("anon_111 ASC"))), Set("anon_111")))
 
     assertGood(
       attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("b"), Order(PrettyStringCreator.raw("b ASC, b.foo DESC"))), Set("b")))
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("b"), Order(asPrettyString.raw("b ASC, b.foo DESC"))), Set("b")))
   }
 
   test("NodeByLabelScan") {

@@ -239,8 +239,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringInterpolator
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringMaker
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.exceptions.InternalException
@@ -274,18 +274,18 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)
 
     val id = plan.id
-    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
+    val variables = plan.availableSymbols.map(asPrettyString(_))
 
     val result: InternalPlanDescription = plan match {
       case AllNodesScan(idName, _) =>
-        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(PrettyStringCreator(idName))), variables)
+        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(asPrettyString(idName))), variables)
 
       case NodeByLabelScan(idName, label, _) =>
-        val prettyDetails = pretty"${PrettyStringCreator(idName)}:${PrettyStringCreator(label.name)}"
+        val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(label.name)}"
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(Details(prettyDetails)), variables)
 
       case NodeByIdSeek(idName, nodeIds: SeekableArgs, _) =>
-        val prettyDetails = pretty"${PrettyStringCreator(idName)} WHERE id(${PrettyStringCreator(idName)}) ${seekableArgsInfo(nodeIds)}"
+        val prettyDetails = pretty"${asPrettyString(idName)} WHERE id(${asPrettyString(idName)}) ${seekableArgsInfo(nodeIds)}"
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(Details(prettyDetails)), variables)
 
       case p@NodeIndexSeek(idName, label, properties, valueExpr, _, _) =>
@@ -301,7 +301,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables)
 
       case plans.Argument(argumentIds) if argumentIds.nonEmpty =>
-        val details = if (argumentIds.nonEmpty) Seq(Details(argumentIds.map(PrettyStringCreator(_)).mkPrettyString(SEPARATOR))) else Seq.empty
+        val details = if (argumentIds.nonEmpty) Seq(Details(argumentIds.map(asPrettyString(_)).mkPrettyString(SEPARATOR))) else Seq.empty
         PlanDescriptionImpl(id, "Argument", NoChildren, details, variables)
 
       case _: plans.Argument =>
@@ -316,25 +316,25 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details), variables)
 
       case Input(nodes, rels, inputVars, _) =>
-        PlanDescriptionImpl(id, "Input", NoChildren, Seq(Details((nodes ++ rels ++ inputVars).map(PrettyStringCreator(_)))), variables)
+        PlanDescriptionImpl(id, "Input", NoChildren, Seq(Details((nodes ++ rels ++ inputVars).map(asPrettyString(_)))), variables)
 
       case NodeCountFromCountStore(ident, labelNames, _) =>
         val info = nodeCountFromCountStoreInfo(ident, labelNames)
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, Seq(Details(info)), variables)
 
       case p@NodeIndexContainsScan(idName, label, property, valueExpr, _, _) =>
-        val predicate = pretty"${PrettyStringCreator(property.propertyKeyToken.name)} CONTAINS ${PrettyStringCreator(valueExpr)}"
+        val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} CONTAINS ${asPrettyString(valueExpr)}"
         val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, Seq(Details(info)), variables)
 
       case p@NodeIndexEndsWithScan(idName, label, property, valueExpr, _, _) =>
-        val predicate = pretty"${PrettyStringCreator(property.propertyKeyToken.name)} ENDS WITH ${PrettyStringCreator(valueExpr)}"
+        val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} ENDS WITH ${asPrettyString(valueExpr)}"
         val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, Seq(Details(info)), variables)
 
       case p@NodeIndexScan(idName, label, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
-        val props = tokens.map(x => PrettyStringCreator(x.name))
+        val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"exists($p)").mkPrettyString(" AND ")
         val info = indexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables)
@@ -353,7 +353,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexSchemaInfo(None, labelName, propertyKeyNames))), variables)
 
       case DropIndexOnName(name) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${PrettyStringCreator(name)}")), variables)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
 
       case CreateUniquePropertyConstraint(node, label, properties: Seq[Property], nameOption) =>
         val details = Details(constraintInfo(nameOption, Some(node), scala.util.Left(label), properties, scala.util.Right("IS UNIQUE")))
@@ -394,14 +394,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq(details), variables)
 
       case DropConstraintOnName(name) =>
-        val constraintName = Details(pretty"CONSTRAINT ${PrettyStringCreator(name)}")
+        val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
       case SetOwnPassword(_, _) =>
         PlanDescriptionImpl(id, "AlterCurrentUserSetPassword", NoChildren, Seq.empty, variables)
 
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Details(PrettyStringCreator.raw(Prettifier.extractScope(scope)))), variables)
+        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Details(asPrettyString.raw(Prettifier.extractScope(scope)))), variables)
 
       case ShowDatabase(dbName) =>
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(Details(escapeName(dbName))), variables)
@@ -416,13 +416,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
       case AssertDbmsAdmin(actions) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(Details(actions.map(x => PrettyStringCreator.raw(x.name)))), variables)
+        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(Details(actions.map(x => asPrettyString.raw(x.name)))), variables)
 
       case AssertDbmsAdminOrSelf(user, actions) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, Seq(Details(actions.map(x => PrettyStringCreator.raw(x.name)) :+ getUserInfo(user))), variables)
+        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, Seq(Details(actions.map(x => asPrettyString.raw(x.name)) :+ getUserInfo(user))), variables)
 
       case AssertDatabaseAdmin(action, dbName) =>
-        val arguments = Seq(Details(Seq(PrettyStringCreator.raw(action.name), escapeName(dbName))))
+        val arguments = Seq(Details(Seq(asPrettyString.raw(action.name), escapeName(dbName))))
         PlanDescriptionImpl(id, "AssertDatabaseAdmin", NoChildren, arguments, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
@@ -436,7 +436,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.rhs.isEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
+    val variables = plan.availableSymbols.map(asPrettyString(_))
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
@@ -462,30 +462,30 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           }
         val nodeDetails = nodes.map {
           case CreateNode(idName, labels, _) =>
-            pretty"(${PrettyStringCreator(idName)}${if (labels.nonEmpty) labels.map(x => PrettyStringCreator(x.name)).mkPrettyString(":", ":", "") else pretty""})"
+            pretty"(${asPrettyString(idName)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
         }
         PlanDescriptionImpl(id, "Create", children, Seq(Details(nodeDetails ++ relationshipDetails)), variables)
 
       case DeleteExpression(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DeleteNode(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DeletePath(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DeleteRelationship(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DetachDeleteExpression(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DetachDeleteNode(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case DetachDeletePath(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(PrettyStringCreator(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
 
       case _: Eager =>
         PlanDescriptionImpl(id, "Eager", children, Seq.empty, variables)
@@ -516,16 +516,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, modeText, children, Seq(expression), variables)
 
       case Limit(_, count, _) =>
-        PlanDescriptionImpl(id, "Limit", children, Seq(Details(PrettyStringCreator(count))), variables)
+        PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables)
 
       case CacheProperties(_, properties) =>
-        PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(PrettyStringCreator(_)))), variables)
+        PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(asPrettyString(_)))), variables)
 
       case LockNodes(_, nodesToLock) =>
         PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables)
 
       case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates, _) =>
-        val predicate = predicates.map(p => pretty" WHERE ${PrettyStringCreator(p)}").getOrElse(pretty"")
+        val predicate = predicates.map(p => pretty" WHERE ${asPrettyString(p)}").getOrElse(pretty"")
         val expandExpressionDesc = expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1))
         val details = Details(pretty"$expandExpressionDesc$predicate")
         val modeText = mode match {
@@ -535,18 +535,18 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, modeText, children, Seq(details), variables)
 
       case ProduceResult(_, columns) =>
-        PlanDescriptionImpl(id, "ProduceResults", children, Seq(Details(columns.map(PrettyStringCreator(_)))), variables)
+        PlanDescriptionImpl(id, "ProduceResults", children, Seq(Details(columns.map(asPrettyString(_)))), variables)
 
       case Projection(_, expr) =>
         val expressions = Details(projectedExpressionInfo(expr))
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
       case Selection(predicate, _) =>
-        val details = Details(predicate.exprs.toSeq.map(PrettyStringCreator(_)).mkPrettyString(" AND "))
+        val details = Details(predicate.exprs.toSeq.map(asPrettyString(_)).mkPrettyString(" AND "))
         PlanDescriptionImpl(id, "Filter", children, Seq(details), variables)
 
       case Skip(_, count) =>
-        PlanDescriptionImpl(id, name = "Skip", children, Seq(Details(PrettyStringCreator(count))), variables)
+        PlanDescriptionImpl(id, name = "Skip", children, Seq(Details(asPrettyString(count))), variables)
 
       case FindShortestPaths(_, ShortestPathPattern(maybePathName, PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength), isSingle), predicates, _, _) =>
         val patternRelationshipInfo = expandExpressionDescription(fromName, Some(relName), relTypes.map(_.name), toName, dir, patternLength)
@@ -554,21 +554,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val predicatesInfo = if (predicates.isEmpty) {
           pretty""
         } else {
-          pretty" WHERE ${predicates.map(PrettyStringCreator(_)).mkPrettyString(" AND ")}"
+          pretty" WHERE ${predicates.map(asPrettyString(_)).mkPrettyString(" AND ")}"
         }
 
         val pathName = maybePathName match {
-          case Some(p) => pretty"${PrettyStringCreator(p)} = "
+          case Some(p) => pretty"${asPrettyString(p)} = "
           case _ => pretty""
         }
 
         PlanDescriptionImpl(id, "ShortestPath", children, Seq(Details(pretty"$pathName$patternRelationshipInfo$predicatesInfo")), variables)
 
       case LoadCSV(_, _, variableName, _, _, _, _) =>
-        PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(PrettyStringCreator(variableName))), variables)
+        PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables)
 
       case MergeCreateNode(_, idName, _, _) =>
-        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(PrettyStringCreator(idName))), variables)
+        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(asPrettyString(idName))), variables)
 
       case MergeCreateRelationship(_, idName, startNode, relTypeName, endNode, _) =>
         val details = expandExpressionDescription(startNode, Some(idName), Seq(relTypeName.name), endNode, SemanticDirection.OUTGOING, 1, Some(1))
@@ -600,41 +600,41 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(Details(pretty"$expandInfo$predicatesDescription")), variables)
 
       case RemoveLabels(_, idName, labelNames) =>
-        val prettyId = PrettyStringCreator(idName)
-        val prettyLabels = labelNames.map(labelName => PrettyStringCreator(labelName.name)).mkPrettyString(":", ":", "")
+        val prettyId = asPrettyString(idName)
+        val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
         val details = Details(pretty"$prettyId$prettyLabels")
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq(details), variables)
 
       case SetLabels(_, idName, labelNames) =>
 
-        val prettyId = PrettyStringCreator(idName)
-        val prettyLabels = labelNames.map(labelName => PrettyStringCreator(labelName.name)).mkPrettyString(":", ":", "")
+        val prettyId = asPrettyString(idName)
+        val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
         val details = Details(pretty"$prettyId$prettyLabels")
         PlanDescriptionImpl(id, "SetLabels", children, Seq(details), variables)
 
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
-        val details = Details(setPropertyInfo(PrettyStringCreator(idName), expression, removeOtherProps))
+        val details = Details(setPropertyInfo(asPrettyString(idName), expression, removeOtherProps))
         PlanDescriptionImpl(id, "SetNodePropertiesFromMap", children, Seq(details), variables)
 
       case SetPropertiesFromMap(_, entity, expression, removeOtherProps) =>
-        val details = Details(setPropertyInfo(PrettyStringCreator(entity), expression, removeOtherProps))
+        val details = Details(setPropertyInfo(asPrettyString(entity), expression, removeOtherProps))
         PlanDescriptionImpl(id, "SetPropertiesFromMap", children, Seq(details), variables)
 
       case SetProperty(_, entity, propertyKey, expression) =>
-        val entityString = pretty"${PrettyStringCreator(entity)}.${PrettyStringCreator(propertyKey.name)}"
+        val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey.name)}"
         val details = Details(setPropertyInfo(entityString, expression, true))
         PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
 
       case SetNodeProperty(_, idName, propertyKey, expression) =>
-        val details = Details(setPropertyInfo(pretty"${PrettyStringCreator(idName)}.${PrettyStringCreator(propertyKey.name)}", expression, true))
+        val details = Details(setPropertyInfo(pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}", expression, true))
         PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
 
       case SetRelationshipProperty(_, idName, propertyKey, expression) =>
-        val details = Details(setPropertyInfo(pretty"${PrettyStringCreator(idName)}.${PrettyStringCreator(propertyKey.name)}", expression, true))
+        val details = Details(setPropertyInfo(pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}", expression, true))
         PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
 
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
-        val details = Details(setPropertyInfo(PrettyStringCreator(idName), expression, removeOtherProps))
+        val details = Details(setPropertyInfo(asPrettyString(idName), expression, removeOtherProps))
         PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", children, Seq(details), variables)
 
       case Sort(_, orderBy) =>
@@ -644,11 +644,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "PartialSort", children, Seq(Details(orderInfo(alreadySortedPrefix ++ stillToSortSuffix))), variables)
 
       case Top(_, orderBy, limit) =>
-        val details = pretty"${orderInfo(orderBy)} LIMIT ${PrettyStringCreator(limit)}"
+        val details = pretty"${orderInfo(orderBy)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "Top", children, Seq(Details(details)), variables)
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
-        val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${PrettyStringCreator(limit)}"
+        val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables)
 
       case UnwindCollection(_, variable, expression) =>
@@ -702,13 +702,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Details(Seq(getRoleInfo(roleName), getUserInfo(userName)))), variables)
 
       case GrantDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(Seq(PrettyStringCreator.raw(action.name), getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
 
       case DenyDbmsAction(_, action, roleName) =>
-        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(Seq(PrettyStringCreator.raw(action.name), getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
 
       case RevokeDbmsAction(_, action, roleName, revokeType) =>
-        val details = Details(Seq(PrettyStringCreator.raw(action.name), getRoleInfo(roleName)))
+        val details = Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(details), variables)
 
       case GrantDatabaseAction(_, action, database, qualifier, roleName) =>
@@ -725,36 +725,36 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case GrantGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
 
       case DenyGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
 
       case RevokeGraphAction(_, action, resource, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
           Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))), variables)
 
       case DenyTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))), variables)
 
       case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
         val details = Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), children, Seq(details), variables)
 
@@ -784,7 +784,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
 
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Details(PrettyStringCreator.raw(Prettifier.extractScope(scope)))), variables)
+        PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Details(asPrettyString.raw(Prettifier.extractScope(scope)))), variables)
 
       case CreateDatabase(_, dbName) =>
         PlanDescriptionImpl(id, "CreateDatabase", children, Seq(Details(escapeName(dbName))), variables)
@@ -834,7 +834,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols.map(PrettyStringCreator(_))
+    val variables = plan.availableSymbols.map(asPrettyString(_))
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
@@ -851,7 +851,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
 
       case AssertSameNode(node, _, _) =>
-        PlanDescriptionImpl(id, "AssertSameNode", children, Seq(Details(PrettyStringCreator(node))), variables)
+        PlanDescriptionImpl(id, "AssertSameNode", children, Seq(Details(asPrettyString(node))), variables)
 
       case CartesianProduct(_, _) =>
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
@@ -863,13 +863,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
 
       case LetSelectOrSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
+        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
 
       case row: plans.Argument =>
         ArgumentPlanDescription(id = plan.id, Seq.empty, variables)
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
+        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
 
       case _: LetSemiApply =>
         PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables)
@@ -888,17 +888,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RollUpApply", children, Seq(Details(detailsList)), variables)
 
       case SelectOrAntiSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
+        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
 
       case SelectOrSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Details(PrettyStringCreator(predicate))), variables)
+        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
 
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)
 
       case TriadicSelection(_, _, positivePredicate, source, seen, target) =>
         val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "
-        val details = Details(pretty"WHERE $positivePredicateString(${PrettyStringCreator(source)})--(${PrettyStringCreator(target)})")
+        val details = Details(pretty"WHERE $positivePredicateString(${asPrettyString(source)})--(${asPrettyString(target)})")
         PlanDescriptionImpl(id, "TriadicSelection", children, Seq(details), variables)
 
       case _: Union =>
@@ -909,7 +909,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           id = id,
           name = "ValueHashJoin",
           children = children,
-          arguments = Seq(Details(PrettyStringCreator(predicate))),
+          arguments = Seq(Details(asPrettyString(predicate))),
           variables
         )
 
@@ -929,7 +929,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       description
     }
     if (providedOrders.isDefinedAt(plan.id) && !providedOrders(plan.id).isEmpty) {
-      withEstRows.addArgument(PrettyStringCreator.order(providedOrders(plan.id)))
+      withEstRows.addArgument(asPrettyString.order(providedOrders(plan.id)))
     } else {
       withEstRows
     }
@@ -941,8 +941,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def buildPredicatesDescription(maybeNodePredicate: Option[VariablePredicate],
                                          maybeRelationshipPredicate: Option[VariablePredicate]): Option[PrettyString] = {
-    val nodePredicateInfo = maybeNodePredicate.map(_.predicate).map(PrettyStringCreator(_))
-    val relationshipPredicateInfo = maybeRelationshipPredicate.map(_.predicate).map(PrettyStringCreator(_))
+    val nodePredicateInfo = maybeNodePredicate.map(_.predicate).map(asPrettyString(_))
+    val relationshipPredicateInfo = maybeRelationshipPredicate.map(_.predicate).map(asPrettyString(_))
 
     (nodePredicateInfo ++ relationshipPredicateInfo) match {
       case predicates if predicates.nonEmpty => Some(predicates.mkPrettyString(" AND "))
@@ -992,14 +992,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   private def indexPredicateString(propertyKeys: Seq[PropertyKeyToken],
                                    valueExpr: QueryExpression[expressions.Expression]): PrettyString = valueExpr match {
     case _: ExistenceQueryExpression[expressions.Expression] =>
-      pretty"exists(${PrettyStringCreator(propertyKeys.head.name)})"
+      pretty"exists(${asPrettyString(propertyKeys.head.name)})"
 
     case e: RangeQueryExpression[expressions.Expression] =>
       checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
       e.expression match {
         case PrefixSeekRangeWrapper(range) =>
-          val propertyKeyName = PrettyStringCreator(propertyKeys.head.name)
-          pretty"$propertyKeyName STARTS WITH ${PrettyStringCreator(range.prefix)}"
+          val propertyKeyName = asPrettyString(propertyKeys.head.name)
+          pretty"$propertyKeyName STARTS WITH ${asPrettyString(range.prefix)}"
 
         case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
           bounds.map(rangeBoundString(propertyKeys.head, _, '<')).toIndexedSeq.mkPrettyString(" AND ")
@@ -1016,17 +1016,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           val funcName = Point.name
           val poi = point match {
             case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
-              pretty"point(${args.map(_._2).map(PrettyStringCreator(_)).mkPrettyString(", ")})"
-            case _ => PrettyStringCreator(point)
+              pretty"point(${args.map(_._2).map(asPrettyString(_)).mkPrettyString(", ")})"
+            case _ => asPrettyString(point)
           }
-          val propertyKeyName = PrettyStringCreator(propertyKeys.head.name)
-          val distanceStr = PrettyStringCreator(distance)
+          val propertyKeyName = asPrettyString(propertyKeys.head.name)
+          val distanceStr = asPrettyString(distance)
           pretty"distance($propertyKeyName, $poi) <${if (inclusive) pretty"=" else pretty""} $distanceStr"
       }
 
     case e: SingleQueryExpression[expressions.Expression] =>
-      val propertyKeyName = PrettyStringCreator(propertyKeys.head.name)
-      pretty"$propertyKeyName = ${PrettyStringCreator(e.expression)}"
+      val propertyKeyName = asPrettyString(propertyKeys.head.name)
+      pretty"$propertyKeyName = ${asPrettyString(e.expression)}"
 
     case e: ManyQueryExpression[expressions.Expression] =>
       val (eqOp, innerExp) = e.expression match {
@@ -1035,8 +1035,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         // This case is used for example when the expression in a parameter
         case x => (pretty"IN", x)
       }
-      val propertyKeyName = PrettyStringCreator(propertyKeys.head.name)
-      pretty"$propertyKeyName $eqOp ${PrettyStringCreator(innerExp)}"
+      val propertyKeyName = asPrettyString(propertyKeys.head.name)
+      pretty"$propertyKeyName $eqOp ${asPrettyString(innerExp)}"
 
     case e: CompositeQueryExpression[expressions.Expression] =>
       val predicates = e.inner.zipWithIndex.map {
@@ -1046,13 +1046,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def rangeBoundString(propertyKey: PropertyKeyToken, bound: Bound[expressions.Expression], sign: Char): PrettyString = {
-    pretty"${PrettyStringCreator(propertyKey.name)} ${PrettyStringCreator.raw(sign + bound.inequalitySignSuffix)} ${PrettyStringCreator(bound.endPoint)}"
+    pretty"${asPrettyString(propertyKey.name)} ${asPrettyString.raw(sign + bound.inequalitySignSuffix)} ${asPrettyString(bound.endPoint)}"
   }
 
   private def nodeCountFromCountStoreInfo(ident: String, labelNames: List[Option[LabelName]]): PrettyString = {
-    val labels = labelNames.flatten.map(_.name).map(PrettyStringCreator(_))
+    val labels = labelNames.flatten.map(_.name).map(asPrettyString(_))
     val node = labels.map(labelName => pretty":$labelName").mkPrettyString
-    pretty"count( ($node) ) AS ${PrettyStringCreator(ident)}"
+    pretty"count( ($node) ) AS ${asPrettyString(ident)}"
   }
 
   private def relationshipCountFromCountStoreInfo(ident: String,
@@ -1061,54 +1061,54 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                                                   endLabel: Option[LabelName]): PrettyString = {
     val start = startLabel
       .map(_.name)
-      .map(PrettyStringCreator(_))
+      .map(asPrettyString(_))
       .map(l => pretty":$l")
       .getOrElse(pretty"")
     val end = endLabel
       .map(_.name)
-      .map(PrettyStringCreator(_))
+      .map(asPrettyString(_))
       .map(l => pretty":$l")
       .getOrElse(pretty"")
     val types = typeNames
       .map(_.name)
-      .map(PrettyStringCreator(_))
+      .map(asPrettyString(_))
       .mkPrettyString(":", "|", "")
-    pretty"count( ($start)-[$types]->($end) ) AS ${PrettyStringCreator(ident)}"
+    pretty"count( ($start)-[$types]->($end) ) AS ${asPrettyString(ident)}"
   }
 
   private def relationshipByIdSeekInfo(idName: String, relIds: SeekableArgs, startNode: String, endNode: String, isDirectional: Boolean): PrettyString = {
     val predicate = seekableArgsInfo(relIds)
     val directionString = if (isDirectional) pretty">" else pretty""
-    val prettyStartNode = PrettyStringCreator(startNode)
-    val prettyIdName = PrettyStringCreator(idName)
-    val prettyEndNode = PrettyStringCreator(endNode)
+    val prettyStartNode = asPrettyString(startNode)
+    val prettyIdName = asPrettyString(idName)
+    val prettyEndNode = asPrettyString(endNode)
     pretty"(${prettyStartNode})-[$prettyIdName]-$directionString($prettyEndNode) WHERE id($prettyIdName) $predicate"
   }
 
   private def seekableArgsInfo(seekableArgs: SeekableArgs): PrettyString = seekableArgs match {
     case ManySeekableArgs(ListLiteral(exprs)) if exprs.size > 1 =>
-      pretty"IN ${exprs.map(PrettyStringCreator(_)).mkPrettyString("[", ",", "]")}"
+      pretty"IN ${exprs.map(asPrettyString(_)).mkPrettyString("[", ",", "]")}"
     case ManySeekableArgs(ListLiteral(exprs)) =>
-      pretty"= ${PrettyStringCreator(exprs.head)}"
+      pretty"= ${asPrettyString(exprs.head)}"
     case _ =>
-      pretty"= ${PrettyStringCreator(seekableArgs.expr)}"
+      pretty"= ${asPrettyString(seekableArgs.expr)}"
   }
 
   private def signatureInfo(call: ResolvedCall): PrettyString = {
-    val argString = call.callArguments.map(PrettyStringCreator(_)).mkPrettyString(SEPARATOR)
+    val argString = call.callArguments.map(asPrettyString(_)).mkPrettyString(SEPARATOR)
     val resultString = call.callResultTypes
-      .map { case (name, typ) => pretty"${PrettyStringCreator(name)} :: ${PrettyStringCreator.raw(typ.toNeoTypeString)}" }
+      .map { case (name, typ) => pretty"${asPrettyString(name)} :: ${asPrettyString.raw(typ.toNeoTypeString)}" }
       .mkPrettyString(SEPARATOR)
     // TODO: should we call prettify on what is being returned from toString method in QualifiedName?
     // Or should we copy the toString method and prettify it like this:
     // (namespace :+ name).map(PrettyStringCreator(_)).mkPrettyString(".")
-    pretty"${PrettyStringCreator.raw(call.qualifiedName.toString)}($argString) :: ($resultString)"
+    pretty"${asPrettyString.raw(call.qualifiedName.toString)}($argString) :: ($resultString)"
   }
 
   private def orderInfo(orderBy: Seq[ColumnOrder]): PrettyString = {
     orderBy.map {
-      case Ascending(id) => pretty"${PrettyStringCreator(id)} ASC"
-      case Descending(id) => pretty"${PrettyStringCreator(id)} DESC"
+      case Ascending(id) => pretty"${asPrettyString(id)} ASC"
+      case Descending(id) => pretty"${asPrettyString(id)} DESC"
     }.mkPrettyString(SEPARATOR)
   }
 
@@ -1135,16 +1135,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                                           maxLength: Option[Int]): PrettyString = {
     val left = if (direction == SemanticDirection.INCOMING) pretty"<-" else pretty"-"
     val right = if (direction == SemanticDirection.OUTGOING) pretty"->" else pretty"-"
-    val types = if (relTypes.isEmpty) pretty"" else relTypes.map(PrettyStringCreator(_)).mkPrettyString(":", "|", "")
+    val types = if (relTypes.isEmpty) pretty"" else relTypes.map(asPrettyString(_)).mkPrettyString(":", "|", "")
     val lengthDescr: PrettyString = (minLength, maxLength) match {
       case (1, Some(1)) => pretty""
       case (1, None) => pretty"*"
-      case (1, Some(m)) => pretty"*..${PrettyStringCreator.raw(m.toString)}"
-      case _ => pretty"*${PrettyStringCreator.raw(minLength.toString)}..${PrettyStringCreator.raw(maxLength.map(_.toString).getOrElse(""))}"
+      case (1, Some(m)) => pretty"*..${asPrettyString.raw(m.toString)}"
+      case _ => pretty"*${asPrettyString.raw(minLength.toString)}..${asPrettyString.raw(maxLength.map(_.toString).getOrElse(""))}"
     }
-    val relName = PrettyStringCreator(maybeRelName.getOrElse(""))
+    val relName = asPrettyString(maybeRelName.getOrElse(""))
     val relInfo = if (lengthDescr == pretty"" && relTypes.isEmpty && relName.prettifiedString.isEmpty) pretty"" else pretty"[$relName$types$lengthDescr]"
-    pretty"(${PrettyStringCreator(from)})$left$relInfo$right(${PrettyStringCreator(to)})"
+    pretty"(${asPrettyString(from)})$left$relInfo$right(${asPrettyString(to)})"
   }
 
   private def indexInfoString(idName: String,
@@ -1154,14 +1154,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               predicate: PrettyString,
                               caches: Seq[expressions.Expression]): PrettyString = {
     val uniqueStr = if (unique) pretty"UNIQUE " else pretty""
-    val propertyKeyString = propertyKeys.map(x => PrettyStringCreator(x.name)).mkPrettyString(SEPARATOR)
-    pretty"$uniqueStr${PrettyStringCreator(idName)}:${PrettyStringCreator(label.name)}($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
+    val propertyKeyString = propertyKeys.map(x => asPrettyString(x.name)).mkPrettyString(SEPARATOR)
+    pretty"$uniqueStr${asPrettyString(idName)}:${asPrettyString(label.name)}($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
   }
 
   private def aggregationInfo(groupingExpressions: Map[String, Expression],
                               aggregationExpressions: Map[String, Expression],
                               ordered: Seq[Expression] = Seq.empty): PrettyString = {
-    val sanitizedOrdered = ordered.map(PrettyStringCreator(_)).toIndexedSeq
+    val sanitizedOrdered = ordered.map(asPrettyString(_)).toIndexedSeq
     val groupingInfo = projectedExpressionInfo(groupingExpressions, sanitizedOrdered)
     val aggregatingInfo = projectedExpressionInfo(aggregationExpressions)
     (groupingInfo ++ aggregatingInfo).mkPrettyString(SEPARATOR)
@@ -1169,8 +1169,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def projectedExpressionInfo(expressions: Map[String, Expression], ordered: IndexedSeq[PrettyString] = IndexedSeq.empty): Seq[PrettyString] = {
     expressions.toList.map { case (k, v) =>
-      val key = PrettyStringCreator(k)
-      val value = PrettyStringCreator(v)
+      val key = asPrettyString(k)
+      val value = asPrettyString(v)
       (key, value)
     }.sortBy {
       case (key, _) if ordered.contains(key) => ordered.indexOf(key)
@@ -1181,19 +1181,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def keyNamesInfo(keys: Seq[String]): PrettyString = {
     keys
-      .map(PrettyStringCreator(_))
+      .map(asPrettyString(_))
       .mkPrettyString(SEPARATOR)
   }
 
   private def cachesSuffix(caches: Seq[expressions.Expression]): PrettyString = {
-    if (caches.isEmpty) pretty"" else caches.map(PrettyStringCreator(_)).mkPrettyString(", ", ", ", "")
+    if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
   private def extractDatabaseArguments(action: AdminAction,
                                        database: GraphScope,
                                        qualifier: PrivilegeQualifier,
                                        roleName: Either[String, Parameter]): Seq[PrettyString] =
-    Seq(PrettyStringCreator.raw(action.name), extractDbScope(database)) ++ extractUserQualifier(qualifier).toSeq :+ getRoleInfo(roleName)
+    Seq(asPrettyString.raw(action.name), extractDbScope(database)) ++ extractUserQualifier(qualifier).toSeq :+ getRoleInfo(roleName)
 
   private def getNameArgumentForLabelInAdministrationCommand(label: String, name: Either[String, Parameter]): PrettyString = {
     label match {
@@ -1205,9 +1205,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, PrettyString, PrettyString) = {
     val dbName = extractGraphScope(dbScope)
-    val qualifierText = PrettyStringCreator.raw(Prettifier.extractQualifierPart(qualifier))
+    val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
     val resourceText = resource match {
-      case PropertyResource(name) => pretty"PROPERTY ${PrettyStringCreator(name)}"
+      case PropertyResource(name) => pretty"PROPERTY ${asPrettyString(name)}"
       case AllPropertyResource() => pretty"ALL PROPERTIES"
     }
     (dbName, qualifierText, resourceText)
@@ -1221,7 +1221,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractLabelPart(resource: ActionResource): Option[PrettyString] = resource match {
-    case LabelResource(name) => Some(pretty"LABEL ${PrettyStringCreator(name)}")
+    case LabelResource(name) => Some(pretty"LABEL ${asPrettyString(name)}")
     case AllLabelResource()  => Some(pretty"ALL LABELS")
     case NoResource()        => None
     case _                   => Some(pretty"<unknown>")
@@ -1241,8 +1241,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def escapeName(name: Either[String, Parameter]): PrettyString = name match {
-    case scala.util.Left(s) => PrettyStringCreator(s)
-    case scala.util.Right(p) => pretty"$$${PrettyStringCreator(p.name)}"
+    case scala.util.Left(s) => asPrettyString(s)
+    case scala.util.Right(p) => pretty"$$${asPrettyString(p.name)}"
   }
 
   private def getUserInfo(user: Either[String, Parameter]): PrettyString = pretty"USER ${escapeName(user)}"
@@ -1251,29 +1251,29 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def indexSchemaInfo(nameOption: Option[String], label: LabelName, properties: Seq[PropertyKeyName]): PrettyString = {
     val name = nameOption match {
-      case Some(n) => pretty" ${PrettyStringCreator(n)}"
+      case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
-    val propertyString = properties.map(PrettyStringCreator(_)).mkPrettyString("(", SEPARATOR, ")")
-    val prettyLabel = PrettyStringCreator(label.name)
+    val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
+    val prettyLabel = asPrettyString(label.name)
     pretty"INDEX$name FOR (:$prettyLabel) ON $propertyString"
   }
 
   private def constraintInfo(nameOption: Option[String], entityOption: Option[String], entityType: Either[LabelName, RelTypeName], properties: Seq[Property], assertion: Either[String, String]): PrettyString = {
     val name = nameOption match {
-      case Some(n) => pretty" ${PrettyStringCreator(n)}"
+      case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
     val (leftAssertion, rightAssertion) = assertion match {
-      case scala.util.Left(a) => (PrettyStringCreator.raw(a), pretty"")
-      case scala.util.Right(a) => (pretty"",PrettyStringCreator.raw(s" $a"))
+      case scala.util.Left(a) => (asPrettyString.raw(a), pretty"")
+      case scala.util.Right(a) => (pretty"",asPrettyString.raw(s" $a"))
     }
-    val propertyString = properties.map(PrettyStringCreator(_)).mkPrettyString("(", SEPARATOR, ")")
-    val entity = entityOption.map(PrettyStringCreator(_)).getOrElse(pretty"")
+    val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
+    val entity = entityOption.map(asPrettyString(_)).getOrElse(pretty"")
 
     val entityInfo = entityType match {
-      case scala.util.Left(label) => pretty"($entity:${PrettyStringCreator(label)})"
-      case scala.util.Right(relType) => pretty"()-[$entity:${PrettyStringCreator(relType)}]-()"
+      case scala.util.Left(label) => pretty"($entity:${asPrettyString(label)})"
+      case scala.util.Right(relType) => pretty"()-[$entity:${asPrettyString(relType)}]-()"
     }
     pretty"CONSTRAINT$name ON $entityInfo ASSERT $leftAssertion$propertyString$rightAssertion"
   }
@@ -1283,6 +1283,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               removeOtherProps: Boolean): PrettyString = {
     val setString = if (removeOtherProps) pretty"=" else pretty"+="
 
-    pretty"$idName $setString ${PrettyStringCreator(expression)}"
+    pretty"$idName $setString ${asPrettyString(expression)}"
   }
 }

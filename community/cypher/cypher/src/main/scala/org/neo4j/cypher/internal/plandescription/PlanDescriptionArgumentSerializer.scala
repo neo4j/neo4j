@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringMaker
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 
 object PlanDescriptionArgumentSerializer {
 

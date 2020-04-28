@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.NoChildren
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionImpl
 import org.neo4j.cypher.internal.plandescription.PrettyString
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
 import org.neo4j.cypher.internal.plandescription.SingleChild
 import org.neo4j.cypher.internal.plandescription.TwoChildren
+import org.neo4j.cypher.internal.plandescription.asPrettyString
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.scalatest.matchers.MatchResult
@@ -390,7 +390,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
 
   override def toPlanDescription: InternalPlanDescription = {
     val nameDesc = name.fold("???")(_.expectedName)
-    val variablesDesc = variables.fold(Set.empty[PrettyString])(_.expected.map(PrettyStringCreator.raw))
+    val variablesDesc = variables.fold(Set.empty[PrettyString])(_.expected.map(asPrettyString.raw))
     val lhsDesc = lhs.map(_.toPlanDescription)
     val rhsDesc = rhs.map(_.toPlanDescription)
     val estRowArg = estimatedRows.map(m => EstimatedRows(m.expectedValue)).toSeq
@@ -399,9 +399,9 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val memoryArg = memory.map(m => Memory(m.expectedValue)).toSeq
     val globalMemoryArg = memory.map(m => GlobalMemory(m.expectedValue)).toSeq
     val dbHitsArg = dbHits.map(m => DbHits(m.expectedValue)).toSeq
-    val orderArg = order.map(m => PrettyStringCreator.order(m.expected)).toSeq
+    val orderArg = order.map(m => asPrettyString.order(m.expected)).toSeq
     val otherArgs = other
-      .map(_.expected.toSeq.map(str => Details(PrettyStringCreator(JustForToStringExpression(str)))))
+      .map(_.expected.toSeq.map(str => Details(asPrettyString(JustForToStringExpression(str)))))
       .getOrElse(Seq.empty)
 
     val children = (lhsDesc, rhsDesc) match {

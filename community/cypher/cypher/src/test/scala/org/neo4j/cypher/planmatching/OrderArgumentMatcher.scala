@@ -22,7 +22,7 @@ package org.neo4j.cypher.planmatching
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator
+import org.neo4j.cypher.internal.plandescription.asPrettyString
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -32,7 +32,7 @@ import org.scalatest.matchers.Matcher
 case class OrderArgumentMatcher(expected: ProvidedOrder) extends Matcher[InternalPlanDescription] {
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val orderArgs = plan.arguments.collect { case o:Order => o }
-    val expectedAsOrder = PrettyStringCreator.order(expected)
+    val expectedAsOrder = asPrettyString.order(expected)
     MatchResult(
       matches = orderArgs.contains(expectedAsOrder),
       rawFailureMessage = s"Expected ${plan.name} to have order $expectedAsOrder but got $orderArgs.",

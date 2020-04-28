@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.plandescription.PrettyStringCreator.PrettyStringInterpolator
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PrettyStringCreatorTest extends CypherFunSuite {
+class asPrettyStringTest extends CypherFunSuite {
 
   test("should interpolate just literal string") {
-    pretty"Foo" should equal(PrettyStringCreator("Foo"))
+    pretty"Foo" should equal(asPrettyString("Foo"))
   }
 
   test("should interpolate with one argument") {
-    val p1 = PrettyStringCreator("Bar")
-    pretty"Foo$p1" should equal(PrettyStringCreator("FooBar"))
-    pretty"${p1}Foo" should equal(PrettyStringCreator("BarFoo"))
+    val p1 = asPrettyString("Bar")
+    pretty"Foo$p1" should equal(asPrettyString("FooBar"))
+    pretty"${p1}Foo" should equal(asPrettyString("BarFoo"))
   }
 
   test("should interpolate with two argument") {
-    val p1 = PrettyStringCreator("Bar")
-    val p2 = PrettyStringCreator("Baz")
-    pretty"${p1}Foo$p2" should equal(PrettyStringCreator("BarFooBaz"))
-    pretty"Foo$p1$p2" should equal(PrettyStringCreator("FooBarBaz"))
+    val p1 = asPrettyString("Bar")
+    val p2 = asPrettyString("Baz")
+    pretty"${p1}Foo$p2" should equal(asPrettyString("BarFooBaz"))
+    pretty"Foo$p1$p2" should equal(asPrettyString("FooBarBaz"))
   }
 }
