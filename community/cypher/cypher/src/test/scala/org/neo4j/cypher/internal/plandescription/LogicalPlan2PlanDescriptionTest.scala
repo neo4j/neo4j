@@ -228,6 +228,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.anonVar
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
@@ -249,6 +250,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 object LogicalPlan2PlanDescriptionTest {
+
+  def anonVar(number: String) = s"anon_$number"
+
   def details(infos: Seq[String]): Details = Details(infos.map(asPrettyString.raw))
 
   def details(info: String): Details = Details(asPrettyString.raw(info))
@@ -297,7 +301,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), EstimatedRows(1), Order(asPrettyString.raw("anon_111 ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("anon_111")),
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), EstimatedRows(1), Order(asPrettyString.raw(s"${anonVar("111")} ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set(anonVar("111"))),
       validateAllArgs = true)
 
     assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3),
@@ -313,7 +317,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("anon_111"), Order(asPrettyString.raw("anon_111 ASC"))), Set("anon_111")))
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), Order(asPrettyString.raw(s"${anonVar("111")} ASC"))), Set(anonVar("111"))))
 
     assertGood(
       attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
@@ -327,7 +331,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(NodeByLabelScan("  NODE123", label("X"), Set.empty), 33.0),
-      planDescription(id, "NodeByLabelScan", NoChildren, Seq(details("anon_123:X")), Set("anon_123")))
+      planDescription(id, "NodeByLabelScan", NoChildren, Seq(details(s"${anonVar("123")}:X")), Set(anonVar("123"))))
   }
 
   test("NodeByIdSeek") {
@@ -337,7 +341,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(NodeByIdSeek("  NODE11", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty), 333.0),
-      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("anon_11 WHERE id(anon_11) IN [1,32]")), Set("anon_11")))
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details(anonVar(s"11 WHERE id(${anonVar("11")}) IN [1,32]"))), Set(anonVar("11"))))
   }
 
   test("IndexSeek") {
@@ -477,7 +481,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details("(a)-[r]-(b) WHERE id(r) = 1")), Set("r", "a", "b", "x")))
 
     assertGood(attach(UndirectedRelationshipByIdSeek("  REL2", ManySeekableArgs(number("1")), "a", "  NODE32", Set("x")), 70.0),
-      planDescription(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details("(a)-[anon_2]-(anon_32) WHERE id(anon_2) = 1")), Set("anon_2", "a", "anon_32", "x")))
+      planDescription(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details(s"(a)-[${anonVar("2")}]-(${anonVar("32")}) WHERE id(${anonVar("2")}) = 1")), Set(anonVar("2"), "a", anonVar("32"), "x")))
   }
 
   test("LoadCSV") {
@@ -487,7 +491,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(LoadCSV(lhsLP, StringLiteral("file:///tmp/foo.csv")(pos), "  UNNAMED2", NoHeaders, None, legacyCsvQuoteEscaping = false, csvBufferSize = 2), 27.6),
-      planDescription(id, "LoadCSV", SingleChild(lhsPD), Seq(details("anon_2")), Set("anon_2", "a")))
+      planDescription(id, "LoadCSV", SingleChild(lhsPD), Seq(details(anonVar("2"))), Set(anonVar("2"), "a")))
   }
 
   test("Input") {
@@ -503,7 +507,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName:LabelName2) ) AS x")), Set("x")))
 
     assertGood(attach(NodeCountFromCountStore("  UNNAMED123", List(Some(label("LabelName"))), Set.empty), 54.2),
-      planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName) ) AS anon_123")), Set("anon_123")))
+      planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details(s"count( (:LabelName) ) AS ${anonVar("123")}")), Set(anonVar("123"))))
   }
 
   test("ProcedureCall") {
@@ -525,7 +529,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( ()-[:LIKES|LOVES]->() ) AS x")), Set("x")))
 
     assertGood(attach(RelationshipCountFromCountStore("  UNNAMED122", None, Seq(RelTypeName("LIKES")(pos)), None, Set.empty), 54.2),
-      planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( ()-[:LIKES]->() ) AS anon_122")), Set("anon_122")))
+      planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details(s"count( ()-[:LIKES]->() ) AS ${anonVar("122")}")), Set(anonVar("122"))))
 
     assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), None, Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( (:StartLabel)-[:LIKES|LOVES]->() ) AS x")), Set("x")))
@@ -696,7 +700,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), None)), Seq(CreateRelationship("  REL67", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, None))), 32.2),
-      planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", "(x)<-[anon_67:R]-(y)"))), Set("a", "x", "anon_67")))
+      planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", s"(x)<-[${anonVar("67")}:R]-(y)"))), Set("a", "x", anonVar("67"))))
 
     assertGood(
       attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label1"), label("Label2")), None)), Seq(CreateRelationship("r", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, None))), 32.2),
@@ -752,7 +756,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Expand") {
     assertGood(attach(Expand(lhsLP, "a", OUTGOING, Seq.empty, "  UNNAMED4", "r1", ExpandAll), 95.0),
-      planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)-[r1]->(anon_4)")), Set("a", "anon_4", "r1")))
+      planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details(s"(a)-[r1]->(${anonVar("4")})")), Set("a", anonVar("4"), "r1")))
 
     assertGood(attach(Expand(lhsLP, "a", INCOMING, Seq(RelTypeName("R")(pos)), "y", "r1", ExpandAll), 95.0),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)<-[r1:R]-(y)")), Set("a", "y", "r1")))
@@ -770,7 +774,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[r1:R1|R2]-(y)")), Set("a", "y", "r1")))
 
     assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "y", "  UNNAMED1", ExpandInto), 113.0),
-      planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[anon_1:R1|R2]-(y)")), Set("a", "y", "anon_1")))
+      planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details(s"(a)-[${anonVar("1")}:R1|R2]-(y)")), Set("a", "y", anonVar("1"))))
   }
 
   test("Limit") {
@@ -797,7 +801,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // Without predicate
     assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(RelTypeName("R")(pos)), "  NODE5", "r", ExpandAll, None), 12.0),
-      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[r:R]-(anon_5)")), Set("a", "anon_5", "r")))
+      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details(s"(a)<-[r:R]-(${anonVar("5")})")), Set("a", anonVar("5"), "r")))
 
     // With predicate and no relationship types
     assertGood(attach(OptionalExpand(lhsLP, "a", OUTGOING, Seq(), "to", "r", ExpandAll, Some(predicate1)), 12.0),
@@ -817,7 +821,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x")))
 
     assertGood(attach(Projection(lhsLP, Map("x" -> varFor("  REL42"), "n.prop" -> prop("n", "prop"))), 2345.0),
-      planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(Seq("anon_42 AS x", "n.prop AS `n.prop`"))), Set("a", "x", "`n.prop`")))
+      planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(Seq(s"${anonVar("42")} AS x", "n.prop AS `n.prop`"))), Set("a", "x", "`n.prop`")))
 
     // Projection should show up in the order they were specified in
     assertGood(attach(Projection(lhsLP, Map("n.prop" -> prop("n", "prop"), "x" -> varFor("y"))), 2345.0),
@@ -845,15 +849,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // without: predicates, path name, relationship type
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("  NODE23", "y"), SemanticDirection.BOTH, Seq.empty, VarPatternLength(2, Some(4))), single = true)(null), Seq.empty), 2345.0),
-      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details("(anon_23)-[r*2..4]-(y)")), Set("r", "a", "anon_23", "y")))
+      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(${anonVar("23")})-[r*2..4]-(y)")), Set("r", "a", anonVar("23"), "y")))
 
     // with: predicates, path name, relationship type
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(Some("  UNNAMED12"), PatternRelationship("r", ("a", "y"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, Some(4))), single = true)(null), Seq(predicate)), 2345.0),
-      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details("anon_12 = (a)-[r:R*2..4]-(y) WHERE r.prop = 32")), Set("r", "a", "y", "anon_12")))
+      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE r.prop = 32")), Set("r", "a", "y", anonVar("12"))))
 
     // with: predicates, UNNAMED variables, relationship type, unbounded max length
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("a", "  UNNAMED2"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, None)), single = true)(null), Seq(predicate)), 2345.0),
-      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details("(a)-[r:R*2..]-(anon_2) WHERE r.prop = 32")), Set("r", "a", "anon_2")))
+      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = 32")), Set("r", "a", anonVar("2"))))
   }
 
   test("MergeCreate") {
@@ -866,7 +870,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "MergeCreateNode", SingleChild(lhsPD), Seq(details("x")), Set("a", "x")))
 
     assertGood(attach(MergeCreateRelationship(lhsLP, "r", "x", RelTypeName("R")(pos), "  NODE90", Some(properties)), 113.0),
-      planDescription(id, "MergeCreateRelationship", SingleChild(lhsPD), Seq(details("(x)-[r:R]->(anon_90)")), Set("a", "r", "x", "anon_90")))
+      planDescription(id, "MergeCreateRelationship", SingleChild(lhsPD), Seq(details(s"(x)-[r:R]->(${anonVar("90")})")), Set("a", "r", "x", anonVar("90"))))
   }
 
   test("Optional") {
@@ -910,7 +914,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With unnamed variables, without predicates
     assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "  UNNAMED123", "  UNNAMED99", VarPatternLength(1, Some(1)), ExpandAll), 1.0),
-      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[anon_99:LIKES|LOVES]-(anon_123)")), Set("a", "anon_99", "anon_123")))
+      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details(s"(a)<-[${anonVar("99")}:LIKES|LOVES]-(${anonVar("123")})")), Set("a", anonVar("99"), anonVar("123"))))
 
     // With nodePredicate and relationshipPredicate
     assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
