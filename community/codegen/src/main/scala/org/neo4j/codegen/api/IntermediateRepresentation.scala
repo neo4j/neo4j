@@ -691,7 +691,7 @@ object IntermediateRepresentation {
     ArrayLiteral(typeRef(t), values.toArray)
 
   def arrayLoad(array: IntermediateRepresentation, offset: Int): IntermediateRepresentation =
-    ArrayLoad(array, constant(offset))
+    arrayLoad(array, constant(offset))
 
   def arrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation): IntermediateRepresentation =
     ArrayLoad(array, offset)
