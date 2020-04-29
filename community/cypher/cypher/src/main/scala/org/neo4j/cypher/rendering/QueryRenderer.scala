@@ -56,13 +56,15 @@ object QueryRenderer {
       alwaysBacktick = true,
       preferSingleQuotes = false
     ),
-    extension = clauseExtension
+    extension = clauseExtension,
+    useInCommands = false
   )
   private val renderPretty = renderStrict.copy(
     expr = renderStrict.expr.copy(
       alwaysParens = false,
       alwaysBacktick = false
-    )
+    ),
+    useInCommands = true
   )
 
   private val pos = InputPosition.NONE

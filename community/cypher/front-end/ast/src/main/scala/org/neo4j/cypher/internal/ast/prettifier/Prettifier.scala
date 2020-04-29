@@ -165,7 +165,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 //noinspection DuplicatedCode
 case class Prettifier(
   expr: ExpressionStringifier,
-  extension: Prettifier.ClausePrettifier = Prettifier.EmptyExtension
+  extension: Prettifier.ClausePrettifier = Prettifier.EmptyExtension,
+  useInCommands: Boolean = true
 ) {
 
   private val NL = System.lineSeparator()
@@ -447,7 +448,7 @@ case class Prettifier(
   }
 
   private def asString(use: Option[GraphSelection]) = {
-    use.map(u => base.dispatch(u) + NL).getOrElse("")
+    use.filter(_ => useInCommands).map(u => base.dispatch(u) + NL).getOrElse("")
   }
 
   private case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
