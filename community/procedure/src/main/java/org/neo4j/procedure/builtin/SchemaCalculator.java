@@ -157,7 +157,7 @@ public class SchemaCalculator
             StringBuilder labelsConcatenator = new StringBuilder();
             for ( String item : labelNames )
             {
-                labelsConcatenator.append( ":`" ).append( item ).append( "`" );
+                labelsConcatenator.append( ":`" ).append( item ).append( '`' );
             }
             String labels = labelsConcatenator.toString();
 

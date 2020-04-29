@@ -161,7 +161,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         }
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
-        builder.append( "]" ).append( fitInProgress( progress ) );
+        builder.append( ']' ).append( fitInProgress( progress ) );
     }
 
     private static String fitInProgress( long value )

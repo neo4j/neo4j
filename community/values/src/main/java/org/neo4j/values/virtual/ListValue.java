@@ -615,7 +615,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
+        StringBuilder sb = new StringBuilder().append( getTypeName() ).append( '{' );
         int i = 0;
         for ( ; i < size() - 1; i++ )
         {

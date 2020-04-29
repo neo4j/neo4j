@@ -178,11 +178,11 @@ public final class Exceptions
 
     public static String stringify( Thread thread, StackTraceElement[] elements )
     {
-        StringBuilder builder = new StringBuilder(
-                "\"" + thread.getName() + "\"" + (thread.isDaemon() ? " daemon" : "") +
-                " prio=" + thread.getPriority() +
-                " tid=" + thread.getId() +
-                " " + thread.getState().name().toLowerCase() + "\n" );
+        StringBuilder builder = new StringBuilder()
+                .append( '"' ).append( thread.getName() ).append( '"' ).append( thread.isDaemon() ? " daemon" : "" )
+                .append( " prio=" ).append( thread.getPriority() )
+                .append( " tid=" ).append( thread.getId() )
+                .append( ' ' ).append( thread.getState().name().toLowerCase() ).append( '\n' );
         builder.append( "   " ).append( State.class.getName() ).append( ": " )
                 .append( thread.getState().name().toUpperCase() ).append( '\n' );
         for ( StackTraceElement element : elements )
@@ -199,8 +199,8 @@ public final class Exceptions
             }
             else
             {
-                builder.append( "(" ).append( element.getFileName() ).append( ":" ).append( element.getLineNumber() )
-                        .append( ")" );
+                builder.append( '(' ).append( element.getFileName() ).append( ':' ).append( element.getLineNumber() )
+                        .append( ')' );
             }
             builder.append( "\n" );
         }

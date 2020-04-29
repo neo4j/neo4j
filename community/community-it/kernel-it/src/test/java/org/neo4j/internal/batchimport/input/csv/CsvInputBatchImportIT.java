@@ -249,12 +249,15 @@ class CsvInputBatchImportIT
             for ( InputEntity node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                StringBuilder sb = new StringBuilder( node.id() + "," );
+                StringBuilder sb = new StringBuilder().append( node.id() ).append( ',' );
                 for ( int i = 0; i < node.propertyCount(); i++ )
                 {
-                    sb.append( node.propertyValue( i ) + "," );
+                    sb.append( node.propertyValue( i ) ).append( ',' );
                 }
-                sb.append( csvLabels != null && !csvLabels.isEmpty() ? csvLabels : "" );
+                if ( csvLabels != null && !csvLabels.isEmpty() )
+                {
+                    sb.append( csvLabels );
+                }
                 println( writer, sb.toString() );
             }
         }

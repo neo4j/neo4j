@@ -60,7 +60,7 @@ public class MediaTypeNotSupportedException extends WebApplicationException
             message.append( "Requested formats:\n" );
             for ( int i = 0; i < requested.length; i++ )
             {
-                message.append( " " )
+                message.append( ' ' )
                         .append( i )
                         .append( ". " );
                 message.append( requested[i] )

@@ -445,7 +445,7 @@ public class EntityUpdates
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( entityId );
+        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( '[' ).append( entityId );
         result.append( ", entityTokensBefore:" ).append( Arrays.toString( entityTokensBefore ) );
         result.append( ", entityTokensAfter:" ).append( Arrays.toString( entityTokensAfter ) );
         knownProperties.forEachKeyValue( ( key, propertyValue ) ->

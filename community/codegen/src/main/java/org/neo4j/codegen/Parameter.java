@@ -60,7 +60,7 @@ public class Parameter
     {
         result.append( "Parameter[ " );
         type.writeTo( result );
-        return result.append( " " ).append( name ).append( " ]" );
+        return result.append( ' ' ).append( name ).append( " ]" );
     }
 
     public TypeReference type()

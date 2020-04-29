@@ -179,10 +179,10 @@ public class RecordAssert extends AbstractAssert<RecordAssert,RecordChangeSet>
                     {
                         break;
                     }
-                    arrow.append( "-" );
+                    arrow.append( '-' );
                 }
                 return String.format( "Record fields don't match.\n" + "Expected: %s\n" + "Actual:   %s\n" + "          %s", expected, actual,
-                        arrow.append( "^" ).toString() );
+                        arrow.append( '^' ).toString() );
             }
         };
     }

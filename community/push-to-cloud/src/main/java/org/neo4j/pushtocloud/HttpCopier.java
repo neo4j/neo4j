@@ -121,7 +121,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private static String base64Encode( String username, char[] password )
     {
-        String plainToken = new StringBuilder( username ).append( ":" ).append( password ).toString();
+        String plainToken = new StringBuilder( username ).append( ':' ).append( password ).toString();
         return Base64.getEncoder().encodeToString( plainToken.getBytes() );
     }
 

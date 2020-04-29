@@ -399,7 +399,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             }
         }
 
-        buf.append( "]" );
+        buf.append( ']' );
         return buf.toString();
     }
 

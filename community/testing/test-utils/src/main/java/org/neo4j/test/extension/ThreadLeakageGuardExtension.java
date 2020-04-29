@@ -242,7 +242,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
         while ( (group = group.getParent()) != null )
         {
-            str.append( ":" ).append( group.getName() );
+            str.append( ':' ).append( group.getName() );
         }
 
         return str.toString();

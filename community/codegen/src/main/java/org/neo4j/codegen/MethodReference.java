@@ -147,12 +147,12 @@ public class MethodReference
     {
         StringBuilder result = new StringBuilder().append( "MethodReference[" );
         writeTo( result );
-        return result.append( "]" ).toString();
+        return result.append( ']' ).toString();
     }
 
     void writeTo( StringBuilder result )
     {
         owner.writeTo( result );
-        result.append( "#" ).append( name ).append( "(...)" );
+        result.append( '#' ).append( name ).append( "(...)" );
     }
 }

@@ -140,7 +140,7 @@ public abstract class Neo4jAlgoTestCase
         {
             if ( builder.length() > 0 )
             {
-                builder.append( "," );
+                builder.append( ',' );
             }
             builder.append( node.getProperty( SimpleGraphBuilder.KEY_ID ) );
         }

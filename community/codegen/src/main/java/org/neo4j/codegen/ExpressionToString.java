@@ -43,7 +43,7 @@ class ExpressionToString implements ExpressionVisitor
             argument.accept( this );
             sep = ", ";
         }
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -59,7 +59,7 @@ class ExpressionToString implements ExpressionVisitor
             argument.accept( this );
             sep = ", ";
         }
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -74,7 +74,7 @@ class ExpressionToString implements ExpressionVisitor
         {
             variable.type().writeTo( result );
         }
-        result.append( ", name=" ).append( variable.name() ).append( "}" );
+        result.append( ", name=" ).append( variable.name() ).append( '}' );
     }
 
     @Override
@@ -84,7 +84,7 @@ class ExpressionToString implements ExpressionVisitor
         array.accept( this );
         result.append( ", index=" );
         index.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -96,7 +96,7 @@ class ExpressionToString implements ExpressionVisitor
         index.accept( this );
         result.append( ", value=" );
         value.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -104,7 +104,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "length{array=" );
         array.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -112,26 +112,26 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "get{target=" );
         target.accept( this );
-        result.append( ", field=" ).append( field.name() ).append( "}" );
+        result.append( ", field=" ).append( field.name() ).append( '}' );
     }
 
     @Override
     public void constant( Object value )
     {
-        result.append( "constant(" ).append( value ).append( ")" );
+        result.append( "constant(" ).append( value ).append( ')' );
     }
 
     @Override
     public void getStatic( FieldReference field )
     {
         result.append( "get{class=" ).append( field.owner() );
-        result.append( ", field=" ).append( field.name() ).append( "}" );
+        result.append( ", field=" ).append( field.name() ).append( '}' );
     }
 
     @Override
     public void loadThis( String sourceName )
     {
-        result.append( "load{" ).append( sourceName ).append( "}" );
+        result.append( "load{" ).append( sourceName ).append( '}' );
     }
 
     @Override
@@ -139,7 +139,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "new{type=" );
         type.writeTo( result );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -147,7 +147,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "not(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -159,7 +159,7 @@ class ExpressionToString implements ExpressionVisitor
         onTrue.accept( this );
         result.append( ", onFalse=" );
         onFalse.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -169,7 +169,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( ", " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -179,7 +179,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( ", " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -187,7 +187,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "isNull(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -195,7 +195,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "notNull(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -218,7 +218,7 @@ class ExpressionToString implements ExpressionVisitor
             expression.accept( this );
             sep = ", ";
         }
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -228,7 +228,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " + " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -238,7 +238,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " > " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -248,7 +248,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " >= " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -258,7 +258,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " < " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -268,7 +268,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " <= " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -278,7 +278,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " - " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -288,7 +288,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " * " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     private void div( Expression lhs, Expression rhs )
@@ -297,7 +297,7 @@ class ExpressionToString implements ExpressionVisitor
         lhs.accept( this );
         result.append( " / " );
         rhs.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -307,7 +307,7 @@ class ExpressionToString implements ExpressionVisitor
         type.writeTo( result );
         result.append( ", expression=" );
         expression.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -317,7 +317,7 @@ class ExpressionToString implements ExpressionVisitor
         type.writeTo( result );
         result.append( ", expression=" );
         expression.accept( this );
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -333,7 +333,7 @@ class ExpressionToString implements ExpressionVisitor
             constant.accept( this );
             sep = ", ";
         }
-        result.append( "}" );
+        result.append( '}' );
     }
 
     @Override
@@ -341,7 +341,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "newArray{type=" );
         type.writeTo( result );
-        result.append( ", size=" ).append( size ).append( "}" );
+        result.append( ", size=" ).append( size ).append( '}' );
     }
 
     @Override
@@ -356,7 +356,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "pop(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -364,7 +364,7 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "box(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 
     @Override
@@ -372,6 +372,6 @@ class ExpressionToString implements ExpressionVisitor
     {
         result.append( "unbox(" );
         expression.accept( this );
-        result.append( ")" );
+        result.append( ')' );
     }
 }
