@@ -30,9 +30,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
@@ -61,12 +61,11 @@ public class LogsUpgrader
     {
         Config config = Config.defaults( GraphDatabaseSettings.read_only, true );
         CommandReaderFactory commandReaderFactory = storageEngineFactory.commandReaderFactory();
-        try ( TransactionMetaDataStore txStore = storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, tracer );
+        try ( TransactionMetaDataStore store = storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, tracer );
               PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "LogsUpgrade" ) )
         {
-            StoreId storeId = storageEngineFactory.storeId( databaseLayout, pageCache, cursorTracer );
-            TransactionLogsMigrator logMigrator = new TransactionLogsMigrator(
-                    fs, txStore, storeId, txStore, commandReaderFactory, tracer );
+            TransactionLogInitializer logInitializer = new TransactionLogInitializer(
+                    fs, store, commandReaderFactory, tracer );
 
             File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
             File legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
@@ -86,7 +85,7 @@ public class LogsUpgrader
                         fs.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
                     }
                 }
-                logMigrator.migrateLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                logInitializer.initializeExistingLogFiles( dbDirectoryLayout, transactionLogsDirectory );
                 if ( filesNeedsToMove )
                 {
                     for ( File legacyFile : legacyFiles )
@@ -97,7 +96,7 @@ public class LogsUpgrader
             }
             else
             {
-                logMigrator.createEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                logInitializer.initializeEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
             }
         }
         catch ( Exception exception )

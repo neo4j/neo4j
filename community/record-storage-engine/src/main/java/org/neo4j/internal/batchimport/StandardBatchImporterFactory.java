@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 
 @ServiceProvider
 public class StandardBatchImporterFactory extends BatchImporterFactory

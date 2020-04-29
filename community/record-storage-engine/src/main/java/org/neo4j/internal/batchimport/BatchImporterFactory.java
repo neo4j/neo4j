@@ -35,6 +35,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 
 @Service
 public abstract class BatchImporterFactory implements NamedService

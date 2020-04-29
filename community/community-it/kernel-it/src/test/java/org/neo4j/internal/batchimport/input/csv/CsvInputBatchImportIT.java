@@ -19,10 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -54,7 +50,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.csv.reader.Configuration;
@@ -81,6 +79,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
@@ -143,11 +142,10 @@ class CsvInputBatchImportIT
                 .build();
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer =
-                    new ParallelBatchImporter( databaseLayout, fileSystem, null, PageCacheTracer.NULL,
-                            smallBatchSizeConfig(), NullLogService.getInstance(),
-                            ExecutionMonitors.invisible(), EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY,
-                            TransactionLogsInitializer.INSTANCE, INSTANCE );
+            BatchImporter importer = new ParallelBatchImporter(
+                    databaseLayout, fileSystem, null, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitors.invisible(),
+                    EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer(),
+                    INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 
