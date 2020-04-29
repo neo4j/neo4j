@@ -135,7 +135,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder( simpleName() + '[' );
+        StringBuilder buf = new StringBuilder().append( simpleName() ).append( '[' );
         buf.append( getId() ).append( ',' ).append( inUse() ? "in" : "no" ).append( " use" );
         buf.append( ",nameId=" ).append( nameId );
         buf.append( ",internal=" ).append( internal );

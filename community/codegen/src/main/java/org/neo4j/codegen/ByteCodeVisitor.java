@@ -238,7 +238,7 @@ interface ByteCodeVisitor
                         frame.append( prefix ).append( Objects.toString( stack[i] ) );
                         prefix = ", ";
                     }
-                    println( frame.append( "]" ) );
+                    println( frame.append( ']' ) );
                 }
 
                 @Override

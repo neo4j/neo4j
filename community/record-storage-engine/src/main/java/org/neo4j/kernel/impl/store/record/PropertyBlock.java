@@ -212,7 +212,7 @@ public class PropertyBlock
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
-                    StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( "[" );
+                    StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( '[' );
                     for ( int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++ )
                     {
                         if ( i != 0 )

@@ -221,7 +221,7 @@ public class Paths
                     {
                         if ( builder.length() > 0 )
                         {
-                            builder.append( "," );
+                            builder.append( ',' );
                         }
                         builder.append( value );
                     }
@@ -236,20 +236,20 @@ public class Paths
                 StringBuilder builder = new StringBuilder();
                 if ( direction.equals( Direction.INCOMING ) )
                 {
-                    builder.append( "<" );
+                    builder.append( '<' );
                 }
                 builder.append( "-[" + (relId ? relationship.getId() : "") );
                 String representation = representation( relationship );
                 if ( relId && !representation.equals( "" ) )
                 {
-                    builder.append( "," );
+                    builder.append( ',' );
                 }
                 builder.append( representation );
                 builder.append( "]-" );
 
                 if ( direction.equals( Direction.OUTGOING ) )
                 {
-                    builder.append( ">" );
+                    builder.append( '>' );
                 }
                 return builder.toString();
             }

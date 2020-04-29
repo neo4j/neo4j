@@ -93,27 +93,27 @@ class ClassSourceWriter implements ClassEmitter
             }
             else
             {
-                target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
+                target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( ' ' );
                 typeParameters( target, signature );
                 target.append( signature.declaringClass().name() );
             }
         }
         else
         {
-            target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
+            target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( ' ' );
             typeParameters( target, signature );
-            target.append( signature.returnType().fullName() ).append( " " ).append( signature.name() );
+            target.append( signature.returnType().fullName() ).append( ' ' ).append( signature.name() );
         }
-        target.append( "(" );
+        target.append( '(' );
         String prefix = " ";
         for ( Parameter parameter : signature.parameters() )
         {
-            target.append( prefix ).append( parameter.type().fullName() ).append( " " ).append( parameter.name() );
+            target.append( prefix ).append( parameter.type().fullName() ).append( ' ' ).append( parameter.name() );
             prefix = ", ";
         }
         if ( prefix.length() > 1 )
         {
-            target.append( " " );
+            target.append( ' ' );
         }
         target.append( ')' );
         String sep = " throws ";

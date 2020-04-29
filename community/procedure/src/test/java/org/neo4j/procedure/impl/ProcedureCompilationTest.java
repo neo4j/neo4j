@@ -652,7 +652,7 @@ public class ProcedureCompilationTest
                     aggregator.append( ", " );
                 }
                 first = false;
-                aggregator.append( in ).append( " " ).append( string );
+                aggregator.append( in ).append( ' ' ).append( string );
             }
 
             public String result()

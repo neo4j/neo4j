@@ -424,7 +424,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         MapWriter( StringBuilder builder, String quoteMark )
         {
             super( builder, quoteMark );
-            builder.append( "{" );
+            builder.append( '{' );
         }
 
         @Override
@@ -465,7 +465,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         @Override
         public void done()
         {
-            builder.append( "}" );
+            builder.append( '}' );
         }
     }
 
@@ -476,7 +476,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         ListWriter( StringBuilder builder, String quoteMark )
         {
             super( builder, quoteMark );
-            builder.append( "[" );
+            builder.append( '[' );
         }
 
         @Override
@@ -497,7 +497,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         @Override
         public void done()
         {
-            builder.append( "]" );
+            builder.append( ']' );
         }
     }
 }

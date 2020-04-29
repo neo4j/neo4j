@@ -91,7 +91,7 @@ public class DummyThirdPartyWebService
                 theEntity.append( ", " );
             }
         }
-        theEntity.append( "}" );
+        theEntity.append( '}' );
         return Response.ok().entity( theEntity.toString() ).build();
     }
 

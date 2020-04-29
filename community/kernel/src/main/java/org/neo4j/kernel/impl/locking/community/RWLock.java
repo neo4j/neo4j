@@ -610,19 +610,19 @@ public class RWLock
         while ( wElements.hasNext() )
         {
             LockRequest lockRequest = wElements.next();
-            sb.append( "[" ).append( lockRequest.waitingThread ).append( "(" ).append( lockRequest.element.readCount )
+            sb.append( '[' ).append( lockRequest.waitingThread ).append( '(' ).append( lockRequest.element.readCount )
               .append( "r," ).append( lockRequest.element.writeCount ).append( "w)," ).append( lockRequest.lockType )
               .append( "]\n" );
             if ( wElements.hasNext() )
             {
-                sb.append( "," );
+                sb.append( ',' );
             }
         }
 
         sb.append( "Locking transactions:\n" );
         for ( TxLockElement tle : txLockElementMap.values() )
         {
-            sb.append( tle.tx ).append( "(" ).append( tle.readCount ).append( "r," )
+            sb.append( tle.tx ).append( '(' ).append( tle.readCount ).append( "r," )
               .append( tle.writeCount ).append( "w)\n" );
         }
         return sb.toString();

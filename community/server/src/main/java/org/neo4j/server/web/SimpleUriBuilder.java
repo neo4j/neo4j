@@ -34,7 +34,7 @@ public class SimpleUriBuilder
 
         if ( isSsl )
         {
-            sb.append( "s" );
+            sb.append( 's' );
 
         }
         sb.append( "://" );
@@ -44,10 +44,10 @@ public class SimpleUriBuilder
         int port = address.getPort();
         if ( port != 80 && port != 443 )
         {
-            sb.append( ":" );
+            sb.append( ':' );
             sb.append( port );
         }
-        sb.append( "/" );
+        sb.append( '/' );
 
         try
         {

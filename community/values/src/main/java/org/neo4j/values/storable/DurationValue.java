@@ -636,7 +636,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             return "PT0S"; // no need to allocate a string builder if we know the result
         }
-        StringBuilder str = new StringBuilder().append( "P" );
+        StringBuilder str = new StringBuilder().append( 'P' );
         append( str, months / 12, 'Y' );
         append( str, months % 12, 'M' );
         append( str, days, 'D' );

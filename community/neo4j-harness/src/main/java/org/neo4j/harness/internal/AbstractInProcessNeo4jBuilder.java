@@ -284,7 +284,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
     private static StringBuilder describeJaxRsPackage( StringBuilder builder, ThirdPartyJaxRsPackage jaxRsPackage )
     {
-        return builder.append( jaxRsPackage.getPackageName() ).append( "=" ).append( jaxRsPackage.getMountPoint() );
+        return builder.append( jaxRsPackage.getPackageName() ).append( '=' ).append( jaxRsPackage.getMountPoint() );
     }
 
     private static OutputStream openStream( FileSystemAbstraction fs, File file )

@@ -97,7 +97,7 @@ public final class WebContainerTestUtils
         for ( Map.Entry<String, String> property : properties.entrySet() )
         {
             builder.append( builder.length() > 0 ? "," : "" );
-            builder.append( property.getKey() ).append( "=" ).append( property.getValue() );
+            builder.append( property.getKey() ).append( '=' ).append( property.getValue() );
         }
         return builder.toString();
     }

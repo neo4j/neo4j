@@ -742,7 +742,7 @@ public abstract class MapValue extends VirtualValue
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
+        StringBuilder sb = new StringBuilder( getTypeName() ).append( '{' );
         final String[] sep = new String[]{""};
         foreach( ( key, value ) ->
         {
