@@ -19,6 +19,9 @@
  */
 package org.neo4j.commandline.dbms.storeutil;
 
+import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.map.MutableMap;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,9 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.map.MutableMap;
-import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
@@ -184,9 +185,10 @@ public class StoreCopy
                 log.info( "Target: %s (page cache %s)", toDatabaseLayout.databaseDirectory(), toPageCacheMemory );
                 log.info( "Empty database created, will start importing readable data from the source." );
 
-                BatchImporter batchImporter = BatchImporterFactory.withHighestPriority().instantiate( toDatabaseLayout, fs, toPageCache, Configuration.DEFAULT,
-                        new SimpleLogService( logProvider ), executionMonitor, AdditionalInitialIds.EMPTY, config, recordFormats, NO_MONITOR, null,
-                        Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
+                BatchImporter batchImporter = BatchImporterFactory.withHighestPriority().instantiate(
+                        toDatabaseLayout, fs, toPageCache, Configuration.DEFAULT, new SimpleLogService( logProvider ), executionMonitor,
+                        AdditionalInitialIds.EMPTY, config, recordFormats, NO_MONITOR, null, Collector.EMPTY,
+                        TransactionLogInitializer.asLogFilesInitializer() );
 
                 batchImporter.doImport( Input.input( this::nodeIterator, this::relationshipIterator, IdType.INTEGER, getEstimates(), new Groups() ) );
 

@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -61,6 +60,7 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -166,7 +166,8 @@ class CsvImporter implements Importer
             ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
                     SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
 
-            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
+            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate(
+                    databaseLayout,
                     fileSystem,
                     null, // no external page cache
                     importConfig,
@@ -176,7 +177,9 @@ class CsvImporter implements Importer
                     databaseConfig,
                     RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
                     new PrintingImportLogicMonitor( stdOut, stdErr ),
-                    jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
+                    jobScheduler,
+                    badCollector,
+                    TransactionLogInitializer.asLogFilesInitializer() );
 
             printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
 

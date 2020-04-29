@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
-import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -71,6 +70,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -178,9 +178,9 @@ public class ParallelBatchImporterTest
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         // This will have statistically half the nodes be considered dense
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
-        final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
-            fs, null, config, NullLogService.getInstance(),
-            monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
+        final BatchImporter inserter = new ParallelBatchImporter(
+                databaseLayout, fs, null, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler,
+                Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer() );
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();
         try

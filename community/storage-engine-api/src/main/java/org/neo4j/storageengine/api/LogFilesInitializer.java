@@ -17,24 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.store.NeoStores;
 
-public class EmptyLogFilesInitializer implements LogFilesInitializer
+public interface LogFilesInitializer
 {
-    public static final LogFilesInitializer INSTANCE = new EmptyLogFilesInitializer();
+    /**
+     * A LogFilesInitializer instance that doesn't do anything.
+     */
+    LogFilesInitializer NULL = ( databaseLayout, store, fileSystem ) -> {};
 
-    private EmptyLogFilesInitializer()
-    {
-    }
-
-    @Override
-    public void initializeLogFiles( Config config, DatabaseLayout databaseLayout, NeoStores neoStores, FileSystemAbstraction fileSystem )
-    {
-        // empty
-    }
+    /**
+     * Initialize the transaction log files in the given database layout.
+     * This is usually called after creating an empty, or newly imported, store.
+     */
+    void initializeLogFiles( DatabaseLayout databaseLayout, TransactionMetaDataStore store, FileSystemAbstraction fileSystem );
 }

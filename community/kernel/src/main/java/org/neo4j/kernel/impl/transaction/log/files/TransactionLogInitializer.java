@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
@@ -36,35 +37,43 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
-class TransactionLogsMigrator
+public class TransactionLogInitializer
 {
     private final FileSystemAbstraction fs;
-    private final TransactionIdStore idStore;
-    private final StoreId storeId;
-    private final LogVersionRepository logVersionRepository;
+    private final TransactionMetaDataStore store;
 
-    TransactionLogsMigrator( FileSystemAbstraction fs, TransactionIdStore idStore, StoreId storeId,
-                             LogVersionRepository logVersionRepository )
+    public static LogFilesInitializer asLogFilesInitializer()
     {
-        this.fs = fs;
-        this.idStore = idStore;
-        this.storeId = storeId;
-        this.logVersionRepository = logVersionRepository;
+        return ( databaseLayout, store, fileSystem ) ->
+        {
+            try
+            {
+                TransactionLogInitializer initializer = new TransactionLogInitializer( fileSystem, store );
+                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory() );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Fail to create empty transaction log file.", e );
+            }
+        };
     }
 
-    void createEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
+    public TransactionLogInitializer( FileSystemAbstraction fs, TransactionMetaDataStore store )
+    {
+        this.fs = fs;
+        this.store = store;
+    }
+
+    public void initializeEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
         try ( Lifespan lifespan = buildLogFiles( layout, transactionLogsDirectory ) )
         {
@@ -73,7 +82,7 @@ class TransactionLogsMigrator
         }
     }
 
-    void migrateLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
+    public void initializeExistingLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
     {
         // If there are no transactions in any of the log files,
         // append an empty transaction, and a checkpoint, to the last log file.
@@ -101,12 +110,12 @@ class TransactionLogsMigrator
         }
     }
 
-    private Lifespan buildLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
+    private Lifespan buildLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( layout, fs )
-                                           .withLogVersionRepository( logVersionRepository )
-                                           .withTransactionIdStore( idStore )
-                                           .withStoreId( storeId )
+                                           .withLogVersionRepository( store )
+                                           .withTransactionIdStore( store )
+                                           .withStoreId( store.getStoreId() )
                                            .withLogsDirectory( transactionLogsDirectory )
                                            .build();
         return new Lifespan( logFiles );
@@ -114,7 +123,7 @@ class TransactionLogsMigrator
 
     private void appendEmptyTransactionAndCheckPoint( LogFiles logFiles ) throws IOException
     {
-        TransactionId committedTx = idStore.getLastCommittedTransaction();
+        TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
         long transactionId = committedTx.transactionId();
         FlushablePositionAwareChecksumChannel writableChannel = logFiles.getLogFile().getWriter();
@@ -125,6 +134,6 @@ class TransactionLogsMigrator
         writableChannel.getCurrentPosition( marker );
         LogPosition position = marker.newPosition();
         writer.writeCheckPointEntry( position );
-        idStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion() );
+        store.setLastCommittedAndClosedTransactionId( transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion() );
     }
 }

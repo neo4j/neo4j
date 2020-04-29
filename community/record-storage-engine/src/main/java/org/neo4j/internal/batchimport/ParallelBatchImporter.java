@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -97,7 +98,7 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
-            logFilesInitializer.initializeLogFiles( dbConfig, databaseLayout, store.getNeoStores(), fileSystem );
+            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem );
 
             logic.success();
         }

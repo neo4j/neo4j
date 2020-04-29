@@ -55,7 +55,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.csv.reader.Configuration;
@@ -81,6 +80,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
@@ -141,10 +141,9 @@ class CsvInputBatchImportIT
                 .build();
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer =
-                    new ParallelBatchImporter( databaseLayout, fileSystem, null, smallBatchSizeConfig(), NullLogService.getInstance(),
-                            ExecutionMonitors.invisible(), EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY,
-                            TransactionLogsInitializer.INSTANCE );
+            BatchImporter importer = new ParallelBatchImporter(
+                    databaseLayout, fileSystem, null, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, dbConfig,
+                    defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer() );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 

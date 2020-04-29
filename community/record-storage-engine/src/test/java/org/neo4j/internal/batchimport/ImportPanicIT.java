@@ -46,6 +46,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -79,9 +80,10 @@ class ImportPanicIT
     {
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer = new ParallelBatchImporter( databaseLayout, testDirectory.getFileSystem(), null,
-                Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE );
+            BatchImporter importer = new ParallelBatchImporter(
+                    databaseLayout, testDirectory.getFileSystem(), null, Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(),
+                    AdditionalInitialIds.EMPTY, Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    LogFilesInitializer.NULL );
             Iterable<DataFactory> nodeData =
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
             Input brokenCsvInput = new CsvInput(

@@ -28,8 +28,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
@@ -55,10 +55,9 @@ public class LogsUpgrader
     public void upgrade( DatabaseLayout dbDirectoryLayout )
     {
         Config config = Config.defaults( GraphDatabaseSettings.read_only, true );
-        try ( TransactionMetaDataStore txStore = storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache ) )
+        try ( TransactionMetaDataStore store = storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache ) )
         {
-            StoreId storeId = storageEngineFactory.storeId( databaseLayout, pageCache );
-            TransactionLogsMigrator logMigrator = new TransactionLogsMigrator( fs, txStore, storeId, txStore );
+            TransactionLogInitializer logInitializer = new TransactionLogInitializer( fs, store );
 
             File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
             File legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
@@ -76,7 +75,7 @@ public class LogsUpgrader
                         fs.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
                     }
                 }
-                logMigrator.migrateLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                logInitializer.initializeExistingLogFiles( dbDirectoryLayout, transactionLogsDirectory );
                 if ( filesNeedsToMove )
                 {
                     for ( File legacyFile : legacyFiles )
@@ -87,7 +86,7 @@ public class LogsUpgrader
             }
             else
             {
-                logMigrator.createEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                logInitializer.initializeEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
             }
         }
         catch ( Exception exception )

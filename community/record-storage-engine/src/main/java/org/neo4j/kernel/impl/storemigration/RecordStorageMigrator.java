@@ -46,7 +46,6 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.EmptyLogFilesInitializer;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -106,6 +105,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -435,11 +435,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDirectoryStructure,
-                    fileSystem, pageCache, importConfig, logService,
-                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector,
-                    EmptyLogFilesInitializer.INSTANCE );
+            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate(
+                    migrationDirectoryStructure, fileSystem, pageCache, importConfig, logService,
+                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter, importConfig ), importConfig ),
+                    additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector, LogFilesInitializer.NULL );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
