@@ -373,6 +373,28 @@ public class LifeSupport implements Lifecycle
         }
     }
 
+    /**
+     * Return the first {@link Lifecycle} object added to this LifeSupport, that is an instance of the given class.
+     * If there are multiple such instance managed by this LifeSupport, only the first instance in {@link #add(Lifecycle)}-order will be returned.
+     * If there are no such instances managed by this LifeSupport, {@code null} will be returned.
+     *
+     * @param type the type of object to unwrap.
+     * @param <T> the type of object of unwrap.
+     * @return The first life-cycled instance of the given type, or {@code null}.
+     */
+    public synchronized <T extends Lifecycle> T unwrap( Class<T> type )
+    {
+        Objects.requireNonNull( type );
+        for ( LifecycleInstance instance : instances )
+        {
+            if ( type.isInstance( instance.instance ) )
+            {
+                return type.cast( instance.instance );
+            }
+        }
+        return null;
+    }
+
     private class LifecycleInstance
             implements Lifecycle
     {

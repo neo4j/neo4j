@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -78,10 +79,12 @@ public class DatabaseMigrator
      */
     public void migrate()
     {
-        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
-        StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
-                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
-                tailScanner, legacyLogsLocator, storageEngineFactory, pageCacheTracer );
+        StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, pageCacheTracer );
+        VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) );
+        LogProvider logProvider = logService.getInternalLogProvider();
+        StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, tailScanner, logsUpgrader,
+                storageEngineFactory, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer,
@@ -89,7 +92,7 @@ public class DatabaseMigrator
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
-                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer, memoryTracker );
+                                                                           logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer, memoryTracker );
         storeUpgrader.addParticipant( indexConfigMigrator );
 
         IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer,
@@ -97,7 +100,7 @@ public class DatabaseMigrator
         storeUpgrader.addParticipant( indexProviderMigrator );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
-        this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
+        indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
 
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }

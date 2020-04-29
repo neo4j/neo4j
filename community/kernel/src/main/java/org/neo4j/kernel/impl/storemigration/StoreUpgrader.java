@@ -37,7 +37,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
@@ -50,7 +49,6 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
-import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -91,20 +89,20 @@ public class StoreUpgrader
     private final FileSystemAbstraction fileSystem;
     private final Log log;
     private final LogTailScanner logTailScanner;
-    private final LegacyTransactionLogsLocator legacyLogsLocator;
+    private final LogsUpgrader logsUpgrader;
     private final String configuredFormat;
     private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
 
-    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
-            LegacyTransactionLogsLocator legacyLogsLocator, StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
+    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
+                          Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
+                          LogsUpgrader logsUpgrader, StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.legacyLogsLocator = legacyLogsLocator;
+        this.logsUpgrader = logsUpgrader;
         this.log = logProvider.getLog( getClass() );
         this.logTailScanner = logTailScanner;
         this.configuredFormat = storeVersionCheck.configuredVersion();
@@ -225,45 +223,12 @@ public class StoreUpgrader
         }
 
         progressMonitor.startTransactionLogsMigration();
-        migrateTransactionLogs( dbDirectoryLayout, legacyLogsLocator );
+        logsUpgrader.upgrade( dbDirectoryLayout );
         progressMonitor.completeTransactionLogsMigration();
 
         cleanup( participants.values(), migrationLayout );
 
         progressMonitor.completed();
-    }
-
-    private void migrateTransactionLogs( DatabaseLayout dbDirectoryLayout, LegacyTransactionLogsLocator transactionLogsLocator )
-    {
-        try
-        {
-            File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
-            File legacyLogsDirectory = transactionLogsLocator.getTransactionLogsDirectory();
-            if ( transactionLogsDirectory.equals( legacyLogsDirectory ) )
-            {
-                // directories are the same - no need to move log files
-                return;
-            }
-            File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem )
-                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
-                    .build()
-                    .logFiles();
-            if ( legacyFiles != null )
-            {
-                for ( File legacyFile : legacyFiles )
-                {
-                    fileSystem.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
-                }
-                for ( File legacyFile : legacyFiles )
-                {
-                    fileSystem.deleteFile( legacyFile );
-                }
-            }
-        }
-        catch ( IOException ioException )
-        {
-            throw new TransactionLogsRelocationException( "Failure on attempt to move transaction logs into new location.", ioException );
-        }
     }
 
     private String getVersionFromResult( StoreVersionCheck.Result result )
