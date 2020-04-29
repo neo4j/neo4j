@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
@@ -49,7 +48,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty)
-  : ReturnItemsDef = {
+  : ReturnItems = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }

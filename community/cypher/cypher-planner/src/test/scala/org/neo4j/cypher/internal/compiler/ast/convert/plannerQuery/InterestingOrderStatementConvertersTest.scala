@@ -194,7 +194,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   }
 
   test("Do not propagate unfulfillable order to previous query graph") {
-    val result = buildSinglePlannerQuery("MATCH (n) WITH n AS secretN MATCH (m) RETURN m ORDER BY m.prop")
+    val result = buildSinglePlannerQuery("MATCH (n) WITH n AS secretN MATCH (m) WHERE m.prop = secretN.prop RETURN m ORDER BY m.prop")
 
     interestingOrders(result).take(2) should be(List(
       InterestingOrder.empty,

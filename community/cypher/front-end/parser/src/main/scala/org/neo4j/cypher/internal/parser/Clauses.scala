@@ -158,21 +158,21 @@ trait Clauses extends Parser
       | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
-  private def WithBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  private def WithBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)
   }
 
-  private def ReturnBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  private def ReturnBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)
   }
 
-  private def ReturnItems: Rule1[ast.ReturnItemsDef] = rule("'*', an expression")(
+  private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression")(
     "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
       | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
   )

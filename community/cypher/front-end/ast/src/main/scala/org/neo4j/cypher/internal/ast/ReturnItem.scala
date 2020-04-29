@@ -31,40 +31,21 @@ import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
-  /**
-   * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
-   * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
-   * This field is true if the dash (-) was used by a user.
-   */
-  def includeExisting: Boolean
-  def declareVariables(previousScope: Scope): SemanticCheck
-  def containsAggregate: Boolean
-  def withExisting(includeExisting: Boolean): ReturnItemsDef
-  def items: Seq[ReturnItem]
-
-  def isStarOnly: Boolean = includeExisting && items.isEmpty
-}
-
-final case class DiscardCardinality()(val position: InputPosition) extends ReturnItemsDef {
-  override def includeExisting: Boolean = false
-  override def semanticCheck: SemanticCheck = _success
-  override def items: Seq[ReturnItem] = Seq.empty
-  override def declareVariables(previousScope: Scope): SemanticState => SemanticCheckResult = _success
-  override def containsAggregate = false
-  override def withExisting(includeExisting: Boolean): DiscardCardinality = this
-  private def _success(s: SemanticState) = success(s)
-}
-
+/**
+ *
+ * @param includeExisting Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
+ *                        Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
+ *                        This field is true if the dash (-) was used by a user.
+ */
 final case class ReturnItems(
                               includeExisting: Boolean,
                               items: Seq[ReturnItem]
-                            )(val position: InputPosition) extends ReturnItemsDef with SemanticAnalysisTooling {
+                            )(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
-  override def withExisting(includeExisting: Boolean): ReturnItemsDef =
+  def withExisting(includeExisting: Boolean): ReturnItems =
     copy(includeExisting = includeExisting)(position)
 
-  override def semanticCheck: SemanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
+  def semanticCheck: SemanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
 
   def aliases: Set[LogicalVariable] = items.flatMap(_.alias).toSet
 
@@ -75,7 +56,7 @@ final case class ReturnItems(
   def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]): ReturnItems =
     copy(items = f(items))(position)
 
-  override def declareVariables(previousScope: Scope): SemanticCheck =
+  def declareVariables(previousScope: Scope): SemanticCheck =
     when (includeExisting) {
       s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
@@ -96,7 +77,7 @@ final case class ReturnItems(
     }
   }
 
-  override def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
+  def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
 }
 
 sealed trait ReturnItem extends ASTNode with SemanticCheckable {

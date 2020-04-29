@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -81,6 +82,21 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor(s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("p")
+          .projection("n.prop AS p")
+          .projection("1 AS foo")
+          .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder)
+          .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order") {
       val plan = new given {
         indexOn("Awesome", "prop")
@@ -94,6 +110,22 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 IndexOrderNone),
             Map("n.prop" -> prop("n", "prop"))),
           Seq(sortOrder("n.prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH and with Expand") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor(s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("p")
+          .projection("n.prop AS p")
+          .projection("1 AS foo")
+          .expandAll("(n)-[r]->(m)")
+          .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder)
+          .build()
       )
     }
 

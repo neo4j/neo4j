@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
+import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.nameMatchPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.namePatternComprehensionPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
@@ -60,8 +61,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   getDegreeRewriting: Boolean,
                   innerVariableNamer: InnerVariableNamer) {
 
-  def rewrite(queryText: String,
-              statement: Statement,
+  def rewrite(statement: Statement,
               semanticState: SemanticState,
               parameterTypeMapping: Map[String, CypherType],
               cypherExceptionFactory: CypherExceptionFactory): (Statement, Map[String, Any], Set[RewriterCondition]) = {
@@ -69,6 +69,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
     val contract = rewriterSequencer("ASTRewriter")(
       recordScopes(semanticState),
       desugarMapProjection(semanticState),
+      moveWithPastMatch,
       normalizeComparisons,
       enableCondition(noReferenceEqualityAmongVariables),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),

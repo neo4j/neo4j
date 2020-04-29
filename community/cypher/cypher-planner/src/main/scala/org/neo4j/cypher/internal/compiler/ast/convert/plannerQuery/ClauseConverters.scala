@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
@@ -366,7 +365,7 @@ object ClauseConverters {
     acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
   }
 
-  private def asReturnItems(current: QueryGraph, returnItems: ReturnItemsDef): Seq[ReturnItem] = returnItems match {
+  private def asReturnItems(current: QueryGraph, returnItems: ReturnItems): Seq[ReturnItem] = returnItems match {
     case ReturnItems(star, items) if star =>
       QueryProjection.forIds(current.allCoveredIds) ++ items
     case ReturnItems(_, items) =>

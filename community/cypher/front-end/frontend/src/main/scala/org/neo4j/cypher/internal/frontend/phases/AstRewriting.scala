@@ -41,7 +41,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer,
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
 
-    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.queryText, in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
+    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
 
     in.withStatement(rewrittenStatement).withParams(extractedParams)
   }

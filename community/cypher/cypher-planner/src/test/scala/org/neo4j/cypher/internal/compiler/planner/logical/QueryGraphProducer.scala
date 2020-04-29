@@ -55,7 +55,7 @@ trait QueryGraphProducer extends MockitoSugar {
     onError(errors)
 
     // if you ever want to have parameters in here, fix the map
-    val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState, Map.empty, exceptionFactory)
+    val (firstRewriteStep, _, _) = astRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory)
     val state = LogicalPlanState(query, None, IDPPlannerName, newStubbedPlanningAttributes, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)

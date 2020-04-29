@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.ReturnItemsDef
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
@@ -324,7 +324,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         ) chain implicitVariable(variable, expectedType)
     }
 
-  def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItemsDef, position: InputPosition): SemanticCheck = {
+  def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
     val propertyKeys = returnItems.items.collect { case item => item.expression.findByAllClass[Property]map(prop => prop.propertyKey) }.flatten
     SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
   }

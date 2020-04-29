@@ -103,7 +103,7 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
-import org.neo4j.cypher.internal.ast.ReturnItemsDef
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
@@ -571,7 +571,7 @@ case class Prettifier(
       case UnaliasedReturnItem(e, _) => expr(e)
     }
 
-    def asString(r: ReturnItemsDef): String = {
+    def asString(r: ReturnItems): String = {
       val as = if (r.includeExisting) Seq("*") else Seq()
       val is = r.items.map(asString)
       (as ++ is).mkString(", ")
