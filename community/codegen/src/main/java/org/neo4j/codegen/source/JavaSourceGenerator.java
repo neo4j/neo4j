@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 
 import org.neo4j.codegen.ByteCodes;
@@ -31,13 +32,19 @@ import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.TypeReference;
 
+/**
+ * {@link CodeGenerator} that generates code by writing java source files, and compiling these using {@link JavaCompiler}.
+ * <p/>
+ * NOTE: This generator does not support generating classes that depend on previously generated classes. If you
+ *       need to generate multiple dependent classes they have to be compiled in the same compilation unit (See {@link CodeGenerator})
+ */
 class JavaSourceGenerator extends CodeGenerator
 {
     private final Configuration configuration;
     private final Map<TypeReference, StringBuilder> classes = new HashMap<>();
-    private final SourceCompiler compiler;
+    private final JavaSourceCompiler compiler;
 
-    JavaSourceGenerator( ClassLoader parentClassLoader, Configuration configuration, SourceCompiler compiler )
+    JavaSourceGenerator( ClassLoader parentClassLoader, Configuration configuration, JavaSourceCompiler compiler )
     {
         super( parentClassLoader );
         this.configuration = configuration;

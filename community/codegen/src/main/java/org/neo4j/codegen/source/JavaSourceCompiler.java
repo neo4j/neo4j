@@ -27,7 +27,7 @@ import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.CodeGeneratorOption;
 import org.neo4j.codegen.CompilationFailureException;
 
-interface SourceCompiler
+interface JavaSourceCompiler
 {
     Iterable<? extends ByteCodes> compile( List<JavaSourceFile> sourceFiles, ClassLoader loader )
             throws CompilationFailureException;
@@ -45,7 +45,7 @@ interface SourceCompiler
             }
         }
 
-        abstract SourceCompiler sourceCompilerFor( Configuration configuration, CodeGenerationStrategy<?> strategy )
+        abstract JavaSourceCompiler sourceCompilerFor( Configuration configuration, CodeGenerationStrategy<?> strategy )
                 throws CodeGenerationStrategyNotSupportedException;
 
         void configure( Configuration configuration )

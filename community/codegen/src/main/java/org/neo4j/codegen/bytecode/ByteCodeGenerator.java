@@ -30,6 +30,9 @@ import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.TypeReference;
 
+/**
+ * {@link CodeGenerator} that generates classes dy direct bytecode generation using {@link org.objectweb.asm.ClassWriter}.
+ */
 class ByteCodeGenerator extends CodeGenerator
 {
     private final Configuration configuration;

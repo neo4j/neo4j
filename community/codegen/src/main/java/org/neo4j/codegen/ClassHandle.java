@@ -26,14 +26,14 @@ public class ClassHandle extends TypeReference
 {
     private final TypeReference parent;
     final CodeGenerator generator;
-    private final long generation;
+    private final long compilationUnit;
 
-    ClassHandle( String packageName, String name, TypeReference parent, CodeGenerator generator, long generation )
+    ClassHandle( String packageName, String name, TypeReference parent, CodeGenerator generator, long compilationUnit )
     {
         super( packageName, name, parent.isPrimitive(), parent.arrayDepth(), false, null, Modifier.PUBLIC );
         this.parent = parent;
         this.generator = generator;
-        this.generation = generation;
+        this.compilationUnit = compilationUnit;
     }
 
     @Override
@@ -57,12 +57,12 @@ public class ClassHandle extends TypeReference
 
     public Class<?> loadClass() throws CompilationFailureException
     {
-        return generator.loadClass( fullName(), generation );
+        return generator.loadClass( fullName(), compilationUnit );
     }
 
     public Class<?> loadAnonymousClass() throws CompilationFailureException
     {
-        return generator.loadAnonymousClass( fullName(), generation );
+        return generator.loadAnonymousClass( fullName(), compilationUnit );
     }
 
     public TypeReference parent()
