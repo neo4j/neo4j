@@ -76,6 +76,11 @@ class GrowingArray[T <: AnyRef] {
    */
   def hasNeverSeenData: Boolean = highWaterMark == 0
 
+  /**
+   * Return `true` if array contains a non-null element at the given index.
+   */
+  def isDefinedAt(index: Int): Boolean = array.isDefinedAt(index) && array(index) != null
+
   private def ensureCapacity(size: Int): Unit = {
     if (this.highWaterMark < size) {
       this.highWaterMark = size

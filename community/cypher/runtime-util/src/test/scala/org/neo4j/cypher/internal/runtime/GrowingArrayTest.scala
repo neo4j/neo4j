@@ -81,4 +81,13 @@ class GrowingArrayTest extends CypherFunSuite {
     x.set(1234, "a")
     x.get(1234) shouldBe "a"
   }
+
+  test("isDefinedAt") {
+    val x = new GrowingArray[String]
+    x.isDefinedAt(1234) shouldBe false
+
+    x.set(1234, "a")
+    x.isDefinedAt(1234) shouldBe true
+    x.isDefinedAt(0) shouldBe false
+  }
 }
