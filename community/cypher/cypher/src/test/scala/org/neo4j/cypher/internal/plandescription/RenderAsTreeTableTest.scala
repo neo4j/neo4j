@@ -349,11 +349,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
-      """+--------------+--------------------+--------------+
-        || Operator     | Details            | Order        |
-        |+--------------+--------------------+--------------+
-        || +Expand(All) | (from)<-[rel]-(to) | anon[42] ASC |
-        |+--------------+--------------------+--------------+
+      """+--------------+--------------------+-------------+
+        || Operator     | Details            | Order       |
+        |+--------------+--------------------+-------------+
+        || +Expand(All) | (from)<-[rel]-(to) | anon_42 ASC |
+        |+--------------+--------------------+-------------+
         |""".stripMargin)
   }
 
