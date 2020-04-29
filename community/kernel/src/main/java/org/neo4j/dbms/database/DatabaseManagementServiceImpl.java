@@ -75,7 +75,14 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     @Override
     public void dropDatabase( String name )
     {
-        systemDatabaseExecute( "DROP DATABASE `" + name + "`" );
+        dropDatabase( name, false );
+    }
+
+    @Override
+    public void dropDatabase( String name, boolean keepData )
+    {
+        var dataClause = keepData ? " KEEP DATA" : " DESTROY DATA";
+        systemDatabaseExecute( "DROP DATABASE `" + name + "`" + dataClause );
     }
 
     @Override

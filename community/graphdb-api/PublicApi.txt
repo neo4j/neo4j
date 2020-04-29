@@ -18,6 +18,7 @@ org.neo4j.dbms.api.DatabaseManagementService public abstract interface
 org.neo4j.dbms.api.DatabaseManagementService::createDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseExistsException
 org.neo4j.dbms.api.DatabaseManagementService::database(java.lang.String) org.neo4j.graphdb.GraphDatabaseService public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
 org.neo4j.dbms.api.DatabaseManagementService::dropDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
+org.neo4j.dbms.api.DatabaseManagementService::dropDatabase(java.lang.String, boolean) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
 org.neo4j.dbms.api.DatabaseManagementService::listDatabases() java.util.List<java.lang.String> public abstract
 org.neo4j.dbms.api.DatabaseManagementService::registerDatabaseEventListener(org.neo4j.graphdb.event.DatabaseEventListener) void public abstract
 org.neo4j.dbms.api.DatabaseManagementService::registerTransactionEventListener(java.lang.String, org.neo4j.graphdb.event.TransactionEventListener<?>) void public abstract
