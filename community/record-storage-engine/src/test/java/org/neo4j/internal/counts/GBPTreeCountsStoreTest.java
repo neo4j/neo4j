@@ -607,11 +607,11 @@ class GBPTreeCountsStoreTest
             CountsAccessor.Updater updater = invocationOnMock.getArgument( 0, CountsAccessor.Updater.class );
             updater.incrementNodeCount( LABEL_ID_1, 3 );
             return null;
-        } ).when( countsBuilder ).initialize( any(), any() );
+        } ).when( countsBuilder ).initialize( any(), any(), any() );
         openCountsStore( countsBuilder );
 
         // then rebuild store instead of throwing exception
-        verify( countsBuilder ).initialize( any(), any() );
+        verify( countsBuilder ).initialize( any(), any(), any() );
         assertEquals( 3, countsStore.nodeCount( LABEL_ID_1, NULL ) );
     }
 
