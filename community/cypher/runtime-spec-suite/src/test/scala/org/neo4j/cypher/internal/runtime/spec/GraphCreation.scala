@@ -258,6 +258,71 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (ring :+ center, rels)
   }
 
+  def nestedStarGraph(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship], Node) = {
+    val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
+
+    var nodes = new ArrayBuffer[Node]
+    var rels = new ArrayBuffer[Relationship]
+
+    def recurse(depth: Int, localCenter: Node): Unit = {
+      def star(center: Node): Seq[Node] = {
+        val ring =
+          for (_ <- 0 until ringSize) yield {
+            runtimeTestSupport.tx.createNode(Label.label(labelRing))
+          }
+        val rType = RelationshipType.withName("R")
+        for (i <- 0 until ringSize) {
+          val a = ring(i)
+          rels += a.createRelationshipTo(center, rType)
+        }
+        ring
+      }
+
+      if (depth > 0) {
+        val ring = star(localCenter)
+        nodes ++= ring
+        ring.foreach(recurse(depth - 1, _))
+      }
+    }
+    nodes += globalCenter
+    recurse(depth, globalCenter)
+    (nodes, rels, globalCenter)
+  }
+
+  def nestedStarGraphCenterOnly(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Node, Int) = {
+    val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
+
+    var nodes = new ArrayBuffer[Node]
+    var rels = new ArrayBuffer[Relationship]
+
+    def recurse(depth: Int, localCenter: Node): Unit = {
+      def star(center: Node): Seq[Node] = {
+        val ring =
+          for (_ <- 0 until ringSize) yield {
+            runtimeTestSupport.tx.createNode(Label.label(labelRing))
+          }
+        val rType = RelationshipType.withName("R")
+        for (i <- 0 until ringSize) {
+          val a = ring(i)
+          rels += a.createRelationshipTo(center, rType)
+        }
+        ring
+      }
+
+      if (depth > 0) {
+        val ring = star(localCenter)
+        nodes ++= ring
+        ring.foreach(recurse(depth - 1, _))
+      }
+    }
+    nodes += globalCenter
+    recurse(depth, globalCenter)
+    val nNodes = nodes.size
+    nodes = null
+    rels = null
+    (globalCenter, nNodes)
+  }
+
   case class Connectivity(atLeast: Int, atMost: Int, relType: String)
 
   /**

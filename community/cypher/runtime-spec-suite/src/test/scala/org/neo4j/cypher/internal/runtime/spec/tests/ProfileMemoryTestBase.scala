@@ -246,11 +246,29 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input: _*))
     consume(runtimeResult)
 
     // then
-    assertOnMemory(logicalQuery, inputValues(input:_*), 3, 1)
+    assertOnMemory(logicalQuery, inputValues(input: _*), 3, 1)
+  }
+
+  test("should profile memory of var-length-expand") {
+    // given
+    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*2..4]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 4, 1, 2)
   }
 
   //noinspection SameParameterValue

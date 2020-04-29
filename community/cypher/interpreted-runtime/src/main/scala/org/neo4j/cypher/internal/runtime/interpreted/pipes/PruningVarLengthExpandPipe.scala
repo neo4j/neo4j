@@ -19,14 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.NoMemoryTracker
-import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.HeapEstimator
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.MemoryTracker
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
@@ -88,7 +92,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val queryState: QueryState,
                    val row: CypherRow,
-                   val expandMap: LongObjectHashMap[NodeState],
+                   val expandMap: MutableLongObjectMap[NodeState],
                    val prevLocalRelIndex: Int,
                    val prevNodeState: NodeState ) {
 
@@ -97,7 +101,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
     def nextEndNode(): VirtualNodeValue = {
 
-      initiate()
+      initiate(state.memoryTracker)
 
       if (pathLength < self.max) {
 
@@ -180,22 +184,25 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       }
     }
 
-    private def initiate(): Unit = {
+    private def initiate(memoryTracker: MemoryTracker): Unit = {
       nodeState = expandMap.get(node.id())
       if (nodeState == NodeState.UNINITIALIZED) {
-        nodeState = new NodeState(queryState.memoryTracker)
+        nodeState = new NodeState(memoryTracker)
+        memoryTracker.allocateHeap(NodeState.INSTANCE_SIZE)
         expandMap.put(node.id(), nodeState)
       }
     }
   }
 
   object NodeState {
+    final val INSTANCE_SIZE = shallowSizeOfInstance(classOf[NodeState])
+
     val UNINITIALIZED: NodeState = null
 
     val NOOP_REL: Int = 0
 
     val NOOP: NodeState = {
-      val noop = new NodeState(NoMemoryTracker)
+      val noop = new NodeState(EmptyMemoryTracker.INSTANCE)
       noop.rels = Array(null)
       noop.depths = Array[Byte](0)
       noop
@@ -205,7 +212,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   /**
     * The state of expansion for one node
     */
-  class NodeState(memoryTracker: QueryMemoryTracker) {
+  class NodeState(memoryTracker: MemoryTracker) {
 
     // All relationships that connect to this node, filtered by the var-length predicates
     var rels: Array[RelationshipValue] = _
@@ -250,12 +257,12 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           if (filteringStep.filterRelationship(row, queryState)(rel) &&
             filteringStep.filterNode(row, queryState)(rel.otherNode(node))) {
             builder += rel
-            memoryTracker.allocated(rel, id.x)
+            memoryTracker.allocateHeap(rel.estimatedHeapUsage)
           }
         }
         rels = builder.result()
         depths = new Array[Byte](rels.length)
-        memoryTracker.allocated(rels.length * java.lang.Byte.BYTES, id.x)
+        memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(rels.length) + HeapEstimator.sizeOf(depths))
       }
     }
   }
@@ -263,14 +270,15 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   /**
     * The overall state of the full pruning var expand. Mostly manages stack of PruningDFS nodes.
     */
-  class FullPruneState(queryState:QueryState ) {
+  class FullPruneState(queryState: QueryState, val memoryTracker: MemoryTracker) {
     private var inputRow:CypherRow = _
     private val nodeState = new Array[PruningDFS](self.max + 1)
     private val path = new Array[Long](max)
-    queryState.memoryTracker.allocated(max * java.lang.Long.BYTES, id.x)
+    memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(nodeState.length) + HeapEstimator.sizeOf(path))
     private var depth = -1
 
     def startRow( inputRow:CypherRow ): Unit = {
+      memoryTracker.reset() // We build up a new state for each input row
       this.inputRow = inputRow
       depth = -1
     }
@@ -312,7 +320,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       if(filteringStep.filterNode(inputRow, queryState)(node)) {
         push(node,
           pathLength = 0,
-          expandMap = new LongObjectHashMap[NodeState](),
+          expandMap = HeapTrackingCollections.newLongObjectMap[NodeState](memoryTracker),
           prevLocalRelIndex = -1,
           prevNodeState = NodeState.NOOP)
       } else {
@@ -322,7 +330,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
     def push(node: VirtualNodeValue,
              pathLength: Int,
-             expandMap: LongObjectHashMap[NodeState],
+             expandMap: MutableLongObjectMap[NodeState],
              prevLocalRelIndex: Int,
              prevNodeState: NodeState): VirtualNodeValue = {
       depth += 1
@@ -345,12 +353,21 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                               private val queryState: QueryState
   ) extends Iterator[CypherRow] {
 
-    var outputRow:CypherRow = _
-    val fullPruneState:FullPruneState = new FullPruneState( queryState )
-    var hasPrefetched = false
+    private val memoryTracker = new ScopedMemoryTracker(queryState.memoryTracker.memoryTrackerForOperator(id.x))
+    private var outputRow:CypherRow = _
+    private var fullPruneState:FullPruneState = new FullPruneState(queryState, memoryTracker)
+    private var hasPrefetched = false
+
+    def close(): Unit = {
+      fullPruneState = null
+      memoryTracker.close()
+    }
 
     override def hasNext: Boolean = {
       prefetch()
+      if (outputRow == null && fullPruneState != null) {
+        close()
+      }
       outputRow != null
     }
 

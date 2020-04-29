@@ -209,10 +209,21 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                  input: InputValues
                                 ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
-  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false): Unit = {
+  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false, lastAllocation: Long = 0, stackTrace: Option[String] = None): Unit = {
     val pw = new PrintWriter(new File(fileName))
     val maxAllocatedMemory = queryProfile.maxAllocatedMemory()
-    val logString = s"Max allocated memory: $maxAllocatedMemory"
+    val logString = new StringBuilder("Estimation of max allocated memory: ")
+    logString.append(maxAllocatedMemory)
+    if (lastAllocation > 0) {
+      logString.append("\nLast allocation before peak reached: ")
+      logString.append(lastAllocation)
+      logString.append("\nEstimation of max allocated memory before peak reached: ")
+      logString.append(maxAllocatedMemory - lastAllocation)
+    }
+    if (stackTrace.isDefined) {
+      logString.append("\nStack trace of the allocation where peak was reached: ")
+      logString.append(stackTrace.get)
+    }
     if (logToStdOut) println(logString)
     try {
       pw.println(logString)
