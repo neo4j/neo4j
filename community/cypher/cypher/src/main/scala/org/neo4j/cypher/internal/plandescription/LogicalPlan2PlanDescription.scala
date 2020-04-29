@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.GraphScope
-import org.neo4j.cypher.internal.ast.LabelAllQualifier
-import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
@@ -769,34 +769,34 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children, Seq(Details(Seq(dbName, resourceText, qualifierText) ++ getRoleInfo(roleName).info)), variables)
 
-      case GrantSetLabel(_, database, qualifier, roleName) =>
+      case GrantSetLabel(_, resource, database, _, roleName) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, "GrantSetLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
-      case DenySetLabel(_, database, qualifier, roleName) =>
+      case DenySetLabel(_, resource, database, _, roleName) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, "DenySetLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
-      case RevokeSetLabel(_, database, qualifier, roleName, revokeType) =>
+      case RevokeSetLabel(_, resource, database, _, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeSetLabel", revokeType), children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
-      case GrantRemoveLabel(_, database, qualifier, roleName) =>
+      case GrantRemoveLabel(_, resource, database, _, roleName) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, "GrantRemoveLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
-      case DenyRemoveLabel(_, database, qualifier, roleName) =>
+      case DenyRemoveLabel(_, resource, database, _, roleName) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, "DenyRemoveLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
-      case RevokeRemoveLabel(_, database, qualifier, roleName, revokeType) =>
+      case RevokeRemoveLabel(_, resource, database, _, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(qualifier)
+        val labelText = extractLabelPart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRemoveLabel", revokeType), children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
@@ -1224,9 +1224,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
   }
 
-  private def extractLabelPart(qualifier: PrivilegeQualifier): String = qualifier match {
-    case LabelQualifier(name)        => s"LABEL ${ExpressionStringifier.backtick(name)}"
-    case LabelAllQualifier()         => "ALL LABELS"
+  private def extractLabelPart(resource: ActionResource): String = resource match {
+    case LabelResource(name)        => s"LABEL ${ExpressionStringifier.backtick(name)}"
+    case AllLabelResource()         => "ALL LABELS"
     case _                           => "<unknown>"
   }
 
