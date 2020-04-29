@@ -121,7 +121,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
-    private final MemoryTracker memoryTracker;
+    private final MemoryTracker otherMemoryTracker;
     private final GBPTreeCountsStore countsStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
@@ -148,7 +148,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             PageCacheTracer cacheTracer,
             boolean createStoreIfNotExists,
-            MemoryTracker memoryTracker )
+            MemoryTracker otherMemoryTracker )
     {
         this.databaseLayout = databaseLayout;
         this.tokenHolders = tokenHolders;
@@ -158,7 +158,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.idController = idController;
         this.cacheTracer = cacheTracer;
-        this.memoryTracker = memoryTracker;
+        this.otherMemoryTracker = otherMemoryTracker;
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
@@ -264,9 +264,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer )
+    public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, cursorTracer );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, cursorTracer, memoryTracker );
     }
 
     @Override
@@ -395,7 +395,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try ( var cursor = cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) )
         {
             neoStores.start( cursor );
-            countsStore.start( cursor, memoryTracker );
+            countsStore.start( cursor, otherMemoryTracker );
             idController.start();
         }
     }

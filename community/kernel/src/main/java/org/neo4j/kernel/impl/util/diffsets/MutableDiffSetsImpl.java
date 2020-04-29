@@ -24,9 +24,9 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 

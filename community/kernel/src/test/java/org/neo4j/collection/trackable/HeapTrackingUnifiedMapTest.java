@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.github.jamm.MemoryMeter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,10 +31,9 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.util.collection.HeapTrackingUnifiedSet.createUnifiedSet;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-class HeapTrackingUnifiedSetTest
+class HeapTrackingUnifiedMapTest
 {
     private static final long INTEGER_SIZE = shallowSizeOfInstance( Integer.class );
     private final MemoryMeter meter = new MemoryMeter();
@@ -52,9 +50,9 @@ class HeapTrackingUnifiedSetTest
     @Test
     void calculateEmptySize()
     {
-        HeapTrackingUnifiedSet<Integer> unifiedSet = createUnifiedSet( memoryTracker );
-        assertExactEstimation( unifiedSet );
-        unifiedSet.close();
+        HeapTrackingUnifiedMap<Integer,Integer> map = HeapTrackingUnifiedMap.createUnifiedMap( memoryTracker );
+        assertExactEstimation( map );
+        map.close();
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
     }
 
@@ -62,19 +60,22 @@ class HeapTrackingUnifiedSetTest
     void reactToGrowth()
     {
         long totalBytesIntegers = 0;
-        HeapTrackingUnifiedSet<Integer> unifiedSet = createUnifiedSet( memoryTracker );
-        assertExactEstimation( unifiedSet );
-        for ( int i = 0; i < 10; i++ )
+        HeapTrackingUnifiedMap<Integer,Integer> map = HeapTrackingUnifiedMap.createUnifiedMap( memoryTracker );
+        assertExactEstimation( map );
+        long emptySize = memoryTracker.estimatedHeapMemory();
+        // We avoid 0 and 1 since they are sentinel values and we don't track them
+        for ( int i = 0; i < 128; i++ )
         {
             totalBytesIntegers += INTEGER_SIZE;
             memoryTracker.allocateHeap( INTEGER_SIZE );
-            unifiedSet.add( i );
+            map.put( i, i );
         }
 
-        assertExactEstimation( unifiedSet );
+        assertExactEstimation( map );
+        assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThan( emptySize );
         assertThat( memoryPool.usedHeap() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
 
-        unifiedSet.close();
+        map.close();
         memoryTracker.releaseHeap( totalBytesIntegers );
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
 
@@ -82,8 +83,8 @@ class HeapTrackingUnifiedSetTest
         assertEquals( 0, memoryPool.usedHeap() );
     }
 
-    private void assertExactEstimation( UnifiedSet<?> unifiedSet )
+    private void assertExactEstimation( HeapTrackingUnifiedMap<?,?> map )
     {
-        assertEquals( meter.measureDeep( unifiedSet ) - meter.measureDeep( memoryTracker ), memoryTracker.estimatedHeapMemory() );
+        assertEquals( meter.measureDeep( map ) - meter.measureDeep( memoryTracker ), memoryTracker.estimatedHeapMemory() );
     }
 }

@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.impl.map.mutable.UnifiedMap;
+import org.eclipse.collections.api.map.MutableMap;
 
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.trackable.HeapTrackingAppendList;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
 import static java.util.Collections.emptyIterator;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -41,7 +43,7 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
     private final ScopedMemoryTracker scopedMemoryTracker;
-    private final UnifiedMap<K,HeapTrackingAppendList<V>> map;
+    private final MutableMap<K,HeapTrackingAppendList<V>> map;
 
     public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
     {
@@ -53,7 +55,7 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
     private ProbeTable( ScopedMemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = HeapTrackingUnifiedMap.createUnifiedMap( scopedMemoryTracker );
+        this.map = newMap( scopedMemoryTracker );
     }
 
     public void put( K key, V value )

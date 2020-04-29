@@ -30,8 +30,8 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;

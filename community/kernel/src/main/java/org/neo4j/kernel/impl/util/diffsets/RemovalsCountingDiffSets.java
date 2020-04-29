@@ -37,7 +37,7 @@ public class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl
     private final MemoryTracker memoryTracker;
     private MutableLongSet removedFromAdded;
 
-    public static RemovalsCountingDiffSets newRemovalsCountingDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    static RemovalsCountingDiffSets newRemovalsCountingDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( REMOVALS_COUNTING_DIFF_SET_SHALLOW_SIZE );
         return new RemovalsCountingDiffSets( collectionsFactory, memoryTracker );

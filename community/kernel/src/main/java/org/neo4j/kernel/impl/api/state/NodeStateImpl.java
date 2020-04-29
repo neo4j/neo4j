@@ -33,7 +33,6 @@ import java.util.Set;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -45,6 +44,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.createRelationshipChangesForNode;
+import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 
 class NodeStateImpl extends EntityStateImpl implements NodeState
 {
@@ -170,7 +170,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     {
         if ( labelDiffSets == null )
         {
-            labelDiffSets = HeapTrackingCollections.newMutableLongDiffSets( collectionsFactory, memoryTracker );
+            labelDiffSets = newMutableLongDiffSets( collectionsFactory, memoryTracker );
         }
         return labelDiffSets;
     }

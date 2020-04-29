@@ -22,9 +22,13 @@ package org.neo4j.kernel.impl.util.collection;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.util.collection.HeapTrackingValuesMap.createValuesMap;
 
 public class OnHeapCollectionsFactory implements CollectionsFactory
 {
@@ -42,15 +46,15 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker )
+    public MutableLongDiffSets newLongDiffSets( MemoryTracker memoryTracker )
     {
-        return MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( this, memoryTracker );
+        return TrackableDiffSets.newMutableLongDiffSets( this, memoryTracker );
     }
 
     @Override
     public MutableLongObjectMap<Value> newValuesMap( MemoryTracker memoryTracker )
     {
-        return HeapTrackingCollections.newValuesMap( memoryTracker );
+        return createValuesMap( memoryTracker );
     }
 
     @Override

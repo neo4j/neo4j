@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangesTest
 {
@@ -60,7 +61,7 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt() );
+        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE );
 
         // When
         change.getOrLoad( 1, null, NULL ).forChangingData();

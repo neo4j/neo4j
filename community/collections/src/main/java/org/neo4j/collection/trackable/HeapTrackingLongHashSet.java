@@ -17,33 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.map.mutable.UnifiedMap;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
-import static org.neo4j.memory.HeapEstimator.OBJECT_REFERENCE_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements AutoCloseable
+public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedMap.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongHashSet.class );
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
+    static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker )
     {
-        int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
-        return new HeapTrackingUnifiedMap<>( memoryTracker, initialSizeToAllocate );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( DEFAULT_INITIAL_CAPACITY ) );
+        return new HeapTrackingLongHashSet( memoryTracker, DEFAULT_INITIAL_CAPACITY );
     }
 
-    private HeapTrackingUnifiedMap( MemoryTracker memoryTracker, int trackedCapacity )
+    private HeapTrackingLongHashSet( MemoryTracker memoryTracker, int trackedCapacity )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
         this.trackedCapacity = trackedCapacity;
@@ -64,11 +64,11 @@ class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements AutoClosea
     @Override
     public void close()
     {
-        memoryTracker.releaseHeap( SHALLOW_SIZE + arrayHeapSize( trackedCapacity ) );
+        memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
     private static long arrayHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
     }
 }

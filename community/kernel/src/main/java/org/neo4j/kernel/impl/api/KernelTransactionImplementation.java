@@ -223,12 +223,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
+        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES );
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext( pageCursorTracer );
+        this.commandCreationContext = storageEngine.newCommandCreationContext( pageCursorTracer, memoryTracker );
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -262,7 +263,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
-        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES );
     }
 
     /**

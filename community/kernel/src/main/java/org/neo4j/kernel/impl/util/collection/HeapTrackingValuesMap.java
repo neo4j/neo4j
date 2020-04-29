@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 

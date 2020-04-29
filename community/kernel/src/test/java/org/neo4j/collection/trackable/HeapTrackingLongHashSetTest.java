@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.github.jamm.MemoryMeter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +32,10 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.util.collection.HeapTrackingIntObjectHashMap.createIntObjectHashMap;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.collection.trackable.HeapTrackingLongHashSet.createLongHashSet;
 
-class HeapTrackingIntObjectHashMapTest
+class HeapTrackingLongHashSetTest
 {
-    private static final long INTEGER_SIZE = shallowSizeOfInstance( Integer.class );
     private final MemoryMeter meter = new MemoryMeter();
     private MemoryPool memoryPool;
     private MemoryTracker memoryTracker;
@@ -51,41 +50,34 @@ class HeapTrackingIntObjectHashMapTest
     @Test
     void calculateEmptySize()
     {
-        HeapTrackingIntObjectHashMap<Object> intObjectHashMap = createIntObjectHashMap( memoryTracker );
-        assertExactEstimation( intObjectHashMap );
-        intObjectHashMap.close();
+        HeapTrackingLongHashSet longHashSet = createLongHashSet( memoryTracker );
+        assertExactEstimation( longHashSet );
+        longHashSet.close();
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
     }
 
     @Test
     void reactToGrowth()
     {
-        long totalBytesIntegers = 0;
-        HeapTrackingIntObjectHashMap<Integer> intObjectHashMap = createIntObjectHashMap( memoryTracker );
-        assertExactEstimation( intObjectHashMap );
-        long emptySize = memoryTracker.estimatedHeapMemory();
-        // We avoid 0 and 1 since they are sentinel values and we don't track them
-        for ( int i = 2; i <= 10; i++ )
+        HeapTrackingLongHashSet longHashSet = createLongHashSet( memoryTracker );
+        assertExactEstimation( longHashSet );
+        for ( int i = 0; i < 200; i++ )
         {
-            totalBytesIntegers += INTEGER_SIZE;
-            memoryTracker.allocateHeap( INTEGER_SIZE );
-            intObjectHashMap.put( i, i );
+            longHashSet.add( i );
         }
 
-        assertExactEstimation( intObjectHashMap );
-        assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThan( emptySize );
+        assertExactEstimation( longHashSet );
         assertThat( memoryPool.usedHeap() ).isGreaterThanOrEqualTo( memoryTracker.estimatedHeapMemory() );
 
-        intObjectHashMap.close();
-        memoryTracker.releaseHeap( totalBytesIntegers );
+        longHashSet.close();
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
 
         memoryTracker.reset();
         assertEquals( 0, memoryPool.usedHeap() );
     }
 
-    private void assertExactEstimation( HeapTrackingIntObjectHashMap<?> longObjectHashMap )
+    private void assertExactEstimation( LongHashSet longHashSet )
     {
-        assertEquals( meter.measureDeep( longObjectHashMap ) - meter.measureDeep( memoryTracker ), memoryTracker.estimatedHeapMemory() );
+        assertEquals( meter.measureDeep( longHashSet ) - meter.measureDeep( memoryTracker ), memoryTracker.estimatedHeapMemory() );
     }
 }

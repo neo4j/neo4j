@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -209,7 +210,7 @@ public class RecordBuilders
                             group.setType( extra );
                             return group;
                         } ),
-                null, null, null, null );
+                null, null, null, null, EmptyMemoryTracker.INSTANCE );
     }
 
     public static RelationshipGroupGetter newRelGroupGetter( AbstractBaseRecord... records )

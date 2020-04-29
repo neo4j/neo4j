@@ -44,7 +44,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     private MutableLongSet added;
     private MutableLongSet removed;
 
-    public static MutableLongDiffSetsImpl createMutableLongDiffSetsImpl( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    static MutableLongDiffSetsImpl createMutableLongDiffSetsImpl( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE );
         return new MutableLongDiffSetsImpl( collectionsFactory, memoryTracker );

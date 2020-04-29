@@ -71,6 +71,7 @@ import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
@@ -155,14 +156,14 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
-            this.commandCreationContext = storageEngine.newCommandCreationContext( NULL );
+            this.commandCreationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE );
         }
 
         @Override
         public void run()
         {
             try ( StorageReader reader = storageEngine.newReader();
-                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( NULL ) )
+                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE ) )
             {
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {

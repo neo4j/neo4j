@@ -21,11 +21,13 @@ package org.neo4j.internal.recordstorage;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.LocalIntCounter;
+
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 
 /**
  * Manages changes to records in a transaction. Before/after state is supported as well as
@@ -37,13 +39,14 @@ import org.neo4j.util.LocalIntCounter;
  */
 public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private final LongObjectHashMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges;
     private final Loader<RECORD,ADDITIONAL> loader;
     private final MutableInt changeCounter;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter )
+    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker )
     {
         this.loader = loader;
+        this.recordChanges = newLongObjectMap( memoryTracker );
         this.changeCounter = new LocalIntCounter( globalCounter );
     }
 

@@ -43,6 +43,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -108,7 +109,7 @@ public abstract class RecordStorageReaderTestBase
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
-        this.commitContext = storageEngine.newCommandCreationContext( NULL );
+        this.commitContext = storageEngine.newCommandCreationContext( NULL, EmptyMemoryTracker.INSTANCE );
         storageEngineRule.before();
     }
 

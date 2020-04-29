@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.legacy.IndexCommand;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -38,12 +37,10 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
@@ -52,7 +49,6 @@ import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
-import static org.neo4j.values.storable.Values.stringValue;
 
 @DbmsExtension
 public class CommitProcessTracingIT
@@ -79,7 +75,7 @@ public class CommitProcessTracingIT
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorTracer );
-            var context = storageEngine.newCommandCreationContext( PageCursorTracer.NULL );
+            var context = storageEngine.newCommandCreationContext( PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE );
             List<StorageCommand> commands = new ArrayList<>();
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );

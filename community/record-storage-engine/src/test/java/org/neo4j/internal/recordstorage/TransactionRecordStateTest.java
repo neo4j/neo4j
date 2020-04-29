@@ -122,6 +122,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -1577,7 +1578,7 @@ class TransactionRecordStateTest
     private TransactionRecordState newTransactionRecordState()
     {
         Loaders loaders = new Loaders( neoStores );
-        recordChangeSet = new RecordChangeSet( loaders );
+        recordChangeSet = new RecordChangeSet( loaders, INSTANCE );
         PropertyTraverser propertyTraverser = new PropertyTraverser( NULL );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, NULL );

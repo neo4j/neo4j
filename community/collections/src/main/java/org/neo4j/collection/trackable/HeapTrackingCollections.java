@@ -17,20 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.MutableSet;
 
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
-import org.neo4j.kernel.impl.util.diffsets.RemovalsCountingDiffSets;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
 
 public final class HeapTrackingCollections
 {
@@ -61,25 +55,5 @@ public final class HeapTrackingCollections
     public static <T> MutableSet<T> newSet( MemoryTracker memoryTracker )
     {
         return HeapTrackingUnifiedSet.createUnifiedSet( memoryTracker );
-    }
-
-    public static MutableLongDiffSets newMutableLongDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
-    {
-        return MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( collectionsFactory, memoryTracker );
-    }
-
-    public static RemovalsCountingDiffSets newRemovalsCountingDiffSets( CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
-    {
-        return RemovalsCountingDiffSets.newRemovalsCountingDiffSets( collectionsFactory, memoryTracker );
-    }
-
-    public static <T> MutableDiffSets<T> newMutableDiffSets( MemoryTracker memoryTracker )
-    {
-        return MutableDiffSetsImpl.newMutableDiffSets( memoryTracker );
-    }
-
-    static HeapTrackingLongObjectHashMap<Value> newValuesMap( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingValuesMap.createValuesMap( memoryTracker );
     }
 }

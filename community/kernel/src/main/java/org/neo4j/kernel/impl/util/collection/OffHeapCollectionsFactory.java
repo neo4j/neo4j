@@ -29,9 +29,11 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesMap;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 
 public class OffHeapCollectionsFactory implements CollectionsFactory
 {
@@ -54,9 +56,9 @@ public class OffHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker )
+    public MutableLongDiffSets newLongDiffSets( MemoryTracker memoryTracker )
     {
-        return MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl( this, memoryTracker );
+        return newMutableLongDiffSets( this, memoryTracker );
     }
 
     @Override

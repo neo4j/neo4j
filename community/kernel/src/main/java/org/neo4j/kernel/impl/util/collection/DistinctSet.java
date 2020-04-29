@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.block.procedure.Procedure;
+import org.eclipse.collections.api.set.MutableSet;
 
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newSet;
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -36,7 +38,7 @@ public class DistinctSet<T extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( DistinctSet.class );
     private final ScopedMemoryTracker scopedMemoryTracker;
-    private final HeapTrackingUnifiedSet<T> distinctSet;
+    private final MutableSet<T> distinctSet;
 
     public static <T extends Measurable> DistinctSet<T> createDistinctSet( MemoryTracker memoryTracker )
     {
@@ -48,7 +50,7 @@ public class DistinctSet<T extends Measurable> implements AutoCloseable
     private DistinctSet( ScopedMemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        distinctSet = HeapTrackingUnifiedSet.createUnifiedSet( scopedMemoryTracker );
+        distinctSet = newSet( scopedMemoryTracker );
     }
 
     public boolean add( T element )

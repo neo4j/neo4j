@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryGroup;
@@ -90,6 +90,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
@@ -114,7 +115,7 @@ class KernelTransactionTestBase
     {
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( storageEngine.newReader() ).thenReturn( storageReader );
-        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ) ) ).thenReturn( commandCreationContext );
+        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), any() ) ).thenReturn( commandCreationContext );
         when( storageEngine.transactionIdStore() ).thenReturn( transactionIdStore );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
@@ -208,7 +209,7 @@ class KernelTransactionTestBase
         }
 
         @Override
-        public MutableLongDiffSetsImpl newLongDiffSets( MemoryTracker memoryTracker )
+        public MutableLongDiffSets newLongDiffSets( MemoryTracker memoryTracker )
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets( memoryTracker );
         }

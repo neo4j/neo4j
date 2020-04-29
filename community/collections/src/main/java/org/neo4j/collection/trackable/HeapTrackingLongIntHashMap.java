@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
 
 import org.neo4j.memory.MemoryTracker;
 
@@ -29,21 +29,21 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable
+class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongHashSet.class );
-    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongIntHashMap.class );
+    static final int DEFAULT_INITIAL_CAPACITY = 16;
 
-    private final MemoryTracker memoryTracker;
+    final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker )
+    static HeapTrackingLongIntHashMap createLongIntHashMap( MemoryTracker memoryTracker )
     {
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( DEFAULT_INITIAL_CAPACITY ) );
-        return new HeapTrackingLongHashSet( memoryTracker, DEFAULT_INITIAL_CAPACITY );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
+        return new HeapTrackingLongIntHashMap( memoryTracker, DEFAULT_INITIAL_CAPACITY );
     }
 
-    private HeapTrackingLongHashSet( MemoryTracker memoryTracker, int trackedCapacity )
+    private HeapTrackingLongIntHashMap( MemoryTracker memoryTracker, int trackedCapacity )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
         this.trackedCapacity = trackedCapacity;
@@ -54,8 +54,8 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
     {
         if ( memoryTracker != null )
         {
-            memoryTracker.allocateHeap( arrayHeapSize( sizeToAllocate ) );
-            memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) );
+            memoryTracker.allocateHeap( arraysHeapSize( sizeToAllocate ) );
+            memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) );
             trackedCapacity = sizeToAllocate;
         }
         super.allocateTable( sizeToAllocate );
@@ -64,11 +64,13 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
     @Override
     public void close()
     {
-        memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) + SHALLOW_SIZE );
+        memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    private static long arrayHeapSize( int arrayLength )
+    private static long arraysHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
+        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
+        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Integer.BYTES );
+        return keyArray + valueArray;
     }
 }

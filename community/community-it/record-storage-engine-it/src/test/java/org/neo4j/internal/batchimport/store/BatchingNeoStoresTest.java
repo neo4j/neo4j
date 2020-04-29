@@ -349,7 +349,7 @@ class BatchingNeoStoresTest
             TxState txState = new TxState();
             Monitors monitors = new Monitors();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL );
+            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE );
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );

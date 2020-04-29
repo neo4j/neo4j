@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.set.mutable.UnifiedSet;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 
 import org.neo4j.memory.MemoryTracker;
 
@@ -30,20 +30,20 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoCloseable
+class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements AutoCloseable
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedSet.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedMap.class );
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <T> HeapTrackingUnifiedSet<T> createUnifiedSet( MemoryTracker memoryTracker )
+    static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
     {
-        int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 1;
+        int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
         memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
-        return new HeapTrackingUnifiedSet<>( memoryTracker, initialSizeToAllocate );
+        return new HeapTrackingUnifiedMap<>( memoryTracker, initialSizeToAllocate );
     }
 
-    private HeapTrackingUnifiedSet( MemoryTracker memoryTracker, int trackedCapacity )
+    private HeapTrackingUnifiedMap( MemoryTracker memoryTracker, int trackedCapacity )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
         this.trackedCapacity = trackedCapacity;

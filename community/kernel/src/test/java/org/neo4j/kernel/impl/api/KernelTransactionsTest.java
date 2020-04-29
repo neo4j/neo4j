@@ -124,6 +124,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.util.concurrent.Futures.combine;
 
@@ -401,15 +402,8 @@ class KernelTransactionsTest
 
         Future<?> wrongUnblocker = unblockTxsInSeparateThread( kernelTransactions );
 
-        try
-        {
-            wrongUnblocker.get();
-        }
-        catch ( Exception e )
-        {
-            assertThat( e ).isInstanceOf( ExecutionException.class );
-            assertThat( e.getCause() ).isInstanceOf( IllegalStateException.class );
-        }
+        var e = assertThrows( ExecutionException.class, wrongUnblocker::get );
+        assertThat( e.getCause() ).isInstanceOf( IllegalStateException.class );
         assertNotDone( txOpener );
 
         kernelTransactions.unblockNewTransactions();
@@ -640,7 +634,7 @@ class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
-        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ) ) ).thenReturn( mock( CommandCreationContext.class ) );
+        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), INSTANCE ) ).thenReturn( mock( CommandCreationContext.class ) );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );

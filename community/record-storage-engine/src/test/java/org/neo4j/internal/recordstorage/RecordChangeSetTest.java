@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangeSetTest
 {
@@ -30,7 +31,7 @@ class RecordChangeSetTest
     void shouldStartWithSetsInitializedAndEmpty()
     {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ) );
+        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE );
 
         // WHEN
         // nothing really
