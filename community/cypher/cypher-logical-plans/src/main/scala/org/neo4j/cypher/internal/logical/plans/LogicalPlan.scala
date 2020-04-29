@@ -194,8 +194,9 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case NodeIndexScan(idName, label, properties, _, _) =>
         acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+      case MultiNodeIndexSeek(indexPlans) =>
+        acc => acc ++ indexPlans.flatMap(_.indexUsage)
       }
-    // TODO: FIXME Multi
   }
 }
 
