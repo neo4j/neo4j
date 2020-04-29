@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllNodes
+import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
-import org.neo4j.cypher.internal.ast.AllResource
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -753,7 +753,7 @@ object Prettifier {
     val resourceName = resource match {
       case PropertyResource(name) => ExpressionStringifier.backtick(name)
       case PropertiesResource(names) => names.map(ExpressionStringifier.backtick(_)).mkString(", ")
-      case AllResource() => "*"
+      case AllPropertyResource() => "*"
       case _ => "<unknown>"
     }
     (resourceName, extractScope(dbScope, qualifier))

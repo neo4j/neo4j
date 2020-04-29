@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
-import org.neo4j.cypher.internal.ast.AllResource
+import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
@@ -1212,7 +1212,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val qualifierText = Prettifier.extractQualifierPart(qualifier)
     val resourceText = resource match {
       case PropertyResource(name) => s"PROPERTY ${ExpressionStringifier.backtick(name)}"
-      case AllResource() => "ALL PROPERTIES"
+      case AllPropertyResource() => "ALL PROPERTIES"
     }
     (dbName, qualifierText, resourceText)
   }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AllResource
+import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.LabelsQualifier
@@ -1029,7 +1029,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(GrantRead(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       PlanDescriptionImpl(id, "GrantRead", SingleChild(privLhsPD), Seq(Details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyRead(privLhsLP, AllResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(DenyRead(privLhsLP, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       PlanDescriptionImpl(id, "DenyRead", SingleChild(privLhsPD), Seq(Details(Seq("ALL GRAPHS", "ALL PROPERTIES", "NODES Label1", "ROLE role1"))), Set.empty))
 
     assertGood(attach(RevokeRead(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),

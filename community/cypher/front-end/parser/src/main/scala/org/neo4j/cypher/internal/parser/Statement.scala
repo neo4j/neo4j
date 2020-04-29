@@ -497,7 +497,7 @@ trait Statement extends Parser
 
   private def PrivilegeProperty: Rule1[ActionResource] = rule("{propertyList}")(
     group("{" ~~ SymbolicNamesList ~~ "}") ~~>> {ast.PropertiesResource(_)} |
-      group("{" ~~ "*" ~~ "}") ~~~> {ast.AllResource()}
+      group("{" ~~ "*" ~~ "}") ~~~> {ast.AllPropertyResource()}
   )
 
   private def UserQualifier: Rule1[PrivilegeQualifier] = rule("(usernameList)")(

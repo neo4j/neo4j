@@ -238,11 +238,12 @@ final case class PropertiesResource(properties: Seq[String])(val position: Input
   override def simplify: Seq[ActionResource] = properties.map(PropertyResource(_)(position))
 }
 
-final case class DatabaseResource()(val position: InputPosition) extends ActionResource
 
-final case class AllResource()(val position: InputPosition) extends ActionResource
+final case class AllPropertyResource()(val position: InputPosition) extends ActionResource
 
 final case class NoResource()(val position: InputPosition) extends ActionResource
+
+final case class DatabaseResource()(val position: InputPosition) extends ActionResource
 
 sealed trait PrivilegeQualifier extends Rewritable {
   def simplify: Seq[PrivilegeQualifier] = Seq(this)
