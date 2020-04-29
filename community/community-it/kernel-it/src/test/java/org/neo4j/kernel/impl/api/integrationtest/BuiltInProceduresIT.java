@@ -34,8 +34,6 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
-import org.neo4j.cypher.internal.QueryCache;
-import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.SchemaWrite;
