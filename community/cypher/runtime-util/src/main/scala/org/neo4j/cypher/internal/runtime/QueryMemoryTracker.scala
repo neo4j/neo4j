@@ -227,12 +227,14 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker, memoryTracke
   override def memoryTrackingIterator[T <: Measurable](input: Iterator[T], operatorId: Int): Iterator[T] = new MemoryTrackingIterator[T](input, operatorId)
 
   private class MemoryTrackingIterator[T <: Measurable](input: Iterator[T], operatorId: Int) extends Iterator[T] {
+    private val operatorMemoryTracker = memoryTrackerForOperator(operatorId)
+
     override def hasNext: Boolean = input.hasNext
 
     override def next(): T = {
       val t = input.next()
       val rowHeapUsage = t.estimatedHeapUsage
-      allocated(rowHeapUsage, operatorId)
+      operatorMemoryTracker.allocateHeap(rowHeapUsage)
       t
     }
   }
