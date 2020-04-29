@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
@@ -100,8 +101,6 @@ import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
 import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
 import org.neo4j.cypher.internal.logical.plans.DenyMatch
 import org.neo4j.cypher.internal.logical.plans.DenyRead
-import org.neo4j.cypher.internal.logical.plans.DenyRemoveLabel
-import org.neo4j.cypher.internal.logical.plans.DenySetLabel
 import org.neo4j.cypher.internal.logical.plans.DenyTraverse
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
@@ -139,9 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantMatch
 import org.neo4j.cypher.internal.logical.plans.GrantRead
-import org.neo4j.cypher.internal.logical.plans.GrantRemoveLabel
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
-import org.neo4j.cypher.internal.logical.plans.GrantSetLabel
 import org.neo4j.cypher.internal.logical.plans.GrantTraverse
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
@@ -198,9 +195,7 @@ import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
 import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
 import org.neo4j.cypher.internal.logical.plans.RevokeMatch
 import org.neo4j.cypher.internal.logical.plans.RevokeRead
-import org.neo4j.cypher.internal.logical.plans.RevokeRemoveLabel
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
-import org.neo4j.cypher.internal.logical.plans.RevokeSetLabel
 import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -714,20 +709,24 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val details = extractDatabaseArguments(action, database, qualifier, roleName)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children, Seq(details), variables)
 
-      case GrantGraphAction(_, action, database, qualifier, roleName) =>
+      case GrantGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
         val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName, qualifierText) ++ getRoleInfo(roleName).info)), variables)
+        val labelText = extractLabelPart(resource)
+        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText) ++ getRoleInfo(roleName).info)), variables)
 
-      case DenyGraphAction(_, action, database, qualifier, roleName) =>
+      case DenyGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
         val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName, qualifierText) ++ getRoleInfo(roleName).info)), variables)
+        val labelText = extractLabelPart(resource)
+        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText) ++ getRoleInfo(roleName).info)), variables)
 
-      case RevokeGraphAction(_, action, database, qualifier, roleName, revokeType) =>
+      case RevokeGraphAction(_, action, resource, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
         val qualifierText = Prettifier.extractQualifierPart(qualifier)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children, Seq(Details(Seq(dbName, qualifierText) ++ getRoleInfo(roleName).info)), variables)
+        val labelText = extractLabelPart(resource)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
+          Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText) ++ getRoleInfo(roleName).info)), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
@@ -768,36 +767,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeMatch(_, resource, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children, Seq(Details(Seq(dbName, resourceText, qualifierText) ++ getRoleInfo(roleName).info)), variables)
-
-      case GrantSetLabel(_, resource, database, _, roleName) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, "GrantSetLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
-
-      case DenySetLabel(_, resource, database, _, roleName) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, "DenySetLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
-
-      case RevokeSetLabel(_, resource, database, _, roleName, revokeType) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeSetLabel", revokeType), children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
-
-      case GrantRemoveLabel(_, resource, database, _, roleName) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, "GrantRemoveLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
-
-      case DenyRemoveLabel(_, resource, database, _, roleName) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, "DenyRemoveLabel", children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
-
-      case RevokeRemoveLabel(_, resource, database, _, roleName, revokeType) =>
-        val dbName = extractGraphScope(database)
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRemoveLabel", revokeType), children, Seq(Details(Seq(dbName, labelText) ++ getRoleInfo(roleName).info)), variables)
 
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Details(Prettifier.extractScope(scope))), variables)
@@ -1224,10 +1193,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
   }
 
-  private def extractLabelPart(resource: ActionResource): String = resource match {
-    case LabelResource(name)        => s"LABEL ${ExpressionStringifier.backtick(name)}"
-    case AllLabelResource()         => "ALL LABELS"
-    case _                           => "<unknown>"
+  private def extractLabelPart(resource: ActionResource): Seq[String] = resource match {
+    case LabelResource(name) => Seq(s"LABEL ${ExpressionStringifier.backtick(name)}")
+    case AllLabelResource()  => Seq("ALL LABELS")
+    case NoResource()        => Seq.empty
+    case _                   => Seq("<unknown>")
   }
 
   private def extractUserQualifier(qualifier: PrivilegeQualifier): Option[String] = qualifier match {

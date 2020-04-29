@@ -94,23 +94,23 @@ trait Statement extends Parser
   }
 
   def GrantCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege grant statement") {
-      GrantRole | GrantDatabasePrivilege | GrantTraverse | GrantRead | GrantMatch |  GrantGraphPrivilege | GrantSetLabel | GrantRemoveLabel | GrantDbmsPrivilege
+      GrantRole | GrantDatabasePrivilege | GrantTraverse | GrantRead | GrantMatch |  GrantGraphPrivilege | GrantDbmsPrivilege
   }
 
   def DenyCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege deny statement") {
-    DenyDatabasePrivilege | DenyTraverse | DenyRead | DenyMatch |  DenyGraphPrivilege | DenySetLabel | DenyRemoveLabel | DenyDbmsPrivilege
+    DenyDatabasePrivilege | DenyTraverse | DenyRead | DenyMatch |  DenyGraphPrivilege | DenyDbmsPrivilege
   }
 
   def RevokeCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke statement") {
-    RevokeRole | RevokeDatabasePrivilege | RevokeTraverse | RevokeRead | RevokeMatch | RevokeGraphPrivilege | RevokeSetLabel | RevokeRemoveLabel | RevokeGrant | RevokeDeny | RevokeDbmsPrivilege
+    RevokeRole | RevokeDatabasePrivilege | RevokeTraverse | RevokeRead | RevokeMatch | RevokeGraphPrivilege | RevokeGrant | RevokeDeny | RevokeDbmsPrivilege
   }
 
   def RevokeGrant: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke grant statement") {
-    RevokeGrantDatabasePrivilege | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantSetLabel | RevokeGrantRemoveLabel | RevokeGrantDbmsPrivilege
+    RevokeGrantDatabasePrivilege | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantDbmsPrivilege
   }
 
   def RevokeDeny: Rule1[ast.AdministrationCommand] = rule("Security privilege revoke deny statement") {
-    RevokeDenyDatabasePrivilege | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch |  RevokeDenySetLabel | RevokeDenyRemoveLabel | RevokeDenyDbmsPrivilege
+    RevokeDenyDatabasePrivilege | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyDbmsPrivilege
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -408,83 +408,33 @@ trait Statement extends Parser
    //`GRANT ON GRAPH foo TO role`
   def GrantGraphPrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT CREATE") {
     group(keyword("GRANT") ~~ QualifiedGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, None, graphScope, qualifier, roles))
+      ((graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
+    group(keyword("GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
   }
 
   //`DENY ON GRAPH foo TO role`
   def DenyGraphPrivilege: Rule1[DenyPrivilege] = rule("CATALOG GRANT DELETE") {
     group(keyword("DENY") ~~ QualifiedGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, None, graphScope, qualifier, roles))
+      ((graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
+    group(keyword("DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
   }
 
   //`REVOKE ON GRAPH foo TO role`
   def RevokeGraphPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT CREATE") {
     group(keyword("REVOKE GRANT") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.grantedGraphAction(action, None, graphScope, qualifier, roles)) |
+    group(keyword("REVOKE GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, action, roles) =>  ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))|
     group(keyword("REVOKE DENY") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, None, graphScope, qualifier, roles)) |
+    group(keyword("REVOKE DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
     group(keyword("REVOKE") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles))
-  }
-
-  //`GRANT SET LABEL * ON GRAPH foo TO role`
-  def GrantSetLabel: Rule1[GrantPrivilege] = rule("CATALOG GRANT SET LABEL") {
-    group(keyword("GRANT SET LABEL") ~~ LabelResource ~~ Graph ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.GrantPrivilege.setLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`DENY SET LABEL * ON GRAPH foo TO role`
-  def DenySetLabel: Rule1[DenyPrivilege] = rule("CATALOG DENY SET LABEL") {
-    group(keyword("DENY SET LABEL") ~~ LabelResource ~~ Graph ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.DenyPrivilege.setLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE GRANT SET LABEL * ON GRAPH foo FROM role`
-  def RevokeGrantSetLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT SET LABEL") {
-    group(keyword("REVOKE GRANT SET LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.grantedSetLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE DENY SET LABEL * ON GRAPH foo FROM role`
-  def RevokeDenySetLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY SET LABEL") {
-    group(keyword("REVOKE DENY SET LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.deniedSetLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE SET LABEL * ON GRAPH foo FROM role`
-  def RevokeSetLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE SET LABEL") {
-    group(keyword("REVOKE SET LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.setLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-    //`GRANT REMOVE LABEL * ON GRAPH foo TO role`
-  def GrantRemoveLabel: Rule1[GrantPrivilege] = rule("CATALOG GRANT REMOVE LABEL") {
-    group(keyword("GRANT REMOVE LABEL") ~~ LabelResource ~~ Graph ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.GrantPrivilege.removeLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`DENY REMOVE LABEL * ON GRAPH foo TO role`
-  def DenyRemoveLabel: Rule1[DenyPrivilege] = rule("CATALOG DENY REMOVE LABEL") {
-    group(keyword("DENY REMOVE LABEL") ~~ LabelResource ~~ Graph ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.DenyPrivilege.removeLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE GRANT REMOVE LABEL * ON GRAPH foo FROM role`
-  def RevokeGrantRemoveLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT REMOVE LABEL") {
-    group(keyword("REVOKE GRANT REMOVE LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.grantedRemoveLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE DENY REMOVE LABEL * ON GRAPH foo FROM role`
-  def RevokeDenyRemoveLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY REMOVE LABEL") {
-    group(keyword("REVOKE DENY REMOVE LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.deniedRemoveLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
-  }
-
-  //`REVOKE REMOVE LABEL * ON GRAPH foo FROM role`
-  def RevokeRemoveLabel: Rule1[RevokePrivilege] = rule("CATALOG REVOKE REMOVE LABEL") {
-    group(keyword("REVOKE REMOVE LABEL") ~~ LabelResource ~~ Graph ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resources, graphs, roles) => ast.RevokePrivilege.removeLabel(resources, graphs, ast.LabelAllQualifier()(InputPosition.NONE), roles))
+      ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
+    group(keyword("REVOKE") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
@@ -563,6 +513,12 @@ trait Statement extends Parser
     group(keyword("DELETE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.DeleteElementAction)) |
     group(keyword("WRITE") ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.WriteAction))
   )
+
+  private def QualifiedGraphActionWithResource: Rule3[ActionResource, List[GraphScope], GraphAction] = rule("qualified graph action")(
+    group(keyword("SET LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.SetLabelAction)) |
+    group(keyword("REMOVE LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.RemoveLabelAction))
+  )
+
 
   private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |

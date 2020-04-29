@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GrantPrivilege
-import org.neo4j.cypher.internal.ast.RemoveLabelPrivilege
+import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RoleManagementAction
-import org.neo4j.cypher.internal.ast.SetLabelPrivilege
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.TransactionManagementAction
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
@@ -121,28 +121,16 @@ object Additions {
       case p@RevokePrivilege(DatabasePrivilege(_: TransactionManagementAction), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Transaction administration privileges are not supported in this Cypher version.", p.position)
 
-      // grant set label
-      case p@GrantPrivilege(SetLabelPrivilege(), _, _, _, _) =>
+      // grant fine-grained write
+      case p@GrantPrivilege(GraphPrivilege(action), _, _, _, _) if !action.equals(WriteAction) =>
         throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
 
-      // deny set label
-      case p@DenyPrivilege(SetLabelPrivilege(), _, _, _, _) =>
+      // deny fine-grained write
+      case p@DenyPrivilege(GraphPrivilege(action), _, _, _, _) if !action.equals(WriteAction) =>
         throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
 
-      // revoke set label
-      case p@RevokePrivilege(SetLabelPrivilege(), _, _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
-
-      // grant remove label
-      case p@GrantPrivilege(RemoveLabelPrivilege(), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
-
-      // deny remove label
-      case p@DenyPrivilege(RemoveLabelPrivilege(), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
-
-      // revoke remove label
-      case p@RevokePrivilege(RemoveLabelPrivilege(), _, _, _, _, _) =>
+      // revoke fine-grained
+      case p@RevokePrivilege(GraphPrivilege(action), _, _, _, _, _) if !action.equals(WriteAction) =>
         throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
     }
   }
