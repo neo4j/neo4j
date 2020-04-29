@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,8 +41,6 @@ import org.neo4j.test.extension.Inject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -62,7 +58,7 @@ class SnapshotExecutionEngineTest
     private CompilerFactory compilerFactory;
     private SnapshotExecutionEngine executionEngine;
     private VersionContext versionContext;
-    private SnapshotExecutionEngine.ParametrizedQueryExecutor executor;
+    private SnapshotExecutionEngine.QueryExecutor executor;
     private TransactionalContext transactionalContext;
     private final Config config = Config.defaults();
 
@@ -73,7 +69,7 @@ class SnapshotExecutionEngineTest
         compilerFactory = mock( CompilerFactory.class );
         transactionalContext = mock( TransactionalContext.class, RETURNS_DEEP_STUBS );
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        executor = mock( SnapshotExecutionEngine.ParametrizedQueryExecutor.class );
+        executor = mock( SnapshotExecutionEngine.QueryExecutor.class );
         versionContext = mock( VersionContext.class );
 
         executionEngine = createExecutionEngine( cypherService, false );
@@ -84,15 +80,15 @@ class SnapshotExecutionEngineTest
         when( originalResult.getQueryStatistics() ).thenReturn( statistics );
 
         var innerExecution = mock( QueryExecution.class );
-        when( executor.execute( any(), anyMap(), any(), anyBoolean(), any() ) ).thenReturn( innerExecution );
+        when( executor.execute( any() ) ).thenReturn( innerExecution );
     }
 
     @Test
     void executeQueryWithoutRetries() throws QueryExecutionKernelException
     {
-        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
+        executionEngine.executeWithRetries( "query", transactionalContext, executor );
 
-        verify( executor ).execute( any(), anyMap(), any(), anyBoolean(), any() );
+        verify( executor ).execute( any() );
         verify( versionContext ).initRead();
     }
 
@@ -101,9 +97,9 @@ class SnapshotExecutionEngineTest
     {
         when( versionContext.isDirty() ).thenReturn( true, true, false );
 
-        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
+        executionEngine.executeWithRetries( "query", transactionalContext, executor );
 
-        verify( executor, times( 3 ) ).execute( any(), anyMap(), any(), anyBoolean(), any() );
+        verify( executor, times( 3 ) ).execute( any() );
         verify( versionContext, times( 3 ) ).initRead();
     }
 
@@ -115,10 +111,10 @@ class SnapshotExecutionEngineTest
         when( versionContext.isDirty() ).thenReturn( true, true, false );
 
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false ) );
+                executionEngine.executeWithRetries( "query", transactionalContext, executor ) );
         assertEquals( "Unable to get clean data snapshot for query 'query' that performs updates.", e.getMessage() );
 
-        verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), anyBoolean(), any() );
+        verify( executor, times( 1 ) ).execute( any() );
         verify( versionContext, times( 1 ) ).initRead();
     }
 
@@ -128,10 +124,10 @@ class SnapshotExecutionEngineTest
         when( versionContext.isDirty() ).thenReturn( true );
 
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false ) );
+                executionEngine.executeWithRetries( "query", transactionalContext, executor ) );
         assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
 
-        verify( executor, times( 5 ) ).execute( any(), anyMap(), any(), anyBoolean(), any() );
+        verify( executor, times( 5 ) ).execute( any() );
         verify( versionContext, times( 5 ) ).initRead();
     }
 

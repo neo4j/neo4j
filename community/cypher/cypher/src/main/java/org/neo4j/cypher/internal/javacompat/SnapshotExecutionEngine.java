@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.javacompat;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
+import org.neo4j.cypher.internal.FullyParsedQuery;
+import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -55,22 +57,31 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
-        return executeWithRetries( query, parameters, context, super::executeQuery, prePopulate ).other();
+        QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, querySubscriber );
+        return executeWithRetries( query, context, queryExecutor ).other();
     }
 
     @Override
     public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate, QuerySubscriber subscriber )
             throws QueryExecutionKernelException
     {
-        var pair = executeWithRetries( query, parameters, context, super::executeQuery, prePopulate );
+        QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, querySubscriber );
+        var pair = executeWithRetries( query, context, queryExecutor );
         return pair.other().streamToSubscriber( subscriber, pair.first() );
     }
 
-    protected <T> Pair<QueryExecution, EagerResult> executeWithRetries( String query,
-                                                                   T parameters,
+    @Override
+    public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
+            boolean prePopulate, InputDataStream input, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+    {
+        QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, input, querySubscriber );
+        var pair = executeWithRetries( query.description(), context, queryExecutor );
+        return pair.other().streamToSubscriber( subscriber, pair.first() );
+    }
+
+    protected Pair<QueryExecution, EagerResult> executeWithRetries( String query,
                                                                    TransactionalContext context,
-                                                                   ParametrizedQueryExecutor<T> executor,
-                                                                   boolean prePopulate ) throws QueryExecutionKernelException
+                                                                   QueryExecutor executor ) throws QueryExecutionKernelException
     {
         VersionContext versionContext = getCursorContext( context );
         QueryExecution queryExecution;
@@ -95,7 +106,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
 
             ResultSubscriber resultSubscriber = getResultSubscriber( context );
 
-            queryExecution = executor.execute( query, parameters, context, prePopulate, resultSubscriber );
+            queryExecution = executor.execute( resultSubscriber );
             resultSubscriber.init( queryExecution );
 
             eagerResult = getEagerResult( versionContext, resultSubscriber );
@@ -128,9 +139,8 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @FunctionalInterface
-    protected interface ParametrizedQueryExecutor<T>
+    protected interface QueryExecutor
     {
-        QueryExecution execute( String query, T parameters, TransactionalContext context, boolean prePopulate, QuerySubscriber subscriber )
-                throws QueryExecutionKernelException;
+        QueryExecution execute( ResultSubscriber resultSubscriber ) throws QueryExecutionKernelException;
     }
 }
