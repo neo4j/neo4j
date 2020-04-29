@@ -399,7 +399,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
         long offset = fileSystem.getFileSize( versionVisitor.getHighestFile() );
         return new LogPosition( logVersion, offset );
-
     }
 
     private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure,

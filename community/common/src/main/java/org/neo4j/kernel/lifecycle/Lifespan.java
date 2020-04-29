@@ -41,6 +41,11 @@ public class Lifespan implements AutoCloseable
         return life.add( subject );
     }
 
+    public <T extends Lifecycle> T unwrap( Class<T> type )
+    {
+        return life.unwrap( type );
+    }
+
     @Override
     public void close()
     {

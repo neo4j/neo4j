@@ -30,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -583,6 +584,19 @@ class LifeSupportTest
         Lifecycle anotherLastComponent = mock( Lifecycle.class );
         lifeSupport.setLast( lastComponent );
         assertThrows( IllegalStateException.class, () -> lifeSupport.setLast( anotherLastComponent ) );
+    }
+
+    @Test
+    void unwrapMustFindFirstContainedInstanceOfType()
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        LifecycleAdapter a = new LifecycleAdapter();
+        LifecycleAdapter b = new LifecycleAdapter();
+        lifeSupport.add( new LifeSupportTest.LifecycleMock( null, null, null, null ) );
+        lifeSupport.add( a );
+        lifeSupport.add( b );
+
+        assertThat( lifeSupport.unwrap( LifecycleAdapter.class ), sameInstance( a ) );
     }
 
     static class LifecycleMock implements Lifecycle

@@ -211,6 +211,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withLogsDirectory( File logsDirectory )
+    {
+        this.logsDirectory = logsDirectory;
+        return this;
+    }
+
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
