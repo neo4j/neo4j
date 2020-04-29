@@ -535,7 +535,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
       case Selection(predicate, _) =>
-        val details = Details(predicate.exprs.toSeq.map(asPrettyString(_)).mkPrettyString(" AND "))
+        val details = Details(asPrettyString(predicate))
         PlanDescriptionImpl(id, "Filter", children, Seq(details), variables)
 
       case Skip(_, count) =>
