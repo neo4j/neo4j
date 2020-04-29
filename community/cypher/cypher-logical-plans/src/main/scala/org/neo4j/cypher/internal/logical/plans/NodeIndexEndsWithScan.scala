@@ -43,6 +43,10 @@ case class NodeIndexEndsWithScan(idName: String,
 
   val availableSymbols: Set[String] = argumentIds + idName
 
+  override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexEndsWithScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 

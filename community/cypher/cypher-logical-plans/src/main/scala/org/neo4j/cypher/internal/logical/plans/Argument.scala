@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * Produce a single row with the contents of argument
@@ -28,4 +29,7 @@ case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen)
 
   override val availableSymbols: Set[String] = argumentIds
 
+  override def usedVariables: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): Argument = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

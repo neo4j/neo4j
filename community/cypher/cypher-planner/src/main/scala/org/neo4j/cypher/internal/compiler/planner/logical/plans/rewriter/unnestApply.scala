@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -140,6 +141,12 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
       val res = Create(Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
       solveds.copy(apply.id, res.id)
       res
+
+    // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
+    case Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
+      if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
+      val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
+      projection.copy(rhsCopy, projections)(SameId(projection.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

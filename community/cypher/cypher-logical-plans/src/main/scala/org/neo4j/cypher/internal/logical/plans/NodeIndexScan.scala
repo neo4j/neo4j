@@ -36,6 +36,10 @@ case class NodeIndexScan(idName: String,
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
+  override def usedVariables: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeIndexScan =
     NodeIndexScan(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, argumentIds, indexOrder)(SameId(this.id))
 

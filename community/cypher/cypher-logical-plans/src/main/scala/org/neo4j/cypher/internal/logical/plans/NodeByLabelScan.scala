@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')
@@ -29,4 +30,8 @@ import org.neo4j.cypher.internal.expressions.LabelName
 case class NodeByLabelScan(idName: String, label: LabelName, argumentIds: Set[String])(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
+
+  override def usedVariables: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeByLabelScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

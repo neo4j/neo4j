@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * Produce one row for every node in the graph. Each row contains the contents of argument, and
@@ -29,4 +30,8 @@ case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen
   extends NodeLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
+
+  override def usedVariables: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): AllNodesScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

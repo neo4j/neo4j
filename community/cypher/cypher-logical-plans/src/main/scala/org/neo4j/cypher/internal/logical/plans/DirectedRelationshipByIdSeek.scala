@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
@@ -37,4 +38,8 @@ case class DirectedRelationshipByIdSeek(idName: String,
   extends LogicalLeafPlan(idGen) {
 
   val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+
+  override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipByIdSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

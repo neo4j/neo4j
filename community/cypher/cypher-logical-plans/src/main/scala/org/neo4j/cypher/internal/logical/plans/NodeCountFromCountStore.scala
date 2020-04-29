@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * Produce a single row with the contents of argument and a new value 'idName'. For each label in 'labelNames' the
@@ -31,4 +32,8 @@ case class NodeCountFromCountStore(idName: String, labelNames: List[Option[Label
   extends LogicalLeafPlan(idGen) {
 
   override val availableSymbols = Set(idName)
+
+  override def usedVariables: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeCountFromCountStore = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 }

@@ -40,6 +40,10 @@ case class NodeUniqueIndexSeek(idName: String,
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
+  override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): NodeUniqueIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 

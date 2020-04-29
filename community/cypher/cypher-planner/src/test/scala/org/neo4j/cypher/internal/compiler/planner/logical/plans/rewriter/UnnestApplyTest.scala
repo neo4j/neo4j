@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -273,6 +274,56 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
         Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)),
       Seq("a")
     ))
+  }
+
+  test("π (Arg) Ax R => π (R)") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .apply()
+      .|.allNodeScan("n", "x")
+      .projection("5 AS x")
+      .argument()
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .projection("5 as x")
+      .allNodeScan("n")
+      .build()
+    )
+  }
+
+  test("π (Arg) Ax R => π (R): keeps arguments if nested under another apply") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .apply()
+      .|.apply()
+      .|.|.allNodeScan("n", "x", "m")
+      .|.projection("5 AS x")
+      .|.argument("m")
+      .allNodeScan("m")
+      .build()
+
+    rewrite(input) should equal(new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .projection("5 as x")
+      .apply()
+      .|.allNodeScan("n", "m")
+      .allNodeScan("m")
+      .build()
+    )
+  }
+
+  test("π (Arg) Ax R => π (R): if R uses projected value") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .apply()
+      .|.nodeIndexOperator("n:Label(prop=???)", paramExpr = Some(varFor("x")), argumentIds = Set("x"))
+      .projection("5 AS x")
+      .argument()
+      .build()
+
+    rewrite(input) should equal(input)
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

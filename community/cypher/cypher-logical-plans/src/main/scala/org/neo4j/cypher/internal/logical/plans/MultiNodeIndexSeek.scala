@@ -35,6 +35,8 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[IndexSeekLeafPlan])
   override val availableSymbols: Set[String] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet
 
+  override def usedVariables: Set[String] = nodeIndexSeeks.flatMap(_.usedVariables).toSet
+
   override def argumentIds: Set[String] =
     nodeIndexSeeks.flatMap(_.argumentIds).toSet
 
@@ -43,6 +45,9 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[IndexSeekLeafPlan])
 
   override def properties: Seq[IndexedProperty] =
     nodeIndexSeeks.flatMap(_.properties)
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): MultiNodeIndexLeafPlan =
+    copy(nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[IndexSeekLeafPlan]))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiNodeIndexLeafPlan =
     MultiNodeIndexSeek(nodeIndexSeeks.map(_.withMappedProperties(f)))(SameId(this.id))

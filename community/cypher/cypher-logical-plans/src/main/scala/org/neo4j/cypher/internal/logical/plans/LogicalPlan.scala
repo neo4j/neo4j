@@ -210,6 +210,10 @@ abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) with Laz
   final val lhs = None
   final val rhs = None
   def argumentIds: Set[String]
+
+  def usedVariables: Set[String]
+
+  def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan
 }
 
 abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
