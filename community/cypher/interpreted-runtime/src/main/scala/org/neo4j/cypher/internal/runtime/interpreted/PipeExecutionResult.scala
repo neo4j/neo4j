@@ -68,7 +68,7 @@ class PipeExecutionResult(pipe: Pipe,
   }
 
   override def await(): Boolean = {
-    inner.hasNext && !cancelled
+    inner == null || (inner.hasNext && !cancelled)
   }
 
   private def serveResults(): Unit = {
