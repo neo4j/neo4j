@@ -41,7 +41,7 @@ class Configuration
     private List<String> options = new ArrayList<>();
     private List<SourceVisitor> sourceVisitors = new ArrayList<>();
     private List<WarningsHandler> warningsHandlers = new ArrayList<>();
-    SourceCompiler.Factory compiler = JdkCompiler.FACTORY;
+    JavaSourceCompiler.Factory compiler = JdkCompiler.FACTORY;
 
     public Configuration withAnnotationProcessor( Processor processor )
     {
@@ -133,7 +133,7 @@ class Configuration
                 warningsHandlers.toArray( new WarningsHandler[0] ) );
     }
 
-    public SourceCompiler sourceCompilerFor( CodeGenerationStrategy<?> strategy )
+    public JavaSourceCompiler sourceCompilerFor( CodeGenerationStrategy<?> strategy )
             throws CodeGenerationStrategyNotSupportedException
     {
         return compiler.sourceCompilerFor( this, strategy );
