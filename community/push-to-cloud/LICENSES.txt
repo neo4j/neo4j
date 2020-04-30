@@ -14,6 +14,7 @@ Apache Software License, Version 2.0
   Jackson-core
   jackson-databind
   Java Concurrency Tools Core Library
+  Jettison
   jPowerShell
   jProcesses
   Lucene Common Analyzers

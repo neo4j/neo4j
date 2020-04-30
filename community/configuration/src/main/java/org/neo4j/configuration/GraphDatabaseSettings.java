@@ -34,6 +34,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -934,6 +935,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .setDependency( logs_directory )
             .immutable()
             .build();
+
+    @Description( "Log format to use." )
+    @Internal
+    public static final Setting<FormattedLogFormat> log_format =
+            newBuilder( "unsupported.dbms.logs.format", ofEnum( FormattedLogFormat.class ), FormattedLogFormat.STANDARD_FORMAT ).build();
 
     @Description( "Log parameters for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =

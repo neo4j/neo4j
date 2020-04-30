@@ -188,7 +188,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
         FormattedLogProvider.Builder builder = FormattedLogProvider
                 .withoutRenderingContext()
                 .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
-                .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
+                .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                .withFormat( config.get( GraphDatabaseSettings.log_format) );
 
         LogProvider userLogProvider = config.get( GraphDatabaseSettings.store_user_log_to_stdout ) ? builder.toOutputStream( System.out )
                                                                                                    : createFileSystemUserLogProvider( config, builder );

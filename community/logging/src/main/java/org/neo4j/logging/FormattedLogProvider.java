@@ -50,6 +50,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
+        private FormattedLogFormat format = FormattedLogFormat.STANDARD_FORMAT;
 
         private Builder()
         {
@@ -140,6 +141,17 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
+         * The log format to use.
+         *
+         * @return this builder
+         */
+        public Builder withFormat( FormattedLogFormat format )
+        {
+            this.format = format;
+            return this;
+        }
+
+        /**
          * Creates a {@link FormattedLogProvider} instance that writes messages to an {@link OutputStream}.
          *
          * @param out An {@link OutputStream} to write to
@@ -193,7 +205,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( writerSupplier, zoneId, renderContext, levels, defaultLevel, autoFlush );
+            return new FormattedLogProvider( writerSupplier, zoneId, renderContext, levels, defaultLevel, autoFlush, format );
         }
     }
 
@@ -201,6 +213,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final ZoneId zoneId;
     private final boolean renderContext;
     private final boolean autoFlush;
+    private final FormattedLogFormat format;
 
     // Level settings can change dynamically at runtime
     private volatile Map<String, Level> levels;
@@ -320,7 +333,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     FormattedLogProvider( Supplier<PrintWriter> writerSupplier,
                           ZoneId zoneId, boolean renderContext,
-                          Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
+                          Map<String, Level> levels, Level defaultLevel, boolean autoFlush, FormattedLogFormat format )
     {
         this.writerSupplier = writerSupplier;
         this.zoneId = zoneId;
@@ -328,6 +341,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         this.levels = new HashMap<>( levels );
         this.defaultLevel = defaultLevel;
         this.autoFlush = autoFlush;
+        this.format = format;
     }
 
     @Override
@@ -376,7 +390,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     private FormattedLog buildLog( String context, Level level )
     {
-        return new FormattedLog( writerSupplier, zoneId, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( writerSupplier, zoneId, this, renderContext ? context : null, level, autoFlush, format );
     }
 
     private Level levelForContext( String context )

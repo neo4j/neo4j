@@ -168,6 +168,7 @@ org.neo4j.configuration.GraphDatabaseSettings::label_block_size org.neo4j.graphd
 org.neo4j.configuration.GraphDatabaseSettings::load_csv_file_url_root org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lock_acquisition_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lock_manager org.neo4j.graphdb.config.Setting<java.lang.String> public static final
+org.neo4j.configuration.GraphDatabaseSettings::log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_allocation_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_detailed_time_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

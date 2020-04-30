@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -58,6 +59,7 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
         private Level defaultLevel = Level.INFO;
         private ZoneId timeZoneId = ZoneOffset.UTC;
         private File debugLog;
+        private FormattedLogFormat format = FormattedLogFormat.STANDARD_FORMAT;
 
         private Builder()
         {
@@ -122,6 +124,12 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
             return this;
         }
 
+        public Builder withFormat( FormattedLogFormat format )
+        {
+            this.format = format;
+            return this;
+        }
+
         public StoreLogService build( FileSystemAbstraction fileSystem ) throws IOException
         {
             if ( debugLog == null )
@@ -130,7 +138,7 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
             }
             return new StoreLogService( userLogProvider, fileSystem, debugLog, logLevels, defaultLevel, timeZoneId,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor,
-                    rotationListener );
+                    rotationListener, format );
         }
     }
 
@@ -166,7 +174,8 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
             long internalLogRotationDelay,
             int maxInternalLogArchives,
             Executor rotationExecutor,
-            final Consumer<LogProvider> rotationListener ) throws IOException
+            final Consumer<LogProvider> rotationListener,
+            FormattedLogFormat format ) throws IOException
     {
         if ( !internalLog.getParentFile().exists() )
         {
@@ -174,7 +183,7 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
         }
 
         final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withZoneId( logTimeZone )
-                .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels );
+                .withDefaultLogLevel( defaultLevel ).withLogLevels( logLevels ).withFormat( format );
 
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )

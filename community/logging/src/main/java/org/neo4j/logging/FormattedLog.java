@@ -22,7 +22,6 @@ package org.neo4j.logging;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -54,9 +53,10 @@ public class FormattedLog extends AbstractLog
         private String category;
         private Level level = Level.INFO;
         private boolean autoFlush = true;
-        private DateTimeFormatter dateTimeFormatter = FormattedLogger.DATE_TIME_FORMATTER;
+        private FormattedLogFormat format = FormattedLogFormat.STANDARD_FORMAT;
+        private DateTimeFormatter dateTimeFormatter = FormattedLoggerStandard.DATE_TIME_FORMATTER;
         private Supplier<ZonedDateTime> dateTimeFormatterSupplier = () ->
-                FormattedLogger.DEFAULT_CURRENT_DATE_TIME.apply( zoneId );
+                FormattedLoggerStandard.DEFAULT_CURRENT_DATE_TIME.apply( zoneId );
 
         private Builder()
         {
@@ -156,6 +156,17 @@ public class FormattedLog extends AbstractLog
         }
 
         /**
+         * Use the specified logging format.
+         *
+         * @return this builder
+         */
+        public Builder withFormat( FormattedLogFormat format )
+        {
+            this.format = format;
+            return this;
+        }
+
+        /**
          * Creates a {@link FormattedLog} instance that writes messages to an {@link OutputStream}.
          *
          * @param out An {@link OutputStream} to write to
@@ -179,28 +190,6 @@ public class FormattedLog extends AbstractLog
         }
 
         /**
-         * Creates a {@link FormattedLog} instance that writes messages to a {@link Writer}.
-         *
-         * @param writer A {@link Writer} to write to
-         * @return A {@link FormattedLog} instance that writes to the specified Writer
-         */
-        public FormattedLog toWriter( Writer writer )
-        {
-            return toPrintWriter( new PrintWriter( writer ) );
-        }
-
-        /**
-         * Creates a {@link FormattedLog} instance that writes messages to a {@link PrintWriter}.
-         *
-         * @param writer A {@link PrintWriter} to write to
-         * @return A {@link FormattedLog} instance that writes to the specified PrintWriter
-         */
-        public FormattedLog toPrintWriter( PrintWriter writer )
-        {
-            return toPrintWriter( Suppliers.singleton( writer ) );
-        }
-
-        /**
          * Creates a {@link FormattedLog} instance that writes messages to {@link PrintWriter}s obtained from the specified
          * {@link Supplier}. The PrintWriter is obtained from the Supplier before every log message is written.
          *
@@ -209,7 +198,7 @@ public class FormattedLog extends AbstractLog
          */
         public FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLog( writerSupplier, zoneId, lock, category, level, autoFlush,
+            return new FormattedLog( writerSupplier, zoneId, lock, category, level, autoFlush, format,
                     dateTimeFormatter, dateTimeFormatterSupplier );
         }
     }
@@ -220,6 +209,7 @@ public class FormattedLog extends AbstractLog
     private final String category;
     private final AtomicReference<Level> levelRef;
     final boolean autoFlush;
+    private final FormattedLogFormat format;
     private final Logger debugLogger;
     private final Logger infoLogger;
     private final Logger warnLogger;
@@ -315,51 +305,18 @@ public class FormattedLog extends AbstractLog
         return new Builder().toOutputStream( outSupplier );
     }
 
-    /**
-     * Creates a {@link FormattedLog} instance that writes messages to a {@link Writer}.
-     *
-     * @param writer A {@link Writer} to write to
-     * @return A {@link FormattedLog} instance that writes to the specified Writer
-     */
-    public static FormattedLog toWriter( Writer writer )
-    {
-        return new Builder().toWriter( writer );
-    }
-
-    /**
-     * Creates a {@link FormattedLog} instance that writes messages to a {@link PrintWriter}.
-     *
-     * @param writer A {@link PrintWriter} to write to
-     * @return A {@link FormattedLog} instance that writes to the specified PrintWriter
-     */
-    public static FormattedLog toPrintWriter( PrintWriter writer )
-    {
-        return new Builder().toPrintWriter( writer );
-    }
-
-    /**
-     * Creates a {@link FormattedLog} instance that writes messages to {@link PrintWriter}s obtained from the specified
-     * {@link Supplier}. The PrintWriter is obtained from the Supplier before every log message is written.
-     *
-     * @param writerSupplier A supplier for a {@link PrintWriter} to write to
-     * @return A {@link FormattedLog} instance that writes to the specified PrintWriter
-     */
-    public static FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier )
-    {
-        return new Builder().toPrintWriter( writerSupplier );
-    }
-
     protected FormattedLog(
             Supplier<PrintWriter> writerSupplier,
             ZoneId zoneId,
             Object maybeLock,
             String category,
             Level level,
-            boolean autoFlush )
+            boolean autoFlush,
+            FormattedLogFormat format )
     {
-        this( writerSupplier, zoneId, maybeLock, category, level, autoFlush,
-                FormattedLogger.DATE_TIME_FORMATTER,
-                () -> FormattedLogger.DEFAULT_CURRENT_DATE_TIME.apply( zoneId ) );
+        this( writerSupplier, zoneId, maybeLock, category, level, autoFlush, format,
+                FormattedLoggerStandard.DATE_TIME_FORMATTER,
+                () -> FormattedLoggerStandard.DEFAULT_CURRENT_DATE_TIME.apply( zoneId ) );
     }
 
     protected FormattedLog(
@@ -369,6 +326,7 @@ public class FormattedLog extends AbstractLog
             String category,
             Level level,
             boolean autoFlush,
+            FormattedLogFormat format,
             DateTimeFormatter dateTimeFormatter,
             Supplier<ZonedDateTime> dateTimeSupplier )
     {
@@ -378,19 +336,15 @@ public class FormattedLog extends AbstractLog
         this.category = category;
         this.levelRef = new AtomicReference<>( level );
         this.autoFlush = autoFlush;
+        this.format = format;
 
-        String debugPrefix = ( category != null && !category.isEmpty() ) ? "DEBUG [" + category + "]" : "DEBUG";
-        String infoPrefix = ( category != null && !category.isEmpty() ) ? "INFO [" + category + "]" : "INFO ";
-        String warnPrefix = ( category != null && !category.isEmpty() ) ? "WARN [" + category + "]" : "WARN ";
-        String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + "]" : "ERROR";
-
-        this.debugLogger = new FormattedLogger( this, writerSupplier, debugPrefix, dateTimeFormatter,
+        this.debugLogger = FormattedLogFormat.getFormattedLogger( format, this, writerSupplier, Level.DEBUG, category, dateTimeFormatter,
                 dateTimeSupplier );
-        this.infoLogger = new FormattedLogger( this, writerSupplier, infoPrefix, dateTimeFormatter,
+        this.infoLogger = FormattedLogFormat.getFormattedLogger( format, this, writerSupplier, Level.INFO, category, dateTimeFormatter,
                 dateTimeSupplier );
-        this.warnLogger = new FormattedLogger( this, writerSupplier, warnPrefix, dateTimeFormatter,
+        this.warnLogger = FormattedLogFormat.getFormattedLogger( format, this, writerSupplier, Level.WARN, category, dateTimeFormatter,
                 dateTimeSupplier );
-        this.errorLogger = new FormattedLogger( this, writerSupplier, errorPrefix, dateTimeFormatter,
+        this.errorLogger = FormattedLogFormat.getFormattedLogger( format, this, writerSupplier, Level.ERROR, category, dateTimeFormatter,
                 dateTimeSupplier );
     }
 
@@ -481,7 +435,7 @@ public class FormattedLog extends AbstractLog
         {
             writer = writerSupplier.get();
             consumer.accept( new FormattedLog( Suppliers.singleton( writer ), zoneId,
-                    lock, category, levelRef.get(), false ) );
+                    lock, category, levelRef.get(), false, format ) );
         }
         if ( autoFlush )
         {

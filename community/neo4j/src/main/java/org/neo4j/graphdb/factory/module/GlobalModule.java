@@ -341,7 +341,8 @@ public class GlobalModule
 
         builder.withLevels( asDebugLogLevels( globalConfig.get( GraphDatabaseSettings.store_internal_debug_contexts ) ) );
         builder.withDefaultLevel( globalConfig.get( GraphDatabaseSettings.store_internal_log_level ) )
-               .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
+               .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
+               .withFormat( globalConfig.get( GraphDatabaseSettings.log_format ) );
 
         File logFile = globalConfig.get( store_internal_log_path ).toFile();
         if ( !logFile.getParentFile().exists() )

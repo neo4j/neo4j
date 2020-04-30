@@ -20,6 +20,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   Java Concurrency Tools Core Library
+  Jettison
   jPowerShell
   jProcesses
   Lucene Common Analyzers

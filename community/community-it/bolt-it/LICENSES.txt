@@ -38,6 +38,7 @@ Apache Software License, Version 2.0
   jersey-core-server
   jersey-inject-hk2
   jersey-media-jaxb
+  Jettison
   Jetty :: Security
   Jetty :: Servlet Handling
   Jetty :: Utilities

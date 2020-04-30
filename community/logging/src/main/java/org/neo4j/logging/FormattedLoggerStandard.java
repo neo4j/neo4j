@@ -29,28 +29,49 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.function.Suppliers;
 
-class FormattedLogger extends AbstractPrintWriterLogger
+class FormattedLoggerStandard extends AbstractPrintWriterLogger
 {
     static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss.SSSZ" );
     static final Function<ZoneId, ZonedDateTime> DEFAULT_CURRENT_DATE_TIME = zoneId ->
             ZonedDateTime.now()
                     .withZoneSameInstant( zoneId );
+    private final String category;
+    private final Level level;
     private FormattedLog formattedLog;
     private final String prefix;
     private final DateTimeFormatter dateTimeFormatter;
     private Supplier<ZonedDateTime> supplier;
 
-    FormattedLogger( FormattedLog formattedLog, @Nonnull Supplier<PrintWriter> writerSupplier,
-                     @Nonnull String prefix, DateTimeFormatter dateTimeFormatter,
-                     Supplier<ZonedDateTime> zonedDateTimeSupplier )
+    FormattedLoggerStandard( FormattedLog formattedLog, @Nonnull Supplier<PrintWriter> writerSupplier,
+                             @Nonnull Level level, String category, DateTimeFormatter dateTimeFormatter,
+                             Supplier<ZonedDateTime> zonedDateTimeSupplier )
     {
         super( writerSupplier, formattedLog.lock, formattedLog.autoFlush );
 
         this.formattedLog = formattedLog;
-        this.prefix = prefix;
+        this.level = level;
+        this.category = category;
+        this.prefix = createPrefix( level, category );
         this.dateTimeFormatter = dateTimeFormatter;
         this.supplier = zonedDateTimeSupplier;
+    }
+
+    private static String createPrefix( Level level, String category )
+    {
+        switch ( level )
+        {
+        case DEBUG:
+            return (category != null && !category.isEmpty()) ? "DEBUG [" + category + "]" : "DEBUG";
+        case INFO:
+            return (category != null && !category.isEmpty()) ? "INFO [" + category + "]" : "INFO ";
+        case WARN:
+            return (category != null && !category.isEmpty()) ? "WARN [" + category + "]" : "WARN ";
+        case ERROR:
+            return (category != null && !category.isEmpty()) ? "ERROR [" + category + "]" : "ERROR";
+        default:
+            throw new IllegalArgumentException( "Cannot create FormattedLogger with Level " + level );
+        }
     }
 
     @Override
@@ -78,7 +99,7 @@ class FormattedLogger extends AbstractPrintWriterLogger
     @Override
     protected Logger getBulkLogger( @Nonnull PrintWriter out, @Nonnull Object lock )
     {
-        return new FormattedLogger( formattedLog, Suppliers.singleton( out ), prefix, DATE_TIME_FORMATTER,
+        return new FormattedLoggerStandard( formattedLog, Suppliers.singleton( out ), level, category, DATE_TIME_FORMATTER,
                 () -> DEFAULT_CURRENT_DATE_TIME.apply( formattedLog.zoneId ) );
     }
 

@@ -6,6 +6,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Commons Lang
   Java Concurrency Tools Core Library
+  Jettison
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory

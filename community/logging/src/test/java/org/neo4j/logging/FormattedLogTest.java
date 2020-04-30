@@ -40,7 +40,7 @@ class FormattedLogTest
             ZonedDateTime.of( 1984, 10, 26, 4, 23, 24, 343000000, ZoneOffset.UTC );
 
     @Test
-    void logShouldWriteMessage()
+    void logShouldWriteMessageStandard()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -54,7 +54,22 @@ class FormattedLogTest
     }
 
     @Test
-    void logShouldWriteMessageAndThrowable()
+    void logShouldWriteMessageJson()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer, Level.DEBUG, FormattedLogFormat.JSON_FORMAT );
+
+        // When
+        log.info( "Terminator 2" );
+
+        // Then
+        assertThat( writer.toString() ).isEqualTo(
+                format( "{\"time\": \"1984-10-26 04:23:24.343+0000\", \"level\": \"INFO\", \"category\": \"test\", \"message\": \"Terminator 2\"}%n" ) );
+    }
+
+    @Test
+    void logShouldWriteMessageAndThrowableStandard()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -68,7 +83,23 @@ class FormattedLogTest
     }
 
     @Test
-    void logShouldWriteMessageAndThrowableWithNullMessage()
+    void logShouldWriteMessageAndThrowableJson()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer, Level.DEBUG, FormattedLogFormat.JSON_FORMAT );
+
+        // When
+        log.info( "Hasta la vista, baby", newThrowable( "<message>", "<stacktrace>" ) );
+
+        // Then
+        assertThat( writer.toString() ).isEqualTo(
+                "{\"time\": \"1984-10-26 04:23:24.343+0000\", \"level\": \"INFO\", \"category\": \"test\", " +
+                        "\"message\": \"Hasta la vista, baby\", \"stacktraceMessage\": \"<message>\", \"stacktrace\": \"<stacktrace>\"}" );
+    }
+
+    @Test
+    void logShouldWriteMessageAndThrowableWithNullMessageStandard()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -79,6 +110,22 @@ class FormattedLogTest
 
         // Then
         assertThat( writer.toString() ).isEqualTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby%n<stacktrace>" ) );
+    }
+
+    @Test
+    void logShouldWriteMessageAndThrowableWithNullMessageJson()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer, Level.DEBUG, FormattedLogFormat.JSON_FORMAT );
+
+        // When
+        log.info( "Hasta la vista, baby", newThrowable( null, "<stacktrace>" ) );
+
+        // Then
+        assertThat( writer.toString() ).isEqualTo(
+                "{\"time\": \"1984-10-26 04:23:24.343+0000\", \"level\": \"INFO\", \"category\": \"test\", \"message\": " +
+                        "\"Hasta la vista, baby\", \"stacktrace\": \"<stacktrace>\"}" );
     }
 
     @Test
@@ -160,17 +207,23 @@ class FormattedLogTest
         return newFormattedLog( writer, Level.DEBUG );
     }
 
-    private static FormattedLog newFormattedLog( StringWriter writer, Level level )
+    static FormattedLog newFormattedLog( StringWriter writer, Level level )
+    {
+        return newFormattedLog( writer, level, FormattedLogFormat.STANDARD_FORMAT );
+    }
+
+    static FormattedLog newFormattedLog( StringWriter writer, Level level, FormattedLogFormat format )
     {
         return FormattedLog
                 .withUTCTimeZone()
                 .withCategory( "test" )
                 .withLogLevel( level )
                 .withTimeSupplier( DATE_TIME_SUPPLIER )
+                .withFormat( format )
                 .toPrintWriter( Suppliers.singleton( new PrintWriter( writer ) ) );
     }
 
-    private static Throwable newThrowable( final String message, final String stackTrace )
+    static Throwable newThrowable( final String message, final String stackTrace )
     {
         return new Throwable()
         {

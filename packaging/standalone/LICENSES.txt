@@ -33,6 +33,7 @@ Apache Software License, Version 2.0
   forever-agent
   grpc
   Java Concurrency Tools Core Library
+  Jettison
   long
   Lucene Common Analyzers
   Lucene Core

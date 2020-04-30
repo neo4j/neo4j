@@ -128,6 +128,6 @@ class FormattedLogProviderTest
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer, Map<String, Level> levels )
     {
         return new FormattedLogProvider( Suppliers.singleton( new PrintWriter( writer ) ),
-                ZoneOffset.UTC, true, levels, Level.INFO, true );
+                ZoneOffset.UTC, true, levels, Level.INFO, true, FormattedLogFormat.STANDARD_FORMAT );
     }
 }
