@@ -50,8 +50,8 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                divergence: StatsDivergenceCalculator,
                                                lastCommittedTxIdProvider: () => Long,
                                                log: Log)
-  extends QueryCache[STATEMENT, Pair[STATEMENT, ParameterTypeMap],
-    CacheableLogicalPlan](maximumSize,
+  extends QueryCache[STATEMENT, Pair[STATEMENT, ParameterTypeMap], CacheableLogicalPlan](
+    maximumSize,
     AstLogicalPlanCache.stalenessCaller(clock,
       divergence,
       lastCommittedTxIdProvider,
@@ -87,5 +87,5 @@ object AstLogicalPlanCache {
 }
 
 case class CacheableLogicalPlan(logicalPlanState: LogicalPlanState,
-                                reusability: ReusabilityState, notifications: Set[InternalNotification],
+                                reusability: ReusabilityState, notifications: IndexedSeq[InternalNotification],
                                 override val shouldBeCached: Boolean) extends CacheabilityInfo

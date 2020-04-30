@@ -374,7 +374,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }
-    CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldCache)
+    CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications.toIndexedSeq, shouldCache)
   }
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
@@ -412,7 +412,7 @@ case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
                              extractedParams: MapValue,
                              reusability: ReusabilityState,
                              plannerContext: PlannerContext,
-                             notifications: Set[InternalNotification],
+                             notifications: IndexedSeq[InternalNotification],
                              shouldBeCached: Boolean,
                              queryObfuscator: QueryObfuscator)
 

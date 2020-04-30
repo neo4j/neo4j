@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -223,16 +224,27 @@ class QueryCache[QUERY_REP <: AnyRef,
    * Check if certain warnings are not valid anymore.
    */
   def invalidNotificationExisting(cachedValue: CachedValue, tc: TransactionalContext): Boolean = {
-    cachedValue.value.notifications.exists {
-      case notification: MissingLabelNotification =>
-        tc.kernelTransaction().tokenRead().nodeLabel(notification.label) != TokenRead.NO_TOKEN
-      case notification: MissingRelTypeNotification =>
-        tc.kernelTransaction().tokenRead().relationshipType(notification.relType) != TokenRead.NO_TOKEN
-      case notification: MissingPropertyNameNotification =>
-        tc.kernelTransaction().tokenRead().propertyKey(notification.name) != TokenRead.NO_TOKEN
+    val notifications = cachedValue.value.notifications
+    var i = 0
+    while (i < notifications.length) {
+      if (isInvalidNotification(notifications(i), tc)) {
+        return true
+      }
+      i += 1
+    }
+    false
+  }
+
+  private def isInvalidNotification(notification: InternalNotification, tc: TransactionalContext): Boolean =
+    notification match {
+      case x: MissingLabelNotification =>
+        tc.kernelTransaction().tokenRead().nodeLabel(x.label) != TokenRead.NO_TOKEN
+      case x: MissingRelTypeNotification =>
+        tc.kernelTransaction().tokenRead().relationshipType(x.relType) != TokenRead.NO_TOKEN
+      case x: MissingPropertyNameNotification =>
+        tc.kernelTransaction().tokenRead().propertyKey(x.name) != TokenRead.NO_TOKEN
       case _ => false
     }
-  }
 
   /**
    * Recompile a query with expression code generation if needed. Otherwise return the cached value.

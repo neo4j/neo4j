@@ -32,5 +32,5 @@ trait CacheabilityInfo {
     */
   def shouldBeCached: Boolean
 
-  def notifications: Set[InternalNotification]
+  def notifications: IndexedSeq[InternalNotification]
 }

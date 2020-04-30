@@ -321,7 +321,7 @@ object QueryCacheTest extends MockitoSugar {
   case class MyValue(key: String)(val compiledWithExpressionCodeGen: Boolean) extends CacheabilityInfo {
     override def shouldBeCached: Boolean = true
 
-    override def notifications: Set[InternalNotification] = Set.empty
+    override def notifications: IndexedSeq[InternalNotification] = IndexedSeq.empty
   }
 
   val TC: TransactionalContext = mock[TransactionalContext]

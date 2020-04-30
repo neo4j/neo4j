@@ -155,7 +155,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planningAttributesCopy.providedOrders,
       executionPlan,
       preParsingNotifications,
-      logicalPlanResult.notifications,
+      logicalPlanResult.notifications.toIndexedSeq,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames.toArray,
       logicalPlanResult.extractedParams,
@@ -216,7 +216,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         providedOrders: ProvidedOrders,
                                         executionPlan: ExecutionPlan,
                                         preParsingNotifications: Set[Notification],
-                                        planningNotifications: Set[InternalNotification],
+                                        planningNotifications: IndexedSeq[InternalNotification],
                                         reusabilityState: ReusabilityState,
                                         override val paramNames: Array[String],
                                         override val extractedParams: MapValue,
@@ -252,7 +252,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    override def notifications: Set[InternalNotification] = planningNotifications
+    override def notifications: IndexedSeq[InternalNotification] = planningNotifications
 
     override def execute(transactionalContext: TransactionalContext,
                          isOutermostQuery: Boolean,
