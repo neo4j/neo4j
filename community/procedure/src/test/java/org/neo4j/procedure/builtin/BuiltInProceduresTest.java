@@ -35,10 +35,14 @@ import java.util.function.IntSupplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingImpl;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -373,6 +377,40 @@ class BuiltInProceduresTest
     void shouldPing() throws ProcedureException, IndexNotFoundKernelException
     {
         assertThat( call( "db.ping" ), contains( record( Boolean.TRUE ) ) );
+    }
+
+    @Test
+    void listClientConfigShouldFilterConfig() throws ProcedureException, IndexNotFoundKernelException
+    {
+        // Given
+        Config mockConfig = mock( Config.class );
+        HashMap<Setting<?>,Object> settings = new HashMap<>();
+
+        settings.put( SettingImpl.newBuilder( "browser.allow_outgoing_connections", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "browser.credential_timeout", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "browser.retain_connection_credentials", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "dbms.security.auth_enabled", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "browser.remote_content_hostname_whitelist", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "browser.post_connect_cmd", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "dbms.default_database", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "something.else", SettingValueParsers.STRING, "" ).build(), "" );
+
+        HashMap<Setting<Object>,Object> objectSettings = new HashMap<>();
+        settings.forEach( ( setting, value ) -> objectSettings.put( (Setting<Object>) setting, value ) );
+
+        when( mockConfig.getValues() ).thenReturn( objectSettings );
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( mockConfig );
+
+        // When / Then
+        assertThat( call( "dbms.clientConfig" ), containsInAnyOrder(
+                record( "browser.allow_outgoing_connections", "browser.allow_outgoing_connections, a string", "", false ),
+                record( "browser.credential_timeout", "browser.credential_timeout, a string", "", false ),
+                record( "browser.retain_connection_credentials", "browser.retain_connection_credentials, a string", "", false ),
+                record( "dbms.security.auth_enabled", "dbms.security.auth_enabled, a string", "", false ),
+                record( "browser.remote_content_hostname_whitelist", "browser.remote_content_hostname_whitelist, a string", "", false ),
+                record( "browser.post_connect_cmd", "browser.post_connect_cmd, a string", "", false ),
+                record( "dbms.default_database", "dbms.default_database, a string", "", false ))
+        );
     }
 
     private static Matcher<Object[]> record( Object... fields )

@@ -19,14 +19,15 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
@@ -49,12 +50,8 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
-import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.string.HexString;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.procedure.Mode.DBMS;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
@@ -102,6 +99,31 @@ public class BuiltInDbmsProcedures
 
         config.getValues().forEach( ( setting, value ) -> {
             if ( !setting.internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
+            {
+                results.add( new ConfigResult( setting, value ) );
+            }
+        } );
+        return results.stream().sorted( Comparator.comparing( c -> c.name ) );
+    }
+
+    @SystemProcedure
+    @Description( "Return config settings interesting to clients (e.g. Neo4j Browser)" )
+    @Procedure( name = "dbms.clientConfig", mode = DBMS )
+    public Stream<ConfigResult> listClientConfig()
+    {
+        List<ConfigResult> results = new ArrayList<>();
+        Set<String> browserSettings = Stream.of( "browser.allow_outgoing_connections",
+                                                 "browser.credential_timeout",
+                                                 "browser.retain_connection_credentials",
+                                                 "dbms.security.auth_enabled",
+                                                 "browser.remote_content_hostname_whitelist",
+                                                 "browser.post_connect_cmd",
+                                                 "dbms.default_database" ).collect( Collectors.toCollection( HashSet::new ) );
+
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+        config.getValues().forEach( ( setting, value ) ->
+        {
+            if ( browserSettings.contains( setting.name().toLowerCase() ) )
             {
                 results.add( new ConfigResult( setting, value ) );
             }
