@@ -544,10 +544,11 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
 
   // Formatting paramExpr and customQueryExpression is currently not supported.
   // These cases will need manual fixup.
-  testPlan("nodeIndexOperator",
-    new TestPlanBuilder()
-      .produceResults("x", "y")
-      // NodeIndexSeek
+  testPlan("nodeIndexOperator", {
+    val builder = new TestPlanBuilder().produceResults("x", "y")
+
+    // NodeIndexSeek
+    builder
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 20)")
       .apply()
@@ -574,7 +575,9 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"))
       .apply()
       .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending)
-      // NodeUniqueIndexSeek
+
+    // NodeUniqueIndexSeek
+    builder
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 20)", unique = true)
       .apply()
@@ -593,7 +596,9 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"), unique = true)
       .apply()
       .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, unique = true)
-      // NodeIndexScan
+
+    // NodeIndexScan
+    builder
       .apply()
       .|.nodeIndexOperator("x:Honey(calories)")
       .apply()
@@ -602,7 +607,9 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .|.nodeIndexOperator("x:Honey(calories, taste)", indexOrder = IndexOrderDescending)
       .apply()
       .|.nodeIndexOperator("x:Honey(calories, taste)", argumentIds = Set("a", "b"))
-      // NodeIndexContainsScan
+
+    // NodeIndexContainsScan
+    builder
       .apply()
       .|.nodeIndexOperator("x:Label(text CONTAINS 'as')")
       .apply()
@@ -611,7 +618,9 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", indexOrder = IndexOrderDescending)
       .apply()
       .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", argumentIds = Set("a", "b"))
-      // NodeIndexEndsWithScan
+
+    // NodeIndexEndsWithScan
+    builder
       .apply()
       .|.nodeIndexOperator("x:Label(text ENDS WITH 'as')")
       .apply()
@@ -619,7 +628,9 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .apply()
       .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", indexOrder = IndexOrderDescending)
       .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"))
-      .build())
+
+    builder.build()
+  })
 
   testPlan("multiNodeIndexSeekOperator",
     new TestPlanBuilder()
@@ -635,18 +646,23 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
          |$code""".stripMargin
     val res = Array[AnyRef](null)
 
-    interpreter.beSilentDuring {
-      // imports
-      interpreter.interpret(
-        """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-          |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-          |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
-          |import org.neo4j.cypher.internal.logical.plans._
-          |import org.neo4j.cypher.internal.logical.builder.TestException
-          |""".stripMargin)
-      interpreter.bind("result", "Array[AnyRef]", res)
+    try {
+      interpreter.beSilentDuring {
+        // imports
+        interpreter.interpret(
+          """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+            |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
+            |import org.neo4j.cypher.internal.logical.plans._
+            |import org.neo4j.cypher.internal.logical.builder.TestException
+            |""".stripMargin)
+        interpreter.bind("result", "Array[AnyRef]", res)
+      }
+      interpreter.interpret(s"result(0) = $completeCode")
+    } catch {
+      case t: Throwable =>
+        fail("Failed to interpret generated code: ", t)
     }
-    interpreter.interpret(s"result(0) = $completeCode")
     res(0).asInstanceOf[LogicalPlan]
   }
 
