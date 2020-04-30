@@ -158,7 +158,7 @@ import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -810,7 +810,7 @@ object Prettifier {
   }
 
   def escapePassword(password: Expression): String = password match {
-    case _: SensitiveStringLiteral => "'******'"
+    case _: SensitiveString => "'******'"
     case _: SensitiveAutoParameter => "'******'"
     case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
   }

@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
@@ -401,7 +401,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 object ContainsSensitiveFields {
   def unapply(plan: LogicalPlan): Boolean = {
     plan.treeExists {
-      case _: SensitiveStringLiteral => true
+      case _: SensitiveString => true
       case _: SensitiveParameter => true
     }
   }

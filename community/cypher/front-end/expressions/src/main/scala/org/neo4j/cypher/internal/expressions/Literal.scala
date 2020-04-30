@@ -69,13 +69,17 @@ case class StringLiteral(value: String)(val position: InputPosition) extends Lit
   override def asCanonicalStringVal = value
 }
 
-final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression {
+final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression with SensitiveString {
   override def equals(obj: Any): Boolean = obj match {
     case o: SensitiveStringLiteral => util.Arrays.equals(o.value, value)
     case _ => false
   }
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
+}
+
+trait SensitiveString {
+  val position: InputPosition
 }
 
 case class Null()(val position: InputPosition) extends Literal {

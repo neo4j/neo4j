@@ -38,13 +38,12 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.string.UTF8
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
@@ -56,7 +55,7 @@ object ResolvedCall {
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
       case (p: Parameter, true) => new Parameter(p.name, p.parameterType)(p.position) with SensitiveParameter
-      case (p: StringLiteral, true) => SensitiveStringLiteral(UTF8.encode(p.value))(p.position)
+      case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveString
       case (p, _) => p
     }
     val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
