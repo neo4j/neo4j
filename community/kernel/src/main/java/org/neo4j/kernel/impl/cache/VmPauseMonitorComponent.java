@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.LoggingVmPauseMonitor;
 import org.neo4j.logging.Log;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.VmPauseMonitor;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -32,22 +33,29 @@ public class VmPauseMonitorComponent extends LifecycleAdapter
     private final Config config;
     private final Log log;
     private final JobScheduler jobScheduler;
+    private final VmPauseMonitor.Monitor monitor;
+    private final LoggingVmPauseMonitor loggingVmPauseMonitor;
+    private final Monitors globalMonitors;
     private volatile VmPauseMonitor vmPauseMonitor;
 
-    public VmPauseMonitorComponent( Config config, Log log, JobScheduler jobScheduler )
+    public VmPauseMonitorComponent( Config config, Log log, JobScheduler jobScheduler, Monitors globalMonitors )
     {
         this.config = config;
         this.log = log;
         this.jobScheduler = jobScheduler;
+        this.globalMonitors = globalMonitors;
+        monitor = globalMonitors.newMonitor( VmPauseMonitor.Monitor.class );
+        loggingVmPauseMonitor = new LoggingVmPauseMonitor( log );
     }
 
     @Override
     public void start()
     {
+        globalMonitors.addMonitorListener( loggingVmPauseMonitor );
         vmPauseMonitor = new VmPauseMonitor(
                 config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ),
                 config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ),
-                new LoggingVmPauseMonitor( log ), jobScheduler, vmPauseInfo -> log.warn( "Detected VM stop-the-world pause: %s", vmPauseInfo )
+                monitor, jobScheduler
         );
         vmPauseMonitor.start();
     }
@@ -57,5 +65,6 @@ public class VmPauseMonitorComponent extends LifecycleAdapter
     {
         vmPauseMonitor.stop();
         vmPauseMonitor = null;
+        globalMonitors.removeMonitorListener( loggingVmPauseMonitor );
     }
 }

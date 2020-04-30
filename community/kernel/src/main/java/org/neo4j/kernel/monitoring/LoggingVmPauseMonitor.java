@@ -56,4 +56,10 @@ public class LoggingVmPauseMonitor implements VmPauseMonitor.Monitor
     {
         log.debug( "VM pause monitor failed", e );
     }
+
+    @Override
+    public void pauseDetected( VmPauseMonitor.VmPauseInfo info )
+    {
+        log.warn( "Detected VM stop-the-world pause: %s", info );
+    }
 }

@@ -181,7 +181,7 @@ public class GlobalModule
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
 
-        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
+        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler, globalMonitors ) );
 
         globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );

@@ -22,7 +22,6 @@ package org.neo4j.monitoring;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.function.Consumer;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -42,17 +41,15 @@ public class VmPauseMonitor
     private final long stallAlertThresholdNs;
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
-    private final Consumer<VmPauseInfo> listener;
     private volatile boolean stopped;
     private JobHandle job;
 
-    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
+    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler )
     {
         this.measurementDurationNs = Preconditions.requirePositive( measureInterval.toNanos() );
         this.stallAlertThresholdNs = Preconditions.requireNonNegative( stallAlertThreshold.toNanos() );
         this.monitor = requireNonNull( monitor );
         this.jobScheduler = requireNonNull( jobScheduler );
-        this.listener = requireNonNull( listener );
     }
 
     public void start()
@@ -109,7 +106,7 @@ public class VmPauseMonitor
                         gcStats.time - lastGcStats.time,
                         gcStats.count - lastGcStats.count
                 );
-                listener.accept( pauseInfo );
+                monitor.pauseDetected( pauseInfo );
             }
             lastGcStats = gcStats;
         }
@@ -128,7 +125,7 @@ public class VmPauseMonitor
         private final long gcTime;
         private final long gcCount;
 
-        VmPauseInfo( long pauseTime, long gcTime, long gcCount )
+        public VmPauseInfo( long pauseTime, long gcTime, long gcCount )
         {
             this.pauseTime = pauseTime;
             this.gcTime = gcTime;
@@ -181,6 +178,8 @@ public class VmPauseMonitor
 
         void failed( Exception e );
 
+        void pauseDetected( VmPauseInfo info );
+
         class Adapter implements Monitor
         {
             @Override
@@ -200,6 +199,11 @@ public class VmPauseMonitor
 
             @Override
             public void failed( Exception e )
+            {   // no-op
+            }
+
+            @Override
+            public void pauseDetected( VmPauseInfo info )
             {   // no-op
             }
         }

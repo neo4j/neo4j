@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
-import java.util.function.Consumer;
-
 import org.neo4j.monitoring.VmPauseMonitor.VmPauseInfo;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -39,11 +37,10 @@ import static org.neo4j.monitoring.VmPauseMonitor.Monitor.EMPTY;
 
 class VmPauseMonitorTest
 {
-    @SuppressWarnings( "unchecked" )
-    private final Consumer<VmPauseInfo> listener = Mockito.mock( Consumer.class );
+    private final VmPauseMonitor.Monitor monitor = Mockito.mock( VmPauseMonitor.Monitor.class );
     private final JobHandle jobHandle = Mockito.mock( JobHandle.class );
     private final JobScheduler jobScheduler = Mockito.mock( JobScheduler.class );
-    private final VmPauseMonitor monitor = Mockito.spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), EMPTY, jobScheduler, listener ) );
+    private final VmPauseMonitor vmPauseMonitor = Mockito.spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), monitor, jobScheduler ) );
 
     @BeforeEach
     void setUp()
@@ -55,24 +52,22 @@ class VmPauseMonitorTest
     void testCtorParametersValidation()
     {
         assertThrows( NullPointerException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), null, jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), null, jobScheduler ) );
         assertThrows( NullPointerException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), EMPTY, null, listener ) );
-        assertThrows( NullPointerException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), EMPTY, jobScheduler, null ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), EMPTY, null ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( 0 ), ofSeconds( 1 ), EMPTY, jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 0 ), ofSeconds( 1 ), EMPTY, jobScheduler ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( -1 ), EMPTY, jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( -1 ), EMPTY, jobScheduler ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( -1 ), ofSeconds( 1 ), EMPTY, jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( -1 ), ofSeconds( 1 ), EMPTY, jobScheduler ) );
     }
 
     @Test
     void testStartAndStop()
     {
-        monitor.start();
-        monitor.stop();
+        vmPauseMonitor.start();
+        vmPauseMonitor.stop();
 
         verify( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
         verify( jobHandle ).cancel();
@@ -81,9 +76,9 @@ class VmPauseMonitorTest
     @Test
     void testRestart()
     {
-        monitor.start();
-        monitor.stop();
-        monitor.start();
+        vmPauseMonitor.start();
+        vmPauseMonitor.stop();
+        vmPauseMonitor.start();
 
         verify( jobScheduler, Mockito.times( 2 ) ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
         verify( jobHandle ).cancel();
@@ -92,7 +87,7 @@ class VmPauseMonitorTest
     @Test
     void testFailStopWithoutStart()
     {
-        assertThrows( IllegalStateException.class, monitor::stop );
+        assertThrows( IllegalStateException.class, vmPauseMonitor::stop );
     }
 
     @Test
@@ -100,8 +95,8 @@ class VmPauseMonitorTest
     {
         assertThrows( IllegalStateException.class, () ->
         {
-            monitor.start();
-            monitor.start();
+            vmPauseMonitor.start();
+            vmPauseMonitor.start();
         } );
     }
 
@@ -110,17 +105,17 @@ class VmPauseMonitorTest
     {
         assertThrows( IllegalStateException.class, () ->
         {
-            monitor.start();
-            monitor.stop();
-            monitor.stop();
+            vmPauseMonitor.start();
+            vmPauseMonitor.stop();
+            vmPauseMonitor.stop();
         } );
     }
 
     @Test
     void testNotifyListener() throws Exception
     {
-        Mockito.doReturn( false, true ).when( monitor ).isStopped();
-        monitor.monitor();
-        Mockito.verify( listener ).accept( ArgumentMatchers.any(VmPauseInfo.class) );
+        Mockito.doReturn( false, true ).when( vmPauseMonitor ).isStopped();
+        vmPauseMonitor.monitor();
+        Mockito.verify( monitor ).pauseDetected( ArgumentMatchers.any( VmPauseInfo.class ) );
     }
 }
