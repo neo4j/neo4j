@@ -16,54 +16,150 @@
  */
 package org.neo4j.cypher.internal.ast.generator
 
+import java.nio.charset.StandardCharsets
+
+import org.neo4j.cypher.internal.ast.AccessDatabaseAction
+import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AllConstraintActions
+import org.neo4j.cypher.internal.ast.AllDatabaseAction
+import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.AllDbmsAction
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllIndexActions
+import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllNodes
+import org.neo4j.cypher.internal.ast.AllPrivilegeActions
+import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
+import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllTokenActions
+import org.neo4j.cypher.internal.ast.AllTransactionActions
+import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
+import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateConstraintAction
+import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateElementAction
+import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
+import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.CreateRoleAction
+import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DbmsAdminAction
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
+import org.neo4j.cypher.internal.ast.DeleteElementAction
+import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.DropConstraintAction
+import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropIndexAction
+import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUser
+import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
+import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.IfExistsDo
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.LabelAllQualifier
+import org.neo4j.cypher.internal.ast.LabelsQualifier
+import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
+import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.ast.PrivilegeCommand
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
+import org.neo4j.cypher.internal.ast.RelationshipsQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveItem
+import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
+import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
+import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetLabelItem
+import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowDatabases
+import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
+import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowPrivileges
+import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowRolePrivileges
+import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowTransactionAction
+import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUserPrivileges
+import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.Start
+import org.neo4j.cypher.internal.ast.StartDatabase
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StartItem
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.StopDatabase
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.TerminateTransactionAction
+import org.neo4j.cypher.internal.ast.TransactionManagementAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UnionAll
@@ -71,12 +167,15 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.UserAllQualifier
+import org.neo4j.cypher.internal.ast.UsersQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
@@ -156,6 +255,9 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -175,6 +277,7 @@ import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.alphaLowerChar
@@ -190,6 +293,7 @@ import org.scalacheck.Gen.option
 import org.scalacheck.Gen.pick
 import org.scalacheck.Gen.posNum
 import org.scalacheck.Gen.sequence
+import org.scalacheck.Gen.some
 import org.scalacheck.util.Buildable
 
 object AstGenerator {
@@ -287,6 +391,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _stringLit: Gen[StringLiteral] =
     string.flatMap(StringLiteral(_)(pos))
 
+  def _sensitiveStringLiteral: Gen[SensitiveStringLiteral] =
+    // Needs to be '******' since all sensitive strings get rendered as such
+    // Would normally get rewritten as SensitiveAutoParameter which can be generated as parameter when needed
+    const(SensitiveStringLiteral("******".getBytes(StandardCharsets.UTF_8))(pos))
+
   def _booleanLit: Gen[BooleanLiteral] =
     oneOf(True()(pos), False()(pos))
 
@@ -324,6 +433,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _parameter: Gen[Parameter] =
     _identifier.map(Parameter(_, AnyType.instance)(pos))
+
+  def _stringParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTString)(pos))
+
+  def _sensitiveStringParameter: Gen[Parameter with SensitiveParameter] =
+    _identifier.map(new Parameter(_, CTString)(pos) with SensitiveParameter)
+
+  def _sensitiveAutoStringParameter: Gen[Parameter with SensitiveAutoParameter] =
+    _identifier.map(new Parameter(_, CTString)(pos) with SensitiveAutoParameter)
 
   def _variable: Gen[Variable] = {
     val nameGen = allowedVarNames match {
@@ -628,7 +745,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
     baseRel <- option(_variable)
-  } yield RelationshipPattern(variable, types, length, properties, direction, false, baseRel)(pos)
+  } yield RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator = false, baseRel)(pos)
 
   def _relationshipChain: Gen[RelationshipChain] = for {
     element <- _patternElement
@@ -880,6 +997,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _usingScanHint
   )
 
+  // Queries
+  // ----------------------------------
+
   def _use: Gen[UseGraph] = for {
     expression <- _expression
   } yield UseGraph(expression)(pos)
@@ -946,5 +1066,279 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _query: Gen[Query] = frequency(
     10 -> _regularQuery,
     1 -> _bulkImportQuery
+  )
+
+  // Administration commands
+  // ----------------------------------
+
+  def _nameAsEither: Gen[Either[String, Parameter]] = for {
+    name  <- _identifier
+    param <- _stringParameter
+    finalName <- oneOf(Left(name), Right(param))
+  } yield finalName
+
+  def _listOfNameOfEither: Gen[List[Either[String, Parameter]]] = for {
+    names <- oneOrMore(_nameAsEither)
+  } yield names
+
+  def _password: Gen[Expression] = oneOf(_sensitiveStringParameter, _sensitiveAutoStringParameter, _sensitiveStringLiteral)
+
+  def _ifExistsDo: Gen[IfExistsDo] = oneOf(IfExistsReplace(), IfExistsDoNothing(), IfExistsThrowError(), IfExistsInvalidSyntax())
+
+  // User commands
+
+  def _showUsers: Gen[ShowUsers] = const(ShowUsers()(pos))
+
+  def _createUser: Gen[CreateUser] = for {
+    userName              <- _nameAsEither
+    password              <- _password
+    requirePasswordChange <- boolean
+    suspended             <- option(boolean)
+    ifExistsDo            <- _ifExistsDo
+  } yield CreateUser(userName, password, requirePasswordChange, suspended, ifExistsDo)(pos)
+
+  def _dropUser: Gen[DropUser] = for {
+    userName <- _nameAsEither
+    ifExists <- boolean
+  } yield DropUser(userName, ifExists)(pos)
+
+  def _alterUser: Gen[AlterUser] = for {
+    userName              <- _nameAsEither
+    password              <- option(_password)
+    requirePasswordChange <- option(boolean)
+    suspended             <- if (password.isEmpty && requirePasswordChange.isEmpty) some(boolean) else option(boolean) // All three are not allowed to be None
+  } yield AlterUser(userName, password, requirePasswordChange, suspended)(pos)
+
+  def _setOwnPassword: Gen[SetOwnPassword] = for {
+    newPassword <- _password
+    oldPassword <- _password
+  } yield SetOwnPassword(newPassword, oldPassword)(pos)
+
+  def _userCommand: Gen[AdministrationCommand] = oneOf(
+    _showUsers,
+    _createUser,
+    _dropUser,
+    _alterUser,
+    _setOwnPassword
+  )
+
+  // Role commands
+
+  def _showRoles: Gen[ShowRoles] = for {
+    withUsers <- boolean
+    showAll   <- boolean
+  } yield ShowRoles(withUsers, showAll)(pos)
+
+  def _createRole: Gen[CreateRole] = for {
+    roleName     <- _nameAsEither
+    fromRoleName <- option(_nameAsEither)
+    ifExistsDo   <- _ifExistsDo
+  } yield CreateRole(roleName, fromRoleName, ifExistsDo)(pos)
+
+  def _dropRole: Gen[DropRole] = for {
+    roleName <- _nameAsEither
+    ifExists <- boolean
+  } yield DropRole(roleName, ifExists)(pos)
+
+  def _grantRole: Gen[GrantRolesToUsers] = for {
+    roleNames <- _listOfNameOfEither
+    userNames <- _listOfNameOfEither
+  } yield GrantRolesToUsers(roleNames, userNames)(pos)
+
+  def _revokeRole: Gen[RevokeRolesFromUsers] = for {
+    roleNames <- _listOfNameOfEither
+    userNames <- _listOfNameOfEither
+  } yield RevokeRolesFromUsers(roleNames, userNames)(pos)
+
+  def _roleCommand: Gen[AdministrationCommand] = oneOf(
+    _showRoles,
+    _createRole,
+    _dropRole,
+    _grantRole,
+    _revokeRole
+  )
+
+  // Privilege commands
+
+  def _graphAction: Gen[GraphAction] = oneOf(
+    CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction
+    // TODO: TraverseAction, ReadAction and MatchAction are used as individual Privileges and not as actions
+  )
+
+  def _databaseAction: Gen[DatabaseAction] = oneOf(
+    StartDatabaseAction, StopDatabaseAction,
+    AllDatabaseAction, AccessDatabaseAction,
+    AllIndexActions, CreateIndexAction, DropIndexAction,
+    AllConstraintActions, CreateConstraintAction, DropConstraintAction,
+    AllTokenActions, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction,
+    AllTransactionActions, ShowTransactionAction, TerminateTransactionAction
+  )
+
+  def _dbmsAction: Gen[DbmsAdminAction] = oneOf(
+    AllDbmsAction,
+    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetPasswordsAction, AlterUserAction, DropUserAction,
+    AllRoleActions, ShowRoleAction, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
+    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
+    AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
+  )
+
+  def _databaseQualifier(haveUserQualifier: Boolean): Gen[PrivilegeQualifier] =
+    if (haveUserQualifier) {
+      for {
+        userNames <- _listOfNameOfEither
+        qualifier <- oneOf(UserAllQualifier()(pos), UsersQualifier(userNames)(pos))
+      } yield qualifier
+    } else {
+      AllQualifier()(pos)
+    }
+
+  def _graphQualifierAndResource(graphAction: GraphAction): Gen[(PrivilegeQualifier, Option[ActionResource])] =
+    if (graphAction == SetLabelAction || graphAction == RemoveLabelAction) {
+      // SET/REMOVE LABEL have AllLabelQualifier and label resource
+      for {
+        resourceNames  <- oneOrMore(_identifier)
+        resource       <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
+      } yield (LabelAllQualifier()(pos), Some(resource))
+    } else {
+      // CREATE/DELETE ELEMENT, WRITE have any graph qualifier and no resource
+      // TRAVERSE, READ, MATCH have any graph qualifier and property resource, TODO: add case returning correct resource
+      for {
+        qualifierNames <- oneOrMore(_identifier)
+        qualifier      <- oneOf(RelationshipsQualifier(qualifierNames)(pos), RelationshipAllQualifier()(pos),
+                                LabelsQualifier(qualifierNames)(pos), LabelAllQualifier()(pos),
+                                ElementsQualifier(qualifierNames)(pos), ElementsAllQualifier()(pos))
+      } yield (qualifier, None)
+    }
+
+  def _showPrivileges: Gen[ShowPrivileges] = for {
+    name       <- _nameAsEither
+    optionName <- option(name)
+    showRole   = ShowRolePrivileges(name)(pos)
+    showUser   = ShowUserPrivileges(optionName)(pos)
+    showAll    = ShowAllPrivileges()(pos)
+    scope      <- oneOf(showRole, showUser, showAll)
+  } yield ShowPrivileges(scope)(pos)
+
+  def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
+    dbmsAction      <- _dbmsAction
+    roleNames       <- _listOfNameOfEither
+    dbmsGrant       = GrantPrivilege.dbmsAction(dbmsAction, roleNames)(pos)
+    dbmsDeny        = DenyPrivilege.dbmsAction(dbmsAction, roleNames)(pos)
+    dbmsRevokeGrant = RevokePrivilege.grantedDbmsAction(dbmsAction, roleNames)(pos)
+    dbmsRevokeDeny  = RevokePrivilege.deniedDbmsAction(dbmsAction, roleNames)(pos)
+    dbmsRevoke      = RevokePrivilege.dbmsAction(dbmsAction, roleNames)(pos)
+    dbms            <- oneOf(dbmsGrant, dbmsDeny, dbmsRevokeGrant, dbmsRevokeDeny, dbmsRevoke)
+  } yield dbms
+
+  def _databasePrivilege: Gen[PrivilegeCommand] = for {
+    databaseAction      <- _databaseAction
+    namedScope          <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
+    databaseScope       <- oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultDatabaseScope()(pos)))
+    databaseQualifier   <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
+    roleNames           <- _listOfNameOfEither
+    databaseGrant       = GrantPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseDeny        = DenyPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseRevokeGrant = RevokePrivilege.grantedDatabaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseRevokeDeny  = RevokePrivilege.deniedDatabaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseRevoke      = RevokePrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    database            <- oneOf(databaseGrant, databaseDeny, databaseRevokeGrant, databaseRevokeDeny, databaseRevoke)
+  } yield database
+
+  def _graphPrivilege: Gen[PrivilegeCommand] = for {
+    graphAction                 <- _graphAction
+    namedScope                  <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
+    graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)))
+    (qualifier, labelResource)  <- _graphQualifierAndResource(graphAction)
+    propertyNames               <- oneOrMore(_identifier)
+    propertyResource            <- oneOf(PropertiesResource(propertyNames)(pos), AllPropertyResource()(pos))
+    roleNames                   <- _listOfNameOfEither
+    graphGrant                  = GrantPrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
+    traverseGrant               = GrantPrivilege.traverse(graphScope, qualifier, roleNames)(pos)
+    readGrant                   = GrantPrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
+    matchGrant                  = GrantPrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    graphDeny                   = DenyPrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
+    traverseDeny                = DenyPrivilege.traverse(graphScope, qualifier, roleNames)(pos)
+    readDeny                    = DenyPrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
+    matchDeny                   = DenyPrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    graphRevokeGrant            = RevokePrivilege.grantedGraphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevokeGrant         = RevokePrivilege.grantedTraverse(graphScope, qualifier, roleNames)(pos)
+    readRevokeGrant             = RevokePrivilege.grantedRead(propertyResource, graphScope, qualifier, roleNames)(pos)
+    matchRevokeGrant            = RevokePrivilege.grantedAsMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    graphRevokeDeny             = RevokePrivilege.deniedGraphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevokeDeny          = RevokePrivilege.deniedTraverse(graphScope, qualifier, roleNames)(pos)
+    readRevokeDeny              = RevokePrivilege.deniedRead(propertyResource, graphScope, qualifier, roleNames)(pos)
+    matchRevokeDeny             = RevokePrivilege.deniedAsMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    graphRevoke                 = RevokePrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevoke              = RevokePrivilege.traverse(graphScope, qualifier, roleNames)(pos)
+    readRevoke                  = RevokePrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
+    matchRevoke                 = RevokePrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    grant                       <- oneOf(graphGrant, traverseGrant, readGrant, matchGrant)
+    deny                        <- oneOf(graphDeny, traverseDeny, readDeny, matchDeny)
+    revokeGrant                 <- oneOf(graphRevokeGrant, traverseRevokeGrant, readRevokeGrant, matchRevokeGrant)
+    revokeDeny                  <- oneOf(graphRevokeDeny, traverseRevokeDeny, readRevokeDeny, matchRevokeDeny)
+    revoke                      <- oneOf(graphRevoke, traverseRevoke, readRevoke, matchRevoke)
+    graph                       <- oneOf(grant, deny, revokeGrant, revokeDeny, revoke)
+  } yield graph
+
+  def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
+    _showPrivileges,
+    _dbmsPrivilege,
+    _databasePrivilege,
+    _graphPrivilege
+  )
+
+  // Database commands
+
+  def _showDatabase: Gen[ShowDatabase] = for {
+    dbName <- _nameAsEither
+  } yield ShowDatabase(dbName)(pos)
+
+  def _showDatabases: Gen[ShowDatabases] = const(ShowDatabases()(pos))
+
+  def _showDefaultDatabase: Gen[ShowDefaultDatabase] = const(ShowDefaultDatabase()(pos))
+
+  def _createDatabase: Gen[CreateDatabase] = for {
+    dbName <- _nameAsEither
+    ifExistsDo <- _ifExistsDo
+  } yield CreateDatabase(dbName, ifExistsDo)(pos)
+
+  def _dropDatabase: Gen[DropDatabase] = for {
+    dbName <- _nameAsEither
+    ifExists <- boolean
+  } yield DropDatabase(dbName, ifExists)(pos)
+
+  def _startDatabase: Gen[StartDatabase] = for {
+    dbName <- _nameAsEither
+  } yield StartDatabase(dbName)(pos)
+
+  def _stopDatabase: Gen[StopDatabase] = for {
+    dbName <- _nameAsEither
+  } yield StopDatabase(dbName)(pos)
+
+  def _multiDatabaseCommand: Gen[AdministrationCommand] = oneOf(
+    _showDatabase,
+    _showDatabases,
+    _showDefaultDatabase,
+    _createDatabase,
+    _dropDatabase,
+    _startDatabase,
+    _stopDatabase
+  )
+
+  // Top level administration command
+
+  def _adminCommand: Gen[AdministrationCommand] = oneOf(
+    _userCommand,
+    _roleCommand,
+    _privilegeCommand,
+    _multiDatabaseCommand
+  )
+
+  // Top level statement
+  // ----------------------------------
+
+  def _statement: Gen[Statement] = oneOf(
+    _query,
+    _adminCommand
   )
 }

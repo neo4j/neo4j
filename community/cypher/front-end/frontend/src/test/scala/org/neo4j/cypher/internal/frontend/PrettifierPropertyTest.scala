@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.generator.AstGenerator
-import org.neo4j.cypher.internal.ast.generator.AstShrinker.shrinkQuery
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.CypherParser
@@ -28,7 +27,7 @@ class PrettifierPropertyTest extends CypherFunSuite
   with GeneratorDrivenPropertyChecks
   with PrettifierTestUtils {
 
-  val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true))
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
 
   val parser = new CypherParser
 
@@ -37,8 +36,8 @@ class PrettifierPropertyTest extends CypherFunSuite
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 500)
 
   test("Prettifier output should parse to the same ast") {
-    forAll(astGenerator._query) { query =>
-      roundTripCheck(query)
+    forAll(astGenerator._statement) { statement =>
+      roundTripCheck(statement)
     }
   }
 }
