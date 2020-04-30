@@ -105,6 +105,7 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   neo4j-driver
   Netty/All-in-One
+  Non-Blocking Reactive Foundation for the JVM
   oauth-sign
   parboiled-core
   parboiled-scala
@@ -159,6 +160,9 @@ Common Development and Distribution License Version 1.0
 Common Development and Distribution License Version 1.1
   Java Servlet API
   jaxb-api
+
+Creative Commons 0
+  reactive-streams
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

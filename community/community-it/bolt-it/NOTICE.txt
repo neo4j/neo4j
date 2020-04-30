@@ -73,6 +73,7 @@ Apache Software License, Version 2.0
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  Non-Blocking Reactive Foundation for the JVM
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
@@ -101,6 +102,9 @@ Common Development and Distribution License Version 1.0
 
 Common Development and Distribution License Version 1.1
   jaxb-api
+
+Creative Commons 0
+  reactive-streams
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

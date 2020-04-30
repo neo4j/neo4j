@@ -1049,6 +1049,11 @@
         <artifactId>jamm</artifactId>
         <version>${jamm.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>3.3.4.RELEASE</version>
+      </dependency>
 
       <!-- testing -->
       <dependency>
