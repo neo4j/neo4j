@@ -29,11 +29,13 @@ import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -154,8 +156,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache )
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, recordFormats,
-                NullLogProvider.getInstance() )
+        IdGeneratorFactory factory;
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            factory = new ScanOnOpenReadOnlyIdGeneratorFactory();
+        }
+        else
+        {
+            factory = new DefaultIdGeneratorFactory( fs, immediate() );
+        }
+        return new StoreFactory( databaseLayout, config, factory, pageCache, fs, recordFormats, NullLogProvider.getInstance() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 
