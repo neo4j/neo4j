@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -72,6 +73,7 @@ class TxStateTransactionDataViewTest
     @BeforeEach
     void setup() throws PropertyKeyIdNotFoundKernelException
     {
+        when( transaction.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
         when( transaction.internalTransaction() ).thenReturn( internalTransaction );
         var kernelTransaction = mock( KernelTransaction.class );
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );

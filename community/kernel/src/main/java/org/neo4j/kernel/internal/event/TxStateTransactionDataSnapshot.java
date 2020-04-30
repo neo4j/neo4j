@@ -22,14 +22,11 @@ package org.neo4j.kernel.internal.event;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.graphdb.Label;
+import org.neo4j.collection.trackable.HeapTrackingAppendList;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
@@ -54,9 +51,12 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.trackable.HeapTrackingAppendList.newAppendList;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
+import static org.neo4j.kernel.impl.core.RelationshipEntity.SHALLOW_SIZE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
@@ -67,31 +67,38 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final StorageReader store;
     private final KernelTransaction transaction;
 
-    private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
-    private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
-    private final Collection<LabelEntry> assignedLabels = new ArrayList<>();
+    private final HeapTrackingAppendList<PropertyEntry<Node>> assignedNodeProperties;
+    private final HeapTrackingAppendList<PropertyEntry<Relationship>> assignedRelationshipProperties;
+    private final HeapTrackingAppendList<LabelEntry> assignedLabels;
 
-    private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
-    private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
-    private final Collection<LabelEntry> removedLabels = new ArrayList<>();
-    private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore = new LongObjectHashMap<>();
+    private final HeapTrackingAppendList<PropertyEntry<Node>> removedNodeProperties;
+    private final HeapTrackingAppendList<PropertyEntry<Relationship>> removedRelationshipProperties;
+    private final HeapTrackingAppendList<LabelEntry> removedLabels;
+    private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore;
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
     private final MemoryTracker memoryTracker;
 
-    TxStateTransactionDataSnapshot( ReadableTransactionState state, StorageReader storageReader,
-            KernelTransaction transaction )
+    TxStateTransactionDataSnapshot( ReadableTransactionState state, StorageReader storageReader, KernelTransaction transaction )
     {
         this.state = state;
         this.store = storageReader;
         this.transaction = transaction;
         this.internalTransaction = transaction.internalTransaction();
-        this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
         this.memoryTracker = transaction.memoryTracker();
+        this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
+        this.relationshipsReadFromStore = newLongObjectMap( memoryTracker );
+        this.removedLabels = newAppendList( memoryTracker );
+        this.removedRelationshipProperties = newAppendList( memoryTracker );
+        this.removedNodeProperties = newAppendList( memoryTracker );
+
+        this.assignedLabels = newAppendList( memoryTracker );
+        this.assignedRelationshipProperties = newAppendList( memoryTracker );
+        this.assignedNodeProperties = newAppendList( memoryTracker );
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
-        takeSnapshot();
+        takeSnapshot( memoryTracker );
     }
 
     @Override
@@ -190,126 +197,146 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         return transaction.getCommitTime();
     }
 
-    private void takeSnapshot()
+    private void takeSnapshot( MemoryTracker memoryTracker )
     {
         var cursorTracer = transaction.pageCursorTracer();
         try ( StorageNodeCursor node = store.allocateNodeCursor( cursorTracer );
               StoragePropertyCursor properties = store.allocatePropertyCursor( cursorTracer, memoryTracker ) )
         {
             TokenRead tokenRead = transaction.tokenRead();
-            state.addedAndRemovedNodes().getRemoved().each( nodeId ->
-            {
-                node.single( nodeId );
-                if ( node.next() )
-                {
-                    node.properties( properties );
-                    while ( properties.next() )
-                    {
-                        try
-                        {
-                            removedNodeProperties.add( new NodePropertyEntryView( nodeId, tokenRead.propertyKeyName( properties.propertyKey() ),
-                                    null, properties.propertyValue() ) );
-                        }
-                        catch ( PropertyKeyIdNotFoundKernelException e )
-                        {
-                            throw new IllegalStateException( "Not existing properties was modified for node " + nodeId, e );
-                        }
-                    }
-
-                    for ( long labelId : node.labels() )
-                    {
-                        try
-                        {
-                            removedLabels.add( new LabelEntryView( nodeId, tokenRead.nodeLabelName( toIntExact( labelId ) ) ) );
-                        }
-                        catch ( LabelNotFoundKernelException e )
-                        {
-                            throw new IllegalStateException( "Not existing label was modified for node " + nodeId, e );
-                        }
-                    }
-                }
-            } );
-            state.addedAndRemovedRelationships().getRemoved().each( relId ->
-            {
-                Relationship relationship = relationship( relId );
-                this.relationship.single( relId );
-                if ( this.relationship.next() )
-                {
-                    this.relationship.properties( properties );
-                    while ( properties.next() )
-                    {
-                        try
-                        {
-                            removedRelationshipProperties.add(
-                                    new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( properties.propertyKey() ), null,
-                                            properties.propertyValue() ) );
-                        }
-                        catch ( PropertyKeyIdNotFoundKernelException e )
-                        {
-                            throw new IllegalStateException( "Not existing node properties was modified for relationship " + relId, e );
-                        }
-                    }
-                }
-            } );
-            for ( NodeState nodeState : state.modifiedNodes() )
-            {
-                Iterator<StorageProperty> added = nodeState.addedAndChangedProperties();
-                long nodeId = nodeState.getId();
-                while ( added.hasNext() )
-                {
-                    StorageProperty property = added.next();
-                    assignedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                            tokenRead.propertyKeyName( property.propertyKeyId() ), property.value(),
-                            committedValue( nodeState, property.propertyKeyId(), node, properties ) ) );
-                }
-                nodeState.removedProperties().each( id ->
-                {
-                    try
-                    {
-                        final NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, tokenRead.propertyKeyName( id ), null,
-                                committedValue( nodeState, id, node, properties ) );
-                        removedNodeProperties.add( entryView );
-                    }
-                    catch ( PropertyKeyIdNotFoundKernelException e )
-                    {
-                        throw new IllegalStateException( "Not existing node properties was modified for node " + nodeId, e );
-                    }
-                } );
-
-                final LongDiffSets labels = nodeState.labelDiffSets();
-                addLabelEntriesTo( nodeId, labels.getAdded(), assignedLabels );
-                addLabelEntriesTo( nodeId, labels.getRemoved(), removedLabels );
-            }
-            for ( RelationshipState relState : state.modifiedRelationships() )
-            {
-                Relationship relationship = relationship( relState.getId() );
-                Iterator<StorageProperty> added = relState.addedAndChangedProperties();
-                while ( added.hasNext() )
-                {
-                    StorageProperty property = added.next();
-                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
-                            tokenRead.propertyKeyName( property.propertyKeyId() ), property.value(),
-                            committedValue( relState, property.propertyKeyId(), this.relationship, properties ) ) );
-                }
-                relState.removedProperties().each( id ->
-                {
-                    try
-                    {
-                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( id ),
-                                null, committedValue( relState, id, this.relationship, properties ) );
-                        removedRelationshipProperties.add( entryView );
-                    }
-                    catch ( PropertyKeyIdNotFoundKernelException e )
-                    {
-                        throw new IllegalStateException( "Not existing properties was modified for relationship " + relState.getId(), e );
-                    }
-                } );
-            }
+            snapshotRemovedNodes( memoryTracker, node, properties, tokenRead );
+            snapshotRemovedRelationships( memoryTracker, properties, tokenRead );
+            snapshotModifiedNodes( memoryTracker, node, properties, tokenRead );
+            snapshotModifiedRelationships( memoryTracker, properties, tokenRead );
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new IllegalStateException( "An entity that does not exist was modified.", e );
         }
+    }
+
+    private void snapshotModifiedRelationships( MemoryTracker memoryTracker, StoragePropertyCursor properties, TokenRead tokenRead )
+            throws PropertyKeyIdNotFoundKernelException
+    {
+        for ( RelationshipState relState : state.modifiedRelationships() )
+        {
+            Relationship relationship = relationship( relState.getId() );
+            Iterator<StorageProperty> added = relState.addedAndChangedProperties();
+            while ( added.hasNext() )
+            {
+                StorageProperty property = added.next();
+                assignedRelationshipProperties.add(
+                        createRelationshipPropertyEntryView( memoryTracker, tokenRead, relationship, property.propertyKeyId(), property.value(),
+                                committedValue( relState, property.propertyKeyId(), this.relationship, properties ) ) );
+            }
+            relState.removedProperties().each( id ->
+            {
+                try
+                {
+                    var entryView = createRelationshipPropertyEntryView( memoryTracker, tokenRead, relationship, id, null,
+                            committedValue( relState, id, this.relationship, properties ) );
+                    removedRelationshipProperties.add( entryView );
+                }
+                catch ( PropertyKeyIdNotFoundKernelException e )
+                {
+                    throw new IllegalStateException( "Not existing properties was modified for relationship " + relState.getId(), e );
+                }
+            } );
+        }
+    }
+
+    private void snapshotModifiedNodes( MemoryTracker memoryTracker, StorageNodeCursor node, StoragePropertyCursor properties, TokenRead tokenRead )
+            throws PropertyKeyIdNotFoundKernelException
+    {
+        for ( NodeState nodeState : state.modifiedNodes() )
+        {
+            Iterator<StorageProperty> added = nodeState.addedAndChangedProperties();
+            long nodeId = nodeState.getId();
+            while ( added.hasNext() )
+            {
+                StorageProperty property = added.next();
+                var entryView = createNodePropertyEntryView( memoryTracker, tokenRead, nodeId, property.propertyKeyId(), property.value(),
+                                committedValue( nodeState, property.propertyKeyId(), node, properties ) );
+                assignedNodeProperties.add( entryView );
+            }
+            nodeState.removedProperties().each( id ->
+            {
+                try
+                {
+                    removedNodeProperties.add(
+                            createNodePropertyEntryView( memoryTracker, tokenRead, nodeId, id, null, committedValue( nodeState, id, node, properties ) ) );
+                }
+                catch ( PropertyKeyIdNotFoundKernelException e )
+                {
+                    throw new IllegalStateException( "Not existing node properties was modified for node " + nodeId, e );
+                }
+            } );
+
+            final LongDiffSets labels = nodeState.labelDiffSets();
+            addLabelEntriesTo( nodeId, labels.getAdded(), assignedLabels );
+            addLabelEntriesTo( nodeId, labels.getRemoved(), removedLabels );
+        }
+    }
+
+    private void snapshotRemovedRelationships( MemoryTracker memoryTracker, StoragePropertyCursor properties, TokenRead tokenRead )
+    {
+        state.addedAndRemovedRelationships().getRemoved().each( relId ->
+        {
+            Relationship relationship = relationship( relId );
+            this.relationship.single( relId );
+            if ( this.relationship.next() )
+            {
+                this.relationship.properties( properties );
+                while ( properties.next() )
+                {
+                    try
+                    {
+                        removedRelationshipProperties.add( createRelationshipPropertyEntryView( memoryTracker, tokenRead, relationship,
+                                properties.propertyKey(), null, properties.propertyValue() ) );
+                    }
+                    catch ( PropertyKeyIdNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException( "Not existing node properties was modified for relationship " + relId, e );
+                    }
+                }
+            }
+        } );
+    }
+
+    private void snapshotRemovedNodes( MemoryTracker memoryTracker, StorageNodeCursor node, StoragePropertyCursor properties, TokenRead tokenRead )
+    {
+        state.addedAndRemovedNodes().getRemoved().each( nodeId ->
+        {
+            node.single( nodeId );
+            if ( node.next() )
+            {
+                node.properties( properties );
+                while ( properties.next() )
+                {
+                    try
+                    {
+                        removedNodeProperties.add( createNodePropertyEntryView( memoryTracker, tokenRead, nodeId, properties.propertyKey(),
+                                null, properties.propertyValue() ) );
+                    }
+                    catch ( PropertyKeyIdNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException( "Not existing properties was modified for node " + nodeId, e );
+                    }
+                }
+
+                for ( long labelId : node.labels() )
+                {
+                    try
+                    {
+                        removedLabels.add( createLabelView( memoryTracker, tokenRead, nodeId, labelId ) );
+                    }
+                    catch ( LabelNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException( "Not existing label was modified for node " + nodeId, e );
+                    }
+                }
+            }
+        } );
     }
 
     @Override
@@ -318,20 +345,50 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         relationship.close();
     }
 
-    private void addLabelEntriesTo( long nodeId, LongSet labelIds, Collection<LabelEntry> target )
+    private void addLabelEntriesTo( long nodeId, LongSet labelIds, HeapTrackingAppendList<LabelEntry> target )
     {
         labelIds.each( labelId ->
         {
             try
             {
-                final LabelEntry labelEntryView = new LabelEntryView( nodeId, transaction.tokenRead().nodeLabelName( toIntExact( labelId ) ) );
-                target.add( labelEntryView );
+                target.add( createLabelView( memoryTracker, transaction.tokenRead(), nodeId, labelId ) );
             }
             catch ( LabelNotFoundKernelException e )
             {
                 throw new IllegalStateException( "Not existing label was modified for node " + nodeId, e );
             }
         } );
+    }
+
+    private RelationshipPropertyEntryView createRelationshipPropertyEntryView( MemoryTracker memoryTracker, TokenRead tokenRead,
+            Relationship relationship, int key, Value newValue, Value oldValue ) throws PropertyKeyIdNotFoundKernelException
+    {
+        var entryView = new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( key ), newValue, oldValue );
+        memoryTracker.allocateHeap( RelationshipPropertyEntryView.SHALLOW_SIZE );
+        if ( oldValue != null )
+        {
+            memoryTracker.allocateHeap( oldValue.estimatedHeapUsage() );
+        }
+        return entryView;
+    }
+
+    private NodePropertyEntryView createNodePropertyEntryView( MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, int key, Value newValue,
+            Value oldValue ) throws PropertyKeyIdNotFoundKernelException
+    {
+        var entryView = new NodePropertyEntryView( internalTransaction, nodeId, tokenRead.propertyKeyName( key ), newValue, oldValue );
+        memoryTracker.allocateHeap( NodePropertyEntryView.SHALLOW_SIZE );
+        if ( oldValue != null )
+        {
+            memoryTracker.allocateHeap( oldValue.estimatedHeapUsage() );
+        }
+        return entryView;
+    }
+
+    private LabelEntryView createLabelView( MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, long labelId ) throws LabelNotFoundKernelException
+    {
+        var entryView = new LabelEntryView( internalTransaction, nodeId, tokenRead.nodeLabelName( toIntExact( labelId ) ) );
+        memoryTracker.allocateHeap( LabelEntryView.SHALLOW_SIZE );
+        return entryView;
     }
 
     private Relationship relationship( long relId )
@@ -352,6 +409,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                 throw new IllegalStateException( "Getting deleted relationship data should have been covered by the tx state" );
             }
             relationship.visit( relId, this.relationship.type(), this.relationship.sourceNodeReference(), this.relationship.targetNodeReference() );
+            memoryTracker.allocateHeap( SHALLOW_SIZE );
             relationshipsReadFromStore.put( relId, relationship );
         }
         return relationship;
@@ -371,21 +429,20 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     {
         if ( state.nodeIsAddedInThisTx( nodeState.getId() ) )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
 
         node.single( nodeState.getId() );
         if ( !node.next() )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
-
         return committedValue( properties, node, property );
     }
 
-    private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor entity, int propertyKey )
+    private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey )
     {
-        entity.properties( properties );
+        cursor.properties( properties );
         while ( properties.next() )
         {
             if ( properties.propertyKey() == propertyKey )
@@ -394,165 +451,22 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             }
         }
 
-        return Values.NO_VALUE;
+        return NO_VALUE;
     }
 
     private Value committedValue( RelationshipState relState, int property, StorageRelationshipScanCursor relationship, StoragePropertyCursor properties )
     {
         if ( state.relationshipIsAddedInThisTx( relState.getId() ) )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
 
         relationship.single( relState.getId() );
         if ( !relationship.next() )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
 
         return committedValue( properties, relationship, property );
-    }
-
-    private class NodePropertyEntryView implements PropertyEntry<Node>
-    {
-        private final long nodeId;
-        private final String key;
-        private final Value newValue;
-        private final Value oldValue;
-
-        NodePropertyEntryView( long nodeId, String key, Value newValue, Value oldValue )
-        {
-            this.nodeId = nodeId;
-            this.key = key;
-            this.newValue = newValue;
-            this.oldValue = oldValue;
-        }
-
-        @Override
-        public Node entity()
-        {
-            return new NodeEntity( internalTransaction, nodeId );
-        }
-
-        @Override
-        public String key()
-        {
-            return key;
-        }
-
-        @Override
-        public Object previouslyCommittedValue()
-        {
-            return oldValue.asObjectCopy();
-        }
-
-        @Override
-        public Object value()
-        {
-            if ( newValue == null || newValue == Values.NO_VALUE )
-            {
-                throw new IllegalStateException( "This property has been removed, it has no value anymore: " + this );
-            }
-            return newValue.asObjectCopy();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "NodePropertyEntryView{" +
-                    "nodeId=" + nodeId +
-                    ", key='" + key + '\'' +
-                    ", newValue=" + newValue +
-                    ", oldValue=" + oldValue +
-                    '}';
-        }
-    }
-
-    private static class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
-    {
-        private final Relationship relationship;
-        private final String key;
-        private final Value newValue;
-        private final Value oldValue;
-
-        RelationshipPropertyEntryView( Relationship relationship, String key, Value newValue, Value oldValue )
-        {
-            this.relationship = relationship;
-            this.key = key;
-            this.newValue = newValue;
-            this.oldValue = oldValue;
-        }
-
-        @Override
-        public Relationship entity()
-        {
-            return relationship;
-        }
-
-        @Override
-        public String key()
-        {
-            return key;
-        }
-
-        @Override
-        public Object previouslyCommittedValue()
-        {
-            return oldValue.asObjectCopy();
-        }
-
-        @Override
-        public Object value()
-        {
-            if ( newValue == null || newValue == Values.NO_VALUE )
-            {
-                throw new IllegalStateException( "This property has been removed, it has no value anymore: " + this );
-            }
-            return newValue.asObjectCopy();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "RelationshipPropertyEntryView{" +
-                    "relId=" + relationship.getId() +
-                    ", key='" + key + '\'' +
-                    ", newValue=" + newValue +
-                    ", oldValue=" + oldValue +
-                    '}';
-        }
-    }
-
-    private class LabelEntryView implements LabelEntry
-    {
-        private final long nodeId;
-        private final Label label;
-
-        LabelEntryView( long nodeId, String labelName )
-        {
-            this.nodeId = nodeId;
-            this.label = Label.label( labelName );
-        }
-
-        @Override
-        public Label label()
-        {
-            return label;
-        }
-
-        @Override
-        public Node node()
-        {
-            return new NodeEntity( internalTransaction, nodeId );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "LabelEntryView{" +
-                    "nodeId=" + nodeId +
-                    ", label=" + label +
-                    '}';
-        }
     }
 }
