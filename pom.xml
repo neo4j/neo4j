@@ -100,7 +100,7 @@
     <currentYear>2020</currentYear>
     <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
-    <cypher.compatibility.34>3.4.17</cypher.compatibility.34>
+    <cypher.compatibility.34>3.4.18</cypher.compatibility.34>
     <opencypher.version>1.0.0-M12</opencypher.version>
     <caffeine.version>2.6.2</caffeine.version>
     <required.maven.version>3.5.2</required.maven.version>
