@@ -19,6 +19,10 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,9 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.memory.ByteBuffers;
@@ -116,7 +117,7 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    void shouldCreatePathThatPointsToFile() throws Exception
+    void shouldNotCreatePathThatPointsToFile() throws Exception
     {
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
@@ -124,10 +125,7 @@ public abstract class FileSystemAbstractionTest
         try ( StoreChannel channel = fsa.write( path ) )
         {
             assertThat( channel ).isNotNull();
-
-            fsa.mkdirs( path );
-
-            assertTrue( fsa.fileExists( path ) );
+            assertThrows(IOException.class, () -> fsa.mkdirs( path ));
         }
     }
 

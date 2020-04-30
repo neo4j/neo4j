@@ -44,7 +44,7 @@ class FailureStorageTest
     private IndexFolderLayout indexFolderLayout;
 
     @BeforeEach
-    void before()
+    void before() throws Exception
     {
         File rootDirectory = new File( "dir" );
         fs.mkdirs( rootDirectory );

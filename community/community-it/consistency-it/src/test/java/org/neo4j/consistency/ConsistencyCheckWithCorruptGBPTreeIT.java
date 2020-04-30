@@ -107,7 +107,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private EphemeralFileSystemAbstraction fs;
 
     @BeforeAll
-    void createIndex()
+    void createIndex() throws Exception
     {
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         fs.mkdirs( neo4jHome );

@@ -115,16 +115,20 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void mkdirs( File path ) throws IOException
+    public void mkdirs( File file ) throws IOException
     {
-        if ( path.exists() )
+        if ( file.exists() && file.isDirectory() )
         {
             return;
         }
 
-        if ( !path.mkdirs() )
+        try
         {
-            throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
+            Files.createDirectories( file.toPath() );
+        }
+        catch ( IOException e )
+        {
+            throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, file ), e );
         }
     }
 

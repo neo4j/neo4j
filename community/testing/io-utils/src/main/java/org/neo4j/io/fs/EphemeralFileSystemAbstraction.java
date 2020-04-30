@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.fs;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -51,7 +53,6 @@ import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.CombiningIterator;
 import org.neo4j.io.ByteUnit;
@@ -61,8 +62,10 @@ import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -278,13 +281,20 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void mkdirs( File directory )
+    public void mkdirs( File directory ) throws IOException
     {
         File currentDirectory = canonicalFile( directory );
 
         while ( currentDirectory != null )
         {
-            mkdir( currentDirectory );
+            if ( files.containsKey( currentDirectory ) )
+            {
+                throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, currentDirectory ) );
+            }
+            else
+            {
+                mkdir( currentDirectory );
+            }
             currentDirectory = currentDirectory.getParentFile();
         }
     }
