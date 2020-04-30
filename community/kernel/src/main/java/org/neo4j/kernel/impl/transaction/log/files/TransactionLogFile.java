@@ -97,7 +97,26 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private void seekChannelPosition( long currentLogVersion ) throws IOException
     {
         scrollToTheLastClosedTxPosition( currentLogVersion );
-        LogPosition position = scrollOverCheckpointRecords();
+        LogPosition position;
+        try
+        {
+            position = scrollOverCheckpointRecords();
+        }
+        catch ( Exception e )
+        {
+            // If we can't read the log, it could be that the last-closed-transaction position in the meta-data store is wrong.
+            // We can try again by scanning the log file from the start.
+            scrollToLogStart( currentLogVersion );
+            try
+            {
+                position = scrollOverCheckpointRecords();
+            }
+            catch ( Exception exception )
+            {
+                exception.addSuppressed( e );
+                throw exception;
+            }
+        }
         channel.position( position.getByteOffset() );
     }
 
@@ -123,7 +142,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         LogPosition logPosition = context.getLastClosedTransactionPosition();
         long lastTxOffset = logPosition.getByteOffset();
         long lastTxLogVersion = logPosition.getLogVersion();
-        final long headerSize = logFiles.extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
+        long headerSize = logFiles.extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
         if ( lastTxOffset < headerSize || channel.size() < lastTxOffset )
         {
             return;
@@ -132,6 +151,12 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         {
             channel.position( lastTxOffset );
         }
+    }
+
+    private void scrollToLogStart( long currentLogVersion ) throws IOException
+    {
+        long headerSize = logFiles.extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
+        channel.position( headerSize );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
