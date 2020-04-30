@@ -94,7 +94,7 @@ public final class BoltConnector implements SettingsDeclaration
                   "ongoing queries." )
     @Internal
     public static final Setting<Duration> connection_keep_alive =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 10 ) )
+            newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 1 ) )
                     .build();
 
     @Description( "The interval between every scheduled keep-alive check on all connections with active queries. " +
