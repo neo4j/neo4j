@@ -97,6 +97,7 @@
       -XX:FlightRecorderOptions=stackdepth=256
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
+      -javaagent:${settings.localRepository}/com/github/jbellis/jamm/${jamm.version}/jamm-${jamm.version}.jar
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
@@ -106,6 +107,7 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
+    <jamm.version>0.3.3</jamm.version>
     <lucene.version>8.5.1</lucene.version>
     <bouncycastle.version>1.65</bouncycastle.version>
     <jetty.version>9.4.26.v20200117</jetty.version>
@@ -1036,6 +1038,11 @@
         <groupId>org.hdrhistogram</groupId>
         <artifactId>HdrHistogram</artifactId>
         <version>2.1.12</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jbellis</groupId>
+        <artifactId>jamm</artifactId>
+        <version>${jamm.version}</version>
       </dependency>
 
       <!-- testing -->

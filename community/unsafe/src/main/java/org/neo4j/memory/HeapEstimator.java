@@ -37,6 +37,8 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 
 import static com.sun.jna.Platform.is64Bit;
 import static java.lang.Math.max;
+import static org.neo4j.memory.RuntimeInternals.STRING_VALUE_ARRAY;
+import static org.neo4j.memory.RuntimeInternals.stringBackingArraySize;
 
 public final class HeapEstimator
 {
@@ -121,8 +123,9 @@ public final class HeapEstimator
                             "  NUM_BYTES_OBJECT_HEADER=%d%n" +
                             "  NUM_BYTES_ARRAY_HEADER=%d%n" +
                             "  LONG_SIZE=%d%n" +
-                            "  STRING_SIZE=%d%n", HeapEstimator.class.getName(), OBJECT_ALIGNMENT_BYTES, OBJECT_REFERENCE_BYTES, OBJECT_HEADER_BYTES,
-                    ARRAY_HEADER_BYTES, LONG_SIZE, STRING_SIZE ) );
+                            "  STRING_SIZE=%d%n" +
+                            "  STRING_VALUE_ARRAY=%s%n", HeapEstimator.class.getName(), OBJECT_ALIGNMENT_BYTES, OBJECT_REFERENCE_BYTES, OBJECT_HEADER_BYTES,
+                                               ARRAY_HEADER_BYTES, LONG_SIZE, STRING_SIZE, STRING_VALUE_ARRAY != null ) );
         }
 
         // Calculate common used sizes
@@ -396,10 +399,8 @@ public final class HeapEstimator
         {
             return 0;
         }
-        // may not be true in Java 9+ and CompactStrings - but we have no way to determine this
 
-        // char[] + hashCode
-        long size = STRING_SIZE + (long) ARRAY_HEADER_BYTES + (long) Character.BYTES * s.length();
+        long size = STRING_SIZE + ARRAY_HEADER_BYTES + stringBackingArraySize( s );
         return alignObjectSize( size );
     }
 

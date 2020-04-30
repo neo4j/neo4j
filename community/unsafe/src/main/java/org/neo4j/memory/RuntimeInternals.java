@@ -19,6 +19,8 @@
  */
 package org.neo4j.memory;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -42,6 +44,8 @@ final class RuntimeInternals
     static final int HEADER_SIZE;
     static final int OBJECT_ALIGNMENT;
     static final boolean COMPRESSED_OOPS;
+
+    static final VarHandle STRING_VALUE_ARRAY;
 
     static
     {
@@ -93,10 +97,32 @@ final class RuntimeInternals
         }
         LONG_CACHE_MIN_VALUE = longCacheMinValue;
         LONG_CACHE_MAX_VALUE = longCacheMaxValue;
+
+        // Compensate for compressed string in Java 9+
+        VarHandle stringValueArray;
+        try
+        {
+            stringValueArray = MethodHandles.privateLookupIn( String.class, MethodHandles.lookup() ).findVarHandle( String.class, "value", byte[].class );
+        }
+        catch ( NoSuchFieldException | IllegalAccessException e )
+        {
+            stringValueArray = null;
+        }
+        STRING_VALUE_ARRAY = stringValueArray;
     }
 
     private RuntimeInternals()
     {
+    }
+
+    static int stringBackingArraySize( String s )
+    {
+        if ( STRING_VALUE_ARRAY != null )
+        {
+            byte[] value = (byte[]) STRING_VALUE_ARRAY.get( s );
+            return value.length;
+        }
+        return s.length() << 1; // Assume UTF16
     }
 
     private static String getVmOptionString( String key ) throws Exception
