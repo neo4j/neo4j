@@ -833,8 +833,23 @@ class PrettifierIT extends CypherFunSuite {
           s"$action remove label label on graph foo $preposition role1, role2, role3" ->
             s"$action REMOVE LABEL label ON GRAPH foo $preposition role1, role2, role3",
 
-         s"$action remove label label on graph foo, $$bar $preposition role" ->
+          s"$action remove label label on graph foo, $$bar $preposition role" ->
             s"$action REMOVE LABEL label ON GRAPHS foo, $$bar $preposition role",
+
+          s"$action set property {*} on graph * $preposition role" ->
+            s"$action SET PROPERTY {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action set property {foo} on graph * NODES bar $preposition role" ->
+            s"$action SET PROPERTY {foo} ON GRAPH * NODES bar (*) $preposition role",
+
+          s"$action set property {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
+            s"$action SET PROPERTY {*} ON GRAPH * RELATIONSHIPS bar, baz (*) $preposition role",
+
+          s"$action set property {Foo, BAR} on graph * $preposition role" ->
+            s"$action SET PROPERTY {Foo, BAR} ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action set property {*} on graph foo, $$bar $preposition role1, role2, role3" ->
+            s"$action SET PROPERTY {*} ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role1, role2, role3",
 
         ) ++ Seq(
           ("access", "ACCESS"),

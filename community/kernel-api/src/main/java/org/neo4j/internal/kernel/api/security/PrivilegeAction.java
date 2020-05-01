@@ -40,6 +40,8 @@ public enum PrivilegeAction
     CREATE_ELEMENT,
     DELETE_ELEMENT,
 
+    SET_PROPERTY,
+
     /** Execute procedure/view with elevated access */
     EXECUTE,
 
@@ -276,6 +278,7 @@ public enum PrivilegeAction
                     case REMOVE_LABEL:
                     case CREATE_ELEMENT:
                     case DELETE_ELEMENT:
+                    case SET_PROPERTY:
                         return true;
                     default:
                         return this == action;

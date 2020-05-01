@@ -61,6 +61,7 @@ import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule3
+import org.parboiled.scala.Rule4
 import org.parboiled.scala.group
 
 trait Statement extends Parser
@@ -410,7 +411,9 @@ trait Statement extends Parser
     group(keyword("GRANT") ~~ QualifiedGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("GRANT") ~~ GraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
+      ((resource, graphScope, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+    group(keyword("GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles))
   }
 
   //`DENY ON GRAPH foo TO role`
@@ -418,7 +421,9 @@ trait Statement extends Parser
     group(keyword("DENY") ~~ QualifiedGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("DENY") ~~ GraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
+      ((resource, graphScope, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+    group(keyword("DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles))
   }
 
   //`REVOKE ON GRAPH foo TO role`
@@ -426,15 +431,21 @@ trait Statement extends Parser
     group(keyword("REVOKE GRANT") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.grantedGraphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("REVOKE GRANT") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) =>  ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))|
+      ((resource, graphScope, action, roles) =>  ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+    group(keyword("REVOKE GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, qualifier, roles)) |
     group(keyword("REVOKE DENY") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("REVOKE DENY") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+    group(keyword("REVOKE DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+        ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, Some(resource), graphScope, qualifier, roles)) |
     group(keyword("REVOKE") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("REVOKE") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles))
+      ((resource, graphScope, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+    group(keyword("REVOKE") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
@@ -519,6 +530,9 @@ trait Statement extends Parser
     group(keyword("REMOVE LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.RemoveLabelAction))
   )
 
+  private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified graph action with resource")(
+    group(keyword("SET PROPERTY") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.SetPropertyAction))
+  )
 
   private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |

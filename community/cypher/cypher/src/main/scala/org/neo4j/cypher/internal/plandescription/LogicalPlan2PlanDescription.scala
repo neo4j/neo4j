@@ -726,21 +726,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case GrantGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
         val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
+        val resourceText = extractResourcePart(resource)
+        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText,getRoleInfo(roleName)))), variables)
 
       case DenyGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
         val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        val labelText = extractLabelPart(resource)
-        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
+        val resourceText = extractResourcePart(resource)
+        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
 
       case RevokeGraphAction(_, action, resource, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
         val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        val labelText = extractLabelPart(resource)
+        val resourceText = extractResourcePart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
-          Seq(Details(Seq(dbName) ++ labelText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
@@ -1217,11 +1217,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
   }
 
-  private def extractLabelPart(resource: ActionResource): Option[PrettyString] = resource match {
+  private def extractResourcePart(resource: ActionResource): Option[PrettyString] = resource match {
     case LabelResource(name) => Some(pretty"LABEL ${asPrettyString(name)}")
-    case AllLabelResource()  => Some(pretty"ALL LABELS")
-    case NoResource()        => None
-    case _                   => Some(pretty"<unknown>")
+    case AllLabelResource() => Some(pretty"ALL LABELS")
+    case PropertyResource(name) => Some(pretty"PROPERTY ${asPrettyString(name)}")
+    case AllPropertyResource() => Some(pretty"ALL PROPERTIES")
+    case NoResource() => None
+    case _ => Some(pretty"<unknown>")
   }
 
   private def extractUserQualifier(qualifier: PrivilegeQualifier): Option[PrettyString] = qualifier match {

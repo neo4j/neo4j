@@ -64,6 +64,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_ROLE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWORDS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PROPERTY;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_STATUS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_PRIVILEGE;
@@ -93,7 +94,7 @@ class PrivilegeActionTest
         expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
-        expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT ) );
+        expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY ) );
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
         expected.put( MATCH, Set.of( TRAVERSE, READ ) );
         expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );

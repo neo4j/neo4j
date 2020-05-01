@@ -398,6 +398,7 @@ case object DeleteElementAction extends GraphAction("DELETE", "DeleteElement")
 case object SetLabelAction extends GraphAction("SET LABEL", "SetLabel")
 case object RemoveLabelAction extends GraphAction("REMOVE LABEL", "RemoveLabel")
 case object WriteAction extends GraphAction("WRITE", "Write")
+case object SetPropertyAction extends GraphAction("SET PROPERTY", "SetProperty")
 
 object GrantPrivilege {
 

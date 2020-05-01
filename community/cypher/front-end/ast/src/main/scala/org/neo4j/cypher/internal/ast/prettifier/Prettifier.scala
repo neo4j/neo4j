@@ -362,17 +362,20 @@ case class Prettifier(
       val scope = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x@GrantPrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames) =>
-      val scope = Prettifier.extractLabelScope(dbScope, resource)
-      s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
+    case x@GrantPrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames)
+      if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
+        val scope = Prettifier.extractLabelScope(dbScope, resource)
+        s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x@DenyPrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames) =>
-      val scope = Prettifier.extractLabelScope(dbScope, resource)
-      s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
+    case x@DenyPrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames)
+      if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
+        val scope = Prettifier.extractLabelScope(dbScope, resource)
+        s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x@RevokePrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames, _) =>
-      val scope = Prettifier.extractLabelScope(dbScope, resource)
-      s"${x.name} $scope FROM ${Prettifier.escapeNames(roleNames)}"
+    case x@RevokePrivilege(GraphPrivilege(_), Some(resource), dbScope, _, roleNames, _)
+      if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
+        val scope = Prettifier.extractLabelScope(dbScope, resource)
+        s"${x.name} $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(_, Some(resource), dbScope, qualifier, roleNames) =>
       val (resourceName, scope) = Prettifier.extractScope(resource, dbScope, qualifier)
