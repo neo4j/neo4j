@@ -1052,6 +1052,37 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return records;
     }
 
+    public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer, RecordSubscriber<RECORD> subscriber )
+    {
+        if ( Record.NULL_REFERENCE.is( firstId ) )
+        {
+            return;
+        }
+        LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
+
+        long id = firstId;
+        try ( PageCursor cursor = openPageCursorForReading( firstId, cursorTracer ) )
+        {
+            RECORD record;
+            do
+            {
+                record = newRecord();
+                if ( cycleGuard.test( id ) )
+                {
+                    throw newCycleDetectedException( firstId, id, record );
+                }
+                getRecordByCursor( id, record, mode, cursor );
+                // Even unused records gets added and returned
+                if ( !subscriber.onRecord( record ) )
+                {
+                    return;
+                }
+                id = getNextRecordReference( record );
+            }
+            while ( !Record.NULL_REFERENCE.is( id ) );
+        }
+    }
+
     private LongPredicate createRecordCycleGuard()
     {
         MutableLongSet observedSet = LongSets.mutable.empty();

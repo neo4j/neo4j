@@ -213,7 +213,7 @@ public class AllStoreHolder extends Read
                 this.allNodesScan( nodes );
                 while ( nodes.next() )
                 {
-                    if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
+                    if ( labelId == TokenRead.ANY_LABEL || nodes.hasLabel( labelId ) )
                     {
                         count++;
                     }
@@ -305,8 +305,8 @@ public class AllStoreHolder extends Read
         {
             relationship.source( sourceNode );
             relationship.target( targetNode );
-            if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
-                    targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
+            if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.hasLabel( startLabelId )) &&
+                    targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel( endLabelId )) )
             {
                 internalCount++;
             }

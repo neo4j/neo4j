@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
@@ -63,6 +64,29 @@ public class DynamicNodeLabels implements NodeLabels
             nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ), cursorTracer );
         }
         return getDynamicLabelsArray( node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore(), cursorTracer );
+    }
+
+    public static boolean hasLabel( NodeRecord node, NodeStore nodeStore, PageCursorTracer cursorTracer, int label )
+    {
+        DynamicArrayStore dynamicLabelStore = nodeStore.getDynamicLabelStore();
+        HasLabelSubscriber subscriber = new HasLabelSubscriber( label, dynamicLabelStore, cursorTracer );
+        if ( node.isLight() )
+        {
+            //dynamic records not there, stream the result from the dynamic label store
+            dynamicLabelStore.streamRecords( firstDynamicLabelRecordId( node.getLabelField() ), RecordLoad.NORMAL, false, cursorTracer, subscriber );
+        }
+        else
+        {
+            //dynamic records are already here, lets use them
+            for ( DynamicRecord record : node.getUsedDynamicLabelRecords() )
+            {
+                if ( !subscriber.onRecord( record ) )
+                {
+                    break;
+                }
+            }
+        }
+        return subscriber.hasLabel();
     }
 
     @Override

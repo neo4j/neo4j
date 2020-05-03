@@ -59,6 +59,13 @@ public class NodeLabelsField
                 : InlineNodeLabels.get( node );
     }
 
+    public static boolean hasLabel( NodeRecord node, NodeStore nodeStore, PageCursorTracer cursorTracer, int label )
+    {
+        return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
+               ? DynamicNodeLabels.hasLabel( node, nodeStore, cursorTracer, label )
+               : InlineNodeLabels.hasLabel( node, label);
+    }
+
     public static boolean fieldPointsToDynamicRecordOfLabels( long labelField )
     {
         return (labelField & 0x8000000000L) != 0;

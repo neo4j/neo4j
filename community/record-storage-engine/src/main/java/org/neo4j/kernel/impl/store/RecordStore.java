@@ -200,6 +200,21 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer ) throws InvalidRecordException;
 
     /**
+     * Streams records that belong together, a chain of records that as a whole forms the entirety of a data item.
+     *
+     * @param firstId record id of the first record to start loading from.
+     * @param mode {@link RecordLoad} mode.
+     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
+     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
+     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
+     * A cycle would only occur if the store is inconsistent, though.
+     * @param cursorTracer underlying page cursor tracer
+     * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
+     */
+    void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer,
+                        RecordSubscriber<RECORD> subscriber );
+
+    /**
      * Returns another record id which the given {@code record} references, if it exists in a chain of records.
      *
      * @param record to read the "next" reference from.
@@ -363,6 +378,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public List<R> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer ) throws InvalidRecordException
         {
             return actual.getRecords( firstId, mode, guardForCycles, cursorTracer );
+        }
+
+        @Override
+        public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer, RecordSubscriber<R> subscriber )
+        {
+            actual.streamRecords( firstId, mode, guardForCycles, cursorTracer, subscriber );
         }
 
         @Override
