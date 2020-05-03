@@ -56,9 +56,9 @@ public class TrackingIndexReader implements IndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... query ) throws IndexNotApplicableKernelException
+            IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        delegate.query( context, client, constraints, cursorTracer, query );
+        delegate.query( context, client, constraints, query );
     }
 
     @Override

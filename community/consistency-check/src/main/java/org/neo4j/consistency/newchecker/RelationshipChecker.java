@@ -120,7 +120,8 @@ class RelationshipChecker implements Checker
               AllEntriesTokenScanReader relationshipTypeReader = relationshipTypeScanStore
                       .allEntityTokenRanges( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId, cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
-              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer ) )
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer,
+                      context.memoryTracker ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = cacheAccess.client();

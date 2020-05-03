@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -116,6 +117,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Log userLog;
     private final IndexStatisticsStore indexStatisticsStore;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
     private final boolean readOnly;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
@@ -214,6 +216,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             Monitor monitor,
             IndexStatisticsStore indexStatisticsStore,
             PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker,
             boolean readOnly )
     {
         this.indexProxyCreator = indexProxyCreator;
@@ -232,6 +235,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.userLog = userLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
         this.readOnly = readOnly;
     }
 
@@ -809,8 +813,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
-                jobScheduler, tokenNameLookup, pageCacheTracer );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer );
+                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

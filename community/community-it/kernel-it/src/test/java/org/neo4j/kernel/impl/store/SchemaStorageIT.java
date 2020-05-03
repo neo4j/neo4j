@@ -69,6 +69,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension
 class SchemaStorageIT
@@ -258,7 +259,7 @@ class SchemaStorageIT
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
         long id = schemaStore.nextId( cursorTracer );
         IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
-        storage.writeSchemaRule( storeIndexDescriptor, cursorTracer );
+        storage.writeSchemaRule( storeIndexDescriptor, cursorTracer, INSTANCE );
 
         // when
         IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id, NULL );

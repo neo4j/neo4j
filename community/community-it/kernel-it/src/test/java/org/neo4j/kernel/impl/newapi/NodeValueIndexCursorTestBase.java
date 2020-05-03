@@ -59,6 +59,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -936,7 +937,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private Value getPropertyValueFromStore( long nodeReference )
     {
         try ( NodeCursor storeCursor = cursors.allocateNodeCursor( NULL );
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             read.singleNode( nodeReference, storeCursor );
             storeCursor.next();

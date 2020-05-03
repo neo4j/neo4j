@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -84,7 +85,7 @@ class PropertyCreatorTest
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorTracer = pageCacheTracer.createPageCursorTracer( "propertyStore" );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorTracer );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorTracer, INSTANCE );
     }
 
     @AfterEach
@@ -400,7 +401,7 @@ class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorTracer );
+            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorTracer, INSTANCE );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );

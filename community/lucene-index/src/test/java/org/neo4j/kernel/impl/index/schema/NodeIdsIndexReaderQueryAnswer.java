@@ -54,7 +54,7 @@ public class NodeIdsIndexReaderQueryAnswer implements Answer
     public static IndexQuery[] getIndexQueryArgument( InvocationOnMock invocation )
     {
         // Apparently vararg arguments from mockito can either be non-existent, a single value or an array...
-        Object rawQuery = invocation.getArgument( 4 );
+        Object rawQuery = invocation.getArgument( 3 );
         return rawQuery.getClass().isArray() ? (IndexQuery[]) rawQuery : array( (IndexQuery) rawQuery );
     }
 }

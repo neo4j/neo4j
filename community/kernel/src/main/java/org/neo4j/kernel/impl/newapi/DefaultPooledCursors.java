@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -202,7 +203,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultPropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
+    public DefaultPropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( propertyCursor == null )
         {
@@ -210,7 +211,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
             FullAccessRelationshipScanCursor relCursor = new FullAccessRelationshipScanCursor(
                     this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
-            return trace( new DefaultPropertyCursor( this::accept, storageReader.allocatePropertyCursor( cursorTracer ), nodeCursor, relCursor ) );
+            return trace( new DefaultPropertyCursor( this::accept, storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ), nodeCursor,
+                    relCursor ) );
         }
 
         try
@@ -234,7 +236,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public FullAccessPropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
+    public FullAccessPropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( fullAccessPropertyCursor == null )
         {
@@ -242,7 +244,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
             FullAccessRelationshipScanCursor relCursor = new FullAccessRelationshipScanCursor(
                     this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
-            return trace( new FullAccessPropertyCursor( this::acceptFullAccess, storageReader.allocatePropertyCursor( cursorTracer ), nodeCursor, relCursor ) );
+            return trace( new FullAccessPropertyCursor( this::acceptFullAccess, storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ),
+                    nodeCursor, relCursor ) );
         }
 
         try

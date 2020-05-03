@@ -32,6 +32,8 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.util.Preconditions;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 /**
  * Dynamically expanding ByteBuffer substitute/wrapper. This will allocate ByteBuffers on the go
  * so that we don't have to allocate too big of a buffer up-front.
@@ -132,7 +134,7 @@ class EphemeralDynamicByteBuffer implements Iterable<ByteBuffer>
 
     private ByteBuffer allocate( long capacity )
     {
-        return ByteBuffers.allocate( Math.toIntExact( capacity ) );
+        return ByteBuffers.allocate( Math.toIntExact( capacity ), INSTANCE );
     }
 
     synchronized void free()

@@ -25,6 +25,8 @@ import java.util.Arrays;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 /**
  * Layout that can create keys and values with varying size.
  * Even if the sizes are varying they are still deterministic
@@ -289,7 +291,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 
     private long toSeed( RawBytes rawBytes )
     {
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES );
+        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, INSTANCE );
         // Because keySearch is done inside the same shouldRetry block as keyCount()
         // We risk reading crap data. This is not a problem because we will retry
         // but buffer will throw here if we don't take that into consideration.
@@ -310,7 +312,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             tail = largeEntriesSize - Long.BYTES;
         }
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES + tail );
+        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES + tail, INSTANCE );
         buffer.putLong( seed );
         buffer.put( new byte[tail] );
         return buffer.array();

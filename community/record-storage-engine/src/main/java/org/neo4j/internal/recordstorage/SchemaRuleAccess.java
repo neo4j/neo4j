@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
@@ -85,7 +86,7 @@ public interface SchemaRuleAccess
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer ) throws KernelException;
+    void writeSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws KernelException;
 
     /**
      * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.

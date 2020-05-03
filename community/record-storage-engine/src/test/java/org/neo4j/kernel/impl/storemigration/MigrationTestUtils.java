@@ -37,6 +37,7 @@ import org.neo4j.test.Unzip;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class MigrationTestUtils
 {
@@ -103,7 +104,7 @@ public class MigrationTestUtils
                 try ( StoreChannel originalChannel = fileSystem.read( originalFile );
                       StoreChannel otherChannel = fileSystem.read( otherFile ) )
                 {
-                    ByteBuffer buffer = ByteBuffers.allocate( bufferBatchSize );
+                    ByteBuffer buffer = ByteBuffers.allocate( bufferBatchSize, INSTANCE );
                     while ( true )
                     {
                         if ( !readAndFlip( originalChannel, buffer, bufferBatchSize ) )

@@ -33,6 +33,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -42,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
@@ -63,7 +64,7 @@ class PhysicalFlushableChannelTest
                 nativeChannelAccessor );
         int length = 26_145;
         byte[] bytes;
-        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
+        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
         {
             bytes = generateBytes( length );
             channel.put( bytes, length );
@@ -87,7 +88,7 @@ class PhysicalFlushableChannelTest
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor );
         int length = 262_145;
         byte[] bytes;
-        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
+        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, INSTANCE ) )
         {
             bytes = generateBytes( length );
             channel.put( bytes, length );
@@ -111,7 +112,7 @@ class PhysicalFlushableChannelTest
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor );
         int length = 1_000_000;
         byte[] bytes;
-        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
+        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, INSTANCE ) )
         {
             bytes = generateBytes( length );
             channel.put( bytes, length );
@@ -147,8 +148,7 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor );
-        ByteBuffer buf = ByteBuffer.allocate( 100 );
-        PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel( versionedStoreChannel, buf );
+        PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel( versionedStoreChannel, new HeapScopedBuffer( 100, INSTANCE ) );
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;
@@ -198,7 +198,7 @@ class PhysicalFlushableChannelTest
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
         PositionAwarePhysicalFlushableChecksumChannel channel =
-                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, allocateDirect( 1024, INSTANCE ) );
+                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new NativeScopedBuffer( 1024, INSTANCE ) );
         LogPositionMarker positionMarker = new LogPositionMarker();
         LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 
@@ -220,7 +220,7 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
-        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, INSTANCE );
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
         channel.close();
@@ -240,7 +240,7 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
-        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, INSTANCE );
 
         // just close the underlying channel
         storeChannel.close();
@@ -255,7 +255,7 @@ class PhysicalFlushableChannelTest
     {
         try ( StoreChannel channel = fileSystem.read( file ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( (int) channel.size() );
+            ByteBuffer buffer = ByteBuffers.allocate( (int) channel.size(), INSTANCE );
             channel.readAll( buffer );
             buffer.flip();
             return buffer;

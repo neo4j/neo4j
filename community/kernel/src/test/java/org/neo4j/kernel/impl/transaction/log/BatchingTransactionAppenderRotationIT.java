@@ -64,6 +64,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -101,7 +102,7 @@ class BatchingTransactionAppenderRotationIT
 
         assertEquals( 1, logFiles.getHighestLogVersion() );
         File highestLogFile = logFiles.getHighestLogFile();
-        LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile );
+        LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile, INSTANCE );
         assertEquals( 2, logHeader.getLastCommittedTxId() );
     }
 

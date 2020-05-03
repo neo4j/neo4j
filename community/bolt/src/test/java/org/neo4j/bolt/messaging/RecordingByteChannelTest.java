@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.memory.ByteBuffers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class RecordingByteChannelTest
 {
@@ -39,7 +40,7 @@ public class RecordingByteChannelTest
         // When
         byte[] data = new byte[]{1, 2, 3, 4, 5};
         channel.write( ByteBuffer.wrap( data ) );
-        ByteBuffer buffer = ByteBuffers.allocate( 10 );
+        ByteBuffer buffer = ByteBuffers.allocate( 10, INSTANCE );
         int bytesRead = channel.read( buffer );
 
         // Then

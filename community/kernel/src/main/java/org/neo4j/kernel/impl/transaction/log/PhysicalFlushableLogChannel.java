@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ScopedBuffer;
 
 class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
 {
-    PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
+    PhysicalFlushableLogChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
     {
-        super( channel, byteBuffer );
+        super( channel, scopedBuffer );
     }
 
     void setChannel( StoreChannel channel )
@@ -36,8 +35,9 @@ class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
         this.channel = channel;
     }
 
-    void setBuffer( ByteBuffer byteBuffer )
+    void setScopedBuffer( ScopedBuffer scopedBuffer )
     {
-        this.buffer = byteBuffer;
+        this.scopedBuffer = scopedBuffer;
+        this.buffer = scopedBuffer.getBuffer();
     }
 }

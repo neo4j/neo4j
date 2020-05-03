@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
@@ -146,6 +147,7 @@ public class Operations implements Write, SchemaWrite
     private final IndexingProvidersService indexProviders;
     private final Config config;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -154,7 +156,8 @@ public class Operations implements Write, SchemaWrite
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config, PageCursorTracer cursorTracer )
+            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config, PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
@@ -168,15 +171,16 @@ public class Operations implements Write, SchemaWrite
         this.indexProviders = indexProviders;
         this.config = config;
         this.cursorTracer = cursorTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     public void initialize()
     {
         this.nodeCursor = cursors.allocateFullAccessNodeCursor( cursorTracer );
-        this.propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer );
+        this.propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker );
         this.relationshipCursor = cursors.allocateRelationshipScanCursor( cursorTracer );
         this.restrictedNodeCursor = cursors.allocateNodeCursor( cursorTracer );
-        this.restrictedPropertyCursor = cursors.allocatePropertyCursor( cursorTracer );
+        this.restrictedPropertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker );
     }
 
     @Override

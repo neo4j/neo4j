@@ -49,6 +49,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
@@ -144,6 +145,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      */
     private final DatabaseLayout directoryStructure;
     private final PageCacheTracer cacheTracer;
+    private final MemoryTracker memoryTracker;
 
     /**
      * The index which backs this token scan store. Instantiated in {@link #init()} and considered
@@ -185,13 +187,14 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
-            PageCacheTracer cacheTracer )
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
         this.cacheTracer = cacheTracer;
+        this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
         this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
         this.readOnly = readOnly;
@@ -475,7 +478,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             final PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG );
             try ( TokenScanWriter writer = newBulkAppendWriter( cursorTracer ) )
             {
-                numberOfEntities = fullStoreChangeStream.applyTo( writer, cursorTracer );
+                numberOfEntities = fullStoreChangeStream.applyTo( writer, cursorTracer, memoryTracker );
             }
 
             index.checkpoint( IOLimiter.UNLIMITED, writeClean, cursorTracer );

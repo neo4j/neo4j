@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import java.util.function.ToIntBiFunction;
-
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -31,8 +30,8 @@ public class Inputs
     {
     }
 
-    public static int calculatePropertySize( InputEntity entity, ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator,
-            PageCursorTracer cursorTracer )
+    public static int calculatePropertySize( InputEntity entity, PropertySizeCalculator valueSizeCalculator, PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
     {
         int size = 0;
         int propertyCount = entity.propertyCount();
@@ -44,7 +43,7 @@ public class Inputs
                 Object propertyValue = entity.propertyValue( i );
                 values[i] = propertyValue instanceof Value ? (Value) propertyValue : Values.of( propertyValue );
             }
-            size += valueSizeCalculator.applyAsInt( values, cursorTracer );
+            size += valueSizeCalculator.calculateSize( values, cursorTracer, memoryTracker );
         }
         return size;
     }

@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -309,8 +310,8 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -328,7 +329,6 @@ class BlockBasedIndexPopulatorTest
             assertTrue( memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
                     "expected some memory to have been temporarily allocated in scanCompleted" );
             populator.close( true, NULL );
-            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedNativeMemory(), "expected all allocated memory to have been freed on close" );
             closed = true;
 
             bufferFactory.close();
@@ -348,8 +348,8 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -368,8 +368,6 @@ class BlockBasedIndexPopulatorTest
                     "expected some memory to have been temporarily allocated in scanCompleted" );
             populator.drop();
             closed = true;
-            assertEquals( memoryBeforeScanCompleted, memoryTracker.usedNativeMemory(), "expected all allocated memory to have been freed on drop" );
-
             bufferFactory.close();
             assertEquals( 0, memoryTracker.usedNativeMemory() );
         }
@@ -387,8 +385,8 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
         populator.add( populationUpdates, NULL );
 
@@ -418,7 +416,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
         AtomicInteger checkpoints = new AtomicInteger();
         GBPTree.Monitor treeMonitor = new GBPTree.Monitor.Adaptor()
         {
@@ -428,7 +426,7 @@ class BlockBasedIndexPopulatorTest
                 checkpoints.incrementAndGet();
             }
         };
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, treeMonitor, bufferFactory );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, treeMonitor, bufferFactory, memoryTracker );
         try
         {
             // when
@@ -484,8 +482,8 @@ class BlockBasedIndexPopulatorTest
     void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException
     {
         // given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -514,8 +512,8 @@ class BlockBasedIndexPopulatorTest
     void shouldFailOnBatchAddedTooLargeValue()
     {
         /// given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -533,8 +531,8 @@ class BlockBasedIndexPopulatorTest
     void shouldAcceptUpdatedMaxSizeValue( boolean updateBeforeScanCompleted ) throws Throwable
     {
         // given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -579,8 +577,8 @@ class BlockBasedIndexPopulatorTest
     void shouldFailOnUpdatedTooLargeValue( boolean updateBeforeScanCompleted ) throws IndexEntryConflictException
     {
         /// given
-        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( INSTANCE ), SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -627,15 +625,16 @@ class BlockBasedIndexPopulatorTest
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor )
     {
-        return instantiatePopulator( monitor, GBPTree.NO_MONITOR, heapBufferFactory( 100 ) );
+        return instantiatePopulator( monitor, GBPTree.NO_MONITOR, heapBufferFactory( 100), INSTANCE );
     }
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, GBPTree.Monitor treeMonitor,
-            ByteBufferFactory bufferFactory )
+            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
     {
         GenericLayout layout = layout();
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
-                new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, 2, monitor, treeMonitor )
+                new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
+                        memoryTracker, 2, monitor, treeMonitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

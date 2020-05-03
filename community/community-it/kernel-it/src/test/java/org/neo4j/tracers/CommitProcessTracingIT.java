@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -46,6 +45,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
@@ -74,7 +74,7 @@ public class CommitProcessTracingIT
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorTracer );
-            var context = storageEngine.newCommandCreationContext( PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE );
+            var context = storageEngine.newCommandCreationContext( PageCursorTracer.NULL, INSTANCE );
             List<StorageCommand> commands = new ArrayList<>();
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );

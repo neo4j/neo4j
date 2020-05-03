@@ -35,7 +35,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBufferFactory.Allocator;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.Math.ceil;
@@ -62,6 +64,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final StoreChannel storeChannel;
     private final Monitor monitor;
     private final int blockSize;
+    private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
     private final File blockFile;
     private long numberOfBlocksInCurrentFile;
@@ -69,14 +72,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private boolean doneAdding;
     private long entryCount;
 
-    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor )
-            throws IOException
+    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor,
+            MemoryTracker memoryTracker ) throws IOException
     {
         this.layout = layout;
         this.fs = fs;
         this.blockFile = blockFile;
         this.monitor = monitor;
         this.blockSize = bufferFactory.bufferSize();
+        this.memoryTracker = memoryTracker;
         this.bufferedEntries = Lists.mutable.empty();
         this.bufferFactory = bufferFactory;
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
@@ -124,7 +128,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         bufferedEntries.sortThis( comparator );
 
         ListBasedBlockEntryCursor<KEY,VALUE> entries = new ListBasedBlockEntryCursor<>( bufferedEntries );
-        ByteBuffer byteBuffer = bufferFactory.acquireThreadLocalBuffer();
+        ByteBuffer byteBuffer = bufferFactory.acquireThreadLocalBuffer( memoryTracker );
         try
         {
             writeBlock( storeChannel, entries, blockSize, bufferedEntries.size(), NOT_CANCELLABLE, count -> entryCount += count, byteBuffer );
@@ -159,18 +163,13 @@ class BlockStorage<KEY, VALUE> implements Closeable
         monitor.mergeStarted( entryCount, calculateNumberOfEntriesWrittenDuringMerges( entryCount, numberOfBlocksInCurrentFile, mergeFactor ) );
         File sourceFile = blockFile;
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
-        try ( Allocator mergeBufferAllocator = bufferFactory.newLocalAllocator() )
+        File targetFile = tempFile;
+        int bufferSize = bufferFactory.bufferSize();
+
+        try ( var mergeBufferAllocator = bufferFactory.newLocalAllocator();
+              var writeBuffer = mergeBufferAllocator.allocate( bufferSize, memoryTracker );
+              var readBuffers = new CompositeScopedBuffer( mergeFactor, bufferSize, mergeBufferAllocator, memoryTracker ) )
         {
-            File targetFile = tempFile;
-
-            // Allocate all buffers that will be used and reused for all merge iterations
-            ByteBuffer writeBuffer = mergeBufferAllocator.allocate( bufferFactory.bufferSize() );
-            ByteBuffer[] readBuffers = new ByteBuffer[mergeFactor];
-            for ( int i = 0; i < readBuffers.length; i++ )
-            {
-                readBuffers[i] = mergeBufferAllocator.allocate( bufferFactory.bufferSize() );
-            }
-
             while ( numberOfBlocksInCurrentFile > 1 )
             {
                 // Perform one complete merge iteration, merging all blocks from source into target.
@@ -182,7 +181,8 @@ class BlockStorage<KEY, VALUE> implements Closeable
                     long blocksInMergedFile = 0;
                     while ( !cancellation.cancelled() && blocksMergedSoFar < numberOfBlocksInCurrentFile )
                     {
-                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation, readBuffers, writeBuffer );
+                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation, readBuffers.buffers(),
+                                writeBuffer.getBuffer() );
                         blocksInMergedFile++;
                     }
                     numberOfBlocksInCurrentFile = blocksInMergedFile;
@@ -484,4 +484,34 @@ class BlockStorage<KEY, VALUE> implements Closeable
     }
 
     static final Cancellation NOT_CANCELLABLE = () -> false;
+
+    private static class CompositeScopedBuffer implements AutoCloseable
+    {
+        private final ScopedBuffer[] scopedBuffers;
+
+        CompositeScopedBuffer( int numberOfBuffers, int bufferSize, Allocator allocator, MemoryTracker memoryTracker )
+        {
+            scopedBuffers = new ScopedBuffer[numberOfBuffers];
+            for ( int i = 0; i < scopedBuffers.length; i++ )
+            {
+                scopedBuffers[i] = allocator.allocate( bufferSize, memoryTracker );
+            }
+        }
+
+        public ByteBuffer[] buffers()
+        {
+            var buffers = new ByteBuffer[scopedBuffers.length];
+            for ( int i = 0; i < buffers.length; i++ )
+            {
+                buffers[i] = scopedBuffers[i].getBuffer();
+            }
+            return buffers;
+        }
+
+        @Override
+        public void close()
+        {
+            IOUtils.closeAllSilently( scopedBuffers );
+        }
+    }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -35,11 +36,11 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
     private final StorageNodeCursor nodeCursor;
     private final StoragePropertyCursor propertyCursor;
 
-    public DefaultNodePropertyAccessor( StorageReader reader, PageCursorTracer cursorTracer )
+    public DefaultNodePropertyAccessor( StorageReader reader, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.reader = reader;
         nodeCursor = reader.allocateNodeCursor( cursorTracer );
-        propertyCursor = reader.allocatePropertyCursor( cursorTracer );
+        propertyCursor = reader.allocatePropertyCursor( cursorTracer, memoryTracker );
     }
 
     @Override

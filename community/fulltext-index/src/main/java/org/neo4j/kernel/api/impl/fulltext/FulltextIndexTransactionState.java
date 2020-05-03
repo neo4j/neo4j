@@ -40,6 +40,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -73,13 +74,13 @@ class FulltextIndexTransactionState implements Closeable
         txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, propertyNames, modifiedEntityIdsInThisTransaction, writer );
     }
 
-    SearcherReference maybeUpdate( QueryContext context, PageCursorTracer cursorTracer )
+    SearcherReference maybeUpdate( QueryContext context, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( currentSearcher == null || lastUpdateRevision != context.getTransactionStateOrNull().getDataRevision() )
         {
             try
             {
-                updateSearcher( context, cursorTracer );
+                updateSearcher( context, cursorTracer, memoryTracker );
             }
             catch ( Exception e )
             {
@@ -89,7 +90,7 @@ class FulltextIndexTransactionState implements Closeable
         return currentSearcher;
     }
 
-    private void updateSearcher( QueryContext context, PageCursorTracer cursorTracer ) throws Exception
+    private void updateSearcher( QueryContext context, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws Exception
     {
         Read read = context.getRead();
         CursorFactory cursors = context.cursors();
@@ -99,7 +100,7 @@ class FulltextIndexTransactionState implements Closeable
 
         try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor( cursorTracer ) : null;
               RelationshipScanCursor relationshipCursor = visitingNodes ? null : cursors.allocateRelationshipScanCursor( cursorTracer );
-              PropertyCursor propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer ) )
+              PropertyCursor propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker ) )
         {
             state.accept( txStateVisitor.init( read, nodeCursor, relationshipCursor, propertyCursor ) );
         }

@@ -126,7 +126,8 @@ class NodeChecker implements Checker
               AllEntriesTokenScanReader labelIndexReader = context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                       cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
-              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer ) )
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer,
+                      context.memoryTracker ) )
         {
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();

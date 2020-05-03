@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
@@ -506,7 +507,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     private ByteBuffer wrap( byte[] bytes )
     {
-        ByteBuffer buffer = ByteBuffers.allocate( bytes.length );
+        ByteBuffer buffer = ByteBuffers.allocate( bytes.length, INSTANCE );
         for ( byte b : bytes )
         {
             buffer.put( b );

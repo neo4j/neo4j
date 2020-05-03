@@ -248,7 +248,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL, INSTANCE );
                 tx.create( nodeRecord );
             }
         } );
@@ -370,7 +370,8 @@ public class FullCheckIntegrationTest
         {
             IndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() ).getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ) );
+            IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() )
+                    .getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ), INSTANCE );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false, NULL );
         }
@@ -1087,7 +1088,7 @@ public class FullCheckIntegrationTest
                     {
                         return StandardDynamicRecordAllocator.allocateRecord( next.arrayProperty() );
                     }
-                }, true, NULL );
+                }, true, NULL, INSTANCE );
                 assertThat( allocatedRecords.size() ).isGreaterThan( 1 );
                 DynamicRecord array = allocatedRecords.get( 0 );
                 array.setType( ARRAY.intValue() );
@@ -2242,7 +2243,7 @@ public class FullCheckIntegrationTest
             try ( RandomAccessFile accessFile = new RandomAccessFile( file, "rw" ) )
             {
                 FileChannel channel = accessFile.getChannel();
-                ByteBuffer buffer = ByteBuffers.allocate( 30 );
+                ByteBuffer buffer = ByteBuffers.allocate( 30, INSTANCE );
                 while ( buffer.hasRemaining() )
                 {
                     buffer.put( (byte) 9 );
@@ -2281,7 +2282,7 @@ public class FullCheckIntegrationTest
             {
                 PropertyRecord record = new PropertyRecord( id ).initialize( true, prev, next );
                 PropertyBlock block = new PropertyBlock();
-                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false, NULL );
+                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false, NULL, INSTANCE );
                 record.addPropertyBlock( block );
                 return record;
             }
@@ -2534,7 +2535,7 @@ public class FullCheckIntegrationTest
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders() );
-        schemaRuleAccess.writeSchemaRule( rule, NULL );
+        schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE );
     }
 
     private Iterator<IndexDescriptor> getIndexDescriptors()
@@ -2609,7 +2610,7 @@ public class FullCheckIntegrationTest
         protoProperties.forEachKeyValue( ( keyId, value ) ->
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true, NULL );
+            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true, NULL, INSTANCE );
             blocks.add( block );
         } );
 

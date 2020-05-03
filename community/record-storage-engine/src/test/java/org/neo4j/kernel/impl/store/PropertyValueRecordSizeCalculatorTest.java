@@ -31,6 +31,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 class PropertyValueRecordSizeCalculatorTest
@@ -48,7 +49,7 @@ class PropertyValueRecordSizeCalculatorTest
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.applyAsInt( new Value[] {Values.of( 10 )}, NULL );
+        int size = calculator.calculateSize( new Value[] {Values.of( 10 )}, NULL, INSTANCE );
 
         // then
         assertEquals( PropertyRecordFormat.RECORD_SIZE, size );
@@ -61,7 +62,7 @@ class PropertyValueRecordSizeCalculatorTest
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.applyAsInt( new Value[] {Values.of( string( 80 ) ), Values.of( new String[] {string( 150 )} )}, NULL );
+        int size = calculator.calculateSize( new Value[] {Values.of( string( 80 ) ), Values.of( new String[] {string( 150 )} )}, NULL, INSTANCE );
 
         // then
         assertEquals( PROPERTY_RECORD_SIZE + DYNAMIC_RECORD_SIZE + DYNAMIC_RECORD_SIZE * 2, size );
@@ -74,7 +75,7 @@ class PropertyValueRecordSizeCalculatorTest
         PropertyValueRecordSizeCalculator calculator = newCalculator();
 
         // when
-        int size = calculator.applyAsInt( new Value[] {
+        int size = calculator.calculateSize( new Value[] {
                 Values.of( 10 ),                          // 1 block  go to record 1
                 Values.of( "test" ),                      // 1 block
                 Values.of( (byte) 5 ),                    // 1 block
@@ -83,7 +84,7 @@ class PropertyValueRecordSizeCalculatorTest
                 Values.of( 1234567890123456789L ),        // 2 blocks go to record 3
                 Values.of( 5 ),                           // 1 block
                 Values.of( "value" )                      // 1 block
-        }, NULL );
+        }, NULL, INSTANCE );
 
         // then
         assertEquals( PROPERTY_RECORD_SIZE * 3 + DYNAMIC_RECORD_SIZE, size );

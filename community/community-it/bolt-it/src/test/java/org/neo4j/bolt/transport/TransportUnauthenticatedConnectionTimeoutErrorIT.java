@@ -36,12 +36,12 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.rule.OtherThreadRule;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBoltTransportsTest
 {
@@ -111,7 +111,7 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
     public void shouldTimeoutToHandshakeForHalfHandshake() throws Throwable
     {
         // Given half written bolt handshake message
-        ByteBuffer bb = ByteBuffers.allocate( Integer.BYTES, BIG_ENDIAN );
+        ByteBuffer bb = ByteBuffers.allocate( Integer.BYTES, INSTANCE );
         bb.putInt( 0x6060B017 );
         // When
         connection.connect( address ).send( bb.array() );

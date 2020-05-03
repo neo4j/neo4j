@@ -253,7 +253,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, unconstrained(), cursorTracer, query );
+            reader.query( NULL_CONTEXT, iterator, unconstrained(), query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )

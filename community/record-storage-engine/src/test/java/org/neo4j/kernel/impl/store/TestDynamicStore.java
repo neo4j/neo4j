@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -117,7 +118,7 @@ class TestDynamicStore
         char[] chars = new char[STR.length()];
         STR.getChars( 0, STR.length(), chars, 0 );
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars, NULL );
+        store.allocateRecords( records, chars, NULL, INSTANCE );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record, NULL );
@@ -159,7 +160,7 @@ class TestDynamicStore
             {
                 byte[] bytes = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes, NULL );
+                store.allocateRecords( records, bytes, NULL, INSTANCE );
                 for ( DynamicRecord record : records )
                 {
                     assert !set.contains( record.getId() );
@@ -202,7 +203,7 @@ class TestDynamicStore
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, arrayToStore, NULL );
+        store.allocateRecords( records, arrayToStore, NULL, INSTANCE );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record, NULL );
@@ -250,7 +251,7 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         List<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, createBytes( 500 ), NULL );
+        store.allocateRecords( records, createBytes( 500 ), NULL, INSTANCE );
         long firstId = records.get( 0 ).getId();
         // Avoid creating this inconsistency at the last record, since that would trip up a data-size check instead.
         DynamicRecord secondLastRecord = records.get( records.size() - 2 );

@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
 
@@ -63,6 +64,7 @@ class CheckerContext
     final TokenNameLookup tokenNameLookup;
     final PageCache pageCache;
     final PageCacheTracer pageCacheTracer;
+    final MemoryTracker memoryTracker;
     final long highNodeId;
     private final boolean debug;
     private final AtomicBoolean cancelled;
@@ -82,11 +84,12 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker,
             boolean debug,
             ConsistencyFlags consistencyFlags )
     {
         this( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, new AtomicBoolean(), consistencyFlags );
+                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags );
     }
 
     private CheckerContext(
@@ -104,6 +107,7 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker,
             boolean debug,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags )
@@ -128,12 +132,13 @@ class CheckerContext
         this.tokenNameLookup = tokenHolders.lookupWithIds();
         this.pageCache = pageCache;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, debug, cancelled, consistencyFlags );
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception

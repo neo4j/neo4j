@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -81,7 +82,7 @@ public class RecordPropertyCursorTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory,
                 pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, Sets.immutable.empty() ).openAllNeoStores( true );
-        creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( NULL ), NULL );
+        creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( NULL ), NULL, INSTANCE );
         owner = neoStores.getNodeStore().newRecord();
     }
 
@@ -137,7 +138,7 @@ public class RecordPropertyCursorTest
 
     protected RecordPropertyCursor createCursor()
     {
-        return new RecordPropertyCursor( neoStores.getPropertyStore(), NULL );
+        return new RecordPropertyCursor( neoStores.getPropertyStore(), NULL, INSTANCE );
     }
 
     protected static void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )

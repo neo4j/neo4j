@@ -58,6 +58,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -92,7 +93,7 @@ class ImportPanicIT
                 DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
                 IdType.ACTUAL,
                 csvConfigurationWithLowBufferSize(),
-                CsvInput.NO_MONITOR );
+                CsvInput.NO_MONITOR, INSTANCE );
             var e = assertThrows( InputException.class, () -> importer.doImport( brokenCsvInput ) );
             assertTrue( e.getCause() instanceof DataAfterQuoteException );
         }

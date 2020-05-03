@@ -2051,7 +2051,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            ByteBuffer buf = ByteBuffers.allocate( 23 );
+            ByteBuffer buf = ByteBuffers.allocate( 23, INSTANCE );
             try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 channel.readAll( buf );
@@ -2434,7 +2434,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
-                ByteBuffer bufB = ByteBuffers.allocate( recordSize );
+                ByteBuffer bufB = ByteBuffers.allocate( recordSize, INSTANCE );
                 for ( int i = 0; i < recordCount; i++ )
                 {
                     bufA.clear();
@@ -4887,7 +4887,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToHeapByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate( filePageSize );
+        ByteBuffer buffer = ByteBuffers.allocate( filePageSize, INSTANCE );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
@@ -4924,7 +4924,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToHeapByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate( filePageSize );
+        ByteBuffer buffer = ByteBuffers.allocate( filePageSize, INSTANCE );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage, recordSize );
         try ( PagedFile pf = map( file, filePageSize );
@@ -5039,7 +5039,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToReadOnlyHeapByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buf = ByteBuffers.allocate( filePageSize ).asReadOnlyBuffer();
+        ByteBuffer buf = ByteBuffers.allocate( filePageSize, INSTANCE ).asReadOnlyBuffer();
         try ( PagedFile pf = map( file( "a" ), filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {

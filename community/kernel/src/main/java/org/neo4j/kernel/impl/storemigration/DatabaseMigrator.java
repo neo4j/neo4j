@@ -89,10 +89,11 @@ public class DatabaseMigrator
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
-                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer );
+                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer, memoryTracker );
         storeUpgrader.addParticipant( indexConfigMigrator );
 
-        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer );
+        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer,
+                memoryTracker );
         storeUpgrader.addParticipant( indexProviderMigrator );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.

@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
@@ -138,7 +139,7 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     /**
      * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
      */
-    StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
+    StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     /**
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.

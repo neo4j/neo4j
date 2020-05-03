@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.ToIntBiFunction;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
@@ -31,12 +30,11 @@ import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
@@ -123,7 +121,7 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public Estimates calculateEstimates( ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator )
+    public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator )
     {
         int sampleSize = 100;
         InputEntity[] nodeSample = sample( nodes( Collector.EMPTY ), sampleSize );
@@ -172,7 +170,7 @@ public class DataGeneratorInput implements Input
         return (double) labels / nodes.length;
     }
 
-    private static double[] sampleProperties( InputEntity[] sample, ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator )
+    private static double[] sampleProperties( InputEntity[] sample, PropertySizeCalculator valueSizeCalculator )
     {
         int propertiesPerEntity = sample[0].propertyCount();
         long propertiesSize = 0;
@@ -180,7 +178,7 @@ public class DataGeneratorInput implements Input
         {
             if ( entity != null )
             {
-                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL );
+                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL, INSTANCE );
             }
         }
         double propertySizePerEntity = (double) propertiesSize / sample.length;

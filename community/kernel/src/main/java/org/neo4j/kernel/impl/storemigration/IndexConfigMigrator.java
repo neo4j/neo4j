@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -54,9 +55,10 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private final IndexProviderMap indexProviderMap;
     private final Log log;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory,
-            IndexProviderMap indexProviderMap, Log log, PageCacheTracer pageCacheTracer )
+            IndexProviderMap indexProviderMap, Log log, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         super( "Index config" );
         this.fs = fs;
@@ -67,6 +69,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         this.indexProviderMap = indexProviderMap;
         this.log = log;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -84,7 +87,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_CONFIG_MIGRATION_TAG );
                 var ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
-                versionToMigrateTo, pageCacheTracer, cursorTracer ) )
+                versionToMigrateTo, pageCacheTracer, cursorTracer, memoryTracker ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {

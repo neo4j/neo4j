@@ -45,6 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( DefaultFileSystemExtension.class )
 @Neo4jLayoutExtension
@@ -124,7 +125,7 @@ class KernelDiagnosticsTest
         File file = new File( parent, name );
         try ( StoreChannel channel = fs.write( file ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( size );
+            ByteBuffer buffer = ByteBuffers.allocate( size, INSTANCE );
             buffer.position( size ).flip();
             channel.write( buffer );
         }

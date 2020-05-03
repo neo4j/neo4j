@@ -69,7 +69,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... query ) throws IndexNotApplicableKernelException
+            IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         try
         {
@@ -78,7 +78,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
             {
                 try
                 {
-                    reader.query( context, bridgingIndexProgressor, constraints, cursorTracer, query );
+                    reader.query( context, bridgingIndexProgressor, constraints, query );
                 }
                 catch ( IndexNotApplicableKernelException e )
                 {

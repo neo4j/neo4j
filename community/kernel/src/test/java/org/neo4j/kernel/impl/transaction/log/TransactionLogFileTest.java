@@ -63,6 +63,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @Neo4jLayoutExtension
@@ -162,7 +163,7 @@ class TransactionLogFileTest
         File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withLogEntryReader( logEntryReader() )
                 .build().getLogFileForVersion( 1L );
-        LogHeader header = readLogHeader( fileSystem, file );
+        LogHeader header = readLogHeader( fileSystem, file, INSTANCE );
         assertEquals( 1L, header.getLogVersion() );
         assertEquals( 2L, header.getLastCommittedTxId() );
     }

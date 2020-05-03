@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -135,7 +136,7 @@ class TestArrayStore
     {
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
+        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL, INSTANCE );
         Pair<byte[], byte[]> loaded = loadArray( records );
         assertStringHeader( loaded.first(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
@@ -181,7 +182,7 @@ class TestArrayStore
                             Values.pointValue( CoordinateReferenceSystem.WGS84, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
+            arrayStore.allocateRecords( records, array, PageCursorTracer.NULL, INSTANCE );
         } );
     }
 
@@ -196,14 +197,14 @@ class TestArrayStore
                                     longBitsToDouble( 0x4L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
+            arrayStore.allocateRecords( records, array, PageCursorTracer.NULL, INSTANCE );
         } );
     }
 
     private void assertPointArrayHasCorrectFormat( PointValue[] array, int numberOfBitsUsedForDoubles )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
+        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL, INSTANCE );
         Pair<byte[],byte[]> loaded = loadArray( records );
         assertGeometryHeader( loaded.first(),
                 GeometryType.GEOMETRY_POINT.getGtype(),
@@ -274,7 +275,7 @@ class TestArrayStore
     private Collection<DynamicRecord> storeArray( Object array )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL );
+        arrayStore.allocateRecords( records, array, PageCursorTracer.NULL, INSTANCE );
         for ( DynamicRecord record : records )
         {
             arrayStore.updateRecord( record, NULL );

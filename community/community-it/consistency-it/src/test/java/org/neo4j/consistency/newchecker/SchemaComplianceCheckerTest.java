@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -89,7 +90,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // when
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                PageCursorTracer.NULL ) )
+                PageCursorTracer.NULL, INSTANCE ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -201,7 +202,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), PageCursorTracer.NULL ) )
+                context().indexAccessors.onlineRules( NODE ), PageCursorTracer.NULL, INSTANCE ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( nodeId ), reporter::forNode );

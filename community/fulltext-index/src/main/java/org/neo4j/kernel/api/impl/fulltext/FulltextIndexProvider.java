@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -219,7 +220,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            ByteBufferFactory bufferFactory )
+            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
     {
         if ( isReadOnly() )
         {

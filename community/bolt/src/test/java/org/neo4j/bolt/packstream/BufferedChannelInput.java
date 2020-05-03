@@ -25,7 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.io.memory.ByteBuffers;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * An {@link PackInput} implementation that reads from an input channel into an internal buffer.
@@ -37,7 +37,7 @@ public class BufferedChannelInput implements PackInput
 
     public BufferedChannelInput( int bufferCapacity )
     {
-        this.buffer = ByteBuffers.allocate( bufferCapacity, BIG_ENDIAN );
+        this.buffer = ByteBuffers.allocate( bufferCapacity, INSTANCE );
     }
 
     public BufferedChannelInput reset( ReadableByteChannel ch )

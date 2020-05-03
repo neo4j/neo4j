@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 class DropBrokenUniquenessConstraintIT
@@ -174,7 +175,7 @@ class DropBrokenUniquenessConstraintIT
     {
         for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( NULL ) ) )
         {
-            schemaRules.writeSchemaRule( rule, NULL );
+            schemaRules.writeSchemaRule( rule, NULL, INSTANCE );
         }
     }
 }

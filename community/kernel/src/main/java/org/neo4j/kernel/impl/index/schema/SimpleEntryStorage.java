@@ -23,13 +23,16 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.concurrent.Runnables.runAll;
@@ -56,22 +59,25 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     private final File file;
     private final FileSystemAbstraction fs;
     private final int blockSize;
+    private final MemoryTracker memoryTracker;
     private final ByteBufferFactory.Allocator byteBufferFactory;
 
     // Resources allocated lazily upon add
     private boolean allocated;
+    private ScopedBuffer scopedBuffer;
     private ByteBuffer buffer;
     private ByteArrayPageCursor pageCursor;
     private StoreChannel storeChannel;
 
-    private volatile long count;
+    private final AtomicLong count = new AtomicLong();
 
-    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize )
+    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.file = file;
         this.byteBufferFactory = byteBufferFactory;
         this.blockSize = blockSize;
+        this.memoryTracker = memoryTracker;
     }
 
     void add( ENTRY entry ) throws IOException
@@ -79,7 +85,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         allocateResources();
         add( entry, pageCursor );
         // a single thread, and the same thread every time, increments this count
-        count++;
+        count.incrementAndGet();
     }
 
     CURSOR reader() throws IOException
@@ -98,7 +104,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
 
     long count()
     {
-        return count;
+        return count.get();
     }
 
     void doneAdding() throws IOException
@@ -121,7 +127,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         if ( allocated )
         {
             runAll( "Failed while trying to close " + getClass().getSimpleName(),
-                    () -> closeAllUnchecked( pageCursor, storeChannel ),
+                    () -> closeAllUnchecked( pageCursor, storeChannel, scopedBuffer ),
                     () -> fs.deleteFile( file )
             );
         }
@@ -165,7 +171,8 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     {
         if ( !allocated )
         {
-            this.buffer = byteBufferFactory.allocate( blockSize );
+            this.scopedBuffer = byteBufferFactory.allocate( blockSize, memoryTracker );
+            this.buffer = scopedBuffer.getBuffer();
             this.pageCursor = new ByteArrayPageCursor( buffer );
             this.storeChannel = fs.write( file );
             this.allocated = true;

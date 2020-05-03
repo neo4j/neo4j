@@ -334,7 +334,7 @@ public class DatabaseIndexAccessorTest
     private NodeValueIterator results( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
-        reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
+        reader.query( NULL_CONTEXT, results, unconstrained(), queries );
         return results;
     }
 

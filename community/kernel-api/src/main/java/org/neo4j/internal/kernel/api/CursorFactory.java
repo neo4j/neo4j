@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Allocates Cursors. To read data from the Kernel, Cursors are needed. A Cursor factory let's the Kernel consumer
@@ -43,9 +44,9 @@ public interface CursorFactory
 
     // properties
 
-    PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer );
+    PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
-    PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer );
+    PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     // schema indexes
 

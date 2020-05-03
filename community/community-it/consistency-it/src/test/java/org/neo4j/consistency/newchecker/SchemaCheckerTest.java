@@ -62,6 +62,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class SchemaCheckerTest extends CheckerTestBase
 {
@@ -104,8 +105,8 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index1, cursorTracer );
-            schemaStorage.writeSchemaRule( index2, cursorTracer );
+            schemaStorage.writeSchemaRule( index1, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( index2, cursorTracer, INSTANCE);
         }
 
         // when
@@ -126,7 +127,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
         }
 
         // when
@@ -147,7 +148,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
         }
 
         // when
@@ -168,7 +169,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
         }
 
         // when
@@ -189,7 +190,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
         }
 
         // when
@@ -211,7 +212,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) )
                     .withOwningConstraintId( UNUSED );
-            schemaStorage.writeSchemaRule( index1, cursorTracer );
+            schemaStorage.writeSchemaRule( index1, cursorTracer, INSTANCE );
         }
 
         // when
@@ -232,7 +233,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
-            schemaStorage.writeSchemaRule( constraintDescriptor, cursorTracer );
+            schemaStorage.writeSchemaRule( constraintDescriptor, cursorTracer, INSTANCE );
         }
 
         // when
@@ -253,7 +254,7 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorTracer ) );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
             SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
             propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ), PageCursorTracer.NULL );
         }
@@ -281,8 +282,8 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( UNUSED );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
-            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer, INSTANCE );
         }
 
         // when
@@ -308,8 +309,8 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME )
                     .withOwnedIndexId( UNUSED );
             index = index.withOwningConstraintId( uniquenessConstraint.getId() );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
-            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer, INSTANCE );
         }
 
         // when
@@ -340,9 +341,9 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withOwnedIndexId( index1.getId() );
             index1 = index1.withOwningConstraintId( uniquenessConstraint.getId() );
             index2 = index2.withOwningConstraintId( uniquenessConstraint.getId() );
-            schemaStorage.writeSchemaRule( index1, cursorTracer );
-            schemaStorage.writeSchemaRule( index2, cursorTracer );
-            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer );
+            schemaStorage.writeSchemaRule( index1, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( index2, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorTracer, INSTANCE );
         }
 
         // when
@@ -372,9 +373,9 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withName( NAME2 )
                     .withOwnedIndexId( index.getId() );
             index = index.withOwningConstraintId( uniquenessConstraint1.getId() );
-            schemaStorage.writeSchemaRule( index, cursorTracer );
-            schemaStorage.writeSchemaRule( uniquenessConstraint1, cursorTracer );
-            schemaStorage.writeSchemaRule( uniquenessConstraint2, cursorTracer );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( uniquenessConstraint1, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( uniquenessConstraint2, cursorTracer, INSTANCE );
         }
 
         // when
@@ -407,10 +408,10 @@ class SchemaCheckerTest extends CheckerTestBase
                     .existsForRelType( relationshipType2, propertyKey1, propertyKey2 )
                     .withId( schemaStore.nextId( cursorTracer ) )
                     .withName( NAME2 );
-            schemaStorage.writeSchemaRule( constraint1, cursorTracer );
-            schemaStorage.writeSchemaRule( constraint2, cursorTracer );
-            schemaStorage.writeSchemaRule( constraint3, cursorTracer );
-            schemaStorage.writeSchemaRule( constraint4, cursorTracer );
+            schemaStorage.writeSchemaRule( constraint1, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( constraint2, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( constraint3, cursorTracer, INSTANCE );
+            schemaStorage.writeSchemaRule( constraint4, cursorTracer, INSTANCE );
         }
 
         // when

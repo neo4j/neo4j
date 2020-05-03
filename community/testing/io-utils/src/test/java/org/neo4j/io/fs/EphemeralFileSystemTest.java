@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class EphemeralFileSystemTest
 {
@@ -68,7 +69,7 @@ class EphemeralFileSystemTest
         File aFile = new File( "test" );
         StoreChannel channel = fs.write( aFile );
 
-        ByteBuffer buffer = allocate( Long.BYTES );
+        ByteBuffer buffer = allocate( Long.BYTES, INSTANCE );
         int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
         for ( int position = mebiBytes + 42; position < 10_000_000; position += mebiBytes )
         {
@@ -252,7 +253,7 @@ class EphemeralFileSystemTest
         try
         {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocate( (int) claimedSize );
+            ByteBuffer buffer = allocate( (int) claimedSize, INSTANCE );
             channel.readAll( buffer );
             buffer.flip();
 
@@ -273,7 +274,7 @@ class EphemeralFileSystemTest
         try
         {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocate( 8 );
+            ByteBuffer buffer = allocate( 8, INSTANCE );
             channel.read( buffer, 0 );
             buffer.flip();
 
@@ -294,7 +295,7 @@ class EphemeralFileSystemTest
 
     private static ByteBuffer readLong( StoreChannel readChannel ) throws IOException
     {
-        ByteBuffer readBuffer = allocate( 8 );
+        ByteBuffer readBuffer = allocate( 8, INSTANCE );
         readChannel.readAll( readBuffer );
         readBuffer.flip();
         return readBuffer;
@@ -302,7 +303,7 @@ class EphemeralFileSystemTest
 
     private static void writeLong( StoreChannel channel, long value ) throws IOException
     {
-        ByteBuffer buffer = allocate( 8 );
+        ByteBuffer buffer = allocate( 8, INSTANCE );
         buffer.putLong( value );
         buffer.flip();
         channel.write( buffer );

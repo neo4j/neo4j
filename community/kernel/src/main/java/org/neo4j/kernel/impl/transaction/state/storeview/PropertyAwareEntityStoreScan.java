@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.Lock;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
@@ -64,11 +65,11 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private PhaseTracker phaseTracker;
 
     protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
-            LongFunction<Lock> lockFunction, PageCursorTracer cursorTracer )
+            LongFunction<Lock> lockFunction, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
         this.entityCursor = allocateCursor( storageReader, cursorTracer );
-        this.propertyCursor = storageReader.allocatePropertyCursor( cursorTracer );
+        this.propertyCursor = storageReader.allocatePropertyCursor( cursorTracer, memoryTracker );
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;

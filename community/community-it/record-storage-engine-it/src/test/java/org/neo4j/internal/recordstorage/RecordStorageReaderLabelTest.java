@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Test read access to committed label data.
@@ -61,7 +62,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 
         // WHEN THEN
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
-        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL );
+        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, INSTANCE );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         nodeCursor.properties( propertyCursor );

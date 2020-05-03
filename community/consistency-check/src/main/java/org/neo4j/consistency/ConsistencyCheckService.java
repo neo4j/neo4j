@@ -244,10 +244,10 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore =
-                    TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector, pageCacheTracer );
-            RelationshipTypeScanStore relationshipTypeScanstore = TokenScanStore
-                    .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector, config, pageCacheTracer );
+            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector,
+                    pageCacheTracer, memoryTracker );
+            RelationshipTypeScanStore relationshipTypeScanstore = TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem,
+                    EMPTY, true, monitors, workCollector, config, pageCacheTracer, memoryTracker );
             life.add( labelScanStore );
             life.add( relationshipTypeScanstore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, pageCacheTracer );

@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -253,7 +254,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleNode(bareNodeId, node );
@@ -274,7 +275,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldNotAccessNonExistentRelationshipProperties()
     {
         try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleRelationship(bareRelId, relationship );
@@ -355,7 +356,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleNode( allPropsNodeId, node );
@@ -401,7 +402,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         // given
         try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleRelationship( allPropsRelId, relationship );
@@ -446,7 +447,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleNode( nodeId, node );
@@ -470,7 +471,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         // given
         try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( NULL );
-              PropertyCursor props = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor props = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             read.singleRelationship( relationshipId, relationship );

@@ -23,15 +23,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -39,7 +36,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.test.extension.DbmsExtension;
@@ -52,6 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 public class CommandCreationContextIT
@@ -88,7 +85,7 @@ public class CommandCreationContextIT
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReservation" ) )
         {
             prepareIdGenerator( storeProvider.apply( neoStores ).getIdGenerator() );
-            try ( var creationContext = storageEngine.newCommandCreationContext( cursorTracer, EmptyMemoryTracker.INSTANCE ) )
+            try ( var creationContext = storageEngine.newCommandCreationContext( cursorTracer, INSTANCE ) )
             {
                 idReservation.applyAsLong( creationContext );
                 assertCursorOne( cursorTracer );

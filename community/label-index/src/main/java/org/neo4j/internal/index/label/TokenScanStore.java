@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
@@ -54,10 +55,10 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      */
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer )
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE,
-                cacheTracer );
+                cacheTracer, memoryTracker );
     }
 
     /**
@@ -65,20 +66,20 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      */
     static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer )
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                RELATIONSHIP, cacheTracer );
+                RELATIONSHIP, cacheTracer, memoryTracker );
     }
 
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Config config, PageCacheTracer cacheTracer )
+            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                    cacheTracer );
+                    cacheTracer, memoryTracker );
         }
         return new EmptyingRelationshipTypeScanStore( fs, directoryStructure, readOnly );
     }

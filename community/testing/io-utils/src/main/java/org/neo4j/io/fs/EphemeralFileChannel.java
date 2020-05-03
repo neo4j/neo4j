@@ -31,8 +31,10 @@ import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.lang.Math.min;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class EphemeralFileChannel extends FileChannel implements EphemeralPositionable
 {
@@ -147,7 +149,7 @@ class EphemeralFileChannel extends FileChannel implements EphemeralPositionable
         try
         {
             long transferred = 0;
-            ByteBuffer intermediary = ByteBuffers.allocate( 8, ByteUnit.MebiByte );
+            ByteBuffer intermediary = ByteBuffers.allocate( 8, ByteUnit.MebiByte, INSTANCE );
             while ( transferred < count )
             {
                 intermediary.clear();

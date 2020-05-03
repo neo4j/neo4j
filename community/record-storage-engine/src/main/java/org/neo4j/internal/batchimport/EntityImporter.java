@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -57,6 +58,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final BatchingIdGetter stringPropertyIds;
     private final BatchingIdGetter arrayPropertyIds;
     protected final Monitor monitor;
+    protected final MemoryTracker memoryTracker;
     private long propertyCount;
     protected int entityPropertyCount; // just for the current entity
     private boolean hasPropertyId;
@@ -65,12 +67,13 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final DynamicRecordAllocator dynamicArrayRecordAllocator;
     protected final PageCursorTracer cursorTracer;
 
-    EntityImporter( BatchingNeoStores stores, Monitor monitor, PageCacheTracer pageCacheTracer )
+    EntityImporter( BatchingNeoStores stores, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.cursorTracer = pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG );
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
         this.monitor = monitor;
+        this.memoryTracker = memoryTracker;
         for ( int i = 0; i < propertyBlocks.length; i++ )
         {
             propertyBlocks[i] = new PropertyBlock();
@@ -134,7 +137,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         Value value = property instanceof Value ? (Value) property : Values.of( property );
         PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, propertyStore.allowStorePointsAndTemporal(),
-                PageCursorTracer.NULL );
+                cursorTracer, memoryTracker );
     }
 
     long createAndWritePropertyChain( PageCursorTracer cursorTracer )

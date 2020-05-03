@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.LabelViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
@@ -98,6 +99,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -333,7 +335,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, storeView, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, false );
+                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, false );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
@@ -514,10 +516,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-                boolean forceStoreScan, PageCursorTracer cursorTracer )
+                boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
-                    labelUpdateVisitor, forceStoreScan, cursorTracer );
+                    labelUpdateVisitor, forceStoreScan, cursorTracer, memoryTracker );
             return new LabelViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction );
@@ -535,7 +537,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 LabelViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
-            super( storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, NULL );
+            super( storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
         }
@@ -643,7 +645,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 update.entityTokensChanged(),
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
-                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL );
+                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL,
+                                INSTANCE );
                         indexService.applyUpdates( entryUpdates, NULL );
                     }
                 }

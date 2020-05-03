@@ -59,7 +59,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         this.propertyCreator = new PropertyCreator(
                 new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                 new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
-                propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorTracer );
+                propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorTracer, memoryTracker );
     }
 
     private long nextId( StoreType storeType )
@@ -114,6 +114,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker );
         return new TransactionRecordState( neoStores, integrityValidator,
                 recordChangeSet, lastTransactionIdWhenStarted, locks,
-                relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter, cursorTracer );
+                relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter, cursorTracer, memoryTracker );
     }
 }

@@ -681,7 +681,7 @@ public class TransactionImpl implements InternalTransaction
 
         NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
         NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() );
-        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer() );
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
 
         transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor, IndexOrder.NONE );
 

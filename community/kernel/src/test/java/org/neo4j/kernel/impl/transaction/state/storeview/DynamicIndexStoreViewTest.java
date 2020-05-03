@@ -57,6 +57,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DynamicIndexStoreViewTest
 {
@@ -99,7 +100,7 @@ class DynamicIndexStoreViewTest
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL );
+                storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL, INSTANCE );
         storeScan.run();
 
         verify( tokenUpdateVisitor, times( nodeIds.length ) ).visit( any() );
@@ -139,7 +140,7 @@ class DynamicIndexStoreViewTest
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL );
+                storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL, INSTANCE );
         storeScan.run();
 
         // Then make sure all the fitting relationships where included
@@ -163,12 +164,12 @@ class DynamicIndexStoreViewTest
         when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
         // When
-        dynamicIndexStoreView
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                cursorTracer, INSTANCE );
 
         // Then
-        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 0 ) )
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 0 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
     }
 
     @Test
@@ -186,12 +187,12 @@ class DynamicIndexStoreViewTest
 
         // When
         boolean forceStoreScan = true;
-        dynamicIndexStoreView
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                cursorTracer, INSTANCE );
 
         // Then
-        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
     }
 
     @Test
@@ -209,12 +210,12 @@ class DynamicIndexStoreViewTest
 
         // When
         int[] typeIds = EMPTY_INT_ARRAY;
-        dynamicIndexStoreView
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                cursorTracer, INSTANCE );
 
         // Then
-        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
     }
 
     @Test
@@ -233,12 +234,12 @@ class DynamicIndexStoreViewTest
         when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
 
         // When
-        dynamicIndexStoreView
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                cursorTracer, INSTANCE );
 
         // Then
-        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
     }
 
     @Test
@@ -256,12 +257,12 @@ class DynamicIndexStoreViewTest
 
         // When
         when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( true );
-        dynamicIndexStoreView
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
+                cursorTracer, INSTANCE );
 
         // Then
-        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) )
-                .visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer );
+        Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView()

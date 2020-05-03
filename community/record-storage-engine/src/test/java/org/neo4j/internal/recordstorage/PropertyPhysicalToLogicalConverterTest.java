@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -225,7 +226,7 @@ class PropertyPhysicalToLogicalConverterTest
     private PropertyBlock property( long key, Value value )
     {
         PropertyBlock block = new PropertyBlock();
-        store.encodeValue( block, (int) key, value, NULL );
+        store.encodeValue( block, (int) key, value, NULL, INSTANCE );
         return block;
     }
 

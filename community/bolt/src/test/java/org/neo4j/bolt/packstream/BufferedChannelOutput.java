@@ -25,7 +25,7 @@ import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.io.memory.ByteBuffers;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class BufferedChannelOutput implements PackOutput
 {
@@ -34,7 +34,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( int bufferSize )
     {
-        this.buffer = ByteBuffers.allocate( bufferSize, BIG_ENDIAN );
+        this.buffer = ByteBuffers.allocate( bufferSize, INSTANCE );
     }
 
     public BufferedChannelOutput( WritableByteChannel channel )

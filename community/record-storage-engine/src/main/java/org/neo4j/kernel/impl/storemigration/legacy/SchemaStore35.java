@@ -24,9 +24,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -36,16 +34,11 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.util.VisibleForTesting;
-
-import static java.util.Collections.singleton;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * The SchemaStore implementation from 3.5.x, used for reading the old schema store during schema store migration.
@@ -82,15 +75,6 @@ public class SchemaStore35 extends AbstractDynamicStore
     public void initialise( boolean createIfNotExists, PageCursorTracer pageCursorTracer )
     {
         super.initialise( createIfNotExists, pageCursorTracer );
-    }
-
-    public List<DynamicRecord> allocateFrom( SchemaRule rule, PageCursorTracer cursorTracer )
-    {
-        List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = getRecord( rule.getId(), newRecord(), CHECK, cursorTracer );
-        DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator, cursorTracer );
-        return records;
     }
 
     static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer ) throws MalformedSchemaRuleException

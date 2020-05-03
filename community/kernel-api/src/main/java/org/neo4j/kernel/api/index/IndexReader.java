@@ -48,18 +48,17 @@ public interface IndexReader extends Resource
      * Queries the index for the given {@link IndexQuery} predicates.
      * @param client the client which will control the progression though query results.
      * @param constraints constraints upon the query result, like ordering and whether the index should fetch property values alongside the entity ids.
-     * @param cursorTracer underlying page cursor tracer
      * @param query the query so serve.
      */
-    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints, PageCursorTracer cursorTracer,
+    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             IndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
      * @param predicates query to determine whether index has full value precision for.
      * @return whether or not this reader will only return 100% matching results from
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, PageCursorTracer, IndexQuery...)}.
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, IndexQuery...)}.
      * If {@code false} is returned this means that the caller of
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, PageCursorTracer, IndexQuery...)} will have to
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, IndexQuery...)} will have to
      * do additional filtering, double-checking of actual property values, externally.
      */
     boolean hasFullValuePrecision( IndexQuery... predicates );
@@ -81,7 +80,7 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                PageCursorTracer cursorTracer, IndexQuery... query )
+                IndexQuery... query )
         {
             // do nothing
         }
@@ -114,7 +113,7 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                PageCursorTracer cursorTracer, IndexQuery... query )
+                IndexQuery... query )
         {
         }
 

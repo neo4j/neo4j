@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.memory.BufferScope;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
@@ -62,7 +62,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final MemoryTracker memoryTracker;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private BufferScope bufferScope;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private LogVersionRepository logVersionRepository;
 
@@ -91,8 +90,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        bufferScope = new BufferScope( calculateLogBufferSize(), memoryTracker );
-        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, bufferScope.buffer );
+        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, new NativeScopedBuffer( calculateLogBufferSize(), memoryTracker ) );
     }
 
     private void seekChannelPosition( long currentLogVersion ) throws IOException
@@ -139,7 +137,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void shutdown() throws IOException
     {
-        IOUtils.closeAll( writer, bufferScope );
+        IOUtils.closeAll( writer );
     }
 
     @Override

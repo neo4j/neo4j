@@ -277,7 +277,7 @@ public class ImportLogic implements Closeable
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
         DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
-                pageCacheTracer );
+                pageCacheTracer, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }
@@ -314,7 +314,7 @@ public class ImportLogic implements Closeable
         neoStore.startFlushingPageCache();
         DataStatistics typeDistribution = DataImporter.importRelationships(
                 config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
-                !badCollector.isCollectingBadRelationships(), pageCacheTracer );
+                !badCollector.isCollectingBadRelationships(), pageCacheTracer, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
         idMapper.close();
@@ -572,7 +572,7 @@ public class ImportLogic implements Closeable
         }
 
         return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, externalPageCache,
-                cacheTracer, databaseLayout, recordFormats, config, logService, additionalInitialIds, dbConfig );
+                cacheTracer, databaseLayout, recordFormats, config, logService, additionalInitialIds, dbConfig, memoryTracker );
     }
 
     private static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )

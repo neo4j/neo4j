@@ -50,6 +50,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -78,7 +79,7 @@ class LabelScanStoreIT
     {
         cacheTracer = new DefaultPageCacheTracer();
         store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
-                immediate(), cacheTracer ) );
+                immediate(), cacheTracer, INSTANCE ) );
     }
 
     @Test

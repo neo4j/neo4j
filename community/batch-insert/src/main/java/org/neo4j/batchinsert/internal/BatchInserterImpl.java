@@ -352,7 +352,7 @@ public class BatchInserterImpl implements BatchInserter
             relationshipCreator = new RelationshipCreator(
                 new RelationshipGroupGetter( relationshipGroupStore, cursorTracer ), relationshipGroupStore.getStoreHeaderInt(), cursorTracer );
             propertyTraverser = new PropertyTraverser( cursorTracer );
-            propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorTracer );
+            propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorTracer, memoryTracker );
             propertyDeletor = new PropertyDeleter( propertyTraverser, cursorTracer );
 
             flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
@@ -539,7 +539,7 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( index, cursorTracer );
+            schemaRuleAccess.writeSchemaRule( index, cursorTracer, memoryTracker );
             schemaCache.addSchemaRule( index );
             updateTouchToken( index.schema() );
             flushStrategy.forceFlush();
@@ -579,7 +579,7 @@ public class BatchInserterImpl implements BatchInserter
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
-                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, false );
+                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker, false );
         life.add( indexingService );
         try
         {
@@ -673,9 +673,9 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( constraint, cursorTracer );
+            schemaRuleAccess.writeSchemaRule( constraint, cursorTracer, memoryTracker );
             schemaCache.addSchemaRule( constraint );
-            schemaRuleAccess.writeSchemaRule( index, cursorTracer );
+            schemaRuleAccess.writeSchemaRule( index, cursorTracer, memoryTracker );
             schemaCache.addSchemaRule( index );
             updateTouchToken( constraint.schema() );
             flushStrategy.forceFlush();
@@ -763,7 +763,7 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( rule, cursorTracer );
+            schemaRuleAccess.writeSchemaRule( rule, cursorTracer, memoryTracker );
             schemaCache.addSchemaRule( rule );
             updateTouchToken( rule.schema() );
             flushStrategy.forceFlush();
@@ -782,7 +782,7 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( rule, cursorTracer );
+            schemaRuleAccess.writeSchemaRule( rule, cursorTracer, memoryTracker );
             schemaCache.addSchemaRule( rule );
             flushStrategy.forceFlush();
             return rule;
@@ -877,7 +877,7 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer );
+        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer, memoryTracker );
         labelsTouched = true;
     }
 
@@ -1123,7 +1123,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
         LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate(),
-                pageCacheTracer );
+                pageCacheTracer, memoryTracker );
         if ( labelsTouched )
         {
             labelIndex.drop();
@@ -1138,7 +1138,7 @@ public class BatchInserterImpl implements BatchInserter
         FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( storeIndexStoreView );
         RelationshipTypeScanStore relationshipTypeIndex = TokenScanStore
                 .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, false, monitors, immediate(), config,
-                        pageCacheTracer );
+                        pageCacheTracer, memoryTracker );
         if ( relationshipTypesTouched )
         {
             relationshipTypeIndex.drop();

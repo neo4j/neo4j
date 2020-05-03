@@ -23,8 +23,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -40,6 +42,9 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -48,6 +53,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.ByteBuffer.wrap;
+import static java.util.Collections.singleton;
 import static java.util.stream.IntStream.range;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +62,9 @@ import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 class SchemaStore35Test
@@ -99,7 +108,7 @@ class SchemaStore35Test
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -118,7 +127,7 @@ class SchemaStore35Test
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -140,7 +149,7 @@ class SchemaStore35Test
         // WHEN
         IndexDescriptor readIndexRule =
                 (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
-                        wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
+                        wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -159,7 +168,7 @@ class SchemaStore35Test
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -179,7 +188,7 @@ class SchemaStore35Test
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
-                wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
+                wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -217,7 +226,7 @@ class SchemaStore35Test
 
     private void storeRule( SchemaRule rule )
     {
-        Collection<DynamicRecord> records = store.allocateFrom( rule, NULL );
+        Collection<DynamicRecord> records = allocateFrom( rule, NULL );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record, NULL );
@@ -244,5 +253,14 @@ class SchemaStore35Test
     private static ConstraintDescriptor constraintExistsRule( long ruleId, int labelId, int... propertyIds )
     {
         return ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ).withName( "constraint_" + ruleId ).withId( ruleId );
+    }
+
+    public List<DynamicRecord> allocateFrom( SchemaRule rule, PageCursorTracer cursorTracer )
+    {
+        List<DynamicRecord> records = new ArrayList<>();
+        DynamicRecord record = store.getRecord( rule.getId(), store.newRecord(), CHECK, cursorTracer );
+        DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer );
+        return records;
     }
 }

@@ -30,10 +30,11 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.MebiByte;
@@ -54,12 +55,14 @@ public class CorruptedLogsTruncator
     private final File storeDir;
     private final LogFiles logFiles;
     private final FileSystemAbstraction fs;
+    private final MemoryTracker memoryTracker;
 
-    public CorruptedLogsTruncator( File storeDir, LogFiles logFiles, FileSystemAbstraction fs )
+    public CorruptedLogsTruncator( File storeDir, LogFiles logFiles, FileSystemAbstraction fs, MemoryTracker memoryTracker )
     {
         this.storeDir = storeDir;
         this.logFiles = logFiles;
         this.fs = fs;
+        this.memoryTracker = memoryTracker;
     }
 
     /**
@@ -104,16 +107,15 @@ public class CorruptedLogsTruncator
     {
         File corruptedLogArchive = getArchiveFile( recoveredTransactionLogVersion, recoveredTransactionOffset );
         try ( ZipOutputStream recoveryContent = new ZipOutputStream(
-                new BufferedOutputStream( fs.openAsOutputStream( corruptedLogArchive, false ) ) ) )
+                new BufferedOutputStream( fs.openAsOutputStream( corruptedLogArchive, false ) ) );
+                var bufferScope = new HeapScopedBuffer(  1, MebiByte, memoryTracker ) )
         {
-            ByteBuffer zipBuffer = ByteBuffers.allocate( 1, MebiByte );
-            copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent,
-                    zipBuffer );
+            copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent, bufferScope.getBuffer() );
             forEachSubsequentLogFile( recoveredTransactionLogVersion, fileIndex ->
             {
                 try
                 {
-                    copyTransactionLogContent( fileIndex, 0, recoveryContent, zipBuffer );
+                    copyTransactionLogContent( fileIndex, 0, recoveryContent, bufferScope.getBuffer() );
                 }
                 catch ( IOException io )
                 {

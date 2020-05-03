@@ -185,7 +185,7 @@ class BatchingNeoStoresTest
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
-                    Config.defaults() ) )
+                    Config.defaults(), INSTANCE ) )
             {
                 stores.createNew();
                 for ( StoreType type : relevantRecordStores() )
@@ -197,7 +197,7 @@ class BatchingNeoStoresTest
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
-                    Config.defaults() ) )
+                    Config.defaults(), INSTANCE ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
 
@@ -225,7 +225,7 @@ class BatchingNeoStoresTest
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
@@ -245,7 +245,7 @@ class BatchingNeoStoresTest
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
@@ -265,7 +265,7 @@ class BatchingNeoStoresTest
         RecordFormats formats = LATEST_RECORD_FORMATS;
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
@@ -293,7 +293,7 @@ class BatchingNeoStoresTest
         {
             // Special hack for property store, since it's not enough to simply set a record as in use there
             PropertyBlock block = new PropertyBlock();
-            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL );
+            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL, INSTANCE );
             ((PropertyRecord) record).addPropertyBlock( block );
         }
         store.updateRecord( record, NULL );
@@ -356,7 +356,7 @@ class BatchingNeoStoresTest
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
             RelationshipTypeScanStore relationshipTypeScanStore = life.add(
                     toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
-                            recoveryCleanupWorkCollector, config, PageCacheTracer.NULL ) );
+                            recoveryCleanupWorkCollector, config, PageCacheTracer.NULL, INSTANCE ) );
             storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
             apply( txState, commandCreationContext, storageEngine );
 

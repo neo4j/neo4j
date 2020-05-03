@@ -41,7 +41,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.memory.ByteBufferFactory.HEAP_ALLOCATOR;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -63,7 +64,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
-                HEAP_ALLOCATOR, 1000, layout
+                heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
             // when
@@ -80,7 +81,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
-                HEAP_ALLOCATOR, 1000, layout
+                heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
             // when
@@ -97,7 +98,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
-                HEAP_ALLOCATOR, 10_000, layout
+                heapBufferFactory( 0 ).globalAllocator(), 10_000, layout, INSTANCE
         ) )
         {
             // when

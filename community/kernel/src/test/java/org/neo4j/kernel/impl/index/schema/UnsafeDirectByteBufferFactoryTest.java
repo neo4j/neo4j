@@ -33,11 +33,11 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryTracker tracker = new LocalMemoryTracker();
-        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
+        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator() )
         {
             // when
             int bufferSize = 128;
-            factory.allocate( bufferSize );
+            factory.allocate( bufferSize, tracker );
 
             // then
             assertEquals( bufferSize, tracker.usedNativeMemory() );
@@ -49,10 +49,10 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryTracker tracker = new LocalMemoryTracker();
-        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
+        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator() )
         {
             // when
-            factory.allocate( 256 );
+            factory.allocate( 256, tracker );
         }
 
         // then
@@ -64,10 +64,10 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryTracker tracker = new LocalMemoryTracker();
-        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker );
+        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator();
 
         // when
-        factory.allocate( 256 );
+        factory.allocate( 256, tracker );
         factory.close();
 
         // then
@@ -80,13 +80,14 @@ class UnsafeDirectByteBufferFactoryTest
     void shouldNotAllocateAfterClosed()
     {
         // given
-        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( new LocalMemoryTracker() );
+        var localMemoryTracker = new LocalMemoryTracker();
+        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator();
         factory.close();
 
         // when
         try
         {
-            factory.allocate( 8 );
+            factory.allocate( 8, localMemoryTracker );
         }
         catch ( IllegalStateException e )
         {

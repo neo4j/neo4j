@@ -245,7 +245,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, relationshipTypeScanStore,
-                        indexStatisticsStore, pageCursorTracer, dependencies, config );
+                        indexStatisticsStore, pageCursorTracer, dependencies, config, memoryTracker );
         this.operations =
                 new Operations(
                         allStoreHolder,
@@ -258,7 +258,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         constraintIndexCreator,
                         constraintSemantics,
                         indexingService,
-                        config, pageCursorTracer );
+                        config, pageCursorTracer, memoryTracker );
         traceProvider = getTraceProvider( config );
         transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
@@ -1106,7 +1106,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateVisitor enforceConstraints( TxStateVisitor txStateVisitor )
     {
         return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor,
-                pageCursorTracer );
+                pageCursorTracer, memoryTracker );
     }
 
     /**

@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 class CorruptedLogsTruncatorTest
@@ -84,7 +85,7 @@ class CorruptedLogsTruncatorTest
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
-        logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs );
+        logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs, INSTANCE );
     }
 
     @AfterEach

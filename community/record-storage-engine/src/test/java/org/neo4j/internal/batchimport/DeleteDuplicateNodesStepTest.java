@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -235,7 +236,7 @@ class DeleteDuplicateNodesStepTest
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId( nodeStore.nextId( NULL ) );
         nodeRecord.setInUse( true );
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
         if ( propertyRecords.length > 0 )
         {
@@ -256,7 +257,7 @@ class DeleteDuplicateNodesStepTest
         for ( int i = 0; i < numberOfProperties; i++ )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, i, random.nextValue(), NULL );
+            propertyStore.encodeValue( block, i, random.nextValue(), NULL, INSTANCE );
             if ( current == null || block.getValueBlocks().length > space )
             {
                 PropertyRecord next = propertyStore.newRecord();

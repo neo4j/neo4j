@@ -1244,7 +1244,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 if ( legal )
                 {
                     // when
-                    reader.query( NULL_CONTEXT, client, unconstrained(), NULL, theQuery );
+                    reader.query( NULL_CONTEXT, client, unconstrained(), theQuery );
 
                     // then should not throw
                 }
@@ -1253,7 +1253,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     try
                     {
                         // when
-                        reader.query( NULL_CONTEXT, client, unconstrained(), NULL, theQuery );
+                        reader.query( NULL_CONTEXT, client, unconstrained(), theQuery );
                         fail( "Expected index reader to throw for illegal composite query. Query was, " + Arrays.toString( theQuery ) );
                     }
                     catch ( IllegalArgumentException e )

@@ -69,6 +69,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -776,7 +777,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         try ( StoreChannel channel = fs.write( file ) )
         {
-            ByteBuffer buf = ByteBuffers.allocate( 16 );
+            ByteBuffer buf = ByteBuffers.allocate( 16, INSTANCE );
             buf.putLong( x );
             buf.putLong( y );
             buf.flip();
@@ -786,7 +787,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffers.allocate( 16 );
+        ByteBuffer buffer = ByteBuffers.allocate( 16, INSTANCE );
         try ( StoreChannel channel = fs.read( file( fileName ) ) )
         {
             channel.readAll( buffer );

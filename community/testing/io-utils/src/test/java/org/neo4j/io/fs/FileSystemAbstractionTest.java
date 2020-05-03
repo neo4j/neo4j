@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 import static org.neo4j.io.fs.FileHandle.handleRename;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 public abstract class FileSystemAbstractionTest
@@ -64,11 +65,11 @@ public abstract class FileSystemAbstractionTest
     @Inject
     TestDirectory testDirectory;
 
-    private int recordSize = 9;
-    private int maxPages = 20;
-    private int pageCachePageSize = 32;
-    private int recordsPerFilePage = pageCachePageSize / recordSize;
-    private int recordCount = 25 * maxPages * recordsPerFilePage;
+    private final int recordSize = 9;
+    private final int maxPages = 20;
+    private final int pageCachePageSize = 32;
+    private final int recordsPerFilePage = pageCachePageSize / recordSize;
+    private final int recordCount = 25 * maxPages * recordsPerFilePage;
     protected FileSystemAbstraction fsa;
     protected File path;
 
@@ -726,7 +727,7 @@ public abstract class FileSystemAbstractionTest
         {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             int fileSize = (int) channel.size();
-            ByteBuffer buffer = ByteBuffers.allocate( fileSize );
+            ByteBuffer buffer = ByteBuffers.allocate( fileSize, INSTANCE );
             for ( int i = 0; i < fileSize; i++ )
 
             {
@@ -775,7 +776,7 @@ public abstract class FileSystemAbstractionTest
             channel.writeAll( ByteBuffer.wrap( data ) );
             channel.truncate( 4 );
             assertThat( channel.size() ).isEqualTo( 4 );
-            ByteBuffer buf = ByteBuffer.allocate( data.length );
+            ByteBuffer buf = ByteBuffers.allocate( data.length, INSTANCE );
             channel.position( 0 );
             int read = channel.read( buf );
             assertThat( read ).isEqualTo( 4 );
@@ -789,7 +790,7 @@ public abstract class FileSystemAbstractionTest
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
-            ByteBuffer buf = ByteBuffers.allocate( recordSize );
+            ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
             for ( int i = 0; i < recordCount; i++ )
             {
                 generateRecordForId( i, buf );
@@ -807,8 +808,8 @@ public abstract class FileSystemAbstractionTest
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
-            ByteBuffer buf = ByteBuffers.allocate( recordSize );
-            ByteBuffer observation = ByteBuffers.allocate( recordSize );
+            ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
+            ByteBuffer observation = ByteBuffers.allocate( recordSize, INSTANCE );
             for ( int i = 0; i < recordCount; i++ )
             {
                 generateRecordForId( i, buf );
@@ -880,7 +881,7 @@ public abstract class FileSystemAbstractionTest
     private void writeIntegerIntoFile( File targetFile ) throws IOException
     {
         StoreChannel storeChannel = fsa.write( targetFile );
-        ByteBuffer byteBuffer = ByteBuffers.allocate( Integer.SIZE ).putInt( 7 );
+        ByteBuffer byteBuffer = ByteBuffers.allocate( Integer.SIZE, INSTANCE ).putInt( 7 );
         byteBuffer.flip();
         storeChannel.writeAll( byteBuffer );
         storeChannel.close();

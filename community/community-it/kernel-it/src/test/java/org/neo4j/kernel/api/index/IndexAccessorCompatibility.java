@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -71,7 +72,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void before() throws Exception
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE );
         populator.create();
         populator.close( true, NULL );
         accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig );
@@ -118,7 +119,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, nodeValueClient, unconstrained(), NULL, predicates );
+            reader.query( NULL_CONTEXT, nodeValueClient, unconstrained(), predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
             {
@@ -136,7 +137,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
-        reader.query( NULL_CONTEXT, client, constrained( order, false ), NULL, predicates );
+        reader.query( NULL_CONTEXT, client, constrained( order, false ), predicates );
         return reader;
     }
 

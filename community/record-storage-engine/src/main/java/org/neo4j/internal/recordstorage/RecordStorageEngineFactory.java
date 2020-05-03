@@ -182,7 +182,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer )
+            LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
@@ -196,7 +196,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         {
             throw new UncheckedIOException( e );
         }
-        return createMigrationTargetSchemaRuleAccess( stores, cursorTracer );
+        return createMigrationTargetSchemaRuleAccess( stores, cursorTracer, memoryTracker );
     }
 
     @Override
@@ -229,7 +229,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return StorageFilesState.recoveredState();
     }
 
-    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer )
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
@@ -258,6 +259,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorTracer ) );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer, memoryTracker );
     }
 }

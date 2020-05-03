@@ -50,6 +50,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.io.IoMonitor;
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -173,20 +174,20 @@ public class DataImporter
     }
 
     static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
-            ExecutionMonitor executionMonitor, Monitor monitor, PageCacheTracer pageCacheTracer ) throws IOException
+            ExecutionMonitor executionMonitor, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
-        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, pageCacheTracer );
+        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, pageCacheTracer, memoryTracker );
         importData( NODE_IMPORT_NAME, numRunners, input.nodes( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
     static DataStatistics importRelationships( int numRunners, Input input,
             BatchingNeoStores stores, IdMapper idMapper, Collector badCollector, ExecutionMonitor executionMonitor,
-            Monitor monitor, boolean validateRelationshipData, PageCacheTracer pageCacheTracer ) throws IOException
+            Monitor monitor, boolean validateRelationshipData, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         DataStatistics typeDistribution = new DataStatistics( monitor, new DataStatistics.RelationshipTypeCount[0] );
         Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
-                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), pageCacheTracer );
+                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), pageCacheTracer, memoryTracker );
         importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
         return typeDistribution;

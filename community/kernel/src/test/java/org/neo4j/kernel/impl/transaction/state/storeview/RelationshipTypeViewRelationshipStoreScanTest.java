@@ -40,6 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RelationshipTypeViewRelationshipStoreScanTest
 {
@@ -82,6 +84,6 @@ class RelationshipTypeViewRelationshipStoreScanTest
     private RelationshipTypeViewRelationshipStoreScan<Exception> getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
         return new RelationshipTypeViewRelationshipStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
-                relationshipTypeScanStore, labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, PageCursorTracer.NULL );
+                relationshipTypeScanStore, labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, NULL, INSTANCE );
     }
 }

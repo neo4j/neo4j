@@ -56,6 +56,7 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
@@ -366,7 +367,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL ) )
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             // when
             propertyCursor.setTracer( tracer );

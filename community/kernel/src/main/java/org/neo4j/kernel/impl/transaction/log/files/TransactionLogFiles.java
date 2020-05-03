@@ -22,12 +22,11 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -139,7 +138,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         LogHeader logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader == null )
         {
-            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ), strict );
+            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ), strict, logFilesContext.getMemoryTracker() );
             if ( !strict && logHeader == null )
             {
                 return null;
@@ -168,10 +167,13 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
             }
             try ( StoreChannel channel = fileSystem.read( logFile ) )
             {
-                ByteBuffer buffer = ByteBuffers.allocate( headerSize + 1 );
-                channel.readAll( buffer );
-                buffer.flip();
-                return buffer.get( headerSize ) != 0;
+                try ( var scopedBuffer = new HeapScopedBuffer( headerSize + 1, logFilesContext.getMemoryTracker() ) )
+                {
+                    var buffer = scopedBuffer.getBuffer();
+                    channel.readAll( buffer );
+                    buffer.flip();
+                    return buffer.get( headerSize ) != 0;
+                }
             }
         }
         catch ( IOException e )

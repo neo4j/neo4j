@@ -121,7 +121,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.observedCounts = new CountsState( neoStores, cacheAccess, memoryTracker );
         this.progress = progressFactory.multipleParts( "Consistency check" );
         this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution,
-                reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, debug, consistencyFlags );
+                reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, memoryTracker,
+                debug, consistencyFlags );
     }
 
     public void check() throws ConsistencyCheckIncompleteException

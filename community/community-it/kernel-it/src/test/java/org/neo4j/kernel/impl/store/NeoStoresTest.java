@@ -109,6 +109,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -237,7 +238,7 @@ public class NeoStoresTest
 
     private StorageProperty getProperty( int key, long propertyId )
     {
-        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL ) )
+        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             propertyCursor.initNodeProperties( propertyId );
             if ( propertyCursor.next() )

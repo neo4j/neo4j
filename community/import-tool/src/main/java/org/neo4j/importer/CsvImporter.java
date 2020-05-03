@@ -153,8 +153,7 @@ class CsvImporter implements Importer
 
             CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
                 relationshipsData, defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
-                csvConfig,
-                    new CsvInput.PrintingMonitor( stdOut ) );
+                csvConfig, new CsvInput.PrintingMonitor( stdOut ), memoryTracker );
 
             doImport( input, badCollector );
         }

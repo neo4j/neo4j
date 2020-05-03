@@ -28,13 +28,14 @@ import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class TestMemoryAllocator implements MemoryAllocator
 {
     @Override
     public Memory allocate( long size, boolean zeroed, MemoryTracker memoryTracker )
     {
-        final ByteBuffer buf = ByteBuffers.allocate( toIntExact( size ) );
+        final ByteBuffer buf = ByteBuffers.allocate( toIntExact( size ), INSTANCE );
         if ( zeroed )
         {
             Arrays.fill( buf.array(), (byte) 0 );

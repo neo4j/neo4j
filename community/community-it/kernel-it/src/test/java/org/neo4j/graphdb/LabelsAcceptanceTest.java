@@ -80,6 +80,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension
 class LabelsAcceptanceTest
@@ -722,7 +723,7 @@ class LabelsAcceptanceTest
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( PageCursorTracer.NULL );
-                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( PageCursorTracer.NULL ) )
+                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( PageCursorTracer.NULL, INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node.getId(), nodes );
                 while ( nodes.next() )

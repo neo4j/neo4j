@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.max;
@@ -62,9 +63,9 @@ public class NodeImporter extends EntityImporter
     private long highestId = -1;
     private boolean hasLabelField;
 
-    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor, PageCacheTracer pageCacheTracer )
+    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        super( stores, monitor, pageCacheTracer );
+        super( stores, monitor, pageCacheTracer, memoryTracker );
         this.labelTokenRepository = stores.getLabelRepository();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
@@ -93,7 +94,7 @@ public class NodeImporter extends EntityImporter
         // also store this id as property in temp property store
         if ( id != null )
         {
-            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), cursorTracer );
+            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), cursorTracer, memoryTracker );
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
@@ -138,7 +139,7 @@ public class NodeImporter extends EntityImporter
         if ( !hasLabelField )
         {
             long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorTracer );
+            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorTracer, memoryTracker );
         }
         labelsCursor = 0;
 

@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Flushable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
+import org.neo4j.io.memory.ScopedBuffer;
 
-import static org.neo4j.io.memory.ByteBuffers.allocate;
+import static org.neo4j.io.memory.HeapScopedBuffer.EMPTY_BUFFER;
 
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChecksumChannel}. This
@@ -35,11 +35,10 @@ import static org.neo4j.io.memory.ByteBuffers.allocate;
  */
 public class PositionAwarePhysicalFlushableChecksumChannel implements FlushablePositionAwareChecksumChannel
 {
-    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = allocate( 0 ).asReadOnlyBuffer();
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableLogChannel channel;
 
-    public PositionAwarePhysicalFlushableChecksumChannel( LogVersionedStoreChannel logVersionedStoreChannel, ByteBuffer buffer )
+    public PositionAwarePhysicalFlushableChecksumChannel( LogVersionedStoreChannel logVersionedStoreChannel, ScopedBuffer buffer )
     {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
         this.channel = new PhysicalFlushableLogChannel( logVersionedStoreChannel, buffer );
@@ -116,7 +115,7 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     public void close() throws IOException
     {
         channel.close();
-        channel.setBuffer( EMPTY_READ_ONLY_BUFFER );
+        channel.setScopedBuffer( EMPTY_BUFFER );
     }
 
     public void setChannel( LogVersionedStoreChannel channel )

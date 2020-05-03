@@ -243,7 +243,7 @@ public abstract class KernelIntegrationTest
     static Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
     {
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.pageCursorTracer() );
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer() ) )
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer(), transaction.memoryTracker() ) )
         {
             transaction.dataRead().singleRelationship( relationship, cursor );
             if ( !cursor.next() )

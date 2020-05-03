@@ -33,14 +33,15 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ManagedTestCursors implements CursorFactory
 {
-    private List<Cursor> allCursors = new ArrayList<>();
+    private final List<Cursor> allCursors = new ArrayList<>();
 
-    private CursorFactory cursors;
+    private final CursorFactory cursors;
 
     ManagedTestCursors( CursorFactory c )
     {
@@ -101,17 +102,17 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
+    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        PropertyCursor n = cursors.allocatePropertyCursor( cursorTracer );
+        PropertyCursor n = cursors.allocatePropertyCursor( cursorTracer, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
+    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        PropertyCursor n = cursors.allocateFullAccessPropertyCursor( cursorTracer );
+        PropertyCursor n = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker );
         allCursors.add( n );
         return n;
     }

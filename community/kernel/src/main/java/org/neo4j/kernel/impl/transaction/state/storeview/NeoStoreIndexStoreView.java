@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -51,25 +52,25 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
             final Visitor<EntityUpdates, FAILURE> propertyUpdatesVisitor,
             final Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer )
+            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return new NodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer );
+                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer, memoryTracker );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer )
+            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return new RelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
-                propertyKeyIdFilter, cursorTracer );
+                propertyKeyIdFilter, cursorTracer, memoryTracker );
     }
 
     @Override
-    public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer )
+    public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorTracer );
+        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorTracer, memoryTracker );
     }
 }

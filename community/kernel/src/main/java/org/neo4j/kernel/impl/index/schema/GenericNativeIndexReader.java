@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
@@ -81,7 +80,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... query )
+            IndexQuery... query )
     {
         IndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
@@ -106,7 +105,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                     GenericKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
-                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, cursorTracer );
+                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, context.cursorTracer() );
                 }
             }
             catch ( IllegalArgumentException e )
@@ -117,7 +116,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         }
         else
         {
-            super.query( context, client, constraints, cursorTracer, query );
+            super.query( context, client, constraints, query );
         }
     }
 

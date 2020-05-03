@@ -20,8 +20,11 @@
 package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -32,7 +35,7 @@ import org.neo4j.util.Preconditions;
  *     <li>{@link #globalAllocator() Global buffers} which will be closed when this factory {@link #close() closes}</li>
  *     <li>{@link #newLocalAllocator() Local buffers} where caller gets a new {@link Allocator} and gets the responsibility of its
  *     life cycle, i.e. allocations from it and must call {@link Allocator#close()} close on it after use</li>
- *     <li>{@link #acquireThreadLocalBuffer()} Thread-local buffers} created lazily on first call by any given thread into this buffer factory.
+ *     <li>{@link #acquireThreadLocalBuffer(MemoryTracker)} Thread-local buffers} created lazily on first call by any given thread into this buffer factory.
  *     These buffers are allocated from the global allocator on first use and then only cleared and handed out on further requests.
  *     After use it must be {@link #releaseThreadLocalBuffer() released} so that other code paths in that thread's execution can acquire it.</li>
  * </ul>
@@ -43,6 +46,7 @@ public class ByteBufferFactory implements AutoCloseable
 {
     private final Allocator globalAllocator;
     private final int threadLocalBufferSize;
+    private final List<ScopedBuffer> buffers = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalByteBuffer> threadLocalBuffers = ThreadLocal.withInitial( ThreadLocalByteBuffer::new );
     private final Supplier<Allocator> allocatorFactory;
 
@@ -73,19 +77,24 @@ public class ByteBufferFactory implements AutoCloseable
      * @return thread-local buffer. The returned buffer is meant to be used in a limited closure and then {@link #releaseThreadLocalBuffer() released}
      * so that other pieces of code can use it again for this thread.
      */
-    public ByteBuffer acquireThreadLocalBuffer()
+    public ByteBuffer acquireThreadLocalBuffer( MemoryTracker memoryTracker )
     {
-        return threadLocalBuffers.get().acquire();
+        return threadLocalBuffers.get().acquire( memoryTracker );
     }
 
     /**
-     * Releases a previously {@link #acquireThreadLocalBuffer()} acquired} thread-local buffer.
+     * Releases a previously {@link #acquireThreadLocalBuffer(MemoryTracker)} acquired} thread-local buffer.
      */
     public void releaseThreadLocalBuffer()
     {
         ThreadLocalByteBuffer managedByteBuffer = threadLocalBuffers.get();
         Preconditions.checkState( managedByteBuffer != null, "Buffer doesn't exist" );
         managedByteBuffer.release();
+    }
+
+    public void releaseAllBuffers()
+    {
+        buffers.forEach( ScopedBuffer::close );
     }
 
     public int bufferSize()
@@ -109,18 +118,18 @@ public class ByteBufferFactory implements AutoCloseable
      */
     public interface Allocator extends AutoCloseable
     {
-        ByteBuffer allocate( int bufferSize );
+        ScopedBuffer allocate( int bufferSize, MemoryTracker memoryTracker );
 
         @Override
         void close();
     }
 
-    public static final Allocator HEAP_ALLOCATOR = new Allocator()
+    private static final Allocator HEAP_ALLOCATOR = new Allocator()
     {
         @Override
-        public ByteBuffer allocate( int bufferSize )
+        public ScopedBuffer allocate( int bufferSize, MemoryTracker memoryTracker )
         {
-            return ByteBuffers.allocate( bufferSize );
+            return new HeapScopedBuffer( bufferSize, memoryTracker );
         }
 
         @Override
@@ -133,21 +142,22 @@ public class ByteBufferFactory implements AutoCloseable
     private class ThreadLocalByteBuffer
     {
         private boolean acquired;
-        private ByteBuffer buffer;
+        private ScopedBuffer scopedBuffer;
 
-        ByteBuffer acquire()
+        ByteBuffer acquire( MemoryTracker memoryTracker )
         {
             Preconditions.checkState( !acquired, "Already acquired" );
             acquired = true;
-            if ( buffer == null )
+            if ( scopedBuffer == null )
             {
-                buffer = globalAllocator.allocate( threadLocalBufferSize );
+                scopedBuffer = globalAllocator.allocate( threadLocalBufferSize, memoryTracker );
+                buffers.add( scopedBuffer );
             }
             else
             {
-                buffer.clear();
+                scopedBuffer.getBuffer().clear();
             }
-            return buffer;
+            return scopedBuffer.getBuffer();
         }
 
         void release()

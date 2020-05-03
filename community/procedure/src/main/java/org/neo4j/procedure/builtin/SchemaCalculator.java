@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
 
@@ -55,6 +56,7 @@ public class SchemaCalculator
     private final TokenRead tokenRead;
     private final CursorFactory cursors;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
 
     SchemaCalculator( KernelTransaction ktx )
     {
@@ -62,6 +64,7 @@ public class SchemaCalculator
         this.tokenRead = ktx.tokenRead();
         this.cursors = ktx.cursors();
         this.cursorTracer = ktx.pageCursorTracer();
+        this.memoryTracker = ktx.memoryTracker();
 
         // the only one that is common for both nodes and rels so thats why we can do it here
         propertyIdToPropertyNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
@@ -84,7 +87,7 @@ public class SchemaCalculator
     public Stream<NodePropertySchemaInfoResult> calculateTabularResultStreamForNodes()
     {
         NodeMappings nodeMappings = initializeMappingsForNodes();
-        scanEverythingBelongingToNodes( nodeMappings, cursorTracer );
+        scanEverythingBelongingToNodes( nodeMappings, cursorTracer, memoryTracker );
 
         // go through all labels to get actual names
         addNamesToCollection( tokenRead.labelsGetAllTokens(), nodeMappings.labelIdToLabelName );
@@ -95,7 +98,7 @@ public class SchemaCalculator
     public Stream<RelationshipPropertySchemaInfoResult> calculateTabularResultStreamForRels()
     {
         RelationshipMappings relMappings = initializeMappingsForRels();
-        scanEverythingBelongingToRelationships( relMappings, cursorTracer );
+        scanEverythingBelongingToRelationships( relMappings, cursorTracer, memoryTracker );
 
         // go through all relationshipTypes to get actual names
         addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relMappings.relationshipTypIdToRelationshipName );
@@ -188,10 +191,10 @@ public class SchemaCalculator
         return results;
     }
 
-    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings, PageCursorTracer cursorTracer )
+    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor( cursorTracer );
-                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer ) )
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker ) )
         {
             dataRead.allRelationshipsScan( relationshipScanCursor );
             while ( relationshipScanCursor.next() )
@@ -246,10 +249,10 @@ public class SchemaCalculator
         }
     }
 
-    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings, PageCursorTracer cursorTracer )
+    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( cursorTracer );
-                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer ) )
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker ) )
         {
             dataRead.allNodesScan( nodeCursor );
             while ( nodeCursor.next() )
@@ -329,7 +332,7 @@ public class SchemaCalculator
 
     private static class ValueTypeListHelper
     {
-        private Set<String> seenValueTypes;
+        private final Set<String> seenValueTypes;
         private boolean isMandatory = true;
 
         ValueTypeListHelper( Value v )

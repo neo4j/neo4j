@@ -30,11 +30,15 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordPropertyCursor;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -47,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
@@ -302,18 +307,18 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator, boolean allowStorePoints,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints, cursorTracer );
+        DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints, cursorTracer, memoryTracker );
     }
 
-    public void encodeValue( PropertyBlock block, int keyId, Value value, PageCursorTracer cursorTracer )
+    public void encodeValue( PropertyBlock block, int keyId, Value value, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePointsAndTemporal, cursorTracer );
+        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePointsAndTemporal, cursorTracer, memoryTracker );
     }
 
     public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
-            boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
+            boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( value instanceof ArrayValue )
         {
@@ -327,7 +332,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal, cursorTracer );
+            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal, cursorTracer, memoryTracker );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -351,27 +356,20 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return arrayStore.openPageCursorForReading( reference, cursorTracer );
     }
 
-    public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page, RecordLoad loadMode )
+    public void loadString( long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode )
     {
-        return readDynamic( stringStore, reference, buffer, page, loadMode );
+        readDynamic( stringStore, reference, propertyCursor, page, loadMode );
     }
 
-    public ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page, RecordLoad loadMode )
+    public void loadArray( long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode )
     {
-        return readDynamic( arrayStore, reference, buffer, page, loadMode );
+        readDynamic( arrayStore, reference, propertyCursor, page, loadMode );
     }
 
-    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer,
+    private static void readDynamic( AbstractDynamicStore store, long reference, RecordPropertyCursor propertyCursor,
             PageCursor page, RecordLoad loadMode )
     {
-        if ( buffer == null )
-        {
-            buffer = ByteBuffers.allocate( 512 );
-        }
-        else
-        {
-            buffer.clear();
-        }
+        var buffer = propertyCursor.getOrCreateClearBuffer();
         DynamicRecord record = store.newRecord();
         do
         {
@@ -382,24 +380,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )
             {
-                buffer = grow( buffer, data.length );
+                buffer = propertyCursor.growBuffer( data.length );
             }
             buffer.put( data, 0, data.length );
         }
         while ( reference != NO_ID );
-        return buffer;
-    }
-
-    private static ByteBuffer grow( ByteBuffer buffer, int required )
-    {
-        buffer.flip();
-        int capacity = buffer.capacity();
-        do
-        {
-            capacity *= 2;
-        }
-        while ( capacity - buffer.limit() < required );
-        return ByteBuffers.allocate( capacity ).put( buffer );
     }
 
     private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>

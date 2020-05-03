@@ -87,7 +87,7 @@ abstract class FusionIndexReaderTest
         for ( int i = 0; i < activeSlots.length; i++ )
         {
             IndexReader mock = mock( IndexReader.class );
-            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), any(), any() );
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), any() );
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
@@ -145,13 +145,13 @@ abstract class FusionIndexReaderTest
                 client.initialize( DESCRIPTOR, progressor, getIndexQueryArgument( invocation ), invocation.getArgument( 2 ), false );
                 progressors[slot] = progressor;
                 return null;
-            } ).when( aliveReaders[i] ).query( any(), any(), any(), any(), any() );
+            } ).when( aliveReaders[i] ).query( any(), any(), any(), any() );
         }
 
         // when
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, iterator, unconstrained(), NULL, IndexQuery.exists( PROP_KEY ) );
+            fusionIndexReader.query( NULL_CONTEXT, iterator, unconstrained(), IndexQuery.exists( PROP_KEY ) );
         }
 
         // then
@@ -255,14 +255,14 @@ abstract class FusionIndexReaderTest
         for ( IndexReader aliveReader : aliveReaders )
         {
             doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
-                    any(), any(), any(), any(), any() );
+                    any(), any(), any(), any() );
         }
 
         // when
         LongSet resultSet;
         try ( NodeValueIterator result = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, result, unconstrained(), NULL, exists );
+            fusionIndexReader.query( NULL_CONTEXT, result, unconstrained(), exists );
 
             // then
             resultSet = PrimitiveLongCollections.asSet( result );
@@ -286,7 +286,7 @@ abstract class FusionIndexReaderTest
                 Value value = values.get( i )[0];
                 try ( NodeValueIterator cursor = new NodeValueIterator() )
                 {
-                    fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), NULL, IndexQuery.exact( 0, value ) );
+                    fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), IndexQuery.exact( 0, value ) );
                 }
                 for ( IndexSlot j : IndexSlot.values() )
                 {
@@ -295,7 +295,7 @@ abstract class FusionIndexReaderTest
                     {
                         if ( i == j )
                         {
-                            verify( readers.get( i ) ).query( any(), any(), any(), any(), any() );
+                            verify( readers.get( i ) ).query( any(), any(), any(), any() );
                         }
                         else
                         {
@@ -315,18 +315,18 @@ abstract class FusionIndexReaderTest
         // when
         try ( NodeValueIterator cursor = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), NULL, indexQuery );
+            fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), indexQuery );
         }
 
         // then
         // Strange mockito inconsistency regarding varargs
         if ( indexQuery.length == 1 )
         {
-            verify( expectedReader ).query( any(), any(), any(), any(), eq( indexQuery[0] ) );
+            verify( expectedReader ).query( any(), any(), any(), eq( indexQuery[0] ) );
         }
         else
         {
-            verify( expectedReader ).query( any(), any(), any(), any(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
+            verify( expectedReader ).query( any(), any(), any(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
         }
         for ( IndexReader reader : aliveReaders )
         {

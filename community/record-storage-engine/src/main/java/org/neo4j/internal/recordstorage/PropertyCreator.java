@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
 public class PropertyCreator
@@ -43,15 +44,16 @@ public class PropertyCreator
     private final PropertyTraverser traverser;
     private final boolean allowStorePointsAndTemporal;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
 
-    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, PageCursorTracer cursorTracer )
+    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal(),
-                cursorTracer );
+                cursorTracer, memoryTracker );
     }
 
     PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
-            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
+            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
@@ -59,6 +61,7 @@ public class PropertyCreator
         this.traverser = traverser;
         this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
         this.cursorTracer = cursorTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
@@ -188,7 +191,8 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorTracer );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorTracer,
+                memoryTracker );
         return block;
     }
 

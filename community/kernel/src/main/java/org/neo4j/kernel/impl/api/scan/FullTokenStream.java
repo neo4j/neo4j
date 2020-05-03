@@ -27,6 +27,7 @@ import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 /**
@@ -47,14 +48,14 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
     }
 
     abstract StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<EntityTokenUpdate,IOException> tokenUpdateVisitor,
-            PageCursorTracer cursorTracer );
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     @Override
-    public long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer ) throws IOException
+    public long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
     {
         // Keep the writer for using it in "visit"
         this.writer = writer;
-        StoreScan<IOException> scan = getStoreScan( indexStoreView, this, cursorTracer );
+        StoreScan<IOException> scan = getStoreScan( indexStoreView, this, cursorTracer, memoryTracker );
         scan.run();
         return count;
     }

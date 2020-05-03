@@ -51,6 +51,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class IndexTransactionApplierFactoryTest
 {
@@ -66,7 +67,7 @@ class IndexTransactionApplierFactoryTest
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
         try ( var batchContext = new BatchContext( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync, indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL,
+                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE,
                 mock( IdUpdateListener.class ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
@@ -147,7 +148,7 @@ class IndexTransactionApplierFactoryTest
     {
         NodeRecord after = new NodeRecord( nodeId,
                 true, false, NO_NEXT_RELATIONSHIP.intValue(),NO_NEXT_PROPERTY.intValue(), 0 );
-        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL );
+        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, INSTANCE );
 
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }

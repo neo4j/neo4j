@@ -44,9 +44,11 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.Inputs;
+import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
@@ -73,6 +75,7 @@ public class CsvInput implements Input
     private final Configuration config;
     private final Monitor monitor;
     private final Groups groups;
+    private final MemoryTracker memoryTracker;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -90,16 +93,17 @@ public class CsvInput implements Input
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Monitor monitor )
+            IdType idType, Configuration config, Monitor monitor, MemoryTracker memoryTracker )
     {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, monitor, new Groups() );
+        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, monitor, new Groups(), memoryTracker );
     }
 
     CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Monitor monitor, Groups groups )
+            IdType idType, Configuration config, Monitor monitor, Groups groups, MemoryTracker memoryTracker )
     {
+        this.memoryTracker = memoryTracker;
         assertSaneConfiguration( config );
 
         this.nodeDataFactory = nodeDataFactory;
@@ -240,7 +244,7 @@ public class CsvInput implements Input
     }
 
     @Override
-    public Estimates calculateEstimates( ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator ) throws IOException
+    public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException
     {
         long[] nodeSample = sample( nodeDataFactory, nodeHeaderFactory, valueSizeCalculator, node -> node.labels().length );
         long[] relationshipSample = sample( relationshipDataFactory, relationshipHeaderFactory, valueSizeCalculator, entity -> 0 );
@@ -253,7 +257,7 @@ public class CsvInput implements Input
     }
 
     private long[] sample( Iterable<DataFactory> dataFactories, Header.Factory headerFactory,
-            ToIntBiFunction<Value[],PageCursorTracer> valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
+            PropertySizeCalculator valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
     {
         long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
         try ( CsvInputChunkProxy chunk = new CsvInputChunkProxy() )
@@ -289,7 +293,7 @@ public class CsvInput implements Input
                                 for ( ; chunk.next( entity ); entities++ )
                                 {
                                     properties += entity.propertyCount();
-                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL );
+                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL, memoryTracker );
                                     additional += additionalCalculator.applyAsInt( entity );
                                 }
                             }

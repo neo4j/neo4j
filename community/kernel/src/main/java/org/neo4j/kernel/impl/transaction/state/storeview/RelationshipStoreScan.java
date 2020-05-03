@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
@@ -45,10 +46,10 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
     public RelationshipStoreScan( StorageReader storageReader, LockService locks,
             @Nullable Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
+            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
-                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ), cursorTracer );
+                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ), cursorTracer, memoryTracker );
         this.relationshipTypeUpdateVisitor = relationshipTypeUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.relationshipTypeIds = relationshipTypeIds;

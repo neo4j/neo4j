@@ -17,29 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.memory;
-
-import java.nio.ByteBuffer;
+package org.neo4j.kernel.database;
 
 import org.neo4j.memory.MemoryTracker;
 
-/**
- * A life-time scope for the contained direct byte buffer.
- */
-public final class BufferScope implements AutoCloseable
+public class DatabaseMemoryTrackers
 {
-    public final ByteBuffer buffer;
-    private final MemoryTracker memoryTracker;
+    private final MemoryTracker otherTracker;
 
-    public BufferScope( int capacity, MemoryTracker memoryTracker )
+    public DatabaseMemoryTrackers( MemoryTracker otherTracker )
     {
-        buffer = ByteBuffers.allocateDirect( capacity, memoryTracker );
-        this.memoryTracker = memoryTracker;
+        this.otherTracker = otherTracker;
     }
 
-    @Override
-    public void close()
+    public MemoryTracker getOtherTracker()
     {
-        ByteBuffers.releaseBuffer( buffer, memoryTracker );
+        return otherTracker;
     }
 }

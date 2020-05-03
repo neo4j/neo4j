@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -32,6 +32,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -60,12 +62,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 /**
  * Issue came up when observing that recovering an INDEX DROP command didn't actually call {@link IndexProxy#drop()},
  * and actually did nothing to that {@link IndexProxy} except removing it from its {@link IndexMap}.
- * This would have {@link IndexingService} forget about that index and at shutdown not call {@link IndexProxy#close()},
+ * This would have {@link IndexingService} forget about that index and at shutdown not call {@link IndexProxy#close(PageCursorTracer)},
  * resulting in open page cache files, for any page cache mapped native index files.
  *
  * This would be a problem if the INDEX DROP command was present in the transaction log, but the db had been killed
@@ -148,8 +151,7 @@ class RecoverIndexDropIT
             LogPosition position = logEntryReader.lastPosition();
             StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
             storeChannel.position( position.getByteOffset() );
-            ByteBuffer buf = ByteBuffer.allocate( 1000 );
-            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buf ) )
+            try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
             {
                 new LogEntryWriter( writeChannel ).serialize( dropTransaction );
             }

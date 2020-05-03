@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class TestEphemeralFileChannel
@@ -48,7 +49,7 @@ class TestEphemeralFileChannel
         StoreChannel channel = fileSystem.write( new File( "yo" ) );
 
         // Clear it because we depend on it to be zeros where we haven't written
-        ByteBuffer buffer = allocate( 23 );
+        ByteBuffer buffer = allocate( 23, INSTANCE );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );

@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
@@ -143,6 +144,7 @@ public class MultipleIndexPopulator
     private final PhaseTracker phaseTracker;
     private final JobScheduler jobScheduler;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
     private final TokenNameLookup tokenNameLookup;
     private final PageCacheTracer cacheTracer;
@@ -157,11 +159,13 @@ public class MultipleIndexPopulator
      * @param tokenNameLookup token lookup
      */
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer )
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
+            MemoryTracker memoryTracker )
     {
         this.storeView = storeView;
         this.cursorTracer = cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG );
-        this.propertyAccessor = storeView.newPropertyAccessor( cursorTracer );
+        this.memoryTracker = memoryTracker;
+        this.propertyAccessor = storeView.newPropertyAccessor( cursorTracer, memoryTracker );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
@@ -209,11 +213,13 @@ public class MultipleIndexPopulator
 
         if ( type == EntityType.RELATIONSHIP )
         {
-            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false, cursorTracer );
+            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false, cursorTracer,
+                    memoryTracker );
         }
         else
         {
-            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false, cursorTracer );
+            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false,
+                    cursorTracer, memoryTracker );
         }
         storeScan.setPhaseTracker( phaseTracker );
         return new BatchingStoreScan<>( storeScan );

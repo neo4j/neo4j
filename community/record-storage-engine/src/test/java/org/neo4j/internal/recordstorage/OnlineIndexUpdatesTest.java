@@ -122,7 +122,7 @@ class OnlineIndexUpdatesTest
         schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), PageCursorTracer.NULL );
         life.start();
-        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( PageCursorTracer.NULL ), PageCursorTracer.NULL );
+        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( PageCursorTracer.NULL ), PageCursorTracer.NULL, INSTANCE );
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
     }
 
@@ -137,7 +137,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedNodeUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), PageCursorTracer.NULL );
+                new RecordStorageReader( neoStores ), PageCursorTracer.NULL, INSTANCE );
 
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
@@ -166,7 +166,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedRelationshipUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), PageCursorTracer.NULL );
+                new RecordStorageReader( neoStores ), PageCursorTracer.NULL, INSTANCE );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -195,7 +195,7 @@ class OnlineIndexUpdatesTest
     void shouldDifferentiateNodesAndRelationships()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), PageCursorTracer.NULL );
+                new RecordStorageReader( neoStores ), PageCursorTracer.NULL, INSTANCE );
 
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
@@ -241,7 +241,7 @@ class OnlineIndexUpdatesTest
     void shouldUpdateCorrectIndexes()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), PageCursorTracer.NULL );
+                new RecordStorageReader( neoStores ), PageCursorTracer.NULL, INSTANCE );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -330,7 +330,7 @@ class OnlineIndexUpdatesTest
         if ( inUse )
         {
             InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
-            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, PageCursorTracer.NULL );
+            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, PageCursorTracer.NULL, INSTANCE );
         }
         return nodeRecord;
     }

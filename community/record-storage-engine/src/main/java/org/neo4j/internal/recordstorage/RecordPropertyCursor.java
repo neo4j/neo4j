@@ -21,6 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.GeometryType;
@@ -29,9 +31,10 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.TemporalType;
-import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
@@ -53,23 +56,27 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
+    public static final int DEFAULT_PROPERTY_BUFFER_CAPACITY = 512;
 
-    private final PropertyStore read;
+    private final PropertyStore propertyStore;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
     private long next;
     private int block;
-    public ByteBuffer buffer;
+    private ScopedBuffer scopedBuffer;
+    private ByteBuffer buffer;
     private PageCursor page;
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private boolean open;
     private RecordLoadOverride loadMode;
 
-    RecordPropertyCursor( PropertyStore read, PageCursorTracer cursorTracer )
+    RecordPropertyCursor( PropertyStore propertyStore, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( NO_ID );
-        this.read = read;
+        this.propertyStore = propertyStore;
         this.cursorTracer = cursorTracer;
+        this.memoryTracker = memoryTracker;
         loadMode = RecordLoadOverride.none();
     }
 
@@ -402,33 +409,39 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             page.close();
             page = null;
         }
+        if ( scopedBuffer != null )
+        {
+            scopedBuffer.close();
+            scopedBuffer = null;
+            buffer = null;
+        }
     }
 
     private PageCursor propertyPage( long reference )
     {
-        return read.openPageCursorForReading( reference, cursorTracer );
+        return propertyStore.openPageCursorForReading( reference, cursorTracer );
     }
 
     private PageCursor stringPage( long reference )
     {
-        return read.openStringPageCursor( reference, cursorTracer );
+        return propertyStore.openStringPageCursor( reference, cursorTracer );
     }
 
     private PageCursor arrayPage( long reference )
     {
-        return read.openArrayPageCursor( reference, cursorTracer );
+        return propertyStore.openArrayPageCursor( reference, cursorTracer );
     }
 
     private void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        read.getRecordByCursor( reference, record, loadMode.orElse( ALWAYS ), pageCursor );
+        propertyStore.getRecordByCursor( reference, record, loadMode.orElse( ALWAYS ), pageCursor );
     }
 
     private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page, loadMode.orElse( ALWAYS ) );
+        propertyStore.loadString( reference, cursor, page, loadMode.orElse( ALWAYS ) );
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
         buffer.get( bytes );
@@ -437,8 +450,41 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page, loadMode.orElse( ALWAYS ) );
+        propertyStore.loadArray( reference, cursor, page, loadMode.orElse( ALWAYS ) );
         buffer.flip();
         return PropertyStore.readArrayFromBuffer( buffer );
+    }
+
+    public void setScopedBuffer( ScopedBuffer scopedBuffer )
+    {
+        this.scopedBuffer = scopedBuffer;
+        this.buffer = scopedBuffer.getBuffer();
+    }
+
+    public ByteBuffer getOrCreateClearBuffer()
+    {
+        if ( buffer == null )
+        {
+            setScopedBuffer( new HeapScopedBuffer( DEFAULT_PROPERTY_BUFFER_CAPACITY, memoryTracker ) );
+        }
+        else
+        {
+            buffer.clear();
+        }
+        return buffer;
+    }
+
+    public ByteBuffer growBuffer( int minAdditionalCapacity )
+    {
+        buffer.flip();
+        int oldCapacity = buffer.capacity();
+        int newCapacity = Math.max( oldCapacity, minAdditionalCapacity ) + oldCapacity;
+
+        var oldBuffer = buffer;
+        setScopedBuffer( new HeapScopedBuffer( newCapacity, memoryTracker ) );
+        buffer.put( oldBuffer );
+        scopedBuffer.close();
+
+        return buffer;
     }
 }

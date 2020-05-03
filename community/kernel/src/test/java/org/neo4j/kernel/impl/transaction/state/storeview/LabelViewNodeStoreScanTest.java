@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class LabelViewNodeStoreScanTest
 {
@@ -82,6 +83,6 @@ class LabelViewNodeStoreScanTest
     private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
         return new LabelViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
-                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, PageCursorTracer.NULL );
+                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, PageCursorTracer.NULL, INSTANCE );
     }
 }

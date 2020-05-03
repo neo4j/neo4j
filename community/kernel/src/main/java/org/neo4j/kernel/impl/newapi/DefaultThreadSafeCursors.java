@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -79,18 +80,18 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer )
+    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return trace( new DefaultPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ),
+                storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ), allocateFullAccessNodeCursor( cursorTracer ),
                 allocateFullAccessRelationshipScanCursor( cursorTracer ) ) );
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer )
+    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return trace( new FullAccessPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ),
+                storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ), allocateFullAccessNodeCursor( cursorTracer ),
                 allocateFullAccessRelationshipScanCursor( cursorTracer ) ) );
     }
 

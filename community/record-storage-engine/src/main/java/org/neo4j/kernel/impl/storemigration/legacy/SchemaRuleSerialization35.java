@@ -37,7 +37,8 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
@@ -82,15 +83,15 @@ public class SchemaRuleSerialization35
      *
      * @param schemaRule the SchemaRule to serialize
      */
-    public static byte[] serialize( SchemaRule schemaRule )
+    public static byte[] serialize( SchemaRule schemaRule, MemoryTracker memoryTracker )
     {
         if ( schemaRule instanceof IndexDescriptor )
         {
-            return serialize( (IndexDescriptor) schemaRule );
+            return serialize( (IndexDescriptor) schemaRule, memoryTracker );
         }
         else if ( schemaRule instanceof ConstraintDescriptor )
         {
-            return serialize( (ConstraintDescriptor) schemaRule );
+            return serialize( (ConstraintDescriptor) schemaRule, memoryTracker );
         }
         throw new IllegalStateException( "Unknown schema rule type: " + schemaRule.getClass() );
     }
@@ -129,30 +130,33 @@ public class SchemaRuleSerialization35
      * @param indexDescriptor the StoreIndexDescriptor to serialize
      * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( IndexDescriptor indexDescriptor )
+    public static byte[] serialize( IndexDescriptor indexDescriptor, MemoryTracker memoryTracker )
     {
-        ByteBuffer target = ByteBuffers.allocate( lengthOf( indexDescriptor ) );
-        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
-        target.put( INDEX_RULE );
-
-        UTF8.putEncodedStringInto( indexDescriptor.getIndexProvider().getKey(), target );
-        UTF8.putEncodedStringInto( indexDescriptor.getIndexProvider().getVersion(), target );
-
-        if ( !indexDescriptor.isUnique() )
+        try ( var scopedBuffer = new HeapScopedBuffer( lengthOf( indexDescriptor ), memoryTracker ) )
         {
-            target.put( GENERAL_INDEX );
-        }
-        else
-        {
-            target.put( UNIQUE_INDEX );
+            var target = scopedBuffer.getBuffer();
+            target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
+            target.put( INDEX_RULE );
 
-            // The owning constraint can be null. See IndexRule.getOwningConstraint()
-            target.putLong( indexDescriptor.getOwningConstraintId().orElse( NO_OWNING_CONSTRAINT_YET ) );
-        }
+            UTF8.putEncodedStringInto( indexDescriptor.getIndexProvider().getKey(), target );
+            UTF8.putEncodedStringInto( indexDescriptor.getIndexProvider().getVersion(), target );
 
-        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( indexDescriptor.getName(), target );
-        return target.array();
+            if ( !indexDescriptor.isUnique() )
+            {
+                target.put( GENERAL_INDEX );
+            }
+            else
+            {
+                target.put( UNIQUE_INDEX );
+
+                // The owning constraint can be null. See IndexRule.getOwningConstraint()
+                target.putLong( indexDescriptor.getOwningConstraintId().orElse( NO_OWNING_CONSTRAINT_YET ) );
+            }
+
+            indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+            UTF8.putEncodedStringInto( indexDescriptor.getName(), target );
+            return target.array();
+        }
     }
 
     /**
@@ -160,36 +164,38 @@ public class SchemaRuleSerialization35
      * @param constraint the ConstraintDescriptor to serialize
      * @throws IllegalStateException if the ConstraintDescriptor is of type unique, but the owned index has not been set
      */
-    public static byte[] serialize( ConstraintDescriptor constraint )
+    public static byte[] serialize( ConstraintDescriptor constraint, MemoryTracker memoryTracker )
     {
-        ByteBuffer target = ByteBuffers.allocate( lengthOf( constraint ) );
-        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
-        target.put( CONSTRAINT_RULE );
-
-        switch ( constraint.type() )
+        try ( var scopedBuffer = new HeapScopedBuffer( lengthOf( constraint ), memoryTracker ) )
         {
-        case EXISTS:
-            target.put( EXISTS_CONSTRAINT );
-            break;
+            ByteBuffer target = scopedBuffer.getBuffer();
+            target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
+            target.put( CONSTRAINT_RULE );
 
-        case UNIQUE:
-            target.put( UNIQUE_CONSTRAINT );
-            target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
-            break;
+            switch ( constraint.type() )
+            {
+            case EXISTS:
+                target.put( EXISTS_CONSTRAINT );
+                break;
 
-        case UNIQUE_EXISTS:
-            target.put( UNIQUE_EXISTS_CONSTRAINT );
-            target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
-            break;
+            case UNIQUE:
+                target.put( UNIQUE_CONSTRAINT );
+                target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
+                break;
 
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    constraint.type() ) );
+            case UNIQUE_EXISTS:
+                target.put( UNIQUE_EXISTS_CONSTRAINT );
+                target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
+                break;
+
+            default:
+                throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.", constraint.type() ) );
+            }
+
+            constraint.schema().processWith( new SchemaDescriptorSerializer( target ) );
+            UTF8.putEncodedStringInto( constraint.getName(), target );
+            return target.array();
         }
-
-        constraint.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( constraint.getName(), target );
-        return target.array();
     }
 
     /**

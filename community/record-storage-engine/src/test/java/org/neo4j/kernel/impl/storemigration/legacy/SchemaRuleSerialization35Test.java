@@ -48,6 +48,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class SchemaRuleSerialization35Test
 {
@@ -618,13 +619,13 @@ class SchemaRuleSerialization35Test
 
     private static SchemaRule serialiseAndDeserialise( ConstraintDescriptor constraintRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( constraintRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( constraintRule, INSTANCE ) );
         return SchemaRuleSerialization35.deserialize( constraintRule.getId(), buffer );
     }
 
     private static SchemaRule serialiseAndDeserialise( IndexDescriptor indexRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) );
         return SchemaRuleSerialization35.deserialize( indexRule.getId(), buffer );
     }
 
@@ -640,7 +641,7 @@ class SchemaRuleSerialization35Test
     private static void assertCorrectLength( IndexDescriptor indexRule )
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule, INSTANCE ) );
 
         // THEN
         assertThat( SchemaRuleSerialization35.lengthOf( indexRule ) ).isEqualTo( buffer.capacity() );
@@ -649,7 +650,7 @@ class SchemaRuleSerialization35Test
     private static void assertCorrectLength( ConstraintDescriptor constraintRule )
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( constraintRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( constraintRule, INSTANCE ) );
 
         // THEN
         assertThat( SchemaRuleSerialization35.lengthOf( constraintRule ) ).isEqualTo( buffer.capacity() );

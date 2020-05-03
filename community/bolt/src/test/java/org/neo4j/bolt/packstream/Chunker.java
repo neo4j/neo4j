@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.packstream.ChunkedOutput.CHUNK_HEADER_SIZE;
 import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /** Helper to chunk up serialized data for testing */
 public class Chunker
@@ -45,7 +46,7 @@ public class Chunker
 
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
-        final ByteBuffer outputBuffer = ByteBuffers.allocate( 8, KibiByte );
+        final ByteBuffer outputBuffer = ByteBuffers.allocate( 8, KibiByte, INSTANCE );
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );

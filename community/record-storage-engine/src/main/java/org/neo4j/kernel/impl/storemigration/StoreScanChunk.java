@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
@@ -38,11 +39,11 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     private long id;
     private long endId;
 
-    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorTracer );
+        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorTracer, memoryTracker );
         this.cursorTracer = cursorTracer;
     }
 

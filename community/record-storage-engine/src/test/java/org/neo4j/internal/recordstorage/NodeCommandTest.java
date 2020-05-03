@@ -59,6 +59,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -147,7 +148,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
@@ -181,7 +182,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         }
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );

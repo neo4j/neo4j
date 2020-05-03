@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
@@ -51,6 +52,7 @@ public final class IndexingServiceFactory
                                           SchemaState schemaState,
                                           IndexStatisticsStore indexStatisticsStore,
                                           PageCacheTracer pageCacheTracer,
+                                          MemoryTracker memoryTracker,
                                           boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
@@ -63,6 +65,6 @@ public final class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, readOnly );
+                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, readOnly );
     }
 }

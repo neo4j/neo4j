@@ -167,7 +167,7 @@ class CsvInputBatchImportIT
                 DataFactories.defaultFormatRelationshipFileHeader( testDefaultTimeZone, false ),
                 idType,
                 configuration,
-                CsvInput.NO_MONITOR );
+                CsvInput.NO_MONITOR, INSTANCE );
     }
 
     private static Configuration lowBufferSize( Configuration actual )

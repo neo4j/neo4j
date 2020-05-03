@@ -56,6 +56,7 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -76,7 +77,7 @@ class ImportLogicTest
     {
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
-                getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
+                getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
@@ -149,7 +150,7 @@ class ImportLogicTest
         // given
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
-                getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
+                getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             // when
             DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]

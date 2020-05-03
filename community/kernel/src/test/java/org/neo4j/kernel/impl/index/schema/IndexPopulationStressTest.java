@@ -83,6 +83,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -139,7 +140,7 @@ abstract class IndexPopulationStressTest
         descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withName( "index_0" ).materialise( 0 ) );
         descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
+        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( PageCursorTracer.class ) ) ).thenThrow(
                 UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
@@ -185,8 +186,8 @@ abstract class IndexPopulationStressTest
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), NULL, IndexQuery.exists( 0 ) );
-            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), NULL, IndexQuery.exists( 0 ) );
+            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), IndexQuery.exists( 0 ) );
+            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), IndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );
@@ -293,7 +294,8 @@ abstract class IndexPopulationStressTest
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<IndexEntryUpdate<?>> updates )
         throws IndexEntryConflictException
     {
-        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
+        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ),
+                INSTANCE );
         referencePopulator.create();
         boolean referenceSuccess = false;
         try

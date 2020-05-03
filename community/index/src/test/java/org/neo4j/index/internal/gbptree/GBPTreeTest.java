@@ -77,6 +77,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
@@ -106,6 +107,7 @@ import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 @TestDirectoryExtension
@@ -1819,7 +1821,7 @@ class GBPTreeTest
         try ( StoreChannel storeChannel = fileSystem.open( indexFile, options ) )
         {
             int fileSize = (int) storeChannel.size();
-            ByteBuffer expectedContent = ByteBuffers.allocate( fileSize );
+            ByteBuffer expectedContent = ByteBuffers.allocate( fileSize, INSTANCE );
             storeChannel.readAll( expectedContent );
             expectedContent.flip();
             byte[] bytes = new byte[fileSize];

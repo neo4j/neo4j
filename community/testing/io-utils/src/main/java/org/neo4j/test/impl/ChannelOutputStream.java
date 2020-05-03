@@ -25,16 +25,22 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.ScopedBuffer;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.io.ByteUnit.KibiByte;
 
 public class ChannelOutputStream extends OutputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffers.allocate( 8, KibiByte );
+    private final ScopedBuffer scopedBuffer;
+    private final ByteBuffer buffer;
 
-    public ChannelOutputStream( StoreChannel channel, boolean append ) throws IOException
+    public ChannelOutputStream( StoreChannel channel, boolean append, MemoryTracker memoryTracker ) throws IOException
     {
+        this.scopedBuffer = new HeapScopedBuffer( 8, KibiByte, memoryTracker );
+        this.buffer = scopedBuffer.getBuffer();
         this.channel = channel;
         if ( append )
         {
@@ -61,11 +67,10 @@ public class ChannelOutputStream extends OutputStream
     public void write( byte[] b, int off, int len ) throws IOException
     {
         int written = 0;
-        int index = off;
         while ( written < len )
         {
             buffer.clear();
-            buffer.put( b, index + written, Math.min( len - written, buffer.capacity() ) );
+            buffer.put( b, off + written, Math.min( len - written, buffer.capacity() ) );
             buffer.flip();
             written += channel.write( buffer );
         }
@@ -74,6 +79,7 @@ public class ChannelOutputStream extends OutputStream
     @Override
     public void close() throws IOException
     {
+        scopedBuffer.close();
         channel.close();
     }
 }

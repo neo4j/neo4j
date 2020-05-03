@@ -54,6 +54,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 class AbstractDynamicStoreTest
@@ -74,7 +75,7 @@ class AbstractDynamicStoreTest
     {
         try ( StoreChannel channel = fs.write( storeFile ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( 4 );
+            ByteBuffer buffer = ByteBuffers.allocate( 4, INSTANCE );
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
             channel.write( buffer );

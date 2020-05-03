@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -46,10 +47,10 @@ public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntit
     public NodeStoreScan( StorageReader storageReader, LockService locks,
             @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer )
+            int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,
-                id -> locks.acquireNodeLock( id, READ_LOCK ), cursorTracer );
+                id -> locks.acquireNodeLock( id, READ_LOCK ), cursorTracer, memoryTracker );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;

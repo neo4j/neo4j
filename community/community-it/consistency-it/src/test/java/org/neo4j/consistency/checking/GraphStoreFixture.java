@@ -296,7 +296,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         FullLabelStream labelStream = new FullLabelStream( indexStoreView );
         LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout(), fileSystem, labelStream, readOnly, monitors, immediate(),
-                PageCacheTracer.NULL );
+                PageCacheTracer.NULL, INSTANCE );
         try
         {
             labelScanStore.init();
@@ -315,7 +315,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         FullRelationshipTypeStream typeStream = new FullRelationshipTypeStream( indexStoreView );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout(), fileSystem, typeStream, readOnly, monitors, immediate(), config,
-                        PageCacheTracer.NULL );
+                        PageCacheTracer.NULL, INSTANCE );
         try
         {
             relationshipTypeScanStore.init();
@@ -353,7 +353,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         try ( StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL ) )
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             nodeCursor.single( nodeId );
             long[] labels;

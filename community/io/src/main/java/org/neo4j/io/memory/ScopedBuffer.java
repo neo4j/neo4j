@@ -19,26 +19,12 @@
  */
 package org.neo4j.io.memory;
 
-import org.junit.jupiter.api.Test;
+import java.nio.ByteBuffer;
 
-import org.neo4j.memory.LocalMemoryTracker;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.memory.MemoryPools.NO_TRACKING;
-
-class BufferScopeTest
+public interface ScopedBuffer extends AutoCloseable
 {
-    @Test
-    void trackBufferScopeMemoryAllocation()
-    {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
-        try ( BufferScope bufferScope = new BufferScope( 100, memoryTracker ) )
-        {
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 100, memoryTracker.usedNativeMemory() );
-        }
+    ByteBuffer getBuffer();
 
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 0, memoryTracker.usedNativeMemory() );
-    }
+    @Override
+    void close();
 }

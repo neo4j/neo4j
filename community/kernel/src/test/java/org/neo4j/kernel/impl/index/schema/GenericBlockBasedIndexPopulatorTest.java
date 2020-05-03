@@ -65,6 +65,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -293,7 +294,7 @@ class GenericBlockBasedIndexPopulatorTest
         {
             SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
             IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
-            reader.query( NULL_CONTEXT, valueClient, unconstrained(), NULL, exact );
+            reader.query( NULL_CONTEXT, valueClient, unconstrained(), exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;
             assertEquals( expectedId, id );
@@ -315,7 +316,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient cursor = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, cursor, unorderedValues(), NULL, IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
+            reader.query( NULL_CONTEXT, cursor, unorderedValues(), IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
             assertEquals( value, cursor.values[0] );
@@ -331,7 +332,7 @@ class GenericBlockBasedIndexPopulatorTest
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
                 new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
-                heapBufferFactory( (int) kibiBytes( 40 ) ) );
+                heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE );
         populator.create();
         return populator;
     }

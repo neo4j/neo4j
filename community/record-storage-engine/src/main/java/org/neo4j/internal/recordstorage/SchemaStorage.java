@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -156,7 +157,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public void writeSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer ) throws KernelException
+    public void writeSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws KernelException
     {
         IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
         PropertyStore propertyStore = schemaStore.propertyStore();
@@ -164,7 +165,7 @@ public class SchemaStorage implements SchemaRuleAccess
         protoProperties.forEachKeyValue( ( keyId, value ) ->
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, keyId, value, cursorTracer );
+            propertyStore.encodeValue( block, keyId, value, cursorTracer, memoryTracker );
             blocks.add( block );
         } );
 

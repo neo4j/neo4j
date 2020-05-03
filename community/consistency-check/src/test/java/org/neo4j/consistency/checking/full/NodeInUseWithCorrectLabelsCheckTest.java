@@ -45,6 +45,7 @@ import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeInUseWithCorrectLabelsCheckTest
 {
@@ -223,7 +224,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
     private static NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
     {
-        new InlineNodeLabels( nodeRecord ).put( labelIds, null, null, NULL );
+        new InlineNodeLabels( nodeRecord ).put( labelIds, null, null, NULL, INSTANCE );
         return nodeRecord;
     }
 

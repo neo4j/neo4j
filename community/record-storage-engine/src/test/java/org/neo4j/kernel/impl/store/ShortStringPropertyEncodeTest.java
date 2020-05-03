@@ -41,6 +41,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -196,7 +197,7 @@ class ShortStringPropertyEncodeTest
     {
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue( string );
-        propertyStore.encodeValue( block, KEY_ID, expectedValue, PageCursorTracer.NULL );
+        propertyStore.encodeValue( block, KEY_ID, expectedValue, PageCursorTracer.NULL, INSTANCE );
         assertEquals( 0, block.getValueRecords().size() );
         Value readValue = block.getType().value( block, propertyStore, PageCursorTracer.NULL );
         assertEquals( expectedValue, readValue );

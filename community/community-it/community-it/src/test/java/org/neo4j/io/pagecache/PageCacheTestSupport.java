@@ -47,6 +47,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
@@ -117,7 +118,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
         filePageSize = recordsPerFilePage * recordSize;
-        bufA = ByteBuffers.allocate( recordSize );
+        bufA = ByteBuffers.allocate( recordSize, INSTANCE );
         return pageCache;
     }
 
@@ -182,8 +183,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      */
     protected void verifyRecordsMatchExpected( PageCursor cursor ) throws IOException
     {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize );
-        ByteBuffer actualPageContents = ByteBuffers.allocate( filePageSize );
+        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
+        ByteBuffer actualPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
         byte[] record = new byte[recordSize];
         long pageId = cursor.getCurrentPageId();
         for ( int i = 0; i < recordsPerFilePage; i++ )
@@ -212,7 +213,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      */
     protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents )
     {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize );
+        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
         for ( int i = 0; i < recordsPerFilePage; i++ )
         {
             long recordId = (pageId * recordsPerFilePage) + i;
@@ -278,7 +279,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
             throws IOException
     {
-        ByteBuffer buf = ByteBuffers.allocate( recordSize );
+        ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
         for ( int i = 0; i < recordCount; i++ )
         {
             generateRecordForId( i, buf );
@@ -314,8 +315,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected void verifyRecordsInFile( ReadableByteChannel channel, int recordCount ) throws IOException
     {
-        ByteBuffer buf = ByteBuffers.allocate( recordSize );
-        ByteBuffer observation = ByteBuffers.allocate( recordSize );
+        ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
+        ByteBuffer observation = ByteBuffers.allocate( recordSize, INSTANCE );
         for ( int i = 0; i < recordCount; i++ )
         {
             generateRecordForId( i, buf );

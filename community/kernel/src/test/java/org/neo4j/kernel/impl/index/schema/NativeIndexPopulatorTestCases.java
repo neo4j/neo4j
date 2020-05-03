@@ -27,6 +27,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NativeIndexPopulatorTestCases
 {
@@ -38,7 +39,7 @@ class NativeIndexPopulatorTestCases
     {
         return ( nativeIndexContext, storeFile, layout, descriptor ) ->
                 new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
-                        heapBufferFactory( 10 * 1024 ) );
+                        heapBufferFactory( 10 * 1024 ), INSTANCE );
     }
 
     @FunctionalInterface

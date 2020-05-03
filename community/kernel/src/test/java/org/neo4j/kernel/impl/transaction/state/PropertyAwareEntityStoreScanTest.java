@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class PropertyAwareEntityStoreScanTest
 {
@@ -57,8 +58,8 @@ class PropertyAwareEntityStoreScanTest
         MutableInt read = new MutableInt();
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
         final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
-                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( cursors, total, IntPredicates.alwaysTrue(),
-                        id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ), PageCursorTracer.NULL )
+                new PropertyAwareEntityStoreScan<>( cursors, total, IntPredicates.alwaysTrue(),
+                        id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ), PageCursorTracer.NULL, INSTANCE )
                 {
                     @Override
                     public boolean process( StorageNodeCursor node )

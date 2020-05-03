@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -73,6 +73,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -225,7 +226,7 @@ class BatchingTransactionAppenderTest
         String failureMessage = "Forces a failure";
         FlushablePositionAwareChecksumChannel channel =
                 spy( new PositionAwarePhysicalFlushableChecksumChannel( mock( PhysicalLogVersionedStoreChannel.class ),
-                        ByteBuffers.allocate( Long.BYTES * 2 ) ) );
+                        new HeapScopedBuffer( Long.BYTES * 2, INSTANCE ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putLong( anyLong() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );

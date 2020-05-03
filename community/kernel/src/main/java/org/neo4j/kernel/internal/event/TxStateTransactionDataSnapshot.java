@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -76,6 +77,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore = new LongObjectHashMap<>();
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
+    private final MemoryTracker memoryTracker;
 
     TxStateTransactionDataSnapshot( ReadableTransactionState state, StorageReader storageReader,
             KernelTransaction transaction )
@@ -85,6 +87,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         this.transaction = transaction;
         this.internalTransaction = transaction.internalTransaction();
         this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
+        this.memoryTracker = transaction.memoryTracker();
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
@@ -191,7 +194,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     {
         var cursorTracer = transaction.pageCursorTracer();
         try ( StorageNodeCursor node = store.allocateNodeCursor( cursorTracer );
-              StoragePropertyCursor properties = store.allocatePropertyCursor( cursorTracer ) )
+              StoragePropertyCursor properties = store.allocatePropertyCursor( cursorTracer, memoryTracker ) )
         {
             TokenRead tokenRead = transaction.tokenRead();
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->

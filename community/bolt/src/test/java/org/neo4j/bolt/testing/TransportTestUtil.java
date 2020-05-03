@@ -52,11 +52,11 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.responseMessage;
 import static org.neo4j.bolt.testing.MessageConditions.serialize;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class TransportTestUtil
 {
@@ -122,7 +122,7 @@ public class TransportTestUtil
 
     public byte[] chunk( int chunkSize, byte[]... messages )
     {
-        ByteBuffer output = ByteBuffers.allocate( 10000, BIG_ENDIAN );
+        ByteBuffer output = ByteBuffers.allocate( 10000, INSTANCE );
 
         for ( byte[] wholeMessage : messages )
         {
@@ -208,7 +208,7 @@ public class TransportTestUtil
 
     public byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
-        ByteBuffer bb = ByteBuffers.allocate( 5 * Integer.BYTES, BIG_ENDIAN );
+        ByteBuffer bb = ByteBuffers.allocate( 5 * Integer.BYTES, INSTANCE );
         bb.putInt( 0x6060B017 );
         bb.putInt( (int) option1 );
         bb.putInt( (int) option2 );

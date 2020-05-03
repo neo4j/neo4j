@@ -40,9 +40,10 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.InMemoryDirectoryFactory;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -237,9 +238,10 @@ class PartitionedIndexStorageTest
     private void createRandomFile( File rootFolder ) throws IOException
     {
         File file = new File( rootFolder, RandomStringUtils.randomNumeric( 5 ) );
-        try ( StoreChannel channel = fs.write( file ) )
+        try ( StoreChannel channel = fs.write( file );
+              var scopedBuffer = new HeapScopedBuffer( 100, EmptyMemoryTracker.INSTANCE ) )
         {
-            channel.writeAll( ByteBuffers.allocate( 100 ) );
+            channel.writeAll( scopedBuffer.getBuffer() );
         }
     }
 

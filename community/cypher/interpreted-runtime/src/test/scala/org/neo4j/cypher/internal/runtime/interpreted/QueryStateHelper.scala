@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.NoMemoryTracker
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
+import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
@@ -56,7 +56,7 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
@@ -78,7 +78,7 @@ object QueryStateHelper extends MockitoSugar {
     emptyWith(db = db,
       query = queryContext,
       params = params,
-      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer()),
+      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer(), transactionalContext.transaction.memoryTracker()),
       subscriber = subscriber)
   }
 
@@ -99,9 +99,7 @@ object QueryStateHelper extends MockitoSugar {
   def emptyWithValueSerialization: QueryState = emptyWith(query = context)
 
   private val context = mock[QueryContext]
-  Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer(new Answer[Any] {
-    override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObject(invocationOnMock.getArgument(0))
-  })
+  Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer((invocationOnMock: InvocationOnMock) => toObject(invocationOnMock.getArgument(0)))
 
   private def toObject(any: AnyValue) = {
     val writer = new BaseToObjectValueWriter[RuntimeException] {

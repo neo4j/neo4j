@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
@@ -92,22 +93,15 @@ public class AllStoreHolder extends Read
     private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
+    private final MemoryTracker memoryTracker;
     private final IndexReaderCache indexReaderCache;
     private TokenScanReader labelScanReader;
     private TokenScanReader relationshipTypeScanReader;
 
-    public AllStoreHolder( StorageReader storageReader,
-                           KernelTransactionImplementation ktx,
-                           DefaultPooledCursors cursors,
-                           GlobalProcedures globalProcedures,
-                           SchemaState schemaState,
-                           IndexingService indexingService,
-                           LabelScanStore labelScanStore,
-                           RelationshipTypeScanStore relationshipTypeScanStore,
-                           IndexStatisticsStore indexStatisticsStore,
-                           PageCursorTracer cursorTracer,
-                           Dependencies databaseDependencies,
-                           Config config )
+    public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
+            SchemaState schemaState, IndexingService indexingService, LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
+            IndexStatisticsStore indexStatisticsStore, PageCursorTracer cursorTracer, Dependencies databaseDependencies, Config config,
+            MemoryTracker memoryTracker )
     {
         super( storageReader, cursors, cursorTracer, ktx, config );
         this.globalProcedures = globalProcedures;
@@ -118,6 +112,7 @@ public class AllStoreHolder extends Read
         this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -1042,5 +1037,17 @@ public class AllStoreHolder extends Read
     public void release()
     {
         indexReaderCache.close();
+    }
+
+    @Override
+    public PageCursorTracer cursorTracer()
+    {
+        return cursorTracer;
+    }
+
+    @Override
+    public MemoryTracker memoryTracker()
+    {
+        return memoryTracker;
     }
 }

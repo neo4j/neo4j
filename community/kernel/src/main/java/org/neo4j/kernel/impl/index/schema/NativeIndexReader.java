@@ -120,7 +120,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... predicates )
+            IndexQuery... predicates )
     {
         validateQuery( constraints, predicates );
 
@@ -129,7 +129,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, cursorTracer );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, context.cursorTracer() );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )

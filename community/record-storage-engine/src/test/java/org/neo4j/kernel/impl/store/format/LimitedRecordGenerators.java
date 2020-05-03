@@ -37,6 +37,7 @@ import org.neo4j.values.storable.RandomValues;
 import static java.lang.Long.max;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class LimitedRecordGenerators implements RecordGenerators
 {
@@ -120,7 +121,7 @@ public class LimitedRecordGenerators implements RecordGenerators
                 // Dynamic records will not be written and read by the property record format,
                 // that happens in the store where it delegates to a "sub" store.
                 PropertyStore.encodeValue( block, random.nextInt( tokenBits ), random.nextValue(),
-                        stringAllocator, arrayAllocator, true, PageCursorTracer.NULL );
+                        stringAllocator, arrayAllocator, true, PageCursorTracer.NULL, INSTANCE );
                 int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
                 if ( tentativeBlocksWithThisOne <= 4 )
                 {

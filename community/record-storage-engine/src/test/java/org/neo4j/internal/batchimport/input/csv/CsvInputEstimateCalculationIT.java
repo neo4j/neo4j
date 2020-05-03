@@ -97,6 +97,7 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -198,7 +199,7 @@ class CsvInputEstimateCalculationIT
         Collection<DataFactory> relationshipData = singletonList(
                 generateData( defaultFormatRelationshipFileHeader(), new MutableLong(), 0, 0, ":START_ID,:TYPE,:END_ID", "rels-1.csv", groups ) );
         Input input = new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(),
-                IdType.INTEGER, COMMAS, CsvInput.NO_MONITOR, groups );
+                IdType.INTEGER, COMMAS, CsvInput.NO_MONITOR, groups, INSTANCE );
 
         // when
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
@@ -242,7 +243,7 @@ class CsvInputEstimateCalculationIT
         relationshipData.add( generateData( defaultFormatRelationshipFileHeader(), start, RELATIONSHIP_COUNT - start.longValue(),
                 NODE_COUNT, ":START_ID,:TYPE,:END_ID,prop1,prop2", "relationships-2.csv", groups ) );
         return new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(),
-                IdType.INTEGER, COMMAS, CsvInput.NO_MONITOR, groups );
+                IdType.INTEGER, COMMAS, CsvInput.NO_MONITOR, groups, INSTANCE );
     }
 
     private static long calculateNumberOfProperties( NeoStores stores )

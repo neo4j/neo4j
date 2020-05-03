@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
@@ -93,12 +94,13 @@ public class TransactionRecordState implements RecordState
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
 
     private boolean prepared;
 
     TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator, RecordChangeSet recordChangeSet,
             long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, RelationshipCreator relationshipCreator, RelationshipDeleter relationshipDeleter,
-            PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer )
+            PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
@@ -114,6 +116,7 @@ public class TransactionRecordState implements RecordState
         this.propertyCreator = propertyCreator;
         this.propertyDeleter = propertyDeleter;
         this.cursorTracer = cursorTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -408,13 +411,13 @@ public class TransactionRecordState implements RecordState
     void addLabelToNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer );
+        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore(), cursorTracer, memoryTracker );
     }
 
     void removeLabelFromNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
-        parseLabelsField( nodeRecord ).remove( labelId, nodeStore, cursorTracer );
+        parseLabelsField( nodeRecord ).remove( labelId, nodeStore, cursorTracer, memoryTracker );
     }
 
     /**

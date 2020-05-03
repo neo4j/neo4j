@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -62,13 +63,13 @@ class SchemaComplianceChecker implements AutoCloseable
     private final DefaultNodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
         this.cursorTracer = cursorTracer;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorTracer );
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorTracer, memoryTracker );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -151,7 +152,7 @@ class SchemaComplianceChecker implements AutoCloseable
         try
         {
             NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, unconstrained(), cursorTracer, query );
+            reader.query( NULL_CONTEXT, iterator, unconstrained(), query );
             indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )

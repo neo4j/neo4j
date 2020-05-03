@@ -26,6 +26,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 
@@ -34,9 +35,10 @@ class IndexKeyStorage<KEY extends NativeIndexKey<KEY>> extends SimpleEntryStorag
     private static final byte KEY_TYPE = 1;
     private final Layout<KEY,?> layout;
 
-    IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout )
+    IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout,
+            MemoryTracker memoryTracker )
     {
-        super( fs, file, byteBufferFactory, blockSize );
+        super( fs, file, byteBufferFactory, blockSize, memoryTracker );
         this.layout = layout;
     }
 

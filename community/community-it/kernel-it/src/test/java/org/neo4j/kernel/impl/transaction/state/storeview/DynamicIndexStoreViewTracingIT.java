@@ -38,6 +38,7 @@ import org.neo4j.test.extension.Inject;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 class DynamicIndexStoreViewTracingIT
@@ -75,7 +76,7 @@ class DynamicIndexStoreViewTracingIT
             var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
                     lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
             var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
-                    (Visitor<EntityTokenUpdate,Exception>) element -> false, false, cursorTracer );
+                    (Visitor<EntityTokenUpdate,Exception>) element -> false, false, cursorTracer, INSTANCE );
             storeScan.run();
         }
 

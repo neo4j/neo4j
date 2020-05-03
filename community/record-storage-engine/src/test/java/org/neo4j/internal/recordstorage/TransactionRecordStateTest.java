@@ -1471,7 +1471,7 @@ class TransactionRecordStateTest
         List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
         OnlineIndexUpdates onlineIndexUpdates =
                 new OnlineIndexUpdates( neoStores.getNodeStore(), schemaCache,
-                        new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), NULL ), reader, NULL );
+                        new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), NULL ), reader, NULL, INSTANCE );
         onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands() );
         updates.add( onlineIndexUpdates );
         reader.close();
@@ -1585,8 +1585,8 @@ class TransactionRecordStateTest
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE,
                 new RelationshipCreator( relationshipGroupGetter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(), NULL ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, NULL ),
-                new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL ),
-                propertyDeleter, NULL );
+                new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL, INSTANCE ),
+                propertyDeleter, NULL, INSTANCE );
     }
 
     private static CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException

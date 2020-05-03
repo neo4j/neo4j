@@ -234,7 +234,7 @@ class CheckerTestBase
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, relationshipTypeIndex, execution, reporter, cacheAccess, tokenHolders,
-                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, false, consistencyFlags );
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags );
         context.initialize();
         return context;
     }
@@ -350,7 +350,7 @@ class CheckerTestBase
     PropertyBlock propertyValue( int propertyKey, Value value )
     {
         PropertyBlock propertyBlock = new PropertyBlock();
-        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, PageCursorTracer.NULL );
+        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, PageCursorTracer.NULL, INSTANCE );
         return propertyBlock;
     }
 
@@ -368,7 +368,7 @@ class CheckerTestBase
     {
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
-        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, PageCursorTracer.NULL );
+        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, PageCursorTracer.NULL, INSTANCE );
         nodeStore.updateRecord( node, PageCursorTracer.NULL );
         return id;
     }

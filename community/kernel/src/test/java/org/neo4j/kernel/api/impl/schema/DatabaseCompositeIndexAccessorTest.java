@@ -100,6 +100,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -170,7 +171,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         IOFunction function = dirFactory1 ->
         {
-            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ) );
+            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE );
             populator.create();
             populator.close( true, NULL );
 
@@ -324,7 +325,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, results, unconstrained(), NULL, queries );
+            reader.query( NULL_CONTEXT, results, unconstrained(), queries );
             return toSet( results );
         }
     }

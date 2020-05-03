@@ -28,6 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.memory.ByteBuffers;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 /**
  * Utility for testing code that depends on page cursors.
  */
@@ -47,7 +49,7 @@ public class StubPageCursor extends PageCursor
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
-        this( initialPageId, ByteBuffers.allocate( pageSize ) );
+        this( initialPageId, ByteBuffers.allocate( pageSize, INSTANCE ) );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )

@@ -44,6 +44,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -56,7 +57,7 @@ class LabelScanStoreRebuildTest
     @Inject
     private PageCache pageCache;
 
-    private static final FullStoreChangeStream THROWING_STREAM = ( writer, cursorTracer ) ->
+    private static final FullStoreChangeStream THROWING_STREAM = ( writer, cursorTracer, memoryTracker ) ->
     {
         throw new IllegalArgumentException();
     };
@@ -73,7 +74,7 @@ class LabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, monitors, immediate(),
-                PageCacheTracer.NULL );
+                PageCacheTracer.NULL, INSTANCE );
         labelScanStore.init();
         labelScanStore.start();
 
@@ -93,7 +94,8 @@ class LabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, ignore(), PageCacheTracer.NULL );
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, ignore(), PageCacheTracer.NULL,
+                INSTANCE );
         labelScanStore.init();
         labelScanStore.start();
 
@@ -111,7 +113,7 @@ class LabelScanStoreRebuildTest
         existingData.add( EntityTokenUpdate.tokenChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate(),
-                PageCacheTracer.NULL );
+                PageCacheTracer.NULL, INSTANCE );
         try
         {
             labelScanStore.init();
@@ -131,7 +133,7 @@ class LabelScanStoreRebuildTest
         try
         {
             labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, false, new Monitors(), immediate(),
-                    PageCacheTracer.NULL );
+                    PageCacheTracer.NULL, INSTANCE );
 
             labelScanStore.init();
             labelScanStore.start();

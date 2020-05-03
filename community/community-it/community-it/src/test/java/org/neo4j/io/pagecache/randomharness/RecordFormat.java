@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public abstract class RecordFormat
 {
@@ -42,15 +43,9 @@ public abstract class RecordFormat
 
     public abstract void write( Record record, PageCursor cursor );
 
-    public final void writeRecord( PageCursor cursor )
-    {
-        int recordsPerPage = cursor.getCurrentPageSize() / getRecordSize();
-        writeRecordToPage( cursor, cursor.getCurrentPageId(), recordsPerPage );
-    }
-
     public final void writeRecord( Record record, StoreChannel channel ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffers.allocate( getRecordSize() );
+        ByteBuffer buffer = ByteBuffers.allocate( getRecordSize(), INSTANCE );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         write( record, cursor );
         channel.writeAll( buffer );
@@ -94,7 +89,7 @@ public abstract class RecordFormat
     {
         int recordSize = getRecordSize();
         long recordsInFile = channel.size() / recordSize;
-        ByteBuffer buffer = ByteBuffers.allocate( recordSize );
+        ByteBuffer buffer = ByteBuffers.allocate( recordSize, INSTANCE );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         for ( int i = 0; i < recordsInFile; i++ )
         {

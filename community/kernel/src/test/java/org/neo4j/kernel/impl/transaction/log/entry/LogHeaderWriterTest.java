@@ -46,6 +46,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encode
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -106,7 +107,7 @@ class LogHeaderWriterTest
         final StoreChannel channel = fileSystem.write( file );
 
         // when
-        writeLogHeader( channel, logHeader );
+        writeLogHeader( channel, logHeader, INSTANCE );
 
         channel.close();
 

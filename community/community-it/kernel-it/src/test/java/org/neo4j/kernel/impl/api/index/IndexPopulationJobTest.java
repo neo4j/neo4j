@@ -73,6 +73,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -111,6 +112,7 @@ import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVID
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 class IndexPopulationJobTest
@@ -429,9 +431,9 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<EntityTokenUpdate,RuntimeException>>any(), anyBoolean(), any() ) )
+                ArgumentMatchers.<Visitor<EntityTokenUpdate,RuntimeException>>any(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
-        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
@@ -588,7 +590,7 @@ class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE );
 
         // when
         populationJob.run();
@@ -607,7 +609,7 @@ class IndexPopulationJobTest
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
                     Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                    PageCursorTracer cursorTracer )
+                    PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
                 return new StoreScan<>()
                 {
@@ -637,7 +639,7 @@ class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE );
 
         // when
         populationJob.run();
@@ -822,7 +824,7 @@ class IndexPopulationJobTest
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
         indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
-        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ) );
+        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
@@ -855,8 +857,8 @@ class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer );
+                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
@@ -929,7 +931,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
                 IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE );
         }
 
         @Override

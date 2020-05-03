@@ -252,7 +252,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, DatabaseFile.LABEL_TOKEN_STORE,
                         DatabaseFile.LABEL_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
                 fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
-                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer );
+                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer, memoryTracker );
             }
 
             if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
@@ -456,8 +456,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, badCollector,
                     EmptyLogFilesInitializer.INSTANCE, memoryTracker );
-            InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
-            InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer );
+            InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
+            InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
@@ -610,7 +610,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer )
+    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
+            MemoryTracker memoryTracker )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getRelationshipStore() )
         {
@@ -618,12 +619,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public InputChunk newChunk()
             {
                 var cursorTracer = cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG );
-                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer );
+                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer, memoryTracker );
             }
         };
     }
 
-    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer )
+    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
+            MemoryTracker memoryTracker )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getNodeStore() )
         {
@@ -631,7 +633,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public InputChunk newChunk()
             {
                 var cursorTracer = cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG );
-                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer );
+                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer, memoryTracker );
             }
         };
     }
@@ -707,7 +709,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
      */
     private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
-            PageCursorTracer cursorTracer ) throws IOException, KernelException
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException, KernelException
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
@@ -740,7 +742,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 srcSchema.initialise( true, cursorTracer );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
-                SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer );
+                SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer, memoryTracker );
 
                 migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorTracer );
 
@@ -909,9 +911,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>
     {
-        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
+        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateNodeCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer );
+            super( storageReader.allocateNodeCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer, memoryTracker );
         }
 
         @Override
@@ -931,9 +933,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor>
     {
-        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer )
+        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer,
+                MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateRelationshipScanCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer );
+            super( storageReader.allocateRelationshipScanCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer, memoryTracker );
         }
 
         @Override

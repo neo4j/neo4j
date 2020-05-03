@@ -113,6 +113,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.REL
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 class FulltextIndexProviderTest
@@ -536,7 +537,7 @@ class FulltextIndexProviderTest
                         }
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
-                    storage.writeSchemaRule( index, cursorTracer );
+                    storage.writeSchemaRule( index, cursorTracer, INSTANCE );
                     schemaStore.flush( cursorTracer );
                 }
             }

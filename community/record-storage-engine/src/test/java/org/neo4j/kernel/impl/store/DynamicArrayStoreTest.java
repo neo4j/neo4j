@@ -51,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 @EphemeralPageCacheExtension
@@ -97,7 +98,7 @@ class DynamicArrayStoreTest
             assertZeroCursor( cursorTracer );
             prepareDirtyGenerator( store );
 
-            store.allocateRecords( new ArrayList<>(), array, cursorTracer );
+            store.allocateRecords( new ArrayList<>(), array, cursorTracer, INSTANCE );
 
             assertOneCursor( cursorTracer );
         }

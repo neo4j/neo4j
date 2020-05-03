@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
@@ -65,11 +66,11 @@ public class RelationshipImporter extends EntityImporter
     private Group endIdGroup;
     private String type;
 
-    protected RelationshipImporter( BatchingNeoStores stores, IdMapper idMapper,
-            DataStatistics typeDistribution,
-            DataImporter.Monitor monitor, Collector badCollector, boolean validateRelationshipData, boolean doubleRecordUnits, PageCacheTracer pageCacheTracer )
+    protected RelationshipImporter( BatchingNeoStores stores, IdMapper idMapper, DataStatistics typeDistribution,
+            DataImporter.Monitor monitor, Collector badCollector, boolean validateRelationshipData, boolean doubleRecordUnits,
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        super( stores, monitor, pageCacheTracer );
+        super( stores, monitor, pageCacheTracer, memoryTracker );
         this.doubleRecordUnits = doubleRecordUnits;
         this.relationshipTypeTokenRepository = stores.getRelationshipTypeRepository();
         this.idMapper = idMapper;

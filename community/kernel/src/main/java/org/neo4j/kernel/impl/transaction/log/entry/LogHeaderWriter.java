@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -63,20 +65,23 @@ public class LogHeaderWriter
         channel.putLong( 0 /* reserved */ );
     }
 
-    public static void writeLogHeader( StoreChannel channel, LogHeader logHeader ) throws IOException
+    public static void writeLogHeader( StoreChannel channel, LogHeader logHeader, MemoryTracker memoryTracker ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
-        buffer.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
-        buffer.putLong( logHeader.getLastCommittedTxId() );
-        StoreId storeId = logHeader.getStoreId();
-        buffer.putLong( storeId.getCreationTime() );
-        buffer.putLong( storeId.getRandomId() );
-        buffer.putLong( storeId.getStoreVersion() );
-        buffer.putLong( storeId.getUpgradeTime() );
-        buffer.putLong( storeId.getUpgradeTxId() );
-        buffer.putLong( 0 /* reserved */ );
-        buffer.flip();
-        channel.writeAll( buffer );
+        try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker ) )
+        {
+            var buffer = scopedBuffer.getBuffer();
+            buffer.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
+            buffer.putLong( logHeader.getLastCommittedTxId() );
+            StoreId storeId = logHeader.getStoreId();
+            buffer.putLong( storeId.getCreationTime() );
+            buffer.putLong( storeId.getRandomId() );
+            buffer.putLong( storeId.getStoreVersion() );
+            buffer.putLong( storeId.getUpgradeTime() );
+            buffer.putLong( storeId.getUpgradeTxId() );
+            buffer.putLong( 0 /* reserved */ );
+            buffer.flip();
+            channel.writeAll( buffer );
+        }
     }
 
     public static long encodeLogVersion( long logVersion, long formatVersion )

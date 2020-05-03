@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class MultipleIndexPopulatorUpdatesTest
 {
@@ -76,7 +78,7 @@ class MultipleIndexPopulatorUpdatesTest
         InMemoryTokens tokens = new InMemoryTokens();
         MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
                 storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL );
+                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 
@@ -145,7 +147,7 @@ class MultipleIndexPopulatorUpdatesTest
                 IntPredicate propertyKeyIdFilter,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-                boolean forceStoreScan, PageCursorTracer cursorTracer )
+                boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
 
             return new ListenableNodeScanViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
@@ -168,7 +170,7 @@ class MultipleIndexPopulatorUpdatesTest
                 IntPredicate propertyKeyIdFilter, Listener<StorageNodeCursor> processListener, PageCursorTracer cursorTracer )
         {
             super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor,
-                    labelIds, propertyKeyIdFilter, cursorTracer );
+                    labelIds, propertyKeyIdFilter, cursorTracer, INSTANCE );
             this.processListener = processListener;
         }
 

@@ -250,7 +250,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         //Verify
         try ( KernelTransaction tx = beginTransaction();
               NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
-              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
         {
             //Node without conflict
             tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );

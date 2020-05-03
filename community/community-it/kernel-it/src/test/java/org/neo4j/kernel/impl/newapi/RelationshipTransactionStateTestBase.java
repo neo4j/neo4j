@@ -60,6 +60,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCounts;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.computeKey;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.count;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.sparse;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -335,7 +336,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
             try ( NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
                   RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleNode( n1, node );
                 assertTrue( node.next(), "should access node" );
@@ -389,7 +390,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     NO_VALUE );
 
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -440,7 +441,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     NO_VALUE );
 
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -501,7 +502,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
                     stringValue( "hello" ) );
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -549,7 +550,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipRemoveProperty( relationshipId, propToken ),
                     stringValue( "hello" ) );
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -594,7 +595,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             assertEquals( tx.dataWrite().relationshipSetProperty( relationshipId, propToken, stringValue( "world" ) ),
                     NO_VALUE );
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
                 assertTrue( relationship.next(), "should access relationship" );
@@ -1331,7 +1332,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( KernelTransaction tx = beginTransaction() )
         {
             try ( RelationshipScanCursor relationships = tx.cursors().allocateRelationshipScanCursor( NULL );
-                  PropertyCursor properties = tx.cursors().allocatePropertyCursor( NULL ) )
+                  PropertyCursor properties = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
             {
                 tx.dataRead().singleRelationship( relationship, relationships );
                 assertTrue( relationships.next() );
@@ -1348,7 +1349,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
     private boolean hasProperties( RelationshipScanCursor cursor, KernelTransaction tx )
     {
-        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( NULL ) )
+        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
         {
             cursor.properties( propertyCursor );
             return propertyCursor.next();

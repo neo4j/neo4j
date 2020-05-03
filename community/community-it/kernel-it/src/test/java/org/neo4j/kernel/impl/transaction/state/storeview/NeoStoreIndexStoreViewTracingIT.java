@@ -35,6 +35,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 class NeoStoreIndexStoreViewTracingIT
@@ -66,7 +67,7 @@ class NeoStoreIndexStoreViewTracingIT
         {
             var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
             var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                    (Visitor<EntityTokenUpdate,Exception>) element -> false, true, cursorTracer );
+                    (Visitor<EntityTokenUpdate,Exception>) element -> false, true, cursorTracer, INSTANCE );
             storeScan.run();
         }
 

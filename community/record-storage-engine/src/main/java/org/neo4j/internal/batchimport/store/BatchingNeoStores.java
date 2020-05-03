@@ -121,6 +121,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdGeneratorFactory tempIdGeneratorFactory;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
 
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
@@ -139,7 +140,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout databaseLayout,
             RecordFormats recordFormats, Config neo4jConfig, Configuration importConfiguration, LogService logService,
-            AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer, PageCacheTracer pageCacheTracer )
+            AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.fileSystem = fileSystem;
         this.recordFormats = recordFormats;
@@ -155,6 +156,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     private boolean databaseExistsAndContainsData()
@@ -233,11 +235,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         life = new LifeSupport();
         life.start();
         labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(),
-                pageCacheTracer );
+                pageCacheTracer, memoryTracker );
         life.add( labelScanStore );
         relationshipTypeScanStore = TokenScanStore
                 .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(), neo4jConfig,
-                        pageCacheTracer );
+                        pageCacheTracer, memoryTracker );
         life.add( relationshipTypeScanStore );
     }
 
@@ -275,17 +277,17 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
-                initialIds, false, pageCacheTracer::bytesWritten, pageCacheTracer );
+                initialIds, false, pageCacheTracer::bytesWritten, pageCacheTracer, memoryTracker );
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
             PageCache pageCache, PageCacheTracer tracer, DatabaseLayout databaseLayout, RecordFormats recordFormats,
-            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
+            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig, MemoryTracker memoryTracker )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
-                initialIds, true, tracer::bytesWritten, tracer );
+                initialIds, true, tracer::bytesWritten, tracer, memoryTracker );
     }
 
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )

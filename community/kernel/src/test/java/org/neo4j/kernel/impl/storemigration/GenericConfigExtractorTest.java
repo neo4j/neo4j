@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Unzip.unzip;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 
@@ -179,7 +180,7 @@ class GenericConfigExtractorTest
             int size = 100;
             byte[] bytes = new byte[size];
             Arrays.fill( bytes, (byte) 9 );
-            ByteBuffer byteBuffer = ByteBuffers.allocate( size );
+            ByteBuffer byteBuffer = ByteBuffers.allocate( size, INSTANCE );
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }

@@ -93,7 +93,7 @@ public class SimpleIndexReader extends AbstractIndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );

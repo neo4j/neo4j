@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -50,6 +51,7 @@ public class IndexPopulationJob implements Runnable
     private final IndexingService.Monitor monitor;
     private final boolean verifyBeforeFlipping;
     private final PageCacheTracer pageCacheTracer;
+    private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
     private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
@@ -61,17 +63,18 @@ public class IndexPopulationJob implements Runnable
      * The {@link JobHandle} that represents the scheduling of this index population job.
      * This is used in the cancellation of the job.
      */
-    private volatile JobHandle jobHandle;
+    private volatile JobHandle<?> jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
-            PageCacheTracer pageCacheTracer )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
         this.pageCacheTracer = pageCacheTracer;
+        this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
-        this.bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryAllocationTracker ), parseBlockSize() );
+        this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, parseBlockSize() );
     }
 
     /**
@@ -243,5 +246,10 @@ public class IndexPopulationJob implements Runnable
     public ByteBufferFactory bufferFactory()
     {
         return bufferFactory;
+    }
+
+    public MemoryTracker getMemoryTracker()
+    {
+        return memoryTracker;
     }
 }

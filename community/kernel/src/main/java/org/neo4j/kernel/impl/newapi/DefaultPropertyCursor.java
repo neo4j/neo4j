@@ -40,7 +40,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 {
     private static final int NODE = -2;
     private Read read;
-    private StoragePropertyCursor storeCursor;
+    private final StoragePropertyCursor storeCursor;
     private final FullAccessNodeCursor nodeCursor;
     private final FullAccessRelationshipScanCursor relCursor;
     private EntityState propertiesState;

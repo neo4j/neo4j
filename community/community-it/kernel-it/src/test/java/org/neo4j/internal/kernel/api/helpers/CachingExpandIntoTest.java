@@ -306,7 +306,7 @@ class CachingExpandIntoTest
         try ( KernelTransaction tx = transaction();
               NodeCursor nodes = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
               RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() );
-              PropertyCursor properties = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer() ) )
+              PropertyCursor properties = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
         {
 
             int[] types = {t2, t3};

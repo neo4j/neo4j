@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -230,7 +232,7 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node ).add( 1, null, null, NULL );
+        new InlineNodeLabels( node ).add( 1, null, null, NULL, INSTANCE );
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
 
         add( labelRecordNotInUse );
@@ -280,7 +282,7 @@ class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node ).put( new long[]{1, 2, 1}, null, null, NULL );
+        new InlineNodeLabels( node ).put( new long[]{1, 2, 1}, null, null, NULL, INSTANCE );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
 
@@ -333,11 +335,12 @@ class NodeRecordCheckTest
         new InlineNodeLabels( node )
         {
             @Override
-            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer,
+                    MemoryTracker memoryTracker )
             {
-                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
+                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer, memoryTracker );
             }
-        }.put( new long[]{3, 1, 2}, null, null, NULL );
+        }.put( new long[]{3, 1, 2}, null, null, NULL, INSTANCE );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
         LabelTokenRecord label3 = inUse( new LabelTokenRecord( 3 ) );
@@ -363,11 +366,12 @@ class NodeRecordCheckTest
         new InlineNodeLabels( node )
         {
             @Override
-            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer,
+                    MemoryTracker memoryTracker )
             {
-                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer );
+                return putSorted( node, labelIds, nodeStore, allocator, cursorTracer, memoryTracker );
             }
-        }.put( new long[]{1, 18, 13, 14, 15, 16, 12}, null, null, NULL );
+        }.put( new long[]{1, 18, 13, 14, 15, 16, 12}, null, null, NULL, INSTANCE );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label12 = inUse( new LabelTokenRecord( 12 ) );
         LabelTokenRecord label13 = inUse( new LabelTokenRecord( 13 ) );

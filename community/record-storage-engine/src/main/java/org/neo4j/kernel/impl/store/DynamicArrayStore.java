@@ -36,7 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.CRSTable;
@@ -236,7 +237,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
-            DynamicRecordAllocator recordAllocator, PageCursorTracer cursorTracer )
+            DynamicRecordAllocator recordAllocator, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         byte[][] stringsAsBytes = new byte[array.length][];
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
@@ -248,24 +249,27 @@ public class DynamicArrayStore extends AbstractDynamicStore
             totalBytesRequired += 4/*byte[].length*/ + bytes.length;
         }
 
-        ByteBuffer buf = ByteBuffers.allocate( totalBytesRequired );
-        buf.put( PropertyType.STRING.byteValue() );
-        buf.putInt( array.length );
-        for ( byte[] stringAsBytes : stringsAsBytes )
+        try ( var scopedBuffer = new HeapScopedBuffer( totalBytesRequired, memoryTracker ) )
         {
-            buf.putInt( stringAsBytes.length );
-            buf.put( stringAsBytes );
+            var buffer = scopedBuffer.getBuffer();
+            buffer.put( PropertyType.STRING.byteValue() );
+            buffer.putInt( array.length );
+            for ( byte[] stringAsBytes : stringsAsBytes )
+            {
+                buffer.putInt( stringAsBytes.length );
+                buffer.put( stringAsBytes );
+            }
+            allocateRecordsFromBytes( target, buffer.array(), recordAllocator, cursorTracer );
         }
-        allocateRecordsFromBytes( target, buf.array(), recordAllocator, cursorTracer );
     }
 
-    public void allocateRecords( Collection<DynamicRecord> target, Object array, PageCursorTracer cursorTracer )
+    public void allocateRecords( Collection<DynamicRecord> target, Object array, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        allocateRecords( target, array, this, allowStorePointsAndTemporal, cursorTracer );
+        allocateRecords( target, array, this, allowStorePointsAndTemporal, cursorTracer, memoryTracker );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( !array.getClass().isArray() )
         {
@@ -275,7 +279,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
-            allocateFromString( target, (String[]) array, recordAllocator, cursorTracer );
+            allocateFromString( target, (String[]) array, recordAllocator, cursorTracer, memoryTracker );
         }
         else if ( type.equals( PointValue.class ) )
         {

@@ -69,6 +69,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class MultipleIndexPopulatorTest
 {
@@ -84,13 +85,13 @@ class MultipleIndexPopulatorTest
     {
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
-        when( indexStoreView.newPropertyAccessor( any( PageCursorTracer.class ) ) ).thenReturn( mock( NodePropertyAccessor.class ) );
-        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), any() ) ).thenReturn( mock( StoreScan.class ) );
+        when( indexStoreView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
-                jobScheduler, tokens, PageCacheTracer.NULL );
+                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE );
     }
 
     @Test
@@ -247,7 +248,7 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.createStoreScan( NULL );
 
         verify( indexStoreView )
-            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ) );
+            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ), any() );
     }
 
     @Test

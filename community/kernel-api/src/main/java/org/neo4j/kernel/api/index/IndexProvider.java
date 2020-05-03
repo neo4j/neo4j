@@ -36,8 +36,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -49,7 +52,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * When an index rule is added, the IndexingService is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory) batch index writer}.
+ * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory, MemoryTracker)} batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -68,10 +71,10 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * Once population is done, the index needs to be "flipped" to an online mode of operation.
  *
- * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean)}
+ * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, PageCursorTracer)}
  * method, that population is done, and that the index should turn it's state to {@link InternalIndexState#ONLINE} or
  * {@link InternalIndexState#FAILED} depending on the value given to the
- * {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean) close method}.
+ * {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, PageCursorTracer)}  close method}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -170,7 +173,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                        MemoryTracker memoryTracker )
                 {
                     return singlePopulator;
                 }
@@ -214,13 +218,15 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
     public IndexDropper getDropper( IndexDescriptor descriptor )
     {
-        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ), ByteBufferFactory.heapBufferFactory( 0 ) );
+        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ),
+                ByteBufferFactory.heapBufferFactory( 0 ), INSTANCE );
     }
 
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
+    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker );
 
     /**
      * Used for updating an index once initial population has completed.
@@ -314,13 +320,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                MemoryTracker memoryTracker )
         {
             return null;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
         {
             return null;
         }
@@ -361,9 +368,10 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                MemoryTracker memoryTracker )
         {
-            return provider.getPopulator( descriptor, samplingConfig, bufferFactory );
+            return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker );
         }
 
         @Override
@@ -393,7 +401,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         @Override
         public boolean equals( Object o )
         {
-            return provider.equals( o );
+            return o instanceof IndexProvider && provider.equals( o );
         }
 
         @Override

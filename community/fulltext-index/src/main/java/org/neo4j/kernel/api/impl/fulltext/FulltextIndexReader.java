@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.TextValue;
@@ -95,7 +96,7 @@ public class FulltextIndexReader implements IndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PageCursorTracer cursorTracer, IndexQuery... queries ) throws IndexNotApplicableKernelException
+            IndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for ( IndexQuery indexQuery : queries )
@@ -160,7 +161,7 @@ public class FulltextIndexReader implements IndexReader
             }
         }
         Query query = queryBuilder.build();
-        ValuesIterator itr = searchLucene( query, constraints, context, cursorTracer );
+        ValuesIterator itr = searchLucene( query, constraints, context, context.cursorTracer(), context.memoryTracker() );
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );
     }
@@ -213,7 +214,8 @@ public class FulltextIndexReader implements IndexReader
         return multiFieldQueryParser.parse( query );
     }
 
-    private ValuesIterator searchLucene( Query query, IndexQueryConstraints constraints, QueryContext context, PageCursorTracer cursorTracer )
+    private ValuesIterator searchLucene( Query query, IndexQueryConstraints constraints, QueryContext context, PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
     {
         try
         {
@@ -235,7 +237,7 @@ public class FulltextIndexReader implements IndexReader
             }
             if ( includeTransactionState )
             {
-                SearcherReference reference = transactionState.maybeUpdate( context, cursorTracer );
+                SearcherReference reference = transactionState.maybeUpdate( context, cursorTracer, memoryTracker );
                 searches.add( new PreparedSearch( reference.getIndexSearcher(), ALWAYS_FALSE ) );
             }
 

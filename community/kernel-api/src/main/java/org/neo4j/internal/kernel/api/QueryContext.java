@@ -19,7 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Represents the specific transactional context in which an index query is executed.
@@ -48,6 +53,18 @@ public interface QueryContext
         {
             return null;
         }
+
+        @Override
+        public PageCursorTracer cursorTracer()
+        {
+            return NULL;
+        }
+
+        @Override
+        public MemoryTracker memoryTracker()
+        {
+            return INSTANCE;
+        }
     };
 
     /**
@@ -68,4 +85,14 @@ public interface QueryContext
      * create any transaction state, if there is none associated with the current transaction.
      */
     ReadableTransactionState getTransactionStateOrNull();
+
+    /**
+     * @return underlying transaction page cursor tracer
+     */
+    PageCursorTracer cursorTracer();
+
+    /**
+     * @return underlying transactional memory tracker
+     */
+    MemoryTracker memoryTracker();
 }

@@ -110,7 +110,7 @@ abstract class Read implements TxStateHolder,
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
-        indexSession.reader.query( this, withFullPrecision, constraints, cursorTracer, query );
+        indexSession.reader.query( this, withFullPrecision, constraints, query );
     }
 
     @Override
@@ -127,7 +127,7 @@ abstract class Read implements TxStateHolder,
         IndexReader reader = indexReader( index, false );
         client.setRead( this );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
-        reader.query( this, withFullPrecision, constraints, cursorTracer, query );
+        reader.query( this, withFullPrecision, constraints, query );
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
@@ -171,7 +171,7 @@ abstract class Read implements TxStateHolder,
                 // filters[] can contain null elements. The non-null elements are the filters and each sit in the designated slot
                 // matching the values from the index.
                 target = new NodeValueClientFilter( target, cursors.allocateNodeCursor( cursorTracer ),
-                        cursors.allocatePropertyCursor( cursorTracer ), this, filters );
+                        cursors.allocatePropertyCursor( cursorTracer, memoryTracker() ), this, filters );
             }
         }
         return target;
@@ -219,7 +219,7 @@ abstract class Read implements TxStateHolder,
         cursor.setRead( this );
         IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, indexReader );
         // we never need values for exact predicates
-        indexReader.query( this, target, unconstrained(), cursorTracer, query );
+        indexReader.query( this, target, unconstrained(), query );
     }
 
     @Override
@@ -240,7 +240,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
-        indexSession.reader.query( this, cursorImpl, constraints, cursorTracer, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, cursorImpl, constraints, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

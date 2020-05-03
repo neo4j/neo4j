@@ -82,7 +82,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.WRITE;
 
 class PrivilegeActionTest
 {
-    private static Map<PrivilegeAction,Set<PrivilegeAction>> expected = new HashMap<>();
+    private static final Map<PrivilegeAction,Set<PrivilegeAction>> expected = new HashMap<>();
 
     static
     {

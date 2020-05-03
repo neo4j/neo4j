@@ -39,6 +39,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
 {
     private volatile boolean outOfSpace;
@@ -57,13 +59,13 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( write( fileName ), append );
+        return new ChannelOutputStream( write( fileName ), append, INSTANCE );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( read( fileName ) );
+        return new ChannelInputStream( read( fileName ), INSTANCE );
     }
 
     @Override

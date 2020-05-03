@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeCheckerTest extends CheckerTestBase
 {
@@ -221,7 +222,7 @@ class NodeCheckerTest extends CheckerTestBase
         {
             long nodeId = nodeStore.nextId( PageCursorTracer.NULL );
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
-            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL );
+            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), PageCursorTracer.NULL, INSTANCE );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
             nodeStore.updateRecord( node, PageCursorTracer.NULL );
             vandal.accept( node );

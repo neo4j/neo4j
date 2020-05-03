@@ -66,6 +66,7 @@ import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -190,13 +191,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( write( fileName ), append );
+        return new ChannelOutputStream( write( fileName ), append, INSTANCE );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( read( fileName) );
+        return new ChannelInputStream( read( fileName), INSTANCE );
     }
 
     @Override
@@ -561,7 +562,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private static ByteBuffer newCopyBuffer()
     {
-        return ByteBuffers.allocate( 1, ByteUnit.MebiByte );
+        return ByteBuffers.allocate( 1, ByteUnit.MebiByte, INSTANCE );
     }
 
     private void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to, ByteBuffer buffer )

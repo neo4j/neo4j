@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
 class PropertyReaderIT
@@ -124,7 +125,7 @@ class PropertyReaderIT
 
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue( randomAscii( 100 ) );
-        propertyStore.encodeValue( block, 1, expectedValue, NULL );
+        propertyStore.encodeValue( block, 1, expectedValue, NULL, INSTANCE );
         record.addPropertyBlock( block );
 
         propertyStore.updateRecord( record, NULL );

@@ -151,7 +151,7 @@ class NonUniqueDatabaseIndexPopulatorTest
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
             int propertyKeyId = labelSchemaDescriptor.getPropertyId();
-            reader.query( NULL_CONTEXT, allEntities, unconstrained(), NULL, IndexQuery.exists( propertyKeyId ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), IndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

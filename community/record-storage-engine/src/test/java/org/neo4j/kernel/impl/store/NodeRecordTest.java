@@ -38,6 +38,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeRecordTest
 {
@@ -98,7 +99,7 @@ class NodeRecordTest
         long labelId = 10_123;
         // A dynamic label record
         Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
-                recordAllocator, NULL );
+                recordAllocator, NULL, INSTANCE );
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord( ids.nextId( NULL ) );
         unused.setInUse( false );

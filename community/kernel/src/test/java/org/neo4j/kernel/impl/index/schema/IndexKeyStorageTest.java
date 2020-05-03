@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -43,8 +44,9 @@ import org.neo4j.values.storable.Value;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.memory.ByteBufferFactory.HEAP_ALLOCATOR;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -176,8 +178,8 @@ class IndexKeyStorageTest
         FileSystemAbstraction fs = directory.getFileSystem();
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
         File file = directory.file( "file" );
-        try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator( allocationTracker );
-              IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory ) )
+        try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator();
+              IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
             assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
             assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
@@ -222,11 +224,11 @@ class IndexKeyStorageTest
 
     private IndexKeyStorage<GenericKey> keyStorage( File file ) throws IOException
     {
-        return keyStorage( file, HEAP_ALLOCATOR );
+        return keyStorage( file, heapBufferFactory( 0 ).newLocalAllocator(), INSTANCE );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory ) throws IOException
+    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
     {
-        return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout );
+        return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout, memoryTracker );
     }
 }
