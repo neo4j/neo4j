@@ -665,6 +665,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action traverse on graphs $$foo, $$bar nodes * (*) $preposition $$role" ->
             s"$action TRAVERSE ON GRAPHS $$foo, $$bar NODES * (*) $preposition $$role",
 
+          s"$action traverse on graph * elements A (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * ELEMENTS A (*) $preposition role",
+
           s"$action read {*} on graph * $preposition role" ->
             s"$action READ {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
@@ -694,6 +697,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action read {*} on graph foo, bar relationships * (*) $preposition role" ->
             s"$action READ {*} ON GRAPHS foo, bar RELATIONSHIPS * (*) $preposition role",
+
+          s"$action read {*} on graph * elements A (*) $preposition role" ->
+            s"$action READ {*} ON GRAPH * ELEMENTS A (*) $preposition role",
 
           s"$action match {*} on graph * $preposition role" ->
             s"$action MATCH {*} ON GRAPH * ELEMENTS * (*) $preposition role",
@@ -725,6 +731,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action match {*} on graph $$foo, bar nodes * (*) $preposition role" ->
             s"$action MATCH {*} ON GRAPHS $$foo, bar NODES * (*) $preposition role",
 
+          s"$action match {*} on graph * elements A (*) $preposition role" ->
+            s"$action MATCH {*} ON GRAPH * ELEMENTS A (*) $preposition role",
+
           s"$action write on graph * $preposition role" ->
             s"$action WRITE ON GRAPH * ELEMENTS * (*) $preposition role",
 
@@ -746,14 +755,17 @@ class PrettifierIT extends CypherFunSuite {
           s"$action write on graphs FoO elements * (*) $preposition $$role" ->
             s"$action WRITE ON GRAPH FoO ELEMENTS * (*) $preposition $$role",
 
-          s"$action write on graph foo, $$bar elements * $preposition role" ->
-            s"$action WRITE ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role",
+          s"$action write on graph foo, $$bar elements foo $preposition role" ->
+            s"$action WRITE ON GRAPHS foo, $$bar ELEMENTS foo (*) $preposition role",
 
           s"$action create on graph * $preposition role" ->
             s"$action CREATE ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action create on graph * elements * $preposition role" ->
             s"$action CREATE ON GRAPH * ELEMENTS * $preposition role",
+
+          s"$action create on graph * elements foo $preposition role" ->
+            s"$action CREATE ON GRAPH * ELEMENTS foo $preposition role",
 
           s"$action create on graph foo $preposition role" ->
             s"$action CREATE ON GRAPH foo ELEMENTS * $preposition role",
@@ -769,6 +781,30 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create on graph foo, $$bar relationship * $preposition role" ->
             s"$action CREATE ON GRAPHS foo, $$bar RELATIONSHIPS * $preposition role",
+
+          s"$action delete on graph * $preposition role" ->
+            s"$action DELETE ON GRAPH * ELEMENTS * $preposition role",
+
+          s"$action delete on graph * elements * $preposition role" ->
+            s"$action DELETE ON GRAPH * ELEMENTS * $preposition role",
+
+          s"$action delete on graph * elements foo $preposition role" ->
+            s"$action DELETE ON GRAPH * ELEMENTS foo $preposition role",
+
+          s"$action delete on graph foo $preposition role" ->
+            s"$action DELETE ON GRAPH foo ELEMENTS * $preposition role",
+
+          s"$action delete on graph $$foo $preposition role" ->
+            s"$action DELETE ON GRAPH $$foo ELEMENTS * $preposition role",
+
+          s"$action delete on graph foo nodes * $preposition role" ->
+            s"$action DELETE ON GRAPH foo NODES * $preposition role",
+
+          s"$action delete on graphs FoO relationships * $preposition $$role" ->
+            s"$action DELETE ON GRAPH FoO RELATIONSHIPS * $preposition $$role",
+
+          s"$action delete on graph foo, $$bar relationship * $preposition role" ->
+            s"$action DELETE ON GRAPHS foo, $$bar RELATIONSHIPS * $preposition role",
 
           s"$action set label label on graph * $preposition role" ->
             s"$action SET LABEL label ON GRAPH * $preposition role",

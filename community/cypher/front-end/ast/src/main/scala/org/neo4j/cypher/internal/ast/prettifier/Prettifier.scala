@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -789,6 +790,7 @@ object Prettifier {
     case RelationshipQualifier(name)   => "RELATIONSHIP " + ExpressionStringifier.backtick(name)
     case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
     case RelationshipAllQualifier()    => "RELATIONSHIPS *"
+    case ElementsQualifier(names)      => "ELEMENTS " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
     case ElementsAllQualifier()        => "ELEMENTS *"
     case UsersQualifier(names)         => "(" + names.map(escapeName).mkString(", ") + ")"
     case UserQualifier(name)           => "(" + escapeName(name) + ")"
