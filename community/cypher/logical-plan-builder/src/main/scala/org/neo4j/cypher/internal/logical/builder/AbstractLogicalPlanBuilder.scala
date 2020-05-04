@@ -122,6 +122,8 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -659,6 +661,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def conditionalApply(items: String*): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ConditionalApply(lhs, rhs, items)(_)))
+
+  def selectOrSemiApply(predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+
+  def selectOrAntiSemiApply(predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
 
   def rollUpApply(collectionName: String,
                   variableToCollect: String,
