@@ -98,7 +98,7 @@ final case class CreateUser(userName: Either[String, Parameter],
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace => "CREATE OR REPLACE USER"
+    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
   }
 
@@ -159,7 +159,7 @@ final case class CreateRole(roleName: Either[String, Parameter], from: Option[Ei
                            (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace => "CREATE OR REPLACE ROLE"
+    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE ROLE"
     case _ => "CREATE ROLE"
   }
 
@@ -574,7 +574,7 @@ final case class ShowDatabase(dbName: Either[String, Parameter])(val position: I
 final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace => "CREATE OR REPLACE DATABASE"
+    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE DATABASE"
     case _ => "CREATE DATABASE"
   }
 
