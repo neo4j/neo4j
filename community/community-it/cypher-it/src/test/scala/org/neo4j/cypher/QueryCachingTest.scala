@@ -390,7 +390,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   }
 
   private class LoggingExecutionEngineQueryCacheListener extends ExecutionEngineQueryCacheMonitor {
-    private var log: mutable.Builder[String, List[String]] = List.newBuilder
+    private val log: mutable.Builder[String, List[String]] = List.newBuilder
 
     def trace: Seq[String] = log.result()
 

@@ -130,7 +130,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
   private def accumulate(incoming: InternalPlanDescription, columns: mutable.Map[String, Int]): Seq[Line] = {
 
-    val stack = new mutable.Stack[(InternalPlanDescription, Level)]
+    val stack = new mutable.ArrayStack[(InternalPlanDescription, Level)]
     stack.push((compactPlan(incoming), Root))
     val lines = new ArrayBuffer[Line]()
     while (stack.nonEmpty) {
