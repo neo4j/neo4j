@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -60,8 +59,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.never;
@@ -70,8 +71,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class NodeStoreTest
@@ -343,6 +346,38 @@ public class NodeStoreTest
         IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
         verify( idGenerator, never() ).freeId( 5L );
         verify( idGenerator ).freeId( 10L );
+    }
+
+    @Test
+    public void shouldIncludeNodeRecordInExceptionLoadingDynamicLabelRecords() throws IOException
+    {
+        // given a node with reference to a dynamic label record
+        EphemeralFileSystemAbstraction fs = efs.get();
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L ).initialize( true, NULL_REFERENCE.longValue(), false, 1234, NO_LABELS_FIELD.longValue() );
+        NodeLabels labels = NodeLabelsField.parseLabelsField( record );
+        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore() );
+        nodeStore.updateRecord( record );
+
+        // ... and where e.g. the dynamic label record is unused
+        for ( DynamicRecord dynamicLabelRecord : record.getDynamicLabelRecords() )
+        {
+            dynamicLabelRecord.setInUse( false );
+            nodeStore.getDynamicLabelStore().updateRecord( dynamicLabelRecord );
+        }
+
+        // when loading that node and making it heavy
+        NodeRecord loadedRecord = nodeStore.getRecord( record.getId(), nodeStore.newRecord(), NORMAL );
+        try
+        {
+            nodeStore.ensureHeavy( loadedRecord );
+            fail( "Should have failed" );
+        }
+        catch ( InvalidRecordException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( loadedRecord.toString() ) );
+        }
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
