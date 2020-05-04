@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * NOTE: This plan is only for testing
-  */
+ * NOTE: This plan is only for testing
+ */
 case class NonFuseable(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs: Option[LogicalPlan] = Some(source)

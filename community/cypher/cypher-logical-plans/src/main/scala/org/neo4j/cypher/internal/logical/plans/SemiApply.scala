@@ -22,30 +22,30 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
-  * produces at least one row.
-  *
-  * for ( leftRow <- left ) {
-  *   right.setArgument( leftRow )
-  *   if ( right.nonEmpty ) {
-  *     produce leftRow
-  *   }
-  * }
-  */
+ * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
+ * produces at least one row.
+ *
+ * for ( leftRow <- left ) {
+ *   right.setArgument( leftRow )
+ *   if ( right.nonEmpty ) {
+ *     produce leftRow
+ *   }
+ * }
+ */
 case class SemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
   extends AbstractSemiApply(left, right)(idGen)
 
 /**
-  * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
-  * produces no rows.
-  *
-  * for ( leftRow <- left ) {
-  *   right.setArgument( leftRow )
-  *   if ( right.isEmpty ) {
-  *     produce leftRow
-  *   }
-  * }
-  */
+ * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
+ * produces no rows.
+ *
+ * for ( leftRow <- left ) {
+ *   right.setArgument( leftRow )
+ *   if ( right.isEmpty ) {
+ *     produce leftRow
+ *   }
+ * }
+ */
 case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
   extends AbstractSemiApply(left, right)(idGen)
 

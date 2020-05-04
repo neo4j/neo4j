@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Operator which loads a CSV from some URL. For every source row, the CSV is loaded. Each CSV line is produced as a
-  * row consisting of the current source row + one value holding the CSV line data.
-  *
-  * If the CSV file has headers, each line will represented in Cypher as a MapValue, if the file has no header, each
-  * line will be a ListValue.
-  */
+ * Operator which loads a CSV from some URL. For every source row, the CSV is loaded. Each CSV line is produced as a
+ * row consisting of the current source row + one value holding the CSV line data.
+ *
+ * If the CSV file has headers, each line will represented in Cypher as a MapValue, if the file has no header, each
+ * line will be a ListValue.
+ */
 case class LoadCSV(source: LogicalPlan,
                    url: Expression,
                    variableName: String,

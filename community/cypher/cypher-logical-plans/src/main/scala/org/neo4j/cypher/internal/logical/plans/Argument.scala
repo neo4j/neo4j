@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Produce a single row with the contents of argument
-  */
+ * Produce a single row with the contents of argument
+ */
 case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds

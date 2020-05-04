@@ -210,14 +210,14 @@ object Deprecations {
 }
 
 /**
-  * One deprecation.
-  *
-  * This class holds both the ability to replace a part of the AST with the preferred non-deprecated variant, and
-  * the ability to generate an optional notification to the user that they are using a deprecated feature.
-  *
-  * @param generateReplacement function which rewrites the matched construct
-  * @param generateNotification function which generates an appropriate deprecation notification
-  */
+ * One deprecation.
+ *
+ * This class holds both the ability to replace a part of the AST with the preferred non-deprecated variant, and
+ * the ability to generate an optional notification to the user that they are using a deprecated feature.
+ *
+ * @param generateReplacement function which rewrites the matched construct
+ * @param generateNotification function which generates an appropriate deprecation notification
+ */
 case class Deprecation(generateReplacement: () => ASTNode, generateNotification: () => Option[InternalNotification])
 
 trait Deprecations extends {

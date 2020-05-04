@@ -38,25 +38,25 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
 
 /**
-  * This rewriter normalizes the scoping structure of a query, ensuring it is able to
-  * be correctly processed for semantic checking. It makes sure that all return items
-  * in WITH clauses are aliased.
-  *
-  * It also replaces expressions and subexpressions in ORDER BY and WHERE
-  * to use aliases introduced by the WITH, where possible.
-  *
-  * Example:
-  *
-  * MATCH n
-  * WITH n.prop AS prop ORDER BY n.prop DESC
-  * RETURN prop
-  *
-  * This rewrite will change the query to:
-  *
-  * MATCH n
-  * WITH n.prop AS prop ORDER BY prop DESC
-  * RETURN prop AS prop
-  */
+ * This rewriter normalizes the scoping structure of a query, ensuring it is able to
+ * be correctly processed for semantic checking. It makes sure that all return items
+ * in WITH clauses are aliased.
+ *
+ * It also replaces expressions and subexpressions in ORDER BY and WHERE
+ * to use aliases introduced by the WITH, where possible.
+ *
+ * Example:
+ *
+ * MATCH n
+ * WITH n.prop AS prop ORDER BY n.prop DESC
+ * RETURN prop
+ *
+ * This rewrite will change the query to:
+ *
+ * MATCH n
+ * WITH n.prop AS prop ORDER BY prop DESC
+ * RETURN prop AS prop
+ */
 case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
@@ -93,12 +93,12 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     }
 
   /**
-    * Aliases return items if possible. Return a tuple of unaliased (because impossible) and
-    * aliased (because they already were aliases or we just introduced an alias for them)
-    * return items.
-    *
-    * @param aliasImplicitly UnaliasedReturnItems are rewritten to AliasedReturnItems if this function is defined.
-    */
+   * Aliases return items if possible. Return a tuple of unaliased (because impossible) and
+   * aliased (because they already were aliases or we just introduced an alias for them)
+   * return items.
+   *
+   * @param aliasImplicitly UnaliasedReturnItems are rewritten to AliasedReturnItems if this function is defined.
+   */
   private def partitionReturnItems(returnItems: Seq[ReturnItem],
                                    aliasImplicitly: UnaliasedReturnItem => Option[AliasedReturnItem]): (Seq[ReturnItem], Seq[AliasedReturnItem]) =
     returnItems.foldLeft((Vector.empty[ReturnItem], Vector.empty[AliasedReturnItem])) {
@@ -118,16 +118,16 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     }
 
   /**
-    * Given a list of existing aliases, this rewrites an OrderBy to use these where possible.
-    */
+   * Given a list of existing aliases, this rewrites an OrderBy to use these where possible.
+   */
   private def aliasOrderBy(existingAliases: Map[Expression, LogicalVariable], originalOrderBy: OrderBy): OrderBy = {
     val updatedSortItems = originalOrderBy.sortItems.map { aliasSortItem(existingAliases, _)}
     OrderBy(updatedSortItems)(originalOrderBy.position)
   }
 
   /**
-    * Given a list of existing aliases, this rewrites a SortItem to use these where possible.
-    */
+   * Given a list of existing aliases, this rewrites a SortItem to use these where possible.
+   */
   private def aliasSortItem(existingAliases: Map[Expression, LogicalVariable], sortItem: SortItem): SortItem = {
     sortItem match {
       case AscSortItem(expression) => AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position)
@@ -136,15 +136,15 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   }
 
   /**
-    * Given a list of existing aliases, this rewrites a where to use these where possible.
-    */
+   * Given a list of existing aliases, this rewrites a where to use these where possible.
+   */
   private def aliasWhere(existingAliases: Map[Expression, LogicalVariable], originalWhere: Where): Where = {
     Where(aliasExpression(existingAliases, originalWhere.expression))(originalWhere.position)
   }
 
   /**
-    * Given a list of existing aliases, this rewrites expressions to use these where possible.
-    */
+   * Given a list of existing aliases, this rewrites expressions to use these where possible.
+   */
   private def aliasExpression(existingAliases: Map[Expression, LogicalVariable], expression: Expression): Expression = {
     existingAliases.get(expression) match {
       case Some(alias) if !existingAliases.valuesIterator.contains(expression) =>

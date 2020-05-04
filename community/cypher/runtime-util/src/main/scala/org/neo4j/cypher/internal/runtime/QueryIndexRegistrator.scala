@@ -30,10 +30,10 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Helper class used to register the indexes for a query and allocate query-local index ids.
-  *
-  * @param schemaRead SchemaRead used to acquire index references for registered indexes.
-  */
+ * Helper class used to register the indexes for a query and allocate query-local index ids.
+ *
+ * @param schemaRead SchemaRead used to acquire index references for registered indexes.
+ */
 class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   private val buffer = new ArrayBuffer[InternalIndexReference]

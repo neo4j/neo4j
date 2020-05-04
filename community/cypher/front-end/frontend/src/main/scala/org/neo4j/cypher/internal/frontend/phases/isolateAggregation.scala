@@ -40,21 +40,21 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
 
 /**
-  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
-  * the planner can have an easy time
-  *
-  * Example:
-  *
-  * MATCH (n)
-  * RETURN { name: n.name, count: count(*) }, n.foo
-  *
-  * This query has a RETURN clause where the single expression contains both the aggregate key and
-  * the aggregation expression. To make the job easier on the planner, this rewrite will change the query to:
-  *
-  * MATCH (n)
-  * WITH n.name AS x1, count(*) AS x2, n.foo as X3
-  * RETURN { name: x1, count: x2 }
-  */
+ * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
+ * the planner can have an easy time
+ *
+ * Example:
+ *
+ * MATCH (n)
+ * RETURN { name: n.name, count: count(*) }, n.foo
+ *
+ * This query has a RETURN clause where the single expression contains both the aggregate key and
+ * the aggregation expression. To make the job easier on the planner, this rewrite will change the query to:
+ *
+ * MATCH (n)
+ * WITH n.name AS x1, count(*) AS x2, n.foo as X3
+ * RETURN { name: x1, count: x2 }
+ */
 case object isolateAggregation extends StatementRewriter {
 
   override def instance(context: BaseContext): Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])

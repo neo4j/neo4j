@@ -43,9 +43,9 @@ import org.parboiled.scala.Rule1
 import org.parboiled.scala.group
 
 /**
-  * This parses procedure signatures as specified by the Cypher type system and returned
-  * by dbms.procedures()
-  */
+ * This parses procedure signatures as specified by the Cypher type system and returned
+ * by dbms.procedures()
+ */
 class ProcedureSignatureParser extends Parser with Base with Expressions with Literals {
 
   @throws(classOf[SyntaxException])

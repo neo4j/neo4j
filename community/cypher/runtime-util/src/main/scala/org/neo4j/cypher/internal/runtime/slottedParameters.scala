@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.kernel.impl.util.ValueUtils
 
 /**
-  * Rewrites a logical plan so that parameter access is done by offset into an array instead of accessing
-  * a hash map.
-  */
+ * Rewrites a logical plan so that parameter access is done by offset into an array instead of accessing
+ * a hash map.
+ */
 case object slottedParameters {
 
   def apply(input: LogicalPlan): (LogicalPlan, ParameterMapping) = {

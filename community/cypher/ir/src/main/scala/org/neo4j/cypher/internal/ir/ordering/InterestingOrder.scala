@@ -45,9 +45,9 @@ object InterestingOrder {
   case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
   /**
-    * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
-    * This class specifies the satisfied prefix of columns and the missing suffix of columns.
-    */
+   * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
+   * This class specifies the satisfied prefix of columns and the missing suffix of columns.
+   */
   case class Satisfaction(satisfiedPrefix: Seq[ColumnOrder], missingSuffix: Seq[ColumnOrder]){
     def withSatisfied(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix :+ columnOrder, missingSuffix)
     def withMissing(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix, missingSuffix :+ columnOrder)
@@ -69,14 +69,14 @@ object InterestingOrder {
 }
 
 /**
-  * A single PlannerQuery can require an ordering on its results. This ordering can emerge
-  * from an ORDER BY, or even from distinct or aggregation. The requirement on the ordering can
-  * be strict (it needs to be ordered for correct results) or weak (ordering will allow for optimizations).
-  * A weak requirement might in addition not care about column order and sort direction.
-  *
-  * @param requiredOrderCandidate     a candidate for required sort directions of columns
-  * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns
-  */
+ * A single PlannerQuery can require an ordering on its results. This ordering can emerge
+ * from an ORDER BY, or even from distinct or aggregation. The requirement on the ordering can
+ * be strict (it needs to be ordered for correct results) or weak (ordering will allow for optimizations).
+ * A weak requirement might in addition not care about column order and sort direction.
+ *
+ * @param requiredOrderCandidate     a candidate for required sort directions of columns
+ * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns
+ */
 case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
                             interestingOrderCandidates: Seq[InterestingOrderCandidate] = Seq.empty) {
 
@@ -137,8 +137,8 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
   }
 
   /**
-    * Checks if a RequiredOrder is satisfied by a ProvidedOrder
-    */
+   * Checks if a RequiredOrder is satisfied by a ProvidedOrder
+   */
   def satisfiedBy(providedOrder: ProvidedOrder): Satisfaction = {
     @tailrec
     def satisfied(providedOrder: Expression, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {

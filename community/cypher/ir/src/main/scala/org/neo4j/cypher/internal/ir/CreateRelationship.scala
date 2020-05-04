@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
 /**
-  * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
-  */
+ * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
+ */
 case class CreateRelationship(idName: String,
                               leftNode: String,
                               relType: RelTypeName,

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
-  * For every node with the given label and property values, produces rows with that node.
-  */
+ * For every node with the given label and property values, produces rows with that node.
+ */
 case class NodeIndexSeek(idName: String,
                          label: LabelToken,
                          properties: Seq[IndexedProperty],

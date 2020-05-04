@@ -48,8 +48,8 @@ case object DPPlannerName extends CostBasedPlannerName {
 }
 
 /**
-  * Queries that doesn't require planning are dealt with by a separate planning step
-  */
+ * Queries that doesn't require planning are dealt with by a separate planning step
+ */
 case object AdministrationPlannerName extends PlannerName {
   val name = "ADMINISTRATION"
   val version = "4.0"

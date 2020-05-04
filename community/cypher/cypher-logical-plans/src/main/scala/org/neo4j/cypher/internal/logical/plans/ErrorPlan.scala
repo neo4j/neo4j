@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Throws exception if evaluated.
-  */
+ * Throws exception if evaluated.
+ */
 case class ErrorPlan(source: LogicalPlan, exception: Exception)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override val lhs: Option[LogicalPlan] = Some(source)

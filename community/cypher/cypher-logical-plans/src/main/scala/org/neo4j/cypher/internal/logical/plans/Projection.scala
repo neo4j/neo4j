@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each source row, produce the source row augmented with 'expressions'. For entry in
-  * 'expressions', the produced row get an extra variable name as the key, with the value of
-  * the expression.
-  */
+ * For each source row, produce the source row augmented with 'expressions'. For entry in
+ * 'expressions', the produced row get an extra variable name as the key, with the value of
+ * the expression.
+ */
 case class Projection(source: LogicalPlan, projectExpressions: Map[String, Expression])
                      (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with ProjectingPlan {
 

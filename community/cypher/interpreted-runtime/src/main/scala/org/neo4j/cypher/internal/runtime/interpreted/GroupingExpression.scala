@@ -26,43 +26,43 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 /**
-  * Abstraction for grouping expressions used for aggregation and distinct.
-  */
+ * Abstraction for grouping expressions used for aggregation and distinct.
+ */
 trait GroupingExpression {
   type KeyType <: AnyValue
 
   /**
-    * Computes the grouping key, it will either be a single AnyValue or a SequenceValue of AnyValues
-    * @param context used for evaluating expressions
-    * @param state used for evaluating expressions
-    * @return the grouping key
-    */
+   * Computes the grouping key, it will either be a single AnyValue or a SequenceValue of AnyValues
+   * @param context used for evaluating expressions
+   * @param state used for evaluating expressions
+   * @return the grouping key
+   */
   def computeGroupingKey(context: ReadableRow, state: QueryState): KeyType
 
   /**
-    * Compute the grouping key for all columns that have a provided order.
-    *
-    * @param groupingKey the whole grouping key, as obtained by [[computeGroupingKey()]]
-    * @return the grouping key
-    */
+   * Compute the grouping key for all columns that have a provided order.
+   *
+   * @param groupingKey the whole grouping key, as obtained by [[computeGroupingKey()]]
+   * @return the grouping key
+   */
   def computeOrderedGroupingKey(groupingKey: KeyType): AnyValue
 
   /**
-    * Retrieves an already computed and projected key. Can be called after a call to project grouping key.
-    * @param context The context to get the values for the key
-    * @return The grouping key as read from the context
-    */
+   * Retrieves an already computed and projected key. Can be called after a call to project grouping key.
+   * @param context The context to get the values for the key
+   * @return The grouping key as read from the context
+   */
   def getGroupingKey(context: CypherRow): KeyType
 
   /**
-    * Projects a computed key to the context
-    * @param context The context where to project.
-    * @param groupingKey The computed grouping key to project
-    */
+   * Projects a computed key to the context
+   * @param context The context where to project.
+   * @param groupingKey The computed grouping key to project
+   */
   def project(context: WritableRow, groupingKey: KeyType): Unit
 
   /**
-    * @return `true` if there is no grouping, `false` otherwise.
-    */
+   * @return `true` if there is no grouping, `false` otherwise.
+   */
   def isEmpty: Boolean
 }

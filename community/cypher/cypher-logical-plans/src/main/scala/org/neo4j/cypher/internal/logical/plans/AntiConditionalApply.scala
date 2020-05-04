@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * AntiConditionalApply works like ConditionalApply, but with reversed condition.
-  *
-  * for ( leftRow <- left ) {
-  *   if ( !condition( leftRow ) ) {
-  *     produce leftRow
-  *   } else {
-  *     right.setArgument( leftRow )
-  *     for ( rightRow <- right ) {
-  *       produce rightRow
-  *     }
-  *   }
-  * }
-  */
+ * AntiConditionalApply works like ConditionalApply, but with reversed condition.
+ *
+ * for ( leftRow <- left ) {
+ *   if ( !condition( leftRow ) ) {
+ *     produce leftRow
+ *   } else {
+ *     right.setArgument( leftRow )
+ *     for ( rightRow <- right ) {
+ *       produce rightRow
+ *     }
+ *   }
+ * }
+ */
 case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with ApplyPlan {
 

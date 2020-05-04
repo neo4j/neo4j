@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.
-  *
-  * for ( leftRow <- left ) {
-  *   if ( condition( leftRow ) ) {
-  *     produce leftRow
-  *   } else {
-  *     right.setArgument( leftRow )
-  *     for ( rightRow <- right ) {
-  *       produce rightRow
-  *     }
-  *   }
-  * }
-  */
+ * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.
+ *
+ * for ( leftRow <- left ) {
+ *   if ( condition( leftRow ) ) {
+ *     produce leftRow
+ *   } else {
+ *     right.setArgument( leftRow )
+ *     for ( rightRow <- right ) {
+ *       produce rightRow
+ *     }
+ *   }
+ * }
+ */
 case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])
                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
 

@@ -39,9 +39,9 @@ object Transformer {
   }
 
   /**
-    * Transformer that can be inserted when debugging, to help detect
-    * what part of the compilation that introduces an ast issue.
-    */
+   * Transformer that can be inserted when debugging, to help detect
+   * what part of the compilation that introduces an ast issue.
+   */
   def printAst(tag: String): Transformer[BaseContext, BaseState, BaseState] = new Transformer[BaseContext, BaseState, BaseState] {
     override def transform(from: BaseState, context: BaseContext): BaseState = {
       println("     |||||||| PRINT AST: "+tag)

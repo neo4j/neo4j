@@ -36,58 +36,58 @@ trait QueryMemoryTracker {
   def isEnabled: Boolean
 
   /**
-    * Record allocation of bytes
-    *
-    * @param bytes number of allocated bytes
-    */
+   * Record allocation of bytes
+   *
+   * @param bytes number of allocated bytes
+   */
   def allocated(bytes: Long, operatorId: Int): Unit
 
   /**
-    * Record allocation of value
-    *
-    * @param value that value which was allocated
-    */
+   * Record allocation of value
+   *
+   * @param value that value which was allocated
+   */
   def allocated(value: AnyValue, operatorId: Int) : Unit
 
   /**
-    * Record allocation of instance with heap usage estimation
-    *
-    * @param instance the allocated instance
-    */
+   * Record allocation of instance with heap usage estimation
+   *
+   * @param instance the allocated instance
+   */
   def allocated(instance: Measurable, operatorId: Int): Unit
 
   /**
-    * Record de-allocation of bytes
-    *
-    * @param bytes number of de-allocated bytes
-    */
+   * Record de-allocation of bytes
+   *
+   * @param bytes number of de-allocated bytes
+   */
   def deallocated(bytes: Long, operatorId: Int): Unit
 
   /**
-    * Record de-allocation of value
-    *
-    * @param value that value which was de-allocated
-    */
+   * Record de-allocation of value
+   *
+   * @param value that value which was de-allocated
+   */
   def deallocated(value: AnyValue, operatorId: Int): Unit
 
   /**
-    * Record de-allocation of instance with heap usage estimation
-    *
-    * @param instance the de-allocated instance
-    */
+   * Record de-allocation of instance with heap usage estimation
+   *
+   * @param instance the de-allocated instance
+   */
   def deallocated(instance: Measurable, operatorId: Int): Unit
 
   /**
-    * Returns an Iterator that, given the memory config settings, might throw an exception if the
-    * memory used by the query grows too large.
-    */
+   * Returns an Iterator that, given the memory config settings, might throw an exception if the
+   * memory used by the query grows too large.
+   */
   def memoryTrackingIterator[T<: CypherRow](input: Iterator[T], operatorId: Int): Iterator[T]
 
   /**
-    * Get the total allocated memory of this query, in bytes.
-    *
-    * @return the total number of allocated memory bytes, or [[OptionalMemoryTracker]].ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
-    */
+   * Get the total allocated memory of this query, in bytes.
+   *
+   * @return the total number of allocated memory bytes, or [[OptionalMemoryTracker]].ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
+   */
   def totalAllocatedMemory: Long
 
   /**
@@ -237,15 +237,15 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker, memoryTracke
 }
 
 /**
-  * Logical description of memory tracking behaviour
-  */
+ * Logical description of memory tracking behaviour
+ */
 sealed trait MemoryTracking
 case object NO_TRACKING extends MemoryTracking
 case object MEMORY_TRACKING extends MemoryTracking
 
 /**
-  * Controller of memory tracking. Needed to make memory tracking dynamically configurable.
-  */
+ * Controller of memory tracking. Needed to make memory tracking dynamically configurable.
+ */
 trait MemoryTrackingController {
   def memoryTracking(doProfile: Boolean): MemoryTracking
 }

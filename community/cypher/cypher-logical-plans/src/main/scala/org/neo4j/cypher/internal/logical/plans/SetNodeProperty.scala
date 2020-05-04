@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * for ( row <- source )
-  *   node = row.get(idName)
-  *   node.setProperty( propertyKey, row.evaluate(value) )
-  *
-  *   produce row
-  */
+ * for ( row <- source )
+ *   node = row.get(idName)
+ *   node.setProperty( propertyKey, row.evaluate(value) )
+ *
+ *   produce row
+ */
 case class SetNodeProperty(source: LogicalPlan,
                            idName: String,
                            propertyKey: PropertyKeyName,

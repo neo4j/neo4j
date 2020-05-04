@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Produce a single row with the contents of argument and a new value 'idName'. For each
-  * relationship type in 'typeNames', the number of relationship matching
-  *
-  *   (:startLabel)-[:type]->(:endLabel)
-  *
-  * is fetched from the counts store. These counts are summed, and the result is
-  * assigned to 'idName'.
-  */
+ * Produce a single row with the contents of argument and a new value 'idName'. For each
+ * relationship type in 'typeNames', the number of relationship matching
+ *
+ *   (:startLabel)-[:type]->(:endLabel)
+ *
+ * is fetched from the counts store. These counts are summed, and the result is
+ * assigned to 'idName'.
+ */
 case class RelationshipCountFromCountStore(idName: String,
                                            startLabel: Option[LabelName],
                                            typeNames: Seq[RelTypeName],

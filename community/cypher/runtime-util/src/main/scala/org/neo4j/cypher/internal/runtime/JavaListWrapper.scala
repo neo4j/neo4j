@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime
 import scala.collection.immutable.IndexedSeq
 
 /**
-  * Simple wrapper for a java.util.List which preserves the original list
-  * while lazily converting to scala values if needed.
+ * Simple wrapper for a java.util.List which preserves the original list
+ * while lazily converting to scala values if needed.
  *
-  * @param inner the inner java list
-  * @param converter converter from java values to scala values
-  */
+ * @param inner the inner java list
+ * @param converter converter from java values to scala values
+ */
 case class JavaListWrapper[T](inner: java.util.List[T], converter: RuntimeScalaValueConverter) extends IndexedSeq[Any] {
 
   override def length = inner.size()

@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * RollUp is the inverse of the Unwind operator. For each left row,
-  * right is executed. For each right row produced, a single column value
-  * is extracted and inserted into a collection. which is assigned to 'collectionName'.
-  * The left row is produced.
-  *
-  * It is used for sub queries that return collections, such as pattern expressions (returns
-  * a collection of paths) and pattern comprehension.
-  *
-  * Note about nullableIdentifiers: when any of these identifiers are null, the collection
-  * should be null.
-  */
+ * RollUp is the inverse of the Unwind operator. For each left row,
+ * right is executed. For each right row produced, a single column value
+ * is extracted and inserted into a collection. which is assigned to 'collectionName'.
+ * The left row is produced.
+ *
+ * It is used for sub queries that return collections, such as pattern expressions (returns
+ * a collection of paths) and pattern comprehension.
+ *
+ * Note about nullableIdentifiers: when any of these identifiers are null, the collection
+ * should be null.
+ */
 case class RollUpApply(left: LogicalPlan,
                        right: LogicalPlan,
                        collectionName: String,

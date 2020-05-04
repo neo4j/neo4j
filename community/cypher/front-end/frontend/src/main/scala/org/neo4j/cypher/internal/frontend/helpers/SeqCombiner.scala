@@ -20,9 +20,9 @@ import scala.reflect.ClassTag
 
 object SeqCombiner {
   /**
-    * Combines each element in the inner Seq's with one element of every other inner Seq.
-    *
-    * scala> combine(List(List("A", "B", "C"), List(1,2,3), List("x", "y", "z")))
+   * Combines each element in the inner Seq's with one element of every other inner Seq.
+   *
+   * scala> combine(List(List("A", "B", "C"), List(1,2,3), List("x", "y", "z")))
       res0: Seq[Seq[Any]] = List(
           List(A, 1, x),
           List(A, 1, y),
@@ -58,11 +58,11 @@ object SeqCombiner {
     }
 
     /**
-      * As above but for arrays.
-      *
-      * Works by first making on pass over the outer array to figure out the size and in the next pass
-      * if fills in the array,
-      */
+     * As above but for arrays.
+     *
+     * Works by first making on pass over the outer array to figure out the size and in the next pass
+     * if fills in the array,
+     */
     def combine[A: ClassTag](xs: Array[Array[A]]): Array[Array[A]] = {
         val ncols = xs.length
 

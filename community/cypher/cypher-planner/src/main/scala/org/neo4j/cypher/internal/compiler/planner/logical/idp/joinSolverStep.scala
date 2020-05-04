@@ -48,10 +48,10 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     }
 
     /**
-      *  Normally, it is not desirable to join on the argument(s).
-      *  The exception is when all bits that occurs in goal and the IDP table are compacted ones
-      *  (= not registered), because then it will not be possible to find an expand solution anymore.
-      */
+     *  Normally, it is not desirable to join on the argument(s).
+     *  The exception is when all bits that occurs in goal and the IDP table are compacted ones
+     *  (= not registered), because then it will not be possible to find an expand solution anymore.
+     */
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
     val expandStillPossible = (goal.exists(registered) || table.plans.exists(p => p._1._1.exists(registered))) && !IGNORE_EXPAND_SOLUTIONS_FOR_TEST
 

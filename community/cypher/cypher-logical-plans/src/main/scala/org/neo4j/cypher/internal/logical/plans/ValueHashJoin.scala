@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.expressions.Equals
 
 /**
-  * The definition of a value join is an equality predicate between two expressions that
-  * have different, non-empty variable-dependency sets.
-  */
+ * The definition of a value join is an equality predicate between two expressions that
+ * have different, non-empty variable-dependency sets.
+ */
 case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
                         (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override val lhs = Some(left)

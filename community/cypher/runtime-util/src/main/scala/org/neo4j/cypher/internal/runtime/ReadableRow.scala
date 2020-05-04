@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.values.AnyValue
 
 /**
-  * Cypher row which allows reading variables and caching property values.
-  */
+ * Cypher row which allows reading variables and caching property values.
+ */
 trait ReadableRow extends CachedPropertiesRow {
 
   def getLongAt(offset: Int): Long

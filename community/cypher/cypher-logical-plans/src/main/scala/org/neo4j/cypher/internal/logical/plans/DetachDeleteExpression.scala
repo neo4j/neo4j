@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each input row, delete the entity specified by 'expression' from the graph. If the entity is a
-  *   node) all it's relationships are also deleted
-  *   path) all nodes in the path and all their relationships are deleted.
-  */
+ * For each input row, delete the entity specified by 'expression' from the graph. If the entity is a
+ *   node) all it's relationships are also deleted
+ *   path) all nodes in the path and all their relationships are deleted.
+ */
 case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)

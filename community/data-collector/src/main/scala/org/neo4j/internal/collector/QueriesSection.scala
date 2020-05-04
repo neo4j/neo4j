@@ -33,9 +33,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Data collector section which contains query invocation data. This includes the query itself,
-  * the logical plan, cardinality information, and listing of seen invocations.
-  */
+ * Data collector section which contains query invocation data. This includes the query itself,
+ * the logical plan, cardinality information, and listing of seen invocations.
+ */
 object QueriesSection {
 
   sealed trait InvocationData

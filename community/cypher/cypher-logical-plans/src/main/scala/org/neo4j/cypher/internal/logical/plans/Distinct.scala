@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Distinct produces source rows without changing them, but omitting rows
-  * which have been produced before. That is, the order of rows is unchanged, but each
-  * unique combination of values is only produced once.
-  */
+ * Distinct produces source rows without changing them, but omitting rows
+ * which have been produced before. That is, the order of rows is unchanged, but each
+ * unique combination of values is only produced once.
+ */
 case class Distinct(source: LogicalPlan,
                     groupingExpressions: Map[String, Expression])
                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with ProjectingPlan with AggregatingPlan {

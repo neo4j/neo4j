@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 
 /**
-  * Maps single logical plan operators to their respective pipes. Does not recurse.
-  */
+ * Maps single logical plan operators to their respective pipes. Does not recurse.
+ */
 trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
   override def onLeaf(plan: LogicalPlan): Pipe
   override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe

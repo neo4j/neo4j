@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each input row, create a new relationship with the provided type and properties,
-  * and assign it to the variable 'idName'.
-  *
-  * This is a special version of CreateRelationship, which is used in a merge plan after checking that no relationship
-  * with the same type and properties exist between the given nodes.
-  */
+ * For each input row, create a new relationship with the provided type and properties,
+ * and assign it to the variable 'idName'.
+ *
+ * This is a special version of CreateRelationship, which is used in a merge plan after checking that no relationship
+ * with the same type and properties exist between the given nodes.
+ */
 case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
                                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 

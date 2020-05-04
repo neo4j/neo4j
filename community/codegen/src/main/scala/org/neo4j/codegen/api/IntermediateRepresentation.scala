@@ -30,18 +30,18 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
 /**
-  * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
-  *
-  * The representation is intended to be quite low level and fairly close to the actual bytecode representation.
-  */
+ * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
+ *
+ * The representation is intended to be quite low level and fairly close to the actual bytecode representation.
+ */
 sealed trait IntermediateRepresentation
 
 /**
-  * Invoke a static method
-  *
-  * @param method the method to invoke
-  * @param params the parameter to the static method
-  */
+ * Invoke a static method
+ *
+ * @param method the method to invoke
+ * @param params the parameter to the static method
+ */
 case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
@@ -53,59 +53,59 @@ case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation])
 case class InvokeStaticSideEffect(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
-  * Invoke a method
-  *
-  * @param target the target to call the method on
-  * @param method the method to invoke
-  * @param params the parameter to the method
-  */
+ * Invoke a method
+ *
+ * @param target the target to call the method on
+ * @param method the method to invoke
+ * @param params the parameter to the method
+ */
 case class Invoke(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation
 
 /**
-  * Invoke a void method
-  *
-  * @param target the target to call the method on
-  * @param method the method to invoke
-  * @param params the parameter to the method
-  */
+ * Invoke a void method
+ *
+ * @param target the target to call the method on
+ * @param method the method to invoke
+ * @param params the parameter to the method
+ */
 case class InvokeSideEffect(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation
 
 /**
-  * Load a local variable by name
-  *
-  * @param variable the name of the variable
-  */
+ * Load a local variable by name
+ *
+ * @param variable the name of the variable
+ */
 case class Load(variable: String) extends IntermediateRepresentation
 
 /**
-  * Load a field
-  *
-  * @param field the field to load
-  */
+ * Load a field
+ *
+ * @param field the field to load
+ */
 case class LoadField(field: Field) extends IntermediateRepresentation
 
 /**
-  * Set a field to a value
-  *
-  * @param field the field to set
-  * @param value the value to set
-  */
+ * Set a field to a value
+ *
+ * @param field the field to set
+ * @param value the value to set
+ */
 case class SetField(field: Field, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Constant java value
-  *
-  * @param value the constant value
-  */
+ * Constant java value
+ *
+ * @param value the constant value
+ */
 case class Constant(value: Any) extends IntermediateRepresentation
 
 /**
-  * Loads an array literal of the given inputs
-  *
-  * @param values the values of the array
-  */
+ * Loads an array literal of the given inputs
+ *
+ * @param values the values of the array
+ */
 case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRepresentation]) extends IntermediateRepresentation {
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[ArrayLiteral]
@@ -124,275 +124,275 @@ case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRe
 }
 
 /**
-  * Load a value from an array
-  *
-  * @param array array to load from
-  * @param offset offset to load from
-  */
+ * Load a value from an array
+ *
+ * @param array array to load from
+ * @param offset offset to load from
+ */
 case class ArrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Set a value in an array at the given offset
-  *
-  * @param array array to set value in
-  * @param offset offset to set at
-  * @param value value to set
-  */
+ * Set a value in an array at the given offset
+ *
+ * @param array array to set value in
+ * @param offset offset to set at
+ * @param value value to set
+ */
 case class ArraySet(array: IntermediateRepresentation, offset: IntermediateRepresentation, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Returns the lenght of an array
-  * @param array the length of the array
-  */
+ * Returns the lenght of an array
+ * @param array the length of the array
+ */
 case class ArrayLength(array: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines ternary expression, i.e. {{{condition ? onTrue : onFalse}}}
-  *
-  * @param condition the condition to test
-  * @param onTrue    will be evaluted if condition is true
-  * @param onFalse   will be evaluated if condition is false
-  */
+ * Defines ternary expression, i.e. {{{condition ? onTrue : onFalse}}}
+ *
+ * @param condition the condition to test
+ * @param onTrue    will be evaluted if condition is true
+ * @param onFalse   will be evaluated if condition is false
+ */
 case class Ternary(condition: IntermediateRepresentation,
                    onTrue: IntermediateRepresentation,
                    onFalse: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs + rhs}}}
-  *
-  * @param lhs the left-hand side to add
-  * @param rhs the right-hand side to add
-  */
+ * Defines {{{lhs + rhs}}}
+ *
+ * @param lhs the left-hand side to add
+ * @param rhs the right-hand side to add
+ */
 case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs - rhs}}}
-  *
-  * @param lhs the left-hand side to subtract from
-  * @param rhs the right-hand side to subtract
-  */
+ * Defines {{{lhs - rhs}}}
+ *
+ * @param lhs the left-hand side to subtract from
+ * @param rhs the right-hand side to subtract
+ */
 case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs * rhs}}}
-  *
-  * @param lhs the left-hand side to multiply
-  * @param rhs the right-hand side to multiply
-  */
+ * Defines {{{lhs * rhs}}}
+ *
+ * @param lhs the left-hand side to multiply
+ * @param rhs the right-hand side to multiply
+ */
 case class Multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs < rhs}}}
-  *
-  * @param lhs the left-hand side to compare
-  * @param rhs the right-hand side to compare
-  */
+ * Defines {{{lhs < rhs}}}
+ *
+ * @param lhs the left-hand side to compare
+ * @param rhs the right-hand side to compare
+ */
 case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs <= rhs}}}
-  *
-  * @param lhs the left-hand side to compare
-  * @param rhs the right-hand side to compare
-  */
+ * Defines {{{lhs <= rhs}}}
+ *
+ * @param lhs the left-hand side to compare
+ * @param rhs the right-hand side to compare
+ */
 case class Lte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs > rhs}}}
-  *
-  * @param lhs the left-hand side to compare
-  * @param rhs the right-hand side to compare
-  */
+ * Defines {{{lhs > rhs}}}
+ *
+ * @param lhs the left-hand side to compare
+ * @param rhs the right-hand side to compare
+ */
 case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines {{{lhs >= rhs}}}
-  *
-  * @param lhs the left-hand side to compare
-  * @param rhs the right-hand side to compare
-  */
+ * Defines {{{lhs >= rhs}}}
+ *
+ * @param lhs the left-hand side to compare
+ * @param rhs the right-hand side to compare
+ */
 case class Gte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines equality or identy, i.e. {{{lhs == rhs}}}
-  *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
-  */
+ * Defines equality or identy, i.e. {{{lhs == rhs}}}
+ *
+ * @param lhs the left-hand side to check
+ * @param rhs the right-hand side to check
+ */
 case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines  {{{lhs != rhs}}}
-  *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
-  */
+ * Defines  {{{lhs != rhs}}}
+ *
+ * @param lhs the left-hand side to check
+ * @param rhs the right-hand side to check
+ */
 case class NotEq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines  !test
-  *
-  * @param test the expression to check
-  */
+ * Defines  !test
+ *
+ * @param test the expression to check
+ */
 case class Not(test: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Checks if expression is null
-  */
+ * Checks if expression is null
+ */
 case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * A block is a sequence of operations where the block evaluates to the last expression
-  * @param ops the operations to perform in the block
-  */
+ * A block is a sequence of operations where the block evaluates to the last expression
+ * @param ops the operations to perform in the block
+ */
 case class Block(ops: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
-  * Noop does absolutely nothing.
-  */
+ * Noop does absolutely nothing.
+ */
 case object Noop extends IntermediateRepresentation
 
 /**
-  * A conditon executes the operation if the test evaluates to true.
-  *
-  *  {{{
-  *  if (test)
-  *  {
-  *    onTrue;
-  *  }
-  *  else
-  *  {
-  *    onFalse
-  *  }
-  *  }}}
-  * @param test the condition to check
-  * @param onTrue the operation to perform if the `test` evaluates to true
-  * @param onFalse optional, the operation to perform on false
-  */
+ * A conditon executes the operation if the test evaluates to true.
+ *
+ *  {{{
+ *  if (test)
+ *  {
+ *    onTrue;
+ *  }
+ *  else
+ *  {
+ *    onFalse
+ *  }
+ *  }}}
+ * @param test the condition to check
+ * @param onTrue the operation to perform if the `test` evaluates to true
+ * @param onFalse optional, the operation to perform on false
+ */
 case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepresentation,
                      onFalse: Option[IntermediateRepresentation] = None)
   extends IntermediateRepresentation
 
 /**
-  * A loop runs body while the provided test is true
-  * @param test the body will run while this evaluates to true
-  * @param body the body to run on each iteration
-  */
+ * A loop runs body while the provided test is true
+ * @param test the body will run while this evaluates to true
+ * @param body the body to run on each iteration
+ */
 case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentation, labelName: String)
   extends IntermediateRepresentation
 
 /**
-  * Break out of a labeled loop.
-  *
-  * {{{
-  * outerLoop:
-  * while (outerTest) {
-  *   while (innerTest) {
-  *     if (done) {
-  *       break outerLoop;
-  *     }
-  *   }
-  * }
-  * }}}
-  * @param labelName The label name of the loop to break out of
-  */
+ * Break out of a labeled loop.
+ *
+ * {{{
+ * outerLoop:
+ * while (outerTest) {
+ *   while (innerTest) {
+ *     if (done) {
+ *       break outerLoop;
+ *     }
+ *   }
+ * }
+ * }}}
+ * @param labelName The label name of the loop to break out of
+ */
 case class Break(labelName: String) extends IntermediateRepresentation
 
 /**
-  * Declare a local variable of the given type.
-  *
-  * {{{
-  * typ name;
-  * }}}
-  * @param typ the type of the variable
-  * @param name the name of the variable
-  */
+ * Declare a local variable of the given type.
+ *
+ * {{{
+ * typ name;
+ * }}}
+ * @param typ the type of the variable
+ * @param name the name of the variable
+ */
 case class DeclareLocalVariable(typ: codegen.TypeReference, name: String) extends IntermediateRepresentation
 
 /**
-  * Assign a variable to a value.
-  *
-  * {{{
-  * name = value;
-  * }}}
-  * @param name the name of the variable
-  * @param value the value to assign to the variable
-  */
+ * Assign a variable to a value.
+ *
+ * {{{
+ * name = value;
+ * }}}
+ * @param name the name of the variable
+ * @param value the value to assign to the variable
+ */
 case class AssignToLocalVariable(name: String, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * try-catch block
-  * {{{
-  *   try
-  *   {
-  *     ops;
-  *   }
-  *   catch (exception name)
-  *   {
-  *     onError;
-  *   }
-  * }}}
-  * @param ops the operation to perform in the happy path
-  * @param onError the operation to perform if an exception is caught
-  * @param exception the type of the exception
-  * @param name the name of the caught exception
-  */
+ * try-catch block
+ * {{{
+ *   try
+ *   {
+ *     ops;
+ *   }
+ *   catch (exception name)
+ *   {
+ *     onError;
+ *   }
+ * }}}
+ * @param ops the operation to perform in the happy path
+ * @param onError the operation to perform if an exception is caught
+ * @param exception the type of the exception
+ * @param name the name of the caught exception
+ */
 case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: codegen.TypeReference, name: String) extends IntermediateRepresentation
 
 /**
-  * Throw an error
-  * @param error the error to throw
-  */
+ * Throw an error
+ * @param error the error to throw
+ */
 case class Throw(error: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Boolean && operator
-  * {{{
-  *   lhs && rhs;
-  * }}}
-  * @param lhs the left-hand side of and
-  * @param rhs the right-hand side of and
-  */
+ * Boolean && operator
+ * {{{
+ *   lhs && rhs;
+ * }}}
+ * @param lhs the left-hand side of and
+ * @param rhs the right-hand side of and
+ */
 case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Boolean || operator
-  * {{{
-  *   lhs || rhs;
-  * }}}
-  * @param lhs the left-hand side of or
-  * @param rhs the right-hand side of or
-  */
+ * Boolean || operator
+ * {{{
+ *   lhs || rhs;
+ * }}}
+ * @param lhs the left-hand side of or
+ * @param rhs the right-hand side of or
+ */
 case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Loads a static field
-  * @param owner Either the owning class or None if it is a local static field
-  * @param output The type of the static field
-  * @param name The name of the static field
-  */
+ * Loads a static field
+ * @param owner Either the owning class or None if it is a local static field
+ * @param output The type of the static field
+ * @param name The name of the static field
+ */
 case class GetStatic(owner: Option[codegen.TypeReference], output: codegen.TypeReference, name: String) extends IntermediateRepresentation
 
 /**
-  * Instantiate a new object
-  * @param constructor the constructor to call
-  * @param params the parameter to the constructor
-  */
+ * Instantiate a new object
+ * @param constructor the constructor to call
+ * @param params the parameter to the constructor
+ */
 case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
-  * Instantiate a new instance of an inner class
-  *
-  * @param clazz     the inner-class to instantiate
-  * @param arguments the arguments to the constructor
-  */
+ * Instantiate a new instance of an inner class
+ *
+ * @param clazz     the inner-class to instantiate
+ * @param arguments the arguments to the constructor
+ */
 case class NewInstanceInnerClass(clazz: ExtendClass, arguments: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
-  * Instantiate a new array
-  * @param baseType the type of the array elements
-  * @param size the size of the array.
-  */
+ * Instantiate a new array
+ * @param baseType the type of the array elements
+ * @param size the size of the array.
+ */
 case class NewArray(baseType: codegen.TypeReference, size: Int) extends IntermediateRepresentation
 
 case class Returns(representation: IntermediateRepresentation) extends IntermediateRepresentation
@@ -405,22 +405,22 @@ case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean)
 }
 
 /**
-  * Box a primitive value
-  * @param expression the value to box
-  */
+ * Box a primitive value
+ * @param expression the value to box
+ */
 case class Box(expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Unbox a value to a primitive
-  * @param expression the value to unbox
-  */
+ * Unbox a value to a primitive
+ * @param expression the value to unbox
+ */
 case class Unbox(expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Defines a constructor
-  * @param owner the owner of the constructor, or the object to be instantiated
-  * @param params the parameter to the constructor
-  */
+ * Defines a constructor
+ * @param owner the owner of the constructor, or the object to be instantiated
+ * @param params the parameter to the constructor
+ */
 case class Constructor(owner: codegen.TypeReference, params: Seq[codegen.TypeReference]) {
   def asReference: codegen.MethodReference =
     if (params.isEmpty) codegen.MethodReference.constructorReference(owner)
@@ -428,48 +428,48 @@ case class Constructor(owner: codegen.TypeReference, params: Seq[codegen.TypeRef
 }
 
 /**
-  * Cast the given expression to the given type
-  * @param to the type to cast to
-  * @param expression the expression to cast
-  */
+ * Cast the given expression to the given type
+ * @param to the type to cast to
+ * @param expression the expression to cast
+ */
 case class Cast(to: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Instance of check if the given expression has the given type
-  * @param typ does expression have this type
-  * @param expression the expression to check
-  */
+ * Instance of check if the given expression has the given type
+ * @param typ does expression have this type
+ * @param expression the expression to check
+ */
 case class InstanceOf(typ: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
-  * Returns `this`
-  */
+ * Returns `this`
+ */
 case object Self extends IntermediateRepresentation
 
 /**
-  * A class that extends another class.
-  *
-  * The extending class is assumed to share the same constructor signature as the class it extends.
-  *
-  * @param name the name of the new class
-  * @param overrides the class it extends
-  * @param parameters the parameters to the contructor of the class and super class
-  * @param methods the methods of the class
-  * @param fields the fields of the class.
-  */
+ * A class that extends another class.
+ *
+ * The extending class is assumed to share the same constructor signature as the class it extends.
+ *
+ * @param name the name of the new class
+ * @param overrides the class it extends
+ * @param parameters the parameters to the contructor of the class and super class
+ * @param methods the methods of the class
+ * @param fields the fields of the class.
+ */
 case class ExtendClass(name: String,
                        overrides: TypeReference,
                        parameters: Seq[Parameter],
                        methods: Seq[MethodDeclaration],
                        fields: Seq[Field])
 /**
-  * Defines a method
-  *
-  * @param owner  the owner of the method
-  * @param returnType output type to the method
-  * @param name   the name of the method
-  * @param params the parameter types of the method
-  */
+ * Defines a method
+ *
+ * @param owner  the owner of the method
+ * @param returnType output type to the method
+ * @param name   the name of the method
+ * @param params the parameter types of the method
+ */
 case class Method(owner: codegen.TypeReference, returnType: codegen.TypeReference, name: String, params: codegen.TypeReference*) {
 
   def asReference: codegen.MethodReference = codegen.MethodReference.methodReference(owner, returnType, name, params: _*)
@@ -514,8 +514,8 @@ case class StaticField(typ: codegen.TypeReference, name: String, value: Option[A
 case class LocalVariable(typ: codegen.TypeReference, name: String, value: IntermediateRepresentation)
 
 /**
-  * Defines a simple dsl to facilitate constructing intermediate representation
-  */
+ * Defines a simple dsl to facilitate constructing intermediate representation
+ */
 object IntermediateRepresentation {
   def typeRef(manifest: Manifest[_]): codegen.TypeReference = {
     val arguments = manifest.typeArguments

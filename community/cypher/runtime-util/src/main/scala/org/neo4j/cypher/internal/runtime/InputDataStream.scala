@@ -22,34 +22,34 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.values.AnyValue
 
 /**
-  * Input data stream for Cypher query execution.
-  */
+ * Input data stream for Cypher query execution.
+ */
 trait InputDataStream {
   /**
-    * Get a cursor which traverses a batch of the input stream. Thread-safe.
-    *
-    * @return initialized input cursor, or `null` if there is not more input
-    */
+   * Get a cursor which traverses a batch of the input stream. Thread-safe.
+   *
+   * @return initialized input cursor, or `null` if there is not more input
+   */
   def nextInputBatch(): InputCursor
 }
 
 /**
-  * Cursor which traverses a batch of cypher query input rows.
-  */
+ * Cursor which traverses a batch of cypher query input rows.
+ */
 trait InputCursor extends AutoCloseable {
   /**
-    * Advance the cursor to the new input row.
-    *
-    * @return true if the cursor is not positioned at a new row, false if there are no more rows.
-    */
+   * Advance the cursor to the new input row.
+   *
+   * @return true if the cursor is not positioned at a new row, false if there are no more rows.
+   */
   def next(): Boolean
 
   /**
-    * Get a value in the input row.
-    *
-    * @param offset at which to get the value
-    * @return the input value
-    */
+   * Get a value in the input row.
+   *
+   * @param offset at which to get the value
+   * @return the input value
+   */
   def value(offset: Int): AnyValue
 }
 

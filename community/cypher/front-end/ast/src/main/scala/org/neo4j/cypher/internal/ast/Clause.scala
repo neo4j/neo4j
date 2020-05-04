@@ -259,12 +259,12 @@ case class CreateInConstruct(pattern: Pattern)
       SemanticPatternCheck.check(Pattern.SemanticContext.Construct, pattern)
 
   /**
-    * Checks if a relationship in new is cloned or newly created.
-    * If it is cloned, no type needs to be specified.
-    * Otherwise it has to have exactly one type.
-    *
-    * @return
-    */
+   * Checks if a relationship in new is cloned or newly created.
+   * If it is cloned, no type needs to be specified.
+   * Otherwise it has to have exactly one type.
+   *
+   * @return
+   */
   private def checkNewRelTypes: SemanticCheck = state => {
     pattern.patternParts.foldLeft(success) {
       case (acc, EveryPath(relChain: RelationshipChain)) => acc chain checkNewRelTypes(relChain, state)
@@ -768,8 +768,8 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 
   /**
-    * @return copy of this ProjectionClause with new return items
-    */
+   * @return copy of this ProjectionClause with new return items
+   */
   def withReturnItems(items: Seq[ReturnItem]): ProjectionClause
 
   override def semanticCheck: SemanticCheck =
@@ -850,15 +850,15 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 
   /**
-    * If you access a previously defined variable in a WITH/RETURN with DISTINCT or aggregation, that is not OK. Example:
-    * MATCH (a) RETURN sum(a.age) ORDER BY a.name
-    *
-    * This method takes the "Variable not defined" errors we get from the semantic analysis and provides a more helpful
-    * error message
-    * @param previousScopeVars all variables defined in the previous scope.
-    * @param error the error
-    * @return an error with a possibly better error message
-    */
+   * If you access a previously defined variable in a WITH/RETURN with DISTINCT or aggregation, that is not OK. Example:
+   * MATCH (a) RETURN sum(a.age) ORDER BY a.name
+   *
+   * This method takes the "Variable not defined" errors we get from the semantic analysis and provides a more helpful
+   * error message
+   * @param previousScopeVars all variables defined in the previous scope.
+   * @param error the error
+   * @return an error with a possibly better error message
+   */
   private def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])(error: SemanticErrorDef): SemanticErrorDef = {
     previousScopeVars.collectFirst {
       case name if error.msg.equals(s"Variable `$name` not defined") => error.withMsg(

@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For every source row, call the procedure 'call'.
-  *
-  *   If the procedure returns a stream, produce one row per result in this stream with result appended to the row
-  *   If the procedure returns void, produce the source row
-  */
+ * For every source row, call the procedure 'call'.
+ *
+ *   If the procedure returns a stream, produce one row per result in this stream with result appended to the row
+ *   If the procedure returns void, produce the source row
+ */
 case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)

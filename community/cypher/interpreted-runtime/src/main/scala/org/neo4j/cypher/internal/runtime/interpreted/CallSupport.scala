@@ -28,8 +28,8 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 
 /**
-  * This class contains helpers for calling procedures, user-defined functions and user-defined aggregations.
-  */
+ * This class contains helpers for calling procedures, user-defined functions and user-defined aggregations.
+ */
 object CallSupport {
 
   type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]

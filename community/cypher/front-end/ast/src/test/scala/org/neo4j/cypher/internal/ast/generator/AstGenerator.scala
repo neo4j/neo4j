@@ -242,10 +242,10 @@ object AstGenerator {
 }
 
 /**
-  * Random query generation
-  * Implements instances of Gen[T] for all query ast nodes
-  * Generated queries are syntactically (but not semantically) valid
-  */
+ * Random query generation
+ * Implements instances of Gen[T] for all query ast nodes
+ * Generated queries are syntactically (but not semantically) valid
+ */
 class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None) {
 
   // HELPERS

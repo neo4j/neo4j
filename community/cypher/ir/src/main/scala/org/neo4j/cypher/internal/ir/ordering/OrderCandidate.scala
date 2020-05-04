@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
 
 /**
-  * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.
-  * A candidate can be required (i.e. the rows need to sorted like this for correctness)
-  * or interesting (i.e. sorting the rows like this will allow for performance optimizations).
-  *
-  * There can be multiple candidates since different parts of a query can leverage different orders for their respective optimizations.
-  */
+ * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.
+ * A candidate can be required (i.e. the rows need to sorted like this for correctness)
+ * or interesting (i.e. sorting the rows like this will allow for performance optimizations).
+ *
+ * There can be multiple candidates since different parts of a query can leverage different orders for their respective optimizations.
+ */
 trait OrderCandidate {
   def order: Seq[ColumnOrder]
 

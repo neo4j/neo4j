@@ -28,9 +28,9 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
-  * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
-  * which we are not using here. We need to close the results to make sure that updates are committed and that cursors are closed.
-  */
+ * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
+ * which we are not using here. We need to close the results to make sure that updates are committed and that cursors are closed.
+ */
 class ClosingRuntimeResult(inner: RuntimeResult,
                            tx: Transaction,
                            txContext: TransactionalContext,

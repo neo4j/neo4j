@@ -25,11 +25,11 @@ import org.scalacheck.Shrink
 import scala.util.Random
 
 /**
-  * Not-so-great shrinking for Ast:s
-  *
-  * Works by rewriting at a random point (lists or options)
-  * to create a smaller query
-  */
+ * Not-so-great shrinking for Ast:s
+ *
+ * Works by rewriting at a random point (lists or options)
+ * to create a smaller query
+ */
 object AstShrinker {
 
   implicit val shrinkQuery: Shrink[Query] = Shrink[Query] { q =>

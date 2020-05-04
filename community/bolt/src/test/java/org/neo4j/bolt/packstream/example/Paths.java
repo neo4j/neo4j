@@ -51,7 +51,7 @@ import static org.neo4j.values.virtual.VirtualValues.path;
  *                                                    '--[:WORKS_FOR]--'
  *
  * </pre>
-*/
+ */
 public class Paths
 {
     // Paths

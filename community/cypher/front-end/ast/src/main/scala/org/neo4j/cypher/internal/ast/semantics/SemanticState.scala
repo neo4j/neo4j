@@ -288,9 +288,9 @@ case class SemanticState(currentScope: ScopeLocation,
   def withCypher9ComparabilitySemantics(cypher9ComparabilitySemantics: Boolean): SemanticState = copy(cypher9ComparabilitySemantics = cypher9ComparabilitySemantics)
 
   /**
-    * @param overriding if `true` then a previous occurrence of that variable is overridden.
-    *                   if `false` then a previous occurrence of that variable leads to an error
-    */
+   * @param overriding if `true` then a previous occurrence of that variable is overridden.
+   *                   if `false` then a previous occurrence of that variable leads to an error
+   */
   def declareVariable(variable: LogicalVariable,
                       possibleTypes: TypeSpec,
                       positions: Set[InputPosition] = Set.empty,

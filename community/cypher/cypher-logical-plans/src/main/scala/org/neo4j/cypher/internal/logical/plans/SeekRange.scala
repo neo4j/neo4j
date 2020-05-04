@@ -27,8 +27,8 @@ import MinMaxOrdering.NullOrdering
  */
 sealed trait SeekRange[+V] {
   /**
-    * The [[V]]s that are used to define this [[SeekRange]].
-    */
+   * The [[V]]s that are used to define this [[SeekRange]].
+   */
   def arguments: Seq[V]
 }
 

@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
-  * produce one row containing:
-  *   - argument
-  *   - the relationship as 'idName'
-  *   - the start node as 'startNode'
-  *   - the end node as 'endNode'
-  */
+ * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
+ * produce one row containing:
+ *   - argument
+ *   - the relationship as 'idName'
+ *   - the start node as 'startNode'
+ *   - the end node as 'endNode'
+ */
 case class DirectedRelationshipByIdSeek(idName: String,
                                         relIds: SeekableArgs,
                                         startNode: String,

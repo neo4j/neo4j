@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * for ( row <- source )
-  *   node = row.get(idName)
-  *   for ( (key,value) <- row.evaluate( expression ) )
-  *     node.setProperty( key, value )
-  *
-  *   produce row
-  */
+ * for ( row <- source )
+ *   node = row.get(idName)
+ *   for ( (key,value) <- row.evaluate( expression ) )
+ *     node.setProperty( key, value )
+ *
+ *   produce row
+ */
 case class SetNodePropertiesFromMap(
                                      source: LogicalPlan,
                                      idName: String,
