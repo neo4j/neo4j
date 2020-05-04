@@ -97,7 +97,7 @@ case class FabricFrontEnd(
 
     def isPeriodicCommit(queryString: String): Boolean = {
       val preParsedQuery = preParser.preParseQuery(queryString)
-      preParsedQuery.options.isPeriodicCommit
+      preParsedQuery.options.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
     }
   }
 
