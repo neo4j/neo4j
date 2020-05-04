@@ -51,7 +51,7 @@ class BoltRequestMessageReaderV3Test
 
     @ParameterizedTest
     @MethodSource( "boltV3UnsupportedMessages" )
-    void shouldNotDecodeUnsupportedMessages( RequestMessage message ) throws Exception
+    void shouldNotDecodeUnsupportedMessages( RequestMessage message )
     {
         assertThrows( Exception.class, () -> testMessageDecoding( message ) );
     }
@@ -71,7 +71,7 @@ class BoltRequestMessageReaderV3Test
         verify( stateMachine ).process( eq( message ), any() );
     }
 
-    private static Stream<RequestMessage> boltV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> boltV3Messages()
     {
         return BoltV3Messages.supported();
     }

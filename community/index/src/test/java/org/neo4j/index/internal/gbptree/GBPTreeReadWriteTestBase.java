@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -168,7 +167,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
         }
     }
 
-    private GBPTree<KEY,VALUE> index() throws IOException
+    private GBPTree<KEY,VALUE> index()
     {
         return new GBPTreeBuilder<>( pageCache, indexFile, layout ).build();
     }

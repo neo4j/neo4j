@@ -246,7 +246,7 @@ class ExecutionResultSerializer
         }
     }
 
-    private void writeNotifications( Iterable<Notification> notifications ) throws IOException
+    private void writeNotifications( Iterable<Notification> notifications )
     {
         //don't add anything if notifications are empty
         if ( !notifications.iterator().hasNext() )

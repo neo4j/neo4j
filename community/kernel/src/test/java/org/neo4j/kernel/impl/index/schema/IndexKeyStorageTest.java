@@ -215,17 +215,17 @@ class IndexKeyStorageTest
         return key;
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage() throws IOException
+    private IndexKeyStorage<GenericKey> keyStorage()
     {
         return keyStorage( directory.file( "file" ) );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file ) throws IOException
+    private IndexKeyStorage<GenericKey> keyStorage( File file )
     {
         return keyStorage( file, HEAP_ALLOCATOR );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory ) throws IOException
+    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory )
     {
         return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout );
     }
