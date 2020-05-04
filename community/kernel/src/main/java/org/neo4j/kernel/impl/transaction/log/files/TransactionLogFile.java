@@ -89,20 +89,20 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
 
     private void seekChannelPosition( long currentLogVersion ) throws IOException
     {
-        scrollToTheLastClosedTxPosition( currentLogVersion );
+        jumpToTheLastClosedTxPosition( currentLogVersion );
         LogPosition position;
         try
         {
-            position = scrollOverCheckpointRecords();
+            position = scanToEnd();
         }
         catch ( Exception e )
         {
             // If we can't read the log, it could be that the last-closed-transaction position in the meta-data store is wrong.
             // We can try again by scanning the log file from the start.
-            scrollToLogStart( currentLogVersion );
+            jumpToLogStart( currentLogVersion );
             try
             {
-                position = scrollOverCheckpointRecords();
+                position = scanToEnd();
             }
             catch ( Exception exception )
             {
@@ -113,7 +113,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         channel.position( position.getByteOffset() );
     }
 
-    private LogPosition scrollOverCheckpointRecords() throws IOException
+    private LogPosition scanToEnd() throws IOException
     {
         // scroll all over possible checkpoints
         ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
@@ -128,7 +128,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         return logEntryReader.lastPosition();
     }
 
-    private void scrollToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
+    private void jumpToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
     {
         LogPosition logPosition = context.getLastClosedTransactionPosition();
         long lastTxOffset = logPosition.getByteOffset();
@@ -144,7 +144,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         }
     }
 
-    private void scrollToLogStart( long currentLogVersion ) throws IOException
+    private void jumpToLogStart( long currentLogVersion ) throws IOException
     {
         long headerSize = logFiles.extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
         channel.position( headerSize );
