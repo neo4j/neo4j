@@ -21,12 +21,22 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection.EagerBuffer
+
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) {
 
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    val buffer = state.memoryTracker.memoryTrackingIterator(input, id.x).toIndexedSeq
-    buffer.toIterator
+    val buffer = EagerBuffer.createEagerBuffer[CypherRow](state.memoryTracker.memoryTrackerForOperator(id.x),
+                                                          1024,
+                                                          8192,
+                                                          EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT
+                                                          )
+    while (input.hasNext) {
+      buffer.add(input.next)
+    }
+    buffer.autoClosingIterator().asScala
   }
 }
