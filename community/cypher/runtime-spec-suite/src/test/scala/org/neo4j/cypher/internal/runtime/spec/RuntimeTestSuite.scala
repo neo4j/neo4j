@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.io.File
 import java.io.PrintWriter
 
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.AnyValue
@@ -136,6 +138,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   // HELPERS
+
+  def getConfig: Config = {
+    graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Config])
+  }
 
   override def getLabelId(label: String): Int = {
     tx.kernelTransaction().tokenRead().nodeLabel(label)

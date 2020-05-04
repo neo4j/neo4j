@@ -640,6 +640,30 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(result)
   }
 
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  test("should kill pruning-var-expand before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .pruningVarExpand("(x)<-[*4..4]-(y)")
+      .nodeByLabelScan("x", "C")
+      .build()
+
+    // when
+    nestedStarGraphCenterOnly(4, 4, "C", "L")
+
+    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.kibiBytes(32)), "Test")
+    restartTx()
+
+    // then
+    a[MemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     // TODO: Improve this to be a bit more reliable
     val expectedRowSize = estimateSize(valueToEstimate)
@@ -747,26 +771,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // then
     a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill pruning-var-expand before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .pruningVarExpand("(x)-[*..1]->(y)")
-      .allNodeScan("x")
-      .build()
-
-    // when
-    circleGraph(3000)
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
     }
   }
 
