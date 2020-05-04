@@ -61,6 +61,8 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -75,8 +77,10 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @EphemeralNeo4jLayoutExtension
@@ -378,6 +382,31 @@ class NodeStoreTest
         // then
         verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
         verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( PageCursorTracer.class ) );
+    }
+
+    @Test
+    public void shouldIncludeNodeRecordInExceptionLoadingDynamicLabelRecords() throws IOException
+    {
+        // given a node with reference to a dynamic label record
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L ).initialize( true, NULL_REFERENCE.longValue(), false, 1234, NO_LABELS_FIELD.longValue() );
+        NodeLabels labels = NodeLabelsField.parseLabelsField( record );
+        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL );
+        nodeStore.updateRecord( record, NULL );
+
+        // ... and where e.g. the dynamic label record is unused
+        for ( DynamicRecord dynamicLabelRecord : record.getDynamicLabelRecords() )
+        {
+            dynamicLabelRecord.setInUse( false );
+            nodeStore.getDynamicLabelStore().updateRecord( dynamicLabelRecord, NULL );
+        }
+
+        // when loading that node and making it heavy
+        NodeRecord loadedRecord = nodeStore.getRecord( record.getId(), nodeStore.newRecord(), NORMAL, NULL );
+        InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, NULL ) );
+
+        // then
+        assertThat( e.getMessage(), containsString( loadedRecord.toString() ) );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs )
