@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 

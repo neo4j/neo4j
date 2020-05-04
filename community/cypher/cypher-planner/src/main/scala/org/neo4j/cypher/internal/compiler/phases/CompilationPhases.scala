@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
@@ -63,7 +62,6 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
-import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {

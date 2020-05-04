@@ -63,7 +63,7 @@ case class VarLengthExpandPipe(source: Pipe,
 
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
-    val stack = new mutable.Stack[(NodeValue, RelationshipContainer)]
+    val stack = new mutable.ArrayStack[(NodeValue, RelationshipContainer)]
     stack.push((node, RelationshipContainer.EMPTY))
 
     new Iterator[(NodeValue, RelationshipContainer)] {

@@ -105,7 +105,7 @@ object ScenarioTestHelper {
 
   def checkForDuplicates(scenarios: Seq[Scenario], blacklist: Seq[BlacklistEntry]): Unit = {
     // test scenarios
-    var testScenarios = new mutable.HashSet[Scenario]()
+    val testScenarios = new mutable.HashSet[Scenario]()
     for (s <- scenarios) {
       if (testScenarios.contains(s)) {
         throw new IllegalStateException("Multiple scenarios exists for the following name: " + s)
@@ -114,7 +114,7 @@ object ScenarioTestHelper {
       }
     }
     // test blacklist
-    var testBlacklist = new mutable.HashSet[BlacklistEntry]()
+    val testBlacklist = new mutable.HashSet[BlacklistEntry]()
     for (b <- blacklist) {
       if (testBlacklist.contains(b)) {
         throw new IllegalStateException("Multiple blacklists entrys exists for the following scenario: " + b)

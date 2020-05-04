@@ -55,9 +55,7 @@ import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
