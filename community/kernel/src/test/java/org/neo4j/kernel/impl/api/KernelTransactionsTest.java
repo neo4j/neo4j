@@ -634,7 +634,7 @@ class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
-        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), INSTANCE ) ).thenReturn( mock( CommandCreationContext.class ) );
+        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( CommandCreationContext.class ) );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );
