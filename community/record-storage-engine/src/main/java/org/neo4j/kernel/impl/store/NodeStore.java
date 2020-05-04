@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.util.Bits;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
@@ -98,7 +100,14 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         }
 
         // Load any dynamic labels and populate the node record
-        node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false ) );
+        try
+        {
+            node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false ) );
+        }
+        catch ( InvalidRecordException e )
+        {
+            throw Exceptions.withMessage( e, format( "Error loading dynamic label records for %s | %s", node, e.getMessage() ) );
+        }
     }
 
     @Override
