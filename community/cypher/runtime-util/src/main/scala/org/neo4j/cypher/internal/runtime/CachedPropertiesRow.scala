@@ -23,22 +23,22 @@ import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.values.storable.Value
 
 /**
-  * Cypher row which allows caching property values.
-  */
+ * Cypher row which allows caching property values.
+ */
 trait CachedPropertiesRow {
 
   /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
+   * Returns the cached property value
+   *   or NO_VALUE if the entity does not have the property,
+   *   or null     if this cached value has been invalidated, or the property value has not been cached.
+   */
   def getCachedProperty(key: ASTCachedProperty): Value
 
   /**
-    * Returns the cached property value
-    *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or the property value has not been cached.
-    */
+   * Returns the cached property value
+   *   or NO_VALUE if the entity does not have the property,
+   *   or null     if this cached value has been invalidated, or the property value has not been cached.
+   */
   def getCachedPropertyAt(offset: Int): Value
 
   def setCachedProperty(key: ASTCachedProperty, value: Value): Unit

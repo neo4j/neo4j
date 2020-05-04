@@ -44,8 +44,8 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   /**
-    * Infinite iterator.
-    *
+   * Infinite iterator.
+   *
    * @param rowSize the size of a row in Bytes
    * @param data    optionally a function to create data. If non-empty, the result of passing the current row number will be returned in every call to `next`.
    *                If empty, the iterator returns integer values.

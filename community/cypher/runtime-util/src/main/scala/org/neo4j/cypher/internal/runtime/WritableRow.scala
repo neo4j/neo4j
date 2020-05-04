@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.values.AnyValue
 
 /**
-  * Cypher row which allows writing variables and invalidating cached properties.
-  */
+ * Cypher row which allows writing variables and invalidating cached properties.
+ */
 trait WritableRow extends CachedPropertiesRow {
 
   def setLongAt(offset: Int, value: Long): Unit
@@ -38,13 +38,13 @@ trait WritableRow extends CachedPropertiesRow {
   def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit
 
   /**
-    * Invalidate all cached node properties for the given node id
-    */
+   * Invalidate all cached node properties for the given node id
+   */
   def invalidateCachedNodeProperties(node: Long): Unit
 
   /**
-    * Invalidate all cached relationship properties for the given relationship id
-    */
+   * Invalidate all cached relationship properties for the given relationship id
+   */
   def invalidateCachedRelationshipProperties(rel: Long): Unit
 
   // Linenumber and filename specifics

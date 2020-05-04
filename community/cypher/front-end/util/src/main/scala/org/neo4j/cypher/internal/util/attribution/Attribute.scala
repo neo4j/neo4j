@@ -125,12 +125,12 @@ trait Default[KEY <: Identifiable, VALUE] extends Attribute[KEY, VALUE] {
 abstract class PartialAttribute[KEY <: Identifiable, VALUE](override val defaultValue: VALUE) extends Default[KEY, VALUE]
 
 /**
-  * This class encapsulates attributes and allows to copy them from one ID to another without having explicit
-  * read or write access. This allows rewriters to set some attributes manually on a new ID, but copying
-  * others over from an old id.
-  * @param idGen the IdGen used to provide new IDs
-  * @param attributes the attributes encapsulated
-  */
+ * This class encapsulates attributes and allows to copy them from one ID to another without having explicit
+ * read or write access. This allows rewriters to set some attributes manually on a new ID, but copying
+ * others over from an old id.
+ * @param idGen the IdGen used to provide new IDs
+ * @param attributes the attributes encapsulated
+ */
 case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes: Attribute[KEY, _]*) {
   def copy(from: Id): IdGen = new IdGen {
     override def id(): Id = {

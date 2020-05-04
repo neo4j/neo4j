@@ -30,36 +30,36 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 /**
-  * Matches a numeric argument from a PlanDescription, e.g. EstimatedRows.
-  *
-  * There are two types of inheriting types:
-  * - abstract classes that specify how to match
-  * - traits that specify what to match.
-  *
-  * They need to mixed together to get a fully functional matcher, for example
-  * `new ExactArgumentMatcher(rows) with ActualRowsMatcher`
-  */
+ * Matches a numeric argument from a PlanDescription, e.g. EstimatedRows.
+ *
+ * There are two types of inheriting types:
+ * - abstract classes that specify how to match
+ * - traits that specify what to match.
+ *
+ * They need to mixed together to get a fully functional matcher, for example
+ * `new ExactArgumentMatcher(rows) with ActualRowsMatcher`
+ */
 trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
 
   /**
-    * Obtains the value of the argument from the plan description, if it exists
-    */
+   * Obtains the value of the argument from the plan description, if it exists
+   */
   def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long]
 
   /**
-    * A string of the argument name to build cool error messages
-    */
+   * A string of the argument name to build cool error messages
+   */
   val argString: String
 
   /**
-    * A string of the expected value to build cool error messages
-    */
+   * A string of the expected value to build cool error messages
+   */
   val argMatcherDesc: String
 
   /**
-    * @param actualValue the actual value from the argument
-    * @return if it matches the expected value
-    */
+   * @param actualValue the actual value from the argument
+   * @return if it matches the expected value
+   */
   def matches(actualValue: Long): Boolean
 
   /**
@@ -83,8 +83,8 @@ trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
 }
 
 /**
-  * Matches an Argument by exact comparison
-  */
+ * Matches an Argument by exact comparison
+ */
 abstract class ExactArgumentMatcher(override val expectedValue: Long) extends NumericArgumentMatcher {
   override def matches(amount: Long): Boolean = expectedValue == amount
 
@@ -92,8 +92,8 @@ abstract class ExactArgumentMatcher(override val expectedValue: Long) extends Nu
 }
 
 /**
-  * Matches an Argument by range between two values
-  */
+ * Matches an Argument by range between two values
+ */
 abstract class RangeArgumentMatcher(expectedAmountMin: Long, expectedAmountMax: Long) extends NumericArgumentMatcher {
   override val expectedValue: Long = expectedAmountMin
 
@@ -108,8 +108,8 @@ abstract class RangeArgumentMatcher(expectedAmountMin: Long, expectedAmountMax: 
 }
 
 /**
-  * Matches the actual rows from profiling
-  */
+ * Matches the actual rows from profiling
+ */
 trait ActualRowsMatcher extends NumericArgumentMatcher {
   override val argString: String = "rows"
 
@@ -120,8 +120,8 @@ trait ActualRowsMatcher extends NumericArgumentMatcher {
 }
 
 /**
-  * Macthes the estimated rows from planning
-  */
+ * Macthes the estimated rows from planning
+ */
 trait EstimatedRowsMatcher extends NumericArgumentMatcher {
   override val argString: String = "estimated rows"
 
@@ -132,8 +132,8 @@ trait EstimatedRowsMatcher extends NumericArgumentMatcher {
 }
 
 /**
-  * Matches the DB hits from profiling
-  */
+ * Matches the DB hits from profiling
+ */
 trait DBHitsMatcher extends NumericArgumentMatcher {
   override val argString: String = "DB hits"
 
@@ -144,8 +144,8 @@ trait DBHitsMatcher extends NumericArgumentMatcher {
 }
 
 /**
-  * Matches the Time from profiling
-  */
+ * Matches the Time from profiling
+ */
 trait TimeMatcher extends NumericArgumentMatcher {
   override val argString: String = "Time"
 
@@ -156,8 +156,8 @@ trait TimeMatcher extends NumericArgumentMatcher {
 }
 
 /**
-  * Matches the Memory from profiling
-  */
+ * Matches the Memory from profiling
+ */
 trait MemoryMatcher extends NumericArgumentMatcher {
   override val argString: String = "Memory"
 
@@ -168,8 +168,8 @@ trait MemoryMatcher extends NumericArgumentMatcher {
 }
 
 /**
-  * Matches the Global Memory from profiling
-  */
+ * Matches the Global Memory from profiling
+ */
 trait GlobalMemoryMatcher extends NumericArgumentMatcher {
   override val argString: String = "GlobalMemory"
 

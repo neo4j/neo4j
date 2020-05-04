@@ -23,38 +23,38 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
-  * executing right.
-  *
-  * for ( leftRow <- left ) {
-  *   if ( leftRow.evaluate( expr) ) {
-  *     produce leftRow
-  *   } else {
-  *     right.setArgument( leftRow )
-  *     if ( right.nonEmpty ) {
-  *       produce leftRow
-  *     }
-  *   }
-  * }
-  */
+ * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
+ * executing right.
+ *
+ * for ( leftRow <- left ) {
+ *   if ( leftRow.evaluate( expr) ) {
+ *     produce leftRow
+ *   } else {
+ *     right.setArgument( leftRow )
+ *     if ( right.nonEmpty ) {
+ *       produce leftRow
+ *     }
+ *   }
+ * }
+ */
 case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(implicit idGen: IdGen)
   extends AbstractSelectOrSemiApply(left, right, expr)(idGen)
 
 /**
-  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
-  * executing right.
-  *
-  * for ( leftRow <- left ) {
-  *   if ( leftRow.evaluate( expr) ) {
-  *     produce leftRow
-  *   } else {
-  *     right.setArgument( leftRow )
-  *     if ( right.isEmpty ) {
-  *       produce leftRow
-  *     }
-  *   }
-  * }
-  */
+ * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
+ * executing right.
+ *
+ * for ( leftRow <- left ) {
+ *   if ( leftRow.evaluate( expr) ) {
+ *     produce leftRow
+ *   } else {
+ *     right.setArgument( leftRow )
+ *     if ( right.isEmpty ) {
+ *       produce leftRow
+ *     }
+ *   }
+ * }
+ */
 case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(implicit idGen: IdGen)
   extends AbstractSelectOrSemiApply(left, right, expr)(idGen)
 

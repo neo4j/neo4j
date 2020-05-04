@@ -31,8 +31,8 @@ import org.neo4j.values.virtual.ListValue
 import scala.collection.Seq
 
 /**
-  * These classes solve List Predicates.
-  */
+ * These classes solve List Predicates.
+ */
 abstract class InList(collection: Expression,
                       innerVariableName: String,
                       innerVariableOffset: Int,

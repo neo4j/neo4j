@@ -45,15 +45,15 @@ object ResolvedFunctionInvocation {
 }
 
 /**
-  * A ResolvedFunctionInvocation is a user-defined function where the signature
-  * has been resolved, i.e. verified that it exists in the database
-  *
-  * @param qualifiedName The qualified name of the function.
-  * @param fcnSignature Either `Some(signature)` if the signature was resolved, or
-  *                     `None` if the function didn't exist
-  * @param callArguments The argument list to the function
-  * @param position The position in the original query string.
-  */
+ * A ResolvedFunctionInvocation is a user-defined function where the signature
+ * has been resolved, i.e. verified that it exists in the database
+ *
+ * @param qualifiedName The qualified name of the function.
+ * @param fcnSignature Either `Some(signature)` if the signature was resolved, or
+ *                     `None` if the function didn't exist
+ * @param callArguments The argument list to the function
+ * @param position The position in the original query string.
+ */
 case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
                                       fcnSignature: Option[UserFunctionSignature],
                                       callArguments: IndexedSeq[Expression])

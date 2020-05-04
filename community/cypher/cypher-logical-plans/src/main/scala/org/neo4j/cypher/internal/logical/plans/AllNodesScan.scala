@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Produce one row for every node in the graph. Each row contains the contents of argument, and
-  * a node assigned to the variable IdName.
-  */
+ * Produce one row for every node in the graph. Each row contains the contents of argument, and
+ * a node assigned to the variable IdName.
+ */
 case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 

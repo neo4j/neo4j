@@ -37,17 +37,17 @@ trait HasWorkIdentity {
 
 trait WorkIdentity {
   /**
-    * Identifies the work/computation performed by this task, as opposed to identifying the task itself.
-    * If multiple different tasks all execute the same logic (e.g., operator pipeline) they should return the same <code>workId</code>.
-    */
+   * Identifies the work/computation performed by this task, as opposed to identifying the task itself.
+   * If multiple different tasks all execute the same logic (e.g., operator pipeline) they should return the same <code>workId</code>.
+   */
   def workId: Id
 
   /**
-    * Describes the work/computation performed by this task, as opposed to describing the task itself.
-    * Multiple tasks that each execute the same logic (e.g., operator pipeline) should return the same value.
-    * E.g., OperatorPipeline[AllNodesScan].
-    * Two tasks may return the same value <code>workDescription</code> but different values for <code>workId</code>.
-    */
+   * Describes the work/computation performed by this task, as opposed to describing the task itself.
+   * Multiple tasks that each execute the same logic (e.g., operator pipeline) should return the same value.
+   * E.g., OperatorPipeline[AllNodesScan].
+   * Two tasks may return the same value <code>workDescription</code> but different values for <code>workId</code>.
+   */
   def workDescription: String
 
   override def toString: String = s"$workDescription-${workId.x}"

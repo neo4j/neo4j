@@ -47,8 +47,8 @@ import org.neo4j.codegen.source.SourceVisitor
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Produces runnable code from an IntermediateRepresentation
-  */
+ * Produces runnable code from an IntermediateRepresentation
+ */
 object CodeGeneration {
 
   // Use these options for Debugging. They will print generated code to stdout

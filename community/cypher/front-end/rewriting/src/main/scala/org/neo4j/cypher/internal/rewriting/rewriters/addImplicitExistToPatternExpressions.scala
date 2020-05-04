@@ -26,16 +26,16 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
 
 /**
-  * Adds an exist around any pattern expression that is expected to produce a boolean e.g.
-  *
-  *   MATCH (n) WHERE (n)-->(m) RETURN n
-  *
-  *    is rewritten to
-  *
-  *  MATCH (n) WHERE EXISTS((n)-->(m)) RETURN n
-  *
-  * This rewrite normalizes this cases and make it easier to plan correctly.
-  */
+ * Adds an exist around any pattern expression that is expected to produce a boolean e.g.
+ *
+ *   MATCH (n) WHERE (n)-->(m) RETURN n
+ *
+ *    is rewritten to
+ *
+ *  MATCH (n) WHERE EXISTS((n)-->(m)) RETURN n
+ *
+ * This rewrite normalizes this cases and make it easier to plan correctly.
+ */
 case class addImplicitExistToPatternExpressions(semanticState: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(Rewriter.lift {

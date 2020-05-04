@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
-  * row containing the source row and the found path.
-  */
+ * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
+ * row containing the source row and the found path.
+ */
 case class FindShortestPaths(source: LogicalPlan,
                              shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,

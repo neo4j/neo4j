@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 /**
-  * This class holds methods for performing semantic analysis.
-  */
+ * This class holds methods for performing semantic analysis.
+ */
 trait SemanticAnalysisTooling {
 
   def semanticCheckFold[A](
@@ -202,9 +202,9 @@ trait SemanticAnalysisTooling {
     (_: SemanticState).declareVariable(v, possibleTypes)
 
   /**
-    * @param overriding if `true` then a previous occurrence of that variable is overridden.
-    *                   if `false` then a previous occurrence of that variable leads to an error
-    */
+   * @param overriding if `true` then a previous occurrence of that variable is overridden.
+   *                   if `false` then a previous occurrence of that variable leads to an error
+   */
   def declareVariable(v: LogicalVariable,
                       typeGen: TypeGenerator,
                       positions: Set[InputPosition] = Set.empty,

@@ -25,8 +25,8 @@ import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
 
 /**
-  * Parser for Cypher queries.
-  */
+ * Parser for Cypher queries.
+ */
 class CypherParser extends Parser
   with Statement
   with Expressions {

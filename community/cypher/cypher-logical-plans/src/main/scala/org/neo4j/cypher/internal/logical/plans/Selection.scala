@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each source row, produce it if all predicates are true.
-  */
+ * For each source row, produce it if all predicates are true.
+ */
 case class Selection(predicate: Ands,
                      source: LogicalPlan
                     )(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {

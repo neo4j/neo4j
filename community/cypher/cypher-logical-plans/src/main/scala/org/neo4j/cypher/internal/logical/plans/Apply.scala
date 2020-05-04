@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For every row in left, set that row as the argument, and produce all rows from right
-  *
-  * for ( leftRow <- left ) {
-  *   right.setArgument( leftRow )
-  *   for ( rightRow <- right ) {
-  *     produce rightRow
-  *   }
-  * }
-  */
+ * For every row in left, set that row as the argument, and produce all rows from right
+ *
+ * for ( leftRow <- left ) {
+ *   right.setArgument( leftRow )
+ *   for ( rightRow <- right ) {
+ *     produce rightRow
+ *   }
+ * }
+ */
 case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with ApplyPlan {
 

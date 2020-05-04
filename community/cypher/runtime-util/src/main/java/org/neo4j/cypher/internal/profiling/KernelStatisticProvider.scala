@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.profiling
 import org.neo4j.cypher.result.OperatorProfile
 
 /**
-  * Expose various query execution kernel statistics
-  */
+ * Expose various query execution kernel statistics
+ */
 trait KernelStatisticProvider {
   /**
-    * @return observed page cache hits that was caused by particular query execution
-    */
+   * @return observed page cache hits that was caused by particular query execution
+   */
   def getPageCacheHits: Long
 
   /**
-    * @return observer page cache misses that was caused by particular query execution
-    */
+   * @return observer page cache misses that was caused by particular query execution
+   */
   def getPageCacheMisses: Long
 }
 

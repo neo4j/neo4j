@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Aggregation is a more advanced version of Distinct, where source rows are grouped by the
-  * values of the groupingsExpressions. When the source is fully consumed, one row is produced
-  * for every group, containing the values of the groupingExpressions for that row, as well as
-  * aggregates computed on all the rows in that group.
-  *
-  * If there are no groupingExpressions, aggregates are computed over all source rows.
-  */
+ * Aggregation is a more advanced version of Distinct, where source rows are grouped by the
+ * values of the groupingsExpressions. When the source is fully consumed, one row is produced
+ * for every group, containing the values of the groupingExpressions for that row, as well as
+ * aggregates computed on all the rows in that group.
+ *
+ * If there are no groupingExpressions, aggregates are computed over all source rows.
+ */
 case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])

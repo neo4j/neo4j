@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each input row, create new nodes and relationships.
-  */
+ * For each input row, create new nodes and relationships.
+ */
 case class Create(source: LogicalPlan,
                   nodes: Seq[CreateNode],
                   relationships: Seq[CreateRelationship])

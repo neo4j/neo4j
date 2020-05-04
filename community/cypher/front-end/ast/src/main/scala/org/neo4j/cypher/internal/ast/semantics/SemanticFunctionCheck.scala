@@ -195,8 +195,8 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
     }
 
   /**
-    * Check that invocation align with one of the functions type signatures
-    */
+   * Check that invocation align with one of the functions type signatures
+   */
   def checkTypeSignatures(
                            ctx: Expression.SemanticContext,
                            f:TypeSignatures,

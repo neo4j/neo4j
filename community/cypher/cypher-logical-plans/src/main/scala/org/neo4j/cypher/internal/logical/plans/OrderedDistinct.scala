@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * OrderedDistinct is like Distinct, except that it relies on the input coming
-  * * in a particular order, which it can leverage by keeping less state to aggregate at any given time.
-  */
+ * OrderedDistinct is like Distinct, except that it relies on the input coming
+ * * in a particular order, which it can leverage by keeping less state to aggregate at any given time.
+ */
 case class OrderedDistinct(source: LogicalPlan,
                            groupingExpressions: Map[String, Expression],
                            orderToLeverage: Seq[Expression])

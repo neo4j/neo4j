@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
-  * Anonymizer which renames tokens and cypher parts using some scheme. All renames have to be reproducible and
-  * unique to create a valid query.
-  *
-  * The intended usage of this rewriter is for anonymizing queries before storage, to avoid retaining domain specific
-  * information which could harm the operation or integrity of the original cypher deployment. This anonymization would
-  * execucted by 1) parsing the query, 2) running the rewriter, and 3) writing the query back to string form
-  * using the Prettifier.
-  */
+ * Anonymizer which renames tokens and cypher parts using some scheme. All renames have to be reproducible and
+ * unique to create a valid query.
+ *
+ * The intended usage of this rewriter is for anonymizing queries before storage, to avoid retaining domain specific
+ * information which could harm the operation or integrity of the original cypher deployment. This anonymization would
+ * execucted by 1) parsing the query, 2) running the rewriter, and 3) writing the query back to string form
+ * using the Prettifier.
+ */
 trait Anonymizer {
   def variable(name: String): String
   def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String

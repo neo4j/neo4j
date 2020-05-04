@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Cartesian Product
-  *
-  * for ( leftRow <- left )
-  *   for ( rightRow <- right )
-  *     produce (leftRow merge rightRow)
-  */
+ * Cartesian Product
+ *
+ * for ( leftRow <- left )
+ *   for ( rightRow <- right )
+ *     produce (leftRow merge rightRow)
+ */
 case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)

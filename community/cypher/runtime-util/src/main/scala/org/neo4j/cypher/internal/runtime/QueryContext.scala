@@ -283,26 +283,26 @@ trait Operations[T, CURSOR] {
   def removeProperty(obj: Long, propertyKeyId: Int): Boolean
 
   /**
-    * @param throwOnDeleted if this is `true` an Exception will be thrown when the entity with id `obj` has been deleted in this transaction.
-    *                       If this is `false`, it will return `Values.NO_VALUE` in that case.
-    */
+   * @param throwOnDeleted if this is `true` an Exception will be thrown when the entity with id `obj` has been deleted in this transaction.
+   *                       If this is `false`, it will return `Values.NO_VALUE` in that case.
+   */
   def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean): Value
 
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
   /**
-    * @return `null` if there are no changes.
-    *         `NO_VALUE` if the property was deleted.
-    *         `v` if the property was set to v
-    * @throws org.neo4j.exceptions.EntityNotFoundException if the node was deleted
-    */
+   * @return `null` if there are no changes.
+   *         `NO_VALUE` if the property was deleted.
+   *         `v` if the property was set to v
+   * @throws org.neo4j.exceptions.EntityNotFoundException if the node was deleted
+   */
   def getTxStateProperty(obj: Long, propertyKeyId: Int): Value
 
   /**
-    * @return `None` if TxState has no changes.
-    *         `Some(true)` if the property was changed.
-    *         `Some(false)` if the property or the entity were deleted in TxState.
-    */
+   * @return `None` if TxState has no changes.
+   *         `Some(true)` if the property was changed.
+   *         `Some(false)` if the property or the entity were deleted in TxState.
+   */
   def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Option[Boolean]
 
   def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]

@@ -29,8 +29,8 @@ import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * Specialization of [[DistinctPipe]] that leverages the order of some grouping columns.
-  */
+ * Specialization of [[DistinctPipe]] that leverages the order of some grouping columns.
+ */
 case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
@@ -99,8 +99,8 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 }
 
 /**
-  * Specialization of [[OrderedDistinctPipe]] for the case that all groupingColumns are ordered.
-  */
+ * Specialization of [[OrderedDistinctPipe]] for the case that all groupingColumns are ordered.
+ */
 case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {

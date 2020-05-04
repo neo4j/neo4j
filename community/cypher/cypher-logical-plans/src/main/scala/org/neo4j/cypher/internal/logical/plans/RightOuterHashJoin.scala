@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
-  * table. In addition, also produces left rows with missing key values, and right rows that were not matched
-  * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
-  *
-  * This is equivalent to a right outer join in relational algebra.
-  */
+ * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
+ * table. In addition, also produces left rows with missing key values, and right rows that were not matched
+ * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
+ *
+ * This is equivalent to a right outer join in relational algebra.
+ */
 case class RightOuterHashJoin(nodes: Set[String],
                              left: LogicalPlan,
                              right: LogicalPlan)

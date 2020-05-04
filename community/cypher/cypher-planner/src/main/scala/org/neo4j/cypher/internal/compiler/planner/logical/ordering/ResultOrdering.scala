@@ -30,21 +30,21 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**
-  * This object provides some utility methods around InterestingOrder and ProvidedOrder.
-  */
+ * This object provides some utility methods around InterestingOrder and ProvidedOrder.
+ */
 object ResultOrdering {
 
   /**
-    * @param interestingOrder the InterestingOrder from the query
-    * @param indexProperties  a sequence of the properties (inclusive variable name) of a (composite) index.
-    *                         The sequence is length one for non-composite indexes.
-    * @param orderTypes       a sequence of the type that the index query compares against for that each property.
-    *                         So for `WHERE n.prop = 1 AND n.foo > 'bla'` this will be Seq( CTInt, CTString )
-    * @param capabilityLookup a lambda function to ask the index for a (sub)-sequence of types for the order capability it provides.
-    *                         With the above example, we would ask the index for its ordering capability for Seq(CTInt, CTString).
-    *                         In the future we also want to able to ask it for prefix sequences (e.g. just Seq(CTInt)).
-    * @return the order that the index guarantees, if possible in accordance with the given required order.
-    */
+   * @param interestingOrder the InterestingOrder from the query
+   * @param indexProperties  a sequence of the properties (inclusive variable name) of a (composite) index.
+   *                         The sequence is length one for non-composite indexes.
+   * @param orderTypes       a sequence of the type that the index query compares against for that each property.
+   *                         So for `WHERE n.prop = 1 AND n.foo > 'bla'` this will be Seq( CTInt, CTString )
+   * @param capabilityLookup a lambda function to ask the index for a (sub)-sequence of types for the order capability it provides.
+   *                         With the above example, we would ask the index for its ordering capability for Seq(CTInt, CTString).
+   *                         In the future we also want to able to ask it for prefix sequences (e.g. just Seq(CTInt)).
+   * @return the order that the index guarantees, if possible in accordance with the given required order.
+   */
   def withIndexOrderCapability(interestingOrder: InterestingOrder,
                                indexProperties: Seq[Property],
                                orderTypes: Seq[CypherType],

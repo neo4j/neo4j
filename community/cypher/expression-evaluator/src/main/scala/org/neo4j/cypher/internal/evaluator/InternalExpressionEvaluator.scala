@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.evaluator
 import org.neo4j.values.AnyValue
 
 /**
-  * Evaluates an arbitrary Cypher expression
-  */
+ * Evaluates an arbitrary Cypher expression
+ */
 trait InternalExpressionEvaluator {
 
   /**
-    * Evaluates a Cypher expression provided as a String to an instance of [[AnyValue]]
-    *
-    * @param expression The cypher expression string
-    * @return An instance of [[AnyValue]] corresponding to the provided expression string
-    * @throws EvaluationException if evaluation fails
-    */
+   * Evaluates a Cypher expression provided as a String to an instance of [[AnyValue]]
+   *
+   * @param expression The cypher expression string
+   * @return An instance of [[AnyValue]] corresponding to the provided expression string
+   * @throws EvaluationException if evaluation fails
+   */
   @throws(classOf[EvaluationException])
   def evaluate(expression: String): AnyValue
 }

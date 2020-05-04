@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
-  * This operator does a full scan of an index, producing one row per entry.
-  */
+ * This operator does a full scan of an index, producing one row per entry.
+ */
 case class NodeIndexScan(idName: String,
                          label: LabelToken,
                          properties: Seq[IndexedProperty],

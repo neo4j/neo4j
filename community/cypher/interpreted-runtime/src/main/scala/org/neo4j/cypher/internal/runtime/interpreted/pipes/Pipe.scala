@@ -23,16 +23,16 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
-  * Pipe is a central part of Cypher. Most pipes are decorators - they
-  * wrap another pipe. ParamPipe and NullPipe the only exception to this.
-  * Pipes are combined to form an execution plan, and when iterated over,
-  * the execute the query.
-  *
-  * ** WARNING **
-  * Pipes are re-used between query executions, and must not hold state in instance fields.
-  * Not heeding this warning will lead to bugs that do not manifest except for under concurrent use.
-  * If you need to keep state per-query, have a look at QueryState instead.
-  */
+ * Pipe is a central part of Cypher. Most pipes are decorators - they
+ * wrap another pipe. ParamPipe and NullPipe the only exception to this.
+ * Pipes are combined to form an execution plan, and when iterated over,
+ * the execute the query.
+ *
+ * ** WARNING **
+ * Pipes are re-used between query executions, and must not hold state in instance fields.
+ * Not heeding this warning will lead to bugs that do not manifest except for under concurrent use.
+ * If you need to keep state per-query, have a look at QueryState instead.
+ */
 trait Pipe {
   self: Pipe =>
 

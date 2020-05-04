@@ -34,12 +34,12 @@ object MinimumGraphStatistics {
 }
 
 /**
-  * The relative costs of the different operators are estimated for graphs of some size, because no database user
-  * will have graphs with <10 nodes. This means thought that applying these costs to single-digit graphs gives surprising
-  * results, and plans that will be clearly suboptimal for larger graphs. This is mostly fine, as we force replanning
-  * when the graph grows, but for large import queries this could have drastic performance impact in case the initial
-  * import query gets stuck with a plan that becomes unusable towards the end of query invocation.
-  */
+ * The relative costs of the different operators are estimated for graphs of some size, because no database user
+ * will have graphs with <10 nodes. This means thought that applying these costs to single-digit graphs gives surprising
+ * results, and plans that will be clearly suboptimal for larger graphs. This is mostly fine, as we force replanning
+ * when the graph grows, but for large import queries this could have drastic performance impact in case the initial
+ * import query gets stuck with a plan that becomes unusable towards the end of query invocation.
+ */
 class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphStatistics(delegate) {
 
   override def nodesAllCardinality(): Cardinality =

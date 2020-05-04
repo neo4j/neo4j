@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.logical.plans
 
 /**
-  * The index order that will be requested of the index during index seeks or scans
-  */
+ * The index order that will be requested of the index during index seeks or scans
+ */
 sealed trait IndexOrder
 
 case object IndexOrderAscending extends IndexOrder

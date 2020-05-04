@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
 
 /**
-  * Retrieves node counts from count store, for nodes with specified (optional) labels.
-  * Can also be used to compute node count for cartesian product of multiple pattern nodes.
-  * E.g.,
-  * MATCH (n:L1), (n2:L2), (n3) RETURN count(*)
-  *
-  * @param labels list of labels, of different pattern nodes
-  */
+ * Retrieves node counts from count store, for nodes with specified (optional) labels.
+ * Can also be used to compute node count for cartesian product of multiple pattern nodes.
+ * E.g.,
+ * MATCH (n:L1), (n2:L2), (n3) RETURN count(*)
+ *
+ * @param labels list of labels, of different pattern nodes
+ */
 case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
                                       (val id: Id = Id.INVALID_ID) extends Pipe {
 

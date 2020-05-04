@@ -45,9 +45,9 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
                 runtime: CypherRuntime[CONTEXT]): ExecutionPlan
 
   /**
-    * Compile a query
-    * @return the execution plan and the used runtime context
-    */
+   * Compile a query
+   * @return the execution plan and the used runtime context
+   */
   def buildPlanAndContext(logicalQuery: LogicalQuery,
                           runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT)
 

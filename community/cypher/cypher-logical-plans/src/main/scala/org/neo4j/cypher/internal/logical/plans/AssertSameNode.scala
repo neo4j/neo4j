@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For every row in left, assert that all rows in right produce the same value
-  * for the variable IdName. Produce the rows from left.
-  *
-  * for ( leftRow <- left )
-  *   for ( rightRow <- right )
-  *     assert( leftRow(node) == rightRow(node) )
-  *   produce leftRow
-  *
-  * This operator is planned for merges using unique index seeks.
-  */
+ * For every row in left, assert that all rows in right produce the same value
+ * for the variable IdName. Produce the rows from left.
+ *
+ * for ( leftRow <- left )
+ *   for ( rightRow <- right )
+ *     assert( leftRow(node) == rightRow(node) )
+ *   produce leftRow
+ *
+ * This operator is planned for merges using unique index seeks.
+ */
 case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)

@@ -278,9 +278,9 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private int pos;
 
     /**
-    * Number of keys in the current leaf, this value is cached and only re-read every time there's
-    * a {@link PageCursor#shouldRetry() retry due to concurrent write}.
-    */
+     * Number of keys in the current leaf, this value is cached and only re-read every time there's
+     * a {@link PageCursor#shouldRetry() retry due to concurrent write}.
+     */
     private int keyCount;
 
     /**

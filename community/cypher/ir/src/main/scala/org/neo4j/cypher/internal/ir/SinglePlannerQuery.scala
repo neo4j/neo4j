@@ -29,8 +29,8 @@ import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
 
 /**
-  * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
-  */
+ * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
+ */
 trait SinglePlannerQuery extends PlannerQueryPart {
 
   /**
@@ -38,21 +38,21 @@ trait SinglePlannerQuery extends PlannerQueryPart {
    */
   val queryInput: Option[Seq[String]]
   /**
-    * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
-    */
+   * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
+   */
   val queryGraph: QueryGraph
   /**
-    * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
-    */
+   * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
+   */
   val interestingOrder: InterestingOrder
 
   /**
-    * The WITH/RETURN part of a query
-    */
+   * The WITH/RETURN part of a query
+   */
   val horizon: QueryHorizon
   /**
-    * Optionally, a next PlannerQuery for everything after the WITH in the current horizon.
-    */
+   * Optionally, a next PlannerQuery for everything after the WITH in the current horizon.
+   */
   val tail: Option[SinglePlannerQuery]
 
   def dependencies: Set[String]

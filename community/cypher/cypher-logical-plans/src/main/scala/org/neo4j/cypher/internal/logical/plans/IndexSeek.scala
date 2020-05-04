@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Helper object for constructing node index operators from strings.
-  */
+ * Helper object for constructing node index operators from strings.
+ */
 object IndexSeek {
 
   // primitives
@@ -77,16 +77,16 @@ object IndexSeek {
   private val pos = InputPosition.NONE
 
   /**
-    * Extracts just the label from an index seek string
-    */
+   * Extracts just the label from an index seek string
+   */
   def labelFromIndexSeekString(indexSeekString: String): String = {
     val INDEX_SEEK_PATTERN(_, labelStr, _) = indexSeekString.trim
     labelStr
   }
 
   /**
-    * Construct a node index seek/scan operator by parsing a string.
-    */
+   * Construct a node index seek/scan operator by parsing a string.
+   */
   def apply(indexSeekString: String,
             getValue: GetValueFromIndexBehavior = DoNotGetValue,
             indexOrder: IndexOrder = IndexOrderNone,

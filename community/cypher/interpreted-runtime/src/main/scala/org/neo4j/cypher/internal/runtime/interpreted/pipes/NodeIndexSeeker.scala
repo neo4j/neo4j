@@ -61,11 +61,11 @@ import org.neo4j.values.storable.Values
 import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
-  * Mixin trait with functionality for executing logical index queries.
-  *
-  * This trait maps the logical IndexSeekMode and QueryExpression into the kernel IndexQuery classes, which
-  * are passed to the QueryContext for executing the index seek.
-  */
+ * Mixin trait with functionality for executing logical index queries.
+ *
+ * This trait maps the logical IndexSeekMode and QueryExpression into the kernel IndexQuery classes, which
+ * are passed to the QueryContext for executing the index seek.
+ */
 trait NodeIndexSeeker {
 
   // dependencies

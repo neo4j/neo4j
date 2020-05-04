@@ -53,10 +53,10 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   extends UpdateGraph {
 
   /**
-    * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
-    *
-    * @return
-    */
+   * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
+   *
+   * @return
+   */
   def dependencies: Set[String] =
     optionalMatches.flatMap(_.dependencies).toSet ++
       selections.predicates.flatMap(_.dependencies) ++
@@ -64,8 +64,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       argumentIds
 
   /**
-    * The size of a QG is defined as the number of pattern relationships that are introduced
-    */
+   * The size of a QG is defined as the number of pattern relationships that are introduced
+   */
   def size: Int = patternRelationships.size
 
   def isEmpty: Boolean = this == QueryGraph.empty
@@ -96,8 +96,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   /**
-    * Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
-    */
+   * Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
+   */
   def allPatternNodes: collection.Set[String] = {
     val nodes = mutable.Set[String]()
     collectAllPatternNodes(nodes.add)
@@ -217,15 +217,15 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       mergeRelationshipPatterns.flatMap(_.matchGraph.allPatternRelationships)
 
   /**
-    * Variables are bound after matching this QG, but before optional
-    * matches and updates have been applied
-    */
+   * Variables are bound after matching this QG, but before optional
+   * matches and updates have been applied
+   */
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
     QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ argumentIds
 
   /**
-    * All variables that are bound after this QG has been matched
-     */
+   * All variables that are bound after this QG has been matched
+   */
   def allCoveredIds: Set[String] = {
     val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds)
     idsWithoutOptionalMatchesOrUpdates ++ otherSymbols
@@ -252,11 +252,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     patternNodes.collect { case node: String => node -> selections.labelsOnNode(node) }.toMap
 
   /**
-    * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
-    * Connected here means can be reached through a relationship pattern.
-    * Does not include optional matches, shortest paths or predicates that have dependencies across multiple of the
-    * connected query graphs.
-    */
+   * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
+   * Connected here means can be reached through a relationship pattern.
+   * Does not include optional matches, shortest paths or predicates that have dependencies across multiple of the
+   * connected query graphs.
+   */
   def connectedComponents: Seq[QueryGraph] = {
     val visited = mutable.Set.empty[String]
 
@@ -430,12 +430,12 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   /**
-    * We have to do this special treatment of QG to avoid problems when checking that the produced plan actually
-    * solves what we set out to solve. In some rare circumstances, we'll get a few optional matches that are independent of each other.
-    *
-    * Given the way our planner works, it can unpredictably plan these optional matches in different orders, which leads to an exception being thrown when
-    * checking that the correct query has been solved.
-    */
+   * We have to do this special treatment of QG to avoid problems when checking that the produced plan actually
+   * solves what we set out to solve. In some rare circumstances, we'll get a few optional matches that are independent of each other.
+   *
+   * Given the way our planner works, it can unpredictably plan these optional matches in different orders, which leads to an exception being thrown when
+   * checking that the correct query has been solved.
+   */
   override def equals(in: scala.Any): Boolean = in match {
     case other: QueryGraph if other canEqual this =>
 

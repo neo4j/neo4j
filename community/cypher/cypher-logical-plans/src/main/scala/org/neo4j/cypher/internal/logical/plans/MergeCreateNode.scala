@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each input row, create a new node with the provided labels and properties,
-  * and assign it to the variable 'idName'.
-  *
-  * This is a special version of CreateNode, which is used in a merge plan after checking that no node with the same
-  * labels and properties exist.
-  */
+ * For each input row, create a new node with the provided labels and properties,
+ * and assign it to the variable 'idName'.
+ *
+ * This is a special version of CreateNode, which is used in a merge plan after checking that no node with the same
+ * labels and properties exist.
+ */
 case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with UpdatingPlan {
 

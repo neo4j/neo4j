@@ -37,18 +37,18 @@ import org.neo4j.cypher.internal.util.topDown
 import scala.collection.mutable
 
 /**
-  * Piece of physical planning which
-  *
-  *   1) identifies variables that have expression scope (expression variables)
-  *   2) allocates slots for these in the expression slot space (separate from ExecutionContext longs and refs)
-  *   3) rewrites instances of these variables to [[ExpressionVariable]]s with the correct slots offset
-  */
+ * Piece of physical planning which
+ *
+ *   1) identifies variables that have expression scope (expression variables)
+ *   2) allocates slots for these in the expression slot space (separate from ExecutionContext longs and refs)
+ *   3) rewrites instances of these variables to [[ExpressionVariable]]s with the correct slots offset
+ */
 object expressionVariableAllocation {
 
   /**
-    * Attribute listing the expression variables in scope for nested logical plans. Only the root
-    * of the nested plan tree will have in expression variables listed here.
-    */
+   * Attribute listing the expression variables in scope for nested logical plans. Only the root
+   * of the nested plan tree will have in expression variables listed here.
+   */
   class AvailableExpressionVariables extends Attribute[LogicalPlan, Seq[ExpressionVariable]]
 
   case class Result[T](rewritten: T,

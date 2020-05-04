@@ -29,13 +29,13 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 
 /**
-  * TODO: This should instead implement Rewriter
-  *
-  * Transitive closure of where clauses.
-  *
-  * Given a where clause, `WHERE a.prop = b.prop AND b.prop = 42` we rewrite the query
-  * into `WHERE a.prop = 42 AND b.prop = 42`
-  */
+ * TODO: This should instead implement Rewriter
+ *
+ * Transitive closure of where clauses.
+ *
+ * Given a where clause, `WHERE a.prop = b.prop AND b.prop = 42` we rewrite the query
+ * into `WHERE a.prop = 42 AND b.prop = 42`
+ */
 case object transitiveClosure extends StatementRewriter {
 
   override def description: String = "transitive closure in where clauses"

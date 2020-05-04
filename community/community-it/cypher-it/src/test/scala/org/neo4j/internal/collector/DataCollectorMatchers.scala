@@ -38,8 +38,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.Manifest
 
 /**
-  * Matchers allowing more flexible matching on results from RewindableExecutionResult.
-  */
+ * Matchers allowing more flexible matching on results from RewindableExecutionResult.
+ */
 object DataCollectorMatchers {
 
   private val preParser = new PreParser(CypherVersion.default,
@@ -51,8 +51,8 @@ object DataCollectorMatchers {
     0)
 
   /**
-    * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.
-    */
+   * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.
+   */
   def occurBetween(before: ZonedDateTime, after: ZonedDateTime) = BetweenMatcher(before, after)
 
   case class BetweenMatcher(before: ZonedDateTime, after: ZonedDateTime) extends Matcher[ZonedDateTime] {
@@ -77,19 +77,19 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Matches a scala Map if it contains the expected kay-value pairs. Any additional data is ignored.
-    *
-    * Note that any expected value that is a matcher will be used as such, while other expected values will
-    * be asserted on using regular equality.
-    */
+   * Matches a scala Map if it contains the expected kay-value pairs. Any additional data is ignored.
+   *
+   * Note that any expected value that is a matcher will be used as such, while other expected values will
+   * be asserted on using regular equality.
+   */
   def beMapContaining(expected: (String, Any)*) = MapMatcher(expected, exact = false)
 
   /**
-    * Matches a scala Map if it contains exactly the expected key-value pairs.
-    *
-    * Note that any expected value that is a matcher will be used as such, while other expected values will
-    * be asserted on using regular equality.
-    */
+   * Matches a scala Map if it contains exactly the expected key-value pairs.
+   *
+   * Note that any expected value that is a matcher will be used as such, while other expected values will
+   * be asserted on using regular equality.
+   */
   def beMap(expected: (String, Any)*) = MapMatcher(expected, exact = true)
 
   case class MapMatcher(expecteds: Seq[(String, Any)], exact: Boolean) extends Matcher[AnyRef] {
@@ -132,11 +132,11 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Matches a scala Seq if it contains all the expected values. Any additional data is ignored.
-    *
-    * Note that any expected value that is a matcher will be used as such, while other expected values will
-    * be asserted on using regular equality.
-    */
+   * Matches a scala Seq if it contains all the expected values. Any additional data is ignored.
+   *
+   * Note that any expected value that is a matcher will be used as such, while other expected values will
+   * be asserted on using regular equality.
+   */
   def beListWithoutOrder(expected: Any*) = WithoutOrderMatcher(expected)
 
   case class WithoutOrderMatcher(expected: Seq[Any]) extends Matcher[AnyRef] {
@@ -180,11 +180,11 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Matches a scala Seq if it contains exactly the expected values, in order.
-    *
-    * Note that any expected value that is a matcher will be used as such, while other expected values will
-    * be asserted on using regular equality.
-    */
+   * Matches a scala Seq if it contains exactly the expected values, in order.
+   *
+   * Note that any expected value that is a matcher will be used as such, while other expected values will
+   * be asserted on using regular equality.
+   */
   def beListInOrder(expected: Any*) = InOrderMatcher(expected)
 
   case class InOrderMatcher(expected: Seq[Any]) extends Matcher[AnyRef] {
@@ -229,8 +229,8 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Matches instances of the specified type.
-    */
+   * Matches instances of the specified type.
+   */
   def ofType[T : Manifest]: OfTypeMatcher[T] =
     OfTypeMatcher[T](manifest.erasure.asInstanceOf[Class[T]])
 
@@ -246,8 +246,8 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Matches instances of the specified type.
-    */
+   * Matches instances of the specified type.
+   */
   def beCypher(text: String): BeCypherMatcher = BeCypherMatcher(text)
 
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
@@ -271,8 +271,8 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Extract a nested value from a tree of maps.
-    */
+   * Extract a nested value from a tree of maps.
+   */
   def subMap(res: Map[String, AnyRef], keys: String*): AnyRef = {
     def inner(res: Map[String, AnyRef], keys: List[String]): AnyRef =
       keys match {
@@ -289,8 +289,8 @@ object DataCollectorMatchers {
   }
 
   /**
-    * Check whether a == b, but performs element equality on Arrays, instead of instance equality.
-    */
+   * Check whether a == b, but performs element equality on Arrays, instead of instance equality.
+   */
   def arraySafeEquals(a: AnyRef, b: Any): Boolean = {
     a match {
       case arr: Array[_] =>

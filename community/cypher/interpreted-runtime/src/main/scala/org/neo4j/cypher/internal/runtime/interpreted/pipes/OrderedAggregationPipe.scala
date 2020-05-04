@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.Aggre
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
-  * Specialization of [[EagerAggregationPipe]] that leverages the order of some or all grouping columns.
-  * Will use [[OrderedGroupingAggTable]] if some grouping columns do not have a provided order and
-  * [[OrderedNonGroupingAggTable]] if all grouping columns have a provided order.
-  */
+ * Specialization of [[EagerAggregationPipe]] that leverages the order of some or all grouping columns.
+ * Will use [[OrderedGroupingAggTable]] if some grouping columns do not have a provided order and
+ * [[OrderedNonGroupingAggTable]] if all grouping columns have a provided order.
+ */
 case class OrderedAggregationPipe(source: Pipe,
                                   tableFactory: OrderedAggregationTableFactory)
                                  (val id: Id = Id.INVALID_ID)

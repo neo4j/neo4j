@@ -133,15 +133,15 @@ abstract class Expression extends ASTNode {
     }.data
 
   /**
-    * Return true is this expression contains an aggregating expression.
-    */
+   * Return true is this expression contains an aggregating expression.
+   */
   def containsAggregate: Boolean = this.treeExists {
     case IsAggregate(_) => true
   }
 
   /**
-    * Returns the first encountered aggregate expression, or None if none existed.
-    */
+   * Returns the first encountered aggregate expression, or None if none existed.
+   */
   def findAggregate:Option[Expression] = this.treeFind[Expression] {
     case IsAggregate(_) => true
   }

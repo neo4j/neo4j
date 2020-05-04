@@ -30,11 +30,11 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.memory.MemoryTracker
 
 /**
-  * Cursors which are used during expression evaluation. These are expected to be used within one
-  * method call, as opposed to being returned inside an iterator or stream.
-  *
-  * @param cursorFactory cursor factor to allocate cursors with.
-  */
+ * Cursors which are used during expression evaluation. These are expected to be used within one
+ * method call, as opposed to being returned inside an iterator or stream.
+ *
+ * @param cursorFactory cursor factor to allocate cursors with.
+ */
 class ExpressionCursors(cursorFactory: CursorFactory, cursorTracer: PageCursorTracer, memoryTracker: MemoryTracker) extends DefaultCloseListenable with AutoCloseablePlus {
   val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorTracer)
   val relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorTracer)

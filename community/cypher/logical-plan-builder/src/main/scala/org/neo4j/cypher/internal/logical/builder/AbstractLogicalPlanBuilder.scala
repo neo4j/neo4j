@@ -152,12 +152,12 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Used by [[AbstractLogicalPlanBuilder]] to resolve tokens and procedures
-  */
+ * Used by [[AbstractLogicalPlanBuilder]] to resolve tokens and procedures
+ */
 trait Resolver {
   /**
-    * Obtain the token of a label by name.
-    */
+   * Obtain the token of a label by name.
+   */
   def getLabelId(label: String): Int
 
   def getPropertyKeyId(prop: String): Int
@@ -168,8 +168,8 @@ trait Resolver {
 }
 
 /**
-  * Test help utility for hand-writing objects needing logical plans.
-  */
+ * Test help utility for hand-writing objects needing logical plans.
+ */
 abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver) {
 
   self: IMPL =>
@@ -242,9 +242,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   protected def idOfLastPlan: Id = _idOfLastPlan
 
   /**
-    * Increase indent. The indent determines where the next
-    * logical plan will be appended to the tree.
-    */
+   * Increase indent. The indent determines where the next
+   * logical plan will be appended to the tree.
+   */
   def | : IMPL = {
     indent += 1
     self
@@ -772,23 +772,23 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   // ABSTRACT METHODS
 
   /**
-    * Called everytime a new node is introduced by some logical operator.
-    */
+   * Called everytime a new node is introduced by some logical operator.
+   */
   protected def newNode(node: Variable): Unit
 
   /**
-    * Called everytime a new relationship is introduced by some logical operator.
-    */
+   * Called everytime a new relationship is introduced by some logical operator.
+   */
   protected def newRelationship(relationship: Variable): Unit
 
   /**
-    * Called everytime a new variable is introduced by some logical operator.
-    */
+   * Called everytime a new variable is introduced by some logical operator.
+   */
   protected def newVariable(variable: Variable): Unit
 
   /**
-    * Returns the finalized output of the builder.
-    */
+   * Returns the finalized output of the builder.
+   */
   protected def build(readOnly: Boolean = true): T
 
   // HELPERS

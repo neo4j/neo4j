@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
-  * For every source row, traverse all the relationships of 'from' which fulfill the
-  * provided constraints. Produce one row per traversed relationships, and add the
-  * relationship and end node as values on the produced rows.
-  */
+ * For every source row, traverse all the relationships of 'from' which fulfill the
+ * provided constraints. Produce one row per traversed relationships, and add the
+ * relationship and end node as values on the produced rows.
+ */
 case class Expand(source: LogicalPlan,
                   from: String,
                   dir: SemanticDirection,
@@ -60,10 +60,10 @@ case class Expand(source: LogicalPlan,
 }
 
 /**
-  * This works exactly like Expand, but if no matching relationships are found, a single
-  * row is produced instead populated by the argument, and the 'relName' and 'to' variables
-  * are set to NO_VALUE.
-  */
+ * This works exactly like Expand, but if no matching relationships are found, a single
+ * row is produced instead populated by the argument, and the 'relName' and 'to' variables
+ * are set to NO_VALUE.
+ */
 case class OptionalExpand(source: LogicalPlan,
                           from: String,
                           dir: SemanticDirection,
@@ -93,13 +93,13 @@ case class OptionalExpand(source: LogicalPlan,
 }
 
 /**
-  * For every source row, explore all homogeneous paths starting in 'from', that fulfill the provided
-  * criteria. Paths are homogeneous in that all relationships have to fulfill the same relationship
-  * predicate, and all nodes have to fulfill the same node predicate. For each explored
-  * path that is longer or equal to length.min, and shorter than length.max, a row is produced.
-  *
-  * The relationships and end node of the corresponding path are added to the produced row.
-  */
+ * For every source row, explore all homogeneous paths starting in 'from', that fulfill the provided
+ * criteria. Paths are homogeneous in that all relationships have to fulfill the same relationship
+ * predicate, and all nodes have to fulfill the same node predicate. For each explored
+ * path that is longer or equal to length.min, and shorter than length.max, a row is produced.
+ *
+ * The relationships and end node of the corresponding path are added to the produced row.
+ */
 case class VarExpand(source: LogicalPlan,
                      from: String,
                      dir: SemanticDirection,
@@ -118,13 +118,13 @@ case class VarExpand(source: LogicalPlan,
 }
 
 /**
-  * In essence a VarExpand, where some paths are not explored if they could not produce an unseen
-  * end node. Used to serve DISTINCT VarExpands where the individual paths are not of interest. This
-  * operator does not guarantee unique end nodes, but it will produce less of them than the regular
-  * VarExpand.
-  *
-  * Only the end node is added to produced rows.
-  */
+ * In essence a VarExpand, where some paths are not explored if they could not produce an unseen
+ * end node. Used to serve DISTINCT VarExpands where the individual paths are not of interest. This
+ * operator does not guarantee unique end nodes, but it will produce less of them than the regular
+ * VarExpand.
+ *
+ * Only the end node is added to produced rows.
+ */
 case class PruningVarExpand(source: LogicalPlan,
                             from: String,
                             dir: SemanticDirection,
@@ -146,13 +146,13 @@ case class PruningVarExpand(source: LogicalPlan,
 sealed trait ExpansionMode
 
 /**
-  * Expand relationships (a)-[r]-(b) for a given a, and populate r and b
-  */
+ * Expand relationships (a)-[r]-(b) for a given a, and populate r and b
+ */
 case object ExpandAll extends ExpansionMode
 
 /**
-  * Expand relationships (a)-[r]-(b) for a given a and b, and populate r
-  */
+ * Expand relationships (a)-[r]-(b) for a given a and b, and populate r
+ */
 case object ExpandInto extends ExpansionMode
 
 case class VariablePredicate(variable: LogicalVariable, predicate: Expression)

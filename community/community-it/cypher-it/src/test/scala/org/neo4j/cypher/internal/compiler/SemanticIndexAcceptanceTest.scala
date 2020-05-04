@@ -49,17 +49,17 @@ import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 /**
-  * After a failure, do this to reproduce with the actual values that caused the error:
-  *
-  * place a single call to testOperator after the for-loop. As an example
-  * {{{
-  * testOperator("=", ValueSetup[DateTimeValue]("dateTimes", Gen.oneOf(Seq(
-  *     DateTimeValue.parse("1901-12-13T20:45:52Z", null),
-  *     DateTimeValue.parse("1901-12-13T20:45:52Z[Europe/Brussels]", null)
-  * )), x => x.sub(oneDay), x => x.add(oneDay)))
-  * }}}
-  *
-  */
+ * After a failure, do this to reproduce with the actual values that caused the error:
+ *
+ * place a single call to testOperator after the for-loop. As an example
+ * {{{
+ * testOperator("=", ValueSetup[DateTimeValue]("dateTimes", Gen.oneOf(Seq(
+ *     DateTimeValue.parse("1901-12-13T20:45:52Z", null),
+ *     DateTimeValue.parse("1901-12-13T20:45:52Z[Europe/Brussels]", null)
+ * )), x => x.sub(oneDay), x => x.add(oneDay)))
+ * }}}
+ *
+ */
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
   //we don't want scala check to shrink strings since it hides the actual error
@@ -105,9 +105,9 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   }
 
   /**
-    * Value distribution to test. Allow value generation. Can also provide a slightly smaller
-    * or larger version of a value, which allows testing around a property bound.
-    */
+   * Value distribution to test. Allow value generation. Can also provide a slightly smaller
+   * or larger version of a value, which allows testing around a property bound.
+   */
   case class ValueSetup[T <: Value](name: String, generator: Gen[T], lessThan: T => T, moreThan: T => T)
 
   // GENERATORS
@@ -177,8 +177,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     Gen.chooseNum(-18*60, 18*60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
 
   /**
-    * Test a single value setup and operator
-    */
+   * Test a single value setup and operator
+   */
   private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
 
     val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"

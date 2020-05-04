@@ -23,18 +23,18 @@ object Id {
 }
 
 /**
-  * Generates IDs
-  */
+ * Generates IDs
+ */
 trait IdGen {
   /**
-    * @return an ID
-    */
+   * @return an ID
+   */
   def id(): Id
 }
 
 /**
-  * Generates IDs in sequence starting at `initialValue`
-  */
+ * Generates IDs in sequence starting at `initialValue`
+ */
 class SequentialIdGen(initialValue: Int = 0) extends IdGen {
   private var i: Int = initialValue
 
@@ -46,16 +46,16 @@ class SequentialIdGen(initialValue: Int = 0) extends IdGen {
 }
 
 /**
-  * Generates only the given ID.
-  */
+ * Generates only the given ID.
+ */
 case class SameId(id: Id) extends IdGen
 
 /**
-  * An entity that is defined by its ID.
-  */
+ * An entity that is defined by its ID.
+ */
 trait Identifiable {
   /**
-    * @return the ID of the entity.
-    */
+   * @return the ID of the entity.
+   */
   def id: Id
 }

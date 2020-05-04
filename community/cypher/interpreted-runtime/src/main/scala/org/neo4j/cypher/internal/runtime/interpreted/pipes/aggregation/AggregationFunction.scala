@@ -24,19 +24,19 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 /**
-  * Base class for aggregation functions. The function is stateful
-  * and aggregates by having it's apply method called once for every
-  * row that matches the key.
-  */
+ * Base class for aggregation functions. The function is stateful
+ * and aggregates by having it's apply method called once for every
+ * row that matches the key.
+ */
 abstract class AggregationFunction {
   /**
-    * Adds this data to the aggregated total.
-    */
+   * Adds this data to the aggregated total.
+   */
   def apply(data: ReadableRow, state: QueryState): Unit
 
   /**
-    * The aggregated result.
-    */
+   * The aggregated result.
+   */
   def result(state: QueryState): AnyValue
 
   /**

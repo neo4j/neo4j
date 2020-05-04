@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 /**
-  * Provides a helper method for index pipes that get nodes together with actual property values.
-  */
+ * Provides a helper method for index pipes that get nodes together with actual property values.
+ */
 trait IndexPipeWithValues extends Pipe {
 
   // Name of the node variable

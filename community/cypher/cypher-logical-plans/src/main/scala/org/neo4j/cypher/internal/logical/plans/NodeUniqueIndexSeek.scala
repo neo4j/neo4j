@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
-  * Produces one or zero rows containing the node with the given label and property values.
-  *
-  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
-  * node is guaranteed.
-  */
+ * Produces one or zero rows containing the node with the given label and property values.
+ *
+ * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
+ * node is guaranteed.
+ */
 case class NodeUniqueIndexSeek(idName: String,
                                label: LabelToken,
                                properties: Seq[IndexedProperty],

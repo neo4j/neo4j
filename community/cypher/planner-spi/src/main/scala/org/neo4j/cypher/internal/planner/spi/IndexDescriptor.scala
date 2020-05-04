@@ -46,16 +46,16 @@ object IndexOrderCapability {
 
 object IndexDescriptor {
   /**
-    * Given the actual types of properties (one for a single-property index and multiple for a composite index)
-    * can this index guarantee ordered retrieval?
-    */
+   * Given the actual types of properties (one for a single-property index and multiple for a composite index)
+   * can this index guarantee ordered retrieval?
+   */
   type OrderCapability = Seq[CypherType] => IndexOrderCapability
   val noOrderCapability: OrderCapability = _ => IndexOrderCapability.NONE
 
   /**
-    * Given the actual types of properties (one for a single-property index and multiple for a composite index)
-    * does the index provide the actual values?
-    */
+   * Given the actual types of properties (one for a single-property index and multiple for a composite index)
+   * does the index provide the actual values?
+   */
   type ValueCapability = Seq[CypherType] => Seq[GetValueFromIndexBehavior]
   val noValueCapability: ValueCapability = s => s.map(_ => DoNotGetValue)
 

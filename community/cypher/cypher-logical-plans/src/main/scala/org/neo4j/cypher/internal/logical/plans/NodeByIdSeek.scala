@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
-  * the node (assigned to 'idName').
-  */
+ * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
+ * the node (assigned to 'idName').
+ */
 case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName

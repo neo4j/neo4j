@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
-  * Opposed to `SemanticAnalysisTest` this does not focus on whether
-  * something actually passes semantic analysis or not, but rather on helpful
-  * error messages.
-  */
+ * Opposed to `SemanticAnalysisTest` this does not focus on whether
+ * something actually passes semantic analysis or not, but rather on helpful
+ * error messages.
+ */
 class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does

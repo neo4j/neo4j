@@ -27,35 +27,35 @@ case object NODE_TYPE extends EntityType
 case object RELATIONSHIP_TYPE extends EntityType
 
 /**
-  * Common super class of [[CachedProperty]]
-  * and its slotted specializations.
-  */
+ * Common super class of [[CachedProperty]]
+ * and its slotted specializations.
+ */
 trait ASTCachedProperty extends LogicalProperty {
   /**
-    * @return the type of the entity for which a property is cached.
-    */
+   * @return the type of the entity for which a property is cached.
+   */
   def entityType: EntityType
 
   /**
-    * @return the original name of the entity for which a property is cached.
-    */
+   * @return the original name of the entity for which a property is cached.
+   */
   def originalEntityName: String
 
   /**
-    * @return the name of the entity for which a property is cached.
-    */
+   * @return the name of the entity for which a property is cached.
+   */
   def entityName: String
 
   /**
-    * @return the property key name
-    */
+   * @return the property key name
+   */
   def propertyKey: PropertyKeyName
 
   override val map: Expression = Variable(entityName)(this.position)
 
   /**
-    * @return a textual representation of the entity and the property in the form `n.prop`
-    */
+   * @return a textual representation of the entity and the property in the form `n.prop`
+   */
   def propertyAccessString: String = s"$entityName.${propertyKey.name}"
 
   // CachedProperties are stored as keys in `MapExecutionContext`. The lookup is by original entity name and property key.
@@ -69,14 +69,14 @@ trait ASTCachedProperty extends LogicalProperty {
 }
 
 /**
-  * A property value that is cached in the execution context. Such a value can be
-  * retrieved very fast, but care has to be taken to it doesn't out-dated by writes to
-  * the graph/transaction state.
-  *
-  * @param originalEntityName the name of the variable how it appeared in the first Property access.
-  * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
-  *                           if the variable name was changed in between.
-  */
+ * A property value that is cached in the execution context. Such a value can be
+ * retrieved very fast, but care has to be taken to it doesn't out-dated by writes to
+ * the graph/transaction state.
+ *
+ * @param originalEntityName the name of the variable how it appeared in the first Property access.
+ * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
+ *                           if the variable name was changed in between.
+ */
 case class CachedProperty(override val originalEntityName: String,
                           entityVariable: LogicalVariable,
                           override val propertyKey: PropertyKeyName,

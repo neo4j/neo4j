@@ -30,25 +30,25 @@ object LogicalPlans {
   }
 
   /**
-    * Traverses the logical plan tree structure and maps the tree in a bottom up fashion.
-    *
-    * Given a logical plan such as:
-    *
-    *         a
-    *        / \
-    *       b   c
-    *      /   / \
-    *     d   e   f
-    *
-    * the mapper will be called in the following sequence:
-    *
-    *   F = mapLeaf(f)
-    *   E = mapLeaf(e)
-    *   C = mapTwoChildPlan(c, E, F)
-    *   D = mapLeaf(d)
-    *   B = mapOneChingPlan(b, D)
-    *   A = mapTwoChildPlan(a, B, C)
-    */
+   * Traverses the logical plan tree structure and maps the tree in a bottom up fashion.
+   *
+   * Given a logical plan such as:
+   *
+   *         a
+   *        / \
+   *       b   c
+   *      /   / \
+   *     d   e   f
+   *
+   * the mapper will be called in the following sequence:
+   *
+   *   F = mapLeaf(f)
+   *   E = mapLeaf(e)
+   *   C = mapTwoChildPlan(c, E, F)
+   *   D = mapLeaf(d)
+   *   B = mapOneChingPlan(b, D)
+   *   A = mapTwoChildPlan(a, B, C)
+   */
   def map[T](plan: LogicalPlan, mapper: Mapper[T]): T = {
     val planStack = new ArrayStack[LogicalPlan]()
     val resultStack = new ArrayStack[T]()
@@ -109,17 +109,17 @@ object LogicalPlans {
   }
 
   /**
-    * Fold over this logical plan tree in execution order.
-    *
-    * In this fold, the plan tree is visited in execution order, starting from
-    * the leftmost leaf, and moving towards the root. Unlike a fold over a linear
-    * structure, the plan is a binary tree, and therefore we need an additional
-    * function for combining the left and right sides of some operators.
-    *
-    * NOTE: To avoid unpleasant surprises it is important that ACC is immutable,
-    *       unless you really know what you're doing. The same ACC instance might
-    *       be passed into several callback with the expectation of it being unchanged.
-    */
+   * Fold over this logical plan tree in execution order.
+   *
+   * In this fold, the plan tree is visited in execution order, starting from
+   * the leftmost leaf, and moving towards the root. Unlike a fold over a linear
+   * structure, the plan is a binary tree, and therefore we need an additional
+   * function for combining the left and right sides of some operators.
+   *
+   * NOTE: To avoid unpleasant surprises it is important that ACC is immutable,
+   *       unless you really know what you're doing. The same ACC instance might
+   *       be passed into several callback with the expectation of it being unchanged.
+   */
   def foldPlan[ACC](initialAcc: ACC)(root: LogicalPlan,
                                      f: (ACC, LogicalPlan) => ACC,
                                      combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC): ACC = {
@@ -172,8 +172,8 @@ object LogicalPlans {
   }
 
   /**
-    * Return the left-most leaf of a given plan.
-    */
+   * Return the left-most leaf of a given plan.
+   */
   def leftLeaf(plan: LogicalPlan): LogicalPlan = {
     var x = plan
     while (x.lhs.nonEmpty) {

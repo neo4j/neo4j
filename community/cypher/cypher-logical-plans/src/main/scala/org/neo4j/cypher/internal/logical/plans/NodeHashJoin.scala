@@ -22,20 +22,20 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * Join two result streams using a hash table. 'Left' is completely consumed and buffered in a hash table, using a
-  * tuple consisting of the values assigned to 'nodes'. For every 'right' row, lookup the corresponding 'left' rows
-  * based on 'nodes'. For each corresponding left row, merge that with the current right row and produce.
-  *
-  * hashTable = {}
-  * for ( leftRow <- left )
-  *   group = hashTable.getOrUpdate( key( leftRow, nodes ), List[Row]() )
-  *   group += leftRow
-  *
-  * for ( rightRow <- right )
-  *   group = hashTable.get( key( rightRow, nodes ) )
-  *   for ( leftRow <- group )
-  *     produce (leftRow merge rightRow)
-  */
+ * Join two result streams using a hash table. 'Left' is completely consumed and buffered in a hash table, using a
+ * tuple consisting of the values assigned to 'nodes'. For every 'right' row, lookup the corresponding 'left' rows
+ * based on 'nodes'. For each corresponding left row, merge that with the current right row and produce.
+ *
+ * hashTable = {}
+ * for ( leftRow <- left )
+ *   group = hashTable.getOrUpdate( key( leftRow, nodes ), List[Row]() )
+ *   group += leftRow
+ *
+ * for ( rightRow <- right )
+ *   group = hashTable.get( key( rightRow, nodes ) )
+ *   for ( leftRow <- group )
+ *     produce (leftRow merge rightRow)
+ */
 case class NodeHashJoin(nodes: Set[String],
                         left: LogicalPlan,
                         right: LogicalPlan)

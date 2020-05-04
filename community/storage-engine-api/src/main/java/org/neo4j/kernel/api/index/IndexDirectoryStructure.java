@@ -82,13 +82,13 @@ public abstract class IndexDirectoryStructure
     }
 
     /**
-    * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
-    * @return {@link Factory} for creating {@link IndexDirectoryStructure} returning directories looking something like:
-    *
-    * <pre>
-    * &lt;db&gt;/schema/index/&lt;providerKey&gt;-&lt;providerVersion&gt;/&lt;indexId&gt;/
-    * </pre>
-    */
+     * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
+     * @return {@link Factory} for creating {@link IndexDirectoryStructure} returning directories looking something like:
+     *
+     * <pre>
+     * &lt;db&gt;/schema/index/&lt;providerKey&gt;-&lt;providerVersion&gt;/&lt;indexId&gt;/
+     * </pre>
+     */
     public static Factory directoriesByProvider( File databaseStoreDir )
     {
         return descriptor -> new SubDirectoryByIndexId(

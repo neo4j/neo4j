@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
-  * For each input row, delete the node specified by 'expression' and all its relationships from the graph.
-  */
+ * For each input row, delete the node specified by 'expression' and all its relationships from the graph.
+ */
 case class DetachDeleteNode(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)

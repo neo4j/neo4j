@@ -25,24 +25,24 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 /**
-  * Utility more or less equivalent to using Java keyword assert.
-  *
-  * As with `assert`, `require` should not be used for checking input on public methods or similar, only to be used
-  * for checking internal invariants. We should always assume that these checks are not running in production code.
-  */
+ * Utility more or less equivalent to using Java keyword assert.
+ *
+ * As with `assert`, `require` should not be used for checking input on public methods or similar, only to be used
+ * for checking internal invariants. We should always assume that these checks are not running in production code.
+ */
 object AssertMacros {
 
   /**
-    * Require that the given condition is `true`
-    * @param condition the condition that is required to be true
-    */
+   * Require that the given condition is `true`
+   * @param condition the condition that is required to be true
+   */
   def checkOnlyWhenAssertionsAreEnabled(condition: Boolean): Unit = macro checkOnlyWhenAssertionsAreEnabledImpl
 
   /**
-    * Require that the given condition is `true`
-    * @param condition the condition that is required to be true
-    * @param msg the error message shown if requirement fails
-    */
+   * Require that the given condition is `true`
+   * @param condition the condition that is required to be true
+   * @param msg the error message shown if requirement fails
+   */
   def checkOnlyWhenAssertionsAreEnabled(condition: Boolean, msg: String): Unit = macro checkOnlyWhenAssertionsAreEnabledWithMsgImpl
 
   def checkOnlyWhenAssertionsAreEnabledImpl(c: blackbox.Context)(condition: c.Expr[Boolean]): c.universe.Tree = {
