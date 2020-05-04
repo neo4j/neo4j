@@ -831,6 +831,35 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(5).rows() shouldBe sizeHint // all node scan
   }
 
+  test("should profile rows with value hash join") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .valueHashJoin("x.prop = y.prop")
+      .|.filter("y.prop % 2 = 0")
+      .|.allNodeScan("y")
+      .filter(s"x.prop < ${sizeHint / 4}")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint / 2 / 4 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint / 2 / 4 // value hash join
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint / 2 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe sizeHint // all node scan
+    queryProfile.operatorProfile(4).rows() shouldBe sizeHint / 4 // filter
+    queryProfile.operatorProfile(5).rows() shouldBe sizeHint // all node scan
+  }
+
   test("should profile rows with cartesian product") {
     given {
       nodePropertyGraph(sizeHint, {

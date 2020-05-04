@@ -291,6 +291,30 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(5).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
   }
 
+  test("should profile dbHits with value hash join") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .valueHashJoin("x.prop = y.prop")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe 2 * sizeHint // value hash join
+    queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+  }
+
   test("should profile dbHits of cached properties") {
     given {
       nodePropertyGraph(sizeHint, { case i => Map("p" -> i) })
