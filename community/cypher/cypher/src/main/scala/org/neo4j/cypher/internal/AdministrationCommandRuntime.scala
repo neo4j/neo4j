@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.ParameterNotFoundException
@@ -120,7 +121,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def validateStringParameterType(param: ParameterFromSlot): Unit = {
     param.parameterType match {
       case _: StringType =>
-      case _ => throw new ParameterWrongTypeException(s"Only ${StringType.instance} values are accepted as password, got: " + param.parameterType)
+      case _ => throw new ParameterWrongTypeException(s"Only $CTString values are accepted as password, got: " + param.parameterType)
     }
   }
 
