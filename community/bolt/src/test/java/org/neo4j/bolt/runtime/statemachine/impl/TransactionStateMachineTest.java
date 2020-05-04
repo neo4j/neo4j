@@ -75,7 +75,6 @@ class TransactionStateMachineTest
 
     private TransactionStateMachineSPI stateMachineSPI;
     private MutableTransactionState mutableState;
-    private TransactionStateMachine stateMachine;
     private static final EmptyResultConsumer EMPTY = new EmptyResultConsumer();
     private static final EmptyResultConsumer ERROR = new EmptyResultConsumer()
     {
@@ -92,7 +91,6 @@ class TransactionStateMachineTest
         FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineSPI.class );
         mutableState = new MutableTransactionState( AUTH_DISABLED, clock, null );
-        stateMachine = new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, clock, null );
     }
 
     @Test
@@ -117,7 +115,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldThrowOnBeginInExplicitTransaction() throws Exception
+    void shouldThrowOnBeginInExplicitTransaction()
     {
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null ) );
@@ -133,7 +131,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldThrowOnCommitInAutoCommit() throws Exception
+    void shouldThrowOnCommitInAutoCommit()
     {
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
                 TransactionStateMachine.State.AUTO_COMMIT.commitTransaction( mutableState, stateMachineSPI ) );
@@ -471,7 +469,7 @@ class TransactionStateMachineTest
     }
 
     private static TransactionStateMachineSPI newTransactionStateMachineSPI( BoltTransaction transaction,
-            BoltResultHandle resultHandle ) throws KernelException
+            BoltResultHandle resultHandle )
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 

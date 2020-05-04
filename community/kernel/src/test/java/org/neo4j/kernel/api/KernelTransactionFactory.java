@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -106,7 +105,7 @@ public class KernelTransactionFactory
         return new Instances( transaction );
     }
 
-    static KernelTransaction kernelTransaction( LoginContext loginContext ) throws KernelException
+    static KernelTransaction kernelTransaction( LoginContext loginContext )
     {
         return kernelTransactionWithInternals( loginContext ).transaction;
     }

@@ -22,8 +22,6 @@ package org.neo4j.consistency.checking.full;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -66,7 +64,7 @@ class PropertyReaderIT
     }
 
     @Test
-    void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
+    void shouldDetectAndAbortPropertyChainLoadingOnCircularReference()
     {
         // Create property chain 1 --> 2 --> 3 --> 4
         //                             ↑           │

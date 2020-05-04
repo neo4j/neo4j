@@ -1198,7 +1198,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
             {
-                assertEquals( array2[i], new Double( propertyValue[i] ) );
+                assertEquals( array2[i], Double.valueOf( propertyValue[i] ) );
             }
 
             node1.removeProperty( key );
@@ -1248,7 +1248,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
             {
-                assertEquals( array2[i], new Float( propertyValue[i] ) );
+                assertEquals( array2[i], Float.valueOf( propertyValue[i] ) );
             }
 
             node1.removeProperty( key );
@@ -1398,7 +1398,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
             {
-                assertEquals( array2[i], new Character( propertyValue[i] ) );
+                assertEquals( array2[i], Character.valueOf( propertyValue[i] ) );
             }
 
             node1.removeProperty( key );

@@ -71,7 +71,7 @@ public interface IndexUpdateListener
         }
 
         @Override
-        public void activateIndex( IndexDescriptor index ) throws KernelException
+        public void activateIndex( IndexDescriptor index )
         {
         }
 
@@ -81,12 +81,12 @@ public interface IndexUpdateListener
         }
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer ) throws IOException, KernelException
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer )
         {
         }
 
         @Override
-        public void validateIndex( long indexReference ) throws KernelException
+        public void validateIndex( long indexReference )
         {
         }
     }

@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -74,7 +73,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     protected NeoBootstrapper bootstrapper;
 
     @Before
-    public void before() throws IOException
+    public void before()
     {
         bootstrapper = newBootstrapper();
         SelfSignedCertificateFactory.create( testDirectory.homeDir() );
@@ -92,7 +91,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     protected abstract NeoBootstrapper newBootstrapper();
 
     @Test
-    public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable
+    public void shouldStartStopNeoServerWithoutAnyConfigFiles()
     {
         // When
         int resultCode = NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( getAdditionalArguments() ) );
@@ -102,7 +101,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
     }
 
-    protected String[] getAdditionalArguments() throws IOException
+    protected String[] getAdditionalArguments()
     {
         return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, testDirectory.homeDir().getAbsolutePath() ),
@@ -155,43 +154,43 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldStartWithHttpHttpsAndBoltDisabled() throws Exception
+    public void shouldStartWithHttpHttpsAndBoltDisabled()
     {
         testStartupWithConnectors( false, false, false );
     }
 
     @Test
-    public void shouldStartWithHttpEnabledAndHttpsBoltDisabled() throws Exception
+    public void shouldStartWithHttpEnabledAndHttpsBoltDisabled()
     {
         testStartupWithConnectors( true, false, false );
     }
 
     @Test
-    public void shouldStartWithHttpsEnabledAndHttpBoltDisabled() throws Exception
+    public void shouldStartWithHttpsEnabledAndHttpBoltDisabled()
     {
         testStartupWithConnectors( false, true, false );
     }
 
     @Test
-    public void shouldStartWithBoltEnabledAndHttpHttpsDisabled() throws Exception
+    public void shouldStartWithBoltEnabledAndHttpHttpsDisabled()
     {
         testStartupWithConnectors( false, false, true );
     }
 
     @Test
-    public void shouldStartWithHttpHttpsEnabledAndBoltDisabled() throws Exception
+    public void shouldStartWithHttpHttpsEnabledAndBoltDisabled()
     {
         testStartupWithConnectors( true, true, false );
     }
 
     @Test
-    public void shouldStartWithHttpBoltEnabledAndHttpsDisabled() throws Exception
+    public void shouldStartWithHttpBoltEnabledAndHttpsDisabled()
     {
         testStartupWithConnectors( true, false, true );
     }
 
     @Test
-    public void shouldStartWithHttpsBoltEnabledAndHttpDisabled() throws Exception
+    public void shouldStartWithHttpsBoltEnabledAndHttpDisabled()
     {
         testStartupWithConnectors( false, true, true );
     }
@@ -219,7 +218,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
     protected abstract DatabaseManagementService newEmbeddedDbms( File homeDir );
 
-    private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
+    private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
         SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope( SslPolicyScope.HTTPS );
         if ( httpsEnabled )

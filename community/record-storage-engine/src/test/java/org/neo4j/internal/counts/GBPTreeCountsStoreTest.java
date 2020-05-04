@@ -148,7 +148,7 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
-    void tracePageCacheAccessOnNodeCount() throws IOException
+    void tracePageCacheAccessOnNodeCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeCount" );
@@ -161,7 +161,7 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
-    void tracePageCacheAccessOnRelationshipCount() throws IOException
+    void tracePageCacheAccessOnRelationshipCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipCount" );

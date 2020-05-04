@@ -56,14 +56,14 @@ public class BoltV4Messages
         return Stream.of( hello(), goodbye(), run(), discard( 10 ), pull( 10 ), begin(), commit(), rollback(), reset() );
     }
 
-    public static Stream<RequestMessage> unsupported() throws BoltIOException
+    public static Stream<RequestMessage> unsupported()
     {
         return Stream.of( // bolt v3 only messages
                 BoltV3Messages.pullAll(), BoltV3Messages.discardAll() );
 
     }
 
-    public static RequestMessage begin() throws BoltIOException
+    public static RequestMessage begin()
     {
         return BEGIN;
     }

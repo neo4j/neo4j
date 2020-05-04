@@ -80,7 +80,7 @@ public class IndexProcedures
         indexingService.triggerIndexSampling( backgroundRebuildUpdated() );
     }
 
-    void resampleOutdatedIndexes( long timeOutSeconds ) throws TimeoutException
+    void resampleOutdatedIndexes( long timeOutSeconds )
     {
         long millis = TimeUnit.SECONDS.toMillis( timeOutSeconds );
         IndexSamplingMode mode = foregroundRebuildUpdated( millis );

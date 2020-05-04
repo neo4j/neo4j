@@ -214,14 +214,14 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    void shouldNotBeAbleToUnpackNode() throws IOException
+    void shouldNotBeAbleToUnpackNode()
     {
         var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( ALICE ) ) );
         assertEquals( Neo4jError.from( TypeError, "Node values cannot be unpacked with this version of bolt." ), Neo4jError.from( ex ) );
     }
 
     @Test
-    void shouldNotBeAbleToUnpackRelationship() throws IOException
+    void shouldNotBeAbleToUnpackRelationship()
     {
         var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( ALICE_KNOWS_BOB ) ) );
         assertEquals( Neo4jError.from( TypeError, "Relationship values cannot be unpacked with this version of bolt." ),
@@ -246,7 +246,7 @@ public class Neo4jPackV1Test
     }
 
     @Test
-    void shouldNotBeAbleToUnpackPaths() throws IOException
+    void shouldNotBeAbleToUnpackPaths()
     {
         for ( PathValue path : ALL_PATHS )
         {

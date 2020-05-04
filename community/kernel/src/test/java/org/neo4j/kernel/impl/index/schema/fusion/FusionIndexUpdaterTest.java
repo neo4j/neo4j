@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.EnumMap;
 import java.util.function.Function;
 
@@ -210,7 +209,7 @@ abstract class FusionIndexUpdaterTest
     }
 
     private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
-            throws IndexEntryConflictException, IOException
+            throws IndexEntryConflictException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         fusionIndexUpdater.process( update );
@@ -225,7 +224,7 @@ abstract class FusionIndexUpdaterTest
     }
 
     private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
-            throws IndexEntryConflictException, IOException
+            throws IndexEntryConflictException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
@@ -240,7 +239,7 @@ abstract class FusionIndexUpdaterTest
     }
 
     private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, Value before,
-            Value after ) throws IndexEntryConflictException, IOException
+            Value after ) throws IndexEntryConflictException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
@@ -254,7 +253,7 @@ abstract class FusionIndexUpdaterTest
         }
     }
 
-    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater updater, Value[] supportedValues ) throws IndexEntryConflictException, IOException
+    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater updater, Value[] supportedValues ) throws IndexEntryConflictException
     {
         for ( Value before : supportedValues )
         {
@@ -266,7 +265,7 @@ abstract class FusionIndexUpdaterTest
     }
 
     private void verifyChangeWithCorrectUpdaterMixed( IndexUpdater expectRemoveFrom, IndexUpdater expectAddTo, Value[] beforeValues,
-            Value[] afterValues ) throws IOException, IndexEntryConflictException
+            Value[] afterValues ) throws IndexEntryConflictException
     {
         for ( int beforeIndex = 0; beforeIndex < beforeValues.length; beforeIndex++ )
         {
@@ -334,7 +333,7 @@ abstract class FusionIndexUpdaterTest
     }
 
     @Test
-    void shouldInstantiatePartLazilyForSpecificValueGroupUpdates() throws IOException, IndexEntryConflictException
+    void shouldInstantiatePartLazilyForSpecificValueGroupUpdates() throws IndexEntryConflictException
     {
         // given
         EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();

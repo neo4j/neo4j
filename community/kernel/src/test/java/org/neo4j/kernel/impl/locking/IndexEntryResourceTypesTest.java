@@ -94,7 +94,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new boolean[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new boolean[]{true} ) ) );
         hasher.hash( 42, array( exact( 1, new boolean[]{true, false} ) ) );
-        hasher.hash( 42, array( exact( 1, new Boolean( true ) ) ) );
+        hasher.hash( 42, array( exact( 1, Boolean.valueOf( true ) ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{true} ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{true, false} ) ) );
@@ -118,7 +118,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new char[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new char[]{'a'} ) ) );
         hasher.hash( 42, array( exact( 1, new char[]{'a', 'b'} ) ) );
-        hasher.hash( 42, array( exact( 1, new Character( 'a' ) ) ) );
+        hasher.hash( 42, array( exact( 1, Character.valueOf( 'a' ) ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{'a'} ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{'a', 'b'} ) ) );
@@ -126,7 +126,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new float[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new float[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new float[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Float( (float) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Float.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{1.0f} ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{1.0f, 2.0f} ) ) );
@@ -150,7 +150,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new double[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new double[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new double[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Double( 1.0 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Double.valueOf( 1.0 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{1.0} ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{1.0, 2.0} ) ) );
@@ -165,7 +165,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new boolean[]{} ), exact( ~1, new boolean[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new boolean[]{true} ), exact( ~1, new boolean[]{true} ) ) );
         hasher.hash( 42, array( exact( 1, new boolean[]{true, false} ), exact( ~1, new boolean[]{true, false} ) ) );
-        hasher.hash( 42, array( exact( 1, new Boolean( true ) ), exact( ~1, new Boolean( true ) ) ) );
+        hasher.hash( 42, array( exact( 1, Boolean.valueOf( true ) ), exact( ~1, Boolean.valueOf( true ) ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{} ), exact( ~1, new Boolean[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{true} ), exact( ~1, new Boolean[]{true} ) ) );
         hasher.hash( 42, array( exact( 1, new Boolean[]{true, false} ), exact( ~1, new Boolean[]{true, false} ) ) );
@@ -189,7 +189,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new char[]{} ), exact( ~1, new char[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new char[]{'a'} ), exact( ~1, new char[]{'a'} ) ) );
         hasher.hash( 42, array( exact( 1, new char[]{'a', 'b'} ), exact( ~1, new char[]{'a', 'b'} ) ) );
-        hasher.hash( 42, array( exact( 1, new Character( 'a' ) ), exact( ~1, new Character( 'a' ) ) ) );
+        hasher.hash( 42, array( exact( 1, Character.valueOf( 'a' ) ), exact( ~1, Character.valueOf( 'a' ) ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{} ), exact( ~1, new Character[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{'a'} ), exact( ~1, new Character[]{'a'} ) ) );
         hasher.hash( 42, array( exact( 1, new Character[]{'a', 'b'} ), exact( ~1, new Character[]{'a', 'b'} ) ) );
@@ -197,7 +197,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new float[]{} ), exact( ~1, new float[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new float[]{1} ), exact( ~1, new float[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new float[]{1, 2} ), exact( ~1, new float[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Float( (float) 1 ) ), exact( ~1, new Float( (float) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Float.valueOf( 1 ) ), exact( ~1, Float.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{} ), exact( ~1, new Float[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{1.0f} ), exact( ~1, new Float[]{1.0f} ) ) );
         hasher.hash( 42, array( exact( 1, new Float[]{1.0f, 2.0f} ), exact( ~1, new Float[]{1.0f, 2.0f} ) ) );
@@ -221,7 +221,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new double[]{} ), exact( ~1, new double[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new double[]{1} ), exact( ~1, new double[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new double[]{1, 2} ), exact( ~1, new double[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Double( 1.0 ) ), exact( ~1, new Double( 1.0 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Double.valueOf( 1.0 ) ), exact( ~1, Double.valueOf( 1.0 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{} ), exact( ~1, new Double[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{1.0} ), exact( ~1, new Double[]{1.0} ) ) );
         hasher.hash( 42, array( exact( 1, new Double[]{1.0, 2.0} ), exact( ~1, new Double[]{1.0, 2.0} ) ) );
