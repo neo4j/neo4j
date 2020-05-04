@@ -72,6 +72,11 @@ public class Rx2SyncStream
         return recordOrError.record;
     }
 
+    public boolean completed()
+    {
+        return buffer.peek() == END;
+    }
+
     public void close()
     {
         recordSubscriber.close();

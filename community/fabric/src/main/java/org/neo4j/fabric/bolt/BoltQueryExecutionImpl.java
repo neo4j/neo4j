@@ -163,6 +163,15 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
                     publishFields( record );
                     subscriber.onRecordCompleted();
                 }
+
+                // Let's check if the last record exhausted the stream,
+                // This is not necessary for correctness, but might save one extra
+                // round trip.
+                if ( rx2SyncStream.completed() )
+                {
+                    hasMore = false;
+                    subscriber.onResultCompleted( getSummary().getQueryStatistics() );
+                }
             }
             catch ( Exception e )
             {
