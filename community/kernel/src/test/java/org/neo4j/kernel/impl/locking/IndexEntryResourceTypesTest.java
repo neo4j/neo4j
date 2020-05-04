@@ -102,7 +102,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, Byte.valueOf( (byte) 1  ) ) ) );
+        hasher.hash( 42, array( exact( 1, Byte.valueOf( (byte) 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1, 2} ) ) );

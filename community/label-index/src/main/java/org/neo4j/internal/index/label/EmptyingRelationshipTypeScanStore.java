@@ -99,7 +99,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer  )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
     {
         return EmptyAllEntriesTokenScanReader.INSTANCE;
     }

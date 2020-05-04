@@ -83,7 +83,7 @@ class DurationType extends Type
         return read( cursor, into );
     }
 
-    static DurationValue asValue( long long0, long long1, long long2, long long3  )
+    static DurationValue asValue( long long0, long long1, long long2, long long3 )
     {
         // DurationValue has no "raw" variant
         long seconds = long0 - long2 * AVG_MONTH_SECONDS - long3 * AVG_DAY_SECONDS;

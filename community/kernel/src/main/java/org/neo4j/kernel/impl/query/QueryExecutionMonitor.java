@@ -29,7 +29,7 @@ public interface QueryExecutionMonitor
 
     void endFailure( ExecutingQuery query , String reason );
 
-    void endSuccess( ExecutingQuery query  );
+    void endSuccess( ExecutingQuery query );
 
     default void beforeEnd( ExecutingQuery query, boolean success ) {};
 

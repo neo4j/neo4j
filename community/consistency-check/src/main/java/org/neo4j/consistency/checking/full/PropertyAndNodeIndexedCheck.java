@@ -28,7 +28,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;

@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.Function;
 
-import org.neo4j.annotations.documented.ReporterFactories;
-import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;

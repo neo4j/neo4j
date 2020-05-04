@@ -217,7 +217,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     @Override
     public boolean seekProperty( int property )
     {
-        if ( property == NO_TOKEN  )
+        if ( property == NO_TOKEN )
         {
             return false;
         }

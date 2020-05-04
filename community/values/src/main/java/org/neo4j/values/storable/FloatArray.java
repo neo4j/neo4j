@@ -103,7 +103,7 @@ public final class FloatArray extends FloatingPointArray
     @Override
     public boolean equals( double[] x )
     {
-        return PrimitiveArrayValues.equals( value, x  );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override

@@ -67,7 +67,7 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
             int addedStart = addedChunk.getAndAdd( sizeHint );
             if ( addedStart < addedItemsArray.length )
             {
-                int batchSize = min( sizeHint, addedItemsArray.length - addedStart  );
+                int batchSize = min( sizeHint, addedItemsArray.length - addedStart );
                 sizeHint -= batchSize;
                 addedItems = new RangeLongIterator( addedItemsArray, addedStart, batchSize );
             }

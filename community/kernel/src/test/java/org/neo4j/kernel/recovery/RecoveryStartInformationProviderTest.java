@@ -116,7 +116,7 @@ class RecoveryStartInformationProviderTest
     }
 
     @Test
-    void  detectMissingTransactionLogsInformation()
+    void detectMissingTransactionLogsInformation()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( false, -1, -1,
                 -1, LATEST.version() ) );

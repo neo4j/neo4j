@@ -34,11 +34,9 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {

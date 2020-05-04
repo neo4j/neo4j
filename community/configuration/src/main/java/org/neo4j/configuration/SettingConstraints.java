@@ -85,7 +85,7 @@ public final class SettingConstraints
             {
                 if ( !pattern.matcher( value ).matches() )
                 {
-                    throw new IllegalArgumentException( format("value does not match expression: `%s`%s", regex, descMsg  ) );
+                    throw new IllegalArgumentException( format("value does not match expression: `%s`%s", regex, descMsg ) );
                 }
             }
 
@@ -183,7 +183,7 @@ public final class SettingConstraints
             @Override
             public void validate( T value )
             {
-                if ( !Objects.equals( value, expected  ) )
+                if ( !Objects.equals( value, expected ) )
                 {
                     throw new IllegalArgumentException( format( "is not `%s`", expected ) );
                 }

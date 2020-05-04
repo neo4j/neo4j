@@ -227,7 +227,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node2 = tx.createNode();
 
             Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
-            r.setProperty( propertyKey, 42  );
+            r.setProperty( propertyKey, 42 );
             relationshipId = r.getId();
 
             tx.commit();

@@ -108,7 +108,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         }
 
         singlePropValues.sort( Values.COMPARATOR );
-        doublePropValues.sort( ValueTuple.COMPARATOR  );
+        doublePropValues.sort( ValueTuple.COMPARATOR );
     }
 
     private IndexDescriptor unwrap( IndexDefinition indexDefinition )

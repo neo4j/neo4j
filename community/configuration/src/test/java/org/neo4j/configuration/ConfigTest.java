@@ -324,7 +324,7 @@ class ConfigTest
                 .set( TestConnectionGroupSetting.group( "default" ).port, 7474 )
                 .set( TestConnectionGroupSetting.group( "1" ).port, 1111 )
                 .set( TestConnectionGroupSetting.group( "1" ).hostname, "0.0.0.0" )
-                .set( TestConnectionGroupSetting.group( "1" ).secure, false  )
+                .set( TestConnectionGroupSetting.group( "1" ).secure, false )
                 .build();
 
         Config config1 = Config.newBuilder()

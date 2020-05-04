@@ -285,7 +285,7 @@ class RelationshipCountsTest
         long[] before = new long[numberOfNodes];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            beforeCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            beforeCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null );
             before[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
         }
 
@@ -308,7 +308,7 @@ class RelationshipCountsTest
         long[] after = new long[numberOfNodes];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            afterCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            afterCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null );
             after[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
         }
 

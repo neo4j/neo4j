@@ -531,7 +531,7 @@ class CsvInputBatchImportIT
                 {
                     verify = actualValue -> assertEquals( expectedValue, actualValue );
                 }
-                propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
+                propertyVerifiers.put( (String) node.propertyKey( i ), verify );
             }
 
             // Special verifier for pointA property

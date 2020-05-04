@@ -41,7 +41,7 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
     private TokenScanWriter writer;
     private long count;
 
-    FullTokenStream( IndexStoreView indexStoreView  )
+    FullTokenStream( IndexStoreView indexStoreView )
     {
         this.indexStoreView = indexStoreView;
     }

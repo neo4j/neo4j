@@ -90,7 +90,7 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     @Override
     public boolean seekProperty( int property )
     {
-        if ( property == TokenConstants.NO_TOKEN  )
+        if ( property == TokenConstants.NO_TOKEN )
         {
             return false;
         }

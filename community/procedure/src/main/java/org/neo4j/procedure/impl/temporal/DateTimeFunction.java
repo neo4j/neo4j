@@ -170,7 +170,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         {
             if ( input != null && input.length == 1 )
             {
-                if ( input[0] instanceof IntegralValue  )
+                if ( input[0] instanceof IntegralValue )
                 {
                     IntegralValue milliseconds = (IntegralValue) input[0];
                     return DateTimeValue.ofEpochMillis( milliseconds );

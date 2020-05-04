@@ -176,7 +176,7 @@ public final class UserFunctionSignature
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, false  );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, false );
         }
     }
 

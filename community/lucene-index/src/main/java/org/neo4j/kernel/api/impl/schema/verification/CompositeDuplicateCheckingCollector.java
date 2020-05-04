@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.storageengine.api.NodePropertyAccessor;

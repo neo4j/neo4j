@@ -324,7 +324,7 @@ public class ResourceInjectionTest
             @UserAggregationResult
             public String result()
             {
-                return  api.listCoolPeople().toString();
+                return api.listCoolPeople().toString();
             }
         }
     }
@@ -381,7 +381,7 @@ public class ResourceInjectionTest
             @UserAggregationResult
             public String result()
             {
-                return  api.listCoolPeople().toString();
+                return api.listCoolPeople().toString();
             }
         }
     }
@@ -437,7 +437,7 @@ public class ResourceInjectionTest
             @UserAggregationResult
             public String result()
             {
-                return  api.listCoolPeople().toString();
+                return api.listCoolPeople().toString();
             }
         }
     }

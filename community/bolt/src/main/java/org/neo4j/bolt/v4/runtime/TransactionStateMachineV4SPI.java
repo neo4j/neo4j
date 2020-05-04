@@ -70,7 +70,7 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
     private class BoltResultHandleV4 extends AbstractBoltResultHandle
     {
 
-        BoltResultHandleV4( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor  )
+        BoltResultHandleV4( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
         {
             super( statement, params, boltQueryExecutor );
         }

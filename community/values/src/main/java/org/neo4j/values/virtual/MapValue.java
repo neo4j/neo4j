@@ -571,9 +571,9 @@ public abstract class MapValue extends VirtualValue
         int compare = Integer.compare( size, otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new  );
+            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new );
             Arrays.sort( thisKeys, String::compareTo );
-            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new  );
+            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new );
             Arrays.sort( thatKeys, String::compareTo );
             for ( int i = 0; i < size; i++ )
             {
@@ -605,9 +605,9 @@ public abstract class MapValue extends VirtualValue
         int compare = Integer.compare( size, otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new  );
+            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new );
             Arrays.sort( thisKeys, String::compareTo );
-            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new  );
+            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new );
             Arrays.sort( thatKeys, String::compareTo );
             for ( int i = 0; i < size; i++ )
             {

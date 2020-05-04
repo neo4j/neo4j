@@ -38,10 +38,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.

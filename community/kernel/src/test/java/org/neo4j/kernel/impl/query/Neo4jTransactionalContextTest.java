@@ -58,14 +58,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class Neo4jTransactionalContextTest
 {
     private GraphDatabaseQueryService queryService;
     private KernelStatement statement;
     private ConfiguredExecutionStatistics statistics;
-    private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final KernelTransactionFactory transactionFactory = mock( KernelTransactionFactory.class );
     private final NamedDatabaseId namedDatabaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
 

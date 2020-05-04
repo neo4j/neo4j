@@ -41,6 +41,6 @@ public class ConstraintTest extends ConstraintTestBase<WriteTestSupport>
     @Override
     protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
     {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds  );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
     }
 }

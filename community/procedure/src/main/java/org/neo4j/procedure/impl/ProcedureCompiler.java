@@ -245,7 +245,7 @@ class ProcedureCompiler
     }
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, Method method,
-            String warning, boolean fullAccess, QualifiedName procName  )
+            String warning, boolean fullAccess, QualifiedName procName )
             throws ProcedureException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );

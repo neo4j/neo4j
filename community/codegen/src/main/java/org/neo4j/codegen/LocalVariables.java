@@ -36,7 +36,7 @@ public class LocalVariables
     {
         if ( localVariables.containsKey( name ) )
         {
-           throw new IllegalStateException( String.format( "Local variable %s already in scope", name  ) );
+           throw new IllegalStateException( String.format( "Local variable %s already in scope", name ) );
         }
         LocalVariable localVariable = new LocalVariable( type, name, counter.getAndIncrement() );
         localVariables.put( name, localVariable );

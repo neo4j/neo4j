@@ -240,6 +240,6 @@ public class OutputFormat
     {
         representationWriteHandler.onRepresentationStartWriting();
         representationWriteHandler.onRepresentationFinal();
-        return Response.status( BAD_REQUEST ).type( mediaType  ).entity( entity ).build();
+        return Response.status( BAD_REQUEST ).type( mediaType ).entity( entity ).build();
     }
 }

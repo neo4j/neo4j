@@ -93,9 +93,9 @@ class DefaultNonUniqueIndexSamplerTest
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
-        sampler.include( value, 5  );
-        sampler.include( value, 4  );
-        sampler.include( "bbb", 3  );
+        sampler.include( value, 5 );
+        sampler.include( value, 4 );
+        sampler.include( "bbb", 3 );
 
         // when
         sampler.exclude( value, 3 );
@@ -109,9 +109,9 @@ class DefaultNonUniqueIndexSamplerTest
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
-        sampler.include( value, 1  );
-        sampler.include( value, 4  );
-        sampler.include( "bbb", 1  );
+        sampler.include( value, 1 );
+        sampler.include( value, 4 );
+        sampler.include( "bbb", 1 );
 
         // when
         sampler.exclude( value, 4 );

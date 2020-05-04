@@ -139,7 +139,7 @@ public class TransactionWriter
         add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
-    public void create( RelationshipRecord record  )
+    public void create( RelationshipRecord record )
     {
         record.setCreated();
         update( new RelationshipRecord( record.getId() ), record );
@@ -175,7 +175,7 @@ public class TransactionWriter
         add( before, after );
     }
 
-    public void delete( RelationshipRecord record  )
+    public void delete( RelationshipRecord record )
     {
         record.setInUse( false );
         add( record, new RelationshipRecord( record.getId() ) );

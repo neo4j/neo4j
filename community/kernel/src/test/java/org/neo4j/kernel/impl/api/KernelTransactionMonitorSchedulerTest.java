@@ -44,7 +44,7 @@ class KernelTransactionMonitorSchedulerTest
         transactionMonitorScheduler.start();
 
         verify( scheduler).scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, transactionTimeoutMonitor, 1, TimeUnit
-                .MILLISECONDS  );
+                .MILLISECONDS );
     }
 
     @Test
