@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -44,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -243,9 +245,12 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -796,7 +801,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("OptionalExpand") {
-    val predicate1 = Equals(varFor("to"), number("32"))(pos)
+    val predicate1 = Equals(varFor("to"), parameter("  AUTOINT2", CTInteger))(pos)
     val predicate2 = LessThan(varFor("a"), number("2002"))(pos)
 
     // Without predicate
@@ -805,11 +810,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With predicate and no relationship types
     assertGood(attach(OptionalExpand(lhsLP, "a", OUTGOING, Seq(), "to", "r", ExpandAll, Some(predicate1)), 12.0),
-      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r]->(to) WHERE to = 32")), Set("a", "to", "r")))
+      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r]->(to) WHERE to = $autoint_2")), Set("a", "to", "r")))
 
     // With predicate and relationship types
     assertGood(attach(OptionalExpand(lhsLP, "a", BOTH, Seq(RelTypeName("R")(pos)), "to", "r", ExpandAll, Some(And(predicate1, predicate2)(pos))), 12.0),
-      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r:R]-(to) WHERE to = 32 AND a < 2002")), Set("a", "to", "r")))
+      planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r:R]-(to) WHERE to = $autoint_2 AND a < 2002")), Set("a", "to", "r")))
 
     // With multiple relationship types
     assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "to", "r", ExpandAll, None), 12.0),
@@ -829,11 +834,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Selection") {
-    val predicate1 = Equals(varFor("x"), number("32"))(pos)
+    val predicate1 = In(varFor("x"), parameter("  AUTOLIST1", CTList(CTInteger)))(pos)
     val predicate2 = LessThan(varFor("y"), number("2002"))(pos)
 
     assertGood(attach(Selection(Seq(predicate1, predicate2), lhsLP), 2345.0),
-      planDescription(id, "Filter", SingleChild(lhsPD), Seq(details("x = 32 AND y < 2002")), Set("a")))
+      planDescription(id, "Filter", SingleChild(lhsPD), Seq(details("x IN $autolist_1 AND y < 2002")), Set("a")))
   }
 
   test("Skip") {
@@ -842,7 +847,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("FindShortestPaths") {
-    val predicate = Equals(prop("r", "prop"), number("32"))(pos)
+    val predicate = Equals(prop("r", "prop"), parameter("  AUTOSTRING1", CTString))(pos)
 
     // with(out) relationship types
     // length variations
@@ -853,11 +858,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // with: predicates, path name, relationship type
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(Some("  UNNAMED12"), PatternRelationship("r", ("a", "y"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, Some(4))), single = true)(null), Seq(predicate)), 2345.0),
-      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE r.prop = 32")), Set("r", "a", "y", anonVar("12"))))
+      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE r.prop = $$autostring_1")), Set("r", "a", "y", anonVar("12"))))
 
     // with: predicates, UNNAMED variables, relationship type, unbounded max length
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("a", "  UNNAMED2"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, None)), single = true)(null), Seq(predicate)), 2345.0),
-      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = 32")), Set("r", "a", anonVar("2"))))
+      planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")), Set("r", "a", anonVar("2"))))
   }
 
   test("MergeCreate") {
@@ -892,7 +897,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("VarExpand") {
-    val predicate = (varName: String) => Equals(prop(varName, "prop"), number("32"))(pos)
+    val predicate = (varName: String) => Equals(prop(varName, "prop"), parameter("  AUTODOUBLE1", CTFloat))(pos)
     val nodePredicate = VariablePredicate(varFor("x"), predicate("x"))
     val relationshipPredicate = VariablePredicate(varFor("r"), predicate("r"))
 
@@ -900,11 +905,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With nodePredicate and relationshipPredicate
     assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 1, 4, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
-      planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = 32 AND r.prop = 32")), Set("a", "y")))
+      planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")), Set("a", "y")))
 
     // With nodePredicate, without relationshipPredicate
     assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 2, 4, Some(nodePredicate), None), 1.0),
-      planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = 32")), Set("a", "y")))
+      planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = $autodouble_1")), Set("a", "y")))
 
     // Without predicates, without relationship type
     assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, None, None), 1.0),
@@ -918,11 +923,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // With nodePredicate and relationshipPredicate
     assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
-      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = 32 AND r.prop = 32")), Set("a", "to", "rel")))
+      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")), Set("a", "to", "rel")))
 
     // With nodePredicate, without relationshipPredicate, with length
     assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, Some(3)), ExpandAll, Some(nodePredicate)), 1.0),
-      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = 32")), Set("a", "to", "rel")))
+      planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = $autodouble_1")), Set("a", "to", "rel")))
 
     // With unbounded length
     assertGood(attach(VarExpand(lhsLP, "a", OUTGOING, OUTGOING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, None), ExpandAll), 1.0),
@@ -1293,4 +1298,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private def key(name: String): PropertyKeyName = PropertyKeyName(name)(pos)
 
   private def number(i: String): SignedDecimalIntegerLiteral = SignedDecimalIntegerLiteral(i)(pos)
+
+  private def parameter(p: String, t: CypherType): Parameter = Parameter(p, t)(pos)
 }
