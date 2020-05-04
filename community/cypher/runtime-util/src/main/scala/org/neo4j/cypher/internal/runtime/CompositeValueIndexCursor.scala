@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.storable.Value
-import org.neo4j.values.storable.ValueComparator
 import org.neo4j.values.storable.Values.COMPARATOR
 
 import scala.annotation.tailrec
@@ -151,3 +150,4 @@ private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor],
     }
   }
 }
+

@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
+import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
@@ -67,13 +68,11 @@ import org.neo4j.graphdb.traversal.Uniqueness
 import org.neo4j.internal
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
-import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
@@ -996,37 +995,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       current
     }
   }
-
-  class ValuedNodeIndexCursor(inner: NodeValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
-
-    override def numberOfProperties(): Int = values.length
-
-    override def propertyKey(offset: Int): Int = inner.propertyKey(offset)
-
-    override def hasValue: Boolean = true
-
-    override def propertyValue(offset: Int): Value = values(offset)
-
-    override def node(cursor: NodeCursor): Unit = inner.node(cursor)
-
-    override def nodeReference(): Long = inner.nodeReference()
-
-    override def next(): Boolean = inner.next()
-
-    override def closeInternal(): Unit = inner.close()
-
-    // We do not call getCloseListener.onClosed(inner) here since
-    // that will already happen in closeInternal.
-    override def close(): Unit = closeInternal()
-
-    override def isClosed: Boolean = inner.isClosed
-
-    override def score(): Float = inner.score()
-
-    override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
-
-    override def removeTracer(): Unit = inner.removeTracer()
-  }
 }
 
 object TransactionBoundQueryContext {
@@ -1057,8 +1025,8 @@ object TransactionBoundQueryContext {
 
   class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends RelationshipIterator with AutoCloseable {
 
-    import RelationshipCursorIterator.NOT_INITIALIZED
-    import RelationshipCursorIterator.NO_ID
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NOT_INITIALIZED
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID
 
     private var _next = NOT_INITIALIZED
     private var typeId: Int = NO_ID
