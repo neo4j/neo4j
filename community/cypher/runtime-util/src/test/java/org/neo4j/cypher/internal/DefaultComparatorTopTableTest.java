@@ -171,6 +171,31 @@ class DefaultComparatorTopTableTest
         }
     }
 
+    @Test
+    void shouldHandleAddingValuesAfterReset()
+    {
+        DefaultComparatorTopTable<MeasurableLong> table = new DefaultComparatorTopTable<>( comparator, 20 );
+        long totalCountAfterReset = 7;
+
+        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l * 100 ) ) );
+        table.sort();
+        table.reset( totalCountAfterReset );
+        assertEquals( table.getSize(), 0 );
+
+        TEST_VALUES.forEach( l -> table.add( new MeasurableLong( l ) ) );
+        table.sort();
+
+        Iterator<MeasurableLong> iterator = table.iterator();
+
+        for ( int i = 0; i < totalCountAfterReset; i++ )
+        {
+            assertTrue( iterator.hasNext() );
+            long value = iterator.next().getValue();
+            assertEquals( EXPECTED_VALUES[i], value );
+        }
+        assertFalse( iterator.hasNext() );
+    }
+
     private static void add( PriorityQueue<Long> priorityQueue, long e, int limit )
     {
         if ( priorityQueue.size() < limit )

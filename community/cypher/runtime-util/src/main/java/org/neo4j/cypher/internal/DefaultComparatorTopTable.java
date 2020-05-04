@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 
@@ -59,9 +60,9 @@ public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( DefaultComparatorTopTable.class );
 
     private final Comparator<T> comparator;
-    private final long totalCount;
     private final MemoryTracker memoryTracker;
 
+    private long totalCount;
     private long trackedSize;
     private boolean heapified;
     private boolean isSorted;
@@ -156,6 +157,17 @@ public class DefaultComparatorTopTable<T> implements Iterable<T>, AutoCloseable 
             }
         }
         isSorted = true;
+    }
+
+    public void reset( long newTotalCount )
+    {
+        checkArgument( newTotalCount > 0, "Top table size must be greater than 0" );
+        totalCount = newTotalCount;
+
+        Arrays.fill( heap, 0, size, null );
+        heapified = false;
+        isSorted = false;
+        size = 0;
     }
 
     @Override

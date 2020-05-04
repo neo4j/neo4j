@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -38,56 +39,38 @@ case class PartialTopNPipe(source: Pipe,
 
   override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
-  class TopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
-    private val buffer = new java.util.ArrayList[CypherRow]()
-    private var topTable: DefaultComparatorTopTable[CypherRow] = _
+  class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
+    private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
+    private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
-      buffer.forEach(x => state.memoryTracker.deallocated(x, id.x))
-      buffer.clear()
+      topTable.reset(remainingLimit)
+      rowsMemoryTracker.reset()
+    }
+
+    override def close(): Unit = {
+      topTable.close()
+      rowsMemoryTracker.close()
     }
 
     override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
 
     override def processRow(row: CypherRow): Unit = {
-      // add to either Buffer or TopTable
-      if (remainingLimit > 0) {
-        remainingLimit -= 1
-        buffer.add(row)
-        state.memoryTracker.allocated(row, id.x)
-      } else {
-        if (topTable == null) {
-          // At this point we switch from a buffer for the whole chunk to a TopTable
-          topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, buffer.size())
-          // Transfer everything buffered so far into the TopTable
-          var i = 0
-          while (i < buffer.size()) {
-            topTable.add(buffer.get(i))
-            // Only calling allocated here for the rows that are already buffered,
-            // and not for any rows after that, makes the assumption that rows have more or less the same size.
-            // We don't know which ones are actually kept in the TopTable.
-            state.memoryTracker.allocated(row, id.x)
-            i += 1
-          }
-          // Clean up the buffer
-          clear()
-        }
-        // Add the current row to the TopTable
-        topTable.add(row)
+      val sizeBefore = topTable.getSize
+
+      topTable.add(row)
+      remainingLimit = math.max(0, remainingLimit - 1)
+
+      val sizeAfter = topTable.getSize
+      if (sizeAfter > sizeBefore) {
+        rowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)
       }
     }
 
     override def result(): Iterator[CypherRow] = {
-      if (topTable == null) {
-        if (buffer.size() > 1) {
-          // Sort the buffered chunk
-          buffer.sort(suffixComparator)
-        }
-        buffer.iterator().asScala
-      } else {
-        topTable.sort()
-        topTable.iterator().asScala
-      }
+      topTable.sort()
+      topTable.iterator().asScala
     }
 
     override def processNextChunk: Boolean = remainingLimit > 0
@@ -107,7 +90,7 @@ case class PartialTopNPipe(source: Pipe,
 
         // We have to re-attach the already read first row to the iterator
         val restoredInput = Iterator.single(first) ++ input
-        val receiver = new TopNReceiver(longCount, state)
+        val receiver = new PartialTopNReceiver(longCount, state)
         internalCreateResultsWithReceiver(restoredInput, state, receiver)
       }
     }

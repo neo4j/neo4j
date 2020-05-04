@@ -52,7 +52,7 @@ trait OrderedInputPipe {
           (processNextChunk && (
             inputState.firstRowOfNextChunk != null || input.hasNext))
         if (!_hasNext) {
-          receiver.clear()
+          receiver.close()
         }
         _hasNext
       }
@@ -141,4 +141,11 @@ trait OrderedChunkReceiver {
     * @return whether the next chunk needs to be processed
     */
   def processNextChunk: Boolean
+
+  /**
+   * Will be called after all chunks are completed.
+   */
+  def close(): Unit = {
+    clear()
+  }
 }
