@@ -692,9 +692,10 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
    * Tests a plan by getting the string representation and then using scala REPL to execute that code, which yields a `rebuiltPlan`.
    * Compare that plan against the original plan.
    */
-  private def testPlan(name: String, plan: LogicalPlan): Unit = {
+  private def testPlan(name: String, buildPlan: => LogicalPlan): Unit = {
     testedOperators.add(name)
     test(name) {
+      val plan = buildPlan // to avoid running out of stack while compiling the huge LogicalPlanToLogicalPlanBuilderStringTest constructor
       val code = LogicalPlanToPlanBuilderString(plan)
       val rebuiltPlan = interpretPlanBuilder(code)
       if (rebuiltPlan == null) {
