@@ -108,7 +108,7 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
         return new Iterator<T>()
         {
             private EagerBuffer.Chunk<T> chunk = first;
-            private int index = 0;
+            private int index;
 
             @Override
             public boolean hasNext()

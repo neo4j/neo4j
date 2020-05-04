@@ -73,7 +73,7 @@ class DistinctSetTest
     @Test
     void closeShouldReleaseEverything()
     {
-        // Allocate outside of table
+        // Allocate outside of set
         long externalAllocation = 113L;
         memoryTracker.allocateHeap( externalAllocation );
 
