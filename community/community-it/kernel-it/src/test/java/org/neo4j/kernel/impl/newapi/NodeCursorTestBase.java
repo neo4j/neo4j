@@ -105,7 +105,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             for ( long id : NODE_IDS )
             {
                 // when
-                read.singleNode( id, nodes  );
+                read.singleNode( id, nodes );
 
                 // then
                 assertTrue( nodes.next(), "should access defined node" );
@@ -123,7 +123,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         try ( NodeCursor node = cursors.allocateNodeCursor( NULL ) )
         {
             // when
-            read.singleNode( -2L, node  );
+            read.singleNode( -2L, node );
 
             // then
             assertFalse( node.next(), "should not access negative reference node" );

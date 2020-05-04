@@ -144,7 +144,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                         ProcedureCallContext.EMPTY );
 
         // Then
-        assertNotNull( asList( stream  ).get( 0 )[0] );
+        assertNotNull( asList( stream ).get( 0 )[0] );
         commit();
     }
 

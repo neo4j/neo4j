@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

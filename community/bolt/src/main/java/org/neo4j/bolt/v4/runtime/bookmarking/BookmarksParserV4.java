@@ -160,7 +160,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         {
             throw newInvalidSingleBookmarkError( bookmark );
         }
-        return  ((TextValue) bookmark).stringValue();
+        return ((TextValue) bookmark).stringValue();
     }
 
     private static UUID parseDatabaseId( String uuid, String bookmark ) throws BookmarkParsingException

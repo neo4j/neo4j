@@ -335,7 +335,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true  )
+                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                 .containsKeys( "server", "connection_id" ) ) ) );
 
         // When
@@ -374,7 +374,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true  )
+                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
 
         // When
@@ -403,7 +403,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true  )
+                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
 
         // When
@@ -432,7 +432,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true  )
+                msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
 
         // When

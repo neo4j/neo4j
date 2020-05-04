@@ -28,8 +28,6 @@ import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-
 public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
 {
     private final RecordFormat<RECORD> actual;

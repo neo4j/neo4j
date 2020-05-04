@@ -42,7 +42,7 @@ class LocalTimeFunction extends TemporalFunction<LocalTimeValue>
     }
 
     @Override
-    protected LocalTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone  )
+    protected LocalTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
         return timezone == null ? LocalTimeValue.now( clock, defaultZone ) : LocalTimeValue.now( clock, timezone );
     }

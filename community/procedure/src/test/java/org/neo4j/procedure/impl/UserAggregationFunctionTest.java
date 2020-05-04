@@ -559,7 +559,7 @@ public class UserAggregationFunctionTest
             return new LoggingAggregator( );
         }
 
-        public  class LoggingAggregator
+        public class LoggingAggregator
         {
             @UserAggregationUpdate
             public void logAround()

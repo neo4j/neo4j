@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

@@ -127,7 +127,7 @@ class BoltConnectionReadLimiterTest
         limiter.enqueued( connection, job );
         limiter.enqueued( connection, job );
         limiter.enqueued( connection, job );
-        limiter.drained( connection, Arrays.asList( job, job  ) );
+        limiter.drained( connection, Arrays.asList( job, job ) );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );

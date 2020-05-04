@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.cache;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;

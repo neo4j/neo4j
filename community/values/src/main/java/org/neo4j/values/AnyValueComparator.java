@@ -71,11 +71,11 @@ class AnyValueComparator implements TernaryComparator<AnyValue>
         }
         else if ( isSequence1 )
         {
-            return  compareSequenceAndNonSequence( v2 );
+            return compareSequenceAndNonSequence( v2 );
         }
         else if ( isSequence2 )
         {
-            return  -compareSequenceAndNonSequence( v1 );
+            return -compareSequenceAndNonSequence( v1 );
         }
 
         // Handle remaining AnyValues
@@ -94,7 +94,7 @@ class AnyValueComparator implements TernaryComparator<AnyValue>
             else
             {
                 // This returns int
-                return  compareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 );
+                return compareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 );
             }
 
         }

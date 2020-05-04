@@ -26,7 +26,6 @@ import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.kernel.impl.query.QueryExecution;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
-import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 public class CypherAdapterStreamV4 extends CypherAdapterStreamV3

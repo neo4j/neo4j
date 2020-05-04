@@ -555,7 +555,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         DateTimeValue d3 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
         DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) );
         DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+03:00" ) );
-        testIndexSeekRangeWithExists( d1, d2, d3, d4, d5  );
+        testIndexSeekRangeWithExists( d1, d2, d3, d4, d5 );
     }
 
     @Test
@@ -1073,7 +1073,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
-        Object o1 = new LocalTime[]{LocalTime.of( 10, 1  )};
+        Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
         Object o2 = new LocalTime[]{LocalTime.of( 10, 2 )};
         Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
         Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};

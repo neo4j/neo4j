@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import  org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.parboiled.scala.Rule1
 
 class FromGraphReferenceTest

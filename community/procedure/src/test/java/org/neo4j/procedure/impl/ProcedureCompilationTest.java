@@ -307,7 +307,7 @@ public class ProcedureCompilationTest
     void shouldHandleAllTypes() throws ProcedureException
     {
         Map<Type,Method> allTypes = typeMaps();
-        UserFunctionSignature signature = functionSignature( "test", "foo" ).in( "in", NTAny  ).out( NTAny  ).build();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).in( "in", NTAny ).out( NTAny ).build();
 
         for ( Entry<Type,Method> entry : allTypes.entrySet() )
         {

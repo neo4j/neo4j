@@ -21,7 +21,6 @@ package org.neo4j.consistency.newchecker;
 
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.collection.LongRange;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 interface Checker
 {

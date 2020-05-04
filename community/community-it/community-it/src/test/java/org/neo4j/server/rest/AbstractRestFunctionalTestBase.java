@@ -125,7 +125,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 
-    public static HTTP.Response runQuery( String query, String...contentTypes  )
+    public static HTTP.Response runQuery( String query, String...contentTypes )
     {
         String resultDataContents = "";
         if ( contentTypes.length > 0 )

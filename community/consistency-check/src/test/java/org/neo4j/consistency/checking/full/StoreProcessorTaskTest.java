@@ -36,7 +36,6 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @SuppressWarnings( "unchecked" )
 class StoreProcessorTaskTest

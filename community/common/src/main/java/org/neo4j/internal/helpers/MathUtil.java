@@ -55,7 +55,7 @@ public final class MathUtil
     // Tested by PropertyValueComparisonTest
     public static int compareDoubleAgainstLong( double lhs, long rhs )
     {
-        if  ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
+        if ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
         {
             if ( Double.isNaN( lhs ) )
             {

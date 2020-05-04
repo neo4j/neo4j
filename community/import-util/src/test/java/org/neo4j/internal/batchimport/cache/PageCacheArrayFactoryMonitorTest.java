@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;

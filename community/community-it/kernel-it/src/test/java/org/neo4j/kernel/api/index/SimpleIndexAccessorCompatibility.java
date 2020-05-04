@@ -43,7 +43,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.documented.ReporterFactories;
-import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -787,7 +786,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
-        Object o1 = new LocalTime[]{LocalTime.of( 10, 1  )};
+        Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
         Object o2 = new LocalTime[]{LocalTime.of( 10, 2 )};
         Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
         Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};

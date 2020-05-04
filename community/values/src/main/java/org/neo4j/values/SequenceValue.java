@@ -94,7 +94,7 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
         int i = 0;
         Equality equivalenceResult = Equality.TRUE;
-        while ( i < length  )
+        while ( i < length )
         {
             Equality areEqual = a.value( i ).ternaryEquals( b.value( i ) );
             if ( areEqual == Equality.UNDEFINED )

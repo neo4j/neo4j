@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking.full;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.PropertyRecordCheck;

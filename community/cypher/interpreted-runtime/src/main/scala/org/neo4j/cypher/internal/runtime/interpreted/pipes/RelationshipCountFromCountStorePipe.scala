@@ -55,7 +55,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
   }
 
   private def countOneDirection(state: QueryState, startLabelId: Int, endLabelId: Int) = {
-    val  ts = types.types(state.query)
+    val ts = types.types(state.query)
     if (ts == null) state.query.relationshipCountByCountStore(startLabelId, NameId.WILDCARD, endLabelId)
     else {
       var i = 0

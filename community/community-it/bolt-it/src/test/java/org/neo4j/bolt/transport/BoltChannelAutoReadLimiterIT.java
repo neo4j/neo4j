@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

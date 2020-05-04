@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;

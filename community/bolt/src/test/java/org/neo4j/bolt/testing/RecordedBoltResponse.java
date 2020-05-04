@@ -45,7 +45,7 @@ public class RecordedBoltResponse
 
     public void addFields( AnyValue[] fields )
     {
-        records.add( fields  );
+        records.add( fields );
     }
 
     public void addMetadata( String key, AnyValue value )

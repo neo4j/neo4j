@@ -41,7 +41,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
-import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
@@ -51,7 +50,6 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;

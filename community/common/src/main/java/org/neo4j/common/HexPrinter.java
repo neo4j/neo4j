@@ -312,7 +312,7 @@ public class HexPrinter
 
         new HexPrinter( out, bytesPerBlock, groupSep ).append( bytes, offset, length );
         out.flush();
-        return outStream.toString( StandardCharsets.UTF_8  );
+        return outStream.toString( StandardCharsets.UTF_8 );
     }
 
     /**
@@ -330,7 +330,7 @@ public class HexPrinter
         return hex( bytes, DEFAULT_BYTES_PER_GROUP, DEFAULT_GROUP_SEPARATOR );
     }
 
-    public static String hex( ByteBuffer bytes, int bytesPerBlock, String groupSep  )
+    public static String hex( ByteBuffer bytes, int bytesPerBlock, String groupSep )
     {
         return hex( bytes, bytes.position(), bytes.limit(), bytesPerBlock, groupSep );
     }

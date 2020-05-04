@@ -251,7 +251,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "never be compiled." )
     @Internal
     public static final Setting<CypherExpressionEngine> cypher_expression_engine =
-            newBuilder( "unsupported.cypher.expression_engine", ofEnum( CypherExpressionEngine.class ), CypherExpressionEngine.DEFAULT  ).build();
+            newBuilder( "unsupported.cypher.expression_engine", ofEnum( CypherExpressionEngine.class ), CypherExpressionEngine.DEFAULT ).build();
 
     @Description( "Number of uses before an expression is considered for compilation" )
     @Internal
@@ -1079,7 +1079,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "related processing thread until it becomes writable again." )
     @Internal
     public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark =
-            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INT, (int) kibiBytes( 512  ) )
+            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INT, (int) kibiBytes( 512 ) )
                     .addConstraint( range( (int) kibiBytes( 64 ), Integer.MAX_VALUE ) )
                     .build();
 

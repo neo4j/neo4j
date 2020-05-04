@@ -231,7 +231,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
                 RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) );
 
         // Then
-        assertPermissionErrorAtDataAccess( response  );
+        assertPermissionErrorAtDataAccess( response );
     }
 
     private void assertAuthorizationRequired( String method, String path, Object payload,
