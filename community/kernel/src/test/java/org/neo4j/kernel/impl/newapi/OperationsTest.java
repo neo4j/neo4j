@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
-import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -1238,90 +1237,6 @@ class OperationsTest
         // when
         var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
         assertThat( e.getUserMessage( tokenHolders ) ).containsIgnoringCase( "index prototype" ).containsIgnoringCase( "not unique" );
-    }
-
-    @Test
-    void readOnlyModeShouldNotAllowWrites() throws Exception
-    {
-        // given
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.READ );
-
-        // when
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipRemoveProperty( 0L, 1 ) );
-    }
-
-    @Test
-    void accessModeShouldNotAllowWrites() throws Exception
-    {
-        // given
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.ACCESS );
-
-        // when
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.nodeRemoveProperty( 0L, 1 ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertThrows( AuthorizationViolationException.class, () -> operations.relationshipRemoveProperty( 0L, 1 ) );
-    }
-
-    @Test
-    void writeOnlyModeShouldAllowWrites() throws Exception
-    {
-        // given
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.WRITE_ONLY );
-
-        // We're testing security so no nodes exist
-        when( transaction.dataRead() ).thenReturn( new StubRead() );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
-        when( storageReader.nodeExists( anyLong(), any() ) ).thenReturn( false );
-
-        // then
-        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
-        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
-    }
-
-    @Test
-    void writeModeShouldAllowWrites() throws Exception
-    {
-        // given
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.WRITE );
-        when( transaction.dataRead() ).thenReturn( new StubRead() );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
-
-        // then
-        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
-        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
-    }
-
-    @Test
-    void fullModeShouldAllowWrites() throws Exception
-    {
-        // given
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
-        when( transaction.dataRead() ).thenReturn( new StubRead() );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
-
-        // then
-        assertAuthorized( () -> operations.nodeSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.nodeRemoveProperty( 0L, 1 ) );
-        assertAuthorized( () -> operations.relationshipSetProperty( 0L, 1, Values.stringValue( "test" ) ) );
-        assertAuthorized( () -> operations.relationshipRemoveProperty( 0L, 1 ) );
     }
 
     @Test

@@ -176,6 +176,18 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
+    {
+        return wrapping.allowsSetProperty( labels, propertyKey );
+    }
+
+    @Override
+    public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+    {
+        return wrapping.allowsSetProperty( relType, propertyKey);
+    }
+
+    @Override
     public String name()
     {
         return original.name() + " overridden by " + wrapping.name();

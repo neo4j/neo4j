@@ -176,6 +176,18 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
+    {
+        return original.allowsSetProperty( labels, propertyKey ) && wrapping.allowsSetProperty( labels, propertyKey );
+    }
+
+    @Override
+    public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+    {
+        return original.allowsSetProperty( relType, propertyKey ) && wrapping.allowsSetProperty( relType, propertyKey );
+    }
+
+    @Override
     public String name()
     {
         return original.name() + " restricted to " + wrapping.name();

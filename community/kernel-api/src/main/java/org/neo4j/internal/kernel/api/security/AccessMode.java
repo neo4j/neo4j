@@ -222,6 +222,18 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
+        {
+            return write;
+        }
+
+        @Override
+        public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+        {
+            return write;
+        }
+
+        @Override
         public AuthorizationViolationException onViolation( String msg )
         {
             return new AuthorizationViolationException( msg );
@@ -288,6 +300,10 @@ public interface AccessMode
     boolean allowsCreateRelationship( int relType );
 
     boolean allowsDeleteRelationship( int relType );
+
+    boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey );
+
+    boolean allowsSetProperty( IntSupplier relType, int propertyKey );
 
     AuthorizationViolationException onViolation( String msg );
     String name();

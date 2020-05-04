@@ -179,6 +179,18 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey )
+    {
+        return allowWrite;
+    }
+
+    @Override
+    public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+    {
+        return allowWrite;
+    }
+
+    @Override
     public AuthorizationViolationException onViolation( String msg )
     {
         return new AuthorizationViolationException( "Forbidden in testAccessMode" );

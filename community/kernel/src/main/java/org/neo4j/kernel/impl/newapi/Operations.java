@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -591,7 +592,6 @@ public class Operations implements Write, SchemaWrite
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException
     {
-        assertAllowsWrites();
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
@@ -607,6 +607,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( !existingValue.equals( value ) )
         {
+            assertAllowsSetProperty( labels, propertyKey );
             // The value changed and there may be relevant constraints to check so let's check those now.
             Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
             NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
@@ -616,6 +617,7 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue == NO_VALUE )
         {
             //no existing value, we just add it
+            assertAllowsSetProperty( labels, propertyKey );
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             if ( hasRelatedSchema )
             {
@@ -627,6 +629,7 @@ public class Operations implements Write, SchemaWrite
         {
             if ( propertyHasChanged( value, existingValue ) )
             {
+                assertAllowsSetProperty( labels, propertyKey );
                 //the value has changed to a new value
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
                 if ( hasRelatedSchema )
@@ -642,7 +645,6 @@ public class Operations implements Write, SchemaWrite
     public Value nodeRemoveProperty( long node, int propertyKey )
             throws EntityNotFoundException
     {
-        assertAllowsWrites();
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
         singleNode( node );
@@ -651,6 +653,7 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             long[] labels = acquireSharedNodeLabelLocks();
+            assertAllowsSetProperty( labels, propertyKey );
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             if ( storageReader.hasRelatedSchema( labels, propertyKey, NODE ) )
             {
@@ -665,13 +668,13 @@ public class Operations implements Write, SchemaWrite
     public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
             throws EntityNotFoundException
     {
-        assertAllowsWrites();
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
         Value existingValue = readRelationshipProperty( propertyKey );
         if ( existingValue == NO_VALUE )
         {
+            assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
             ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
             return NO_VALUE;
         }
@@ -679,6 +682,7 @@ public class Operations implements Write, SchemaWrite
         {
             if ( propertyHasChanged( existingValue, value ) )
             {
+                assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
                 ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
             }
 
@@ -689,7 +693,6 @@ public class Operations implements Write, SchemaWrite
     @Override
     public Value relationshipRemoveProperty( long relationship, int propertyKey ) throws EntityNotFoundException
     {
-        assertAllowsWrites();
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
@@ -697,6 +700,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( existingValue != NO_VALUE )
         {
+            assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
             ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
         }
 
@@ -1582,4 +1586,37 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
+    private void assertAllowsSetProperty( long[] labelIds, long propertyKey )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsSetProperty( () -> Labels.from( labelIds ), (int) propertyKey ) )
+        {
+            throw accessMode.onViolation( format( "Set property for property '%s' is not allowed for %s.", resolvePropertyKey(propertyKey),
+                                                  ktx.securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsSetProperty( long relType, long propertyKey )
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsSetProperty( () -> (int) relType, (int) propertyKey ) )
+        {
+            throw accessMode.onViolation( format( "Set property for property '%s' is not allowed for %s.", resolvePropertyKey( propertyKey ),
+                                                  ktx.securityContext().description() ) );
+        }
+    }
+
+    private String resolvePropertyKey( long propertyKey )
+    {
+        String propKeyName;
+        try
+        {
+            propKeyName = token.propertyKeyName( (int) propertyKey );
+        }
+        catch ( PropertyKeyIdNotFoundKernelException e )
+        {
+            propKeyName = "<unknown>";
+        }
+        return propKeyName;
+    }
 }
