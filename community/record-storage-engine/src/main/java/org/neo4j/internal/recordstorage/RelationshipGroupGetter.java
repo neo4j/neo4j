@@ -66,12 +66,13 @@ public class RelationshipGroupGetter
     }
 
     public RecordProxy<RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
+            RecordProxy<NodeRecord,Void> nodeChange, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
     {
-        RelationshipGroupPosition existingGroup = getRelationshipGroup( node, type, relGroupRecords );
+        RelationshipGroupPosition existingGroup = getRelationshipGroup( nodeChange.forReadingLinkage(), type, relGroupRecords );
         RecordProxy<RelationshipGroupRecord, Integer> change = existingGroup.group();
         if ( change == null )
         {
+            NodeRecord node = nodeChange.forChangingLinkage();
             assert node.isDense() : "Node " + node + " should have been dense at this point";
             long id = idGenerator.nextId( cursorTracer );
             change = relGroupRecords.create( id, type, cursorTracer );

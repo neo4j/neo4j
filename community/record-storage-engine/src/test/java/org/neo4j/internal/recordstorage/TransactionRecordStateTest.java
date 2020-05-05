@@ -655,7 +655,6 @@ class TransactionRecordStateTest
         assertCommand( commandIterator.next(), RelationshipCommand.class );
         assertCommand( commandIterator.next(), RelationshipCommand.class );
         assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
-        assertCommand( commandIterator.next(), NodeCommand.class );
         assertFalse( commandIterator.hasNext() );
     }
 
@@ -669,7 +668,7 @@ class TransactionRecordStateTest
          * TransactionRecordState.extractCommands() for more details.
          *
          * The test setup looks complicated but all it does is mock properly a NeoStoreTransactionContext to
-         * return an Iterable<RecordSet< that contains a RelationshipGroup record which has been created in this
+         * return an Iterable<RecordSet> that contains a RelationshipGroup record which has been created in this
          * tx and also is set notInUse.
          */
         // Given:
