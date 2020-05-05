@@ -49,12 +49,18 @@ import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
+import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
+import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
+import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabaseAction
@@ -65,11 +71,18 @@ import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DropConstraintAction
+import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
+import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
+import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
@@ -122,6 +135,7 @@ import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
@@ -1068,6 +1082,80 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     1 -> _bulkImportQuery
   )
 
+  // Schema commands
+  // ----------------------------------
+
+  def _variableProperty: Gen[Property] = for {
+    map <- _variable
+    key <- _propertyKeyName
+  } yield Property(map, key)(pos)
+
+  def _listOfProperties: Gen[List[Property]] = for {
+    props <- oneOrMore(_variableProperty)
+  } yield props
+
+  def _createIndex: Gen[CreateIndexNewSyntax] = for {
+    variable  <- _variable
+    labelName <- _labelName
+    props     <- _listOfProperties
+    name      <- option(_identifier)
+    use       <- option(_use)
+  } yield CreateIndexNewSyntax(variable, labelName, props, name, use)(pos)
+
+  def _dropIndex: Gen[DropIndexOnName] = for {
+    name <- _identifier
+    use  <- option(_use)
+  } yield DropIndexOnName(name, use)(pos)
+
+  def _indexCommandsOldSyntax: Gen[SchemaCommand] = for {
+    labelName <- _labelName
+    props     <- oneOrMore(_propertyKeyName)
+    use       <- option(_use)
+    command   <- oneOf(CreateIndex(labelName, props, use)(pos), DropIndex(labelName, props, use)(pos))
+  } yield command
+
+  def _createConstraint: Gen[SchemaCommand] = for {
+    variable            <- _variable
+    labelName           <- _labelName
+    relTypeName         <- _relTypeName
+    props               <- _listOfProperties
+    prop                <- _variableProperty
+    name                <- option(_identifier)
+    use                 <- option(_use)
+    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, use)(pos)
+    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, use)(pos)
+    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, use)(pos)
+    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, use)(pos)
+    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, use)(pos)
+    command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
+  } yield command
+
+  def _dropConstraintOldSyntax: Gen[SchemaCommand] = for {
+    variable            <- _variable
+    labelName           <- _labelName
+    relTypeName         <- _relTypeName
+    props               <- _listOfProperties
+    prop                <- _variableProperty
+    use                 <- option(_use)
+    nodeKey             = DropNodeKeyConstraint(variable, labelName, props, use)(pos)
+    uniqueness          = DropUniquePropertyConstraint(variable, labelName, Seq(prop), use)(pos)
+    compositeUniqueness = DropUniquePropertyConstraint(variable, labelName, props, use)(pos)
+    nodeExistence       = DropNodePropertyExistenceConstraint(variable, labelName, prop, use)(pos)
+    relExistence        = DropRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, use)(pos)
+    command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
+  } yield command
+
+  def _dropConstraint: Gen[DropConstraintOnName] = for {
+    name <- _identifier
+    use  <- option(_use)
+  } yield DropConstraintOnName(name, use)(pos)
+
+  def _indexCommand: Gen[SchemaCommand] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax)
+
+  def _constraintCommand: Gen[SchemaCommand] = oneOf(_createConstraint, _dropConstraint, _dropConstraintOldSyntax)
+
+  def _schemaCommand: Gen[SchemaCommand] = oneOf(_indexCommand, _constraintCommand)
+
   // Administration commands
   // ----------------------------------
 
@@ -1337,6 +1425,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _statement: Gen[Statement] = oneOf(
     _query,
+    _schemaCommand,
     _adminCommand
   )
 }

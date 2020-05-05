@@ -179,64 +179,56 @@ case class Prettifier(
   }
 
   def asString(command: SchemaCommand): String = {
+    def backtick(s: String) = ExpressionStringifier.backtick(s)
+    def propertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("(", ", ", ")")
+    def propertyToString(property: Property): String = s"${expr(property.map)}.${ExpressionStringifier.backtick(property.propertyKey.name)}"
+
     val useString = asString(command.useGraph)
     val commandString = command match {
 
       case CreateIndex(LabelName(label), properties, _) =>
-        s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
+        s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
-      case CreateIndexNewSyntax(variable, LabelName(label), properties, None, _) =>
-        val propString = properties.map(p => s"${p.map.asInstanceOf[Variable].name}.${p.propertyKey.name}").mkString("(", ", ", ")")
-        s"CREATE INDEX FOR (${variable.name}:$label) ON $propString"
-
-      case CreateIndexNewSyntax(variable, LabelName(label), properties, Some(name), _) =>
-        val propString = properties.map(p => s"${p.map.asInstanceOf[Variable].name}.${p.propertyKey.name}").mkString("(", ", ", ")")
-        s"CREATE INDEX ${ExpressionStringifier.backtick(name)} FOR (${variable.name}:$label) ON $propString"
+      case CreateIndexNewSyntax(Variable(variable), LabelName(label), properties, name, _) =>
+        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+        s"CREATE INDEX ${nameString}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}"
 
       case DropIndex(LabelName(label), properties, _) =>
-        s"DROP INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
+        s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
       case DropIndexOnName(name, _) =>
-        s"DROP INDEX ${ExpressionStringifier.backtick(name)}"
+        s"DROP INDEX ${backtick(name)}"
 
-      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, None, _) =>
-        s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
-
-      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, Some(name), _) =>
-        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT ${base.asString(properties)} IS NODE KEY"
+      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, _) =>
+        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
-        s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS NODE KEY"
+        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
 
-      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, None, _) =>
-        s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
-
-      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, Some(name), _) =>
-        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, _) =>
+        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
-        s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
-      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, None, _) =>
-        s"CREATE CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
-
-      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, Some(name), _) =>
-        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
+      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, _) =>
+        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
-        s"DROP CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
+        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
 
-      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, None, _) =>
-        s"CREATE CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
-
-      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, Some(name), _) =>
-        s"CREATE CONSTRAINT ${ExpressionStringifier.backtick(name)} ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
+      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, _) =>
+        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+        s"CREATE CONSTRAINT ${nameString}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
-        s"DROP CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
+        s"DROP CONSTRAINT ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
 
       case DropConstraintOnName(name, _) =>
-        s"DROP CONSTRAINT ${ExpressionStringifier.backtick(name)}"
+        s"DROP CONSTRAINT ${backtick(name)}"
     }
     useString + commandString
   }
@@ -691,9 +683,6 @@ case class Prettifier(
       val where = start.where.map(ind.asString).map(asNewLine).getOrElse("")
       s"${INDENT}START ${startItems.mkString(s",$NL      ")}$where"
     }
-
-    def asString(properties: Seq[Property]): String =
-      properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")
   }
 }
 

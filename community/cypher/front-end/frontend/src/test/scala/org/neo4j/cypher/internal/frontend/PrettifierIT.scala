@@ -213,7 +213,7 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
 
-      "create CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+      "create CONSTRAINT foo ON (n:A) ASSERT n.p IS UNIQUE" ->
         "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE",
 
       "create CONSTRAINT `foo` ON (n:A) ASSERT (n.p) IS UNIQUE" ->

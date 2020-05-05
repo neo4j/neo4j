@@ -155,6 +155,14 @@ class SchemaCommandParserTest
     failsToParse
   }
 
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop.part IS UNIQUE") {
+    failsToParse
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop.part) IS UNIQUE") {
+    failsToParse
+  }
+
   test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop") {
     failsToParse
   }
