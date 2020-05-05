@@ -313,7 +313,7 @@ class MultipleIndexPopulationStressIT
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, null, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    TransactionLogInitializer.asLogFilesInitializer(), INSTANCE );
+                    TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             importer.doImport( input );
         }
     }

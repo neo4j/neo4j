@@ -183,7 +183,7 @@ public class ParallelBatchImporterTest
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         final BatchImporter inserter = new ParallelBatchImporter(
                 databaseLayout, fs, null, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig, getFormat(),
-                ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer(), INSTANCE );
+                ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();
         try

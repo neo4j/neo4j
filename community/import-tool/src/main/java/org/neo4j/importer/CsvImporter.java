@@ -186,7 +186,7 @@ class CsvImporter implements Importer
                     new PrintingImportLogicMonitor( stdOut, stdErr ),
                     jobScheduler,
                     badCollector,
-                    TransactionLogInitializer.asLogFilesInitializer(),
+                    TransactionLogInitializer.getLogFilesInitializer(),
                     memoryTracker );
 
             printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );

@@ -49,6 +49,10 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
+/**
+ * Provides methods for ensuring that transaction log files are properly initialised for a store.
+ * This includes making sure that the log files are ready to be replicated in a cluster.
+ */
 public class TransactionLogInitializer
 {
     private final FileSystemAbstraction fs;
@@ -56,7 +60,11 @@ public class TransactionLogInitializer
     private final CommandReaderFactory commandReaderFactory;
     private final PageCacheTracer tracer;
 
-    public static LogFilesInitializer asLogFilesInitializer()
+    /**
+     * Get a {@link LogFilesInitializer} implementation, suitable for e.g. passing to a batch importer.
+     * @return A {@link LogFilesInitializer} instance.
+     */
+    public static LogFilesInitializer getLogFilesInitializer()
     {
         return ( databaseLayout, store, fileSystem ) ->
         {
@@ -83,6 +91,9 @@ public class TransactionLogInitializer
         this.tracer = tracer;
     }
 
+    /**
+     * Create new empty log files in the given transaction logs directory, for a database that doesn't have any already.
+     */
     public void initializeEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
         try ( Lifespan lifespan = buildLogFiles( layout, transactionLogsDirectory ) )
@@ -92,6 +103,10 @@ public class TransactionLogInitializer
         }
     }
 
+    /**
+     * Make sure that any existing log files in the given transaction logs directory are initialised.
+     * This is done when we migrate 3.x stores into a 4.x world.
+     */
     public void initializeExistingLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
     {
         // If there are no transactions in any of the log files,

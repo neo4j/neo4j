@@ -167,7 +167,7 @@ public class QuickImport
                 consumer = BatchImporterFactory.withHighestPriority().instantiate(
                         DatabaseLayout.ofFlat( dir ), fileSystem, null, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
                         defaultVisible(), EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
-                        Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer(), INSTANCE );
+                        Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             }
             consumer.doImport( input );
         }
