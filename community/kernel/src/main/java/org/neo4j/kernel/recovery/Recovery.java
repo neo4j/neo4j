@@ -536,10 +536,8 @@ public final class Recovery
                     File[] logFiles = findLegacyLogFiles();
                     if ( logFiles.length > 0 )
                     {
-                        recoveryLog.warn( "Transaction log files were found in a legacy location. " +
-                                "This indicates that the database files might have been manipulated wrongly by a human operator, " +
-                                "e.g. trying to restore a backup by manually copying files." );
-                        recoveryLog.warn( "Please move or remove the following misplaced transaction log files:" );
+                        recoveryLog.warn( "Transaction log files were found in database directory, rather than the transaction log directory." );
+                        recoveryLog.warn( "Please move or remove the following %s misplaced transaction log file or files:", logFiles.length );
                         for ( File logFile : logFiles )
                         {
                             recoveryLog.warn( logFile.getAbsolutePath() );

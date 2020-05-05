@@ -114,9 +114,7 @@ public class TransactionLogInitializer
         try ( Lifespan lifespan = buildLogFiles( layout, transactionLogsDirectory ) )
         {
             LogFiles logFiles = lifespan.unwrap( LogFiles.class );
-            MutableLong minVersion = new MutableLong( Long.MAX_VALUE );
-            logFiles.accept( ( file, logVersion ) -> minVersion.setValue( Math.min( minVersion.longValue(), logVersion ) ) );
-            LogHeader logHeader = logFiles.extractHeader( minVersion.longValue() );
+            LogHeader logHeader = logFiles.extractHeader( logFiles.getLowestLogVersion() );
             ReadableLogChannel readableChannel = logFiles.getLogFile().getReader( logHeader.getStartPosition() );
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( commandReaderFactory, false );
             try ( LogEntryCursor cursor = new LogEntryCursor( entryReader, readableChannel ) )

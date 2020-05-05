@@ -100,7 +100,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         LogPosition position;
         try
         {
-            position = scanToEnd();
+            position = scanToEndOfLastLogEntry();
         }
         catch ( Exception e )
         {
@@ -109,7 +109,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
             jumpToLogStart( currentLogVersion );
             try
             {
-                position = scanToEnd();
+                position = scanToEndOfLastLogEntry();
             }
             catch ( Exception exception )
             {
@@ -120,7 +120,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         channel.position( position.getByteOffset() );
     }
 
-    private LogPosition scanToEnd() throws IOException
+    private LogPosition scanToEndOfLastLogEntry() throws IOException
     {
         // scroll all over possible checkpoints
         try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UncloseableChannel( channel ), memoryTracker ) )
