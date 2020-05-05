@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.io.IOUtils
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.COMPARATOR
 
@@ -71,7 +72,7 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
   }
 
   override def closeInternal(): Unit = {
-    cursors.foreach(_.close())
+    IOUtils.closeAll(cursors:_*)
   }
 
   override def isClosed: Boolean = closed
