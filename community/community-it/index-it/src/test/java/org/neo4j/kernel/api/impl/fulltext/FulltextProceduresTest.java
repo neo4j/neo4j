@@ -521,6 +521,27 @@ public class FulltextProceduresTest
     }
 
     @Test
+    public void mustFailToCreateIndexWithUnknownAnalyzer()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asCypherStringsList( LABEL.name() );
+            String props = asCypherStringsList( PROP );
+            String analyzer = props + ", {analyzer: 'blablalyzer'}";
+            try
+            {
+                tx.execute( format( NODE_CREATE, "my_index", label, analyzer ) ).close();
+                fail( "Expected query to fail." );
+            }
+            catch ( QueryExecutionException e )
+            {
+                assertThat( e.getMessage(), containsString( "blablalyzer" ) );
+            }
+        }
+    }
+
+    @Test
     public void queryShouldFindDataAddedInLaterTransactions()
     {
         db = createDatabase();
@@ -2161,7 +2182,7 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void eventuallyConsistenIndexMustNotIncludeEntitiesAddedInTransaction()
+    public void eventuallyConsistentIndexMustNotIncludeEntitiesAddedInTransaction()
     {
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
