@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.util.Bits;
@@ -34,7 +32,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
     private int remainingBits;
     private Bits bits;
     private boolean firstRecord = true;
-    private final MutableBoolean found = new MutableBoolean( false );
+    private boolean found;
     private final int label;
     private final DynamicArrayStore labelStore;
     private final PageCursorTracer cursorTracer;
@@ -48,7 +46,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
 
     boolean hasLabel()
     {
-        return found.booleanValue();
+        return found;
     }
 
     @Override
@@ -118,7 +116,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
             }
             if ( foundLabel == label )
             {
-                found.setTrue();
+                found = true;
                 return false;
             }
         }

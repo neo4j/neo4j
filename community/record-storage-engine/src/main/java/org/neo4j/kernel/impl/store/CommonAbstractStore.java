@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.LongPredicate;
 
@@ -1024,32 +1023,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer )
     {
-        if ( Record.NULL_REFERENCE.is( firstId ) )
-        {
-            return Collections.emptyList();
-        }
-        LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
-
-        List<RECORD> records = new ArrayList<>();
-        long id = firstId;
-        try ( PageCursor cursor = openPageCursorForReading( firstId, cursorTracer ) )
-        {
-            RECORD record;
-            do
-            {
-                record = newRecord();
-                if ( cycleGuard.test( id ) )
-                {
-                    throw newCycleDetectedException( firstId, id, record );
-                }
-                getRecordByCursor( id, record, mode, cursor );
-                // Even unused records gets added and returned
-                records.add( record );
-                id = getNextRecordReference( record );
-            }
-            while ( !Record.NULL_REFERENCE.is( id ) );
-        }
-        return records;
+        ArrayList<RECORD> list = new ArrayList<>();
+        streamRecords( firstId, mode, guardForCycles, cursorTracer, list::add );
+        return list;
     }
 
     public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer, RecordSubscriber<RECORD> subscriber )

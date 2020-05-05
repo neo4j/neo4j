@@ -57,29 +57,6 @@ public class InlineNodeLabels implements NodeLabels
         return parseInlined( node.getLabelField() );
     }
 
-    public static boolean hasLabel( NodeRecord node, int label )
-    {
-        long labelField = node.getLabelField();
-        byte numberOfLabels = labelCount( labelField );
-        if ( numberOfLabels == 0 )
-        {
-            return false;
-        }
-
-        long existingLabelsField = parseLabelsBody( labelField );
-        byte bitsPerLabel = (byte) (LABEL_BITS / numberOfLabels);
-        long mask = (1L << bitsPerLabel) - 1;
-        for ( int i = 0; i < numberOfLabels; i++ )
-        {
-            if ( (existingLabelsField & mask) == label )
-            {
-                return true;
-            }
-            existingLabelsField >>>= bitsPerLabel;
-        }
-        return false;
-    }
-
     @Override
     public long[] getIfLoaded()
     {
@@ -177,6 +154,29 @@ public class InlineNodeLabels implements NodeLabels
             existingLabelsField >>>= bitsPerLabel;
         }
         return result;
+    }
+
+    public static boolean hasLabel( NodeRecord node, int label )
+    {
+        long labelField = node.getLabelField();
+        byte numberOfLabels = labelCount( labelField );
+        if ( numberOfLabels == 0 )
+        {
+            return false;
+        }
+
+        long existingLabelsField = parseLabelsBody( labelField );
+        byte bitsPerLabel = (byte) (LABEL_BITS / numberOfLabels);
+        long mask = (1L << bitsPerLabel) - 1;
+        for ( int i = 0; i < numberOfLabels; i++ )
+        {
+            if ( (existingLabelsField & mask) == label )
+            {
+                return true;
+            }
+            existingLabelsField >>>= bitsPerLabel;
+        }
+        return false;
     }
 
     private static long combineLabelCountAndLabelStorage( byte labelCount, long labelBits )
