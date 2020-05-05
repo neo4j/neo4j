@@ -317,7 +317,7 @@ public class MultipleIndexPopulationStressIT
             DatabaseLayout layout = Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemRule.get(), null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats,
-                    NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.asLogFilesInitializer() );
+                    NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer() );
             importer.doImport( input );
         }
     }

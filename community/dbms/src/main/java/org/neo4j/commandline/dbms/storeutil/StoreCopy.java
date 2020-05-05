@@ -188,7 +188,7 @@ public class StoreCopy
                 BatchImporter batchImporter = BatchImporterFactory.withHighestPriority().instantiate(
                         toDatabaseLayout, fs, toPageCache, Configuration.DEFAULT, new SimpleLogService( logProvider ), executionMonitor,
                         AdditionalInitialIds.EMPTY, config, recordFormats, NO_MONITOR, null, Collector.EMPTY,
-                        TransactionLogInitializer.asLogFilesInitializer() );
+                        TransactionLogInitializer.getLogFilesInitializer() );
 
                 batchImporter.doImport( Input.input( this::nodeIterator, this::relationshipIterator, IdType.INTEGER, getEstimates(), new Groups() ) );
 
