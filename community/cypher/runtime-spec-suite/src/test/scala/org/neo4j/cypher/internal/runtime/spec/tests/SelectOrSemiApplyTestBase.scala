@@ -126,7 +126,6 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("x").withNoRows()
   }
 
-
   test("should let pass the one satisfying the expression even if the rhs is empty") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
@@ -167,354 +166,354 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("x").withRows(Seq(Array(1), Array(2)))
   }
 
-    test("aggregation on lhs, non-empty rhs") {
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("c")
-        .selectOrSemiApply("false")
-        .|.filter("c % 2 = 0")
-        .|.argument("c")
-        .aggregation(Seq.empty, Seq("count(x) AS c"))
-        .input(variables = Seq("x"))
-        .build()
+  test("aggregation on lhs, non-empty rhs") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false")
+      .|.filter("c % 2 = 0")
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("c").withRows(Seq(Array[Any](0)))
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withRows(Seq(Array[Any](0)))
+  }
+
+  test("aggregation on lhs, empty rhs") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false")
+      .|.filter("c % 2 = 1")
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withNoRows()
+  }
+
+  test("empty cartesian on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("aggregation on lhs, empty rhs") {
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("c")
-        .selectOrSemiApply("false")
-        .|.filter("c % 2 = 1")
-        .|.argument("c")
-        .aggregation(Seq.empty, Seq("count(x) AS c"))
-        .input(variables = Seq("x"))
-        .build()
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.cartesianProduct()
+      .|.|.allNodeScan("a", "x")
+      .|.allNodeScan("b", "x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("c").withNoRows()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("non-empty cartesian on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("empty cartesian on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.cartesianProduct()
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.cartesianProduct()
-        .|.|.allNodeScan("a", "x")
-        .|.allNodeScan("b", "x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withNoRows()
+  test("empty optional on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("non-empty cartesian on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.optional("x")
+      .|.allNodeScan("a", "x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.cartesianProduct()
-        .|.|.argument("x")
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("non-empty optional on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("empty optional on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.optional("x")
+      .|.allNodeScan("a", "x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.optional("x")
-        .|.allNodeScan("a", "x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("empty expand on rhs") {
+    given {
+      nodeGraph(sizeHint)
     }
 
-    test("non-empty optional on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.expandAll("(x)-[r]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.optional("x")
-        .|.allNodeScan("a", "x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("non-empty expand on rhs") {
+    given {
+      circleGraph(sizeHint)
     }
 
-    test("empty expand on rhs") {
-      given {
-        nodeGraph(sizeHint)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.expandAll("(x)-[r]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.expandAll("(x)-[r]->(y)")
-        .|.argument("x")
-        .allNodeScan("x")
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("x").withNoRows()
+  test("limit 0 on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("non-empty expand on rhs") {
-      given {
-        circleGraph(sizeHint)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.limit(0)
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.expandAll("(x)-[r]->(y)")
-        .|.argument("x")
-        .allNodeScan("x")
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  test("limit 1 on rhs") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("limit 0 on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.limit(1)
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.limit(0)
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withNoRows()
+  test("semi-apply under apply") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("limit 1 on rhs") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.selectOrSemiApply("false")
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.limit(1)
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("nested semi-apply") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
     }
 
-    test("semi-apply under apply") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.selectOrSemiApply("false")
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .apply()
-        .|.selectOrSemiApply("false")
-        .|.|.argument("x")
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("sort on rhs") {
+    given {
+      nodeGraph(sizeHint)
     }
 
-    test("nested semi-apply") {
-      val inputRows = (0 until sizeHint).map { i =>
-        Array[Any](i.toLong)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.sort(Seq(Ascending("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.selectOrSemiApply("false")
-        .|.|.argument("x")
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(inputRows)
+  test("top on rhs") {
+    given {
+      nodeGraph(sizeHint)
     }
 
-    test("sort on rhs") {
-      given {
-        nodeGraph(sizeHint)
-      }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.top(Seq(Ascending("x")), 10)
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.sort(Seq(Ascending("y")))
-        .|.allNodeScan("y", "x")
-        .allNodeScan("x")
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
-    }
+  test("should only let through rows that match, with RHS aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
 
-    test("top on rhs") {
-      given {
-        nodeGraph(sizeHint)
-      }
+    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.top(Seq(Ascending("x")), 10)
-        .|.allNodeScan("y", "x")
-        .allNodeScan("x")
-        .build()
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime)
-      runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
-    }
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
 
-    test("should only let through rows that match, with RHS aggregation") {
-      val inputRows = for {
-        i <- 0 until sizeHint
-      } yield Array[Any](i.toLong)
+  test("should only let through rows that match, with RHS grouping and aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
 
-      val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.filter("s % 2 = 0")
-        .|.aggregation(Seq.empty, Seq("sum(x) AS s"))
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq("x AS x"), Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(expectedValues)
-    }
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
 
-    test("should only let through rows that match, with RHS grouping and aggregation") {
-      val inputRows = for {
-        i <- 0 until sizeHint
-      } yield Array[Any](i.toLong)
+  test("aggregation on lhs, non-empty rhs, with RHS aggregation") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
 
-      val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false")
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(c) AS s"))
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.filter("s % 2 = 0")
-        .|.aggregation(Seq("x AS x"), Seq("sum(x) AS s"))
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("c").withRows(Seq(Array(inputRows.size)))
+  }
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(expectedValues)
-    }
+  test("aggregation on lhs, non-empty rhs, with RHS sort") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
 
-    test("aggregation on lhs, non-empty rhs, with RHS aggregation") {
-      val inputRows = for {
-        i <- 0 until sizeHint
-      } yield Array[Any](i.toLong)
+    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
 
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("c")
-        .selectOrSemiApply("false")
-        .|.filter("s % 2 = 0")
-        .|.aggregation(Seq.empty, Seq("sum(c) AS s"))
-        .|.argument("c")
-        .aggregation(Seq.empty, Seq("count(x) AS c"))
-        .input(variables = Seq("x"))
-        .build()
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false")
+      .|.filter("x % 2 = 0")
+      .|.sort(Seq(Ascending("x")))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
 
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("c").withRows(Seq(Array(inputRows.size)))
-    }
-
-    test("aggregation on lhs, non-empty rhs, with RHS sort") {
-      val inputRows = for {
-        i <- 0 until sizeHint
-      } yield Array[Any](i.toLong)
-
-      val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
-
-      // when
-      val logicalQuery = new LogicalQueryBuilder(this)
-        .produceResults("x")
-        .selectOrSemiApply("false")
-        .|.filter("x % 2 = 0")
-        .|.sort(Seq(Ascending("x")))
-        .|.argument("x")
-        .input(variables = Seq("x"))
-        .build()
-
-      // then
-      val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-      runtimeResult should beColumns("x").withRows(expectedValues)
-    }
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
 }
