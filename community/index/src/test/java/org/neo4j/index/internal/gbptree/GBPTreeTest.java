@@ -489,6 +489,37 @@ class GBPTreeTest
         index.close(); // should be OK
     }
 
+    @Test
+    void shouldNotFlushPagedFileIfDeleteOnClose() throws IOException
+    {
+        // GIVEN
+        var tracer = new DefaultPageCacheTracer();
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withTracer( tracer ) );
+
+        // WHEN
+        // Closing tree we should see flush happen
+        long flushesBeforeClose;
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+        {
+            index.setDeleteOnClose( false );
+            flushesBeforeClose = tracer.flushes();
+        }
+
+        // THEN
+        assertThat( tracer.flushes() ).isGreaterThan( flushesBeforeClose );
+
+        // WHEN
+        // Closing with set delete on close we should see no flush
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+        {
+            index.setDeleteOnClose( true );
+            flushesBeforeClose = tracer.flushes();
+        }
+
+        // THEN
+        assertThat( tracer.flushes() ).isEqualTo( flushesBeforeClose );
+    }
+
     /* Header test */
 
     @Test

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.ValueGroup;
@@ -57,12 +59,14 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-@PageCacheExtension
+@TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
 public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
 {
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
     @Inject
     protected DefaultFileSystemAbstraction fs;
     @Inject

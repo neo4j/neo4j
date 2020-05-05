@@ -116,6 +116,10 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     {
         try
         {
+            if ( tree != null )
+            {
+                tree.setDeleteOnClose( true );
+            }
             closeTree();
             clear();
         }

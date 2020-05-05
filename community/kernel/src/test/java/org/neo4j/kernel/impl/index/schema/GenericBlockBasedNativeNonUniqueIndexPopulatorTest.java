@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.PopulatorFactory;
 import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.genericBlockBasedPopulatorFactory;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.spaceFillingCurveSettings;
 
-class GenericBlockBasedNativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-    extends NativeNonUniqueIndexPopulatorTest<KEY, VALUE>
+class GenericBlockBasedNativeNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<GenericKey,NativeIndexValue>
 {
     GenericBlockBasedNativeNonUniqueIndexPopulatorTest()
     {
-        super( (PopulatorFactory<KEY, VALUE>) genericBlockBasedPopulatorFactory(), ValueType.values(),
-            () -> (IndexLayout<KEY, VALUE>) new GenericLayout( 1, spaceFillingCurveSettings ) );
+        super( genericBlockBasedPopulatorFactory(), ValueType.values(), () -> new GenericLayout( 1, spaceFillingCurveSettings ) );
     }
 }

@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -58,7 +59,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
     }
 
     @Override
-    NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
+    NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException
     {
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).build();
         return populatorFactory.create( context, indexFiles, layout, indexDescriptor );

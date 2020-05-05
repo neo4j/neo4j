@@ -1329,6 +1329,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
+    public void setDeleteOnClose( boolean deleteOnClose )
+    {
+        pagedFile.setDeleteOnClose( deleteOnClose );
+    }
+
     private void maybeForceCleanState( PageCursorTracer cursorTracer ) throws IOException
     {
         if ( cleaning != null && !changesSinceLastCheckpoint && !cleaning.needed() )

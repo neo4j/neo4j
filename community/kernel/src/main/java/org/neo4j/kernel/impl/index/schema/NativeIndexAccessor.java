@@ -58,6 +58,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     @Override
     public void drop()
     {
+        tree.setDeleteOnClose( true );
         closeTree();
         indexFiles.clear();
     }

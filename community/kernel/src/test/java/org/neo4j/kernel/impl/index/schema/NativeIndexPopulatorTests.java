@@ -38,11 +38,14 @@ import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
@@ -78,10 +81,10 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     @BeforeEach
     void setupPopulator() throws IOException
     {
-        populator = createPopulator();
+        populator = createPopulator( pageCache );
     }
 
-    abstract NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException;
+    abstract NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException;
 
     @Test
     void createShouldCreateFile()
@@ -411,6 +414,26 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // then
         assertFileNotPresent();
+    }
+
+    @Test
+    void dropShouldNotFlushContent() throws IOException
+    {
+        // given
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
+        {
+            populator = createPopulator( pageCache );
+            populator.create();
+            long preDrop = tracer.flushes();
+
+            // when
+            populator.drop();
+
+            // then
+            long postDrop = tracer.flushes();
+            assertEquals( preDrop, postDrop );
+        }
     }
 
     @Test

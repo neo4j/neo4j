@@ -19,16 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.ValueType;
 
@@ -36,21 +31,22 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY, VALUE>
+class NativeIndexAccessorTest extends NativeIndexAccessorTests<GenericKey,NativeIndexValue>
 {
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
-        IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    private final AccessorFactory<KEY, VALUE> accessorFactory = (AccessorFactory<KEY, VALUE>) genericAccessorFactory();
     private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<KEY, VALUE> indexLayoutFactory = (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings );
+    private final IndexLayoutFactory<GenericKey,NativeIndexValue> indexLayoutFactory = () -> new GenericLayout( 1, spaceFillingCurveSettings );
     private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
 
     @Override
-    NativeIndexAccessor<KEY, VALUE> makeAccessor() throws IOException
+    NativeIndexAccessor<GenericKey,NativeIndexValue> makeAccessor( PageCache pageCache )
     {
-        return accessorFactory.create( pageCache, fs, indexFiles, layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor, false );
+        RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( false ).build();
+        return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, indexDescriptor, spaceFillingCurveSettings, configuration );
     }
 
     @Override
@@ -60,32 +56,14 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     }
 
     @Override
-    ValueCreatorUtil<KEY, VALUE> createValueCreatorUtil()
+    ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
-    IndexLayout<KEY, VALUE> createLayout()
+    IndexLayout<GenericKey,NativeIndexValue> createLayout()
     {
         return indexLayoutFactory.create();
-    }
-
-    /* Helpers */
-    private static AccessorFactory<GenericKey, NativeIndexValue> genericAccessorFactory()
-    {
-        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, readOnly ) ->
-        {
-            DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
-            return new GenericNativeIndexAccessor( context, storeFiles, layout, cleanup, descriptor, spaceFillingCurveSettings, configuration );
-        };
-    }
-
-    @FunctionalInterface
-    private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-    {
-        NativeIndexAccessor<KEY, VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY, VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, IndexDescriptor descriptor, boolean readOnly )
-                throws IOException;
     }
 }

@@ -48,6 +48,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
@@ -95,10 +98,10 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     @BeforeEach
     void setupAccessor() throws IOException
     {
-        accessor = makeAccessor();
+        accessor = makeAccessor( pageCache );
     }
 
-    abstract NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException;
+    abstract NativeIndexAccessor<KEY,VALUE> makeAccessor( PageCache pageCache ) throws IOException;
 
     abstract IndexCapability indexCapability();
 
@@ -584,6 +587,29 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         assertFileNotPresent();
+    }
+
+    @Test
+    void dropShouldNotFlushContent() throws IOException
+    {
+        // given
+        accessor.close();
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
+        {
+            accessor = makeAccessor( pageCache );
+            long baseline = tracer.flushes();
+            accessor.force( IOLimiter.UNLIMITED, NULL );
+            long preDrop = tracer.flushes();
+            assertThat( preDrop ).isGreaterThan( baseline );
+
+            // when
+            accessor.drop();
+
+            // then
+            long postDrop = tracer.flushes();
+            assertEquals( preDrop, postDrop );
+        }
     }
 
     @Test
