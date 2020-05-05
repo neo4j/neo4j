@@ -315,6 +315,15 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
+        String analyzerName = indexConfiguration.getProperty( FulltextIndexSettings.INDEX_CONFIG_ANALYZER );
+        try
+        {
+            FulltextIndexSettings.createAnalyzer( analyzerName );
+        }
+        catch ( RuntimeException e )
+        {
+            throw new IllegalArgumentException( "No such analyzer: " + analyzerName, e );
+        }
         return new FulltextSchemaDescriptor( schema, indexConfiguration );
     }
 
