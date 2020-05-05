@@ -310,7 +310,7 @@ class IndexRecoveryIT
                     .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.FAILED );
         }
         verify( mockedIndexProvider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() );
-        verify( mockedIndexProvider ).getDropper( any( IndexDescriptor.class ) );
+        verify( mockedIndexProvider ).getMinimalIndexAccessor( any( IndexDescriptor.class ) );
     }
 
     private void startDb()

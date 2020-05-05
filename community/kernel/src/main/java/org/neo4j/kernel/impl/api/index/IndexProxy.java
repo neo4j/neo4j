@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -60,17 +60,11 @@ import org.neo4j.values.storable.Value;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends IndexConfigProvider
+public interface IndexProxy extends MinimalIndexAccessor
 {
     void start();
 
     IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer );
-
-    /**
-     * Drop index.
-     * Must close the context as well.
-     */
-    void drop();
 
     /**
      * Close this index context.

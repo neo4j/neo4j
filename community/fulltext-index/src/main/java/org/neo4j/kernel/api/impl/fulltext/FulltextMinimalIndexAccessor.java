@@ -23,16 +23,16 @@ import java.util.Map;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.index.IndexDropper;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.values.storable.Value;
 
-class FulltextIndexDropper implements IndexDropper
+class FulltextMinimalIndexAccessor implements MinimalIndexAccessor
 {
     private final IndexDescriptor index;
     private final DatabaseIndex<FulltextIndexReader> fulltextIndex;
     private final boolean readOnly;
 
-    FulltextIndexDropper( IndexDescriptor index, DatabaseIndex<FulltextIndexReader> fulltextIndex, boolean readOnly )
+    FulltextMinimalIndexAccessor( IndexDescriptor index, DatabaseIndex<FulltextIndexReader> fulltextIndex, boolean readOnly )
     {
         this.index = index;
         this.fulltextIndex = fulltextIndex;

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,43 +32,35 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
  * One instance of this class maps to a single index or sub-index if living under a Fusion umbrella.
  * Wraps all {@link IOException IOExceptions} in {@link UncheckedIOException}.
  */
-public abstract class IndexFiles
+public class IndexFiles
 {
-    /**
-     * @return The single {@link File} where the online index should live.
-     */
-    abstract File getStoreFile();
+    private final FileSystemAbstraction fs;
+    private final File directory;
+    private final File storeFile;
 
-    /**
-     * @return The base directory or file belonging to this index.
-     */
-    abstract File getBase();
-
-    /**
-     * Delete all files belonging to this index.
-     */
-    public abstract void clear();
-
-    /**
-     * Create an archive file in parent directory containing this index.
-     */
-    public abstract void archiveIndex();
-
-    /**
-     * Make sure that parent directory to {@link #getStoreFile() store file} exists.
-     */
-    public abstract void ensureDirectoryExist();
-
-    @Override
-    public String toString()
+    public IndexFiles( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId )
     {
-        return String.format( "%s[base=%s,storeFile=%s]", getClass().getSimpleName(), getBase(), getStoreFile() );
+        this.fs = fs;
+        this.directory = directoryStructure.directoryForIndex( indexId );
+        this.storeFile = new File( directory, indexFileName( indexId ) );
     }
 
-    /**
-     * Recursively delete directory and wrap any {@link IOException} in {@link UncheckedIOException}.
-     */
-    static void clearDirectory( FileSystemAbstraction fs, File directory )
+    private static String indexFileName( long indexId )
+    {
+        return "index-" + indexId;
+    }
+
+    public File getStoreFile()
+    {
+        return storeFile;
+    }
+
+    public File getBase()
+    {
+        return directory;
+    }
+
+    public void clear()
     {
         try
         {
@@ -81,31 +72,7 @@ public abstract class IndexFiles
         }
     }
 
-    /**
-     * Delete file and wrap any {@link IOException} in {@link UncheckedIOException}.
-     */
-    static void clearSingleFile( FileSystemAbstraction fs, File file )
-    {
-        try
-        {
-            fs.deleteFileOrThrow( file );
-        }
-        catch ( NoSuchFileException e )
-        {
-            // File does not exist, we don't need to delete
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    /**
-     * Create an archive file for directory using {@link ZipUtils#zip(FileSystemAbstraction, File, File)}.
-     * Will only create the archive if directory exist and is not empty.
-     * Wrap any {@link IOException} in {@link UncheckedIOException}.
-     */
-    static void archiveIndex( FileSystemAbstraction fs, File directory )
+    public void archiveIndex()
     {
         if ( fs.isDirectory( directory ) && fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
         {
@@ -120,10 +87,7 @@ public abstract class IndexFiles
         }
     }
 
-    /**
-     * Create directory and any non existing parent directories and wrap any {@link IOException} in {@link UncheckedIOException}.
-     */
-    static void ensureDirectoryExists( FileSystemAbstraction fs, File directory )
+    public void ensureDirectoryExist()
     {
         try
         {
@@ -135,101 +99,9 @@ public abstract class IndexFiles
         }
     }
 
-    /**
-     * This index own a whole directory.
-     */
-    public static class Directory extends IndexFiles
+    @Override
+    public String toString()
     {
-        private final FileSystemAbstraction fs;
-        private final File directory;
-        private final File storeFile;
-
-        public Directory( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId )
-        {
-            this.fs = fs;
-            this.directory = directoryStructure.directoryForIndex( indexId );
-            this.storeFile = new File( directory, indexFileName( indexId ) );
-        }
-
-        @Override
-        public File getStoreFile()
-        {
-            return storeFile;
-        }
-
-        @Override
-        public File getBase()
-        {
-            return directory;
-        }
-
-        @Override
-        public void clear()
-        {
-            clearDirectory( fs, directory );
-        }
-
-        @Override
-        public void archiveIndex()
-        {
-            archiveIndex( fs, getBase() );
-        }
-
-        @Override
-        public void ensureDirectoryExist()
-        {
-            ensureDirectoryExists( fs, directory );
-        }
-
-        private static String indexFileName( long indexId )
-        {
-            return "index-" + indexId;
-        }
-    }
-
-    /**
-     * This index own only a single file.
-     * Typically a Spatial or Temporal part index.
-     */
-    static class SingleFile extends IndexFiles
-    {
-        private final FileSystemAbstraction fs;
-        private final File singleFile;
-
-        SingleFile( FileSystemAbstraction fs, File singleFile )
-        {
-            this.fs = fs;
-            this.singleFile = singleFile;
-        }
-
-        @Override
-        public File getStoreFile()
-        {
-            return singleFile;
-        }
-
-        @Override
-        public File getBase()
-        {
-            return singleFile;
-        }
-
-        @Override
-        public void clear()
-        {
-            clearSingleFile( fs, singleFile );
-        }
-
-        @Override
-        public void archiveIndex()
-        {
-            archiveIndex( fs, getBase() );
-        }
-
-        @Override
-        public void ensureDirectoryExist()
-        {
-            ensureDirectoryExists( fs, singleFile.getParentFile() );
-        }
+        return String.format( "%s[base=%s,storeFile=%s]", getClass().getSimpleName(), getBase(), getStoreFile() );
     }
 }

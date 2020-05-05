@@ -52,9 +52,9 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
@@ -204,13 +204,13 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public IndexDropper getDropper( IndexDescriptor descriptor )
+    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableFulltextIndex(
                 new DroppableLuceneFulltextIndex( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
         log.debug( "Creating dropper for fulltext schema index: %s", descriptor );
-        return new FulltextIndexDropper( descriptor, fulltextIndex, isReadOnly() );
+        return new FulltextMinimalIndexAccessor( descriptor, fulltextIndex, isReadOnly() );
     }
 
     private boolean isReadOnly()

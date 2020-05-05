@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.UncheckedIOException;
+
 /**
- * Minimal index accessor used for dropping failed indexes.
+ * Minimal index accessor used for dropping failed indexes and provide index configuration.
  */
-public interface IndexDropper extends IndexConfigProvider
+public interface MinimalIndexAccessor extends IndexConfigProvider
 {
     /**
-     * Closes and deletes this index.
+     * Deletes this index as well as closes all used external resources.
+     * There will not be any interactions after this call.
+     *
+     * @throws UncheckedIOException if unable to drop index.
      */
     void drop();
 }

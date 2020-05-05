@@ -51,7 +51,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     {
         super( slotSelector, instanceSelector );
         this.archiveFailedIndex = archiveFailedIndex;
-        this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
+        this.indexFiles = new IndexFiles( fs, directoryStructure, indexId );
     }
 
     @Override

@@ -35,9 +35,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -91,9 +91,9 @@ class IndexPopulationTest
         return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, indexStatisticsStore, false );
     }
 
-    private FailedIndexProxy failedIndexProxy( IndexDropper dropper, IndexStatisticsStore indexStatisticsStore )
+    private FailedIndexProxy failedIndexProxy( MinimalIndexAccessor minimalIndexAccessor, IndexStatisticsStore indexStatisticsStore )
     {
-        return new FailedIndexProxy( dummyMeta(), "userDescription", dropper, IndexPopulationFailure
+        return new FailedIndexProxy( dummyMeta(), "userDescription", minimalIndexAccessor, IndexPopulationFailure
                 .failure( "failure" ), indexStatisticsStore, NullLogProvider.getInstance() );
     }
 

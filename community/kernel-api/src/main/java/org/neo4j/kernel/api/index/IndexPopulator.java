@@ -39,7 +39,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Used for initial population of an index.
  */
-public interface IndexPopulator extends IndexDropper
+public interface IndexPopulator extends MinimalIndexAccessor
 {
     IndexPopulator EMPTY = new Adapter();
 

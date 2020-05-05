@@ -86,7 +86,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
         return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
                 bufferFactory, memoryTracker );
     }
@@ -97,7 +97,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
         return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
     }
 
@@ -141,7 +141,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 
     private File storeFile( IndexDescriptor descriptor )
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
         return indexFiles.getStoreFile();
     }
 }

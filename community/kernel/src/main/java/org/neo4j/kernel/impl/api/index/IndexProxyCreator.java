@@ -25,9 +25,9 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -121,12 +121,12 @@ class IndexProxyCreator
     {
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
-        IndexDropper indexDropper = dropperFromProvider( descriptor );
+        MinimalIndexAccessor minimalIndexAccessor = minimalIndexAccessorFromProvider( descriptor );
         String indexUserDescription = descriptor.userDescription( tokenNameLookup );
         IndexProxy proxy;
         proxy = new FailedIndexProxy( descriptor,
                 indexUserDescription,
-                indexDropper,
+                minimalIndexAccessor,
                 populationFailure,
                 indexStatisticsStore,
                 logProvider );
@@ -141,10 +141,10 @@ class IndexProxyCreator
         return provider.getPopulator( index, samplingConfig, bufferFactory, memoryTracker );
     }
 
-    private IndexDropper dropperFromProvider( IndexDescriptor index )
+    private MinimalIndexAccessor minimalIndexAccessorFromProvider( IndexDescriptor index )
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getDropper( index );
+        return provider.getMinimalIndexAccessor( index );
     }
 
     private IndexAccessor onlineAccessorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException

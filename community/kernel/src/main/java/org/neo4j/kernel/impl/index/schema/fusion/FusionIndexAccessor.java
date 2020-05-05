@@ -59,7 +59,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
-        this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
+        this.indexFiles = new IndexFiles( fs, directoryStructure, descriptor.getId() );
     }
 
     @Override

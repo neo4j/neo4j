@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.api.index.IndexDropper;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -39,7 +39,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 class FailedIndexProxyTest
 {
-    private final IndexDropper indexDropper = mock( IndexDropper.class );
+    private final MinimalIndexAccessor minimalIndexAccessor = mock( MinimalIndexAccessor.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
@@ -50,15 +50,15 @@ class FailedIndexProxyTest
         String userDescription = "description";
         FailedIndexProxy index =
                 new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( userDescription ).materialise( 1 ),
-                                      userDescription, indexDropper, indexPopulationFailure, indexStatisticsStore, NullLogProvider.getInstance() );
+                        userDescription, minimalIndexAccessor, indexPopulationFailure, indexStatisticsStore, NullLogProvider.getInstance() );
 
         // when
         index.drop();
 
         // then
-        verify( indexDropper ).drop();
+        verify( minimalIndexAccessor ).drop();
         verify( indexStatisticsStore ).removeIndex( anyLong() );
-        verifyNoMoreInteractions( indexDropper, indexStatisticsStore );
+        verifyNoMoreInteractions( minimalIndexAccessor, indexStatisticsStore );
     }
 
     @Test

@@ -117,7 +117,7 @@ class BlockBasedIndexPopulatorTest
     {
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homeDir() ).forProvider( providerDescriptor );
-        indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
+        indexFiles = new IndexFiles( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
     }

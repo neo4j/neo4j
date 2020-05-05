@@ -44,18 +44,10 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor extends Closeable, IndexConfigProvider, ConsistencyCheckable
+public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalIndexAccessor
 {
     long UNKNOWN_NUMBER_OF_ENTRIES = -1;
     IndexAccessor EMPTY = new Adapter();
-
-    /**
-     * Deletes this index as well as closes all used external resources.
-     * There will not be any interactions after this call.
-     *
-     * @throws UncheckedIOException if unable to drop index.
-     */
-    void drop();
 
     /**
      * Return an updater for applying a set of changes to this index.

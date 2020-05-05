@@ -79,7 +79,8 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
         SimpleRandomizedIndexAccessorCompatibility.class,
         CompositeRandomizedIndexAccessorCompatibility.Exact.class,
         CompositeRandomizedIndexAccessorCompatibility.Range.class,
-        IndexConfigurationCompletionCompatibility.class
+        IndexConfigurationCompletionCompatibility.class,
+        MinimalIndexAccessorCompatibility.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
