@@ -39,16 +39,17 @@ sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 
 sealed trait AdministrationCommand extends CatalogDDL {
   // We parse USE to give a nice error message, but it's not considered to be a part of the AST
-  private var useGraph: Option[UseGraph] = None
+  private var useGraphVar: Option[UseGraph] = None
+  def useGraph: Option[GraphSelection] = useGraphVar
   def withGraph(useGraph: Option[UseGraph]): AdministrationCommand = {
-    this.useGraph = useGraph
+    this.useGraphVar = useGraph
     this
   }
   def isReadOnly: Boolean
 
   override def semanticCheck: SemanticCheck =
       requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position) chain
-      when(useGraph.isDefined)(SemanticError(s"The `USE` clause is not supported for Administration Commands.", position))
+      when(useGraphVar.isDefined)(SemanticError(s"The `USE` clause is not supported for Administration Commands.", position))
 }
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = true
