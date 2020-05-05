@@ -574,19 +574,6 @@ class LifeSupportTest
         assertThrows( IllegalStateException.class, () -> lifeSupport.setLast( anotherLastComponent ) );
     }
 
-    @Test
-    void unwrapMustFindFirstContainedInstanceOfType()
-    {
-        LifeSupport lifeSupport = newLifeSupport();
-        LifecycleAdapter a = new LifecycleAdapter();
-        LifecycleAdapter b = new LifecycleAdapter();
-        lifeSupport.add( new LifeSupportTest.LifecycleMock( null, null, null, null ) );
-        lifeSupport.add( a );
-        lifeSupport.add( b );
-
-        assertThat( lifeSupport.unwrap( LifecycleAdapter.class ) ).isSameAs( a );
-    }
-
     static class LifecycleMock implements Lifecycle
     {
 
