@@ -104,18 +104,34 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         false
     }
 
-    clauses
-      .filterNot(leadingGraphSelection.contains)
+    clausesExceptLeadingFrom
       .headOption.collect { case w: With if hasImportFormat(w) => w }
   }
 
-  def leadingGraphSelection: Option[GraphSelection] =
+  private def aliasingImportWith: Option[With] = {
+    def hasDependencies(w: With) = w match {
+      case With(false, ri, None, None, None, None) =>
+        ri.items.exists(_.expression.dependencies.nonEmpty)
+      case _ =>
+        false
+    }
+    if (importWith.isDefined)
+      None
+    else
+      clausesExceptLeadingFrom
+        .headOption.collect { case w: With if hasDependencies(w) => w }
+  }
+
+  private def leadingGraphSelection: Option[GraphSelection] =
     clauses.headOption.collect { case s: GraphSelection => s }
 
   def clausesExceptImportWith: Seq[Clause] =
     clauses.filterNot(importWith.contains)
 
-  def clausesExceptLeadingFromAndImportWith: Seq[Clause] =
+  private def clausesExceptLeadingFrom: Seq[Clause] =
+    clauses.filterNot(leadingGraphSelection.contains)
+
+  private def clausesExceptLeadingFromAndImportWith: Seq[Clause] =
     clauses
       .filterNot(importWith.contains)
       .filterNot(leadingGraphSelection.contains)
@@ -141,6 +157,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       )
 
     checkCorrelatedSubQueriesFeature chain
+    checkAliasingImportWith chain
     checkLeadingFrom(outer) chain
     checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
     semanticCheckAbstract(
@@ -165,6 +182,12 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     leadingGraphSelection match {
       case Some(from) => withState(outer)(from.semanticCheck)
       case None       => success
+    }
+
+  private def checkAliasingImportWith: SemanticCheck =
+    aliasingImportWith match {
+      case Some(wth) => error("Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported.", wth.position)
+      case None      => success
     }
 
   private def checkIndexHints(clauses: Seq[Clause]): SemanticCheck = s => {

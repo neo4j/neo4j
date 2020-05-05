@@ -478,8 +478,10 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       return_(varFor("x").aliased, varFor("z").aliased)
     )
       .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `x` not defined")))
+      .tap(_.errors.size.shouldEqual(2))
+      .tap(_.errors.foreach(e => println(e.msg)))
+      .tap(_.errors(0).msg.should(include("Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported.")))
+      .tap(_.errors(1).msg.should(include("Variable `x` not defined")))
   }
 
   test("importing variables using pass-through WITH and then introducing more") {
