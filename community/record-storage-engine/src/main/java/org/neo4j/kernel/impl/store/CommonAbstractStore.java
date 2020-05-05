@@ -806,12 +806,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     void logVersions( Logger logger )
     {
-        logger.log( getTypeDescriptor() + " " + storeVersion );
+        logger.log( String.format( "%s[%s] %s", getTypeDescriptor(), getStorageFile().getName(), storeVersion ) );
     }
 
     void logIdUsage( Logger logger )
     {
-        logger.log( format( "%s: used=%s high=%s", getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+        logger.log( format( "%s[%s]: used=%s high=%s", getTypeDescriptor(), getStorageFile().getName(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
     @Override
