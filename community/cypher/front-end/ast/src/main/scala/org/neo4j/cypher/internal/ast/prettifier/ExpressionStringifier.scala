@@ -70,6 +70,8 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
+import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -86,7 +88,8 @@ case class ExpressionStringifier(
   extension: ExpressionStringifier.Extension,
   alwaysParens: Boolean,
   alwaysBacktick: Boolean,
-  preferSingleQuotes: Boolean
+  preferSingleQuotes: Boolean,
+  sensitiveParamsAsParams: Boolean
 ) {
 
   val patterns = PatternStringifier(this)
@@ -377,6 +380,12 @@ case class ExpressionStringifier(
     else
       "\"" + str + "\""
   }
+
+  def escapePassword(password: Expression): String = password match {
+    case _: SensitiveString => "'******'"
+    case _: SensitiveAutoParameter if !sensitiveParamsAsParams => "'******'"
+    case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
+  }
 }
 
 object ExpressionStringifier {
@@ -385,8 +394,9 @@ object ExpressionStringifier {
     extender: Expression => String = failingExtender,
     alwaysParens: Boolean = false,
     alwaysBacktick: Boolean = false,
-    preferSingleQuotes: Boolean = false
-  ): ExpressionStringifier = ExpressionStringifier(Extension.simple(extender), alwaysParens, alwaysBacktick, preferSingleQuotes)
+    preferSingleQuotes: Boolean = false,
+    sensitiveParamsAsParams: Boolean = false
+  ): ExpressionStringifier = ExpressionStringifier(Extension.simple(extender), alwaysParens, alwaysBacktick, preferSingleQuotes, sensitiveParamsAsParams)
 
   trait Extension {
     def apply(ctx: ExpressionStringifier)(expression: Expression): String

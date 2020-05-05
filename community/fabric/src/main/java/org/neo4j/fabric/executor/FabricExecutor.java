@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.PathValue;
@@ -329,7 +330,9 @@ public class FabricExecutor
             {
                 Location.Remote remote = (Location.Remote) location;
                 FabricQuery.RemoteQuery remoteQuery = plannerInstance.asRemote( fragment );
-                return runRemoteQueryAt( remote, transactionMode, remoteQuery.query(), parameters );
+                MapValue fullParams = addParams( parameters, mapAsJavaMap( remoteQuery.extractedLiterals() ) );
+
+                return runRemoteQueryAt( remote, transactionMode, remoteQuery.query(), fullParams );
             }
             else
             {
@@ -396,6 +399,19 @@ public class FabricExecutor
             MapValueBuilder builder = new MapValueBuilder( resultSize );
             params.foreach( builder::add );
             bindings.forEach( ( var, par ) -> builder.add( par, validateValue( record.get( var ) ) ) );
+            return builder.build();
+        }
+
+        private MapValue addParams( MapValue params, Map<String,Object> newValues )
+        {
+            int resultSize = params.size() + newValues.size();
+            if ( resultSize == 0 || newValues.size() == 0 )
+            {
+                return params;
+            }
+            MapValueBuilder builder = new MapValueBuilder( resultSize );
+            params.foreach( builder::add );
+            newValues.forEach( ( key, val ) -> builder.add( key, Values.of( val ) ) );
             return builder.build();
         }
 

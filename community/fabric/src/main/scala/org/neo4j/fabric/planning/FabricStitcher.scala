@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.rendering.QueryRenderer
@@ -161,7 +162,10 @@ case class FabricStitcher(
   ): Fragment.Exec = {
 
     val local = pipeline.checkAndFinalize.process(query)
-    val remote = QueryRenderer.render(query)
+
+    val (rewriter, extracted) = sensitiveLiteralReplacement(query)
+    val toRender = query.endoRewrite(rewriter)
+    val remote = Fragment.RemoteQuery(QueryRenderer.render(toRender), extracted)
 
     Fragment.Exec(input, query, local, remote, outputColumns)
   }

@@ -115,7 +115,7 @@ object Fragment {
     input: Fragment.Chain,
     query: Statement,
     localQuery: BaseState,
-    remoteQuery: String,
+    remoteQuery: RemoteQuery,
     outputColumns: Seq[String],
   ) extends Fragment.Segment {
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
@@ -124,6 +124,11 @@ object Fragment {
     val queryType: QueryType = QueryType.of(query)
     val statementType: StatementType = StatementType.of(query)
   }
+
+  final case class RemoteQuery(
+    query: String,
+    extractedLiterals: Map[String, Any]
+  )
 
   final case class SchemaCommand(
     use: Use,

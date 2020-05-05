@@ -62,7 +62,7 @@ trait FragmentTestUtils {
   }
 
   val dummyLocalQuery: BaseState = DummyState
-  val dummyRemoteQuery: String = ""
+  val dummyRemoteQuery: Fragment.RemoteQuery = Fragment.RemoteQuery("", Map())
 
   case object DummyState extends BaseState {
     override val queryText: String = ""

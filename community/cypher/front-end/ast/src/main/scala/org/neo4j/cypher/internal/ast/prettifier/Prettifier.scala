@@ -253,7 +253,7 @@ case class Prettifier(
         case _: IfExistsDoNothing => " IF NOT EXISTS"
         case _                    => ""
       }
-      val password = Prettifier.escapePassword(initialPassword)
+      val password = expr.escapePassword(initialPassword)
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
       else ""
@@ -265,7 +265,7 @@ case class Prettifier(
 
     case x @ AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
       val userNameString = Prettifier.escapeName(userName)
-      val passwordString = initialPassword.map(" " + Prettifier.escapePassword(_)).getOrElse("")
+      val passwordString = initialPassword.map(" " + expr.escapePassword(_)).getOrElse("")
       val passwordModeString = if (requirePasswordChange.isDefined)
         s" CHANGE ${if (!requirePasswordChange.get) "NOT " else ""}REQUIRED"
       else
@@ -275,7 +275,7 @@ case class Prettifier(
       s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
     case x @ SetOwnPassword(newPassword, currentPassword) =>
-      s"${x.name} FROM ${Prettifier.escapePassword(currentPassword)} TO ${Prettifier.escapePassword(newPassword)}"
+      s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
@@ -810,12 +810,6 @@ object Prettifier {
   def escapeName(name: Either[String, Parameter]): String = name match {
     case Left(s) => ExpressionStringifier.backtick(s)
     case Right(p) => s"$$${ExpressionStringifier.backtick(p.name)}"
-  }
-
-  def escapePassword(password: Expression): String = password match {
-    case _: SensitiveString => "'******'"
-    case _: SensitiveAutoParameter => "'******'"
-    case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
   }
 
   def escapeNames(names: Seq[Either[String, Parameter]]): String = names.map(escapeName).mkString(", ")

@@ -35,8 +35,14 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
+import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -47,6 +53,7 @@ import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
+import org.neo4j.string.UTF8
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
@@ -87,7 +94,7 @@ class FabricPlannerTest
     fabricContext: Boolean = false,
   ) = {
     val inst = instance(query, fabricContext = fabricContext)
-    inst.asRemote(partSelector(inst.plan.query)).query
+    inst.asRemote(partSelector(inst.plan.query))
   }
 
   "asRemote: " - {
@@ -97,7 +104,7 @@ class FabricPlannerTest
         """RETURN 1 AS x
           |""".stripMargin)
 
-      parse(remote).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[Query].part.as[SingleQuery].clauses
         .shouldEqual(Seq(
           return_(literal(1).as("x"))
         ))
@@ -109,10 +116,59 @@ class FabricPlannerTest
           |RETURN 1 AS x
           |""".stripMargin)
 
-      parse(remote).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[Query].part.as[SingleQuery].clauses
         .shouldEqual(Seq(
           return_(literal(1).as("x"))
         ))
+    }
+
+    "single schema command with USE" in {
+      val remote = asRemote(
+        """USE foo
+          |CREATE INDEX myIndex FOR (n:Label) ON (n.prop)
+          |""".stripMargin)
+
+      parse(remote.query)
+        .shouldEqual(
+          CreateIndexNewSyntax(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"))(pos)
+        )
+    }
+
+    "single admin command with USE" in {
+      val remote = asRemote(
+        """CREATE ROLE myRole
+          |""".stripMargin)
+
+      parse(remote.query)
+        .shouldEqual(CreateRole(Left("myRole"), None, IfExistsThrowError())(pos))
+    }
+
+    "single admin command with password" in {
+      val remote = asRemote(
+        """CREATE USER myUser SET PASSWORD 'secret'
+          |""".stripMargin)
+
+      remote.query
+        .should(not(include("*")))
+
+      parse(remote.query).as[CreateUser].initialPassword
+        .should(matchPattern { case _: SensitiveParameter => })
+
+      remote.extractedLiterals.values.toSeq.head
+        .shouldEqual(UTF8.encode("secret"))
+    }
+
+    "single security procedure with password with USE" in {
+      val remote = asRemote(
+        """USE system
+          |CALL dbms.security.createUser('myProcedureUser', 'secret')
+          |""".stripMargin)
+
+      remote.query
+        .should(not(include("*")))
+
+      parse(remote.query).as[Query].part.as[SingleQuery].clauses
+        .should(matchPattern { case Seq(_:UnresolvedCall) => })
     }
 
     "inner query with imports and USE" in {
@@ -129,7 +185,7 @@ class FabricPlannerTest
         fabricContext = true,
       )
 
-      parse(remote).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[Query].part.as[SingleQuery].clauses
         .shouldEqual(Seq(
           with_(parameter("@@a", CTAny).as("a")),
           with_(varFor("a").as("a")),

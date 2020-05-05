@@ -54,7 +54,8 @@ object QueryRenderer {
       extension = exprExtension,
       alwaysParens = true,
       alwaysBacktick = true,
-      preferSingleQuotes = false
+      preferSingleQuotes = false,
+      sensitiveParamsAsParams = true
     ),
     extension = clauseExtension,
     useInCommands = false
@@ -62,7 +63,8 @@ object QueryRenderer {
   private val renderPretty = renderStrict.copy(
     expr = renderStrict.expr.copy(
       alwaysParens = false,
-      alwaysBacktick = false
+      alwaysBacktick = false,
+      sensitiveParamsAsParams = false
     ),
     useInCommands = true
   )

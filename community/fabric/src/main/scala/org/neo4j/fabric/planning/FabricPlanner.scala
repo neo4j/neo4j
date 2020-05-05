@@ -128,8 +128,9 @@ case class FabricPlanner(
     )
 
     def asRemote(fragment: Fragment.Exec): RemoteQuery = RemoteQuery(
-      QueryRenderer.addOptions(fragment.remoteQuery, optionsFor(fragment)),
+      QueryRenderer.addOptions(fragment.remoteQuery.query, optionsFor(fragment)),
       fragment.queryType,
+      fragment.remoteQuery.extractedLiterals,
     )
 
     private def inFabricContext(fragment: Fragment): Boolean = {

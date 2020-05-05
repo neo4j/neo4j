@@ -68,6 +68,7 @@ object FabricQuery {
   final case class RemoteQuery(
     query: String,
     queryType: QueryType,
+    extractedLiterals: Map[String, Any],
   ) extends FabricQuery
 
 
