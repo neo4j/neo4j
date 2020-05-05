@@ -53,13 +53,16 @@ import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -232,6 +235,36 @@ public class CommonAbstractStoreTest
         assertFalse( fs.fileExists( idFile ) );
     }
 
+    @Test
+    public void shouldIncludeFileNameInIdUsagePrintout()
+    {
+        // given
+        TheStore store = newStore();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        // when
+        store.logIdUsage( logProvider.getLog( TheStore.class ).infoLogger() );
+
+        // then
+        logProvider.assertExactly( AssertableLogProvider.inLog( TheStore.class ).info(
+                containsString( format( "%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getName() ) ) ) );
+    }
+
+    @Test
+    public void shouldIncludeFileNameInStoreVersionPrintout()
+    {
+        // given
+        TheStore store = newStore();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        // when
+        store.logVersions( logProvider.getLog( TheStore.class ).infoLogger() );
+
+        // then
+        logProvider.assertExactly( AssertableLogProvider.inLog( TheStore.class ).info(
+                containsString( format( "%s[%s] %s", TheStore.TYPE_DESCRIPTOR, storeFile.getName(), TheStore.STORE_VERSION ) ) ) );
+    }
+
     private TheStore newStore()
     {
         LogProvider log = NullLogProvider.getInstance();
@@ -247,12 +280,15 @@ public class CommonAbstractStoreTest
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
     {
+        static final String TYPE_DESCRIPTOR = "TheType";
+        static final String STORE_VERSION = "v1";
+
         TheStore( File file, File idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider, RecordFormat<TheRecord> recordFormat,
                 OpenOption... openOptions )
         {
-            super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
-                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1", openOptions );
+            super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, openOptions );
         }
 
         @Override
