@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -86,9 +84,9 @@ public class TransactionLogInitializer
      */
     public void initializeEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
-        try ( Lifespan lifespan = buildLogFiles( layout, transactionLogsDirectory ) )
+        try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
-            LogFiles logFiles = lifespan.unwrap( LogFiles.class );
+            LogFiles logFiles = span.getLogFiles();
             appendEmptyTransactionAndCheckPoint( logFiles );
         }
     }
@@ -101,9 +99,9 @@ public class TransactionLogInitializer
     {
         // If there are no transactions in any of the log files,
         // append an empty transaction, and a checkpoint, to the last log file.
-        try ( Lifespan lifespan = buildLogFiles( layout, transactionLogsDirectory ) )
+        try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
-            LogFiles logFiles = lifespan.unwrap( LogFiles.class );
+            LogFiles logFiles = span.getLogFiles();
             LogHeader logHeader = logFiles.extractHeader( logFiles.getLowestLogVersion() );
             ReadableLogChannel readableChannel = logFiles.getLogFile().getReader( logHeader.getStartPosition() );
             try ( LogEntryCursor cursor = new LogEntryCursor( new VersionAwareLogEntryReader( false ), readableChannel ) )
@@ -123,7 +121,7 @@ public class TransactionLogInitializer
         }
     }
 
-    private Lifespan buildLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
+    private LogFilesSpan buildLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( layout, fs )
                                            .withLogVersionRepository( store )
@@ -131,7 +129,7 @@ public class TransactionLogInitializer
                                            .withStoreId( store.getStoreId() )
                                            .withLogsDirectory( transactionLogsDirectory )
                                            .build();
-        return new Lifespan( logFiles );
+        return new LogFilesSpan( new Lifespan( logFiles ), logFiles );
     }
 
     private void appendEmptyTransactionAndCheckPoint( LogFiles logFiles ) throws IOException

@@ -17,33 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.lifecycle;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-/**
- * Convenient use of a {@link LifeSupport}, effectively making one or more {@link Lifecycle} look and feel
- * like one {@link AutoCloseable}.
- */
-public class Lifespan implements AutoCloseable
+import org.neo4j.kernel.lifecycle.Lifespan;
+
+public class LogFilesSpan implements AutoCloseable
 {
-    private final LifeSupport life = new LifeSupport();
+    private final Lifespan lifespan;
+    private final LogFiles logFiles;
 
-    public Lifespan( Lifecycle... subjects )
+    public LogFilesSpan( Lifespan lifespan, LogFiles logFiles )
     {
-        for ( Lifecycle subject : subjects )
-        {
-            life.add( subject );
-        }
-        life.start();
+        this.lifespan = lifespan;
+        this.logFiles = logFiles;
     }
 
-    public <T extends Lifecycle> T add( T subject )
+    public LogFiles getLogFiles()
     {
-        return life.add( subject );
+        return logFiles;
     }
 
     @Override
     public void close()
     {
-        life.shutdown();
+        lifespan.close();
     }
 }
