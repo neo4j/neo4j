@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
+import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.kernel.impl.util.collection.HeapTrackingCollections
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
