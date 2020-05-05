@@ -74,7 +74,7 @@ trait ExecutableQuery extends CacheabilityInfo {
 
   /**
     * Label ids of the indexes used by this executable query. Precomputed to reduce execution latency
-    * for very fact queries.
+    * for very fast queries.
     */
   val labelIdsOfUsedIndexes: Array[Long] = compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }.toArray
 
