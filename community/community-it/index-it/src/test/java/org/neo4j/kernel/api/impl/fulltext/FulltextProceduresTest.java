@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +36,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -438,6 +437,26 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         assertQueryFindsIds( db, false, typedSwedishRelationships, "and", englishRels );
         assertQueryFindsIds( db, false, typedSwedishRelationships, "ett", noResults );
         assertQueryFindsIds( db, false, typedSwedishRelationships, "apa", swedishRels );
+    }
+
+    @Test
+    void mustFailToCreateIndexWithUnknownAnalyzer()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asStrList( LABEL.name() );
+            String props = asStrList( PROP );
+            String analyzer = props + ", {analyzer: 'blablalyzer'}";
+            try
+            {
+                tx.execute( format( NODE_CREATE, "my_index", label, analyzer ) ).close();
+                fail( "Expected query to fail." );
+            }
+            catch ( QueryExecutionException e )
+            {
+                assertThat( e.getMessage() ).contains( "blablalyzer" );
+            }
+        }
     }
 
     @Test
@@ -1959,7 +1978,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    void eventuallyConsistenIndexMustNotIncludeEntitiesAddedInTransaction()
+    void eventuallyConsistentIndexMustNotIncludeEntitiesAddedInTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {
