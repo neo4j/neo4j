@@ -383,6 +383,30 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should kill value hash join query before it runs out of memory") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(1, {
+        case i => Map("prop" -> i)
+      })
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .valueHashJoin("a.prop=b.prop")
+      .|.allNodeScan("b")
+      .input(nodes = Seq("a"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+
+    // then
+    a[MemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
   test("should kill double collect aggregation query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -835,30 +859,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .rightOuterHashJoin("x")
       .|.allNodeScan("x")
       .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill value hash join query before it runs out of memory") {
-    // given
-    val nodes = given {
-      nodePropertyGraph(1, {
-        case i => Map("prop" -> i)
-      })
-    }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b")
-      .valueHashJoin("a.prop=b.prop")
-      .|.allNodeScan("b")
-      .input(nodes = Seq("a"))
       .build()
 
     // when
