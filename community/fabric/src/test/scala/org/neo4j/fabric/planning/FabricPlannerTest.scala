@@ -543,6 +543,20 @@ class FabricPlannerTest
       newPlanner.queryCache.getHits.shouldEqual(1)
     }
 
+    "sensitive statements are not cached" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+
+      val q =
+        """CREATE USER foo SET PASSWORD 'secret'
+          |""".stripMargin
+
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName).plan
+
+      newPlanner.queryCache.getMisses.shouldEqual(2)
+      newPlanner.queryCache.getHits.shouldEqual(0)
+    }
+
   }
 
   "Options:" - {
@@ -1337,7 +1351,7 @@ class FabricPlannerTest
   val beFullyStitched: Matcher[Try[FabricPlan]] = Matcher[Try[FabricPlan]] {
     case Success(value)     =>
       value.query match {
-        case frag @ Fragment.Exec(_: Fragment.Init, _, _, _, _) => MatchResult(matches = true,
+        case frag @ Fragment.Exec(_: Fragment.Init, _, _, _, _, _) => MatchResult(matches = true,
           s"Expectation failed, got: $frag",
           s"Expectation failed, got: $frag")
 

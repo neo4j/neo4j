@@ -75,7 +75,8 @@ case class FabricPlanner(
     lazy val plan: FabricPlan = {
       val plan = queryCache.computeIfAbsent(
         query.cacheKey, queryParams, defaultContextName,
-        () => computePlan()
+        () => computePlan(),
+        shouldCache
       )
       plan.copy(
         executionType = frontend.preParsing.executionType(query.options, plan.inFabricContext))
@@ -102,6 +103,9 @@ case class FabricPlanner(
         inFabricContext = fabricContext
       )
     }
+
+    private def shouldCache(plan: FabricPlan): Boolean =
+      !QueryType.sensitive(plan.query)
 
     private def optionsFor(fragment: Fragment) =
       if (isFabricFragment(fragment))

@@ -40,13 +40,18 @@ class FabricQueryCache(size: Int) {
   private var hits: Long = 0
   private var misses: Long = 0
 
-  def computeIfAbsent(query: Query, params: Params, defaultContextName: DefaultContextName, compute: () => FabricPlan): FabricPlan = {
+  def computeIfAbsent(query: Query, params: Params, defaultContextName: DefaultContextName,
+                      compute: () => FabricPlan,
+                      shouldCache: FabricPlan => Boolean
+                     ): FabricPlan = {
     val paramTypes = QueryCache.extractParameterTypeMap(params)
     val key = (query, paramTypes, defaultContextName)
     cache.get(key) match {
       case None =>
         val result = compute()
-        cache.put(key, result)
+        if (shouldCache(result))
+          cache.put(key, result)
+
         misses += 1
         result
 

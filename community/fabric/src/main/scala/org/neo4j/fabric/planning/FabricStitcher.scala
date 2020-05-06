@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -161,13 +163,18 @@ case class FabricStitcher(
     outputColumns: Seq[String],
   ): Fragment.Exec = {
 
+    val sensitive = query.treeExists {
+      case _: SensitiveParameter => true
+      case _: SensitiveString => true
+    }
+
     val local = pipeline.checkAndFinalize.process(query)
 
     val (rewriter, extracted) = sensitiveLiteralReplacement(query)
     val toRender = query.endoRewrite(rewriter)
     val remote = Fragment.RemoteQuery(QueryRenderer.render(toRender), extracted)
 
-    Fragment.Exec(input, query, local, remote, outputColumns)
+    Fragment.Exec(input, query, local, remote, sensitive, outputColumns)
   }
 
   private def failDynamicGraph(use: Use): Nothing =

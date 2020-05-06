@@ -116,6 +116,7 @@ object Fragment {
     query: Statement,
     localQuery: BaseState,
     remoteQuery: RemoteQuery,
+    sensitive: Boolean,
     outputColumns: Seq[String],
   ) extends Fragment.Segment {
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)

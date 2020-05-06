@@ -89,4 +89,12 @@ object QueryType {
       case ReadPlusUnresolved => 2
       case Write              => 3
     }
+
+  def sensitive(fragment: Fragment): Boolean =
+    fragment match {
+      case apply: Fragment.Apply     => sensitive(apply.input) || sensitive(apply.inner)
+      case union: Fragment.Union     => sensitive(union.input) || sensitive(union.lhs) || sensitive(union.rhs)
+      case exec: Fragment.Exec       => sensitive(exec.input) || exec.sensitive
+      case _ => false
+    }
 }

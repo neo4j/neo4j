@@ -58,7 +58,7 @@ trait FragmentTestUtils {
   implicit class FragBuilder(input: Chain) {
     def apply(fragmentInheritUse: Use => Fragment): Apply = Apply(input, fragmentInheritUse(input.use))
     def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String]): Leaf = Leaf(input, clauses, outputColumns)
-    def exec(query: Query, outputColumns: Seq[String]): Exec = Exec(input, query, dummyLocalQuery, dummyRemoteQuery, outputColumns)
+    def exec(query: Query, outputColumns: Seq[String]): Exec = Exec(input, query, dummyLocalQuery, dummyRemoteQuery, false, outputColumns)
   }
 
   val dummyLocalQuery: BaseState = DummyState
