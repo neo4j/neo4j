@@ -24,6 +24,9 @@
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.kernel</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+        <test.runner.jvm.settings.additional>
+            -javaagent:${settings.localRepository}/com/github/jbellis/jamm/${jamm.version}/jamm-${jamm.version}.jar
+        </test.runner.jvm.settings.additional>
     </properties>
 
     <scm>

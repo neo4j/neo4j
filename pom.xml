@@ -97,7 +97,6 @@
       -XX:FlightRecorderOptions=stackdepth=256
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
-      -javaagent:${settings.localRepository}/com/github/jbellis/jamm/${jamm.version}/jamm-${jamm.version}.jar
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>

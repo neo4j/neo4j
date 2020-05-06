@@ -19,18 +19,13 @@
  */
 package org.neo4j.memory;
 
-import org.github.jamm.MemoryMeter;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.HeapEstimator.OBJECT_ALIGNMENT_BYTES;
 
 class HeapEstimatorTest
 {
-    private final MemoryMeter memoryMeter = new MemoryMeter();
-
     @Test
     void alignObjectSize()
     {
@@ -39,21 +34,5 @@ class HeapEstimatorTest
             long aligned = HeapEstimator.alignObjectSize( i );
             assertEquals( 0, aligned % OBJECT_ALIGNMENT_BYTES );
         }
-    }
-
-    @ParameterizedTest
-    @ValueSource( strings = {"", "a", "aa", "aaaΩa"} )
-    void stringSize( String s )
-    {
-        assertEquals( memoryMeter.measureDeep( s ), HeapEstimator.sizeOf( s ) );
-    }
-
-    @Test
-    void longStringSize()
-    {
-        String longString = "a".repeat( 5000 ); // Will be compressed
-        assertEquals( memoryMeter.measureDeep( longString ), HeapEstimator.sizeOf( longString ) );
-        longString = "Ω".repeat( 5000 ); // Will not be compressed
-        assertEquals( memoryMeter.measureDeep( longString ), HeapEstimator.sizeOf( longString ) );
     }
 }

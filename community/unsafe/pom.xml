@@ -63,10 +63,5 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.github.jbellis</groupId>
-            <artifactId>jamm</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>
