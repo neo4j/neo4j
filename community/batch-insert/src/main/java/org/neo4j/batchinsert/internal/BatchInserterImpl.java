@@ -1136,8 +1136,9 @@ public class BatchInserterImpl implements BatchInserter
     private RelationshipTypeScanStore buildRelationshipTypeIndex() throws IOException
     {
         FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( storeIndexStoreView );
-        RelationshipTypeScanStore relationshipTypeIndex = TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, false, monitors, immediate(),
-                config, pageCacheTracer );
+        RelationshipTypeScanStore relationshipTypeIndex = TokenScanStore
+                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, false, monitors, immediate(), config,
+                        pageCacheTracer );
         if ( relationshipTypesTouched )
         {
             relationshipTypeIndex.drop();
