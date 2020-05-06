@@ -21,13 +21,61 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.configuration.helpers.NormalizedGraphName
+import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.fabric.eval.Catalog.InternalGraph
 import org.neo4j.fabric.executor.Location
+import org.neo4j.graphdb.event.DatabaseEventContext
+import org.neo4j.graphdb.event.DatabaseEventListener
 
-class CommunityCatalogManager(databaseLookup: DatabaseLookup) extends CatalogManager {
+class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagementService: DatabaseManagementService ) extends CatalogManager {
 
-  override def currentCatalog(): Catalog =
-    Catalog.create(asInternal(), Seq.empty, None)
+  private val invalidationLock = new Object()
+  @volatile private var cachedCatalog: Catalog = _
+  @volatile private var invalidationToken: Object = _
+
+  databaseManagementService.registerDatabaseEventListener(new DatabaseEventListener {
+
+    override def databaseStart(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
+
+    override def databaseShutdown(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
+
+    override def databasePanic(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
+  })
+
+  override final def currentCatalog(): Catalog = {
+    val existingCatalog = cachedCatalog
+    if (existingCatalog != null) {
+      return existingCatalog
+    }
+
+    // There is a race between catalog construction and invalidation.
+    // The 'dark' scenario is caching a stale catalog, which can happen
+    // when another invalidation comes while a catalog is being constructed.
+    // Therefore a newly constructed catalog is cached only
+    // when the invalidation state represented by the invalidation token
+    // is the same as when the catalog construction started.
+    val invalidationTokenAtConstructionStart = invalidationToken
+    val newCatalog = createCatalog()
+
+    if (invalidationToken == invalidationTokenAtConstructionStart) {
+      invalidationLock.synchronized {
+        if (invalidationToken == invalidationTokenAtConstructionStart) {
+          cachedCatalog = newCatalog
+        }
+      }
+    }
+
+    newCatalog
+  }
+
+  private def invalidateCatalog(): Unit = {
+    invalidationLock.synchronized {
+      invalidationToken = new Object()
+      cachedCatalog = null
+    }
+  }
+  
+  protected def createCatalog(): Catalog = Catalog.create(asInternal(), Seq.empty, None)
 
   protected def asInternal(firstId: Long = 0) = for {
     (namedDatabaseId, id) <- databaseLookup.databaseIds.toSeq.sortBy(_.name).zip(Stream.iterate(firstId)(_ + 1))
