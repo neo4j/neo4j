@@ -227,4 +227,21 @@ public abstract class AbstractBaseRecord
         // Don't compare 'created' flag because it isn't properly set on reading a record from the store
         return id == other.id && inUse == other.inUse;
     }
+
+    /**
+     * @return information about secondary unit, like so:
+     * <ul>
+     *     <li><pre>+secondaryUnit:123</pre> where this record requires a secondary unit and has that unit ID assigned to 123</li>
+     *     <li><pre>-secondaryUnit:123</pre> where this record doesn't require a secondary unit, but has one assigned i.e. shrinking down to one unit</li>
+     * </ul>
+     * Returns empty string if this record neither requires a secondary unit nor has one assigned.
+     */
+    protected String secondaryUnitToString()
+    {
+        if ( !requiresSecondaryUnit() && !hasSecondaryUnitId() )
+        {
+            return "";
+        }
+        return String.format( ",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? "+" : "-", getSecondaryUnitId() );
+    }
 }
