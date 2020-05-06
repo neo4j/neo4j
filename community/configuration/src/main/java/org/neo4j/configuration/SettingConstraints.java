@@ -30,6 +30,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 
@@ -46,7 +48,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( String value )
+            public void validate( String value, Configuration config )
             {
                 if ( StringUtils.isNotBlank( value ) )
                 {
@@ -81,7 +83,7 @@ public final class SettingConstraints
             private final Pattern pattern = Pattern.compile( regex );
 
             @Override
-            public void validate( String value )
+            public void validate( String value, Configuration config )
             {
                 if ( !pattern.matcher( value ).matches() )
                 {
@@ -107,7 +109,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( T value )
+            public void validate( T value, Configuration config )
             {
                 if ( value == null )
                 {
@@ -133,7 +135,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( T value )
+            public void validate( T value, Configuration config )
             {
                 if ( value == null )
                 {
@@ -162,10 +164,10 @@ public final class SettingConstraints
             private SettingConstraint<T> min = min( minValue );
 
             @Override
-            public void validate( T value )
+            public void validate( T value, Configuration config )
             {
-                min.validate( value );
-                max.validate( value );
+                min.validate( value, config );
+                max.validate( value, config );
             }
 
             @Override
@@ -181,7 +183,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( T value )
+            public void validate( T value, Configuration config )
             {
                 if ( !Objects.equals( value, expected ) )
                 {
@@ -204,13 +206,13 @@ public final class SettingConstraints
         {
             private final SettingConstraint<T>[] constraints = ArrayUtil.concat( first, rest );
             @Override
-            public void validate( T value )
+            public void validate( T value, Configuration config )
             {
                 for ( SettingConstraint<T> constraint : constraints )
                 {
                     try
                     {
-                        constraint.validate( value );
+                        constraint.validate( value, config );
                         return; // Only one constraint needs to pass for this to pass.
                     }
                     catch ( RuntimeException e )
@@ -232,7 +234,7 @@ public final class SettingConstraints
     public static final SettingConstraint<Long> POWER_OF_2 = new SettingConstraint<>()
     {
         @Override
-        public void validate( Long value )
+        public void validate( Long value, Configuration config )
         {
             if ( value != null && !Numbers.isPowerOfTwo( value ) )
             {
@@ -252,9 +254,9 @@ public final class SettingConstraints
         private final SettingConstraint<Integer> range = range( 0, 65535 );
 
         @Override
-        public void validate( Integer value )
+        public void validate( Integer value, Configuration config )
         {
-            range.validate( value );
+            range.validate( value, config );
         }
 
         @Override
@@ -269,7 +271,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( List<T> value )
+            public void validate( List<T> value, Configuration config )
             {
                 if ( value == null )
                 {
@@ -293,7 +295,7 @@ public final class SettingConstraints
     public static final SettingConstraint<SocketAddress> HOSTNAME_ONLY = new SettingConstraint<>()
     {
         @Override
-        public void validate( SocketAddress value )
+        public void validate( SocketAddress value, Configuration config )
         {
             if ( value == null )
             {
@@ -322,7 +324,7 @@ public final class SettingConstraints
     public static final SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<>()
     {
         @Override
-        public void validate( Path value )
+        public void validate( Path value, Configuration config )
         {
             if ( !value.isAbsolute() )
             {
@@ -335,5 +337,52 @@ public final class SettingConstraints
         {
             return "is absolute";
         }
+    };
+
+    public static <T,U> SettingConstraint<T> dependency( SettingConstraint<T> ifconstraint, SettingConstraint<T> elseconstraint,
+            Setting<U> dependency, SettingConstraint<U> condition )
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( T value, Configuration config )
+            {
+                U depValue = config.get( dependency );
+                try
+                {
+                    condition.validate( depValue, config );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    elseconstraint.validate( value, config );
+                    return;
+                }
+                ifconstraint.validate( value, config );
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return format( "depends on %s. If %s %s then it %s otherwise it %s.", dependency.name(), dependency.name(), condition.getDescription(),
+                        ifconstraint.getDescription(), elseconstraint.getDescription() );
+            }
+        };
+    }
+
+    public static <T> SettingConstraint<T> unconstrained()
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( T value, Configuration config )
+            {
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return "is unconstrained";
+            }
+        };
     };
 }

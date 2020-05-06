@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.format;
@@ -106,7 +107,7 @@ public final class SettingImpl<T> implements Setting<T>
         return parser.solveDependency( value, dependencyValue );
     }
 
-    public void validate( T value )
+    public void validate( T value, Configuration config )
     {
         if ( value != null )
         {
@@ -118,7 +119,7 @@ public final class SettingImpl<T> implements Setting<T>
             parser.validate( value );
             for ( SettingConstraint<T> constraint : constraints )
             {
-                constraint.validate( value );
+                constraint.validate( value, config );
             }
         }
     }

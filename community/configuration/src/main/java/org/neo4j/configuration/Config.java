@@ -298,6 +298,7 @@ public class Config implements Configuration
     protected final Map<String,Entry<?>> settings = new HashMap<>();
     private final Map<Class<? extends GroupSetting>, Map<String,GroupSetting>> allGroupInstances = new HashMap<>();
     private Log log;
+    private Configuration validationConfig = new ValidationConfig();
 
     protected Config()
     {
@@ -372,19 +373,35 @@ public class Config implements Configuration
             boolean modified = false;
             SettingImpl<?> last = newSettings.peekLast();
             SettingImpl<Object> setting;
+            Map<Setting<?>,Setting<?>> dependencies = new HashMap<>();
             do
             {
                 setting = (SettingImpl<Object>) requireNonNull( newSettings.pollFirst() );
 
+                boolean retry = false;
                 if ( setting.dependency() != null && !settings.containsKey( setting.dependency().name() ) )
                 {
-                    //dependency not yet evaluated, put last
-                    newSettings.addLast( setting );
+                    //dependency not yet evaluated
+                    dependencies.put( setting, setting.dependency() );
+                    retry = true;
                 }
                 else
                 {
-                    modified = true;
-                    evaluateSetting( setting, settingValueStrings, settingValueObjects, fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
+                    try
+                    {
+                        evaluateSetting( setting, settingValueStrings, settingValueObjects, fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
+                        modified = true;
+                    }
+                    catch ( AccessDuringEvaluationException e )
+                    {
+                        //Constraint with internal dependencies yet not evaluated
+                        dependencies.put( setting, e.getAttemptedAccess() );
+                        retry = true;
+                    }
+                }
+                if ( retry )
+                {
+                    newSettings.addLast( setting );
                 }
             }
             while ( setting != last );
@@ -393,7 +410,7 @@ public class Config implements Configuration
             {
                 //Settings left depend on settings not present in this config.
                 String unsolvable = newSettings.stream()
-                        .map( s -> format("'%s'->'%s'", s.name(), s.dependency().name() ) )
+                        .map( s -> format("'%s'->'%s'", s.name(), dependencies.get( s ).name() ) )
                         .collect( Collectors.joining(",\n","[","]"));
                 throw new IllegalArgumentException(
                         format( "Can not resolve setting dependencies. %s depend on settings not present in config, or are in a circular dependency ",
@@ -548,6 +565,10 @@ public class Config implements Configuration
             value = setting.solveDefault( value, defaultValue );
 
             settings.put( key, createEntry( setting, value, defaultValue ) );
+        }
+        catch ( AccessDuringEvaluationException exception )
+        {
+            throw exception; //Bubble up
         }
         catch ( RuntimeException exception )
         {
@@ -821,7 +842,7 @@ public class Config implements Configuration
         {
             super( setting, value, defaultValue, false );
             this.solved = solved;
-            setting.validate( solved );
+            setting.validate( solved, validationConfig );
         }
 
         @Override
@@ -835,13 +856,13 @@ public class Config implements Configuration
         {
             T oldValue = solved;
             solved = setting.solveDependency( value != null ? value : defaultValue, getObserver( setting.dependency() ).getValue() );
-            setting.validate( solved );
+            setting.validate( solved, validationConfig );
             internalSetValue( value );
             notifyListeners( oldValue, solved );
         }
     }
 
-    private static class Entry<T> implements SettingObserver<T>
+    private class Entry<T> implements SettingObserver<T>
     {
         protected final SettingImpl<T> setting;
         protected final T defaultValue;
@@ -882,7 +903,7 @@ public class Config implements Configuration
             this.value = isDefault ? defaultValue : value;
             if ( validate )
             {
-                setting.validate( this.value );
+                setting.validate( this.value, validationConfig );
             }
         }
 
@@ -912,4 +933,36 @@ public class Config implements Configuration
         }
     }
 
+    private static class AccessDuringEvaluationException extends RuntimeException
+    {
+        private final Setting<?> attemptedAccess;
+
+        AccessDuringEvaluationException( Setting<?> attemptedAccess )
+        {
+            super( String.format( "AccessDuringEvaluationException{ Tried to access %s in config during construction }", attemptedAccess.name() ) );
+            this.attemptedAccess = attemptedAccess;
+        }
+
+        Setting<?> getAttemptedAccess()
+        {
+            return attemptedAccess;
+        }
+    }
+
+    private class ValidationConfig implements Configuration
+    {
+        @Override
+        public <T> T get( Setting<T> setting )
+        {
+            if ( setting.dynamic() )
+            {
+                throw new IllegalArgumentException( "Can not depend on dynamic setting:" + setting.name() );
+            }
+            if ( !settings.containsKey( setting.name() ) )
+            {
+                throw new AccessDuringEvaluationException( setting );
+            }
+            return Config.this.get( setting );
+        }
+    }
 }

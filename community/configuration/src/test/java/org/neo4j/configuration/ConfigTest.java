@@ -36,6 +36,7 @@ import java.util.Set;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -53,6 +54,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.SettingConstraints.dependency;
+import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.max;
+import static org.neo4j.configuration.SettingConstraints.unconstrained;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
@@ -635,14 +640,97 @@ class ConfigTest
         assertThat( logProvider ).doesNotHaveAnyLogs();
     }
 
+    @Test
+    void shouldCorrectlyValidateDependenciesInConstraints()
+    {
+        //Given
+        Config.Builder builder = Config.emptyBuilder().addSettingsClass( ConstraintDependency.class );
+
+        //Then
+        assertDoesNotThrow( builder::build );
+
+        builder.set( ConstraintDependency.setting1, 5 );
+        builder.set( ConstraintDependency.setting2, 3 );
+        assertDoesNotThrow( builder::build );
+
+        builder.set( ConstraintDependency.setting2, 4 );
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "maximum allowed value is 3" );
+
+        builder.set( ConstraintDependency.setting1, 2 );
+        assertDoesNotThrow( builder::build );
+    }
+
+    @Test
+    void shouldFindCircularDependenciesInConstraints()
+    {
+        //Given
+        Config.Builder builder = Config.emptyBuilder().addSettingsClass( CircularConstraints.class );
+
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "circular dependency" );
+    }
+
+    @Test
+    void shouldNotAllowDependenciesOnDynamicSettings()
+    {
+        //Given
+        Config.Builder builder = Config.emptyBuilder().addSettingsClass( DynamicConstraintDependency.class );
+
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "Can not depend on dynamic setting" );
+    }
+
     private static final class TestSettings implements SettingsDeclaration
     {
         static final Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
         static final Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
         static final Setting<Integer> constrainedIntSetting = newBuilder( "test.setting.constrained-integer", INT, 1 )
-                .addConstraint( SettingConstraints.max( 3 ) ).dynamic().build();
+                .addConstraint( max( 3 ) ).dynamic().build();
         static final Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
         static final Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
+    }
+
+    private static final class CircularConstraints implements SettingsDeclaration
+    {
+        private static SettingConstraint<String> circular = new SettingConstraint<>()
+        {
+            @Override
+            public void validate( String value, Configuration config )
+            {
+                config.get( CircularConstraints.setting2 );
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return "circular test dependency";
+            }
+        };
+
+        static final Setting<String> setting1 = newBuilder( "test.setting.1", STRING, "aloha" )
+                .addConstraint( circular ).build();
+        static final Setting<Integer> setting2 = newBuilder( "test.setting.2", INT, 1 )
+                .addConstraint( dependency( max( 3 ), max( 5 ), setting1, is( "aloha" ) ) )
+                .build();
+    }
+
+    private static final class DynamicConstraintDependency implements SettingsDeclaration
+    {
+        static final Setting<Integer> setting1 = newBuilder( "test.setting.1", INT, 1 ).dynamic().build();
+        static final Setting<Integer> setting2 = newBuilder( "test.setting.2", INT, 1 )
+                .addConstraint( dependency( max( 3 ), unconstrained(), setting1, is( 5 )  ) )
+                .build();
+    }
+
+    private static final class ConstraintDependency implements SettingsDeclaration
+    {
+        static final Setting<Integer> setting1 = newBuilder( "test.setting.1", INT, 1 ).build();
+        static final Setting<Integer> setting2 = newBuilder( "test.setting.2", INT, 1 )
+                .addConstraint( dependency( max( 3 ), unconstrained(), setting1, is( 5 )  ) )
+                .build();
     }
 
     public static class TestConnectionGroupSetting extends GroupSetting implements GroupSettingValidator

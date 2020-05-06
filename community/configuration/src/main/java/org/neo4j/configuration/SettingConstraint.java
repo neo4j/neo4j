@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -32,9 +33,10 @@ public interface SettingConstraint<T>
      * Validates if an object is satisfying the constraint
      *
      * @param value the object to be checked if it satisfies the constraint
+     * @param config the config the value belongs to
      * @throws IllegalArgumentException if the constraint is not satisfied
      */
-    void validate( T value );
+    void validate( T value, Configuration config );
 
     /**
      * A textual representation of the constraint, including information about valid/invalid values
