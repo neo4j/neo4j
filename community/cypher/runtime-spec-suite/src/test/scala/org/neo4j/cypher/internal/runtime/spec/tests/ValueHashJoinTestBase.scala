@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
+
 abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                 runtime: CypherRuntime[CONTEXT],
                                                                 sizeHint: Int
@@ -203,5 +206,163 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // then
     val expected = nodes.map(n => Array(n, n, n))
     runtimeResult should beColumns("a", "a2", "b").withRows(expected)
+  }
+
+  test("should join after expand on empty lhs") {
+    // given
+    given {
+      val (nodes, _) = circleGraph(sizeHint)
+      nodes.foreach(n => n.setProperty("prop",  n.getId))
+    }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .valueHashJoin("x.prop = y.prop")
+      .|.expand("(z)--(y)")
+      .|.allNodeScan("z")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should join on empty rhs") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .valueHashJoin("x.prop = y.prop")
+      .|.expand("(z)--(y)")
+      .|.allNodeScan("z")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // because graph contains no relationships, the expand will return no rows
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should join on empty lhs and rhs") {
+    // given
+    given {
+      val (nodes, _) = circleGraph(sizeHint)
+      nodes.foreach(n => n.setProperty("prop",  n.getId))
+    }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .valueHashJoin("x.prop = y.prop")
+      .|.expand("(z)--(y)")
+      .|.allNodeScan("z")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // because graph contains no relationships, the expand will return no rows
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should join after expand on rhs") {
+    // given
+    val unfilteredNodes = given {
+      val (nodes, _) = circleGraph(sizeHint)
+      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes
+    }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .valueHashJoin("x.prop = z.prop")
+      .|.expand("(y)--(z)")
+      .|.allNodeScan("y")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, otherNode)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
+  }
+
+  test("should join after expand on lhs") {
+    // given
+    val unfilteredNodes = given {
+      val (nodes, _) = circleGraph(sizeHint)
+      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes
+    }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .valueHashJoin("x.prop = z.prop")
+      .|.allNodeScan("z")
+      .expand("(y)--(x)")
+      .input(nodes = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(otherNode, node)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
+  }
+
+  test("should join nested") {
+    val nodes = given {
+      val (nodes, _) = circleGraph(sizeHint)
+      nodes.foreach(n => n.setProperty("prop",  n.getId))
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .valueHashJoin("a.prop = b.prop")
+      .|.valueHashJoin("a.prop = b.prop")
+      .|.|.allNodeScan("b")
+      .|.allNodeScan("a")
+      .valueHashJoin("a.prop = b.prop")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+
+    runtimeResult should beColumns("a").withRows(nodes.map(Array[Any](_)))
   }
 }
