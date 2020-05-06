@@ -53,20 +53,20 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public abstract class AbstractRecordFormatTest
 {
     // Whoever is hit first
-    private static final long TEST_ITERATIONS = 100_000;
-    private static final long TEST_TIME = 1000;
-    private static final int DATA_SIZE = 100;
+    protected static final long TEST_ITERATIONS = 100_000;
+    protected static final long TEST_TIME = 1000;
+    protected static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
     @Inject
-    private RandomRule random;
+    protected RandomRule random;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
-    private final RecordFormats formats;
+    protected final RecordFormats formats;
     private final int entityBits;
     private final int propertyBits;
-    private RecordGenerators generators;
+    protected RecordGenerators generators;
     private String testName;
 
     protected AbstractRecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
@@ -152,7 +152,7 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
+    protected <R extends AbstractBaseRecord> R verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
             int recordSize, BatchingIdSequence idSequence, PageCursor cursor, long i, R written ) throws IOException
     {
         R read = format.newRecord();
@@ -164,6 +164,7 @@ public abstract class AbstractRecordFormatTest
             writeRecord( read, format, cursor, recordSize, idSequence, false );
             readAndVerifyRecord( read, read2, format, key, cursor, recordSize, assertPostReadOffset );
             idSequence.reset();
+            return read2;
         }
         catch ( Throwable t )
         {
@@ -205,7 +206,11 @@ public abstract class AbstractRecordFormatTest
         if ( written.inUse() )
         {
             assertEquals( written.getId(), read.getId() );
-            assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+            assertEquals( written.requiresSecondaryUnit(), read.requiresSecondaryUnit() );
+                if ( written.requiresSecondaryUnit() )
+                {
+                    assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                }
             key.assertRecordsEquals( written, read );
         }
     }

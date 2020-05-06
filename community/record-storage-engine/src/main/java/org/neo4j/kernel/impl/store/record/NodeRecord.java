@@ -155,7 +155,7 @@ public class NodeRecord extends PrimitiveRecord
                ",prop=" + getNextProp() +
                ",labels=" + parseLabelsField( this ) +
                "," + lightHeavyInfo +
-               ",secondaryUnitId=" + getSecondaryUnitId() + "]";
+               secondaryUnitToString() + "]";
     }
 
     @Override

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-interface RecordKey<RECORD extends AbstractBaseRecord>
+public interface RecordKey<RECORD extends AbstractBaseRecord>
 {
     void assertRecordsEquals( RECORD written, RECORD read );
 }
