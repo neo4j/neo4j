@@ -25,9 +25,9 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 /**
- * Wrap a memory tracker so every tracked sub-allocation can be closed in a single call.
- * Can be useful for collections when the items are tracked, to avoid iterating over all
- * of the elements and releasing them individual.
+ * A memory tracker that monitors the high water mark of estimated heap usage,
+ * and allows to set a target value that when reached, either a heap dump will be taken,
+ * or a callback fired, or both.
  */
 public class HeapDumpingMemoryTracker implements MemoryTracker
 {

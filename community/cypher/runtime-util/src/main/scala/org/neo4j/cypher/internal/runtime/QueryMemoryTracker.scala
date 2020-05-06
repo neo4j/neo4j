@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.BoundedMemoryTracker.OperatorMemoryTracker
-import org.neo4j.cypher.internal.runtime.MemoryTrackingController.MemoryTrackerFactory
+import org.neo4j.cypher.internal.runtime.MemoryTrackingController.MemoryTrackerDecorator
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.Measurable
@@ -106,7 +106,7 @@ object QueryMemoryTracker {
     memoryTracking match {
       case NO_TRACKING => NoMemoryTracker
       case MEMORY_TRACKING => BoundedMemoryTracker(transactionMemoryTracker)
-      case CUSTOM_MEMORY_TRACKING(factory: MemoryTrackerFactory) => BoundedMemoryTracker(factory(transactionMemoryTracker))
+      case CUSTOM_MEMORY_TRACKING(decorator: MemoryTrackerDecorator) => BoundedMemoryTracker(decorator(transactionMemoryTracker))
     }
   }
 
@@ -246,7 +246,7 @@ class BoundedMemoryTracker(transactionMemoryTracker: MemoryTracker, memoryTracke
 sealed trait MemoryTracking
 case object NO_TRACKING extends MemoryTracking
 case object MEMORY_TRACKING extends MemoryTracking
-case class CUSTOM_MEMORY_TRACKING(factory: MemoryTrackerFactory) extends MemoryTracking
+case class CUSTOM_MEMORY_TRACKING(decorator: MemoryTrackerDecorator) extends MemoryTracking
 
 /**
   * Controller of memory tracking. Needed to make memory tracking dynamically configurable.
@@ -256,9 +256,9 @@ trait MemoryTrackingController {
 }
 
 object MemoryTrackingController {
-  type MemoryTrackerFactory = MemoryTracker => MemoryTracker
+  type MemoryTrackerDecorator = MemoryTracker => MemoryTracker
 }
 
-case class CUSTOM_MEMORY_TRACKING_CONTROLLER(factory: MemoryTrackerFactory) extends MemoryTrackingController {
-  override def memoryTracking(doProfile: Boolean): MemoryTracking = CUSTOM_MEMORY_TRACKING(factory)
+case class CUSTOM_MEMORY_TRACKING_CONTROLLER(decorator: MemoryTrackerDecorator) extends MemoryTrackingController {
+  override def memoryTracking(doProfile: Boolean): MemoryTracking = CUSTOM_MEMORY_TRACKING(decorator)
 }

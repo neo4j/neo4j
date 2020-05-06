@@ -358,15 +358,11 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     private var fullPruneState:FullPruneState = new FullPruneState(queryState, memoryTracker)
     private var hasPrefetched = false
 
-    def close(): Unit = {
-      fullPruneState = null
-      memoryTracker.close()
-    }
-
     override def hasNext: Boolean = {
       prefetch()
       if (outputRow == null && fullPruneState != null) {
-        close()
+        fullPruneState = null
+        memoryTracker.close()
       }
       outputRow != null
     }
