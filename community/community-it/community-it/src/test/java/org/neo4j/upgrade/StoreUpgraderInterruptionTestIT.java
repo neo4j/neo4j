@@ -226,13 +226,13 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
             throws IOException
     {
-        Config allowUpgrade = Config.defaults( allow_upgrade, true );
+        Config config = Config.defaults( allow_upgrade, true );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, selectStorageEngine(), workingDatabaseLayout, pageCache, legacyTransactionLogsLocator );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, selectStorageEngine(), workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config );
         StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader );
+                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

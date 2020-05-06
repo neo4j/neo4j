@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
 
@@ -41,21 +43,22 @@ public class LogsUpgrader
     private final DatabaseLayout databaseLayout;
     private final PageCache pageCache;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
+    private final Config config;
 
     public LogsUpgrader( FileSystemAbstraction fs, StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout, PageCache pageCache,
-                         LegacyTransactionLogsLocator legacyLogsLocator )
+                         LegacyTransactionLogsLocator legacyLogsLocator, Config config )
     {
         this.fs = fs;
         this.storageEngineFactory = storageEngineFactory;
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
         this.legacyLogsLocator = legacyLogsLocator;
+        this.config = config;
     }
 
     public void upgrade( DatabaseLayout dbDirectoryLayout )
     {
-        Config config = Config.defaults( GraphDatabaseSettings.read_only, true );
-        try ( TransactionMetaDataStore store = storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache ) )
+        try ( TransactionMetaDataStore store = getMetaDataStore() )
         {
             TransactionLogInitializer logInitializer = new TransactionLogInitializer( fs, store );
 
@@ -86,7 +89,17 @@ public class LogsUpgrader
             }
             else
             {
-                logInitializer.initializeEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
+                {
+                    // By default, we should avoid modifying stores that have no log files,
+                    // since we log files are the only thing that can tell us if the store is in a
+                    // recovered state or not.
+                    throw new UpgradeNotAllowedException();
+                }
+                else
+                {
+                    logInitializer.initializeEmptyLogFile( dbDirectoryLayout, transactionLogsDirectory );
+                }
             }
         }
         catch ( Exception exception )
@@ -94,5 +107,14 @@ public class LogsUpgrader
             throw new StoreUpgrader.TransactionLogsRelocationException(
                     "Failure on attempt to move transaction logs into new location.", exception );
         }
+    }
+
+    private TransactionMetaDataStore getMetaDataStore() throws IOException
+    {
+        // Make sure to create the TransactionMetaDataStore with a `read_only` config,
+        // to avoid relying on the persistent id generators.
+        // We can't use those id files because at this point they haven't been migrated yet.
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
+        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, readOnlyConfig, pageCache );
     }
 }

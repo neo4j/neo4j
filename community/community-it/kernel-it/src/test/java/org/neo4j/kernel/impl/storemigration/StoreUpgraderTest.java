@@ -498,7 +498,7 @@ public class StoreUpgraderTest
                 .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache, logsLocator );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache, logsLocator, config );
         StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(),
                                                     logTailScanner, logsUpgrader );
         upgrader.addParticipant( indexMigrator );
