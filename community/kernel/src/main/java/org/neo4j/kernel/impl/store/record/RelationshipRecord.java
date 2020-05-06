@@ -201,7 +201,7 @@ public class RelationshipRecord extends PrimitiveRecord
                (firstInSecondChain ? ",tCount=" : ",tPrev=") + secondPrevRel +
                ",tNext=" + secondNextRel +
                ",prop=" + getNextProp() +
-               ",secondaryUnitId=" + getSecondaryUnitId() +
+               secondaryUnitToString() +
                (firstInFirstChain ? ", sFirst" : ",!sFirst") +
                (firstInSecondChain ? ", tFirst" : ",!tFirst") + "]";
     }

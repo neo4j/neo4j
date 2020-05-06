@@ -56,12 +56,12 @@ public abstract class AbstractRecordFormatTest
     private static final int PAGE_SIZE = 128;
 
     // Whoever is hit first
-    private static final long TEST_ITERATIONS = 100_000;
-    private static final long TEST_TIME = 1000;
-    private static final int DATA_SIZE = 100;
+    protected static final long TEST_ITERATIONS = 100_000;
+    protected static final long TEST_TIME = 1000;
+    protected static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    private final RandomRule random = new RandomRule();
+    protected final RandomRule random = new RandomRule();
     private final EphemeralPageSwapperFactory swapperFactory = new EphemeralPageSwapperFactory();
     private final PageCacheRule pageCacheRule = new PageCacheRule( PageCacheRule.config().withPageSize( PAGE_SIZE ) );
     @Rule
@@ -71,14 +71,14 @@ public abstract class AbstractRecordFormatTest
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( random );
-    private PageCache pageCache;
+    protected PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
-    private final RecordFormats formats;
+    protected final RecordFormats formats;
     private final int entityBits;
     private final int propertyBits;
-    private RecordGenerators generators;
+    protected RecordGenerators generators;
 
     protected AbstractRecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
     {
@@ -180,7 +180,7 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
+    protected <R extends AbstractBaseRecord> R verifyWriteAndReadRecord( boolean assertPostReadOffset, RecordFormat<R> format, RecordKey<R> key,
             int recordSize, BatchingIdSequence idSequence, PagedFile storeFile, long i, R written ) throws IOException
     {
         R read = format.newRecord();
@@ -192,6 +192,7 @@ public abstract class AbstractRecordFormatTest
             writeRecord( read, format, storeFile, recordSize, idSequence, false );
             readAndVerifyRecord( read, read2, format, key, storeFile, recordSize, assertPostReadOffset );
             idSequence.reset();
+            return read2;
         }
         catch ( Throwable t )
         {
@@ -237,7 +238,11 @@ public abstract class AbstractRecordFormatTest
             if ( written.inUse() )
             {
                 assertEquals( written.getId(), read.getId() );
-                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                assertEquals( written.requiresSecondaryUnit(), read.requiresSecondaryUnit() );
+                if ( written.requiresSecondaryUnit() )
+                {
+                    assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                }
                 key.assertRecordsEquals( written, read );
             }
         }
