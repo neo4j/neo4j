@@ -34,7 +34,7 @@ public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
-    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ns', 'ms', 's', 'm' and 'h'; default unit is 's'";
+    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ns', 'μs', 'ms', 's', 'm', 'h' and 'd'; default unit is 's'";
 
     public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
     {
@@ -59,24 +59,62 @@ public final class TimeUtil
         }
 
         // We have digits
-        String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
-        int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
+        int unitIndexEnd = 0;
+        long timeInNanos = 0L;
+        while ( unitIndexEnd < timeWithOrWithoutUnit.length() )
+        {
+            int amountIndex = unitIndexEnd;
+            unitIndexEnd = timeWithOrWithoutUnit.length();
+            for ( int i = unitIndex; i < timeWithOrWithoutUnit.length(); i++ )
+            {
+                char ch = timeWithOrWithoutUnit.charAt( i );
+                if ( Character.isDigit( ch ) )
+                {
+                    unitIndexEnd = i;
+                    break;
+                }
+            }
+
+            String unit = timeWithOrWithoutUnit.substring( unitIndex, unitIndexEnd ).toLowerCase();
+            int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( amountIndex, unitIndex ) );
+            timeInNanos += toNanos( unit, amount );
+
+            for ( int i = unitIndexEnd; i < timeWithOrWithoutUnit.length(); i++ )
+            {
+                char ch = timeWithOrWithoutUnit.charAt( i );
+                if ( !Character.isDigit( ch ) )
+                {
+                    unitIndex = i;
+                    break;
+                }
+            }
+        }
+        return NANOSECONDS.toMillis( timeInNanos );
+    };
+
+    private static long toNanos( String unit, int amount )
+    {
         switch ( unit )
         {
         case "ns":
-            return TimeUnit.NANOSECONDS.toMillis( amount );
+            return NANOSECONDS.toNanos( amount );
+        case "us":
+        case "μs":
+            return MICROSECONDS.toNanos( amount );
         case "ms":
-            return TimeUnit.MILLISECONDS.toMillis( amount );
+            return MILLISECONDS.toNanos( amount );
         case "s":
-            return TimeUnit.SECONDS.toMillis( amount );
+            return SECONDS.toNanos( amount );
         case "m":
-            return TimeUnit.MINUTES.toMillis( amount );
+            return MINUTES.toNanos( amount );
         case "h":
-            return TimeUnit.HOURS.toMillis( amount );
+            return HOURS.toNanos( amount );
+        case "d":
+            return DAYS.toNanos( amount );
         default:
             throw new IllegalArgumentException( "Unrecognized unit '" + unit + "'. " + VALID_TIME_DESCRIPTION );
         }
-    };
+    }
 
     public static String nanosToString( long nanos )
     {

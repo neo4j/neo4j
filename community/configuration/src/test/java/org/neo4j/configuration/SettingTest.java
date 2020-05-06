@@ -205,7 +205,17 @@ class SettingTest
 
         assertEquals( "1s", setting.valueToString( setting.parse( "1s" ) ) );
         assertEquals( "3m", setting.valueToString( setting.parse( "3m" ) ) );
+
+        // Anything less than a millisecond is rounded down
         assertEquals( "0ns", setting.valueToString( setting.parse( "0s" ) ) );
+        assertEquals( "0ns", setting.valueToString( setting.parse( "1ns" ) ) );
+        assertEquals( "0ns", setting.valueToString( setting.parse( "999999ns" ) ) );
+        assertEquals( "0ns", setting.valueToString( setting.parse( "999μs" ) ) );
+
+        // Time strings containing multiple units are permitted
+        assertEquals( "11d19h25m4s50ms", setting.valueToString( setting.parse( "11d19h25m4s50ms607μs80ns" ) ) );
+        // Weird time strings will be converted to something more readable
+        assertEquals( "2m1ms", setting.valueToString( setting.parse( "1m60000ms1000000ns" ) ) );
     }
 
     @Test
@@ -221,10 +231,26 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1s" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1s--2s" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "2s-1s" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "2000ms-1s" ) );
+
+        // DurationRange may have zero delta
+        assertEquals( 1, setting.parse( "1s-1s" ).getMin().toSeconds() );
+        assertEquals( 1, setting.parse( "1s-1s" ).getMax().toSeconds() );
+        assertEquals( 0, setting.parse( "1s-1s" ).getDelta().toNanos() );
 
         assertEquals( "0ns-0ns", setting.valueToString( setting.parse( "0s-0s" ) ) );
         assertEquals( "1s-2s", setting.valueToString( setting.parse( "1s-2s" ) ) );
         assertEquals( "3m-6m", setting.valueToString( setting.parse( "[3m-6m]" ) ) );
+
+        // Time strings containing multiple units are permitted
+        assertEquals( "0ns-1m23s456ms", setting.valueToString( setting.parse( "0s-1m23s456ms" ) ) );
+
+        // Units will be converted to something "more readable"
+        assertEquals( "1s-2s500ms", setting.valueToString( setting.parse( "1000ms-2500ms" ) ) );
+
+        // Anything less than a millisecond is rounded down
+        assertEquals( "0ns-0ns", setting.valueToString( setting.parse( "999μs-999999ns" ) ) );
+        assertEquals( 0, setting.parse( "999μs-999999ns" ).getDelta().toNanos() );
     }
 
     @Test
