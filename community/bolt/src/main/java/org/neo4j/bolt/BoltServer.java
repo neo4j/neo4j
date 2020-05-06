@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.PlatformDependent;
@@ -27,6 +26,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
+import javax.net.ssl.SSLException;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
@@ -68,6 +68,7 @@ import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 
 public class BoltServer extends LifecycleAdapter
 {
@@ -81,7 +82,8 @@ public class BoltServer extends LifecycleAdapter
     private final SystemNanoClock clock;
     private final Monitors monitors;
     private final LogService logService;
-    private final AuthManager authManager;
+    private final AuthManager externalAuthManager;
+    private final AuthManager internalAuthManager;
     private final MemoryPools memoryPools;
 
     // edition specific dependencies are resolved dynamically
@@ -90,9 +92,10 @@ public class BoltServer extends LifecycleAdapter
     private final LifeSupport life = new LifeSupport();
 
     public BoltServer( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, JobScheduler jobScheduler,
-            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
-            DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
-            Monitors monitors, LogService logService, DependencyResolver dependencyResolver, AuthManager authManager, MemoryPools memoryPools )
+                       ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
+                       DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
+                       Monitors monitors, LogService logService, DependencyResolver dependencyResolver,
+                       AuthManager externalAuthManager, AuthManager internalAuthManager, MemoryPools memoryPools )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
@@ -104,7 +107,8 @@ public class BoltServer extends LifecycleAdapter
         this.monitors = monitors;
         this.logService = logService;
         this.dependencyResolver = dependencyResolver;
-        this.authManager = authManager;
+        this.externalAuthManager = externalAuthManager;
+        this.internalAuthManager = internalAuthManager;
         this.memoryPools = memoryPools;
     }
 
@@ -115,28 +119,45 @@ public class BoltServer extends LifecycleAdapter
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
-        Authentication authentication = createAuthentication();
-
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
         BoltSchedulerProvider boltSchedulerProvider =
                 life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(),
                         jobScheduler, logService ) );
-        BoltConnectionFactory boltConnectionFactory =
-                createConnectionFactory( config, boltSchedulerProvider, logService, clock );
-        BoltStateMachineFactory boltStateMachineFactory = createBoltStateMachineFactory( authentication, clock );
+        BoltConnectionFactory boltConnectionFactory = createConnectionFactory( config, boltSchedulerProvider, logService, clock );
+        BoltStateMachineFactory externalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( externalAuthManager ), clock );
+        BoltStateMachineFactory internalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( internalAuthManager ), clock );
 
-        BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory,
-                boltStateMachineFactory, throttleGroup, clock, config.get( BoltConnector.connection_keep_alive ) );
+        BoltProtocolFactory externalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, externalBoltStateMachineFactory, throttleGroup,
+                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
+        BoltProtocolFactory internalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, internalBoltStateMachineFactory, throttleGroup,
+                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
 
         if ( config.get( BoltConnector.enabled ) )
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
+            NettyServer nettyServer;
+
+            if ( config.get( BoltConnector.connector_routing_enabled ) )
+            {
+                nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
+                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
+                                               createInternalProtocolInitializer( internalBoltProtocolFactory, throttleGroup ),
+                                               connectorPortRegister,
+                                               logService );
+            }
+            else
+            {
+                nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
+                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
+                                               connectorPortRegister,
+                                               logService );
+            }
+
             var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
-            NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
-                    createProtocolInitializer( boltProtocolFactory, throttleGroup, log, NETTY_BUF_ALLOCATOR ), connectorPortRegister, logService );
+
             life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
-            life.add( server );
+            life.add( nettyServer );
             log.info( "Bolt server loaded" );
         }
 
@@ -167,8 +188,49 @@ public class BoltServer extends LifecycleAdapter
         return new DefaultBoltConnectionFactory( schedulerProvider, config, logService, clock, monitors );
     }
 
-    private ProtocolInitializer createProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup, Log log,
-            ByteBufAllocator allocator )
+    private ProtocolInitializer createInternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
+
+    {
+        SslContext sslCtx = null;
+        SslPolicyLoader sslPolicyLoader = dependencyResolver.resolveDependency( SslPolicyLoader.class );
+
+        boolean requireEncryption = sslPolicyLoader.hasPolicyForSource( CLUSTER );
+
+        if ( requireEncryption )
+        {
+            try
+            {
+                sslCtx = sslPolicyLoader.getPolicy( CLUSTER ).nettyServerContext();
+            }
+            catch ( SSLException e )
+            {
+                throw new RuntimeException( "Failed to initialize SSL encryption support, which is required to start this connector. " +
+                                            "Error was: " + e.getMessage(), e );
+            }
+        }
+
+        SocketAddress internalListenAddress;
+
+        if ( config.isExplicitlySet( BoltConnector.connector_routing_listen_address ) )
+        {
+            internalListenAddress = config.get( BoltConnector.connector_routing_listen_address );
+        }
+        else
+        {
+            // otherwise use same host as external connector but with default internal port
+            internalListenAddress = new SocketAddress( config.get( BoltConnector.advertised_address ).getHostname(),
+                                                       config.get( BoltConnector.connector_routing_listen_address ).getPort() );
+        }
+
+        Duration channelTimeout = config.get( BoltConnector.unsupported_bolt_unauth_connection_timeout );
+        long maxMessageSize = config.get( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes );
+
+        return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+    }
+
+    private ProtocolInitializer createExternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
+                                                                   TransportThrottleGroup throttleGroup, Log log )
     {
         SslContext sslCtx;
         boolean requireEncryption;
@@ -208,7 +270,7 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, allocator );
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory )
@@ -228,7 +290,7 @@ public class BoltServer extends LifecycleAdapter
         }
     }
 
-    private Authentication createAuthentication()
+    private Authentication createAuthentication( AuthManager authManager )
     {
         return new BasicAuthentication( authManager );
     }

@@ -194,6 +194,16 @@ public class Neo4jWithSocket extends ExternalResource
             settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).enabled, Boolean.TRUE );
             settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates.toPath() );
         }
+
+        SslPolicyConfig clusterConfig = SslPolicyConfig.forScope( SslPolicyScope.CLUSTER );
+        if ( settings.containsKey( clusterConfig.enabled ) )
+        {
+            var clusterCertificates = new File( workingDirectory, "cluster-cert" );
+            SelfSignedCertificateFactory.create( clusterCertificates );
+
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).enabled, Boolean.TRUE );
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).base_directory, clusterCertificates.toPath() );
+        }
     }
 
     private Map<Setting<?>,Object> configure( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )

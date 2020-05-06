@@ -59,7 +59,8 @@ public class NettyServer extends LifecycleAdapter
     private static final int SHUTDOWN_TIMEOUT = FeatureToggles.getInteger( NettyServer.class, "shutdownTimeout", 15 );
 
     private final ServerConfigurationProvider configurationProvider;
-    private final ProtocolInitializer initializer;
+    private final ProtocolInitializer externalInitializer;
+    private final ProtocolInitializer internalInitializer;
     private final ThreadFactory tf;
     private final ConnectorPortRegister portRegister;
     private final Log userLog;
@@ -80,12 +81,34 @@ public class NettyServer extends LifecycleAdapter
 
     /**
      * @param tf used to create IO threads to listen and handle network events
-     * @param initializer function for bolt connector map to bootstrap configured protocol
+     * @param externalInitializer function for bolt connector map to bootstrap configured protocol
      * @param connectorRegister register to keep local address information on all configured connectors
      */
-    public NettyServer( ThreadFactory tf, ProtocolInitializer initializer, ConnectorPortRegister connectorRegister, LogService logService )
+    public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
+            ConnectorPortRegister connectorRegister, LogService logService )
     {
-        this.initializer = initializer;
+        this.externalInitializer = externalInitializer;
+        this.internalInitializer = null;
+        this.tf = tf;
+        this.portRegister = connectorRegister;
+        this.userLog = logService.getUserLog( BoltServer.class );
+        this.internalLog = logService.getUserLog( getClass() );
+        this.configurationProvider = createConfigurationProvider();
+        this.serverChannels = new ArrayList<>();
+    }
+
+    /**
+     * @param tf used to create IO threads to listen and handle network events
+     * @param externalInitializer function for bolt connector map to bootstrap configured protocol
+     * @param internalInitializer function for bolt connertion map to bootstrap configured internal protocol connections
+     * @param connectorRegister register to keep local address information on all configured connectors
+     */
+    public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
+                        ProtocolInitializer internalInitializer,
+                        ConnectorPortRegister connectorRegister, LogService logService )
+    {
+        this.externalInitializer = externalInitializer;
+        this.internalInitializer = internalInitializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.userLog = logService.getUserLog( BoltServer.class );
@@ -103,27 +126,44 @@ public class NettyServer extends LifecycleAdapter
     @Override
     public void start() throws Exception
     {
-        if ( initializer != null )
+        if ( externalInitializer != null )
         {
-            try
-            {
-                var channel = bind( configurationProvider, initializer );
-                serverChannels.add( channel );
+                InetSocketAddress externalLocalAddress = configureInitializer( externalInitializer );
+                portRegister.register( BoltConnector.NAME, externalLocalAddress );
 
-                var localAddress = (InetSocketAddress) channel.localAddress();
-                portRegister.register( BoltConnector.NAME, localAddress );
+                var host = externalInitializer.address().getHostname();
+                var port = externalLocalAddress.getPort();
 
-                var host = initializer.address().getHostname();
-                var port = localAddress.getPort();
                 userLog.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
-            }
-            catch ( Throwable e )
-            {
-                // We catch throwable here because netty uses clever tricks to have method signatures that look like they do not
-                // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
-                // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
-                throw new PortBindException( initializer.address(), e );
-            }
+        }
+
+        if ( internalInitializer != null )
+        {
+                var internalLocalAddress = configureInitializer( internalInitializer );
+                portRegister.register( BoltConnector.INTERNAL_NAME, internalLocalAddress );
+
+                var host = internalInitializer.address().getHostname();
+                var port = internalLocalAddress.getPort();
+
+                userLog.info( "Bolt (Routing) enabled on %s.", SocketAddress.format( host, port ) );
+        }
+    }
+
+    private InetSocketAddress configureInitializer( ProtocolInitializer protocolInitializer ) throws Exception
+    {
+        try
+        {
+            var externalChannel = bind( configurationProvider, protocolInitializer );
+            serverChannels.add( externalChannel );
+
+            return (InetSocketAddress) externalChannel.localAddress();
+        }
+        catch ( Throwable e )
+        {
+            // We catch throwable here because netty uses clever tricks to have method signatures that look like they do not
+            // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
+            // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
+            throw new PortBindException( protocolInitializer.address(), e );
         }
     }
 
@@ -167,6 +207,7 @@ public class NettyServer extends LifecycleAdapter
     private void unregisterListenAddresses()
     {
         portRegister.deregister( BoltConnector.NAME );
+        portRegister.deregister( BoltConnector.INTERNAL_NAME );
     }
 
     private void closeChannels()
