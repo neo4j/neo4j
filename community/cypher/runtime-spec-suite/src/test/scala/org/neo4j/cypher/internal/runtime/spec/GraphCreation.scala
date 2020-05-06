@@ -258,6 +258,10 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (ring :+ center, rels)
   }
 
+  /**
+   * A star graph where each node in the ring is also the center of another star graph, and so on, recursively, limited by depth.
+   * The center of it all can have a special label, all other nodes will have the same label.
+   */
   def nestedStarGraph(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship], Node) = {
     val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
 
@@ -289,37 +293,15 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (nodes, rels, globalCenter)
   }
 
+  /**
+   * Same as a nestedStarGraph, but do not return the nodes and relationships, only the center node and the node count
+   * This is useful if you want to measure heap usage and want to avoid retaining unnecessary memory in your test case
+   */
   def nestedStarGraphCenterOnly(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Node, Int) = {
-    val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
-
-    var nodes = new ArrayBuffer[Node]
-    var rels = new ArrayBuffer[Relationship]
-
-    def recurse(depth: Int, localCenter: Node): Unit = {
-      def star(center: Node): Seq[Node] = {
-        val ring =
-          for (_ <- 0 until ringSize) yield {
-            runtimeTestSupport.tx.createNode(Label.label(labelRing))
-          }
-        val rType = RelationshipType.withName("R")
-        for (i <- 0 until ringSize) {
-          val a = ring(i)
-          rels += a.createRelationshipTo(center, rType)
-        }
-        ring
-      }
-
-      if (depth > 0) {
-        val ring = star(localCenter)
-        nodes ++= ring
-        ring.foreach(recurse(depth - 1, _))
-      }
-    }
-    nodes += globalCenter
-    recurse(depth, globalCenter)
-    val nNodes = nodes.size
-    nodes = null
-    rels = null
+    var nsg = nestedStarGraph(depth, ringSize, labelCenter, labelRing)
+    val nNodes = nsg._1.size
+    val globalCenter = nsg._3
+    nsg = null
     (globalCenter, nNodes)
   }
 

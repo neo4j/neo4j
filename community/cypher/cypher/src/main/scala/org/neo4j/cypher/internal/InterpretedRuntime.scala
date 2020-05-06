@@ -45,9 +45,7 @@ import org.neo4j.exceptions.PeriodicCommitInOpenTransactionException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
-object InterpretedRuntime extends InterpretedRuntime with NoCustomMemoryTrackingController
-
-abstract class InterpretedRuntime extends CypherRuntime[RuntimeContext] with CustomMemoryTrackingController {
+object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
@@ -69,7 +67,7 @@ abstract class InterpretedRuntime extends CypherRuntime[RuntimeContext] with Cus
       columns,
       withSlottedParameters,
       context.config.lenientCreateRelationship,
-      customMemoryTrackingController.getOrElse(context.config.memoryTrackingController),
+      context.config.memoryTrackingController,
       query.hasLoadCSV)
 
     new InterpretedExecutionPlan(query.periodicCommitInfo,

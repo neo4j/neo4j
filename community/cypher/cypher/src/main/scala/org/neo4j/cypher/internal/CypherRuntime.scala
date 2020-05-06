@@ -216,26 +216,3 @@ case class ExecutionPlanWithNotifications(inner: ExecutionPlan, extraNotificatio
 
   override def notifications: Set[InternalNotification] = inner.notifications ++ extraNotifications
 }
-
-trait CustomMemoryTrackingController {
-  def customMemoryTrackingController: Option[MemoryTrackingController]
-}
-
-trait NoCustomMemoryTrackingController {
-  def customMemoryTrackingController: Option[MemoryTrackingController] = None
-}
-
-trait HasCustomMemoryTrackingController extends CustomMemoryTrackingController {
-  private var _customMemoryTrackingController: Option[MemoryTrackingController] = None
-
-  override def customMemoryTrackingController: Option[MemoryTrackingController] =
-    _customMemoryTrackingController
-
-  def setMemoryTrackingController(memoryTrackingController: MemoryTrackingController): Unit = {
-    _customMemoryTrackingController = Some(memoryTrackingController)
-  }
-
-  def resetMemoryTrackingController(): Unit = {
-    _customMemoryTrackingController = None
-  }
-}
