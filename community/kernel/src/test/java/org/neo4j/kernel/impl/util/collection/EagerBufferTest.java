@@ -25,10 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 

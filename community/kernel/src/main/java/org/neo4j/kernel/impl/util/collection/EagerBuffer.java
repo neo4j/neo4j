@@ -26,6 +26,7 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -69,8 +70,7 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
             MemoryTracker memoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
     {
         ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance( IntUnaryOperator.class ) +
-                EagerBuffer.Chunk.SHALLOW_SIZE + shallowSizeOfObjectArray( initialChunkSize )  );
+        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance( IntUnaryOperator.class ) );
         return new EagerBuffer<T>( scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy );
     }
 
@@ -79,18 +79,16 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.maxChunkSize = maxChunkSize;
         this.growthStrategy = growthStrategy;
-        first = new EagerBuffer.Chunk<>( initialChunkSize );
+        first = new EagerBuffer.Chunk<>( initialChunkSize, new ScopedMemoryTracker( scopedMemoryTracker ) );
         current = first;
     }
 
     public void add( T element )
     {
-        scopedMemoryTracker.allocateHeap( element.estimatedHeapUsage() );
         if ( !current.add( element ) )
         {
             int newChunkSize = grow( current.elements.length );
-            scopedMemoryTracker.allocateHeap( EagerBuffer.Chunk.SHALLOW_SIZE + shallowSizeOfObjectArray( newChunkSize ) );
-            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>( newChunkSize );
+            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>( newChunkSize, new ScopedMemoryTracker( scopedMemoryTracker ) );
             current.next = newChunk;
             current = newChunk;
             current.add( element );
@@ -107,8 +105,14 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
     {
         return new Iterator<T>()
         {
-            private EagerBuffer.Chunk<T> chunk = first;
+            private EagerBuffer.Chunk<T> chunk;
             private int index;
+
+            {
+                chunk = first;
+                first = null;
+                current = null;
+            }
 
             @Override
             public boolean hasNext()
@@ -128,8 +132,10 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
                 Object element = chunk.elements[index++];
                 if ( index >= chunk.cursor )
                 {
+                    var chunkToRelease = chunk;
                     chunk = chunk.next;
                     index = 0;
+                    chunkToRelease.close();
                 }
                 return (T) element;
             }
@@ -139,15 +145,12 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
     @Override
     public void close()
     {
-        if ( first != null )
-        {
-            first = null;
-            current = null;
-            scopedMemoryTracker.close();
-        }
+        first = null;
+        current = null;
+        scopedMemoryTracker.close();
     }
 
-    // Only for testing
+    @VisibleForTesting
     int numberOfChunks()
     {
         int i = 0;
@@ -180,21 +183,30 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
 
         private final Object[] elements;
         private EagerBuffer.Chunk<T> next;
+        private MemoryTracker memoryTracker;
         private int cursor;
 
-        Chunk( int size )
+        Chunk( int size, MemoryTracker memoryTracker )
         {
+            memoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfObjectArray( size ) );
             elements = new Object[size];
+            this.memoryTracker = memoryTracker;
         }
 
         boolean add( T element )
         {
             if ( cursor < elements.length )
             {
+                memoryTracker.allocateHeap( element.estimatedHeapUsage() );
                 elements[cursor++] = element;
                 return true;
             }
             return false;
+        }
+
+        void close()
+        {
+            memoryTracker.close();
         }
     }
 }
