@@ -53,8 +53,7 @@ public class Dumper
     private final List<ArchiveOperation> operations;
     private final ArchiveProgressPrinter progressPrinter;
 
-    @VisibleForTesting
-    Dumper()
+    public Dumper()
     {
         operations = new ArrayList<>();
         progressPrinter = new ArchiveProgressPrinter( null );
