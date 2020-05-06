@@ -268,7 +268,7 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
             throws IOException
     {
-        Config allowUpgrade = Config.defaults( allow_upgrade, true );
+        Config config = Config.defaults( allow_upgrade, true );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
@@ -276,9 +276,9 @@ public class StoreUpgraderInterruptionTestIT
         LogTailScanner logTailScanner =
                 new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, NULL );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, NULL );
         StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader,
+                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader,
                 storageEngineFactory, NULL );
         for ( StoreMigrationParticipant participant : participants )
         {

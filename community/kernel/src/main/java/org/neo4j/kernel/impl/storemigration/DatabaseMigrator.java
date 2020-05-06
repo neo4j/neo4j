@@ -80,7 +80,7 @@ public class DatabaseMigrator
     public void migrate()
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, pageCacheTracer );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, pageCacheTracer );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) );
         LogProvider logProvider = logService.getInternalLogProvider();
         StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, tailScanner, logsUpgrader,

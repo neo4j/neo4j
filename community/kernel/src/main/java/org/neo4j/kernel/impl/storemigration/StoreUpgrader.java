@@ -259,9 +259,15 @@ public class StoreUpgrader
         Throwable suppressibleException = null;
         try
         {
-            if ( !logTailScanner.getTailInformation().commitsAfterLastCheckpoint() )
+            LogTailScanner.LogTailInformation tail = logTailScanner.getTailInformation();
+            if ( tail.lastCheckPoint != null && !tail.commitsAfterLastCheckpoint() )
             {
                 // All good
+                return;
+            }
+            if ( tail.lastCheckPoint == null && !config.get( GraphDatabaseSettings.fail_on_missing_files ) )
+            {
+                // We don't have any log files, but we were told to ignore this.
                 return;
             }
         }
@@ -454,7 +460,7 @@ public class StoreUpgrader
         }
     }
 
-    static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
+    public static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
     {
         private static final String MESSAGE =
                 "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
