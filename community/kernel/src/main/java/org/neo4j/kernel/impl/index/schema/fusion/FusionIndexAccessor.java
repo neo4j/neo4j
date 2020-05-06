@@ -30,13 +30,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -54,12 +52,11 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
             IndexDescriptor descriptor,
-            FileSystemAbstraction fs,
-            IndexDirectoryStructure directoryStructure )
+            IndexFiles indexFiles )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
-        this.indexFiles = new IndexFiles( fs, directoryStructure, descriptor.getId() );
+        this.indexFiles = indexFiles;
     }
 
     @Override

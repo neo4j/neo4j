@@ -17,26 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
+import java.util.Map;
 
-/**
- * A droppable index is the same as a read-only index, <em>except</em> it can also be dropped.
- */
-class DroppableFulltextIndex
-        extends ReadOnlyAbstractDatabaseIndex<DroppableLuceneFulltextIndex,FulltextIndexReader>
-        implements DatabaseIndex<FulltextIndexReader>
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.values.storable.Value;
+
+public class NativeMinimalIndexAccessor implements MinimalIndexAccessor
 {
-    DroppableFulltextIndex( DroppableLuceneFulltextIndex luceneIndex )
+    private final IndexDescriptor descriptor;
+    private final IndexFiles indexFiles;
+
+    public NativeMinimalIndexAccessor( IndexDescriptor descriptor, IndexFiles indexFiles )
     {
-        super( luceneIndex );
+        this.descriptor = descriptor;
+        this.indexFiles = indexFiles;
     }
 
     @Override
     public void drop()
     {
-        luceneIndex.drop();
+        indexFiles.clear();
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        return descriptor.getIndexConfig().asMap();
     }
 }

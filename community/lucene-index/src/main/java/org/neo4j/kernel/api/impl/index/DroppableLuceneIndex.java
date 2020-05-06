@@ -17,32 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index;
 
 import java.io.Closeable;
 import java.util.List;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.index.IndexReader;
 
-class DroppableLuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
+public class DroppableLuceneIndex<READER extends IndexReader> extends AbstractLuceneIndex<READER> implements Closeable
 {
-    DroppableLuceneFulltextIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
+    public DroppableLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
     {
         super( indexStorage, partitionFactory, descriptor );
     }
 
     @Override
-    protected FulltextIndexReader createSimpleReader( List<AbstractIndexPartition> partitions )
+    protected READER createSimpleReader( List<AbstractIndexPartition> partitions )
     {
         throw new UnsupportedOperationException( "Cannot create readers for index that can only be dropped." );
     }
 
     @Override
-    protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
+    protected READER createPartitionedReader( List<AbstractIndexPartition> partitions )
     {
         throw new UnsupportedOperationException( "Cannot create readers for index that can only be dropped." );
     }

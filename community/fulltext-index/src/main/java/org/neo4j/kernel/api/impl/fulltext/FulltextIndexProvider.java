@@ -44,6 +44,9 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.index.DroppableIndex;
+import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
+import org.neo4j.kernel.api.impl.index.LuceneMinimalIndexAccessor;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
@@ -207,10 +210,10 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-        DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableFulltextIndex(
-                new DroppableLuceneFulltextIndex( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+        DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
+                new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
         log.debug( "Creating dropper for fulltext schema index: %s", descriptor );
-        return new FulltextMinimalIndexAccessor( descriptor, fulltextIndex, isReadOnly() );
+        return new LuceneMinimalIndexAccessor<>( descriptor, fulltextIndex, isReadOnly() );
     }
 
     private boolean isReadOnly()
@@ -244,8 +247,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         catch ( Exception e )
         {
             PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-            DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableFulltextIndex(
-                    new DroppableLuceneFulltextIndex( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+            DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
+                    new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
             log.debug( "Creating failed index populator for fulltext schema index: %s", descriptor, e );
             return new FailedFulltextIndexPopulator( descriptor, fulltextIndex, e );
         }

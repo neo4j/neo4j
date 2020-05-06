@@ -17,25 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.index;
 
 import java.util.Map;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.values.storable.Value;
 
-class FulltextMinimalIndexAccessor implements MinimalIndexAccessor
+public class LuceneMinimalIndexAccessor<READER extends IndexReader> implements MinimalIndexAccessor
 {
-    private final IndexDescriptor index;
-    private final DatabaseIndex<FulltextIndexReader> fulltextIndex;
+    private final IndexDescriptor indexDescriptor;
+    private final DatabaseIndex<READER> index;
     private final boolean readOnly;
 
-    FulltextMinimalIndexAccessor( IndexDescriptor index, DatabaseIndex<FulltextIndexReader> fulltextIndex, boolean readOnly )
+    public LuceneMinimalIndexAccessor( IndexDescriptor indexDescriptor, DatabaseIndex<READER> index, boolean readOnly )
     {
+        this.indexDescriptor = indexDescriptor;
         this.index = index;
-        this.fulltextIndex = fulltextIndex;
         this.readOnly = readOnly;
     }
 
@@ -46,12 +46,12 @@ class FulltextMinimalIndexAccessor implements MinimalIndexAccessor
         {
             throw new IllegalStateException( "Cannot drop read-only index." );
         }
-        fulltextIndex.drop();
+        index.drop();
     }
 
     @Override
     public Map<String,Value> indexConfig()
     {
-        return index.getIndexConfig().asMap();
+        return indexDescriptor.getIndexConfig().asMap();
     }
 }

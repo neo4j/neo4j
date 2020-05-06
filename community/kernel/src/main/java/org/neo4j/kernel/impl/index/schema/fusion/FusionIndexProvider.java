@@ -40,8 +40,11 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.kernel.impl.index.schema.NativeMinimalIndexAccessor;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -118,20 +121,27 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
+    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
+    {
+        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ) );
+    }
+
+    @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker)
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig, bufferFactory,
                 memoryTracker ) );
-        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.getId(), fs, directoryStructure(),
-                archiveFailedIndex );
+        IndexFiles indexFiles = indexFiles( descriptor );
+        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), indexFiles, archiveFailedIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
-        return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, fs, directoryStructure() );
+        IndexFiles indexFiles = indexFiles( descriptor );
+        return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, indexFiles );
     }
 
     @Override
@@ -187,5 +197,10 @@ public class FusionIndexProvider extends IndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         return new SchemaIndexMigrator( "Schema indexes", fs, this.directoryStructure(), storageEngineFactory );
+    }
+
+    private IndexFiles indexFiles( IndexDescriptor descriptor )
+    {
+        return new IndexFiles( fs, directoryStructure(), descriptor.getId() );
     }
 }

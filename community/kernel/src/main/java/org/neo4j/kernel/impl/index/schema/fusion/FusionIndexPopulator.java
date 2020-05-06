@@ -24,11 +24,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -46,12 +44,11 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     private final boolean archiveFailedIndex;
     private final IndexFiles indexFiles;
 
-    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, FileSystemAbstraction fs,
-            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
+    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, IndexFiles indexFiles, boolean archiveFailedIndex )
     {
         super( slotSelector, instanceSelector );
         this.archiveFailedIndex = archiveFailedIndex;
-        this.indexFiles = new IndexFiles( fs, directoryStructure, indexId );
+        this.indexFiles = indexFiles;
     }
 
     @Override

@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
@@ -107,7 +108,8 @@ abstract class FusionIndexPopulatorTest
         InstanceSelector<IndexPopulator> instanceSelector = new InstanceSelector<>( populators );
         fs = mock( FileSystemAbstraction.class );
         directoryStructure = directoriesByProvider( new File( "storeDir" ) ).forProvider( UNDECIDED );
-        fusionIndexPopulator = new FusionIndexPopulator( slotSelector, instanceSelector, indexId, fs, directoryStructure, false );
+        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexId );
+        fusionIndexPopulator = new FusionIndexPopulator( slotSelector, instanceSelector, indexFiles, false );
     }
 
     /* create */

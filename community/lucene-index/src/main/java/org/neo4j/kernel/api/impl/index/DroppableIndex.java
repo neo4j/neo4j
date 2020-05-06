@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import java.io.UncheckedIOException;
+import org.neo4j.kernel.api.index.IndexReader;
 
 /**
- * Minimal index accessor used for dropping failed indexes and provide index configuration.
+ * A droppable index is the same as a read-only index, <em>except</em> it can also be dropped.
  */
-public interface MinimalIndexAccessor extends IndexConfigProvider
+public class DroppableIndex<READER extends IndexReader>
+        extends ReadOnlyAbstractDatabaseIndex<DroppableLuceneIndex<READER>,READER>
+        implements DatabaseIndex<READER>
 {
-    MinimalIndexAccessor EMPTY = () -> {
-    };
+    public DroppableIndex( DroppableLuceneIndex<READER> luceneIndex )
+    {
+        super( luceneIndex );
+    }
 
-    /**
-     * Deletes this index as well as closes all used external resources.
-     * There will not be any interactions after this call.
-     *
-     * @throws UncheckedIOException if unable to drop index.
-     */
-    void drop();
+    @Override
+    public void drop()
+    {
+        luceneIndex.drop();
+    }
 }

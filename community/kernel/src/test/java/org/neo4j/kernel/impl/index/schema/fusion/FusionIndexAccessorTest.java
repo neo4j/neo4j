@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -129,7 +130,8 @@ abstract class FusionIndexAccessorTest
         InstanceSelector<IndexAccessor> instanceSelector = new InstanceSelector<>( accessors );
         fs = mock( FileSystemAbstraction.class );
         directoryStructure = directoriesByProvider( new File( "storeDir" ) ).forProvider( UNDECIDED );
-        fusionIndexAccessor = new FusionIndexAccessor( slotSelector, instanceSelector, indexDescriptor, fs, directoryStructure );
+        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexDescriptor.getId() );
+        fusionIndexAccessor = new FusionIndexAccessor( slotSelector, instanceSelector, indexDescriptor, indexFiles );
     }
 
     private void resetMocks()

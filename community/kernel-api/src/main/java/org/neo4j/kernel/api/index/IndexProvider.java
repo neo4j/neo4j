@@ -40,8 +40,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
 /**
  * Contract for implementing an index in Neo4j.
  *
@@ -165,6 +163,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
                 private final IndexAccessor singleWriter = IndexAccessor.EMPTY;
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
+                private final MinimalIndexAccessor singleMinimalAccessor = MinimalIndexAccessor.EMPTY;
 
                 @Override
                 public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -173,8 +172,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
+                public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
+                {
+                    return singleMinimalAccessor;
+                }
+
+                @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                        MemoryTracker memoryTracker )
+                        MemoryTracker memoryTracker)
                 {
                     return singlePopulator;
                 }
@@ -216,11 +221,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
     }
 
-    public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
-    {
-        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ),
-                ByteBufferFactory.heapBufferFactory( 0 ), INSTANCE );
-    }
+    public abstract MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor );
 
     /**
      * Used for initially populating a created index, using batch insertion.
@@ -320,8 +321,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
+        public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
         public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                MemoryTracker memoryTracker )
+        MemoryTracker memoryTracker )
         {
             return null;
         }
@@ -368,8 +375,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
+        public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
+        {
+            return provider.getMinimalIndexAccessor( descriptor );
+        }
+
+        @Override
         public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                MemoryTracker memoryTracker )
+                MemoryTracker memoryTracker)
         {
             return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker );
         }
