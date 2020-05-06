@@ -346,7 +346,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(NodeByIdSeek("  NODE11", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty), 333.0),
-      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details(anonVar(s"11 WHERE id(${anonVar("11")}) IN [1,32]"))), Set(anonVar("11"))))
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details(s"${anonVar("11")} WHERE id(${anonVar("11")}) IN [1,32]")), Set(anonVar("11"))))
   }
 
   test("IndexSeek") {
