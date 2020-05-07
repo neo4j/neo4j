@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -47,39 +48,37 @@ import org.neo4j.values.virtual.MapValue;
 
 public class FabricKernelTransaction
 {
-    private final ExecutingQuery parentQuery;
     private final ExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
     private final InternalTransaction internalTransaction;
     private final FabricConfig config;
     private final Set<TransactionalContext> openExecutionContexts = ConcurrentHashMap.newKeySet();
 
-    FabricKernelTransaction( ExecutingQuery parentQuery, ExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
-            InternalTransaction internalTransaction, FabricConfig config )
+    FabricKernelTransaction( ExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
+                             InternalTransaction internalTransaction, FabricConfig config )
     {
-        this.parentQuery = parentQuery;
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionalContextFactory = transactionalContextFactory;
         this.internalTransaction = internalTransaction;
         this.config = config;
     }
 
-    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input )
+    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input, FabricQueryMonitoring.QueryMonitor parentQueryMonitor )
     {
-        String queryText = "Internal query for Fabric query id:" + parentQuery.id();
-        var executionContext = transactionalContextFactory.newContext( internalTransaction, queryText, params );
-        openExecutionContexts.add( executionContext );
-        //Query is a sub-part of the parent fabric query that is already parsed and planned. The parent fabric query is monitored by the fabric executor.
-        var result = StatementResults.create( subscriber -> execute( query, params, executionContext, convert( input ), subscriber ) );
-        return new ContextClosingResultInterceptor( result, executionContext );
+        var childExecutionContext = makeChildTransactionalContext( parentQueryMonitor );
+        var childQueryMonitor = parentQueryMonitor.getChildQueryMonitor();
+        openExecutionContexts.add( childExecutionContext );
+
+        var result = StatementResults.create( subscriber -> execute( query, params, childExecutionContext, convert( input ), childQueryMonitor, subscriber ) );
+        return new ContextClosingResultInterceptor( result, childExecutionContext );
     }
 
     private QueryExecution execute( FullyParsedQuery query, MapValue params, TransactionalContext executionContext, InputDataStream input,
-            QuerySubscriber subscriber )
+                                    QueryExecutionMonitor queryMonitor, QuerySubscriber subscriber )
     {
         try
         {
-            return queryExecutionEngine.executeQuery( query, params, executionContext, true, input, subscriber );
+            return queryExecutionEngine.executeQuery( query, params, executionContext, true, input, queryMonitor, subscriber );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -93,6 +92,24 @@ public class FabricKernelTransaction
             {
                 throw Exceptions.transform( Status.Statement.ExecutionFailed, e.getCause() );
             }
+        }
+    }
+
+    private TransactionalContext makeChildTransactionalContext( FabricQueryMonitoring.QueryMonitor queryMonitor )
+    {
+        var parentQuery = queryMonitor.getMonitoredQuery();
+
+        if ( queryMonitor.isParentChildMonitoringMode() )
+        {
+            // Cypher engine reports separately for each child query
+            String queryText = "Internal query for parent query id: " + parentQuery.id();
+            MapValue params = MapValue.EMPTY;
+            return transactionalContextFactory.newContext( internalTransaction, queryText, params );
+        }
+        else
+        {
+            // Cypher engine reports directly to parent query
+            return transactionalContextFactory.newContextForQuery( internalTransaction, parentQuery );
         }
     }
 
@@ -168,10 +185,10 @@ public class FabricKernelTransaction
             // We care only about the case when the statement completes successfully.
             // All contexts will be closed upon a failure in the rollback
             return wrappedResult.records().doOnComplete( () ->
-            {
-                openExecutionContexts.remove( executionContext );
-                executionContext.close();
-            } );
+                                                         {
+                                                             openExecutionContexts.remove( executionContext );
+                                                             executionContext.close();
+                                                         } );
         }
 
         @Override

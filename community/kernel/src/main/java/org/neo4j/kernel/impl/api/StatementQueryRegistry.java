@@ -24,26 +24,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class StatementQueryRegistry implements QueryRegistry
 {
-    private static final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final KernelStatement statement;
-    private final SystemNanoClock clock;
-    private final AtomicReference<CpuClock> cpuClockRef;
-    private final NamedDatabaseId namedDatabaseId;
+    private final ExecutingQueryFactory factory;
 
-    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId )
+    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef )
     {
         this.statement = statement;
-        this.clock = clock;
-        this.cpuClockRef = cpuClockRef;
-        this.namedDatabaseId = namedDatabaseId;
+        this.factory = new ExecutingQueryFactory( clock, cpuClockRef );
     }
 
     @Override
@@ -61,17 +54,16 @@ public class StatementQueryRegistry implements QueryRegistry
     @Override
     public ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters )
     {
-        long queryId = lastQueryId.incrementAndGet();
-        Thread thread = Thread.currentThread();
-        long threadId = thread.getId();
-        String threadName = thread.getName();
-        KernelTransactionImplementation transaction = statement.getTransaction();
-        ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, transaction.clientInfo(), namedDatabaseId, statement.username(), queryText, queryParameters,
-                        transaction.getMetaData(), () -> statement.locks().activeLockCount(), statement::getHits, statement::getFaults,
-                        threadId, threadName, clock, cpuClockRef.get() );
+        ExecutingQuery executingQuery = factory.createForStatement( statement, queryText, queryParameters );
         registerExecutingQuery( executingQuery );
         return executingQuery;
+    }
+
+    @Override
+    public void startQueryExecution( ExecutingQuery executingQuery )
+    {
+        factory.bindToStatement( executingQuery, statement );
+        registerExecutingQuery( executingQuery );
     }
 
     @Override

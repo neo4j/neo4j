@@ -41,7 +41,6 @@ import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -86,11 +85,11 @@ public class FabricLocalExecutor
             this.bookmarkManager = bookmarkManager;
         }
 
-        public StatementResult run( Location.Local location, TransactionMode transactionMode, ExecutingQuery parentQuery, FullyParsedQuery query,
-                MapValue params, Flux<Record> input )
+        public StatementResult run( Location.Local location, TransactionMode transactionMode, FabricQueryMonitoring.QueryMonitor parentQueryMonitor,
+                                    FullyParsedQuery query, MapValue params, Flux<Record> input )
         {
-            var kernelTransaction = getOrCreateTx( location, transactionMode, parentQuery );
-            return kernelTransaction.run( query, params, input );
+            var kernelTransaction = getOrCreateTx( location, transactionMode );
+            return kernelTransaction.run( query, params, input, parentQueryMonitor );
         }
 
         @Override
@@ -104,7 +103,7 @@ public class FabricLocalExecutor
             return internalTransactions;
         }
 
-        public FabricKernelTransaction getOrCreateTx( Location.Local location, TransactionMode transactionMode, ExecutingQuery parentQuery )
+        public FabricKernelTransaction getOrCreateTx( Location.Local location, TransactionMode transactionMode )
         {
             var existingTx = kernelTransactions.get( location.getGraphId() );
             if ( existingTx != null )
@@ -125,21 +124,21 @@ public class FabricLocalExecutor
                 case DEFINITELY_WRITE:
                     return compositeTransaction.startWritingTransaction( location, () ->
                     {
-                        var tx = beginKernelTx( databaseFacade, AccessMode.WRITE, parentQuery );
+                        var tx = beginKernelTx( databaseFacade, AccessMode.WRITE );
                         return new KernelTxWrapper( tx, bookmarkManager, location );
                     } );
 
                 case MAYBE_WRITE:
                     return compositeTransaction.startReadingTransaction( location, () ->
                     {
-                        var tx = beginKernelTx( databaseFacade, AccessMode.WRITE, parentQuery );
+                        var tx = beginKernelTx( databaseFacade, AccessMode.WRITE );
                         return new KernelTxWrapper( tx, bookmarkManager, location );
                     } );
 
                 case DEFINITELY_READ:
                     return compositeTransaction.startReadingOnlyTransaction( location, () ->
                     {
-                        var tx = beginKernelTx( databaseFacade, AccessMode.READ, parentQuery );
+                        var tx = beginKernelTx( databaseFacade, AccessMode.READ );
                         return new KernelTxWrapper( tx, bookmarkManager, location );
                     } );
                 default:
@@ -156,7 +155,7 @@ public class FabricLocalExecutor
             }
         }
 
-        private FabricKernelTransaction beginKernelTx( GraphDatabaseFacade databaseFacade, AccessMode accessMode, ExecutingQuery parentQuery )
+        private FabricKernelTransaction beginKernelTx( GraphDatabaseFacade databaseFacade, AccessMode accessMode )
         {
             var dependencyResolver = databaseFacade.getDependencyResolver();
             var executionEngine = dependencyResolver.resolveDependency( ExecutionEngine.class );
@@ -166,7 +165,7 @@ public class FabricLocalExecutor
             var queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
             var transactionalContextFactory = Neo4jTransactionalContextFactory.create( queryService );
 
-            return new FabricKernelTransaction( parentQuery,executionEngine, transactionalContextFactory, internalTransaction, config );
+            return new FabricKernelTransaction( executionEngine, transactionalContextFactory, internalTransaction, config );
         }
 
         private GraphDatabaseFacade getDatabaseFacade( Location.Local location )

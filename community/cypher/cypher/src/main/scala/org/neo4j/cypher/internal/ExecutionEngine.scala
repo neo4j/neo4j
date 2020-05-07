@@ -66,7 +66,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   require(queryService != null, "Can't work with a null graph database")
 
   // HELPER OBJECTS
-  private val queryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   private val preParser = new PreParser(config.version,
     config.planner,
@@ -123,7 +123,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
-    queryExecutionMonitor.start(context.executingQuery())
+    defaultQueryExecutionMonitor.startProcessing(context.executingQuery())
     executeSubQuery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
 
@@ -143,11 +143,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               context: TransactionalContext,
               prePopulate: Boolean,
               input: InputDataStream,
+              queryMonitor: QueryExecutionMonitor,
               subscriber: QuerySubscriber): QueryExecution = {
-    queryExecutionMonitor.start(context.executingQuery())
+    queryMonitor.startProcessing(context.executingQuery())
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryTracer, subscriber)
+      doExecute(query, params, context, isOutermostQuery = true, prePopulate, input, queryMonitor, queryTracer, subscriber)
     }
   }
 
@@ -176,7 +177,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     closing(context, queryTracer) {
       val couldContainSensitiveFields = isOutermostQuery && compilerLibrary.supportsAdministrativeCommands()
       val preParsedQuery = preParser.preParseQuery(query, profile, couldContainSensitiveFields)
-      doExecute(preParsedQuery, params, context, isOutermostQuery, prePopulate, NoInput, queryTracer, subscriber)
+      doExecute(preParsedQuery, params, context, isOutermostQuery, prePopulate, NoInput, defaultQueryExecutionMonitor, queryTracer, subscriber)
     }
   }
 
@@ -193,6 +194,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         isOutermostQuery: Boolean,
                         prePopulate: Boolean,
                         input: InputDataStream,
+                        queryMonitor: QueryExecutionMonitor,
                         tracer: QueryCompilationEvent,
                         subscriber: QuerySubscriber): QueryExecution = {
 
@@ -201,7 +203,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } catch {
       case up: Throwable =>
         if (isOutermostQuery)
-          queryExecutionMonitor.endFailure(context.executingQuery(), up.getMessage)
+          defaultQueryExecutionMonitor.endFailure(context.executingQuery(), up.getMessage)
         throw up
     }
     if (query.options.executionMode.name != "explain") {
@@ -214,7 +216,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, () => executableQuery.planDescription())
     }
 
-    executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, subscriber)
+    executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, queryMonitor, subscriber)
   }
 
   /*
@@ -255,7 +257,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def getOrCompile(context: TransactionalContext,
                            inputQuery: InputQuery,
                            tracer: QueryCompilationEvent,
-                           params: MapValue
+                           params: MapValue,
                           ): ExecutableQuery = {
     val cacheKey = Pair.of(inputQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
 

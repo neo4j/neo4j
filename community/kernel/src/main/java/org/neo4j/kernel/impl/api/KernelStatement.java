@@ -78,6 +78,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     private final QueryRegistry queryRegistry;
     private final KernelTransactionImplementation transaction;
+    private final NamedDatabaseId namedDatabaseId;
     private StatementLocks statementLocks;
     private PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
     private int referenceCount;
@@ -93,16 +94,22 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
             VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId )
     {
         this.transaction = transaction;
-        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, namedDatabaseId );
+        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef );
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
         this.versionContextSupplier = versionContextSupplier;
+        this.namedDatabaseId = namedDatabaseId;
     }
 
     public QueryRegistry queryRegistration()
     {
         return queryRegistry;
+    }
+
+    public NamedDatabaseId namedDatabaseId()
+    {
+        return namedDatabaseId;
     }
 
     @Override

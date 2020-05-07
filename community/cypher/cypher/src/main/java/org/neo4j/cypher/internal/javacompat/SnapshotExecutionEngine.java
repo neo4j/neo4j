@@ -31,6 +31,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
@@ -72,9 +73,10 @@ public class SnapshotExecutionEngine extends ExecutionEngine
 
     @Override
     public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
-            boolean prePopulate, InputDataStream input, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+                                        boolean prePopulate, InputDataStream input, QueryExecutionMonitor queryMonitor, QuerySubscriber subscriber )
+            throws QueryExecutionKernelException
     {
-        QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, input, querySubscriber );
+        QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, input, queryMonitor, querySubscriber );
         var pair = executeWithRetries( query.description(), context, queryExecutor );
         return pair.other().streamToSubscriber( subscriber, pair.first() );
     }

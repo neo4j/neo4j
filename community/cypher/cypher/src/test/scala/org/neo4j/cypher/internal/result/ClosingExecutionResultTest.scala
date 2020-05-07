@@ -238,8 +238,12 @@ class ClosingExecutionResultTest extends CypherFunSuite {
       nBeforeEndCalls += 1
     }
 
-    override def start(query: ExecutingQuery): Unit = {
-      //Start is not called from ClosingExecutionResult
+    override def startProcessing(query: ExecutingQuery): Unit = {
+      // not called from ClosingExecutionResult
+    }
+
+    override def startExecution(query: ExecutingQuery): Unit = {
+      // not called from ClosingExecutionResult
     }
 
     def assertSuccess(query: ExecutingQuery): Unit = {

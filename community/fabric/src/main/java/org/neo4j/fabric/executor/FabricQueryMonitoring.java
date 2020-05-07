@@ -20,13 +20,17 @@
 package org.neo4j.fabric.executor;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.cypher.internal.CypherQueryObfuscator;
 import org.neo4j.fabric.FabricDatabaseManager;
+import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.memory.OptionalMemoryTracker;
@@ -39,26 +43,39 @@ public class FabricQueryMonitoring
 {
     private final DependencyResolver dependencyResolver;
     private final Monitors monitors;
+    private final AtomicReference<CpuClock> cpuClockReference;
+    private final ExecutingQueryFactory executingQueryFactory;
     private DatabaseIdRepository databaseIdRepository;
 
     public FabricQueryMonitoring( DependencyResolver dependencyResolver, Monitors monitors )
     {
         this.dependencyResolver = dependencyResolver;
         this.monitors = monitors;
+        // TODO: Fix clock setup here
+        this.cpuClockReference = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+        this.executingQueryFactory = new ExecutingQueryFactory(
+                Clocks.nanoClock(),
+                cpuClockReference );
     }
 
-    QueryMonitor queryMonitor( FabricTransactionInfo transactionInfo, String statement, MapValue params, Thread thread )
+    QueryMonitor queryMonitor( FabricTransactionInfo transactionInfo, String statement, MapValue params )
     {
-        return new QueryMonitor(
-                executingQuery( transactionInfo, statement, params, thread ),
-                monitors.newMonitor( QueryExecutionMonitor.class )
-        );
+        var executingQuery = executingQueryFactory.createUnbound(
+                statement, params,
+                transactionInfo.getClientConnectionInfo(),
+                transactionInfo.getLoginContext().subject().username(),
+                transactionInfo.getTxMetadata() );
+        var queryExecutionMonitor = monitors.newMonitor( QueryExecutionMonitor.class );
+
+        return new QueryMonitor( executingQuery, queryExecutionMonitor );
     }
 
     static class QueryMonitor
     {
-        private final ExecutingQuery executingQuery;
-        private final QueryExecutionMonitor monitor;
+        protected final ExecutingQuery executingQuery;
+        protected final QueryExecutionMonitor monitor;
+
+        private MonitoringMode monitoringMode;
 
         private QueryMonitor( ExecutingQuery executingQuery, QueryExecutionMonitor monitor )
         {
@@ -66,17 +83,29 @@ public class FabricQueryMonitoring
             this.monitor = monitor;
         }
 
-        void start()
+        void startProcessing()
         {
-            monitor.start( executingQuery );
+            monitor.startProcessing( executingQuery );
+        }
+
+        void fabricPlanningDone( FabricPlan plan )
+        {
+            executingQuery.onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ) );
+
+            if ( plan.inFabricContext() )
+            {
+                monitoringMode = new ParentChildMonitoringMode();
+            }
+            else
+            {
+                monitoringMode = new SingleQueryMonitoringMode();
+            }
         }
 
         void startExecution()
         {
-            executingQuery.onCompilationCompleted( null, null, null );
-            executingQuery.onExecutionStarted( OptionalMemoryTracker.NONE );
-
-            monitor.start( executingQuery );
+            monitor.startExecution( executingQuery );
+            monitoringMode.startExecution();
         }
 
         void endSuccess()
@@ -95,13 +124,83 @@ public class FabricQueryMonitoring
         {
             return executingQuery;
         }
-    }
 
-    private ExecutingQuery executingQuery( FabricTransactionInfo transactionInfo, String statement, MapValue params, Thread thread )
-    {
+        QueryExecutionMonitor getChildQueryMonitor()
+        {
+            return monitoringMode.getChildQueryMonitor();
+        }
 
-        NamedDatabaseId namedDatabaseId = getDatabaseIdRepository().getByName( transactionInfo.getDatabaseName() ).get();
-        return new FabricExecutingQuery( transactionInfo, statement, params, thread, namedDatabaseId );
+        boolean isParentChildMonitoringMode()
+        {
+            return monitoringMode.isParentChildMonitoringMode();
+        }
+
+        private abstract static class MonitoringMode
+        {
+            abstract boolean isParentChildMonitoringMode();
+
+            abstract QueryExecutionMonitor getChildQueryMonitor();
+
+            abstract void startExecution();
+
+            abstract void fabricPlanningDone( FabricPlan plan );
+        }
+
+        private static class SingleQueryMonitoringMode extends MonitoringMode
+        {
+            @Override
+            boolean isParentChildMonitoringMode()
+            {
+                return false;
+            }
+
+            @Override
+            void fabricPlanningDone( FabricPlan plan )
+            {
+                // Query state events triggered by cypher engine
+            }
+
+            @Override
+            void startExecution()
+            {
+                // Query state events triggered by cypher engine
+            }
+
+            @Override
+            QueryExecutionMonitor getChildQueryMonitor()
+            {
+                // Query monitoring events handled by fabric
+                return QueryExecutionMonitor.NO_OP;
+            }
+        }
+
+        private class ParentChildMonitoringMode extends MonitoringMode
+        {
+            @Override
+            boolean isParentChildMonitoringMode()
+            {
+                return true;
+            }
+
+            @Override
+            void fabricPlanningDone( FabricPlan plan )
+            {
+
+            }
+
+            @Override
+            void startExecution()
+            {
+                executingQuery.onCompilationCompleted( null, null, null );
+                executingQuery.onExecutionStarted( OptionalMemoryTracker.NONE );
+            }
+
+            @Override
+            QueryExecutionMonitor getChildQueryMonitor()
+            {
+                return monitor;
+            }
+        }
     }
 
     private DatabaseIdRepository getDatabaseIdRepository()
@@ -121,19 +220,19 @@ public class FabricQueryMonitoring
         private FabricExecutingQuery( FabricTransactionInfo transactionInfo, String statement, MapValue params, Thread thread, NamedDatabaseId namedDatabaseId )
         {
             super( -1, //The actual query id should never be used(leaked) to the dbms
-                    transactionInfo.getClientConnectionInfo(),
-                    namedDatabaseId,
-                    transactionInfo.getLoginContext().subject().username(),
-                    statement,
-                    params,
-                    Map.of(),
-                    () -> 0L,
-                    () -> 0L,
-                    () -> 0L,
-                    thread.getId(),
-                    thread.getName(),
-                    Clocks.nanoClock(),
-                    CpuClock.NOT_AVAILABLE
+                   transactionInfo.getClientConnectionInfo(),
+                   namedDatabaseId,
+                   transactionInfo.getLoginContext().subject().username(),
+                   statement,
+                   params,
+                   Map.of(),
+                   () -> 0L,
+                   () -> 0L,
+                   () -> 0L,
+                   thread.getId(),
+                   thread.getName(),
+                   Clocks.nanoClock(),
+                   CpuClock.NOT_AVAILABLE
             );
             internalFabricId = "Fabric-" + internalFabricQueryIdGenerator.incrementAndGet();
         }

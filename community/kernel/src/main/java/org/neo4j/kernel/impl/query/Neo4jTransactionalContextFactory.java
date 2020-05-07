@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -38,7 +39,11 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( queryServiceSupplier );
         Neo4jTransactionalContext.Creator contextCreator =
-                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), tx, initialStatement, executingQuery,
+                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext(
+                        queryService.get(),
+                        tx,
+                        initialStatement,
+                        executingQuery,
                         transactionFactory );
         return new Neo4jTransactionalContextFactory( contextCreator );
     }
@@ -71,6 +76,14 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         KernelStatement initialStatement = (KernelStatement) tx.kernelTransaction().acquireStatement();
         var executingQuery = initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters );
+        return contextCreator.create( tx, initialStatement, executingQuery );
+    }
+
+    @Override
+    public TransactionalContext newContextForQuery( InternalTransaction tx, ExecutingQuery executingQuery )
+    {
+        KernelStatement initialStatement = (KernelStatement) tx.kernelTransaction().acquireStatement();
+        initialStatement.queryRegistration().startQueryExecution( executingQuery );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }
 }

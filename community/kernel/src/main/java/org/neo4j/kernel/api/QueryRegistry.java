@@ -46,6 +46,11 @@ public interface QueryRegistry
     ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters );
 
     /**
+     * Registers an already known query that is about to start executing
+     */
+    void startQueryExecution( ExecutingQuery executingQuery );
+
+    /**
      * Registers an already known query to a this transaction.
      *
      * This is used solely for supporting PERIODIC COMMIT which requires committing and starting new transactions

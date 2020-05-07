@@ -260,6 +260,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          params: MapValue,
                          prePopulateResults: Boolean,
                          input: InputDataStream,
+                         queryMonitor: QueryExecutionMonitor,
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
@@ -274,7 +275,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       })
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
-        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber, isOutermostQuery)
+        innerExecute(transactionalContext,
+                     queryOptions,
+                     taskCloser,
+                     queryContext,
+                     params,
+                     prePopulateResults,
+                     input,
+                     queryMonitor,
+                     subscriber,
+                     isOutermostQuery)
       } catch {
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
@@ -291,6 +301,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                              params: MapValue,
                              prePopulateResults: Boolean,
                              input: InputDataStream,
+                             queryMonitor: QueryExecutionMonitor,
                              subscriber: QuerySubscriber,
                              isOutermostQuery: Boolean): InternalExecutionResult = {
 
@@ -300,8 +311,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
 
-      val monitor = if (isOutermostQuery) kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]) else QueryExecutionMonitor.NO_OP
-      monitor.start(transactionalContext.executingQuery())
+      val monitor = if (isOutermostQuery) queryMonitor else QueryExecutionMonitor.NO_OP
+      monitor.startExecution(transactionalContext.executingQuery())
 
       val inner = if (innerExecutionMode == ExplainMode) {
         taskCloser.close(success = true)

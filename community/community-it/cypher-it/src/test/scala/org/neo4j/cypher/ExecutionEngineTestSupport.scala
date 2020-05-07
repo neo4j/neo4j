@@ -40,8 +40,10 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.LogProvider
@@ -189,6 +191,7 @@ trait ExecutionEngineHelper {
           context = context,
           prePopulate = false,
           input = input,
+          queryMonitor = DummyQueryExecutionMonitor,
           subscriber = subscriber
         ),
         tbqc,
@@ -212,4 +215,12 @@ case object DummyIndexSearchMonitor extends IndexSearchMonitor {
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
+}
+
+case object DummyQueryExecutionMonitor extends QueryExecutionMonitor {
+  override def startProcessing(query: ExecutingQuery): Unit = {}
+  override def startExecution(query: ExecutingQuery): Unit = {}
+  override def endFailure(query: ExecutingQuery, failure: Throwable): Unit = {}
+  override def endFailure(query: ExecutingQuery, reason: String): Unit = {}
+  override def endSuccess(query: ExecutingQuery): Unit = {}
 }

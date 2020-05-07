@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
@@ -127,11 +128,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
-            boolean prePopulate, InputDataStream input, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+            boolean prePopulate, InputDataStream input, QueryExecutionMonitor queryMonitor, QuerySubscriber subscriber ) throws QueryExecutionKernelException
     {
         try
         {
-            return cypherExecutionEngine.execute( query, parameters, context, prePopulate, input, subscriber );
+            return cypherExecutionEngine.execute( query, parameters, context, prePopulate, input, queryMonitor, subscriber );
         }
         catch ( Neo4jException e )
         {

@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -46,6 +47,7 @@ trait ExecutableQuery extends CacheabilityInfo {
    * @param params                         the parameters
    * @param prePopulateResults             if false, nodes and relationships might be returned as references in the results
    * @param input                          stream of existing records as input
+   * @param queryMonitor                   monitor to submit query events to
    * @param subscriber                     The subscriber where results should be streamed to.
    * @return the QueryExecution that controls the demand to the subscriber
    */
@@ -55,6 +57,7 @@ trait ExecutableQuery extends CacheabilityInfo {
               params: MapValue,
               prePopulateResults: Boolean,
               input: InputDataStream,
+              queryMonitor: QueryExecutionMonitor,
               subscriber: QuerySubscriber): QueryExecution
 
   /**

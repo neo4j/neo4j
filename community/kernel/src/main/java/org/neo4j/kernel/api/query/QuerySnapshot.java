@@ -110,7 +110,7 @@ public class QuerySnapshot
         return query.username();
     }
 
-    public NamedDatabaseId databaseId()
+    public Optional<NamedDatabaseId> databaseId()
     {
         return query.databaseId();
     }

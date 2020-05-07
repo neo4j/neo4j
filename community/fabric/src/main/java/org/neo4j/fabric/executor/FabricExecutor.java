@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.cypher.internal.CypherQueryObfuscator;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.GraphSelection;
@@ -85,27 +84,26 @@ public class FabricExecutor
     private final UseEvaluation useEvaluation;
     private final CatalogManager catalogManager;
     private final Log log;
-    private final FabricQueryMonitoring queryMonitoring;
+    private final FabricQueryMonitoring monitoring;
     private final Executor fabricWorkerExecutor;
 
     public FabricExecutor( FabricConfig config, FabricPlanner planner, UseEvaluation useEvaluation, CatalogManager catalogManager,
-                           LogProvider internalLog, FabricQueryMonitoring queryMonitoring, Executor fabricWorkerExecutor )
+                           LogProvider internalLog, FabricQueryMonitoring monitoring, Executor fabricWorkerExecutor )
     {
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
         this.catalogManager = catalogManager;
         this.log = internalLog.getLog( getClass() );
-        this.queryMonitoring = queryMonitoring;
+        this.monitoring = monitoring;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
     }
 
     public FabricExecutionStatementResult run( FabricTransaction fabricTransaction, String queryString, MapValue queryParams )
     {
-        Thread thread = Thread.currentThread();
         FabricQueryMonitoring.QueryMonitor queryMonitor =
-                queryMonitoring.queryMonitor( fabricTransaction.getTransactionInfo(), queryString, queryParams, thread );
-        queryMonitor.start();
+                monitoring.queryMonitor( fabricTransaction.getTransactionInfo(), queryString, queryParams );
+        queryMonitor.startProcessing();
 
         String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
         FabricPlanner.PlannerInstance plannerInstance = planner.instance( queryString, queryParams, defaultGraphName );
@@ -113,7 +111,7 @@ public class FabricExecutor
         FabricPlan plan = plannerInstance.plan();
         Fragment query = plan.query();
 
-        queryMonitor.getMonitoredQuery().onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ) );
+        queryMonitor.fabricPlanningDone( plan );
 
         AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
 
@@ -155,11 +153,8 @@ public class FabricExecutor
     @Deprecated
     public InternalTransaction forceKernelTxCreation( FabricTransaction fabricTransaction )
     {
-        FabricQueryMonitoring.QueryMonitor queryMonitor =
-                queryMonitoring.queryMonitor( fabricTransaction.getTransactionInfo(), "", MapValue.EMPTY, Thread.currentThread() );
         try
         {
-            queryMonitor.start();
             var dbName = fabricTransaction.getTransactionInfo().getDatabaseName();
             var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.<String>empty() ) );
             var location = (Location.Local) catalogManager.locationOf( graph, false );
@@ -167,7 +162,7 @@ public class FabricExecutor
             fabricTransaction.execute( ctx ->
                                        {
                                            FabricKernelTransaction fabricKernelTransaction =
-                                                   ctx.getLocal().getOrCreateTx( location, TransactionMode.MAYBE_WRITE, queryMonitor.getMonitoredQuery() );
+                                                   ctx.getLocal().getOrCreateTx( location, TransactionMode.MAYBE_WRITE );
                                            internalTransaction.complete( fabricKernelTransaction.getInternalTransaction() );
                                            return StatementResults.initial();
                                        } );
@@ -176,10 +171,6 @@ public class FabricExecutor
         catch ( Exception e )
         {
             throw new IllegalStateException( "Failed to force open local transaction", e );
-        }
-        finally
-        {
-            queryMonitor.endSuccess();
         }
     }
 
@@ -240,8 +231,9 @@ public class FabricExecutor
 
             return StatementResults.create(
                     columns,
-                    fragmentResult.records.doOnComplete( queryMonitor::endSuccess )
-                           .doOnError( queryMonitor::endFailure ),
+                    fragmentResult.records
+                            .doOnComplete( queryMonitor::endSuccess )
+                            .doOnError( queryMonitor::endFailure ),
                     Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) )
             );
         }
@@ -344,7 +336,7 @@ public class FabricExecutor
                                       Flux<Record> input )
         {
 
-            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, queryMonitor.getMonitoredQuery(), query, parameters, input );
+            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, queryMonitor, query, parameters, input );
             Flux<Record> records = localStatementResult.records().doOnComplete( () -> localStatementResult.summary().subscribe( this::updateSummary ) );
 
             Mono<ExecutionPlanDescription> planDescription = localStatementResult.summary()
