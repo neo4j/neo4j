@@ -64,7 +64,7 @@ import static org.mockito.Mockito.when;
 public class TransportWriteThrottleTest
 {
     @Rule
-    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 1, TimeUnit.MINUTES );
+    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private ChannelHandlerContext context;
     private Channel channel;

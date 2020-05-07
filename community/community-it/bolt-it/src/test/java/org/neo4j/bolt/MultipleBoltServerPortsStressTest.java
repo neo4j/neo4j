@@ -20,9 +20,10 @@
 package org.neo4j.bolt;
 
 import org.assertj.core.api.Condition;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +34,7 @@ import java.util.function.Function;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
@@ -45,6 +47,8 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -58,7 +62,9 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 
-public class MultipleBoltServerPortsStressTest
+@TestDirectoryExtension
+@Neo4jWithSocketExtension
+class MultipleBoltServerPortsStressTest
 {
     private static final int DURATION_IN_MINUTES = 1;
     private static final int NUMBER_OF_THREADS = 10;
@@ -66,24 +72,34 @@ public class MultipleBoltServerPortsStressTest
     private static final String USER_AGENT = "TestClient/4.1";
     private static TransportTestUtil util;
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), new SharedAuthManagerDbmsBuilder(), settings ->
-    {
-        settings.put( BoltConnector.enabled, true );
-        settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
+    @Inject
+    public Neo4jWithSocket server;
 
-        settings.put( BoltConnector.connector_routing_enabled, true );
-        settings.put( BoltConnector.connector_routing_listen_address, new SocketAddress( 0 ) );
-    } );
-
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp( TestInfo testInfo ) throws IOException
     {
+        server.setGraphDatabaseFactory( new SharedAuthManagerDbmsBuilder() );
+        server.setConfigure( settings ->
+        {
+            settings.put( BoltConnector.enabled, true );
+            settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
+
+            settings.put( BoltConnector.connector_routing_enabled, true );
+            settings.put( BoltConnector.connector_routing_listen_address, new SocketAddress( 0 ) );
+        } );
+        server.init( testInfo );
+
         util = new TransportTestUtil( newMessageEncoder() );
     }
 
+    @AfterEach
+    void tearDown()
+    {
+        server.shutdownDatabase();
+    }
+
     @Test
-    public void splitTrafficBetweenPorts() throws Exception
+    void splitTrafficBetweenPorts() throws Exception
     {
         SocketConnection externalConnection = new SocketConnection();
         SocketConnection internalConnection = new SocketConnection();
@@ -101,7 +117,7 @@ public class MultipleBoltServerPortsStressTest
         }
     }
 
-    private void executeStressTest( ExecutorService executorPool, HostnamePort external, HostnamePort internal ) throws Exception
+    private static void executeStressTest( ExecutorService executorPool, HostnamePort external, HostnamePort internal ) throws Exception
     {
         long finishTimeMillis = System.currentTimeMillis() + MINUTES.toMillis( MultipleBoltServerPortsStressTest.DURATION_IN_MINUTES );
         AtomicBoolean failureFlag = new AtomicBoolean( false );
@@ -128,7 +144,7 @@ public class MultipleBoltServerPortsStressTest
         assertThat( failureFlag ).isFalse();
     }
 
-    private void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
+    private static void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 1, 4} ) );
@@ -142,7 +158,7 @@ public class MultipleBoltServerPortsStressTest
         return new Condition<>( value -> value.equals( longValue( expected ) ), "equals" );
     }
 
-    private Runnable workload( AtomicBoolean failureFlag, SocketConnection connection, long finishTimeMillis )
+    private static Runnable workload( AtomicBoolean failureFlag, SocketConnection connection, long finishTimeMillis )
     {
         return () ->
         {

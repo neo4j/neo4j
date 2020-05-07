@@ -19,10 +19,11 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.time.Duration;
 import java.util.Map;
@@ -46,23 +47,20 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
 public class BoltKeepAliveSchedulingIT
 {
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Neo4jWithSocket server =
-            new Neo4jWithSocket( getClass(), new TestDatabaseManagementServiceBuilder(), fsRule,
-                    getSettingsFunction() );
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
+    @Inject
+    private Neo4jWithSocket server;
 
     private HostnamePort address;
     private TransportConnection connection;
@@ -77,9 +75,11 @@ public class BoltKeepAliveSchedulingIT
         };
     }
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws Exception
     {
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
         installSleepProcedure( server.graphDatabaseService() );
 
         address = server.lookupDefaultConnector();

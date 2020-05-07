@@ -54,6 +54,7 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
 
@@ -83,7 +84,8 @@ public class ShutdownSequenceIT
             new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    private final Neo4jWithSocket server =
+            new Neo4jWithSocket( getTestGraphDatabaseFactory(), () -> TestDirectory.testDirectory( getClass(), fsRule.get() ), getSettingsFunction() );
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
     private CountDownLatch txStarted;
@@ -93,7 +95,7 @@ public class ShutdownSequenceIT
     public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
 
     @Rule
-    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 1, MINUTES );
+    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Before
     public void setup() throws Exception

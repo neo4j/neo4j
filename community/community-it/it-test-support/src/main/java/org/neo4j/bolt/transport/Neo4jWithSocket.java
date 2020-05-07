@@ -19,13 +19,13 @@
  */
 package org.neo4j.bolt.transport;
 
+import org.junit.jupiter.api.TestInfo;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -51,13 +51,14 @@ import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class Neo4jWithSocket extends ExternalResource
 {
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
-    private final Consumer<Map<Setting<?>,Object>> configure;
+    private Consumer<Map<Setting<?>,Object>> configure;
     private final TestDirectory testDirectory;
-    private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
+    private TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
@@ -65,30 +66,21 @@ public class Neo4jWithSocket extends ExternalResource
 
     public Neo4jWithSocket( Class<?> testClass )
     {
-        this( testClass, settings ->
-        {
-        } );
+        this( testClass, settings -> { } );
     }
 
     public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,Object>> configure )
     {
-        this( testClass, new TestDatabaseManagementServiceBuilder(), configure );
+        this( new TestDatabaseManagementServiceBuilder(), () -> testDirectory( testClass, new EphemeralFileSystemAbstraction() ), configure );
     }
 
-    public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Consumer<Map<Setting<?>,Object>> configure )
+    public Neo4jWithSocket( TestDatabaseManagementServiceBuilder graphDatabaseFactory,
+                            Supplier<TestDirectory> testDirectorySupplier, Consumer<Map<Setting<?>,Object>> configure )
     {
-        this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
-    }
-
-    public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<Setting<?>,Object>> configure )
-    {
-        this.testDirectory = TestDirectory.testDirectory( testClass, fileSystemProvider.get() );
+        this.testDirectory = testDirectorySupplier.get();
         this.graphDatabaseFactory = graphDatabaseFactory;
-        this.fileSystemProvider = fileSystemProvider;
+        this.fileSystemProvider = testDirectory::getFileSystem;
         this.configure = configure;
-        this.workingDirectory = defaultWorkingDirectory();
     }
 
     public FileSystemAbstraction getFileSystem()
@@ -96,14 +88,28 @@ public class Neo4jWithSocket extends ExternalResource
         return this.graphDatabaseFactory.getFileSystem();
     }
 
-    public File getWorkingDirectory()
-    {
-        return workingDirectory;
-    }
-
     public DatabaseManagementService getManagementService()
     {
         return managementService;
+    }
+
+    public void setConfigure( Consumer<Map<Setting<?>, Object>> configure )
+    {
+        this.configure = configure;
+    }
+
+    public void setGraphDatabaseFactory( TestDatabaseManagementServiceBuilder graphDatabaseFactory )
+    {
+        this.graphDatabaseFactory = graphDatabaseFactory;
+    }
+
+    public void init( TestInfo testInfo ) throws IOException
+    {
+        var testName = testInfo.getTestMethod().get().getName();
+        testDirectory.prepareDirectory( testInfo.getTestClass().get(), testName );
+        workingDirectory = testDirectory.directory( testName );
+
+        ensureDatabase( settings -> {} );
     }
 
     @Override
@@ -228,15 +234,4 @@ public class Neo4jWithSocket extends ExternalResource
         return gdb;
     }
 
-    private File defaultWorkingDirectory()
-    {
-        try
-        {
-            return testDirectory.prepareDirectoryForTest( "default" );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
 }

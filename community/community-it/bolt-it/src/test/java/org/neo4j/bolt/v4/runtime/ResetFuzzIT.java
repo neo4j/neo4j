@@ -53,6 +53,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class ResetFuzzIT
 {
@@ -64,7 +65,8 @@ public class ResetFuzzIT
     private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    private final Neo4jWithSocket server =
+            new Neo4jWithSocket( getTestGraphDatabaseFactory(), () -> testDirectory( getClass(), fsRule.get() ), getSettingsFunction() );
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
 

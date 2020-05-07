@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -48,7 +48,8 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.singletonMap;
@@ -57,18 +58,36 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSi
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-public class BoltChannelAutoReadLimiterIT
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
+class BoltChannelAutoReadLimiterIT
 {
+    @Inject
+    private Neo4jWithSocket server;
+
     private AssertableLogProvider logProvider;
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
-
     private HostnamePort address;
     private TransportConnection connection;
     private TransportTestUtil util;
+
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws Exception
+    {
+        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
+        address = server.lookupDefaultConnector();
+        connection = new SocketConnection();
+        util = new TransportTestUtil();
+
+        installSleepProcedure( server.graphDatabaseService() );
+    }
+
+    @AfterEach
+    public void cleanup()
+    {
+        server.shutdownDatabase();
+    }
 
     protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
@@ -85,16 +104,6 @@ public class BoltChannelAutoReadLimiterIT
     protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled, false );
-    }
-
-    @Before
-    public void setup() throws Exception
-    {
-        installSleepProcedure( server.graphDatabaseService() );
-
-        address = server.lookupDefaultConnector();
-        connection = new SocketConnection();
-        util = new TransportTestUtil();
     }
 
     @Test

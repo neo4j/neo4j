@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -35,9 +36,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class OtherThreadRule<STATE> implements TestRule
 {
-    private final String name;
-    private final long timeout;
-    private final TimeUnit unit;
+    private String name;
+    private long timeout;
+    private TimeUnit unit;
     private volatile OtherThreadExecutor<STATE> executor;
 
     public OtherThreadRule()
@@ -47,15 +48,21 @@ public class OtherThreadRule<STATE> implements TestRule
 
     public OtherThreadRule( String name )
     {
-        this( name, 60, SECONDS );
+        set( name, 60, SECONDS );
     }
 
     public OtherThreadRule( long timeout, TimeUnit unit )
     {
-        this( null, timeout, unit );
+        set( null, timeout, unit );
     }
 
-    public OtherThreadRule( String name, long timeout, TimeUnit unit )
+    public void set( long timeout, TimeUnit unit )
+    {
+        this.timeout = timeout;
+        this.unit = unit;
+    }
+
+    public void set( String name, long timeout, TimeUnit unit )
     {
         this.name = name;
         this.timeout = timeout;
@@ -134,7 +141,29 @@ public class OtherThreadRule<STATE> implements TestRule
         return otherThread.toString();
     }
 
-    // Implementation of TestRule
+    // Implementation of life cycles
+
+    public void beforeEach( ExtensionContext context )
+    {
+        String displayName = context.getDisplayName();
+
+        String threadName = name != null
+                ? name + '-' + displayName
+                : displayName;
+        init( threadName );
+    }
+
+    public void afterEach( ExtensionContext context )
+    {
+        try
+        {
+            executor.close();
+        }
+        finally
+        {
+            executor = null;
+        }
+    }
 
     @Override
     public Statement apply( final Statement base, final Description description )

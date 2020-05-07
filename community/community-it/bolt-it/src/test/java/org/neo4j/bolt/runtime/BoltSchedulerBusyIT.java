@@ -19,13 +19,11 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,8 +31,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -42,7 +42,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
@@ -50,20 +51,29 @@ import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-@RunWith( Parameterized.class )
-public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
+class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
 {
-    private AssertableLogProvider internalLogProvider = new AssertableLogProvider();
-    private AssertableLogProvider userLogProvider = new AssertableLogProvider();
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
+    private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
+
+    @Inject
+    private Neo4jWithSocket server;
+
     private TransportConnection connection1;
     private TransportConnection connection2;
     private TransportConnection connection3;
     private TransportConnection connection4;
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
+    {
+        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
+        address = server.lookupDefaultConnector();
+    }
 
     private TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
@@ -84,24 +94,23 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         };
     }
 
-    @Before
-    public void setup() throws Exception
-    {
-        address = server.lookupDefaultConnector();
-    }
-
-    @After
-    public void cleanup() throws Exception
+    @AfterEach
+    public void cleanup()
     {
         close( connection1 );
         close( connection2 );
         close( connection3 );
         close( connection4 );
+        server.shutdownDatabase();
     }
 
-    @Test
-    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Throwable
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name )
+            throws Throwable
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         // it's enough to get the bolt state machine into streaming mode to have
         // the thread sticked to the connection, causing all the available threads
         // to be busy (logically)
@@ -129,9 +138,13 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         }
     }
 
-    @Test
-    public void shouldStopConnectionsWhenRelatedJobIsRejectedOnShutdown() throws Throwable
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldStopConnectionsWhenRelatedJobIsRejectedOnShutdown( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack,
+            String name ) throws Throwable
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         // Connect and get two connections into idle state
         connection1 = enterStreaming();
         exitStreaming( connection1 );

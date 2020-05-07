@@ -19,17 +19,15 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -45,54 +43,64 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
-@RunWith( Parameterized.class )
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
 public class UnsupportedStructTypesV2IT
 {
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), Neo4jWithSocket.withOptionalBoltEncryption() );
-
-    @Parameter
-    public Class<? extends TransportConnection> connectionClass;
+    @Inject
+    private Neo4jWithSocket server;
 
     private HostnamePort address;
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    @Parameters( name = "{0}" )
-    public static List<Class<? extends TransportConnection>> transports()
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
-        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
-    }
-
-    @Before
-    public void setup() throws Exception
-    {
+        server.setConfigure( withOptionalBoltEncryption() );
+        server.init( testInfo );
         address = server.lookupDefaultConnector();
-        connection = connectionClass.getDeclaredConstructor().newInstance();
         util = new TransportTestUtil( new Neo4jPackV2() );
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws Exception
     {
         if ( connection != null )
         {
             connection.disconnect();
         }
+        server.shutdownDatabase();
     }
 
-    @Test
-    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId() throws Exception
+    public static Stream<Arguments> classProvider()
     {
+        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
+                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
+    }
+
+    private void initConnection( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        connection = connectionClass.getDeclaredConstructor().newInstance();
+    }
+
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldFailWhenPoint2DIsSentWithInvalidCrsId( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        initConnection( connectionClass );
+
         testFailureWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 3, StructType.POINT_2D.signature() );
@@ -102,9 +110,12 @@ public class UnsupportedStructTypesV2IT
         }, "Unable to construct Point value: `Unknown coordinate reference system code: 5`" );
     }
 
-    @Test
-    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldFailWhenPoint3DIsSentWithInvalidCrsId( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testFailureWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 4, StructType.POINT_3D.signature() );
@@ -115,9 +126,12 @@ public class UnsupportedStructTypesV2IT
         }, "Unable to construct Point value: `Unknown coordinate reference system code: 1200`" );
     }
 
-    @Test
-    public void shouldFailWhenPoint2DDimensionsDoNotMatch() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldFailWhenPoint2DDimensionsDoNotMatch( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testDisconnectWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 3, StructType.POINT_3D.signature() );
@@ -127,9 +141,12 @@ public class UnsupportedStructTypesV2IT
         }, "Unable to construct Point value: `Cannot create point, CRS cartesian-3d expects 3 dimensions, but got coordinates [3.15, 4.012]`" );
     }
 
-    @Test
-    public void shouldFailWhenPoint3DDimensionsDoNotMatch() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldFailWhenPoint3DDimensionsDoNotMatch( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testFailureWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 4, StructType.POINT_3D.signature() );
@@ -140,9 +157,12 @@ public class UnsupportedStructTypesV2IT
         }, "Unable to construct Point value: `Cannot create point, CRS cartesian expects 2 dimensions, but got coordinates [3.15, 4.012, 5.905]`" );
     }
 
-    @Test
-    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldFailWhenZonedDateTimeZoneIdIsNotKnown( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testFailureWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 3, StructType.DATE_TIME_WITH_ZONE_NAME.signature() );
