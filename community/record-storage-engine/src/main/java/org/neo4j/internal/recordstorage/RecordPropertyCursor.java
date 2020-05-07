@@ -480,10 +480,10 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         int oldCapacity = buffer.capacity();
         int newCapacity = Math.max( oldCapacity, minAdditionalCapacity ) + oldCapacity;
 
-        var oldBuffer = buffer;
+        var oldScopedBuffer = scopedBuffer;
         setScopedBuffer( new HeapScopedBuffer( newCapacity, memoryTracker ) );
-        buffer.put( oldBuffer );
-        scopedBuffer.close();
+        buffer.put( oldScopedBuffer.getBuffer() );
+        oldScopedBuffer.close();
 
         return buffer;
     }

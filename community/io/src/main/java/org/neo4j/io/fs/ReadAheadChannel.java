@@ -41,7 +41,7 @@ import static org.neo4j.io.fs.PhysicalFlushableChecksumChannel.DISABLE_WAL_CHECK
 public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksumChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact( kibiBytes( 4 ) );
-    private final ScopedBuffer scopedBuffer;
+    private ScopedBuffer scopedBuffer;
 
     protected T channel;
     private final ByteBuffer aheadBuffer;
@@ -49,17 +49,22 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
     private final Checksum checksum;
     private final ByteBuffer checksumView;
 
-    public ReadAheadChannel( T channel, ScopedBuffer scopedBuffer )
+    public ReadAheadChannel( T channel, ByteBuffer byteBuffer )
     {
         requireNonNull( channel );
-        requireNonNull( scopedBuffer );
-        this.scopedBuffer = scopedBuffer;
-        this.aheadBuffer = scopedBuffer.getBuffer();
+        requireNonNull( byteBuffer );
+        this.aheadBuffer = byteBuffer;
         this.aheadBuffer.position( aheadBuffer.capacity() );
         this.channel = channel;
         this.readAheadSize = aheadBuffer.capacity();
         this.checksumView = aheadBuffer.duplicate();
         this.checksum = CHECKSUM_FACTORY.get();
+    }
+
+    public ReadAheadChannel( T channel, ScopedBuffer scopedBuffer )
+    {
+        this( channel, scopedBuffer.getBuffer() );
+        this.scopedBuffer = scopedBuffer;
     }
 
     /**

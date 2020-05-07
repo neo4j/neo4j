@@ -59,7 +59,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         }
         StoreChannel blockChannel = fs.read( file );
         blockChannel.position( position );
-        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer ) );
+        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer.getBuffer() ) );
         BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );
         long blockSize = blockEntryReader.blockSize();
         channel.position( position + blockSize );
