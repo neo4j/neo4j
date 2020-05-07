@@ -83,16 +83,16 @@ public class DatabaseManagementServiceBuilder
     protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         config.set( GraphDatabaseSettings.ephemeral_lucene, FALSE );
-        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
+        return new DatabaseManagementServiceFactory( getDatabaseInfo( config ), getEditionFactory( config ) )
                 .build( augmentConfig( config ), dependencies );
     }
 
-    protected DatabaseInfo getDatabaseInfo()
+    protected DatabaseInfo getDatabaseInfo( Config config )
     {
         return DatabaseInfo.COMMUNITY;
     }
 
-    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
+    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory( Config config )
     {
         return CommunityEditionModule::new;
     }

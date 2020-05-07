@@ -10,9 +10,9 @@ org.neo4j.dbms.api.DatabaseManagementServiceBuilder::databaseDependencies() org.
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::databaseEventListeners java.util.List<org.neo4j.graphdb.event.DatabaseEventListener> protected final
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::dependencies org.neo4j.common.DependencyResolver protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::extensions java.util.List<org.neo4j.kernel.extension.ExtensionFactory<?>> protected final
-org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getDatabaseInfo() org.neo4j.kernel.impl.factory.DatabaseInfo protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getDatabaseInfo(org.neo4j.configuration.Config) org.neo4j.kernel.impl.factory.DatabaseInfo protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEdition() java.lang.String public
-org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEditionFactory() java.util.function.Function<org.neo4j.graphdb.factory.module.GlobalModule,org.neo4j.graphdb.factory.module.edition.AbstractEditionModule> protected
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEditionFactory(org.neo4j.configuration.Config) java.util.function.Function<org.neo4j.graphdb.factory.module.GlobalModule,org.neo4j.graphdb.factory.module.edition.AbstractEditionModule> protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::homeDirectory java.io.File protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::loadPropertiesFromFile(java.lang.String) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::monitors org.neo4j.monitoring.Monitors protected

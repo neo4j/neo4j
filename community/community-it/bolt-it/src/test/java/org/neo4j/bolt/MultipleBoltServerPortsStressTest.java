@@ -36,6 +36,7 @@ import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -174,7 +175,7 @@ public class MultipleBoltServerPortsStressTest
     private static class SharedAuthManagerDbmsBuilder extends TestDatabaseManagementServiceBuilder
     {
         @Override
-        protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
+        protected Function<GlobalModule,AbstractEditionModule> getEditionFactory( Config config )
         {
             return globalModule -> new CommunityEditionModule( globalModule )
             {

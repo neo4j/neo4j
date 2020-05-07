@@ -62,10 +62,10 @@ public class Futures
      * @return A {@link List<V> list} of results.
      * @throws ExecutionException If any of the futures throw.
      */
-    public static <V> List<V> getAllResults( Iterable<Future<V>> futures ) throws ExecutionException
+    public static <V> List<V> getAllResults( Iterable<? extends Future<V>> futures ) throws ExecutionException
     {
         List<V> result = futures instanceof Collection
-                         ? new ArrayList<>( ((Collection) futures).size() )
+                         ? new ArrayList<>( ((Collection<?>) futures).size() )
                          : new ArrayList<>();
         Throwable finalError = null;
         for ( Future<V> future : futures )
@@ -86,7 +86,7 @@ public class Futures
         return result;
     }
 
-    public static void getAll( Iterable<Future<?>> futures ) throws ExecutionException
+    public static void getAll( Iterable<? extends Future<?>> futures ) throws ExecutionException
     {
         Throwable finalError = null;
         for ( Future<?> future : futures )
