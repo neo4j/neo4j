@@ -51,12 +51,12 @@ object Parser {
   def cleanup[T <: ASTNode](in: T): T =
     injectCachedProperties.andThen(invalidateInputPositions)(in).asInstanceOf[T]
 
-  private val regex = s"(.+) [Aa][Ss] ([a-zA-Z0-9` @]+)".r
+  private val regex = s"(.+) [Aa][Ss] (.+)".r
   private val parser = new Parser
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
-      case regex(Parser(expression), alias) => (VariableParser.unescaped(alias), expression)
+      case regex(Parser(expression), VariableParser(alias)) => (alias, expression)
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }

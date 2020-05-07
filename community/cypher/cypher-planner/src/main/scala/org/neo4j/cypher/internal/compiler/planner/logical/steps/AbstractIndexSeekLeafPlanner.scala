@@ -147,7 +147,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
          (predicates, canGetValues, providedOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, interestingOrder, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -160,7 +160,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 isUnique: Boolean,
                                 canGetValues: Seq[GetValueFromIndexBehavior],
                                 providedOrder: ProvidedOrder,
-                                interestingOrder: InterestingOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
@@ -285,7 +284,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   /**
    * Finds the Seq of IndexCompatiblePredicate that can be solved by the indexDescriptor.
-   * Either each property of the index solves some predicate, in which case case this returns Some(...).
+   * Either each property of the index solves some predicate, in which case this returns Some(...).
    * Or, if at least one property does not solve a predicate, this returns None.
    *
    * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
@@ -330,7 +329,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       Property(Variable(mp.name)(pos), mp.propertyKeyName)(pos)
     }).slice(0, types.length)
 
-    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, indexProperties, types, indexDescriptor.orderCapability)
+    val providedOrder = ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexProperties, types, indexDescriptor.orderCapability)
 
     // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
     (matchingPredicates, propertyBehaviours, providedOrder)

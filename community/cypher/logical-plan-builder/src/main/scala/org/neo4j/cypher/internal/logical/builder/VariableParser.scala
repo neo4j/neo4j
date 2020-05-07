@@ -21,5 +21,17 @@ package org.neo4j.cypher.internal.logical.builder
 
 object VariableParser {
 
-  def unescaped(varName: String): String = varName.filter(_ != '`')
+  private val raw = "([a-zA-Z0-9]*)".r
+  private val escaped = "`(.*)`".r
+
+  def unescaped(varName: String): String = unapply(varName) match {
+    case Some(value) => value
+    case None => throw new IllegalArgumentException(s"'$varName' cannot be parsed as a variable name")
+  }
+
+  def unapply(varName: String): Option[String] = varName match {
+    case raw(n) => Some(n)
+    case escaped(n) => Some(n)
+    case _ => None
+  }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -26,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -81,33 +83,29 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("ORDER BY renamed column old name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a RETURN b.name, age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a RETURN b.name, age", stripProduceResults = false)._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("b", "name")
-
-    val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val sort = Sort(projection, Seq(Ascending("b")))
-    val projection2 = Projection(sort, Map("age" -> ageProperty))
-    val result = Projection(projection2, Map("b.name" -> nameProperty))
-
-    plan should equal(result)
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("`b.name`", "age")
+        .projection("b.name AS `b.name`")
+        .projection("a AS b", "a.age AS age")
+        .nodeByLabelScan("a", "A", IndexOrderAscending)
+        .build()
+    )
   }
 
   test("ORDER BY renamed column new name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b RETURN b.name, age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b RETURN b.name, age", stripProduceResults = false)._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("b", "name")
-
-    val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val sort = Sort(projection, Seq(Ascending("b")))
-    val projection2 = Projection(sort, Map("age" -> ageProperty))
-    val result = Projection(projection2, Map("b.name" -> nameProperty))
-
-    plan should equal(result)
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("`b.name`", "age")
+        .projection("b.name AS `b.name`")
+        .projection("a AS b", "a.age AS age")
+        .nodeByLabelScan("a", "A", IndexOrderAscending)
+        .build()
+    )
   }
 
   test("ORDER BY renamed column expression with old name in WITH and project and return that column") {
@@ -496,8 +494,10 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("Should plan sort before first expand when sorting on node") {
+    // Not having a label on u, otherwise we can take the order from the label scan and don't need to sort at all,
+    // which would make this test useless.
     val query =
-      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+      """MATCH (u)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY u""".stripMargin

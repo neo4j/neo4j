@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.symbols.CypherType
+
+import scala.annotation.tailrec
 
 /**
  * This object provides some utility methods around InterestingOrder and ProvidedOrder.
@@ -45,10 +48,10 @@ object ResultOrdering {
    *                         In the future we also want to able to ask it for prefix sequences (e.g. just Seq(CTInt)).
    * @return the order that the index guarantees, if possible in accordance with the given required order.
    */
-  def withIndexOrderCapability(interestingOrder: InterestingOrder,
-                               indexProperties: Seq[Property],
-                               orderTypes: Seq[CypherType],
-                               capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
+  def providedOrderForIndexOperator(interestingOrder: InterestingOrder,
+                                    indexProperties: Seq[Property],
+                                    orderTypes: Seq[CypherType],
+                                    capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
 
 
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
@@ -76,6 +79,34 @@ object ResultOrdering {
           ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) }, ProvidedOrder.Self)
         else ProvidedOrder.empty
       }
+    }
+  }
+
+  def providedOrderForLabelScan(interestingOrder: InterestingOrder,
+                                variable: Variable): ProvidedOrder = {
+    def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
+      extractVariableForValue(expression, projections).contains(variable)
+
+    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
+
+    candidates.map(_.headOption).collectFirst {
+      case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
+        ProvidedOrder.desc(variable)
+      case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
+        ProvidedOrder.asc(variable)
+    }.getOrElse(ProvidedOrder.empty)
+  }
+
+  @tailrec
+  private[ordering] def extractVariableForValue(expression: Expression,
+                                                renamings: Map[String, Expression]): Option[Variable] = {
+    expression match {
+      case variable@Variable(varName) =>
+        if (renamings.contains(varName) && renamings(varName) != variable)
+          extractVariableForValue(renamings(varName), renamings)
+        else
+          Some(variable)
+      case _ => None
     }
   }
 }

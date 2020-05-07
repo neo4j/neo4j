@@ -97,6 +97,84 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order") {
+      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN n ORDER BY n $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("n")
+          .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by variable from label and join in MATCH with multiple labels") {
+      val plan = new given {
+        indexOn("Foo", "prop")
+        indexOn("Bar", "unused") // otherwise we don't get a label id for Bar
+        labelCardinality = Map(
+          "Foo" -> 10.0,
+          "Bar" -> 1000.0
+        )
+        cost = {
+          // Selection is usually cheap. Let's avoid it by making it expensive to plan, so that our options are index seeks and label scans.
+          case (_:Selection, _, _) => 5000.0
+        }
+      }.getLogicalPlanFor(s"MATCH (n:Foo:Bar) WHERE n.prop > 0 RETURN n ORDER BY n $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("n")
+          .nodeHashJoin("n")
+          .|.nodeByLabelScan("n", "Bar", plannedOrder)
+          .nodeIndexOperator("n:Foo(prop > 0)")
+          .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Should not order label scan if ORDER BY aggregation of that node") {
+      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome)-[r]-(m) RETURN m AS mm, count(n) AS c ORDER BY c $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("mm", "c")
+          .sort(Seq(sortOrder("c")))
+          .aggregation(Seq("m AS mm"), Seq("count(n) AS c"))
+          .expandAll("(n)-[r]-(m)")
+          .nodeByLabelScan("n", "Awesome", IndexOrderNone)
+          .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by variable renamed in WITH from label scan should plan with provided order") {
+      val plan = new given().getLogicalPlanFor(s"""MATCH (n:Awesome)
+                                                  |WITH n AS nnn
+                                                  |MATCH (m)-[r]->(nnn)
+                                                  |RETURN nnn ORDER BY nnn $cypherToken""".stripMargin, stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("nnn")
+          .expandAll("(nnn)<-[r]-(m)")
+          .projection("n AS nnn")
+          .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order and PartialSort") {
+      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) WITH n, n.foo AS foo RETURN n ORDER BY n $cypherToken, foo", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("n")
+          .partialSort(Seq(sortOrder("n")), Seq(Ascending("foo")))
+          .projection("n.foo AS foo")
+          .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order") {
       val plan = new given {
         indexOn("Awesome", "prop")
@@ -309,6 +387,23 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               argumentIds = Set("a"))
           ),
           Map("a.prop" -> cachedNodeProp("a", "prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by label variable in a plan with an Apply") {
+      val plan = new given {
+        indexOn("B", "prop").providesOrder(orderCapability)
+      }.getLogicalPlanFor(s"MATCH (a:A), (b:B) WHERE a.prop = b.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
+
+      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("a")
+          .apply()
+          .|.nodeIndexOperator("b:B(prop = ???)", indexOrder = expectedBIndexOrder, paramExpr = Some(prop("a", "prop")), argumentIds = Set("a"))
+          .nodeByLabelScan("a", "A", plannedOrder)
+          .build()
       )
     }
 
@@ -939,6 +1034,20 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             DoNotIncludeTies
           )
         )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should use label scan order") {
+      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults(s"`$functionName(n)`")
+          .optional()
+          .limit(1)
+          .projection(s"n AS `$functionName(n)`")
+          .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
       )
     }
 

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Variable
@@ -41,7 +42,8 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
           val hint = qg.hints.collectFirst {
             case hint@UsingScanHint(`variable`, `labelName`) => hint
           }
-          val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, context)
+          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrder, variable)
+          val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
           Some(LeafPlansForVariable(varName, Set(plan)))
         } else
           None

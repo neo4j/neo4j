@@ -426,6 +426,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                           solvedPredicates: Seq[Expression],
                           solvedHint: Option[UsingScanHint] = None,
                           argumentIds: Set[String],
+                          providedOrder: ProvidedOrder,
                           context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(variable.name)
@@ -433,10 +434,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    // TODO not just IndexOrderNone, doh!
-//    val providedOrder = ProvidedOrder.asc(variable)
-//    val order = toIndexOrder(providedOrder)
-    annotate(NodeByLabelScan(variable.name, label, argumentIds, IndexOrderNone), solved, ProvidedOrder.empty, context)
+    annotate(NodeByLabelScan(variable.name, label, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeIndexSeek(idName: String,

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.planner.unsolvedPreds
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Variable
@@ -33,7 +34,8 @@ case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
   def apply(plan: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     unsolvedPreds(context.planningAttributes.solveds)(queryGraph.selections, plan).collect {
       case s@HasLabels(variable: Variable, Seq(labelName)) =>
-        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, Set.empty, context)
+        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrder, variable)
+        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, Set.empty, providedOrder, context)
         context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), plan, labelScan, Set.empty, context)
     }
 }

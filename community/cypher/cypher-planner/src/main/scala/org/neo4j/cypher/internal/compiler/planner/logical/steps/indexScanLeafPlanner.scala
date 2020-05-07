@@ -199,7 +199,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
     val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
     val orderProperty = Property(property.map, property.propertyKey)(property.position)
-    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
+    val providedOrder = ResultOrdering.providedOrderForIndexOperator(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
 
     val labelToken = LabelToken(labelName, labelId)
     val predicates = Seq(predicate, labelPredicate)
