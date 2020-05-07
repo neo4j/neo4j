@@ -197,6 +197,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CON
   }
 
   test("non-empty optional on rhs") {
+    given { nodeGraph(sizeHint) }
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
