@@ -52,35 +52,35 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       // WHEN
       Config.defaults(default_database, "")
       // THEN
-    } should have message startOfError + "The provided database name is empty."
+    } should have message startOfError + "Failed to validate '' for 'dbms.default_database': The provided database name is empty."
 
     // Starting on invalid character
     the[IllegalArgumentException] thrownBy {
       // WHEN
       Config.defaults(default_database, "_default")
       // THEN
-    } should have message startOfError + "Database name '_default' is not starting with an ASCII alphabetic character."
+    } should have message startOfError + "Failed to validate '_default' for 'dbms.default_database': Database name '_default' is not starting with an ASCII alphabetic character."
 
     // Has prefix 'system'
     the[IllegalArgumentException] thrownBy {
       // WHEN
       Config.defaults(default_database, "system-mine")
       // THEN
-    } should have message startOfError + "Database name 'system-mine' is invalid, due to the prefix 'system'."
+    } should have message startOfError + "Failed to validate 'system-mine' for 'dbms.default_database': Database name 'system-mine' is invalid, due to the prefix 'system'."
 
     // Contains invalid characters
     the[IllegalArgumentException] thrownBy {
       // WHEN
       Config.defaults(default_database, "mydbwith_and%")
       // THEN
-    } should have message startOfError + "Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes."
+    } should have message startOfError + "Failed to validate 'mydbwith_and%' for 'dbms.default_database': Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes."
 
     // Too short name
     the[IllegalArgumentException] thrownBy {
       // WHEN
       Config.defaults(default_database, "me")
       // THEN
-    } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
+    } should have message startOfError + "Failed to validate 'me' for 'dbms.default_database': The provided database name must have a length between 3 and 63 characters."
 
     // Too long name
     val name = "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould"
@@ -88,7 +88,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       // WHEN
       Config.defaults(default_database, name)
       // THEN
-    } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
+    } should have message startOfError + "Failed to validate '" + name + "' for 'dbms.default_database': The provided database name must have a length between 3 and 63 characters."
   }
 
   // Tests for showing databases
