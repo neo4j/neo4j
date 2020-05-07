@@ -72,7 +72,8 @@ import static org.neo4j.util.concurrent.Runnables.runAll;
  * {@link IndexPopulator} for native indexes that stores scan updates in parallel append-only files. When all scan updates have been collected
  * each file is sorted and then all of them merged together into the resulting index.
  *
- * Note on buffers: basically each thread adding scan updates will make use of a {@link ByteBufferFactory#acquireThreadLocalBuffer() thread-local buffer}.
+ * Note on buffers: basically each thread adding scan updates will make use of a {@link ByteBufferFactory#acquireThreadLocalBuffer(MemoryTracker)}
+ * thread-local buffer}.
  * This together with {@link ByteBufferFactory#globalAllocator() a global buffer for external updates} and carefully reused
  * {@link ByteBufferFactory#newLocalAllocator() local buffers} for merging allows memory consumption to stay virtually the same regardless
  * how many indexes are being built concurrently by the same job and regardless of index sizes. Formula for peak number of buffers in use is roughly
@@ -548,7 +549,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         List<Closeable> toClose = allScanUpdates.stream().map( local -> local.blockStorage ).collect( Collectors.toCollection( ArrayList::new ) );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
-        bufferFactory.releaseAllBuffers();
     }
 
     @Override

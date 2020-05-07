@@ -20,8 +20,6 @@
 package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 import org.neo4j.memory.MemoryTracker;
@@ -46,7 +44,6 @@ public class ByteBufferFactory implements AutoCloseable
 {
     private final Allocator globalAllocator;
     private final int threadLocalBufferSize;
-    private final List<ScopedBuffer> buffers = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalByteBuffer> threadLocalBuffers = ThreadLocal.withInitial( ThreadLocalByteBuffer::new );
     private final Supplier<Allocator> allocatorFactory;
 
@@ -90,11 +87,6 @@ public class ByteBufferFactory implements AutoCloseable
         ThreadLocalByteBuffer managedByteBuffer = threadLocalBuffers.get();
         Preconditions.checkState( managedByteBuffer != null, "Buffer doesn't exist" );
         managedByteBuffer.release();
-    }
-
-    public void releaseAllBuffers()
-    {
-        buffers.forEach( ScopedBuffer::close );
     }
 
     public int bufferSize()
@@ -151,7 +143,6 @@ public class ByteBufferFactory implements AutoCloseable
             if ( scopedBuffer == null )
             {
                 scopedBuffer = globalAllocator.allocate( threadLocalBufferSize, memoryTracker );
-                buffers.add( scopedBuffer );
             }
             else
             {
