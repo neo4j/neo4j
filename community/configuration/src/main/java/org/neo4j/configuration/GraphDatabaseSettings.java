@@ -168,6 +168,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "complete the upgrade." )
     public static final Setting<Boolean> allow_single_automatic_upgrade = newBuilder( "dbms.allow_single_automatic_upgrade", BOOL, true ).dynamic().build();
 
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, " +
+                  "'CORE' for operating as a core member of a Causal Cluster, " +
+                  "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster. Only SINGLE mode is allowed in Community" )
+    public static final Setting<Mode> mode = newBuilder( "dbms.mode", ofEnum( Mode.class ), Mode.SINGLE ).build();
+
     // Cypher settings
 
     public enum CypherParserVersion
@@ -1237,4 +1242,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             BoltConnector.enabled, true,
             auth_enabled, true
     );
+
+    public enum Mode
+    {
+        SINGLE,
+        CORE,
+        READ_REPLICA
+    }
 }
