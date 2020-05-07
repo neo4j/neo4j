@@ -19,18 +19,25 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
+import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.PathValue;
 
@@ -43,22 +50,34 @@ import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.TypeError;
 
+@ExtendWith( {EphemeralFileSystemExtension.class, Neo4jWithSocketExtension.class} )
 public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
 {
     public static final byte DEFAULT_SIGNATURE = RunMessage.SIGNATURE;
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
+    @Inject
+    private Neo4jWithSocket server;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
         address = server.lookupDefaultConnector();
     }
 
-    @Test
-    public void shouldFailWhenNullKeyIsSent() throws Exception
+    @AfterEach
+    public void cleanup()
     {
+        server.shutdownDatabase();
+    }
+
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailWhenNullKeyIsSent( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
+    {
+        initParameters( connectionClass, neo4jPack, name );
+
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
@@ -71,9 +90,12 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
-    @Test
-    public void shouldFailWhenDuplicateKey() throws Exception
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailWhenDuplicateKey( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
@@ -85,21 +107,32 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
-    @Test
-    public void shouldFailWhenNodeIsSentWithRun() throws Exception
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailWhenNodeIsSentWithRun(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         testFailureWithV1Value( ALICE, "Node" );
     }
 
-    @Test
-    public void shouldFailWhenRelationshipIsSentWithRun() throws Exception
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailWhenRelationshipIsSentWithRun(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         testFailureWithV1Value( ALICE_KNOWS_BOB, "Relationship" );
     }
 
-    @Test
-    public void shouldFailWhenPathIsSentWithRun() throws Exception
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailWhenPathIsSentWithRun( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         for ( PathValue path : ALL_PATHS )
         {
             try
@@ -113,9 +146,13 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         }
     }
 
-    @Test
-    public void shouldTerminateConnectionWhenUnknownMessageIsSent() throws Exception
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldTerminateConnectionWhenUnknownMessageIsSent(
+            Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
+        initParameters( connectionClass, neo4jPack, name );
+
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );

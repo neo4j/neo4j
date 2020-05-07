@@ -19,16 +19,15 @@
  */
 package org.neo4j.bolt;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV1;
@@ -42,11 +41,8 @@ import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
-@RunWith( Parameterized.class )
 public abstract class AbstractBoltTransportsTest
 {
     private static final List<Class<? extends TransportConnection>> CONNECTION_CLASSES = Arrays.asList(
@@ -59,27 +55,27 @@ public abstract class AbstractBoltTransportsTest
             new Neo4jPackV1(),
             new Neo4jPackV2() );
 
-    @Parameter( 0 )
     public Class<? extends TransportConnection> connectionClass;
 
-    @Parameter( 1 )
     public Neo4jPack neo4jPack;
 
-    @Parameter( 2 )
     public String name;
 
     protected HostnamePort address;
     protected TransportConnection connection;
     protected TransportTestUtil util;
 
-    @Before
-    public void initializeConnectionAndUtil() throws Exception
+    protected void initParameters( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
-        connection = connectionClass.newInstance();
+        this.connectionClass = connectionClass;
+        this.neo4jPack = neo4jPack;
+        this.name = name;
+
+        connection = newConnection();
         util = new TransportTestUtil( neo4jPack );
     }
 
-    @After
+    @AfterEach
     public void disconnectFromDatabase() throws Exception
     {
         if ( connection != null )
@@ -88,18 +84,18 @@ public abstract class AbstractBoltTransportsTest
         }
     }
 
-    @Parameters( name = "{2}" )
-    public static List<Object[]> parameters()
+    protected static Stream<Arguments> argumentsProvider()
     {
-        List<Object[]> result = new ArrayList<>();
+        List<Arguments> result = new ArrayList<>();
+
         for ( Class<? extends TransportConnection> connectionClass : CONNECTION_CLASSES )
         {
             for ( Neo4jPack neo4jPack : NEO4J_PACK_VERSIONS )
             {
-                result.add( new Object[]{connectionClass, neo4jPack, newName( connectionClass, neo4jPack )} );
+                result.add( Arguments.of( connectionClass, neo4jPack, newName( connectionClass, neo4jPack ) ) );
             }
         }
-        return result;
+        return result.stream();
     }
 
     protected TransportConnection newConnection() throws Exception

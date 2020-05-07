@@ -20,9 +20,13 @@
 package org.neo4j.bolt.transport;
 
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,12 +42,15 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
+@ExtendWith( {EphemeralFileSystemExtension.class, Neo4jWithSocketExtension.class} )
 public class CertificatesIT
 {
     private static File keyFile;
@@ -51,17 +58,31 @@ public class CertificatesIT
     private static SelfSignedCertificateFactory certFactory;
     private static TransportTestUtil util;
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
+    @Inject
+    private Neo4jWithSocket server;
+
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
-        SslPolicyConfig policy = SslPolicyConfig.forScope( BOLT );
-        settings.put( policy.enabled, true );
-        settings.put( policy.public_certificate, certFile.toPath().toAbsolutePath() );
-        settings.put( policy.private_key, keyFile.toPath().toAbsolutePath() );
-        settings.put( BoltConnector.enabled, true );
-        settings.put( BoltConnector.encryption_level, OPTIONAL );
-        settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-    } );
+        server.setConfigure( settings ->
+        {
+            SslPolicyConfig policy = SslPolicyConfig.forScope( BOLT );
+            settings.put( policy.enabled, true );
+            settings.put( policy.public_certificate, certFile.toPath().toAbsolutePath() );
+            settings.put( policy.private_key, keyFile.toPath().toAbsolutePath() );
+            settings.put( BoltConnector.enabled, true );
+            settings.put( BoltConnector.encryption_level, OPTIONAL );
+            settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+        } );
+
+        server.init( testInfo );
+    }
+
+    @AfterEach
+    public void cleanup()
+    {
+        server.shutdownDatabase();
+    }
 
     @Test
     public void shouldUseConfiguredCertificate() throws Exception
@@ -92,8 +113,8 @@ public class CertificatesIT
         return (X509Certificate) certificates[0];
     }
 
-    @BeforeClass
-    public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
+    @BeforeAll
+    public static void setup() throws IOException, GeneralSecurityException, OperatorCreationException
     {
         certFactory = new SelfSignedCertificateFactory();
         keyFile = File.createTempFile( "key", "pem" );

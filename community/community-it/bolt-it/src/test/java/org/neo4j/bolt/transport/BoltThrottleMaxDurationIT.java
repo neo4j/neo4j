@@ -19,22 +19,23 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.net.SocketException;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.runtime.DefaultBoltConnection;
 import org.neo4j.bolt.testing.TransportTestUtil;
@@ -48,43 +49,63 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-@RunWith( Parameterized.class )
+@ExtendWith( {EphemeralFileSystemExtension.class, Neo4jWithSocketExtension.class, OtherThreadExtension.class} )
 public class BoltThrottleMaxDurationIT
 {
-    private AssertableLogProvider logProvider;
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    @Inject
+    private Neo4jWithSocket server;
+    @Inject
+    private OtherThreadRule otherThread;
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
-    @Rule
-    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 5, TimeUnit.MINUTES );
-    @Parameterized.Parameter
-    public Factory<TransportConnection> cf;
+    private AssertableLogProvider logProvider;
 
     private HostnamePort address;
     private TransportConnection client;
     private TransportTestUtil util;
 
-    @Parameterized.Parameters
-    public static Collection<Factory<TransportConnection>> transports()
+    public static Stream<Arguments> factoryProvider()
     {
         // we're not running with WebSocketChannels because of their duplex communication model
-        return asList( SocketConnection::new, SecureSocketConnection::new );
+        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( SecureSocketConnection.class ) );
+    }
+
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
+    {
+        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
+
+        otherThread.set( 5, TimeUnit.MINUTES );
+
+        address = server.lookupDefaultConnector();
+        util = new TransportTestUtil();
+    }
+
+    @AfterEach
+    public void cleanup() throws IOException
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
+        server.shutdownDatabase();
     }
 
     protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
@@ -107,26 +128,12 @@ public class BoltThrottleMaxDurationIT
         };
     }
 
-    @Before
-    public void setup()
+    @ParameterizedTest( name = "{displayName} {index}" )
+    @MethodSource( "factoryProvider" )
+    public void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached( Class<? extends TransportConnection> c ) throws Exception
     {
-        client = cf.newInstance();
-        address = server.lookupDefaultConnector();
-        util = new TransportTestUtil();
-    }
+        this.client =  c.getDeclaredConstructor().newInstance();
 
-    @After
-    public void after() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
-    }
-
-    @Test
-    public void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached() throws Exception
-    {
         int numberOfRunDiscardPairs = 10_000;
         String largeString = " ".repeat( 8 * 1024 );
 
@@ -147,16 +154,9 @@ public class BoltThrottleMaxDurationIT
             return null;
         } );
 
-        try
-        {
-            otherThread.get().awaitFuture( sender );
+        var e = assertThrows( ExecutionException.class, () -> otherThread.get().awaitFuture( sender ) );
 
-            fail( "should throw ExecutionException instead" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( getRootCause( e ) ).isInstanceOf( SocketException.class );
-        }
+        assertThat( getRootCause( e ) ).isInstanceOf( SocketException.class );
 
         assertThat( logProvider ).forClass( DefaultBoltConnection.class ).forLevel( ERROR )
                 .assertExceptionForLogMessage( "Unexpected error detected in bolt session" )

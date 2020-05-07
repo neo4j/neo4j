@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
+import org.junit.jupiter.api.TestInfo;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -55,9 +56,9 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 public class Neo4jWithSocket extends ExternalResource
 {
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
-    private final Consumer<Map<Setting<?>,Object>> configure;
+    private Consumer<Map<Setting<?>,Object>> configure;
     private final TestDirectory testDirectory;
-    private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
+    private TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
@@ -72,13 +73,7 @@ public class Neo4jWithSocket extends ExternalResource
 
     public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,Object>> configure )
     {
-        this( testClass, new TestDatabaseManagementServiceBuilder(), configure );
-    }
-
-    public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Consumer<Map<Setting<?>,Object>> configure )
-    {
-        this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
+        this( testClass, new TestDatabaseManagementServiceBuilder(), EphemeralFileSystemAbstraction::new, configure );
     }
 
     public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
@@ -104,6 +99,25 @@ public class Neo4jWithSocket extends ExternalResource
     public DatabaseManagementService getManagementService()
     {
         return managementService;
+    }
+
+    public void setConfigure( Consumer<Map<Setting<?>, Object>> configure )
+    {
+        this.configure = configure;
+    }
+
+    public void setGraphDatabaseFactory( TestDatabaseManagementServiceBuilder graphDatabaseFactory )
+    {
+        this.graphDatabaseFactory = graphDatabaseFactory;
+    }
+
+    public void init( TestInfo testInfo ) throws IOException
+    {
+        var testName = testInfo.getTestMethod().get().getName();
+        testDirectory.prepareDirectory( testInfo.getTestClass().get(), testName );
+        workingDirectory = testDirectory.directory( testName );
+
+        ensureDatabase( settings -> {} );
     }
 
     @Override

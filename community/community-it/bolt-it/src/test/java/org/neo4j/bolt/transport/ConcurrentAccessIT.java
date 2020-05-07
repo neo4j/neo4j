@@ -19,9 +19,14 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -31,7 +36,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -42,14 +50,31 @@ import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
  * load that they roll back, asserting they don't see each others changes.
  */
+@ExtendWith( {EphemeralFileSystemExtension.class, Neo4jWithSocketExtension.class} )
 public class ConcurrentAccessIT extends AbstractBoltTransportsTest
 {
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
+    @Inject
+    private Neo4jWithSocket server;
 
-    @Test
-    public void shouldRunSimpleStatement() throws Throwable
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
+    }
+
+    @AfterEach
+    public void cleanup()
+    {
+        server.shutdownDatabase();
+    }
+
+    @ParameterizedTest( name = "{displayName} {2}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldRunSimpleStatement( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
+    {
+        initParameters( connectionClass, neo4jPack, name );
+
         // Given
         int numWorkers = 5;
         int numRequests = 1_000;

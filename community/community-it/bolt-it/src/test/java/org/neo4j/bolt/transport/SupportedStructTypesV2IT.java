@@ -20,16 +20,18 @@
 package org.neo4j.bolt.transport;
 
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.time.ZoneOffset;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.testing.TransportTestUtil;
@@ -39,11 +41,11 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
@@ -61,45 +63,53 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
-@RunWith( Parameterized.class )
+@ExtendWith( {EphemeralFileSystemExtension.class, Neo4jWithSocketExtension.class} )
 public class SupportedStructTypesV2IT
 {
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
-
-    @Parameter
-    public Class<? extends TransportConnection> connectionClass;
+    @Inject
+    private Neo4jWithSocket server;
 
     private HostnamePort address;
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    @Parameters( name = "{0}" )
-    public static List<Class<? extends TransportConnection>> transports()
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
-        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
-    }
+        server.setConfigure( withOptionalBoltEncryption() );
+        server.init( testInfo );
 
-    @Before
-    public void setUp() throws Exception
-    {
         address = server.lookupDefaultConnector();
-        connection = connectionClass.getDeclaredConstructor().newInstance();
         util = new TransportTestUtil( new Neo4jPackV2() );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown() throws IOException
     {
         if ( connection != null )
         {
             connection.disconnect();
         }
+        server.shutdownDatabase();
     }
 
-    @Test
-    public void shouldNegotiateProtocolV4() throws Exception
+    public static Stream<Arguments> classProvider()
     {
+        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
+                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
+    }
+
+    private void initConnection( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        connection = connectionClass.getDeclaredConstructor().newInstance();
+    }
+
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldNegotiateProtocolV4( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        initConnection( connectionClass );
+
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
@@ -107,9 +117,12 @@ public class SupportedStructTypesV2IT
         assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
     }
 
-    @Test
-    public void shouldNegotiateProtocolV4WhenClientSupportsBothV4AndV3() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldNegotiateProtocolV4WhenClientSupportsBothV4AndV3( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         connection.connect( address )
                 .send( util.acceptedVersions( 4, 3, 0, 0 ) )
                 .send( util.defaultAuth() );
@@ -117,149 +130,221 @@ public class SupportedStructTypesV2IT
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
     }
 
-    @Test
-    public void shouldSendPoint2D() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendPoint2D( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( pointValue( WGS84, 39.111748, -76.775635 ) );
     }
 
-    @Test
-    public void shouldReceivePoint2D() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceivePoint2D( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN point({x: 40.7624, y: 73.9738})", pointValue( Cartesian, 40.7624, 73.9738 ) );
     }
 
-    @Test
-    public void shouldSendAndReceivePoint2D() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceivePoint2D( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( pointValue( WGS84, 38.8719, 77.0563 ) );
     }
 
-    @Test
-    public void shouldSendDuration() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendDuration( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( duration( 5, 3, 34, 0 ) );
     }
 
-    @Test
-    public void shouldReceiveDuration() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveDuration( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN duration({months: 3, days: 100, seconds: 999, nanoseconds: 42})", duration( 3, 100, 999, 42 ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveDuration() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveDuration( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( duration( 17, 9, 2, 1_000_000 ) );
     }
 
-    @Test
-    public void shouldSendDate() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendDate( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( date( 1991, 8, 24 ) );
     }
 
-    @Test
-    public void shouldReceiveDate() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveDate( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN date('2015-02-18')", date( 2015, 2, 18 ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveDate() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveDate( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( date( 2005, 5, 22 ) );
     }
 
-    @Test
-    public void shouldSendLocalTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendLocalTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( localTime( 2, 35, 10, 1 ) );
     }
 
-    @Test
-    public void shouldReceiveLocalTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveLocalTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN localtime('11:04:35')", localTime( 11, 04, 35, 0 ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveLocalTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveLocalTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( localTime( 22, 10, 10, 99 ) );
     }
 
-    @Test
-    public void shouldSendTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( time( 424242, ZoneOffset.of( "+08:30" ) ) );
     }
 
-    @Test
-    public void shouldReceiveTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN time('14:30+0100')", time( 14, 30, 0, 0, ZoneOffset.ofHours( 1 ) ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( time( 19, 22, 44, 100, ZoneOffset.ofHours( -5 ) ) );
     }
 
-    @Test
-    public void shouldSendLocalDateTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendLocalDateTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( localDateTime( 2002, 5, 22, 15, 15, 25, 0 ) );
     }
 
-    @Test
-    public void shouldReceiveLocalDateTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveLocalDateTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN localdatetime('20150202T19:32:24')", localDateTime( 2015, 2, 2, 19, 32, 24, 0 ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveLocalDateTime() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveLocalDateTime( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( localDateTime( 1995, 12, 12, 10, 30, 0, 0 ) );
     }
 
-    @Test
-    public void shouldSendDateTimeWithTimeZoneName() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendDateTimeWithTimeZoneName( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( datetime( 1956, 9, 14, 11, 20, 25, 0, "Europe/Stockholm" ) );
     }
 
-    @Test
-    public void shouldReceiveDateTimeWithTimeZoneName() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveDateTimeWithTimeZoneName( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN datetime({year:1984, month:10, day:11, hour:21, minute:30, timezone:'Europe/London'})",
                 datetime( 1984, 10, 11, 21, 30, 0, 0, "Europe/London" ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveDateTimeWithTimeZoneName() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveDateTimeWithTimeZoneName( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( datetime( 1984, 10, 11, 21, 30, 0, 0, "Europe/London" ) );
     }
 
-    @Test
-    public void shouldSendDateTimeWithTimeZoneOffset() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendDateTimeWithTimeZoneOffset( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingOfBoltV2Value( datetime( 424242, 0, ZoneOffset.ofHoursMinutes( -7, -15 ) ) );
     }
 
-    @Test
-    public void shouldReceiveDateTimeWithTimeZoneOffset() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldReceiveDateTimeWithTimeZoneOffset( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testReceivingOfBoltV2Value( "RETURN datetime({year:2022, month:3, day:2, hour:19, minute:10, timezone:'+02:30'})",
                 datetime( 2022, 3, 2, 19, 10, 0, 0, ZoneOffset.ofHoursMinutes( 2, 30 ) ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveDateTimeWithTimeZoneOffset() throws Exception
+    @ParameterizedTest( name = "{displayName} {0}" )
+    @MethodSource( "classProvider" )
+    public void shouldSendAndReceiveDateTimeWithTimeZoneOffset( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        initConnection( connectionClass );
+
         testSendingAndReceivingOfBoltV2Value( datetime( 1899, 1, 1, 12, 12, 32, 0, ZoneOffset.ofHoursMinutes( -4, -15 ) ) );
     }
 

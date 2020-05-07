@@ -92,7 +92,7 @@ public class ShutdownSequenceIT
     public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
 
     @Rule
-    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 1, MINUTES );
+    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Before
     public void setup() throws Exception
