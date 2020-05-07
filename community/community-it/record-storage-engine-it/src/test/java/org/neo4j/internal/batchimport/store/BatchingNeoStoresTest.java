@@ -21,17 +21,21 @@ package org.neo4j.internal.batchimport.store;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -76,6 +80,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -84,6 +89,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Values;
 
@@ -102,6 +108,7 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -265,6 +272,53 @@ class BatchingNeoStoresTest
 
             // then
             assertFalse( doubleUnits );
+        }
+    }
+
+    @Test
+    void shouldRebuildCountsStoreEvenIfExistsInEmptyDb() throws IOException
+    {
+        // given
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, GBPTreeCountsStore.NO_MONITOR ) )
+        {
+            countsStore.start();
+            countsStore.checkpoint( IOLimiter.UNLIMITED );
+        }
+
+        // when
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT,
+                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+        {
+            stores.createNew();
+            stores.buildCountsStore( new CountsBuilder()
+            {
+                @Override
+                public void initialize( CountsAccessor.Updater updater )
+                {
+                    updater.incrementNodeCount( 1, 10 );
+                    updater.incrementNodeCount( 2, 20 );
+                    updater.incrementRelationshipCount( ANY_LABEL, 1, 2, 30 );
+                    updater.incrementRelationshipCount( 1, 2, ANY_LABEL, 50 );
+                }
+
+                @Override
+                public long lastCommittedTxId()
+                {
+                    return BASE_TX_ID + 1;
+                }
+            } );
+        }
+
+        // then
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, GBPTreeCountsStore.NO_MONITOR ) )
+        {
+            assertEquals( 10, countsStore.nodeCount( 1 ) );
+            assertEquals( 20, countsStore.nodeCount( 2 ) );
+            assertEquals( 30, countsStore.relationshipCount( ANY_LABEL, 1, 2 ) );
+            assertEquals( 50, countsStore.relationshipCount( 1, 2, ANY_LABEL ) );
         }
     }
 
