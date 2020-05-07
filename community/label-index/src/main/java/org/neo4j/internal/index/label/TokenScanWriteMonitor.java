@@ -51,6 +51,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -430,8 +431,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     private static long dumpFile( FileSystemAbstraction fs, File file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
-        try ( NativeScopedBuffer bufferScope = new NativeScopedBuffer( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, INSTANCE );
-              ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.getBuffer() ) )
+        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
         {
             long range = -1;
             int tokenId = -1;

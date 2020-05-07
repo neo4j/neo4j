@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.memory.LocalMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
@@ -31,7 +32,7 @@ import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 class ByteBuffersTest
 {
     @Test
-    void trackMemoryAllocationsForByteBuffers()
+    void trackMemoryAllocationsForNativeByteBuffers()
     {
         var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0 );
         var byteBuffer = allocateDirect( 30, memoryTracker );
@@ -39,6 +40,25 @@ class ByteBuffersTest
         {
             assertEquals( 0, memoryTracker.estimatedHeapMemory() );
             assertEquals( 30, memoryTracker.usedNativeMemory() );
+        }
+        finally
+        {
+            releaseBuffer( byteBuffer, memoryTracker );
+        }
+
+        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
+    }
+
+    @Test
+    void trackMemoryAllocationsForHeapByteBuffers()
+    {
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0 );
+        var byteBuffer = allocate( 30, memoryTracker );
+        try
+        {
+            assertEquals( 30, memoryTracker.estimatedHeapMemory() );
+            assertEquals( 0, memoryTracker.usedNativeMemory() );
         }
         finally
         {

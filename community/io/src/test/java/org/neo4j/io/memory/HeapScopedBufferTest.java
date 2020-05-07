@@ -26,16 +26,16 @@ import org.neo4j.memory.LocalMemoryTracker;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
-class NativeScopedBufferTest
+class HeapScopedBufferTest
 {
     @Test
     void trackBufferScopeMemoryAllocation()
     {
         var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
-        try ( NativeScopedBuffer bufferScope = new NativeScopedBuffer( 100, memoryTracker ) )
+        try ( var bufferScope = new HeapScopedBuffer( 100, memoryTracker ) )
         {
-            assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-            assertEquals( 100, memoryTracker.usedNativeMemory() );
+            assertEquals( 100, memoryTracker.estimatedHeapMemory() );
+            assertEquals( 0, memoryTracker.usedNativeMemory() );
         }
 
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
@@ -46,9 +46,9 @@ class NativeScopedBufferTest
     void closeBufferMultipleTimesIsSafe()
     {
         var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
-        NativeScopedBuffer bufferScope = new NativeScopedBuffer( 100, memoryTracker );
-        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
-        assertEquals( 100, memoryTracker.usedNativeMemory() );
+        var bufferScope = new HeapScopedBuffer( 100, memoryTracker );
+        assertEquals( 100, memoryTracker.estimatedHeapMemory() );
+        assertEquals( 0, memoryTracker.usedNativeMemory() );
 
         bufferScope.close();
 

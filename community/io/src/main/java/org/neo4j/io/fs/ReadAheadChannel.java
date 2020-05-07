@@ -24,8 +24,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.zip.Checksum;
 
+import org.neo4j.io.memory.ScopedBuffer;
+
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.io.fs.PhysicalFlushableChecksumChannel.DISABLE_WAL_CHECKSUM;
@@ -38,6 +41,7 @@ import static org.neo4j.io.fs.PhysicalFlushableChecksumChannel.DISABLE_WAL_CHECK
 public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksumChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact( kibiBytes( 4 ) );
+    private final ScopedBuffer scopedBuffer;
 
     protected T channel;
     private final ByteBuffer aheadBuffer;
@@ -45,13 +49,16 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
     private final Checksum checksum;
     private final ByteBuffer checksumView;
 
-    public ReadAheadChannel( T channel, ByteBuffer byteBuffer )
+    public ReadAheadChannel( T channel, ScopedBuffer scopedBuffer )
     {
-        this.aheadBuffer = byteBuffer;
+        requireNonNull( channel );
+        requireNonNull( scopedBuffer );
+        this.scopedBuffer = scopedBuffer;
+        this.aheadBuffer = scopedBuffer.getBuffer();
         this.aheadBuffer.position( aheadBuffer.capacity() );
         this.channel = channel;
-        this.readAheadSize = byteBuffer.capacity();
-        this.checksumView = byteBuffer.duplicate();
+        this.readAheadSize = aheadBuffer.capacity();
+        this.checksumView = aheadBuffer.duplicate();
         this.checksum = CHECKSUM_FACTORY.get();
     }
 
@@ -170,6 +177,10 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
         {
             channel.close();
             channel = null;
+        }
+        if ( scopedBuffer != null )
+        {
+            scopedBuffer.close();
         }
     }
 

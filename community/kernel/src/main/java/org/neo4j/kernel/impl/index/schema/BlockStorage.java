@@ -150,9 +150,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
      * When source only contain a single block we are finished and the extra file is deleted and {@link #blockFile} contains the result with a single sorted
      * block.
      *
-     * See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation, ByteBuffer[], ByteBuffer)} for further details.
+     * See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation, ScopedBuffer[], ByteBuffer)} for further details.
      *
-     * @param mergeFactor See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation, ByteBuffer[], ByteBuffer)}.
+     * @param mergeFactor See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation, ScopedBuffer[], ByteBuffer)}.
      * @param cancellation Injected so that this merge can be cancelled, if an external request to do that comes in.
      * A cancelled merge will leave the same end state file/channel-wise, just not quite completed, which is fine because the merge
      * was cancelled meaning that the result will not be used for anything other than deletion.
@@ -181,7 +181,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                     long blocksInMergedFile = 0;
                     while ( !cancellation.cancelled() && blocksMergedSoFar < numberOfBlocksInCurrentFile )
                     {
-                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation, readBuffers.buffers(),
+                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation, readBuffers.getScopedBuffers(),
                                 writeBuffer.getBuffer() );
                         blocksInMergedFile++;
                     }
@@ -251,7 +251,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
      * @throws IOException If something goes wrong when reading from file.
      */
     private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel, Cancellation cancellation,
-            ByteBuffer[] readBuffers, ByteBuffer writeBuffer ) throws IOException
+            ScopedBuffer[] readBuffers, ByteBuffer writeBuffer ) throws IOException
     {
         try ( MergingBlockEntryReader<KEY,VALUE> merger = new MergingBlockEntryReader<>( layout ) )
         {
@@ -260,7 +260,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
             int blocksMerged = 0;
             for ( int i = 0; i < mergeFactor; i++ )
             {
-                readBuffers[i].clear();
+                readBuffers[i].getBuffer().clear();
                 BlockEntryReader<KEY,VALUE> source = reader.nextBlock( readBuffers[i] );
                 if ( source != null )
                 {
@@ -498,14 +498,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
             }
         }
 
-        public ByteBuffer[] buffers()
+        public ScopedBuffer[] getScopedBuffers()
         {
-            var buffers = new ByteBuffer[scopedBuffers.length];
-            for ( int i = 0; i < buffers.length; i++ )
-            {
-                buffers[i] = scopedBuffers[i].getBuffer();
-            }
-            return buffers;
+            return scopedBuffers;
         }
 
         @Override

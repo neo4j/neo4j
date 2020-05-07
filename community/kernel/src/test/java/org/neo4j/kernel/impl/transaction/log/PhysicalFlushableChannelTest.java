@@ -36,10 +36,12 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,6 +103,29 @@ class PhysicalFlushableChannelTest
         }
 
         assertArrayEquals( bytes, writtenBytes );
+    }
+
+    @Test
+    void releaseBufferMemoryOnClose() throws IOException
+    {
+        var memoryTracker = new LocalMemoryTracker();
+        final File firstFile = new File( directory.homeDir(), "file2" );
+        StoreChannel storeChannel = fileSystem.write( firstFile );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor );
+
+        assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
+        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+
+        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, memoryTracker ) )
+        {
+            channel.put( (byte) 1 );
+            assertThat( memoryTracker.usedNativeMemory() ).isZero();
+            assertThat( memoryTracker.estimatedHeapMemory() ).isGreaterThan( 0 );
+        }
+
+        assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
+        assertThat( memoryTracker.usedNativeMemory() ).isZero();
     }
 
     @Test

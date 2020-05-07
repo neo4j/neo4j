@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
@@ -425,7 +425,7 @@ class BlockStorageTest
         {
             for ( List<BlockEntry<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
             {
-                try ( BlockEntryReader<MutableLong,MutableLong> block = reader.nextBlock( ByteBuffers.allocate( 1024, INSTANCE ) ) )
+                try ( BlockEntryReader<MutableLong,MutableLong> block = reader.nextBlock( new HeapScopedBuffer( 1024, INSTANCE ) ) )
                 {
                     assertNotNull( block );
                     assertEquals( expectedBlock.size(), block.entryCount() );

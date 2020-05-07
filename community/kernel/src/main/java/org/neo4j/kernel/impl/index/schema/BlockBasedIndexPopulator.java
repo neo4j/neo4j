@@ -410,20 +410,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
               var singleBlockScopedBuffer = allocator.allocate( (int) kibiBytes( 8 ), memoryTracker );
               var readBuffers = new CompositeBuffer() )
         {
-            var singleBlockBuffer = singleBlockScopedBuffer.getBuffer();
             for ( ThreadLocalBlockStorage part : allScanUpdates )
             {
                 var readScopedBuffer = allocator.allocate( bufferSize, memoryTracker );
                 readBuffers.addBuffer( readScopedBuffer );
                 try ( BlockReader<KEY,VALUE> reader = part.blockStorage.reader() )
                 {
-                    BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock( readScopedBuffer.getBuffer() );
+                    BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock( readScopedBuffer );
                     if ( singleMergedBlock != null )
                     {
                         allEntries.addSource( singleMergedBlock );
                         // Pass in some sort of ByteBuffer here. The point is that there should be no more data to read,
                         // if there is then it's due to a bug in the code and must be fixed.
-                        if ( reader.nextBlock( singleBlockBuffer ) != null )
+                        if ( reader.nextBlock( singleBlockScopedBuffer ) != null )
                         {
                             throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
                         }

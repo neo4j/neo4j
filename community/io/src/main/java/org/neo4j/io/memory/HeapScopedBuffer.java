@@ -36,6 +36,7 @@ public final class HeapScopedBuffer implements ScopedBuffer
     public static final HeapScopedBuffer EMPTY_BUFFER = new HeapScopedBuffer( allocate( 0, INSTANCE ).asReadOnlyBuffer(), INSTANCE );
     private final ByteBuffer buffer;
     private final MemoryTracker memoryTracker;
+    private boolean closed;
 
     public HeapScopedBuffer( int capacity, MemoryTracker memoryTracker )
     {
@@ -62,6 +63,10 @@ public final class HeapScopedBuffer implements ScopedBuffer
     @Override
     public void close()
     {
-        releaseBuffer( buffer, memoryTracker );
+        if ( !closed )
+        {
+            releaseBuffer( buffer, memoryTracker );
+            closed = true;
+        }
     }
 }

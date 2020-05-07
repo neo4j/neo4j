@@ -96,8 +96,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         }
 
         // Reuse the existing buffer because we're not writing while reading anyway
-        buffer.clear();
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), buffer );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }

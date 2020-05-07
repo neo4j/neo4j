@@ -166,6 +166,25 @@ class ByteBufferFactoryTest
     }
 
     @Test
+    void releaseAllBuffersReleaseMemoryFromThreadLocalBuffers()
+    {
+        var memoryTracker = new LocalMemoryTracker();
+        var factory = heapBufferFactory( 10 );
+        factory.acquireThreadLocalBuffer( memoryTracker );
+        factory.releaseThreadLocalBuffer();
+        factory.acquireThreadLocalBuffer( memoryTracker );
+        factory.releaseThreadLocalBuffer();
+        factory.acquireThreadLocalBuffer( memoryTracker );
+        factory.releaseThreadLocalBuffer();
+
+        assertEquals( 10, memoryTracker.estimatedHeapMemory() );
+
+        factory.releaseAllBuffers();
+
+        assertEquals( 0, memoryTracker.estimatedHeapMemory() );
+    }
+
+    @Test
     void byteBufferMustThrowOutOfBoundsAfterRelease()
     {
         var tracker = new LocalMemoryTracker();

@@ -23,11 +23,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 
-public class DelegatingStoreChannel implements StoreChannel
+public class DelegatingStoreChannel<T extends StoreChannel> implements StoreChannel
 {
-    protected final StoreChannel delegate;
+    protected final T delegate;
 
-    public DelegatingStoreChannel( StoreChannel delegate )
+    public DelegatingStoreChannel( T delegate )
     {
         this.delegate = delegate;
     }

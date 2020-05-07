@@ -32,6 +32,7 @@ public final class NativeScopedBuffer implements ScopedBuffer
 {
     private final ByteBuffer buffer;
     private final MemoryTracker memoryTracker;
+    private boolean closed;
 
     public NativeScopedBuffer( long capacity, MemoryTracker memoryTracker )
     {
@@ -53,6 +54,10 @@ public final class NativeScopedBuffer implements ScopedBuffer
     @Override
     public void close()
     {
-        ByteBuffers.releaseBuffer( buffer, memoryTracker );
+        if ( !closed )
+        {
+            ByteBuffers.releaseBuffer( buffer, memoryTracker );
+            closed = true;
+        }
     }
 }

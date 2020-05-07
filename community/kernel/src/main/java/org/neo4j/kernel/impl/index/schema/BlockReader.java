@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -50,7 +50,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         this.channel = fs.read( file );
     }
 
-    BlockEntryReader<KEY,VALUE> nextBlock( ByteBuffer blockBuffer ) throws IOException
+    BlockEntryReader<KEY,VALUE> nextBlock( ScopedBuffer blockBuffer ) throws IOException
     {
         long position = channel.position();
         if ( position >= channel.size() )

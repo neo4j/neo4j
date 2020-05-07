@@ -31,6 +31,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -78,5 +79,35 @@ class TransactionLogFileIT
         assertThat( cacheTracer.pins() ).isEqualTo( 5 );
         assertThat( cacheTracer.unpins() ).isEqualTo( 5 );
         assertThat( cacheTracer.hits() ).isEqualTo( 5 );
+    }
+
+    @Test
+    void trackTransactionLogFileMemory() throws IOException
+    {
+        var memoryTracker = new LocalMemoryTracker();
+        var life = new LifeSupport();
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withStoreId( StoreId.UNKNOWN )
+                .withMemoryTracker( memoryTracker )
+                .build();
+
+        life.add( logFiles );
+        try
+        {
+            life.start();
+
+            assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
+            assertThat( memoryTracker.usedNativeMemory() ).isGreaterThan( 0 );
+        }
+        finally
+        {
+            life.stop();
+            life.shutdown();
+        }
+
+        assertThat( memoryTracker.usedNativeMemory() ).isZero();
+        assertThat( memoryTracker.estimatedHeapMemory() ).isZero();
     }
 }

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -103,16 +104,18 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogPosition scrollOverCheckpointRecords() throws IOException
     {
         // scroll all over possible checkpoints
-        ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel, memoryTracker );
-        LogEntryReader logEntryReader = context.getLogEntryReader();
-        LogEntry entry;
-        do
+        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UncloseableChannel( channel ), memoryTracker ) )
         {
-            // seek to the end the records.
-            entry = logEntryReader.readLogEntry( readAheadLogChannel );
+            LogEntryReader logEntryReader = context.getLogEntryReader();
+            LogEntry entry;
+            do
+            {
+                // seek to the end the records.
+                entry = logEntryReader.readLogEntry( readAheadLogChannel );
+            }
+            while ( entry != null );
+            return logEntryReader.lastPosition();
         }
-        while ( entry != null );
-        return logEntryReader.lastPosition();
     }
 
     private void scrollToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
@@ -278,5 +281,31 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private static int calculateLogBufferSize()
     {
         return (int) ByteUnit.kibiBytes( min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512 );
+    }
+
+    private static class UncloseableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel> implements LogVersionedStoreChannel
+    {
+        UncloseableChannel( LogVersionedStoreChannel channel )
+        {
+            super( channel );
+        }
+
+        @Override
+        public long getVersion()
+        {
+            return delegate.getVersion();
+        }
+
+        @Override
+        public byte getLogFormatVersion()
+        {
+            return delegate.getLogFormatVersion();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            // do not close since channel is shared
+        }
     }
 }

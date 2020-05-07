@@ -50,6 +50,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -73,9 +74,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private final File file;
     private final SystemNanoClock clock;
     private FlushableChannel channel;
-    private AtomicLong position = new AtomicLong();
-    private long rotationThreshold;
-    private long pruneThreshold;
+    private final AtomicLong position = new AtomicLong();
+    private final long rotationThreshold;
+    private final long pruneThreshold;
 
     /**
      * Looks at feature toggle and instantiates a LoggingMonitor if enabled, otherwise a no-op monitor.
@@ -389,8 +390,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private static void dumpFile( FileSystemAbstraction fs, File file, Dumper dumper ) throws IOException
     {
         dumper.file( file );
-        try ( NativeScopedBuffer bufferScope = new NativeScopedBuffer( ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE, INSTANCE );
-              var channel = new ReadAheadChannel<>( fs.read( file ), bufferScope.getBuffer() ) )
+        try ( var channel = new ReadAheadChannel<>( fs.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
         {
             while ( true )
             {

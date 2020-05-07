@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import com.sun.jna.Memory;
-
 import java.io.File;
 import java.io.IOException;
 
