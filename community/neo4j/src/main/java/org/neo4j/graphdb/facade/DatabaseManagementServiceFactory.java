@@ -313,7 +313,7 @@ public class DatabaseManagementServiceFactory
         return new BoltServer( boltGraphDatabaseManagementServiceSPI, globalModule.getJobScheduler(), globalModule.getConnectorPortRegister(),
                                edition.getConnectionTracker(), databaseIdRepository, globalModule.getGlobalConfig(), globalModule.getGlobalClock(),
                                globalModule.getGlobalMonitors(), globalModule.getLogService(), globalModule.getGlobalDependencies(),
-                               edition.getBoltAuthManager( globalModule.getGlobalDependencies() ),
-                               edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), globalModule.getMemoryPools() );
+                               edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), edition.getBoltInClusterAuthManager(),
+                               globalModule.getMemoryPools() );
     }
 }

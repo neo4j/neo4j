@@ -187,6 +187,11 @@ public abstract class AbstractEditionModule
         return dependencyResolver.resolveDependency( AuthManager.class );
     }
 
+    public AuthManager getBoltInClusterAuthManager()
+    {
+        return null;
+    }
+
     public abstract DatabaseStartupController getDatabaseStartupController();
 
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
