@@ -1174,6 +1174,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L) ) )
+                    .addConstraint( dependency( max(gibiBytes( 1 )),unconstrained(), mode, is( Mode.CORE )  ) )
                     .dynamic().build();
 
     @Description( "Enable off heap and on heap memory tracking." )

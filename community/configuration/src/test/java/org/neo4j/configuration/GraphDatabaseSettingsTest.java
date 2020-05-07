@@ -47,6 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -298,5 +299,21 @@ class GraphDatabaseSettingsTest
                       .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldDefaultAdvertised,
                 default_advertised_address.name() );
 
+    }
+
+    @Test
+    void shouldLimitTxSizeIfCore()
+    {
+        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder()
+                .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.CORE )
+                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 2 ) ).build() );
+    }
+
+    @Test
+    void shouldNotLimitTxSizeIfSingle()
+    {
+        Config.newBuilder()
+                .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.SINGLE )
+                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 2 ) ).build();
     }
 }
