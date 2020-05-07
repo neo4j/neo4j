@@ -23,17 +23,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
@@ -46,6 +50,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -72,6 +77,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
@@ -108,6 +114,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForC
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -273,6 +280,53 @@ class BatchingNeoStoresTest
 
             // then
             assertFalse( doubleUnits );
+        }
+    }
+
+    @Test
+    void shouldRebuildCountsStoreEvenIfExistsInEmptyDb() throws IOException
+    {
+        // given
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR ) )
+        {
+            countsStore.start( NULL, INSTANCE );
+            countsStore.checkpoint( IOLimiter.UNLIMITED, NULL );
+        }
+
+        // when
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT,
+                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
+        {
+            stores.createNew();
+            stores.buildCountsStore( new CountsBuilder()
+            {
+                @Override
+                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                {
+                    updater.incrementNodeCount( 1, 10 );
+                    updater.incrementNodeCount( 2, 20 );
+                    updater.incrementRelationshipCount( ANY_LABEL, 1, 2, 30 );
+                    updater.incrementRelationshipCount( 1, 2, ANY_LABEL, 50 );
+                }
+
+                @Override
+                public long lastCommittedTxId()
+                {
+                    return BASE_TX_ID + 1;
+                }
+            }, PageCacheTracer.NULL, NULL, INSTANCE );
+        }
+
+        // then
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR ) )
+        {
+            assertEquals( 10, countsStore.nodeCount( 1, NULL ) );
+            assertEquals( 20, countsStore.nodeCount( 2, NULL ) );
+            assertEquals( 30, countsStore.relationshipCount( ANY_LABEL, 1, 2, NULL ) );
+            assertEquals( 50, countsStore.relationshipCount( 1, 2, ANY_LABEL, NULL ) );
         }
     }
 
