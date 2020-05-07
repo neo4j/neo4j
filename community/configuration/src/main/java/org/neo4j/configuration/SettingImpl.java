@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.Exceptions;
 
 import static java.lang.String.format;
 
@@ -116,11 +117,19 @@ public final class SettingImpl<T> implements Setting<T>
                 throw new IllegalArgumentException( format( "Setting '%s' can not have value '%s'. Should be of type '%s', but is '%s'",
                                 name, value, parser.getType().getSimpleName(), value.getClass().getSimpleName() ) );
             }
-            parser.validate( value );
-            for ( SettingConstraint<T> constraint : constraints )
+            try
             {
-                constraint.validate( value, config );
+                parser.validate( value );
+                for ( SettingConstraint<T> constraint : constraints )
+                {
+                    constraint.validate( value, config );
+                }
             }
+            catch ( IllegalArgumentException e )
+            {
+                throw Exceptions.withMessage( e, format( "Failed to validate '%s' for '%s': %s", value, name(), e.getMessage() ) );
+            }
+
         }
     }
 
