@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -129,7 +130,7 @@ class TestDynamicStore
     {
         Random random = new Random( System.currentTimeMillis() );
         DynamicArrayStore store = createDynamicArrayStore();
-        ArrayList<Long> idsTaken = new ArrayList<>();
+        List<Long> idsTaken = new ArrayList<>();
         Map<Long, byte[]> byteData = new HashMap<>();
         float deleteIndex = 0.2f;
         float closeIndex = 0.1f;
@@ -248,7 +249,7 @@ class TestDynamicStore
     void mustThrowOnRecordChainCycle() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
-        ArrayList<DynamicRecord> records = new ArrayList<>();
+        List<DynamicRecord> records = new ArrayList<>();
         store.allocateRecords( records, createBytes( 500 ), NULL );
         long firstId = records.get( 0 ).getId();
         // Avoid creating this inconsistency at the last record, since that would trip up a data-size check instead.

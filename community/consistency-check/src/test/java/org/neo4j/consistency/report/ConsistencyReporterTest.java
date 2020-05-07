@@ -421,7 +421,7 @@ class ConsistencyReporterTest
 
     public static List<ReportMethods> methods()
     {
-        ArrayList<ReportMethods> methods = new ArrayList<>();
+        List<ReportMethods> methods = new ArrayList<>();
         for ( Method reporterMethod : ConsistencyReport.Reporter.class.getMethods() )
         {
             if ( reporterMethod.getReturnType() == Void.TYPE )

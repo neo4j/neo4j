@@ -53,10 +53,10 @@ public class DuplicatingLog extends AbstractLog
      */
     public DuplicatingLog( List<Log> logs )
     {
-        ArrayList<Logger> debugLoggers = new ArrayList<>( logs.size() );
-        ArrayList<Logger> infoLoggers = new ArrayList<>( logs.size() );
-        ArrayList<Logger> warnLoggers = new ArrayList<>( logs.size() );
-        ArrayList<Logger> errorLoggers = new ArrayList<>( logs.size() );
+        List<Logger> debugLoggers = new ArrayList<>( logs.size() );
+        List<Logger> infoLoggers = new ArrayList<>( logs.size() );
+        List<Logger> warnLoggers = new ArrayList<>( logs.size() );
+        List<Logger> errorLoggers = new ArrayList<>( logs.size() );
 
         for ( Log log : logs )
         {
@@ -136,7 +136,7 @@ public class DuplicatingLog extends AbstractLog
         bulk( new ArrayDeque<>( logs ), new ArrayList<>( logs.size() ), consumer );
     }
 
-    private static void bulk( final Deque<Log> remaining, final ArrayList<Log> bulkLogs, final Consumer<Log> finalConsumer )
+    private static void bulk( final Deque<Log> remaining, final List<Log> bulkLogs, final Consumer<Log> finalConsumer )
     {
         if ( !remaining.isEmpty() )
         {
@@ -201,7 +201,7 @@ public class DuplicatingLog extends AbstractLog
             bulk( new ArrayDeque<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
         }
 
-        private static void bulk( final Deque<Logger> remaining, final ArrayList<Logger> bulkLoggers,
+        private static void bulk( final Deque<Logger> remaining, final List<Logger> bulkLoggers,
                 final Consumer<Logger> finalConsumer )
         {
             if ( !remaining.isEmpty() )

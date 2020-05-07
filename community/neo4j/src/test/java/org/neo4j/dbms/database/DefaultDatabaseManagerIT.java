@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
@@ -93,7 +94,7 @@ class DefaultDatabaseManagerIT
     {
         var databases = databaseManager.registeredDatabases();
         assertEquals( 2, databases.size()  );
-        ArrayList<NamedDatabaseId> databaseNames = new ArrayList<>( databases.keySet() );
+        List<NamedDatabaseId> databaseNames = new ArrayList<>( databases.keySet() );
         assertEquals( NAMED_SYSTEM_DATABASE_ID, databaseNames.get( 0 ) );
         assertEquals( defaultNamedDatabaseId, databaseNames.get( 1 ) );
     }

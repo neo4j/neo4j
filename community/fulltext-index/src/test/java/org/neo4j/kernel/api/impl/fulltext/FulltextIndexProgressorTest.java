@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -133,8 +134,8 @@ class FulltextIndexProgressorTest
 
     private static class StubEntityValueClient implements EntityValueClient
     {
-        private final ArrayList<Long> entityIds = new ArrayList<>();
-        private final ArrayList<Float> scores = new ArrayList<>();
+        private final List<Long> entityIds = new ArrayList<>();
+        private final List<Float> scores = new ArrayList<>();
 
         @Override
         public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,

@@ -62,7 +62,7 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
 
     private static List<String> sortedClasses( Set<String> newJunitClasses )
     {
-        ArrayList<String> strings = new ArrayList<>( newJunitClasses );
+        List<String> strings = new ArrayList<>( newJunitClasses );
         Collections.sort( strings );
         return strings;
     }

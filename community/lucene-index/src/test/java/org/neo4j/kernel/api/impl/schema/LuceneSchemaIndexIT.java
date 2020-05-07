@@ -291,7 +291,7 @@ class LuceneSchemaIndexIT
 
     private static Set<String> asUniqueSetOfNames( ResourceIterator<File> files )
     {
-        ArrayList<String> out = new ArrayList<>();
+        List<String> out = new ArrayList<>();
         while ( files.hasNext() )
         {
             String name = files.next().getName();

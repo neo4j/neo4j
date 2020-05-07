@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTest
 {
-    private HashMap<Setting<?>,Object> extraSettings;
+    private Map<Setting<?>,Object> extraSettings;
 
     @BeforeEach
     protected void setUp()

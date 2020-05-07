@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 class Downstream
@@ -29,7 +30,7 @@ class Downstream
 
     private final Step<Object> downstream;
     private final AtomicLong doneBatches;
-    private final ArrayList<TicketedBatch> batches;
+    private final List<TicketedBatch> batches;
     private long lastSendTicket = -1;
 
     Downstream( Step<Object> downstream, AtomicLong doneBatches )

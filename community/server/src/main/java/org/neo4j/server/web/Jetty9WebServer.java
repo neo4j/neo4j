@@ -85,7 +85,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     private ServerConnector httpConnector;
     private ServerConnector httpsConnector;
 
-    private final HashMap<String, String> staticContent = new HashMap<>();
+    private final Map<String, String> staticContent = new HashMap<>();
     private final Map<String,JaxRsServletHolderFactory> jaxRsServletHolderFactories = new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 

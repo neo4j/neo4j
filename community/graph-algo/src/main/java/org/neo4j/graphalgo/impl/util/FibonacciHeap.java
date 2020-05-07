@@ -230,7 +230,7 @@ public class FibonacciHeap<KeyType>
         // arraySize = (int) Math.log( (double) nrNodes )+1;
         // FibonacciHeapNode[] A = (FibonacciHeapNode[]) new Object[arraySize];
         // FibonacciHeapNode[] A = new FibonacciHeapNode[arraySize];
-        ArrayList<FibonacciHeapNode> nodes = new ArrayList<>( arraySize );
+        List<FibonacciHeapNode> nodes = new ArrayList<>( arraySize );
         for ( int i = 0; i < arraySize; ++i )
         {
             nodes.add( null );

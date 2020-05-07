@@ -249,7 +249,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         try
         {
             // when
-            ArrayList<Future<LongList>> futures = new ArrayList<>();
+            List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(

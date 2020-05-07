@@ -144,7 +144,7 @@ public final class MapUtil
         Properties props = new Properties();
         props.load( stream );
 
-        HashMap<String,String> result = new HashMap<>();
+        Map<String,String> result = new HashMap<>();
         for ( Map.Entry<Object,Object> entry : props.entrySet() )
         {
             // Properties does not trim whitespace from the right side of values

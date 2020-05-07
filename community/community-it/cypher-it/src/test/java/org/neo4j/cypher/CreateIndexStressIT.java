@@ -66,7 +66,7 @@ class CreateIndexStressIT
     void shouldHandleConcurrentIndexCreationAndUsage() throws InterruptedException
     {
         // Given
-        HashMap<String,Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         params.put( "param", NUM_PROPS );
         try ( Transaction transaction = db.beginTx() )
         {

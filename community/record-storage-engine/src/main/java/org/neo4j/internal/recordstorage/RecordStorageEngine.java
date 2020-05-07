@@ -200,7 +200,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         Supplier<IdUpdateListener> listenerSupplier = mode == REVERSE_RECOVERY ? () -> IdUpdateListener.IGNORE :
                                                       () -> new EnqueuingIdUpdateListener( idGeneratorWorkSyncs, cacheTracer );
-        ArrayList<TransactionApplierFactory> appliers = new ArrayList<>();
+        List<TransactionApplierFactory> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
         if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
         {

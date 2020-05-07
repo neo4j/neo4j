@@ -157,7 +157,7 @@ class PrimitiveLongCollectionsTest
         {
             long[] array = ThreadLocalRandom.current().longs( arrayLength, 0, arrayLength ).sorted().toArray();
             long[] dedupedActual = PrimitiveLongCollections.deduplicate( array );
-            TreeSet<Long> set = new TreeSet<>();
+            Set<Long> set = new TreeSet<>();
             for ( long value : array )
             {
                 set.add( value );

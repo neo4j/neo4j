@@ -327,7 +327,7 @@ public class Config implements Configuration
 
         Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( settingsClasses );
         Map<String,Class<? extends GroupSetting>> definedGroups = getDefinedGroups( groupSettingClasses );
-        HashSet<String> keys = new HashSet<>( definedSettings.keySet() );
+        Set<String> keys = new HashSet<>( definedSettings.keySet() );
         keys.addAll( settingValueStrings.keySet() );
         keys.addAll( settingValueObjects.keySet() );
 
@@ -717,7 +717,7 @@ public class Config implements Configuration
     @SuppressWarnings( "unchecked" )
     public Map<Setting<Object>,Object> getValues()
     {
-        HashMap<Setting<Object>,Object> values = new HashMap<>();
+        Map<Setting<Object>,Object> values = new HashMap<>();
         settings.forEach( ( s, entry ) -> values.put( (Setting<Object>) entry.setting, entry.value ) );
         return values;
     }

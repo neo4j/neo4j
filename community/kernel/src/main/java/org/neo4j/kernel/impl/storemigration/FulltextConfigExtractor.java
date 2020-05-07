@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.neo4j.internal.schema.IndexConfig;
@@ -61,7 +62,7 @@ class FulltextConfigExtractor
             }
         }
 
-        HashMap<String,Value> indexConfig = new HashMap<>();
+        Map<String,Value> indexConfig = new HashMap<>();
         TextValue analyser = extractSetting( settings, INDEX_CONFIG_ANALYZER );
         BooleanValue eventuallyConsistent = extractBooleanSetting( settings, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         if ( analyser != null )

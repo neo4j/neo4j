@@ -179,7 +179,7 @@ public class UniqueIndexApplicationIT
     {
         return graphDb ->
         {
-            ArrayList<Long> ids = new ArrayList<>();
+            List<Long> ids = new ArrayList<>();
             for ( Node node : loop( tx.findNodes( label, propertyKey, value ) ) )
             {
                 ids.add( node.getId() );

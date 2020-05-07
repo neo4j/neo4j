@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -804,7 +805,7 @@ public abstract class StandardExpander implements PathExpander
         Map<Direction, Collection<RelationshipType>> map = new EnumMap<>( Direction.class );
         for ( Direction direction : Direction.values() )
         {
-            ArrayList<RelationshipType> types = new ArrayList<>();
+            List<RelationshipType> types = new ArrayList<>();
             map.put( direction, types );
             RelationshipType[] existing = typeMap.get( direction );
             if ( existing != null )

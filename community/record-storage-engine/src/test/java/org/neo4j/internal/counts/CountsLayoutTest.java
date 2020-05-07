@@ -21,6 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +34,7 @@ class CountsLayoutTest
     {
         // given
         CountsLayout layout = new CountsLayout();
-        TreeSet<CountsKey> keys = new TreeSet<>( layout );
+        Set<CountsKey> keys = new TreeSet<>( layout );
 
         // when
         for ( int s = -1; s < 10; s++ )

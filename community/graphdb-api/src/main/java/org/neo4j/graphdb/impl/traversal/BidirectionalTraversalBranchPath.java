@@ -21,6 +21,7 @@ package org.neo4j.graphdb.impl.traversal;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -37,7 +38,7 @@ class BidirectionalTraversalBranchPath implements Path
     private final Relationship lastRelationship;
 
     private Node cachedStartNode;
-    private LinkedList<Relationship> cachedRelationships;
+    private List<Relationship> cachedRelationships;
 
     BidirectionalTraversalBranchPath( TraversalBranch start, TraversalBranch end )
     {
@@ -91,7 +92,7 @@ class BidirectionalTraversalBranchPath implements Path
         return gatherRelationships( end, start );
     }
 
-    private LinkedList<Relationship> gatherRelationships( TraversalBranch first, TraversalBranch then )
+    private List<Relationship> gatherRelationships( TraversalBranch first, TraversalBranch then )
     {
         // TODO Don't loop through them all up front
         LinkedList<Relationship> relationships = new LinkedList<>();

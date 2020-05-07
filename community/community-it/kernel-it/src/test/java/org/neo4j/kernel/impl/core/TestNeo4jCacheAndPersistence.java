@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
@@ -206,7 +207,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private Relationship[] getRelationshipArray(
         Iterable<Relationship> relsIterable )
     {
-        ArrayList<Relationship> relList = new ArrayList<>();
+        List<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
         {
             relList.add( rel );

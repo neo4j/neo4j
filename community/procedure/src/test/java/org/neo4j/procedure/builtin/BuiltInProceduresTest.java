@@ -560,7 +560,7 @@ class BuiltInProceduresTest
         int procId = procs.procedure( ProcedureSignature.procedureName( name.split( "\\." ) ) ).id();
         List<AnyValue[]> anyValues =
                 Iterators.asList( procs.callProcedure( ctx, procId, input, EMPTY_RESOURCE_TRACKER ) );
-        ArrayList<Object[]> toReturn = new ArrayList<>( anyValues.size() );
+        List<Object[]> toReturn = new ArrayList<>( anyValues.size() );
         for ( AnyValue[] anyValue : anyValues )
         {
             Object[] values = new Object[anyValue.length];

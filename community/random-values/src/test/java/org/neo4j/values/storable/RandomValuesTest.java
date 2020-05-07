@@ -178,7 +178,7 @@ abstract class RandomValuesTest
     {
         assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
         {
-            HashSet<Class<? extends NumberValue>> seen = new HashSet<>( NUMBER_TYPES );
+            Set<Class<? extends NumberValue>> seen = new HashSet<>( NUMBER_TYPES );
 
             while ( !seen.isEmpty() )
             {
@@ -243,7 +243,7 @@ abstract class RandomValuesTest
     {
         assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
         {
-            HashSet<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
+            Set<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
             while ( !seen.isEmpty() )
             {
                 ArrayValue arrayValue = randomValues.nextArray();
@@ -260,9 +260,9 @@ abstract class RandomValuesTest
     {
         assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
         {
-            HashSet<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
+            Set<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
             all.add( ArrayValue.class );
-            HashSet<Class<? extends AnyValue>> seen = new HashSet<>( all );
+            Set<Class<? extends AnyValue>> seen = new HashSet<>( all );
 
             while ( !seen.isEmpty() )
             {
@@ -280,7 +280,7 @@ abstract class RandomValuesTest
         {
             ValueType[] allTypes = ValueType.values();
             ValueType[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
-            HashSet<Class<? extends AnyValue>> seen = new HashSet<>();
+            Set<Class<? extends AnyValue>> seen = new HashSet<>();
             for ( ValueType type : including )
             {
                 seen.add( type.valueClass );

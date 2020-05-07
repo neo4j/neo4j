@@ -384,7 +384,7 @@ public class UserFunctionTest
         @UserFunction
         public Map<String, Object> listBananaOwningPeople()
         {
-            HashMap<String,Object> map = new HashMap<>();
+            Map<String,Object> map = new HashMap<>();
             map.put("foo", Arrays.asList("bar", "baz"));
             return map;
         }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
@@ -60,10 +61,10 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
         class TestIterator extends Dijkstra<Double>.DijkstraIterator
         {
             TestIterator( Node startNode,
-                HashMap<Node, List<Relationship>> predecessors,
-                HashMap<Node, Double> mySeen, HashMap<Node, Double> otherSeen,
-                HashMap<Node, Double> myDistances,
-                HashMap<Node, Double> otherDistances, boolean backwards )
+                          Map<Node, List<Relationship>> predecessors,
+                          Map<Node, Double> mySeen, Map<Node, Double> otherSeen,
+                          Map<Node, Double> myDistances,
+                          Map<Node, Double> otherDistances, boolean backwards )
             {
                 super( startNode, predecessors, mySeen, otherSeen, myDistances,
                     otherDistances, backwards );
@@ -82,10 +83,10 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
             graph.makeEdge( transaction, "d", "x", "cost", (short) 3 );
             graph.makeEdge( transaction, "d", "e", "cost", (double) 1 );
             graph.makeEdge( transaction, "e", "x", "cost", (double) 1 );
-            HashMap<Node,Double> seen1 = new HashMap<>();
-            HashMap<Node,Double> seen2 = new HashMap<>();
-            HashMap<Node,Double> dists1 = new HashMap<>();
-            HashMap<Node,Double> dists2 = new HashMap<>();
+            Map<Node,Double> seen1 = new HashMap<>();
+            Map<Node,Double> seen2 = new HashMap<>();
+            Map<Node,Double> dists1 = new HashMap<>();
+            Map<Node,Double> dists2 = new HashMap<>();
             DijkstraIterator iter1 = new TestIterator( graph.getNode( transaction, "start" ),
                 predecessors1, seen1, seen2, dists1, dists2, false );
             // while ( iter1.hasNext() && !limitReached() && !iter1.isDone() )

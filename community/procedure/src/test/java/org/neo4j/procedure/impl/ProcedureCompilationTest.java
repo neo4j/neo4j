@@ -862,7 +862,7 @@ public class ProcedureCompilationTest
 
     private Map<Type,Method> typeMaps()
     {
-        HashMap<Type,Method> methodHashMap = new HashMap<>();
+        Map<Type,Method> methodHashMap = new HashMap<>();
         methodHashMap.put( String.class, method( "testMethod", String.class ) );
         methodHashMap.put( long.class, method( "testMethod", long.class ) );
         methodHashMap.put( Long.class, method( "testMethod", Long.class ) );

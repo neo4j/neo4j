@@ -41,8 +41,8 @@ public class SimpleGraphBuilder
     public static final String KEY_ID = "name";
 
     GraphDatabaseService graphDb;
-    HashMap<String,Node> nodes;
-    HashMap<Node,String> nodeNames;
+    Map<String,Node> nodes;
+    Map<Node,String> nodeNames;
     Set<Relationship> edges;
     RelationshipType currentRelType;
 

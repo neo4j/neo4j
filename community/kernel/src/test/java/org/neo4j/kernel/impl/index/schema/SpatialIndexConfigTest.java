@@ -49,7 +49,7 @@ class SpatialIndexConfigTest
     @Test
     void mustAddSpatialConfigToMap()
     {
-        HashMap<String,Value> map = new HashMap<>();
+        Map<String,Value> map = new HashMap<>();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             Config config = Config.defaults();

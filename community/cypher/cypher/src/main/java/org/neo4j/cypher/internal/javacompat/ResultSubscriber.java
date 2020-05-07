@@ -328,7 +328,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         assertNoErrors();
         if ( hasNewValues() )
         {
-            HashMap<String,Object> record = createPublicRecord();
+            Map<String,Object> record = createPublicRecord();
             markAsRead();
             return record;
         }
@@ -367,10 +367,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
     }
 
-    private HashMap<String,Object> createPublicRecord()
+    private Map<String,Object> createPublicRecord()
     {
         String[] fieldNames = execution.fieldNames();
-        HashMap<String,Object> result = new HashMap<>();
+        Map<String,Object> result = new HashMap<>();
 
         try
         {

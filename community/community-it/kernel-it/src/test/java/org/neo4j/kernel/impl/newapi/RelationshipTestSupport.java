@@ -134,7 +134,7 @@ class RelationshipTestSupport
             KernelTransaction transaction,
             RelationshipTraversalCursor relationship ) throws KernelException
     {
-        HashMap<String,Integer> counts = new HashMap<>();
+        Map<String,Integer> counts = new HashMap<>();
         while ( relationship.next() )
         {
             String key = computeKey( transaction, relationship );

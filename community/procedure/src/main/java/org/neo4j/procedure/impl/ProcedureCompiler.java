@@ -121,7 +121,7 @@ class ProcedureCompiler
             //used for proper error handling
             assertValidConstructor( fcnDefinition );
 
-            ArrayList<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
+            List<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
             for ( Method method : functionMethods )
             {
                 String valueName = method.getAnnotation( UserFunction.class ).value();
@@ -166,7 +166,7 @@ class ProcedureCompiler
 
             assertValidConstructor( fcnDefinition );
 
-            ArrayList<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
+            List<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
             for ( Method method : methods )
             {
                 String valueName = method.getAnnotation( UserAggregationFunction.class ).value();
@@ -213,7 +213,7 @@ class ProcedureCompiler
             }
 
             assertValidConstructor( procDefinition );
-            ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
+            List<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
                 String valueName = method.getAnnotation( Procedure.class ).value();

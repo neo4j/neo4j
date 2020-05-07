@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.Envelope;
@@ -48,9 +49,9 @@ class EnvelopeSettings
         Arrays.fill( this.max, Double.NaN );
     }
 
-    static HashMap<CoordinateReferenceSystem,EnvelopeSettings> envelopeSettingsFromConfig( Config config )
+    static Map<CoordinateReferenceSystem,EnvelopeSettings> envelopeSettingsFromConfig( Config config )
     {
-        HashMap<CoordinateReferenceSystem,EnvelopeSettings> env = new HashMap<>();
+        Map<CoordinateReferenceSystem,EnvelopeSettings> env = new HashMap<>();
         config.getGroups( CrsConfig.class ).forEach( ( id, crsConfig ) ->
         {
             EnvelopeSettings envelopeSettings = new EnvelopeSettings( crsConfig.crs );

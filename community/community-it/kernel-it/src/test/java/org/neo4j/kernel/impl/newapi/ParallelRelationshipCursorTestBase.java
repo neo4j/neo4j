@@ -229,7 +229,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         try
         {
             // when
-            ArrayList<Future<LongList>> futures = new ArrayList<>();
+            List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 11; i++ )
             {
                 futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );

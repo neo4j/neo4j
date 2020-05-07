@@ -33,11 +33,11 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public class ConfiguredSpaceFillingCurveSettingsCache
 {
-    private final HashMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
+    private final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
 
     public ConfiguredSpaceFillingCurveSettingsCache( Config config )
     {
-        HashMap<CoordinateReferenceSystem,EnvelopeSettings> env = EnvelopeSettings.envelopeSettingsFromConfig( config );
+        Map<CoordinateReferenceSystem,EnvelopeSettings> env = EnvelopeSettings.envelopeSettingsFromConfig( config );
         for ( Map.Entry<CoordinateReferenceSystem,EnvelopeSettings> entry : env.entrySet() )
         {
             CoordinateReferenceSystem crs = entry.getKey();

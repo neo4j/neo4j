@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -110,7 +111,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
         {
            // Extract out the equality queries
-            ArrayList<Value> exactQueryValues = new ArrayList<>( query.length );
+            List<Value> exactQueryValues = new ArrayList<>( query.length );
             int i = 0;
             while ( i < query.length && query[i] instanceof IndexQuery.ExactPredicate )
             {

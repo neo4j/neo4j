@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -106,8 +107,8 @@ public class Dijkstra<CostType> implements
     protected boolean doneCalculation;
     protected Set<Node> foundPathsMiddleNodes;
     protected CostType foundPathsCost;
-    protected HashMap<Node, List<Relationship>> predecessors1 = new HashMap<>();
-    protected HashMap<Node, List<Relationship>> predecessors2 = new HashMap<>();
+    protected Map<Node, List<Relationship>> predecessors1 = new HashMap<>();
+    protected Map<Node, List<Relationship>> predecessors2 = new HashMap<>();
 
     /**
      * Resets the result data to force the computation to be run again when some
@@ -161,13 +162,13 @@ public class Dijkstra<CostType> implements
     {
         protected Node startNode;
         // where do we come from
-        protected HashMap<Node, List<Relationship>> predecessors;
+        protected Map<Node, List<Relationship>> predecessors;
         // observed distances not yet final
-        protected HashMap<Node, CostType> mySeen;
-        protected HashMap<Node, CostType> otherSeen;
+        protected Map<Node, CostType> mySeen;
+        protected Map<Node, CostType> otherSeen;
         // the final distances
-        protected HashMap<Node, CostType> myDistances;
-        protected HashMap<Node, CostType> otherDistances;
+        protected Map<Node, CostType> myDistances;
+        protected Map<Node, CostType> otherDistances;
         // Flag that indicates if we should follow egdes in the opposite
         // direction instead
         protected boolean backwards;
@@ -180,11 +181,11 @@ public class Dijkstra<CostType> implements
         protected boolean allShortestPathsHasBeenFound;
 
         public DijkstraIterator( Node startNode,
-                HashMap<Node, List<Relationship>> predecessors,
-                HashMap<Node, CostType> mySeen,
-                HashMap<Node, CostType> otherSeen,
-                HashMap<Node, CostType> myDistances,
-                HashMap<Node, CostType> otherDistances, boolean backwards )
+                Map<Node, List<Relationship>> predecessors,
+                Map<Node, CostType> mySeen,
+                Map<Node, CostType> otherSeen,
+                Map<Node, CostType> myDistances,
+                Map<Node, CostType> otherDistances, boolean backwards )
         {
             super();
             this.startNode = startNode;
@@ -250,7 +251,7 @@ public class Dijkstra<CostType> implements
          *            is found and examined if this contains currentNode.
          */
         protected void checkForPath( Node currentNode, CostType currentCost,
-                HashMap<Node, CostType> otherSideDistances )
+                Map<Node, CostType> otherSideDistances )
         {
             // Found a path?
             if ( otherSideDistances.containsKey( currentNode ) )
@@ -481,10 +482,10 @@ public class Dijkstra<CostType> implements
             foundPathsCost = costAccumulator.addCosts( startCost, startCost );
             return true;
         }
-        HashMap<Node, CostType> seen1 = new HashMap<>();
-        HashMap<Node, CostType> seen2 = new HashMap<>();
-        HashMap<Node, CostType> dists1 = new HashMap<>();
-        HashMap<Node, CostType> dists2 = new HashMap<>();
+        Map<Node, CostType> seen1 = new HashMap<>();
+        Map<Node, CostType> seen2 = new HashMap<>();
+        Map<Node, CostType> dists1 = new HashMap<>();
+        Map<Node, CostType> dists2 = new HashMap<>();
         DijkstraIterator iter1 = new DijkstraIterator( startNode, predecessors1,
                 seen1, seen2, dists1, dists2, false );
         DijkstraIterator iter2 = new DijkstraIterator( endNode, predecessors2,
@@ -573,7 +574,7 @@ public class Dijkstra<CostType> implements
                 for ( List<Entity> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<Entity> path = new LinkedList<>();
+                    List<Entity> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -614,7 +615,7 @@ public class Dijkstra<CostType> implements
                 for ( List<Node> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<Node> path = new LinkedList<>();
+                    List<Node> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -655,7 +656,7 @@ public class Dijkstra<CostType> implements
                 for ( List<Relationship> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<Relationship> path = new LinkedList<>();
+                    List<Relationship> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -683,7 +684,7 @@ public class Dijkstra<CostType> implements
             return null;
         }
         Node middleNode = foundPathsMiddleNodes.iterator().next();
-        LinkedList<Entity> path = new LinkedList<>();
+        List<Entity> path = new LinkedList<>();
         path.addAll( Util.constructSinglePathToNode( middleNode, predecessors1,
                 true, false ) );
         path.addAll( Util.constructSinglePathToNode( middleNode, predecessors2,
@@ -707,7 +708,7 @@ public class Dijkstra<CostType> implements
             return null;
         }
         Node middleNode = foundPathsMiddleNodes.iterator().next();
-        LinkedList<Node> pathNodes = new LinkedList<>();
+        List<Node> pathNodes = new LinkedList<>();
         pathNodes.addAll( Util.constructSinglePathToNodeAsNodes( middleNode,
                 predecessors1, true, false ) );
         pathNodes.addAll( Util.constructSinglePathToNodeAsNodes( middleNode,

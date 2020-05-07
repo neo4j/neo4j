@@ -71,7 +71,7 @@ class GraphDatabaseSettingsTest
     @Test
     void noDuplicateSettingsAreAllowed() throws Exception
     {
-        final HashMap<String,String> fields = new HashMap<>();
+        final Map<String,String> fields = new HashMap<>();
         for ( Field field : GraphDatabaseSettings.class.getDeclaredFields() )
         {
             if ( field.getType() == Setting.class )
