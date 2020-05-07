@@ -66,7 +66,7 @@ import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.internal.kernel.api.security
 
-object AdminActionMapper {
+object ActionMapper {
   def asKernelAction(action: AdminAction): security.PrivilegeAction = action match {
     case AccessDatabaseAction => security.PrivilegeAction.ACCESS
 
