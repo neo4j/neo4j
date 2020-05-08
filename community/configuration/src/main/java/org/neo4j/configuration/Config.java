@@ -64,7 +64,6 @@ public class Config implements Configuration
         private final Collection<Class<? extends SettingsDeclaration>> settingsClasses = new HashSet<>();
         private final Collection<Class<? extends GroupSetting>> groupSettingClasses = new HashSet<>();
         private final Collection<SettingMigrator> settingMigrators = new HashSet<>();
-        private final List<Class<? extends GroupSettingValidator>> validators = new ArrayList<>();
         private final Map<String,String> settingValueStrings = new HashMap<>();
         private final Map<String,Object> settingValueObjects = new HashMap<>();
         private final Map<String,Object> overriddenDefaults = new HashMap<>();
@@ -168,18 +167,6 @@ public class Config implements Configuration
             return this;
         }
 
-        public Builder addValidators( List<Class<? extends GroupSettingValidator>> validators )
-        {
-            this.validators.addAll( validators );
-            return this;
-        }
-
-        public Builder addValidator( Class<? extends GroupSettingValidator> validator )
-        {
-            this.validators.add( validator );
-            return this;
-        }
-
         public Builder addMigrator( SettingMigrator migrator )
         {
             this.settingMigrators.add( migrator );
@@ -260,7 +247,7 @@ public class Config implements Configuration
 
         public Config build()
         {
-            return new Config( settingsClasses, groupSettingClasses, validators, settingMigrators, settingValueStrings, settingValueObjects, overriddenDefaults,
+            return new Config( settingsClasses, groupSettingClasses, settingMigrators, settingValueStrings, settingValueObjects, overriddenDefaults,
                     fromConfig, log );
         }
     }
@@ -306,7 +293,6 @@ public class Config implements Configuration
 
     private Config( Collection<Class<? extends SettingsDeclaration>> settingsClasses,
             Collection<Class<? extends GroupSetting>> groupSettingClasses,
-            List<Class<? extends GroupSettingValidator>> validatorClasses,
             Collection<SettingMigrator> settingMigrators,
             Map<String,String> settingValueStrings,
             Map<String,Object> settingValueObjects,
@@ -359,8 +345,6 @@ public class Config implements Configuration
         newSettings.addAll( getActiveSettings( keys, definedGroups, definedSettings, strict ) );
 
         evaluateSettingValues( newSettings, settingValueStrings, settingValueObjects, overriddenDefaultStrings, overriddenDefaultObjects, fromConfig );
-
-        validateGroupsettings( validatorClasses );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -502,19 +486,6 @@ public class Config implements Configuration
         return newSettings;
     }
 
-    private void validateGroupsettings( List<Class<? extends GroupSettingValidator>> validatorClasses )
-    {
-        for ( GroupSettingValidator validator : getGroupSettingValidators( validatorClasses ) )
-        {
-            String prefix = validator.getPrefix() + '.';
-            Map<Setting<?>, Object> values = settings.entrySet().stream()
-                    .filter( e -> e.getKey().startsWith( prefix ) )
-                    .collect( HashMap::new, ( map, entry ) -> map.put( entry.getValue().setting, entry.getValue().getValue() ), HashMap::putAll );
-
-            validator.validate( values, this );
-        }
-    }
-
     @SuppressWarnings( "unchecked" )
     private void evaluateSetting( Setting<?> untypedSetting, Map<String,String> settingValueStrings, Map<String,Object> settingValueObjects, Config fromConfig,
             Map<String,String> overriddenDefaultStrings, Map<String,Object> overriddenDefaultObjects )
@@ -602,13 +573,6 @@ public class Config implements Configuration
                 .filter( parentClass::isAssignableFrom )
                 .map( childClass -> (Class<U>) childClass )
                 .collect( Collectors.toMap( childClass -> childClass, this::getGroups ) );
-    }
-
-    private static List<GroupSettingValidator> getGroupSettingValidators( List<Class<? extends GroupSettingValidator>> validatorClasses )
-    {
-        List<GroupSettingValidator> validators = new ArrayList<>();
-        validatorClasses.forEach( validatorClass -> validators.add( createInstance( validatorClass ) ) );
-        return validators;
     }
 
     private static <T> T createInstance( Class<T> classObj )

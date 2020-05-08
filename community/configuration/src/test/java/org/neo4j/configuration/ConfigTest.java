@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -239,31 +238,6 @@ class ConfigTest
 
         assertEquals( "child", config.get( group.childSetting ) );
         assertEquals( "parent", config.get( group.parentSetting ) );
-    }
-
-    @Test
-    void testValidator()
-    {
-        Config.Builder builder = Config.newBuilder()
-                .addSettingsClass( TestSettings.class )
-                .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .addValidator( TestConnectionGroupSetting.class )
-                .set( TestConnectionGroupSetting.group( "1" ).port, 1111 )
-                .set( TestConnectionGroupSetting.group( "2" ).port, 1111 );
-
-        Exception e = assertThrows( IllegalArgumentException.class, builder::build );
-        assertEquals( "Need unique ports", e.getMessage() );
-    }
-
-    @Test
-    void testInvalidValidator()
-    {
-
-        Config.Builder builder = Config.newBuilder()
-                .addValidator( InvalidValidator.class );
-
-        Exception e = assertThrows( IllegalArgumentException.class, builder::build );
-        assertTrue( e.getMessage().contains( "Failed to create instance of" ) );
     }
 
     @Test
@@ -733,7 +707,7 @@ class ConfigTest
                 .build();
     }
 
-    public static class TestConnectionGroupSetting extends GroupSetting implements GroupSettingValidator
+    public static class TestConnectionGroupSetting extends GroupSetting
     {
 
         public static TestConnectionGroupSetting group( String name )
@@ -753,54 +727,6 @@ class ConfigTest
         TestConnectionGroupSetting( String id )
         {
             super( id );
-        }
-
-        @Override
-        public void validate( Map<Setting<?>,Object> values, Config config )
-        {
-            Set<Integer> ports = new HashSet<>();
-            values.forEach( ( S, V ) ->
-            {
-                if ( ((SettingImpl<Object>) S).suffix().equals( "port" ) )
-                {
-                    if ( !ports.add( (Integer) V ) )
-                    {
-                        throw new IllegalArgumentException( "Need unique ports" );
-                    }
-                }
-            } );
-        }
-
-        @Override
-        public String getDescription()
-        {
-            return "With unique ports";
-        }
-
-    }
-
-    static class InvalidValidator implements GroupSettingValidator
-    {
-        InvalidValidator( Object invalidConstructor )
-        {
-        }
-
-        @Override
-        public String getPrefix()
-        {
-            return "test.validator";
-        }
-
-        @Override
-        public String getDescription()
-        {
-            return null;
-        }
-
-        @Override
-        public void validate( Map<Setting<?>,Object> values, Config config )
-        {
-
         }
     }
 

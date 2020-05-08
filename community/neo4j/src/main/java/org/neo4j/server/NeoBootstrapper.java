@@ -25,14 +25,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.GroupSettingValidator;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -52,7 +50,6 @@ import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class NeoBootstrapper implements Bootstrapper
@@ -105,7 +102,6 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .fromFileNoThrow( configFile )
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
-                .addValidators( configurationValidators() )
                 .build();
         try
         {
@@ -139,11 +135,6 @@ public abstract class NeoBootstrapper implements Bootstrapper
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
-    }
-
-    protected List<Class<? extends GroupSettingValidator>> configurationValidators()
-    {
-        return emptyList();
     }
 
     @Override
