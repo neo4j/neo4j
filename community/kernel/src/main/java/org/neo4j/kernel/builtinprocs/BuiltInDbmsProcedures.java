@@ -20,6 +20,9 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -60,6 +63,25 @@ public class BuiltInDbmsProcedures
         return config.getConfigValues().values().stream()
                 .filter( c -> !c.internal() )
                 .filter( c -> c.name().toLowerCase().contains( lowerCasedSearchString ) )
+                .map( ConfigResult::new )
+                .sorted( Comparator.comparing( c -> c.name ) );
+    }
+
+    @Description( "Return config settings interesting to clients (e.g. Neo4j Browser)" )
+    @Procedure( name = "dbms.clientConfig", mode = DBMS )
+    public Stream<ConfigResult> listClientConfig()
+    {
+        Set<String> browserSettings = Stream.of( "browser.allow_outgoing_connections",
+                                                 "browser.credential_timeout",
+                                                 "browser.retain_connection_credentials",
+                                                 "dbms.security.auth_enabled",
+                                                 "browser.remote_content_hostname_whitelist",
+                                                 "browser.post_connect_cmd" ).collect( Collectors.toCollection( HashSet::new ) );
+
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+
+        return config.getConfigValues().values().stream()
+                .filter( c -> browserSettings.contains( c.name().toLowerCase() ) )
                 .map( ConfigResult::new )
                 .sorted( Comparator.comparing( c -> c.name ) );
     }

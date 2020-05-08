@@ -29,8 +29,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.IntSupplier;
 
+import org.neo4j.configuration.ConfigValue;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -59,6 +61,7 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -497,6 +500,41 @@ public class BuiltInProceduresTest
 
         // Then
         verify( statement ).close();
+    }
+
+    @Test
+    public void listClientConfigShouldFilterConfig() throws ProcedureException, IndexNotFoundKernelException
+    {
+        // Given
+        Config mockConfig = mock( Config.class );
+        HashMap<String, ConfigValue> settings = new HashMap<>();
+
+        settings.put("browser.allow_outgoing_connections", new ConfigValue( "browser.allow_outgoing_connections", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("browser.credential_timeout", new ConfigValue( "browser.credential_timeout", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("browser.retain_connection_credentials", new ConfigValue( "browser.retain_connection_credentials", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("dbms.security.auth_enabled", new ConfigValue( "dbms.security.auth_enabled", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("browser.remote_content_hostname_whitelist", new ConfigValue( "browser.remote_content_hostname_whitelist", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("browser.post_connect_cmd", new ConfigValue( "browser.post_connect_cmd", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+        settings.put("something.else", new ConfigValue( "something.else", Optional.of( "description" ),
+                Optional.empty(), Optional.of("value"), "value description", false, false, false, Optional.empty(), false ));
+
+        when( mockConfig.getConfigValues() ).thenReturn( settings );
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( mockConfig );
+
+        // When / Then
+        assertThat( call( "dbms.clientConfig" ), containsInAnyOrder(
+                record( "browser.allow_outgoing_connections", "description", "value", false ),
+                record( "browser.credential_timeout", "description", "value", false ),
+                record( "browser.retain_connection_credentials", "description", "value", false ),
+                record( "dbms.security.auth_enabled", "description", "value", false ),
+                record( "browser.remote_content_hostname_whitelist", "description", "value", false ),
+                record( "browser.post_connect_cmd", "description", "value", false ) ) );
     }
 
     private static Map<String,String> getIndexProviderDescriptorMap( IndexProviderDescriptor providerDescriptor )
