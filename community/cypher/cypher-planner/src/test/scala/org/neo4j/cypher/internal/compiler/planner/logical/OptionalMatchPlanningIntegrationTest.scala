@@ -222,7 +222,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       ) =>
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
-        predicates.exprs should equal(Set(predicate))
+        predicates.exprs should equal(Seq(predicate))
     }
   }
 
@@ -266,7 +266,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Some(Ands.create(Seq(equals(prop("m", "prop"), literalInt(42)), hasLabels("m", "Y")))))
+        Some(Ands.create(Seq(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42))))))
     )
   }
 

@@ -85,8 +85,8 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val expected =
       Selection(
         ands(
-          not(equals(varFor("r1"), varFor("r2"))),
-          equals(cachedNodeProp("a", "prop"), cachedNodeProp("c", "prop"))
+          equals(cachedNodeProp("a", "prop"), cachedNodeProp("c", "prop")),
+          not(equals(varFor("r1"), varFor("r2")))
         ),
         NodeHashJoin(
           Set("b"),

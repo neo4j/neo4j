@@ -38,8 +38,9 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
   val rewriter: Rewriter = OptionalMatchRemover.instance(null)
 
@@ -181,7 +182,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {id: 42, foo: 'apa'})
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -333,6 +334,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(patternNodes = Set(n, m))
 
     smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m))
+  }
+
+  def is_rewritten_to(newQuery: String): Unit = {
+    val originalQuery = testName
+    val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
+    val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
+
+    val result = original.endoRewrite(fixedPoint(rewriter))
+    assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
   }
 
   case class RewriteTester(originalQuery: String) {

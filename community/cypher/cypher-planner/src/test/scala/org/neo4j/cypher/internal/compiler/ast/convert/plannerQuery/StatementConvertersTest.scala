@@ -636,7 +636,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ) _) _))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
-    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp3, exp2))
+    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2, exp3))
 
     val selections = Selections(Set(orPredicate))
 
