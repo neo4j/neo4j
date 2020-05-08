@@ -32,6 +32,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -39,7 +40,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
-import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -55,10 +55,6 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
@@ -266,20 +262,16 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
-            throws IOException
     {
         Config config = Config.defaults( allow_upgrade, true );
 
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs )
-                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
-                .build();
-        LogTailScanner logTailScanner =
-                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( new Monitors() );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, NULL );
+        LogsUpgrader logsUpgrader = new LogsUpgrader(
+                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE );
         StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader,
-                storageEngineFactory, NULL );
+                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, storageEngineFactory, NULL );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

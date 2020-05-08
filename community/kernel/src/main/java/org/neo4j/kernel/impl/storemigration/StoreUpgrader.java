@@ -36,9 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
@@ -88,15 +86,14 @@ public class StoreUpgrader
     private final Config config;
     private final FileSystemAbstraction fileSystem;
     private final Log log;
-    private final LogTailScanner logTailScanner;
     private final LogsUpgrader logsUpgrader;
     private final String configuredFormat;
     private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
 
-    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-                          Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
-                          LogsUpgrader logsUpgrader, StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
+    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config config,
+                          FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader,
+                          StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
@@ -104,7 +101,6 @@ public class StoreUpgrader
         this.config = config;
         this.logsUpgrader = logsUpgrader;
         this.log = logProvider.getLog( getClass() );
-        this.logTailScanner = logTailScanner;
         this.configuredFormat = storeVersionCheck.configuredVersion();
         this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
@@ -135,7 +131,6 @@ public class StoreUpgrader
             return;
         }
         boolean upgradeAllowed = isUpgradeAllowed();
-        LogVersionUpgradeChecker.check( logTailScanner, upgradeAllowed );
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             // TODO: System database does not (yet) support migration, remove this when it does!
@@ -208,7 +203,7 @@ public class StoreUpgrader
         {
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorTracer );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
-            assertCleanlyShutDownByCheckPoint();
+            logsUpgrader.assertCleanlyShutDownByCheckPoint( dbDirectoryLayout );
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
@@ -252,36 +247,6 @@ public class StoreUpgrader
         default:
             throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
-    }
-
-    private void assertCleanlyShutDownByCheckPoint()
-    {
-        Throwable suppressibleException = null;
-        try
-        {
-            LogTailScanner.LogTailInformation tail = logTailScanner.getTailInformation();
-            if ( tail.lastCheckPoint != null && !tail.commitsAfterLastCheckpoint() )
-            {
-                // All good
-                return;
-            }
-            if ( tail.lastCheckPoint == null && !config.get( GraphDatabaseSettings.fail_on_missing_files ) )
-            {
-                // We don't have any log files, but we were told to ignore this.
-                return;
-            }
-        }
-        catch ( Throwable throwable )
-        {
-            // ignore exception and throw db not cleanly shutdown
-            suppressibleException = throwable;
-        }
-        DatabaseNotCleanlyShutDownException exception = new DatabaseNotCleanlyShutDownException();
-        if ( suppressibleException != null )
-        {
-            exception.addSuppressed( suppressibleException );
-        }
-        throw exception;
     }
 
     List<StoreMigrationParticipant> getParticipants()
