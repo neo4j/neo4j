@@ -107,6 +107,12 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
         return size;
     }
 
+    public void clear()
+    {
+        Arrays.fill( items, 0, size, null );
+        size = 0;
+    }
+
     /**
      * Grow and report size change to tracker
      */

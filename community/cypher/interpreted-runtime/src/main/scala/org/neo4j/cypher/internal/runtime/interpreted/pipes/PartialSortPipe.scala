@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
+import org.neo4j.collection.trackable.HeapTrackingAppendList
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.ScopedMemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -33,17 +35,24 @@ case class PartialSortPipe(source: Pipe,
   extends PipeWithSource(source) with OrderedInputPipe {
 
   class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
-    private val buffer = new java.util.ArrayList[CypherRow]()
+    private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
+    private val buffer = HeapTrackingAppendList.newAppendList[CypherRow](memoryTracker)
 
     override def clear(): Unit = {
-      buffer.forEach(x => state.memoryTracker.deallocated(x, id.x))
+      rowsMemoryTracker.reset()
       buffer.clear()
+    }
+
+    override def close(): Unit = {
+      buffer.close()
+      rowsMemoryTracker.close()
     }
 
     override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
 
     override def processRow(row: CypherRow): Unit = {
-      state.memoryTracker.allocated(row, id.x)
+      rowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)
       buffer.add(row)
     }
 
