@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
-import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
@@ -39,10 +38,10 @@ import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.DateValue
 import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.LocalDateTimeValue
 import org.neo4j.values.storable.LocalTimeValue
-import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.TimeValue
@@ -62,7 +61,10 @@ object ParameterValueTypeHelper {
       case _: TextValue => CTString
       case _: BooleanValue => CTBoolean
       case _: IntegralValue => CTInteger
-      case _: NumberValue => CTFloat
+      case _: FloatingPointValue =>
+        // because Javascript sees everything as floats, even integer values, we need to do this until properly
+        // fixing semantic checking
+        CTAny
       case _: PointValue => CTPoint
       case _: DateTimeValue => CTDateTime
       case _: LocalDateTimeValue => CTLocalDateTime

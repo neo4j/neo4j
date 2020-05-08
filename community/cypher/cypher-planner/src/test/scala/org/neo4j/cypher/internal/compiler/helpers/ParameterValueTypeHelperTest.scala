@@ -61,19 +61,21 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
     // GIVEN
     val mapValueBuilder = new MapValueBuilder()
     mapValueBuilder.add("param1", Values.booleanValue(true))
-    mapValueBuilder.add("param2", Values.floatValue(1))
+    mapValueBuilder.add("param2", Values.floatValue(1.1f))
     mapValueBuilder.add("param3", Values.EMPTY_STRING)
     mapValueBuilder.add("param4", DateTimeValue.MAX_VALUE)
+    mapValueBuilder.add("param5", Values.floatValue(1f))
 
     // WHEN
     val resultMap = asCypherTypeMap(mapValueBuilder.build())
 
     // THEN
-    resultMap.size should be(4)
+    resultMap.size should be(5)
     resultMap("param1") should be(CTBoolean)
-    resultMap("param2") should be(CTFloat)
+    resultMap("param2") should be(CTAny)
     resultMap("param3") should be(CTString)
     resultMap("param4") should be(CTDateTime)
+    resultMap("param5") should be(CTAny)
   }
 
   test("deriveCypherType should be correct") {
@@ -83,10 +85,10 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
     deriveCypherType(Values.ZERO_INT) should be(CTInteger)
     deriveCypherType(Values.EMPTY_INT_ARRAY) should be(CTAny)
 
-    deriveCypherType(Values.doubleValue(1)) should be(CTFloat)
+    deriveCypherType(Values.doubleValue(1)) should be(CTAny)
     deriveCypherType(Values.EMPTY_DOUBLE_ARRAY) should be(CTAny)
 
-    deriveCypherType(Values.floatValue(1)) should be(CTFloat)
+    deriveCypherType(Values.floatValue(1)) should be(CTAny)
     deriveCypherType(Values.EMPTY_FLOAT_ARRAY) should be(CTAny)
 
     deriveCypherType(Values.shortValue(1)) should be(CTInteger)
