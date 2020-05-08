@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-
 abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],
                                                          runtime: CypherRuntime[CONTEXT],
@@ -79,7 +77,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and empty rhs") {
     // given
-    val nodes = given {
+    given {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -103,7 +101,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and nonempty rhs") {
     // given
-    val nodes = given {
+    given {
       nodeGraph(sizeHint)
       nodeGraph(3, "RHS")
     }
