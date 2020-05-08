@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -52,16 +53,11 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
@@ -224,15 +220,14 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
-            throws IOException
     {
         Config config = Config.defaults( allow_upgrade, true );
 
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
-        LogTailScanner logTailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader(), new Monitors() );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, selectStorageEngine(), workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config );
-        StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logTailScanner, logsUpgrader );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( new Monitors() );
+        LogsUpgrader logsUpgrader = new LogsUpgrader(
+                fs, selectStorageEngine(), workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies );
+        StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

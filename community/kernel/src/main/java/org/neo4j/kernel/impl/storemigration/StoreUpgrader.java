@@ -35,7 +35,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
@@ -83,14 +82,12 @@ public class StoreUpgrader
     private final Config config;
     private final FileSystemAbstraction fileSystem;
     private final Log log;
-    private final LogTailScanner logTailScanner;
     private final LogsUpgrader logsUpgrader;
 
     private final String configuredFormat;
 
     public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-                          Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
-                          LogsUpgrader logsUpgrader )
+                          Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
@@ -98,7 +95,6 @@ public class StoreUpgrader
         this.config = config;
         this.logsUpgrader = logsUpgrader;
         this.log = logProvider.getLog( getClass() );
-        this.logTailScanner = logTailScanner;
         this.configuredFormat = storeVersionCheck.configuredVersion();
     }
 
@@ -190,7 +186,7 @@ public class StoreUpgrader
         {
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion() );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
-            assertCleanlyShutDownByCheckPoint();
+            logsUpgrader.assertCleanlyShutDownByCheckPoint( dbDirectoryLayout );
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
@@ -234,36 +230,6 @@ public class StoreUpgrader
         default:
             throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
-    }
-
-    private void assertCleanlyShutDownByCheckPoint()
-    {
-        Throwable suppressibleException = null;
-        try
-        {
-            LogTailScanner.LogTailInformation tail = logTailScanner.getTailInformation();
-            if ( tail.lastCheckPoint != null && !tail.commitsAfterLastCheckpoint() )
-            {
-                // All good
-                return;
-            }
-            if ( tail.lastCheckPoint == null && !config.get( GraphDatabaseSettings.fail_on_missing_files ) )
-            {
-                // We don't have any log files, but we were told to ignore this.
-                return;
-            }
-        }
-        catch ( Throwable throwable )
-        {
-            // ignore exception and throw db not cleanly shutdown
-            suppressibleException = throwable;
-        }
-        DatabaseNotCleanlyShutDownException exception = new DatabaseNotCleanlyShutDownException();
-        if ( suppressibleException != null )
-        {
-            exception.addSuppressed( suppressibleException );
-        }
-        throw exception;
     }
 
     List<StoreMigrationParticipant> getParticipants()

@@ -437,7 +437,7 @@ public class LogTailScanner
             return recordAfterCheckpoint;
         }
 
-        boolean logsMissing()
+        public boolean logsMissing()
         {
             return lastCheckPoint == null && oldestLogVersionFound == -1;
         }
@@ -454,6 +454,5 @@ public class LogTailScanner
                     ", oldestLogVersionFound=" + oldestLogVersionFound + ", currentLogVersion=" + currentLogVersion + ", latestLogEntryVersion=" +
                     latestLogEntryVersion + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';
         }
-
     }
 }
