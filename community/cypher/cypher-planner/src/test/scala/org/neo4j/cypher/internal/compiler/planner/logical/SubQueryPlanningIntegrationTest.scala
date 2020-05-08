@@ -270,6 +270,25 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     )
   }
 
+  test("should plan count store lookup in uncorrelated subquery") {
+    val query =
+      """MATCH (n)
+        |CALL {
+        | MATCH (x)-[r:REL]->(y)
+        | RETURN count(*) AS c
+        |}
+        |RETURN n, c""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n", "c")
+        .cartesianProduct()
+        .|.relationshipCountFromCountStore("c", None, Seq("REL"), None)
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   // Correlated subqueries
 
   test("CALL around single correlated query") {
@@ -451,4 +470,48 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     }
   }
 
+  test("should not plan count store lookup in correlated subquery when node-variable is already bound") {
+    val query =
+      """MATCH (n)
+        |CALL {
+        | WITH n
+        | MATCH (n)-[r:REL]->(m)
+        | RETURN count(*) AS c
+        |}
+        |RETURN n, c""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n", "c")
+        .apply()
+        .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+        .|.expand("(n)-[r:REL]->(m)")
+        .|.argument("n")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should not plan count store lookup in correlated subquery when relationship-variable is already bound") {
+    val query =
+      """MATCH (n)-[r:REL]->(m)
+        |CALL {
+        | WITH r
+        | MATCH (x)-[r:REL]->(y)
+        | RETURN count(*) AS c
+        |}
+        |RETURN n, c""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n", "c")
+        .apply()
+        .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+        .|.projectEndpoints("(x)-[r:REL]->(y)", startInScope = false, endInScope = false)
+        .|.argument("r")
+        .expand("(m)<-[r:REL]-(n)")
+        .allNodeScan("m")
+        .build()
+    )
+  }
 }

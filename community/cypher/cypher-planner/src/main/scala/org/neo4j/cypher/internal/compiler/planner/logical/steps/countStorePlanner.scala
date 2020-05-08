@@ -54,11 +54,18 @@ case object countStorePlanner {
     }
   }
 
-  private def checkForValidQueryGraph(query: SinglePlannerQuery, columnName: String, exp: Expression, context: LogicalPlanningContext): Option[LogicalPlan] = query.queryGraph match {
-    case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns, _)
-      if hints.isEmpty && shortestPathPatterns.isEmpty && query.queryGraph.readOnly =>
-      checkForValidAggregations(query, columnName, exp, patternRelationships, patternNodes, argumentIds, selections, context)
-    case _ => None
+  private def checkForValidQueryGraph(query: SinglePlannerQuery, columnName: String, exp: Expression, context: LogicalPlanningContext): Option[LogicalPlan] = {
+    def patternHasNoDependencies: Boolean = {
+      val qg = query.queryGraph
+      (qg.patternNodes ++ qg.patternRelationships.map(_.name)).intersect(qg.argumentIds).isEmpty
+    }
+
+    query.queryGraph match {
+      case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns, _)
+        if hints.isEmpty && shortestPathPatterns.isEmpty && query.queryGraph.readOnly && patternHasNoDependencies =>
+        checkForValidAggregations(query, columnName, exp, patternRelationships, patternNodes, argumentIds, selections, context)
+      case _ => None
+    }
   }
 
   private def checkForValidAggregations(query: SinglePlannerQuery, columnName: String, exp: Expression,
