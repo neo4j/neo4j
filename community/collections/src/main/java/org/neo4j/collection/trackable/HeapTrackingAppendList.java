@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.trackable;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -69,6 +71,16 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
         items[size++] = item;
     }
 
+    public T get( int index )
+    {
+        return items[index];
+    }
+
+    public void set( int index, T value )
+    {
+        items[index] = value;
+    }
+
     @Override
     public Iterator<T> iterator()
     {
@@ -83,6 +95,16 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
             memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
             items = null;
         }
+    }
+
+    public void sort( Comparator<? super T> c )
+    {
+        Arrays.sort( items, 0, size, c );
+    }
+
+    public int size()
+    {
+        return size;
     }
 
     /**
