@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
@@ -277,6 +278,7 @@ class ReflectiveProcedureCompiler
         Procedure procedure = method.getAnnotation( Procedure.class );
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
+        boolean internal = method.isAnnotationPresent( Internal.class );
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
             if ( procedure.mode() != org.neo4j.procedure.Mode.DEFAULT )
@@ -305,14 +307,14 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                                admin, null, new String[0], description, warning, procedure.eager(), false );
+                                admin, null, new String[0], description, warning, procedure.eager(), false, internal );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, admin, deprecated,
-                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false );
+                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, internal );
         return new ReflectiveProcedure( signature, constructor, method, outputMapper, setters );
     }
 

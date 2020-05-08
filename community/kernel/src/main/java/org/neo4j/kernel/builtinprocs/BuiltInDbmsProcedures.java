@@ -36,6 +36,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -67,6 +68,7 @@ public class BuiltInDbmsProcedures
                 .sorted( Comparator.comparing( c -> c.name ) );
     }
 
+    @Internal
     @Description( "Return config settings interesting to clients (e.g. Neo4j Browser)" )
     @Procedure( name = "dbms.clientConfig", mode = DBMS )
     public Stream<ConfigResult> listClientConfig()
@@ -92,6 +94,7 @@ public class BuiltInDbmsProcedures
     {
         securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+                .filter( proc -> !proc.internal() )
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }

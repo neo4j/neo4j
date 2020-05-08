@@ -188,8 +188,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), containsInAnyOrder(
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
-                proc( "dbms.clientConfig", "() :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
-                      "Return config settings interesting to clients (e.g. Neo4j Browser)", "DBMS" ),
                 proc( "db.constraints", "() :: (description :: STRING?)", "List all constraints in the database.", "READ" ),
                 proc( "db.indexes", "() :: (description :: STRING?, indexName :: STRING?, tokenNames :: LIST? OF STRING?, properties :: " +
                                 "LIST? OF STRING?, state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?, " +
