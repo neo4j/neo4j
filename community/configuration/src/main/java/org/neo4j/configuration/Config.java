@@ -562,12 +562,8 @@ public class Config implements Configuration
         {
             var dep = settings.get( setting.dependency().name() );
             T solvedValue = setting.solveDependency( value != null ? value : defaultValue, (T) dep.getValue() );
-            //can not validate default value when we have dependency, as it is not solved itself, but included in the solved value
-            setting.validate( solvedValue );
             return new DepEntry<>( setting, value, defaultValue, solvedValue );
         }
-        setting.validate( defaultValue );
-        setting.validate( value );
         return new Entry<>( setting, value, defaultValue );
     }
 
@@ -822,8 +818,9 @@ public class Config implements Configuration
         private volatile T solved;
         private DepEntry( SettingImpl<T> setting, T value, T defaultValue, T solved )
         {
-            super( setting, value, defaultValue );
+            super( setting, value, defaultValue, false );
             this.solved = solved;
+            setting.validate( solved );
         }
 
         @Override
@@ -835,9 +832,11 @@ public class Config implements Configuration
         @Override
         synchronized void setValue( T value )
         {
-            super.setValue( value );
+            T oldValue = solved;
             solved = setting.solveDependency( value != null ? value : defaultValue, getObserver( setting.dependency() ).getValue() );
-
+            setting.validate( solved );
+            internalSetValue( value );
+            notifyListeners( oldValue, solved );
         }
     }
 
@@ -845,14 +844,21 @@ public class Config implements Configuration
     {
         protected final SettingImpl<T> setting;
         protected final T defaultValue;
+        private final boolean validate;
         private final Collection<SettingChangeListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
         private volatile T value;
         private volatile boolean isDefault;
 
         private Entry( SettingImpl<T> setting, T value, T defaultValue )
         {
+            this( setting, value, defaultValue, true );
+        }
+
+        private Entry( SettingImpl<T> setting, T value, T defaultValue, boolean validate )
+        {
             this.setting = setting;
             this.defaultValue = defaultValue;
+            this.validate = validate;
             internalSetValue( value );
         }
 
@@ -866,13 +872,22 @@ public class Config implements Configuration
         {
             T oldValue = this.value;
             internalSetValue( value );
-            updateListeners.forEach( listener -> listener.accept( oldValue, this.value ) );
+            notifyListeners( oldValue, this.value );
         }
 
-        private void internalSetValue( T value )
+        void internalSetValue( T value )
         {
             isDefault = value == null;
             this.value = isDefault ? defaultValue : value;
+            if ( validate )
+            {
+                setting.validate( this.value );
+            }
+        }
+
+        protected void notifyListeners( T oldValue, T newValue )
+        {
+            updateListeners.forEach( listener -> listener.accept( oldValue, newValue ) );
         }
 
         private void addListener( SettingChangeListener<T> listener )

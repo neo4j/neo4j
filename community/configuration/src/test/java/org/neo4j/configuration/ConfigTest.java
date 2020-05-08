@@ -99,6 +99,25 @@ class ConfigTest
     }
 
     @Test
+    void testSetConstrainedValue()
+    {
+        Config.Builder builder = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .set( TestSettings.constrainedIntSetting, 4 );
+        assertThrows( IllegalArgumentException.class, builder::build );
+        builder.set( TestSettings.constrainedIntSetting, 2 );
+        assertDoesNotThrow( builder::build );
+    }
+
+    @Test
+    void testUpdateConstrainedValue()
+    {
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        assertThrows( IllegalArgumentException.class, () -> config.setDynamic( TestSettings.constrainedIntSetting, 4, getClass().getSimpleName() ) );
+        assertDoesNotThrow( () -> config.setDynamic( TestSettings.constrainedIntSetting, 2, getClass().getSimpleName() ) );
+    }
+
+    @Test
     void testOverrideAbsentSetting()
     {
         Map<String,String> settings = Map.of( "test.absent.bool", FALSE );
@@ -621,6 +640,8 @@ class ConfigTest
     {
         static final Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
         static final Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
+        static final Setting<Integer> constrainedIntSetting = newBuilder( "test.setting.constrained-integer", INT, 1 )
+                .addConstraint( SettingConstraints.max( 3 ) ).dynamic().build();
         static final Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
         static final Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
     }
