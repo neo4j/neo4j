@@ -49,6 +49,8 @@ import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.ifCluster;
+import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -65,6 +67,7 @@ import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -1173,8 +1176,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
-                    .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L) ) )
-                    .addConstraint( dependency( max(gibiBytes( 1 )),unconstrained(), mode, is( Mode.CORE )  ) )
+                    .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L ) ) )
+                    .addConstraint( ifCluster( max( gibiBytes( 1 ) ) ) )
                     .dynamic().build();
 
     @Description( "Enable off heap and on heap memory tracking." )

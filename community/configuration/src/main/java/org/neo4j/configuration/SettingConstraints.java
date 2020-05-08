@@ -205,6 +205,7 @@ public final class SettingConstraints
         return new SettingConstraint<>()
         {
             private final SettingConstraint<T>[] constraints = ArrayUtil.concat( first, rest );
+
             @Override
             public void validate( T value, Configuration config )
             {
@@ -301,7 +302,6 @@ public final class SettingConstraints
             {
                 throw new IllegalArgumentException( "needs not a hostname" );
             }
-
         }
 
         @Override
@@ -383,5 +383,41 @@ public final class SettingConstraints
                 return "is unconstrained";
             }
         };
-    };
+    }
+
+    public static SettingConstraint<Integer> greaterThanOrEqual( Setting<Integer> other )
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( Integer value, Configuration config )
+            {
+                var otherValue = config.get( other );
+                if ( value == null )
+                {
+                    throw new IllegalArgumentException( "can not be null" );
+                }
+                if ( otherValue == null )
+                {
+                    throw new IllegalArgumentException( other.name() + " can not be null" );
+                }
+                if ( value < otherValue )
+                {
+                    throw new IllegalArgumentException( getDescription() + format( "was %d, which is not more than or equal to %d", value, otherValue ) );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return format( "Must be set greater than or equal to value of '%s'", other.name() );
+            }
+        };
+    }
+
+    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
+    {
+        return dependency( settingConstraint, unconstrained(),
+                GraphDatabaseSettings.mode, any( is( GraphDatabaseSettings.Mode.CORE ), is( GraphDatabaseSettings.Mode.READ_REPLICA ) ) );
+    }
 }
