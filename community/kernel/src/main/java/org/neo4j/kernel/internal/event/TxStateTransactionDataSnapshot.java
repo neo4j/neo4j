@@ -55,7 +55,6 @@ import org.neo4j.values.storable.Value;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.trackable.HeapTrackingAppendList.newAppendList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
-import static org.neo4j.kernel.impl.core.RelationshipEntity.SHALLOW_SIZE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -375,8 +374,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private NodePropertyEntryView createNodePropertyEntryView( MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, int key, Value newValue,
             Value oldValue ) throws PropertyKeyIdNotFoundKernelException
     {
-        var entryView = new NodePropertyEntryView( internalTransaction, nodeId, tokenRead.propertyKeyName( key ), newValue, oldValue );
         memoryTracker.allocateHeap( NodePropertyEntryView.SHALLOW_SIZE );
+        var entryView = new NodePropertyEntryView( internalTransaction, nodeId, tokenRead.propertyKeyName( key ), newValue, oldValue );
         if ( oldValue != null )
         {
             memoryTracker.allocateHeap( oldValue.estimatedHeapUsage() );
@@ -386,9 +385,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private LabelEntryView createLabelView( MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, long labelId ) throws LabelNotFoundKernelException
     {
-        var entryView = new LabelEntryView( internalTransaction, nodeId, tokenRead.nodeLabelName( toIntExact( labelId ) ) );
         memoryTracker.allocateHeap( LabelEntryView.SHALLOW_SIZE );
-        return entryView;
+        return new LabelEntryView( internalTransaction, nodeId, tokenRead.nodeLabelName( toIntExact( labelId ) ) );
     }
 
     private Relationship relationship( long relId )
@@ -409,7 +407,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                 throw new IllegalStateException( "Getting deleted relationship data should have been covered by the tx state" );
             }
             relationship.visit( relId, this.relationship.type(), this.relationship.sourceNodeReference(), this.relationship.targetNodeReference() );
-            memoryTracker.allocateHeap( SHALLOW_SIZE );
+            memoryTracker.allocateHeap( RelationshipEntity.SHALLOW_SIZE );
             relationshipsReadFromStore.put( relId, relationship );
         }
         return relationship;
