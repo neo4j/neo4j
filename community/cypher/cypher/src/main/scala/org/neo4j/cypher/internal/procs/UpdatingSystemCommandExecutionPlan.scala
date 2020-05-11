@@ -52,7 +52,8 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               initFunction: (MapValue, KernelTransaction) => Boolean = (_, _) => true,
                                               finallyFunction: MapValue => Unit = _ => {},
                                               parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-                                              parameterConverter: MapValue => MapValue = p => p)
+                                              parameterConverter: MapValue => MapValue = p => p,
+                                              assertPrivilegeAction: Transaction => Unit = _ => {})
   extends ChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -63,6 +64,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                            subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.kernelTransactionalContext
+    assertPrivilegeAction(tc.transaction())
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
