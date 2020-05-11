@@ -299,7 +299,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
 
   /**
-   * @param error if `true` return an error, otherwise a warning.
+   * Traverse the sub-tree at astNode. Warn or fail if any duplicate relationships are found at that sub-tree.
+   *
+   * @param astNode the sub-tree to traverse.
+   * @param error if true return an error, otherwise a warning.
    */
   private def ensureNoDuplicateRelationships(astNode: ASTNode, error: Boolean): SemanticCheck = {
     def perDuplicate(name: String, pos: InputPosition): SemanticCheck =
@@ -309,7 +312,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         state => SemanticCheckResult(state.addNotification(DeprecatedRepeatedRelVarInPatternExpression(pos, name)), Seq.empty)
 
     RelationshipChain.findDuplicateRelationships(astNode).foldSemanticCheck {
-      duplicate =>perDuplicate(duplicate.name, duplicate.position)
+      duplicate => perDuplicate(duplicate.name, duplicate.position)
     }
   }
 

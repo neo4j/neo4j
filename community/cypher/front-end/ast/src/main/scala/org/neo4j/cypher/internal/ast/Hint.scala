@@ -39,10 +39,6 @@ trait NodeHint {
   self: Hint =>
 }
 
-trait RelationshipHint {
-  self: Hint =>
-}
-
 object Hint {
   implicit val byVariable: Ordering[Hint] =
     Ordering.by { hint: Hint => hint.variables.head }(Variable.byName)
