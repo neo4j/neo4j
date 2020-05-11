@@ -114,7 +114,7 @@ public class LinuxNativeAccess implements NativeAccess
     {
         if ( fd <= 0 )
         {
-            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
+            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
         }
         return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED ) );
     }
@@ -124,7 +124,7 @@ public class LinuxNativeAccess implements NativeAccess
     {
         if ( fd <= 0 )
         {
-            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
+            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
         }
         return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL ) );
     }
@@ -134,7 +134,7 @@ public class LinuxNativeAccess implements NativeAccess
     {
         if ( fd <= 0 )
         {
-            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
+            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
         }
         return wrapResult( () -> posix_fadvise( fd, 0, 0, POSIX_FADV_WILLNEED ) );
     }
@@ -144,11 +144,11 @@ public class LinuxNativeAccess implements NativeAccess
     {
         if ( fd <= 0 )
         {
-            return new NativeCallResult( NativeAccess.ERROR, "Incorrect file descriptor." );
+            return new NativeCallResult( ERROR, "Incorrect file descriptor." );
         }
         if ( bytes <= 0 )
         {
-            return new NativeCallResult( NativeAccess.ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes );
+            return new NativeCallResult( ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes );
         }
         return wrapResult( () -> posix_fallocate( fd, 0, bytes ) );
     }
@@ -174,7 +174,7 @@ public class LinuxNativeAccess implements NativeAccess
         try
         {
             int result = call.call();
-            if ( result == NativeAccess.SUCCESS )
+            if ( result == SUCCESS )
             {
                 return NativeCallResult.SUCCESS;
             }
@@ -200,8 +200,22 @@ public class LinuxNativeAccess implements NativeAccess
             try
             {
                 long result = strerror_r( errorCode, bufferPointer, bufferLength );
+//                The GNU-specific strerror_r() returns a pointer to a string containing the error message.
+//                This may be either a pointer to a string that the function stores in buf, or a  pointer
+//                to  some  (immutable)  static  string (in which case buf is unused).
+//                If the function stores a string in buf, then at most buflen bytes are stored (the string may be truncated if
+//                buflen is too small and errnum is unknown).
+//                The string always includes a terminating null byte ('\0').
+
+//                The XSI-compliant strerror_r() function returns 0 on success.
+//                On error, a (positive) error number is returned (since glibc 2.13), or -1 is returned and errno is set to  indicate
+//                the error (glibc versions before 2.13).
+                if ( result == SUCCESS )
+                {
+                    return new Pointer( bufferPointer ).getString( 0 );
+                }
                 // not error, not EINVAL and not ERANGE
-                if ( result != NativeAccess.ERROR && result != 22 && result != 34 )
+                if ( result != ERROR && result != 22 && result != 34 )
                 {
                     return new Pointer( result ).getString( 0 );
                 }
