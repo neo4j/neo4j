@@ -63,7 +63,7 @@ class LargeDynamicKeysIT
     private TestDirectory testDirectory;
 
     @Test
-    void putSingleKeyLargeThanInlineCap() throws IOException
+    void putSingleKeyLargerThanInlineCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
@@ -79,7 +79,7 @@ class LargeDynamicKeysIT
     }
 
     @Test
-    void removeSingleKeyLargeThanInlineCap() throws IOException
+    void removeSingleKeyLargerThanInlineCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {

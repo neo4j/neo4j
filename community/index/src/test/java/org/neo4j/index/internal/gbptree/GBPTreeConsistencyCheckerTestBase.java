@@ -68,8 +68,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     @Inject
     RandomRule random;
 
+    TestLayout<KEY,VALUE> layout;
     private RandomValues randomValues;
-    private TestLayout<KEY,VALUE> layout;
     private File indexFile;
     private PageCache pageCache;
     private boolean isDynamic;
@@ -918,7 +918,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         return randomValues.among( Arrays.asList( GBPTreePointerType.leftSibling(), GBPTreePointerType.rightSibling() ) );
     }
 
-    private GBPTreeBuilder<KEY,VALUE> index()
+    GBPTreeBuilder<KEY,VALUE> index()
     {
         return index( layout );
     }
@@ -970,7 +970,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         return inspection.getLastLevel();
     }
 
-    private static <KEY, VALUE> GBPTreeInspection<KEY,VALUE> inspect( GBPTree<KEY,VALUE> index ) throws IOException
+    static <KEY, VALUE> GBPTreeInspection<KEY,VALUE> inspect( GBPTree<KEY,VALUE> index ) throws IOException
     {
         return index.visit( new InspectingVisitor<>(), NULL ).get();
     }
@@ -1339,7 +1339,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         assertCalled( called );
     }
 
-    private static void assertCalled( MutableBoolean called )
+    static void assertCalled( MutableBoolean called )
     {
         assertTrue( called.getValue(), "Expected to receive call to correct consistency report method." );
     }

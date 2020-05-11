@@ -39,6 +39,7 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
     private final MutableLongList internalNodes = LongLists.mutable.empty();
     private final MutableLongList leafNodes = LongLists.mutable.empty();
     private final MutableLongList allNodes = LongLists.mutable.empty();
+    private final MutableLongList offloadNodes = LongLists.mutable.empty();
     private final Map<Long,Integer> allKeyCounts = new HashMap<>();
     private final List<LongList> nodesPerLevel = new ArrayList<>();
     private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
@@ -62,6 +63,7 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
                 LongLists.immutable.ofAll( internalNodes ),
                 LongLists.immutable.ofAll( leafNodes ),
                 LongLists.immutable.ofAll( allNodes ),
+                LongLists.immutable.ofAll( offloadNodes ),
                 unmodifiableMap( allKeyCounts ),
                 immutableNodesPerLevel,
                 unmodifiableList( allFreelistEntries ),
@@ -119,6 +121,15 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
     public void freelistEntry( long pageId, long generation, int pos )
     {
         allFreelistEntries.add( new FreelistEntry( currentFreelistPage, pos, pageId, generation ) );
+    }
+
+    @Override
+    public void key( KEY key, boolean isLeaf, long offloadId )
+    {
+        if ( offloadId != TreeNode.NO_OFFLOAD_ID )
+        {
+            offloadNodes.add( offloadId );
+        }
     }
 
     private void clear()

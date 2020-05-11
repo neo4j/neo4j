@@ -78,6 +78,11 @@ public final class GBPTreeCorruption
         return ( cursor, layout, node, treeState ) -> cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE );
     }
 
+    public static <KEY, VALUE> PageCorruption<KEY,VALUE> notAnOffloadNode()
+    {
+        return ( cursor, layout, node, treeState ) -> cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE );
+    }
+
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> unknownTreeNodeType()
     {
         return ( cursor, layout, node, treeState ) -> cursor.putByte( TreeNode.BYTE_POS_TYPE, Byte.MAX_VALUE );

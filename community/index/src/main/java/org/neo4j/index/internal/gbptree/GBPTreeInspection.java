@@ -29,6 +29,7 @@ public class GBPTreeInspection<KEY,VALUE>
     private final ImmutableLongList internalNodes;
     private final ImmutableLongList leafNodes;
     private final ImmutableLongList allNodes;
+    private final ImmutableLongList offloadNodes;
     private final Map<Long,Integer> keyCounts;
     private final List<ImmutableLongList> nodesPerLevel;
     private final List<InspectingVisitor.FreelistEntry> allFreelistEntries;
@@ -36,12 +37,14 @@ public class GBPTreeInspection<KEY,VALUE>
     private final int lastLevel;
     private final TreeState treeState;
 
-    GBPTreeInspection( ImmutableLongList internalNodes, ImmutableLongList leafNodes, ImmutableLongList allNodes, Map<Long,Integer> keyCounts,
-            List<ImmutableLongList> nodesPerLevel, List<InspectingVisitor.FreelistEntry> allFreelistEntries, long rootNode, int lastLevel, TreeState treeState )
+    GBPTreeInspection( ImmutableLongList internalNodes, ImmutableLongList leafNodes, ImmutableLongList allNodes, ImmutableLongList offloadNodes,
+            Map<Long,Integer> keyCounts, List<ImmutableLongList> nodesPerLevel, List<InspectingVisitor.FreelistEntry> allFreelistEntries, long rootNode,
+            int lastLevel, TreeState treeState )
     {
         this.internalNodes = internalNodes;
         this.leafNodes = leafNodes;
         this.allNodes = allNodes;
+        this.offloadNodes = offloadNodes;
         this.keyCounts = keyCounts;
         this.nodesPerLevel = nodesPerLevel;
         this.allFreelistEntries = allFreelistEntries;
@@ -63,6 +66,11 @@ public class GBPTreeInspection<KEY,VALUE>
     public ImmutableLongList getAllNodes()
     {
         return allNodes;
+    }
+
+    public ImmutableLongList getOffloadNodes()
+    {
+        return offloadNodes;
     }
 
     public Map<Long,Integer> getKeyCounts()
