@@ -297,10 +297,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def ensureNoDuplicateRelationships(pattern: Pattern): SemanticCheck = {
     pattern.findDuplicateRelationships.foldLeft(SemanticCheckResult.success) {
-      (acc, duplicates) =>
-        val id = duplicates.head
-
-        acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns", id.position)
+      (acc, duplicate) =>
+        acc chain SemanticError(s"Cannot use the same relationship variable '${duplicate.name}' for multiple patterns", duplicate.position)
     }
   }
 
