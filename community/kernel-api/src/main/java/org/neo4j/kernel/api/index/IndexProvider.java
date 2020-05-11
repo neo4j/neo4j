@@ -179,7 +179,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                        MemoryTracker memoryTracker)
+                        MemoryTracker memoryTracker )
                 {
                     return singlePopulator;
                 }
@@ -382,7 +382,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
         @Override
         public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                MemoryTracker memoryTracker)
+                MemoryTracker memoryTracker )
         {
             return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker );
         }
