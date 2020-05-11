@@ -25,14 +25,15 @@ import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, override val arguments: IndexedSeq[Expression])
   extends AggregationExpression {
 
-  override def createAggregationFunction(operatorId: Id): AggregationFunction = new AggregationFunction {
+  override def createAggregationFunction(_memoryTracker: MemoryTracker): AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = _
+    protected val memoryTracker: MemoryTracker = _memoryTracker
 
     override def result(state: QueryState): AnyValue = {
       aggregator(state).result
@@ -44,8 +45,6 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
       })
       aggregator(state).update(argValues)
     }
-
-    override def recordMemoryDeallocation(): Unit = ()
 
     private def aggregator(state: QueryState) = {
       if (inner == null) {

@@ -43,8 +43,6 @@ trait MinMax extends AggregationFunction {
     }
   }
 
-  override def recordMemoryDeallocation(): Unit = ()
-
   private def checkIfLargest(value: AnyValue) {
     if (biggestSeen eq Values.NO_VALUE) {
       biggestSeen = value

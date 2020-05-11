@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class StdevFunction(val value: Expression, val population:Boolean, operatorId: Id)
+class StdevFunction(val value: Expression, val population:Boolean, memoryTracker: MemoryTracker)
   extends AggregationFunction
   with NumericExpressionOnly {
 
@@ -36,10 +35,9 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   // would be cool to not have to keep a temporary list to do multiple passes
   // this will blow up RAM over a big data set (not lazy!)
   // but I don't think it's currently possible with the way aggregation works
-  private var temp = Vector[Double]()
+  private var temp = Vector[Double]() // TODO: Use heap tracking collection
   private var count:Int = 0
   private var total:Double = 0
-  private var memoryTracker: MemoryTracker = _
 
   override def result(state: QueryState): AnyValue = {
     if(count < 2) {
@@ -58,20 +56,11 @@ class StdevFunction(val value: Expression, val population:Boolean, operatorId: I
   }
 
   override def apply(data: ReadableRow, state: QueryState) {
-    if (memoryTracker == null) {
-      memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
-    }
     actOnNumber(value(data, state), number => {
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()
-      memoryTracker.allocateHeap(java.lang.Double.BYTES) // TODO: Heap tracking collection
+      memoryTracker.allocateHeap(java.lang.Double.BYTES)
     })
-  }
-
-  override def recordMemoryDeallocation(): Unit = {
-    if (memoryTracker != null) {
-      memoryTracker.releaseHeap(java.lang.Double.BYTES * temp.size)
-    }
   }
 }

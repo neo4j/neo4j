@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.Grouping
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.values.AnyValue
 
 /**
@@ -44,28 +46,26 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        executionContextFactory: ExecutionContextFactory,
                        operatorId: Id) extends AggregationTable {
 
-  protected var resultMap: java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]] = _
+  protected var resultMap: HeapTrackingOrderedAppendMap[AnyValue, Array[AggregationFunction]] = _
   protected val addKeys: (CypherRow, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
+  private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
 
   override def clear(): Unit = {
-    // TODO: Use a heap tracking collection or ScopedMemoryTracker instead
     if (resultMap != null) {
-      resultMap.forEach { (key, functions) =>
-        state.memoryTracker.deallocated(key, operatorId.x)
-        functions.foreach(_.recordMemoryDeallocation())
-      }
+      resultMap.close()
     }
-    resultMap = new java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]]()
+    resultMap = HeapTrackingOrderedAppendMap.createOrderedMap[AnyValue, Array[AggregationFunction]](memoryTracker)
   }
 
   override def processRow(row: CypherRow): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
-    val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
-      state.memoryTracker.allocated(groupingValue, operatorId.x)
-      val functions = new Array[AggregationFunction](aggregations.length)
+    val aggregationFunctions = resultMap.getIfAbsentPutWithMemoryTracker(groupingValue, scopedMemoryTracker => {
+      val nAggregations = aggregations.length
+      scopedMemoryTracker.allocateHeap(groupingValue.estimatedHeapUsage() + HeapEstimator.shallowSizeOfObjectArray(nAggregations))
+      val functions = new Array[AggregationFunction](nAggregations)
       var i = 0
-      while (i < aggregations.length) {
-        functions(i) = aggregations(i).expression.createAggregationFunction(operatorId)
+      while (i < nAggregations) {
+        functions(i) = aggregations(i).expression.createAggregationFunction(scopedMemoryTracker)
         i += 1
       }
       functions
@@ -78,7 +78,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
   }
 
   override def result(): Iterator[CypherRow] = {
-    val innerIterator = resultMap.entrySet().iterator()
+    val innerIterator = resultMap.autoClosingEntryIterator()
     new Iterator[CypherRow] {
       override def hasNext: Boolean = innerIterator.hasNext
 

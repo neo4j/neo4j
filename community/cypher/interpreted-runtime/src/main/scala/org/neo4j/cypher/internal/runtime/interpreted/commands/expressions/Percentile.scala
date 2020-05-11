@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.Percentil
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileDiscFunction
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(operatorId: Id): AggregationFunction = new PercentileContFunction(anInner, percentile, operatorId)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new PercentileContFunction(anInner, percentile, memoryTracker)
 
   def expectedInnerType: CypherType = CTNumber
 
@@ -38,7 +38,7 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(operatorId: Id): AggregationFunction = new PercentileDiscFunction(anInner, percentile, operatorId)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new PercentileDiscFunction(anInner, percentile, memoryTracker)
 
   def expectedInnerType: CypherType  = CTNumber
 

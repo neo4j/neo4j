@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CountStarFunction
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
 
 case class CountStar() extends AggregationExpression {
   override def rewrite(f: Expression => Expression): Expression = f(CountStar())
 
-  override def createAggregationFunction(operatorId: Id): AggregationFunction = new CountStarFunction
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new CountStarFunction
 
   override def arguments: Seq[Expression] = Seq.empty
 

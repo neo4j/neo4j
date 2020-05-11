@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.values.storable.DoubleValue
 
 trait StdevTest {
@@ -46,7 +46,7 @@ trait StdevTest {
 }
 
 class StdevSampleTest extends CypherFunSuite with StdevTest {
-  def createAggregator(inner: Expression) = new StdevFunction(inner, false, Id.INVALID_ID)
+  def createAggregator(inner: Expression) = new StdevFunction(inner, false, EmptyMemoryTracker.INSTANCE)
 
   test("singleOne") {
     val values = List(1)
@@ -85,7 +85,7 @@ class StdevSampleTest extends CypherFunSuite with StdevTest {
 }
 
 class StdevPopulationTest extends CypherFunSuite with StdevTest {
-  def createAggregator(inner: Expression) = new StdevFunction(inner, true, Id.INVALID_ID)
+  def createAggregator(inner: Expression) = new StdevFunction(inner, true, EmptyMemoryTracker.INSTANCE)
 
   test("singleOne") {
     val values = List(1)

@@ -23,24 +23,19 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.memory.ScopedMemoryTracker
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-abstract class PercentileFunction(val value: Expression, val percentile: Expression, operatorId: Id) extends AggregationFunction
+abstract class PercentileFunction(val value: Expression, val percentile: Expression, memoryTracker: MemoryTracker) extends AggregationFunction
                                                                                      with NumericExpressionOnly {
 
-  protected var temp: Vector[AnyValue] = Vector[AnyValue]()
+  protected var temp: Vector[AnyValue] = Vector[AnyValue]() // TODO: Use heap tracking collection
   protected var count: Int = 0
   protected var perc: Double = 0
-  private var scopedMemoryTracker: ScopedMemoryTracker = _
 
   override def apply(data: ReadableRow, state: QueryState) {
-    if (scopedMemoryTracker == null) {
-      scopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(operatorId.x))
-    }
     actOnNumber(value(data, state), number => {
       if (count < 1) {
         perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()
@@ -50,20 +45,13 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       }
       count += 1
       temp = temp :+ number
-      scopedMemoryTracker.allocateHeap(number.estimatedHeapUsage()) // TODO: Heap tracking collection
+      memoryTracker.allocateHeap(number.estimatedHeapUsage())
     })
-  }
-
-  override def recordMemoryDeallocation(): Unit = {
-    temp = null
-    if (scopedMemoryTracker != null) {
-      scopedMemoryTracker.close()
-    }
   }
 }
 
-class PercentileContFunction(value: Expression, percentile: Expression, operatorId: Id)
-  extends PercentileFunction(value, percentile, operatorId) {
+class PercentileContFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
+  extends PercentileFunction(value, percentile, memoryTracker) {
 
   def name = "PERCENTILE_CONT"
 
@@ -85,8 +73,8 @@ class PercentileContFunction(value: Expression, percentile: Expression, operator
   }
 }
 
-class PercentileDiscFunction(value: Expression, percentile: Expression, operatorId: Id)
-  extends PercentileFunction(value, percentile, operatorId) {
+class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
+  extends PercentileFunction(value, percentile, memoryTracker) {
 
   def name = "PERCENTILE_DISC"
 

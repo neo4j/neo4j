@@ -36,7 +36,5 @@ class CountFunction(value: Expression) extends AggregationFunction {
     }
   }
 
-  override def recordMemoryDeallocation(): Unit = ()
-
   override def result(state: QueryState): AnyValue = Values.longValue(count)
 }

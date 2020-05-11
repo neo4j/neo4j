@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.SumFunction
-import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.memory.MemoryTracker
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(operatorId: Id): AggregationFunction = new SumFunction(anInner)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new SumFunction(anInner)
 
   override def expectedInnerType: CypherType = CTNumber
 
