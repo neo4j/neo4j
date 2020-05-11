@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
@@ -45,7 +44,7 @@ class RestRepresentationWriterTest
     void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createGenerator( out );
+        JsonGenerator json = new Neo4jJsonCodec().createGenerator( out );
 
         JsonNode rest = serialize( out, json, new RestRepresentationWriter( URI.create( "localhost" ) ) );
 

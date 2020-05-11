@@ -24,6 +24,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -33,6 +35,10 @@ import javax.ws.rs.ext.Provider;
 
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.Statement;
+import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Provider
 @Consumes( MediaType.APPLICATION_JSON )
@@ -40,6 +46,16 @@ public class JsonMessageBodyReader implements MessageBodyReader<InputEventStream
 {
 
     private static final String STATEMENTS_KEY = "input-statements";
+
+    private final JsonFactory jsonFactory;
+
+    @Inject
+    public JsonMessageBodyReader( JsonFactory jsonFactory )
+    {
+        // This can be copied here, as this variant of the Neo4j JSON codec doesn't need to be aware of an ongoing
+        // transaction.
+        this.jsonFactory = jsonFactory.copy().setCodec(new Neo4jJsonCodec());
+    }
 
     @Override
     public boolean isReadable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
@@ -55,7 +71,7 @@ public class JsonMessageBodyReader implements MessageBodyReader<InputEventStream
         Map<Statement,InputStatement> inputStatements = new HashMap<>();
         Map<String,Object> parameters = new HashMap<>();
         parameters.put( STATEMENTS_KEY, inputStatements );
-        StatementDeserializer statementDeserializer = new StatementDeserializer( entityStream );
+        StatementDeserializer statementDeserializer = new StatementDeserializer( this.jsonFactory, entityStream );
         return new InputEventStream( parameters, () ->
         {
             InputStatement inputStatement = statementDeserializer.read();
