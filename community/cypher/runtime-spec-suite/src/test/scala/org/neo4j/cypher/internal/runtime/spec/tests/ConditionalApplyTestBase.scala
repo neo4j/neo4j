@@ -121,4 +121,29 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(Seq(Array("42"), Array("42"), Array("42"), Array[Any](null), Array("43"), Array("43"), Array("43")))
   }
+
+  test("conditional apply on non-nullable node") {
+    val nodeCount = sizeHint
+    val (nodes, _) = given {
+      circleGraph(nodeCount, "L")
+    }
+
+    //when
+    val limit = 2
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.limit(limit)
+      .|.expand("(y)--(z)")
+      .|.nodeByLabelScan("y", "L", "x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+
+    //then
+    runtimeResult should beColumns("x").withRows(nodes.flatMap(n => Seq.fill(limit)(Array[Any](n))))
+
+  }
 }

@@ -200,6 +200,61 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan
   }
 
+  test("should profile rows with limit + expand on RHS of ConditionalApply non-nullable") {
+    val nodeCount = sizeHint
+    given {
+      circleGraph(nodeCount)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.limit(1)
+      .|.expand("(x)--(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodeCount // conditionalApply
+    queryProfile.operatorProfile(2).rows() shouldBe nodeCount // limit
+    // Depending on morsel size, the limit might or might not cancel the second row of the expand.
+    queryProfile.operatorProfile(3).rows() should (be >= 1L* nodeCount and be <= 2L*nodeCount) // expand
+    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan for x
+  }
+
+  test("should profile rows with limit + expand on RHS of ConditionalApply nullable") {
+    val values = (1 to sizeHint).map {
+      case i if i % 2 == 0 => Array[Any](i)
+      case _ => Array[Any](null)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.unwind("range(1, 10) AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(values:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint / 2 + (10 * sizeHint / 2) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint / 2 + (10 * sizeHint / 2)// conditionalApply
+    queryProfile.operatorProfile(2).rows() shouldBe 10 * sizeHint / 2 // unwind
+    queryProfile.operatorProfile(3).rows() shouldBe sizeHint / 2 //argument
+    queryProfile.operatorProfile(4).rows() shouldBe sizeHint  // input
+  }
+
   test("should profile rows of skip") {
     given { nodeGraph(sizeHint) }
 
