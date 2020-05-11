@@ -67,7 +67,7 @@ object expandSolverStep {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel, context)
+    context.logicalPlanProducer.planProjectEndpoints(plan, start, isStartInScope, end, isEndInScope, patternRel, context)
   }
 
   def planSinglePatternSide(qg: QueryGraph,

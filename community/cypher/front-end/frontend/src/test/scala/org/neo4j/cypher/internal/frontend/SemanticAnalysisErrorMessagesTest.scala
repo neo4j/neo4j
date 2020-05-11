@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -758,6 +760,41 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
+  }
+
+  test("Should not allow repeating rel variable in pattern") {
+    val query = "MATCH ()-[r]-()-[r]-() RETURN r AS r"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List("Cannot use the same relationship variable 'r' for multiple patterns"))
+  }
+
+  test("Should warn about repeated rel variable in pattern expression") {
+    val query = "MATCH ()-[r]-() RETURN size( ()-[r]-()-[r]-() ) AS size"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    val resultState = pipeline.transform(startState, context)
+
+    resultState.semantics().notifications should equal(Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(33, 1, 33), "r")))
+    context.errors should be(empty)
+  }
+
+  test("Should warn about repeated rel variable in pattern comprehension") {
+    val query = "MATCH ()-[r]-() RETURN [ ()-[r]-()-[r]-() | r ] AS rs"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    val resultState = pipeline.transform(startState, context)
+
+    resultState.semantics().notifications should equal(Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(29, 1, 29), "r")))
+    context.errors should be(empty)
   }
 
   test("Should type check predicates in FilteringExpression") {

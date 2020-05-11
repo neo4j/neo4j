@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -118,6 +119,8 @@ object NotificationWrapping {
       NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString("Missing parameters: ",", ","")))
     case CodeGenerationFailedNotification(msg) =>
       NotificationCode.CODE_GENERATION_FAILED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Error from code generation", msg))
+    case DeprecatedRepeatedRelVarInPatternExpression(pos, relName) =>
+      NotificationCode.REPEATED_REL_IN_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.repeatedRel(relName))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

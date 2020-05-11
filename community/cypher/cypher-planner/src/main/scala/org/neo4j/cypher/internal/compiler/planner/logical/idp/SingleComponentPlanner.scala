@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPla
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -166,7 +166,7 @@ object SingleComponentPlanner {
       case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan, context))
       case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternNodes.isEmpty && solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipHint]) =>
-        Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
+        Set(context.logicalPlanProducer.planProjectEndpoints(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
       case plan =>
         val (start, end) = pattern.nodes
         val leftExpand = planSinglePatternSide(qg, pattern, plan, start, interestingOrder, context)

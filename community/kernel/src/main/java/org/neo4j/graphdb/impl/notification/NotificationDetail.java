@@ -71,6 +71,11 @@ public interface NotificationDetail
             return createNotificationDetail( "the missing property name", name, true );
         }
 
+        public static NotificationDetail repeatedRel( final String name )
+        {
+            return createNotificationDetail( "the repeated relationship", name, true );
+        }
+
         public static NotificationDetail joinKey( List<String> identifiers )
         {
             boolean singular = identifiers.size() == 1;

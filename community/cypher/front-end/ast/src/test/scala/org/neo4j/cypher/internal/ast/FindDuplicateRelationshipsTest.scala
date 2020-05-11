@@ -42,16 +42,16 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
     val relPath1 = EveryPath(RelationshipChain(node, relPattern(relRBumped), node)(pos))
     val pattern = Pattern(Seq(relPath0, relPath1))(pos)
 
-    pattern.findDuplicateRelationships should equal(Seq(relR))
-    pattern.findDuplicateRelationships(0).position should equal(relR.position)
+    RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq(relR))
+    RelationshipChain.findDuplicateRelationships(pattern)(0).position should equal(relR.position)
   }
 
   test("find duplicate relationships in a long rel chain") {
     val relPath = expressions.EveryPath(relChain(relR, relS, relRBumped))
     val pattern = Pattern(Seq(relPath))(pos)
 
-    pattern.findDuplicateRelationships should equal(Seq(relR))
-    pattern.findDuplicateRelationships(0).position should equal(relR.position)
+    RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq(relR))
+    RelationshipChain.findDuplicateRelationships(pattern)(0).position should equal(relR.position)
   }
 
   test("does not find duplicate relationships across pattern parts if there is none") {
@@ -59,14 +59,14 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
     val otherRelPath = EveryPath(expressions.RelationshipChain(node, relPattern(relS), node)(pos))
     val pattern = Pattern(Seq(relPath, otherRelPath))(pos)
 
-    pattern.findDuplicateRelationships should equal(Seq.empty)
+    RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq.empty)
   }
 
   test("does not find duplicate relationships in a long rel chain if there is none") {
     val relPath = expressions.EveryPath(relChain(relS, relR))
     val pattern = Pattern(Seq(relPath))(pos)
 
-    pattern.findDuplicateRelationships should equal(Seq.empty)
+    RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq.empty)
   }
 
   private def relChain(ids: Variable*) =

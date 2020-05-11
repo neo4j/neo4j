@@ -42,3 +42,5 @@ case class DeprecatedCreateIndexSyntax(position: InputPosition) extends Internal
 case class DeprecatedDropIndexSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedDropConstraintSyntax(position: InputPosition) extends InternalNotification
+
+case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String) extends InternalNotification

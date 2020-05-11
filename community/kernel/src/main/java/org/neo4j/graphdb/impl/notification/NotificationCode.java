@@ -189,7 +189,16 @@ public enum NotificationCode
     CODE_GENERATION_FAILED(
             SeverityLevel.WARNING,
             Status.Statement.CodeGenerationFailed,
-            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." );
+            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." ),
+    REPEATED_REL_IN_PATTERN_EXPRESSION(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "You are using the same relationship variable for multiple patterns in a pattern expression/comprehension. " +
+            "This feature is deprecated and will be removed in a future version, " +
+            "because it does not follow Cyphers pattern matching relationship uniqueness rule. " +
+            "It can lead to the optimizer choosing bad plans for that pattern expression/comprehension. " +
+            "Please rewrite your query, using the start node and/or end node of the relationship in the pattern expression/comprehension instead."
+    );
 
     private final Status status;
     private final String description;
