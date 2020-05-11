@@ -28,19 +28,24 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
+    public static final String ADDRESS_CONTEXT_KEY = "address";
 
     private final ConnectorPortRegister portRegister;
 
@@ -63,7 +68,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         assertDatabaseIsOperational( namedDatabaseId );
         if ( config.get( BoltConnector.enabled ) )
         {
-            return createRoutingResult( findAdvertisedBoltAddress(), configuredRoutingTableTtl() );
+            return createRoutingResult( findAdvertisedBoltAddress( routingContext ), configuredRoutingTableTtl() );
         }
         throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + namedDatabaseId.name() +
                                                            " because Bolt is not enabled. Please update your configuration for '" +
@@ -95,13 +100,14 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return config.get( GraphDatabaseSettings.routing_ttl ).toMillis();
     }
 
-    private SocketAddress findAdvertisedBoltAddress()
+    private SocketAddress findAdvertisedBoltAddress( MapValue routingContext ) throws ProcedureException
     {
-        var advertisedAddress = config.get( BoltConnector.advertised_address );
-        if ( advertisedAddress.getPort() == 0 )
+        var clientProvidedAddress = findClientProvidedAddress( routingContext );
+        var advertisedAddress = clientProvidedAddress.orElse( config.get( BoltConnector.advertised_address ) );
+
+        if ( advertisedAddress.getPort() <= 0 )
         {
-            // advertised address with port zero is not useful for callers of the routing procedure
-            // it is most likely inherited from the listen address
+            // advertised address with a negative or zero port is not useful for callers of the routing procedure
             // attempt to resolve the actual port using the port register
             var localAddress = portRegister.getLocalAddress( BoltConnector.NAME );
             if ( localAddress != null )
@@ -110,5 +116,28 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
             }
         }
         return advertisedAddress;
+    }
+
+    private Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext ) throws ProcedureException
+    {
+        var address = routingContext.get( ADDRESS_CONTEXT_KEY );
+        if ( address == null  || address == NO_VALUE )
+        {
+            return Optional.empty();
+        }
+
+        if ( address instanceof TextValue )
+        {
+            try
+            {
+                return Optional.of( SocketAddressParser.socketAddress( ((TextValue) address).stringValue(), SocketAddress::new ) );
+            }
+            catch ( Exception e )
+            { // Do nothing but warn
+            }
+        }
+
+        throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "An address key is included in the query string provided to the " +
+                                                                            "GetRoutingTableProcedure, but its value could not be parsed." );
     }
 }

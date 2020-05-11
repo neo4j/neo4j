@@ -32,6 +32,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -39,8 +40,12 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -138,7 +143,6 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         databaseIdRepository.filter( UNKNOWN_ID.name() );
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( UNKNOWN_ID.name() )};
-
         var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
         assertEquals( DatabaseNotFound, error.status() );
     }
@@ -149,7 +153,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var portRegister = mock( ConnectorPortRegister.class );
         var config = Config.defaults();
         var databaseManager = databaseManagerMock( config, false );
-        var procedure = newProcedure( databaseManager, portRegister, config );
+        var procedure = newProcedure( databaseManager, portRegister, config, nullLogProvider() );
 
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( ID.name() )};
 
@@ -157,9 +161,110 @@ public class SingleInstanceGetRoutingTableProcedureTest
         assertEquals( DatabaseUnavailable, error.status() );
     }
 
-    protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
+    @Test
+    void shouldThrowWhenAddressCtxIsPresentButEmpty()
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config, nullLogProvider() );
+        // given
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.EMPTY_STRING );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = newConfig( Duration.ofSeconds( 100 ), new SocketAddress( "neo4j.com", 7687 ) );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+
+        // when/then
+        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+    }
+
+    @Test
+    void shouldThrowWhenHostCtxIsInvalid()
+    {
+        // given
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( "not a socket address" ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = newConfig( Duration.ofSeconds( 100 ), new SocketAddress( "neo4j.com", 7687 ) );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+
+        // when/then
+        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+    }
+
+    @Test
+    void shouldUseClientProvidedHostAsAdvertisedAddress() throws Exception
+    {
+        // given
+        var advertisedBoldPort = 8776;
+        var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
+        var clientProvidedHost = "my.neo4j-service.com";
+
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( clientProvidedHost ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
+        var config = newConfig( Duration.ofSeconds( 100 ), advertisedBoltAddress );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedAddress = new SocketAddress( clientProvidedHost, advertisedBoldPort );
+
+        // when
+        var result = procedure.invoke( ID, ctx );
+
+        // then
+        assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
+        assertEquals( expectedWriters( expectedAddress ), result.writeEndpoints() );
+        assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
+    }
+
+    @Test
+    void shouldUseClientProvidedHostAndPortAsAdvertisedAddress() throws Exception
+    {
+        // given
+        var advertisedBoltAddress = new SocketAddress( "neo4j.com", 7687 );
+        var clientProvidedPort = 8888;
+        var clientProvidedHost = "my.neo4j-service.com";
+        var clientProvidedHostPortStr = String.format( "%s:%d", clientProvidedHost, clientProvidedPort );
+
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( clientProvidedHostPortStr ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = newConfig( Duration.ofSeconds( 100 ), advertisedBoltAddress );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedAddress = new SocketAddress( clientProvidedHost, clientProvidedPort );
+
+        // when
+        var result = procedure.invoke( ID, ctx );
+
+        // then
+        assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
+        assertEquals( expectedWriters( expectedAddress ), result.writeEndpoints() );
+        assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
+    }
+
+    protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config,
+                                                         LogProvider logProvider )
+    {
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config, logProvider );
     }
 
     protected List<SocketAddress> expectedWriters( SocketAddress selfAddress )
@@ -170,7 +275,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     private BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
         var databaseManager = databaseManagerMock( config, true );
-        return newProcedure( databaseManager, portRegister, config );
+        return newProcedure( databaseManager, portRegister, config, nullLogProvider() );
     }
 
     private static Config newConfig( Duration routingTtl, SocketAddress boltAddress )
