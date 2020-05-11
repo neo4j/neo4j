@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.http.cypher.format.common;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -79,17 +81,17 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private TransactionHandle transactionHandle;
+    private final TransactionHandle transactionHandle;
 
     public Neo4jJsonCodec( TransactionHandle transactionHandle )
     {
-        this();
         this.transactionHandle = transactionHandle;
+        getSerializationConfig().without( FLUSH_AFTER_WRITE_VALUE );
     }
 
     public Neo4jJsonCodec()
     {
-        getSerializationConfig().without( FLUSH_AFTER_WRITE_VALUE );
+        this( null );
     }
 
     @Override

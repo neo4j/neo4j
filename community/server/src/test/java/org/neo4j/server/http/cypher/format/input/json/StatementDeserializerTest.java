@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher.format.input.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -41,6 +43,8 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 public class StatementDeserializerTest
 {
+    private final JsonFactory jsonFactory = new JsonFactory().setCodec( new ObjectMapper() );
+
     @Test
     public void shouldDeserializeSingleStatement()
     {
@@ -48,7 +52,7 @@ public class StatementDeserializerTest
         String json = createJsonFrom( map( "statements", singletonList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         InputStatement stmt = de.read();
@@ -82,7 +86,7 @@ public class StatementDeserializerTest
                 "totally invalid json is totally ignored";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         InputStatement stmt = de.read();
@@ -100,7 +104,7 @@ public class StatementDeserializerTest
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         InputStatement stmt = de.read();
@@ -118,7 +122,7 @@ public class StatementDeserializerTest
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         InputStatement stmt = de.read();
@@ -136,7 +140,7 @@ public class StatementDeserializerTest
         byte[] json = new byte[0];
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( json ) );
 
         // Then
         assertNull( de.read() );
@@ -151,7 +155,7 @@ public class StatementDeserializerTest
                 map( "statement", "Blah bluh", "parameters", map( "asd", singletonList( "one, two" ) ) ) ) ) );
 
         // When
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         // Then
         InputStatement stmt = de.read();
@@ -206,7 +210,7 @@ public class StatementDeserializerTest
 
     private void assertYieldsErrors( String json, String... expectedErrorMessages )
     {
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
+        StatementDeserializer de = new StatementDeserializer( jsonFactory, new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         try
         {

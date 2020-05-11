@@ -19,13 +19,15 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.time.Duration;
@@ -37,7 +39,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +47,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
@@ -56,7 +65,6 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.spatial.Coordinate;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -68,6 +76,7 @@ import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
 import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
+import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.http.cypher.format.input.json.InputStatement;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.mockito.mock.GraphMock;
@@ -75,7 +84,6 @@ import org.neo4j.test.mockito.mock.Link;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,7 +94,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.Property.property;
@@ -105,6 +112,7 @@ class ExecutionResultSerializerTest
     private static final Map<String,Object> NO_ARGS = Collections.emptyMap();
     private static final Set<String> NO_IDS = Collections.emptySet();
     private static final List<ExecutionPlanDescription> NO_PLANS = Collections.emptyList();
+    private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private ExecutionResultSerializer serializer;
@@ -121,79 +129,78 @@ class ExecutionResultSerializerTest
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
         when( transactionHandle.getContext() ).thenReturn( context );
-        serializer = getSerializerWith( output );
+        serializer = getSerializerWith( transactionHandle, output );
     }
 
     @Test
-    void shouldSerializeResponseWithCommitUriOnly() throws Exception
+    void shouldSerializeResponseWithCommitUriOnly()
     {
         // when
-        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( "commit/uri/1" ) , -1 ) );
+        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( "commit/uri/1" ), -1 ) );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
     }
 
     @Test
-    void shouldSerializeResponseWithCommitUriAndResults() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResults()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer );
 
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd();
-
-        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( "commit/uri/1" ) , -1 ) );
+        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( "commit/uri/1" ), -1 ) );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
     }
 
     @Test
-    void shouldSerializeResponseWithResultsOnly() throws Exception
+    void shouldSerializeResponseWithResultsOnly()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"errors\":[]}", result );
     }
 
     @Test
-    void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResultsAndErrors()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2");
-        writeStatementEnd();
-        writeError( Status.Request.InvalidFormat, "cause1" );
-        writeTransactionInfo("commit/uri/1");
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer );
+        writeError( serializer, Status.Request.InvalidFormat, "cause1" );
+        writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}],\"commit\":\"commit/uri/1\"}",
@@ -201,22 +208,22 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeResponseWithResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithResultsAndErrors()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd();
-        writeError( Status.Request.InvalidFormat, "cause1" );
-        writeTransactionInfo();
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer );
+        writeError( serializer, Status.Request.InvalidFormat, "cause1" );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
@@ -224,66 +231,66 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndErrors()
     {
 
         // when
-        writeError( Status.Request.InvalidFormat, "cause1" );
-        writeTransactionInfo("commit/uri/1");
+        writeError( serializer, Status.Request.InvalidFormat, "cause1" );
+        writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\"," +
                       "\"message\":\"cause1\"}],\"commit\":\"commit/uri/1\"}", result );
     }
 
     @Test
-    void shouldSerializeResponseWithErrorsOnly() throws Exception
+    void shouldSerializeResponseWithErrorsOnly()
     {
         // when
-        writeError( Status.Request.InvalidFormat, "cause1" );
-        writeTransactionInfo();
+        writeError( serializer, Status.Request.InvalidFormat, "cause1" );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals(
                 "{\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                 result );
     }
 
     @Test
-    void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
+    void shouldSerializeResponseWithNoCommitUriResultsOrErrors()
     {
 
         // when
-        writeTransactionInfo();
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[],\"errors\":[]}", result );
     }
 
     @Test
-    void shouldSerializeResponseWithMultipleResultRows() throws Exception
+    void shouldSerializeResponseWithMultipleResultRows()
     {
         // given
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put( "column1", "value1" );
-        row1.put( "column2", "value2" );
+        var row1 = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put( "column1", "value3" );
-        row2.put( "column2", "value4" );
+        var row2 = Map.of(
+                "column1", "value3",
+                "column2", "value4" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row1, "column1", "column2");
-        writeRecord( row2, "column1", "column2");
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row1, "column1", "column2" );
+        writeRecord( serializer, row2, "column1", "column2" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}," +
                       "{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
@@ -291,28 +298,28 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeResponseWithMultipleResults() throws Exception
+    void shouldSerializeResponseWithMultipleResults()
     {
         // given
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put( "column1", "value1" );
-        row1.put( "column2", "value2" );
+        Map<String,Object> row1 = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put( "column3", "value3" );
-        row2.put( "column4", "value4" );
+        Map<String,Object> row2 = Map.of(
+                "column3", "value3",
+                "column4", "value4" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row1, "column1", "column2");
-        writeStatementEnd();
-        writeStatementStart( "column3", "column4" );
-        writeRecord( row2, "column3", "column4" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row1, "column1", "column2" );
+        writeStatementEnd( serializer );
+        writeStatementStart( serializer, "column3", "column4" );
+        writeRecord( serializer, row2, "column3", "column4" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[" +
                 "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}," +
                 "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
@@ -320,28 +327,27 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeNodeAsMapOfProperties() throws Exception
+    void shouldSerializeNodeAsMapOfProperties()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
         var node = node( 1,
-                properties( property( "a", 12 ),
-                        property( "b", true ),
-                        property( "c", new int[]{1, 0, 1, 2} ),
-                        property( "d", new byte[]{1, 0, 1, 2} ),
-                        property( "e", new String[]{"a", "b", "ääö"} ) ) );
-        row.put( "node", node );
+                         properties( property( "a", 12 ),
+                                     property( "b", true ),
+                                     property( "c", new int[]{1, 0, 1, 2} ),
+                                     property( "d", new byte[]{1, 0, 1, 2} ),
+                                     property( "e", new String[]{"a", "b", "ääö"} ) ) );
+        var row = Map.of( "node", node );
 
         when( internalTransaction.getNodeById( 1 ) ).thenReturn( node );
 
         // when
-        writeStatementStart( "node");
-        writeRecord( row, "node" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "node" );
+        writeRecord( serializer, row, "node" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
                       "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]," +
                       "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false}]}]}]," +
@@ -349,26 +355,94 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeNestedEntities() throws Exception
+    void shouldHandleTransactionHandleStateCorrectly() throws Exception, InterruptedException
+    {
+
+        // The serializer is stateful, as the underlying Neo4jJsonCodec uses a handle to the transaction.
+        // Therefore, the JSON Factory must not be reused respectively the codec used on a factory cannot be changed
+        // Otherwise, we will end up with transaction handles belonging to other threads.
+
+        Function<Integer,Node> selectNode = i -> node( 1, properties( property( "i", i ) ) );
+        Function<Integer,Callable<String>> callableProvider = selectNode.andThen( node -> () ->
+        {
+
+            // given
+            var localContext = mock( TransitionalTxManagementKernelTransaction.class );
+            var localInternalTransaction = mock( InternalTransaction.class );
+            var localKernelTransaction = mock( KernelTransactionImplementation.class );
+            var localTransactionHandle = mock( TransactionHandle.class );
+
+            when( localInternalTransaction.getNodeById( 1 ) ).thenReturn( node );
+            when( localInternalTransaction.kernelTransaction() ).thenReturn( localKernelTransaction );
+            when( localContext.getInternalTransaction() ).thenReturn( localInternalTransaction );
+            when( localTransactionHandle.getContext() ).thenReturn( localContext );
+
+            // when
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ExecutionResultSerializer serializer = getSerializerWith( localTransactionHandle, output );
+
+            writeStatementStart( serializer, "node" );
+            writeRecord( serializer, Collections.singletonMap( "node", node ), "node" );
+            writeStatementEnd( serializer );
+            writeTransactionInfo( serializer );
+
+            // then
+            return output.toString( UTF_8 );
+        } );
+
+        int numberOfRequests = 10;
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        List<Future<String>> calledRequests = executor.invokeAll( IntStream.range( 0, numberOfRequests )
+                                                                           .boxed().map( callableProvider ).collect( Collectors.toList() ) );
+        try
+        {
+            int i = 0;
+            for ( Future<String> request : calledRequests )
+            {
+                var expectedResult = "{\"results\":[{\"columns\":[\"node\"]," +
+                                     "\"data\":[{\"row\":[{\"i\":" + i + "}]," +
+                                     "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false}]}]}]," +
+                                     "\"errors\":[]}";
+                try
+                {
+                    var result = request.get();
+                    assertEquals( expectedResult, result );
+                }
+                catch ( ExecutionException e )
+                {
+                    Assertions.fail( "At least one request failed " + e.getMessage() );
+                }
+                ++i;
+            }
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+    }
+
+    @Test
+    void shouldSerializeNestedEntities()
     {
         // given
-        Node a = node( 1, properties( property( "foo", 12 ) ) );
-        Node b = node( 2, properties( property( "bar", false ) ) );
-        Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
+        var a = node( 1, properties( property( "foo", 12 ) ) );
+        var b = node( 2, properties( property( "bar", false ) ) );
+        var r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
         when( internalTransaction.getRelationshipById( 1 ) ).thenReturn( r );
         when( internalTransaction.getNodeById( 1 ) ).thenReturn( a );
         when( internalTransaction.getNodeById( 2 ) ).thenReturn( b );
-        Map<String, Object> row = new HashMap<>();
-        row.put( "nested", new TreeMap<>( map( "node", a, "edge", r, "path", path( a, link( r, b ) ) ) ) );
+        var row = Map.of(
+                "nested", new TreeMap<>( Map.of( "node", a, "edge", r, "path", path( a, link( r, b ) ) ) ) );
 
         // when
-        writeStatementStart( "nested");
-        writeRecord( row, "nested" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "nested" );
+        writeRecord( serializer, row, "nested" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
                 "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12}," +
                 "\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]," +
@@ -379,12 +453,11 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializePathAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePathAsListOfMapsOfProperties()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        final Path path = mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) );
-        row.put( "path", path );
+        var path = mockPath( Map.of( "key1", "value1" ), Map.of( "key2", "value2" ), Map.of( "key3", "value3" ) );
+        var row = Map.of( "path", path );
 
         var startNode = path.startNode();
         var endNode = path.endNode();
@@ -394,13 +467,13 @@ class ExecutionResultSerializerTest
         when( internalTransaction.getNodeById( 2L ) ).thenReturn( endNode );
 
         // when
-        writeStatementStart( "path");
-        writeRecord( row, "path" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "path" );
+        writeRecord( serializer, row, "path" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
                 "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
                 "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false}," +
@@ -409,29 +482,25 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePointsAsListOfMapsOfProperties()
     {
         // given
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) );
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) );
-        Map<String, Object> row3 = new HashMap<>();
-        row3.put( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() )  );
-        Map<String, Object> row4 = new HashMap<>();
-        row4.put(  "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) );
+        var row1 = Map.of( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) );
+        var row2 = Map.of( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) );
+        var row3 = Map.of( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() ) );
+        var row4 = Map.of( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) );
 
         // when
-        writeStatementStart( "geom");
-        writeRecord( row1, "geom" );
-        writeRecord( row2, "geom" );
-        writeRecord( row3, "geom" );
-        writeRecord( row4, "geom" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, "geom" );
+        writeRecord( serializer, row1, "geom" );
+        writeRecord( serializer, row2, "geom" );
+        writeRecord( serializer, row3, "geom" );
+        writeRecord( serializer, row4, "geom" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" +
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":" +
                         "{\"srid\":4326,\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":" +
@@ -454,36 +523,30 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeTemporalAsListOfMapsOfProperties() throws Exception
+    void shouldSerializeTemporalAsListOfMapsOfProperties()
     {
         // given
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put( "temporal", LocalDate.of( 2018, 3, 12 ) );
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put( "temporal", ZonedDateTime.of( 2018, 3, 12, 13, 2, 10, 10, ZoneId.of( "UTC+1" ) ) );
-        Map<String, Object> row3 = new HashMap<>();
-        row3.put( "temporal", OffsetTime.of( 12, 2, 4, 71, ZoneOffset.UTC ) );
-        Map<String, Object> row4 = new HashMap<>();
-        row4.put( "temporal", LocalDateTime.of( 2018, 3, 12, 13, 2, 10, 10 ) );
-        Map<String, Object> row5 = new HashMap<>();
-        row5.put( "temporal", LocalTime.of( 13, 2, 10, 10 ) );
-        Map<String, Object> row6 = new HashMap<>();
-        row6.put( "temporal", Duration.of( 12, ChronoUnit.HOURS ) );
+        var row1 = Map.of( "temporal", LocalDate.of( 2018, 3, 12 ) );
+        var row2 = Map.of( "temporal", ZonedDateTime.of( 2018, 3, 12, 13, 2, 10, 10, ZoneId.of( "UTC+1" ) ) );
+        var row3 = Map.of( "temporal", OffsetTime.of( 12, 2, 4, 71, ZoneOffset.UTC ) );
+        var row4 = Map.of( "temporal", LocalDateTime.of( 2018, 3, 12, 13, 2, 10, 10 ) );
+        var row5 = Map.of( "temporal", LocalTime.of( 13, 2, 10, 10 ) );
+        var row6 = Map.of( "temporal", Duration.of( 12, ChronoUnit.HOURS ) );
 
         // when
-        writeStatementStart( "temporal");
-        writeRecord( row1, "temporal" );
-        writeRecord( row2, "temporal" );
-        writeRecord( row3, "temporal" );
-        writeRecord( row4, "temporal" );
-        writeRecord( row5, "temporal" );
-        writeRecord( row6, "temporal" );
-        writeStatementEnd();
+        writeStatementStart( serializer, "temporal" );
+        writeRecord( serializer, row1, "temporal" );
+        writeRecord( serializer, row2, "temporal" );
+        writeRecord( serializer, row3, "temporal" );
+        writeRecord( serializer, row4, "temporal" );
+        writeRecord( serializer, row5, "temporal" );
+        writeRecord( serializer, row6, "temporal" );
+        writeStatementEnd( serializer );
 
-        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, null , -1 ) );
+        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, null, -1 ) );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals( "{\"results\":[{\"columns\":[\"temporal\"],\"data\":[" +
                         "{\"row\":[\"2018-03-12\"],\"meta\":[{\"type\":\"date\"}]}," +
                         "{\"row\":[\"2018-03-12T13:02:10.000000010+01:00[UTC+01:00]\"],\"meta\":[{\"type\":\"datetime\"}]}," +
@@ -496,61 +559,60 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldErrorWhenSerializingUnknownGeometryType() throws Exception
+    void shouldErrorWhenSerializingUnknownGeometryType()
     {
         // given
-        List<Coordinate> points = new ArrayList<>();
-        points.add( new Coordinate( 1, 2 ) );
-        points.add( new Coordinate( 2, 3 ) );
+        var points = List.of(
+                new Coordinate( 1, 2 ),
+                new Coordinate( 2, 3 ) );
 
-        Map<String, Object> row = new HashMap<>();
-        row.put("geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) );
+        var row = Map.of( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) );
 
         // when
         var e = assertThrows( RuntimeException.class, () ->
         {
-            writeStatementStart( "geom" );
-            writeRecord( row, "geom" );
+            writeStatementStart( serializer, "geom" );
+            writeRecord( serializer, row, "geom" );
         } );
 
-        writeError( Status.Statement.ExecutionFailed, e.getMessage() );
-        writeTransactionInfo();
+        writeError( serializer, Status.Statement.ExecutionFailed, e.getMessage() );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertThat( result, startsWith(
                 "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" + "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
-                        "{\"srid\":7203,\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
-                        "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}]," +
-                        "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
-                        "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"" ) );
+                "{\"srid\":7203,\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}]," +
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
+                "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"" ) );
     }
 
     @Test
-    void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
+    void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
-        RecordEvent recordEvent = mock(RecordEvent.class);
-        when(recordEvent.getValue( any() )).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
-        when( recordEvent.getColumns() ).thenReturn( Arrays.asList( "column1", "column2" ) );
+        var recordEvent = mock( RecordEvent.class );
+        when( recordEvent.getValue( any() ) ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
+        when( recordEvent.getColumns() ).thenReturn( List.of( "column1", "column2" ) );
 
         // when
         var e = assertThrows( RuntimeException.class, () ->
         {
-            writeStatementStart( "column1", "column2" );
-            writeRecord( row, "column1", "column2" );
+            writeStatementStart( serializer, "column1", "column2" );
+            writeRecord( serializer, row, "column1", "column2" );
             serializer.writeRecord( recordEvent );
         } );
 
-        writeError( Status.Statement.ExecutionFailed, e.getMessage() );
-        writeTransactionInfo();
+        writeError( serializer, Status.Statement.ExecutionFailed, e.getMessage() );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                         "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]},{\"row\":[],\"meta\":[]}]}]," +
@@ -559,7 +621,7 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldProduceResultStreamWithGraphEntries() throws Exception
+    void shouldProduceResultStreamWithGraphEntries()
     {
         // given
         Node[] node = {
@@ -576,23 +638,23 @@ class ExecutionResultSerializerTest
         when( internalTransaction.getNodeById( anyLong() ) ).thenAnswer(
                 (Answer<Node>) invocation -> node[invocation.getArgument( 0, Number.class ).intValue()] );
 
-        Map<String, Object> resultRow1 = new HashMap<>();
-        resultRow1.put( "node", node[0] );
-        resultRow1.put( "rel", rel[0] );
+        var resultRow1 = Map.of(
+                "node", node[0],
+                "rel", rel[0] );
 
-        Map<String, Object> resultRow2 = new HashMap<>();
-        resultRow2.put( "node", node[2] );
-        resultRow2.put( "rel", rel[1] );
+        var resultRow2 = Map.of(
+                "node", node[2],
+                "rel", rel[1] );
 
         // when
-        writeStatementStart( Arrays.asList( ResultDataContent.row, ResultDataContent.graph ), "node", "rel" );
-        writeRecord( resultRow1, "node", "rel" );
-        writeRecord( resultRow2, "node", "rel" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, List.of( ResultDataContent.row, ResultDataContent.graph ), "node", "rel" );
+        writeRecord( serializer, resultRow1, "node", "rel" );
+        writeRecord( serializer, resultRow2, "node", "rel" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
 
         // Nodes and relationships form sets, so we cannot test for a fixed string, since we don't know the order.
         String node0 = "{\"id\":\"0\",\"labels\":[\"Node\"],\"properties\":{\"name\":\"node0\"}}";
@@ -640,24 +702,24 @@ class ExecutionResultSerializerTest
                 relationship( 1, node[2], "LOVES", node[1], property( "name", "rel1" ) )};
         Path path = GraphMock.path( node[0], link( rel[0], node[1] ), link( rel[1], node[2] ) );
 
-        serializer = getSerializerWith( output, "http://base.uri/" );
+        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
 
-        Map<String, Object> resultRow = new HashMap<>();
-        resultRow.put( "node", node[0] );
-        resultRow.put( "rel", rel[0] );
-        resultRow.put( "path", path );
-        resultRow.put( "map", map( "n1", node[1], "r1", rel[1] ) );
+        var resultRow = Map.of(
+                "node", node[0],
+                "rel", rel[0],
+                "path", path,
+                "map", Map.of( "n1", node[1], "r1", rel[1] ) );
 
         // when
-        writeStatementStart( Collections.singletonList( ResultDataContent.rest ), "node", "rel", "path", "map" );
-        writeRecord( resultRow, "node", "rel", "path", "map" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ), "node", "rel", "path", "map" );
+        writeRecord( serializer, resultRow, "node", "rel", "path", "map" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         JsonNode json = jsonNode( result );
-        Map<String, Integer> columns = new HashMap<>();
+        Map<String,Integer> columns = new HashMap<>();
         int col = 0;
         JsonNode results = json.get( "results" ).get( 0 );
         for ( JsonNode column : results.get( "columns" ) )
@@ -682,22 +744,22 @@ class ExecutionResultSerializerTest
     void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
     {
         // given
-        serializer = getSerializerWith( output, "http://base.uri/" );
+        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
 
-        Map<String, Object> resultRow = new HashMap<>();
         // RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}
-        resultRow.put( "map", map("one", map( "two", asList("wait for it...", map("three", "GO!") ) ) ) );
+        var resultRow = Map.of(
+                "map", Map.of( "one", Map.of( "two", List.of( "wait for it...", Map.of( "three", "GO!" ) ) ) ) );
 
         // when
-        writeStatementStart( Collections.singletonList( ResultDataContent.rest ), "map" );
-        writeRecord( resultRow, "map" );
-        writeStatementEnd();
-        writeTransactionInfo();
+        writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ), "map" );
+        writeRecord( serializer, resultRow, "map" );
+        writeStatementEnd( serializer );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
-        JsonNode json = jsonNode(result);
-        Map<String, Integer> columns = new HashMap<>();
+        String result = output.toString( UTF_8 );
+        JsonNode json = jsonNode( result );
+        Map<String,Integer> columns = new HashMap<>();
         int col = 0;
         JsonNode results = json.get( "results" ).get( 0 );
         for ( JsonNode column : results.get( "columns" ) )
@@ -714,37 +776,37 @@ class ExecutionResultSerializerTest
     void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
-        serializer = getSerializerWith( output, "http://base.uri/" );
+        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
 
         String operatorType = "Ich habe einen Plan";
 
         // This is the full set of types that we allow in plan arguments
 
-        Map<String, Object> args = new HashMap<>();
-        args.put( "string", "A String" );
-        args.put( "bool", true );
-        args.put( "number", 1 );
-        args.put( "double", 2.3 );
-        args.put( "listOfInts", asList(1, 2, 3) );
-        args.put( "listOfListOfInts", asList( asList(1, 2, 3) ) );
+        var args = Map.of(
+                "string", "A String",
+                "bool", true,
+                "number", 1,
+                "double", 2.3,
+                "listOfInts", List.of( 1, 2, 3 ),
+                "listOfListOfInts", List.of( List.of( 1, 2, 3 ) ) );
 
         ExecutionPlanDescription planDescription = mockedPlanDescription( operatorType, NO_IDS, args, NO_PLANS );
 
         // when
 
-        writeStatementStart( Collections.singletonList( ResultDataContent.rest ) );
-        writeRecord( Collections.emptyMap());
-        writeStatementEnd(planDescription, Collections.emptyList());
-        writeTransactionInfo();
+        writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
+        writeRecord( serializer, Collections.emptyMap() );
+        writeStatementEnd( serializer, planDescription, Collections.emptyList() );
+        writeTransactionInfo( serializer );
 
-        String resultString = output.toString( UTF_8.name() );
+        String resultString = output.toString( UTF_8 );
 
         // then
         assertIsPlanRoot( resultString );
-        Map<String, ?> rootMap = planRootMap( resultString );
+        Map<String,?> rootMap = planRootMap( resultString );
 
         assertEquals( asSet( "operatorType", "identifiers", "children", "string", "bool", "number", "double",
-                "listOfInts", "listOfListOfInts" ), rootMap.keySet() );
+                             "listOfInts", "listOfListOfInts" ), rootMap.keySet() );
 
         assertEquals( operatorType, rootMap.get( "operatorType" ) );
         assertEquals( args.get( "string" ), rootMap.get( "string" ) );
@@ -759,7 +821,7 @@ class ExecutionResultSerializerTest
     void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
     {
         // given
-        serializer = getSerializerWith( output, "http://base.uri/" );
+        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
 
         String operatorType = "Ich habe einen Plan";
         String id1 = "id1";
@@ -770,12 +832,12 @@ class ExecutionResultSerializerTest
         ExecutionPlanDescription planDescription = mockedPlanDescription( operatorType, asSet( id1, id2, id3 ), NO_ARGS, NO_PLANS );
 
         // when
-        writeStatementStart( Collections.singletonList( ResultDataContent.rest ) );
-        writeRecord( Collections.emptyMap());
-        writeStatementEnd(planDescription, Collections.emptyList());
-        writeTransactionInfo();
+        writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
+        writeRecord( serializer, Collections.emptyMap() );
+        writeStatementEnd( serializer, planDescription, Collections.emptyList() );
+        writeTransactionInfo( serializer );
 
-        String resultString = output.toString( UTF_8.name() );
+        String resultString = output.toString( UTF_8 );
 
         // then
         assertIsPlanRoot( resultString );
@@ -784,32 +846,32 @@ class ExecutionResultSerializerTest
         assertEquals( asSet( "operatorType", "identifiers", "children" ), rootMap.keySet() );
 
         assertEquals( operatorType, rootMap.get( "operatorType" ) );
-        assertEquals( asList( id2, id1, id3 ), rootMap.get( "identifiers" ) );
+        assertEquals( List.of( id2, id1, id3 ), rootMap.get( "identifiers" ) );
     }
 
     @Test
     void shouldSerializePlanWithChildren() throws Exception
     {
         // given
-        serializer = getSerializerWith( output, "http://base.uri/" );
+        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
 
         String leftId = "leftId";
         String rightId = "rightId";
         String parentId = "parentId";
 
-        ExecutionPlanDescription left = mockedPlanDescription( "child", asSet( leftId ), MapUtil.map( "id", 1 ), NO_PLANS );
-        ExecutionPlanDescription right = mockedPlanDescription( "child", asSet( rightId ), MapUtil.map( "id", 2 ), NO_PLANS );
+        ExecutionPlanDescription left = mockedPlanDescription( "child", asSet( leftId ), Map.of( "id", 1 ), NO_PLANS );
+        ExecutionPlanDescription right = mockedPlanDescription( "child", asSet( rightId ), Map.of( "id", 2 ), NO_PLANS );
         ExecutionPlanDescription parent =
-                mockedPlanDescription( "parent", asSet( parentId ), MapUtil.map( "id", 0 ), asList( left, right ) );
+                mockedPlanDescription( "parent", asSet( parentId ), Map.of( "id", 0 ), List.of( left, right ) );
 
         // when
-        writeStatementStart( Collections.singletonList( ResultDataContent.rest ) );
-        writeRecord( Collections.emptyMap());
-        writeStatementEnd(parent, Collections.emptyList());
-        writeTransactionInfo();
+        writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
+        writeRecord( serializer, Collections.emptyMap() );
+        writeStatementEnd( serializer, parent, Collections.emptyList() );
+        writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
         JsonNode root = assertIsPlanRoot( result );
 
         assertEquals( "parent", root.get( "operatorType" ).asText() );
@@ -830,24 +892,24 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldReturnNotifications() throws IOException
+    void shouldReturnNotifications()
     {
         // given
         Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( new InputPosition( 1, 2, 3 ) );
         List<Notification> notifications = Collections.singletonList( notification );
 
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd(null, notifications);
-        writeTransactionInfo("commit/uri/1");
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer, null, notifications );
+        writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
 
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
@@ -863,47 +925,47 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    void shouldNotReturnNotificationsWhenEmptyNotifications()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd(null, Collections.emptyList());
-        writeTransactionInfo("commit/uri/1");
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer, null, Collections.emptyList() );
+        writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
 
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
+                "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
     }
 
     @Test
-    void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    void shouldNotReturnPositionWhenEmptyPosition()
     {
         // given
-        Map<String, Object> row = new HashMap<>();
-        row.put( "column1", "value1" );
-        row.put( "column2", "value2" );
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2" );
 
         Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( InputPosition.empty );
 
         List<Notification> notifications = Collections.singletonList( notification );
 
         // when
-        writeStatementStart( "column1", "column2" );
-        writeRecord( row, "column1", "column2" );
-        writeStatementEnd(null, notifications);
-        writeTransactionInfo("commit/uri/1");
+        writeStatementStart( serializer, "column1", "column2" );
+        writeRecord( serializer, row, "column1", "column2" );
+        writeStatementEnd( serializer, null, notifications );
+        writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
-        String result = output.toString( UTF_8.name() );
+        String result = output.toString( UTF_8 );
 
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
@@ -917,38 +979,40 @@ class ExecutionResultSerializerTest
                         "different parts or by using OPTIONAL MATCH\"}],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
     }
 
-    private ExecutionResultSerializer getSerializerWith( OutputStream output )
+    private static ExecutionResultSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
     {
-        return getSerializerWith( output, null );
+        return getSerializerWith( transactionHandle, output, null );
     }
 
-    private ExecutionResultSerializer getSerializerWith( OutputStream output, String uri )
+    private static ExecutionResultSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
-        return new ExecutionResultSerializer( output, uri == null ? null : URI.create( uri ), transactionHandle );
+        return new ExecutionResultSerializer( transactionHandle, Collections.emptyMap(), uri == null ? null : URI.create( uri ), Neo4jJsonCodec.class,
+                                              JSON_FACTORY, output );
     }
 
-    private void writeStatementStart( String... columns )
+    private static void writeStatementStart( ExecutionResultSerializer serializer, String... columns )
     {
-        writeStatementStart( null, columns );
+        writeStatementStart( serializer, null, columns );
     }
 
-    private void writeStatementStart( List<ResultDataContent> resultDataContents, String... columns )
+    private static void writeStatementStart( ExecutionResultSerializer serializer, List<ResultDataContent> resultDataContents, String... columns )
     {
         serializer.writeStatementStart( new StatementStartEvent( null, Arrays.asList( columns ) ),
-                new InputStatement( null, null, false, resultDataContents ) );
+                                        new InputStatement( null, null, false, resultDataContents ) );
     }
 
-    private void writeRecord( Map<String,Object> row, String... columns )
+    private static void writeRecord( ExecutionResultSerializer serializer, Map<String,?> row, String... columns )
     {
         serializer.writeRecord( new RecordEvent( Arrays.asList( columns ), row::get ) );
     }
 
-    private void writeStatementEnd()
+    private static void writeStatementEnd( ExecutionResultSerializer serializer )
     {
-        writeStatementEnd( null, Collections.emptyList() );
+        writeStatementEnd( serializer, null, Collections.emptyList() );
     }
 
-    private void writeStatementEnd( ExecutionPlanDescription planDescription, Iterable<Notification> notifications )
+    private static void writeStatementEnd( ExecutionResultSerializer serializer, ExecutionPlanDescription planDescription,
+                                           Iterable<Notification> notifications )
     {
         QueryExecutionType queryExecutionType = null != planDescription ? QueryExecutionType.profiled( QueryExecutionType.QueryType.READ_WRITE )
                                                                         : QueryExecutionType.query( QueryExecutionType.QueryType.READ_WRITE );
@@ -956,17 +1020,17 @@ class ExecutionResultSerializerTest
         serializer.writeStatementEnd( new StatementEndEvent( queryExecutionType, null, planDescription, notifications ) );
     }
 
-    private void writeTransactionInfo()
+    private static void writeTransactionInfo( ExecutionResultSerializer serializer )
     {
         serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, null, -1 ) );
     }
 
-    private void writeTransactionInfo( String commitUri )
+    private static void writeTransactionInfo( ExecutionResultSerializer serializer, String commitUri )
     {
         serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( commitUri ), -1 ) );
     }
 
-    private void writeError( Status status, String message )
+    private static void writeError( ExecutionResultSerializer serializer, Status status, String message )
     {
         serializer.writeFailure( new FailureEvent( status, message ) );
     }
@@ -979,7 +1043,7 @@ class ExecutionResultSerializerTest
         return path( startNode, Link.link( relationship, endNode ) );
     }
 
-    private Set<String> identifiersOf( JsonNode root )
+    private static Set<String> identifiersOf( JsonNode root )
     {
         Set<String> parentIds = new HashSet<>();
         for ( JsonNode id : root.get( "identifiers" ) )
@@ -989,8 +1053,8 @@ class ExecutionResultSerializerTest
         return parentIds;
     }
 
-    private ExecutionPlanDescription mockedPlanDescription( String operatorType, Set<String> identifiers, Map<String,Object> args,
-            List<ExecutionPlanDescription> children )
+    private static ExecutionPlanDescription mockedPlanDescription( String operatorType, Set<String> identifiers, Map<String,Object> args,
+                                                                   List<ExecutionPlanDescription> children )
     {
         ExecutionPlanDescription planDescription = mock( ExecutionPlanDescription.class );
         when( planDescription.getChildren() ).thenReturn( children );
@@ -1000,7 +1064,7 @@ class ExecutionResultSerializerTest
         return planDescription;
     }
 
-    private JsonNode assertIsPlanRoot( String result ) throws JsonParseException
+    private static JsonNode assertIsPlanRoot( String result ) throws JsonParseException
     {
         JsonNode json = jsonNode( result );
         JsonNode results = json.get( "results" ).get( 0 );
@@ -1015,7 +1079,7 @@ class ExecutionResultSerializerTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private Map<String,?> planRootMap( String resultString ) throws JsonParseException
+    private static Map<String,?> planRootMap( String resultString ) throws JsonParseException
     {
         Map<String,?> resultMap = (Map<String,?>) ((List<?>) ((Map<String,?>) (readJson( resultString ))).get( "results" )).get( 0 );
         Map<String,?> planMap = (Map<String,?>) (resultMap.get( "plan" ));

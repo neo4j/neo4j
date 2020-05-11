@@ -22,9 +22,11 @@ package org.neo4j.server.http.cypher.format.output.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.ObjectCodec;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -47,49 +49,104 @@ import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
 import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
-import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.http.cypher.format.input.json.InputStatement;
+import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
 
 /**
- * A stateful serializer that serializes event stream produced  by {@link OutputEventSource} into JSON.
- * The serialization methods are expected to be invoked in order which corresponds to the legal ordering of the event stream events
- * as described in {@link OutputEvent}.
+ * A stateful serializer that serializes event stream produced  by {@link OutputEventSource} into JSON. The serialization methods are expected to be invoked in
+ * order which corresponds to the legal ordering of the event stream events as described in {@link OutputEvent}.
  */
 class ExecutionResultSerializer
 {
 
     private State currentState = State.EMPTY;
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
-    private final JsonGenerator out;
+    private final JsonGenerator jsonGenerator;
     private final URI baseUri;
     private final TransactionHandle transactionHandle;
     private final List<Notification> notifications = new ArrayList<>();
     private final List<FailureEvent> errors = new ArrayList<>();
     private final OutputStream output;
+    /**
+     * THe original parameters from the {@link org.neo4j.server.http.cypher.format.api.OutputEventSource}.
+     */
+    private final Map<String,Object> parameters;
 
     private ResultDataContentWriter writer;
     private InputStatement inputStatement;
 
-    ExecutionResultSerializer( OutputStream output, URI baseUri, TransactionHandle transactionHandle )
+    // The idea behind passing in the JSON Factory as well as the codec to use is as follows:
+    // This stateful serializer alone shall be responsible for creating a stateful JSON generator
+    // from the JSON Factory in such a way that the state management does not leak into other classes.
+    // For example, if we would rely on the JAX-RS facing JSON Body writer, we would have no meaningful
+    // test whether the state handling works or not.
+    ExecutionResultSerializer( TransactionHandle transactionHandle, Map<String,Object> parameters, URI baseUri,
+                               Class<? extends ObjectCodec> classOfCodec, JsonFactory jsonFactory, OutputStream output )
     {
+        this.parameters = parameters;
         this.baseUri = baseUri;
         this.transactionHandle = transactionHandle;
         this.output = output;
-        JSON_FACTORY.setCodec( new Neo4jJsonCodec( transactionHandle ) );
-        JsonGenerator generator;
+
+        ObjectCodec codec = instantiateCodec( transactionHandle, classOfCodec );
+        this.jsonGenerator = createGenerator( jsonFactory, codec, output );
+    }
+
+    public final void handleEvent( OutputEvent event )
+    {
+        switch ( event.getType() )
+        {
+        case STATEMENT_START:
+            StatementStartEvent statementStartEvent = (StatementStartEvent) event;
+            InputStatement inputStatement = JsonMessageBodyReader.getInputStatement( parameters, statementStartEvent.getStatement() );
+            writeStatementStart( statementStartEvent, inputStatement );
+            break;
+        case RECORD:
+            writeRecord( (RecordEvent) event );
+            break;
+        case STATEMENT_END:
+            StatementEndEvent statementEndEvent = (StatementEndEvent) event;
+            writeStatementEnd( statementEndEvent );
+            break;
+        case FAILURE:
+            FailureEvent failureEvent = (FailureEvent) event;
+            writeFailure( failureEvent );
+            break;
+        case TRANSACTION_INFO:
+            TransactionInfoEvent transactionInfoEvent = (TransactionInfoEvent) event;
+            writeTransactionInfo( transactionInfoEvent );
+            break;
+        default:
+            throw new IllegalStateException( "Unsupported event encountered:" + event.getType() );
+        }
+    }
+
+    private static ObjectCodec instantiateCodec( TransactionHandle transactionHandle, Class<? extends ObjectCodec> classOfCodec )
+    {
         try
         {
-            generator = JSON_FACTORY.createJsonGenerator( output );
+            var ctor = classOfCodec.getConstructor( TransactionHandle.class );
+            return ctor.newInstance( transactionHandle );
+        }
+        catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e )
+        {
+            throw new IllegalStateException( "Failed to create result mapper", e );
+        }
+    }
+
+    private static JsonGenerator createGenerator( JsonFactory jsonFactory, ObjectCodec codec, OutputStream output )
+    {
+        try
+        {
+            return jsonFactory.copy().setCodec( codec ).createGenerator( output );
         }
         catch ( IOException e )
         {
             throw new IllegalStateException( "Failed to create JSON generator", e );
         }
-        this.out = generator;
     }
 
     void writeStatementStart( StatementStartEvent statementStartEvent, InputStatement inputStatement )
@@ -99,10 +156,10 @@ class ExecutionResultSerializer
         try
         {
             ensureResultsFieldOpen();
-            out.writeStartObject();
+            jsonGenerator.writeStartObject();
             Iterable<String> columns = statementStartEvent.getColumns();
             writeColumns( columns );
-            out.writeArrayFieldStart( "data" );
+            jsonGenerator.writeArrayFieldStart( "data" );
             currentState = State.STATEMENT_OPEN;
         }
         catch ( JsonGenerationException e )
@@ -121,14 +178,14 @@ class ExecutionResultSerializer
         {
             TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
 
-            out.writeStartObject();
+            jsonGenerator.writeStartObject();
             try
             {
-                writer.write( out, recordEvent, txStateChecker );
+                writer.write( jsonGenerator, recordEvent, txStateChecker );
             }
             finally
             {
-                out.writeEndObject();
+                jsonGenerator.writeEndObject();
             }
             flush();
         }
@@ -164,7 +221,7 @@ class ExecutionResultSerializer
     {
         try
         {
-            out.writeEndArray();
+            jsonGenerator.writeEndArray();
             if ( inputStatement.includeStats() )
             {
                 writeStats( statementEndEvent.getQueryStatistics() );
@@ -174,7 +231,7 @@ class ExecutionResultSerializer
                 writeRootPlanDescription( statementEndEvent.getExecutionPlanDescription() );
             }
 
-            out.writeEndObject(); // </result>
+            jsonGenerator.writeEndObject(); // </result>
             currentState = State.RESULTS_OPEN;
 
             statementEndEvent.getNotifications().forEach( notifications::add );
@@ -199,21 +256,21 @@ class ExecutionResultSerializer
             writeErrors();
             if ( transactionInfoEvent.getCommitUri() != null )
             {
-                out.writeStringField( "commit", transactionInfoEvent.getCommitUri().toString() );
+                jsonGenerator.writeStringField( "commit", transactionInfoEvent.getCommitUri().toString() );
             }
             if ( transactionInfoEvent.getNotification() == OPEN )
             {
-                out.writeObjectFieldStart( "transaction" );
+                jsonGenerator.writeObjectFieldStart( "transaction" );
                 if ( transactionInfoEvent.getExpirationTimestamp() >= 0 )
                 {
                     String expires = Instant.ofEpochMilli( transactionInfoEvent.getExpirationTimestamp() )
-                            .atZone( ZoneId.of( "GMT" ) )
-                            .format( DateTimeFormatter.RFC_1123_DATE_TIME );
-                    out.writeStringField( "expires", expires );
+                                            .atZone( ZoneId.of( "GMT" ) )
+                                            .format( DateTimeFormatter.RFC_1123_DATE_TIME );
+                    jsonGenerator.writeStringField( "expires", expires );
                 }
-                out.writeEndObject();
+                jsonGenerator.writeEndObject();
             }
-            out.writeEndObject();
+            jsonGenerator.writeEndObject();
             flush();
         }
         catch ( JsonGenerationException e )
@@ -255,29 +312,29 @@ class ExecutionResultSerializer
         {
             ensureResultsFieldClosed();
 
-            out.writeArrayFieldStart( "notifications" );
+            jsonGenerator.writeArrayFieldStart( "notifications" );
             try
             {
                 for ( Notification notification : notifications )
                 {
-                    out.writeStartObject();
+                    jsonGenerator.writeStartObject();
                     try
                     {
-                        out.writeStringField( "code", notification.getCode() );
-                        out.writeStringField( "severity", notification.getSeverity().toString() );
-                        out.writeStringField( "title", notification.getTitle() );
-                        out.writeStringField( "description", notification.getDescription() );
+                        jsonGenerator.writeStringField( "code", notification.getCode() );
+                        jsonGenerator.writeStringField( "severity", notification.getSeverity().toString() );
+                        jsonGenerator.writeStringField( "title", notification.getTitle() );
+                        jsonGenerator.writeStringField( "description", notification.getDescription() );
                         writePosition( notification.getPosition() );
                     }
                     finally
                     {
-                        out.writeEndObject();
+                        jsonGenerator.writeEndObject();
                     }
                 }
             }
             finally
             {
-                out.writeEndArray();
+                jsonGenerator.writeEndArray();
             }
         }
         catch ( IOException e )
@@ -294,92 +351,92 @@ class ExecutionResultSerializer
             return;
         }
 
-        out.writeObjectFieldStart( "position" );
+        jsonGenerator.writeObjectFieldStart( "position" );
         try
         {
-            out.writeNumberField( "offset", position.getOffset() );
-            out.writeNumberField( "line", position.getLine() );
-            out.writeNumberField( "column", position.getColumn() );
+            jsonGenerator.writeNumberField( "offset", position.getOffset() );
+            jsonGenerator.writeNumberField( "line", position.getLine() );
+            jsonGenerator.writeNumberField( "column", position.getColumn() );
         }
         finally
         {
-            out.writeEndObject();
+            jsonGenerator.writeEndObject();
         }
     }
 
     private void writeStats( QueryStatistics stats ) throws IOException
     {
-        out.writeObjectFieldStart( "stats" );
+        jsonGenerator.writeObjectFieldStart( "stats" );
         try
         {
-            out.writeBooleanField( "contains_updates", stats.containsUpdates() );
-            out.writeNumberField( "nodes_created", stats.getNodesCreated() );
-            out.writeNumberField( "nodes_deleted", stats.getNodesDeleted() );
-            out.writeNumberField( "properties_set", stats.getPropertiesSet() );
-            out.writeNumberField( "relationships_created", stats.getRelationshipsCreated() );
-            out.writeNumberField( "relationship_deleted", stats.getRelationshipsDeleted() );
-            out.writeNumberField( "labels_added", stats.getLabelsAdded() );
-            out.writeNumberField( "labels_removed", stats.getLabelsRemoved() );
-            out.writeNumberField( "indexes_added", stats.getIndexesAdded() );
-            out.writeNumberField( "indexes_removed", stats.getIndexesRemoved() );
-            out.writeNumberField( "constraints_added", stats.getConstraintsAdded() );
-            out.writeNumberField( "constraints_removed", stats.getConstraintsRemoved() );
-            out.writeBooleanField( "contains_system_updates", stats.containsSystemUpdates() );
-            out.writeNumberField( "system_updates", stats.getSystemUpdates() );
+            jsonGenerator.writeBooleanField( "contains_updates", stats.containsUpdates() );
+            jsonGenerator.writeNumberField( "nodes_created", stats.getNodesCreated() );
+            jsonGenerator.writeNumberField( "nodes_deleted", stats.getNodesDeleted() );
+            jsonGenerator.writeNumberField( "properties_set", stats.getPropertiesSet() );
+            jsonGenerator.writeNumberField( "relationships_created", stats.getRelationshipsCreated() );
+            jsonGenerator.writeNumberField( "relationship_deleted", stats.getRelationshipsDeleted() );
+            jsonGenerator.writeNumberField( "labels_added", stats.getLabelsAdded() );
+            jsonGenerator.writeNumberField( "labels_removed", stats.getLabelsRemoved() );
+            jsonGenerator.writeNumberField( "indexes_added", stats.getIndexesAdded() );
+            jsonGenerator.writeNumberField( "indexes_removed", stats.getIndexesRemoved() );
+            jsonGenerator.writeNumberField( "constraints_added", stats.getConstraintsAdded() );
+            jsonGenerator.writeNumberField( "constraints_removed", stats.getConstraintsRemoved() );
+            jsonGenerator.writeBooleanField( "contains_system_updates", stats.containsSystemUpdates() );
+            jsonGenerator.writeNumberField( "system_updates", stats.getSystemUpdates() );
         }
         finally
         {
-            out.writeEndObject();
+            jsonGenerator.writeEndObject();
         }
     }
 
     private void writeRootPlanDescription( ExecutionPlanDescription planDescription ) throws IOException
     {
-        out.writeObjectFieldStart( "plan" );
+        jsonGenerator.writeObjectFieldStart( "plan" );
         try
         {
-            out.writeObjectFieldStart( "root" );
+            jsonGenerator.writeObjectFieldStart( "root" );
             try
             {
                 writePlanDescriptionObjectBody( planDescription );
             }
             finally
             {
-                out.writeEndObject();
+                jsonGenerator.writeEndObject();
             }
         }
         finally
         {
-            out.writeEndObject();
+            jsonGenerator.writeEndObject();
         }
     }
 
     private void writePlanDescriptionObjectBody( ExecutionPlanDescription planDescription ) throws IOException
     {
-        out.writeStringField( "operatorType", planDescription.getName() );
+        jsonGenerator.writeStringField( "operatorType", planDescription.getName() );
         writePlanArgs( planDescription );
         writePlanIdentifiers( planDescription );
 
         List<ExecutionPlanDescription> children = planDescription.getChildren();
-        out.writeArrayFieldStart( "children" );
+        jsonGenerator.writeArrayFieldStart( "children" );
         try
         {
             for ( ExecutionPlanDescription child : children )
             {
-                out.writeStartObject();
+                jsonGenerator.writeStartObject();
                 try
                 {
                     writePlanDescriptionObjectBody( child );
                 }
                 finally
                 {
-                    out.writeEndObject();
+                    jsonGenerator.writeEndObject();
                 }
             }
         }
         finally
         {
-            out.writeEndArray();
+            jsonGenerator.writeEndArray();
         }
     }
 
@@ -390,19 +447,19 @@ class ExecutionResultSerializer
             String fieldName = entry.getKey();
             Object fieldValue = entry.getValue();
 
-            out.writeFieldName( fieldName );
-            writeValue( out, fieldValue );
+            jsonGenerator.writeFieldName( fieldName );
+            writeValue( jsonGenerator, fieldValue );
         }
     }
 
     private void writePlanIdentifiers( ExecutionPlanDescription planDescription ) throws IOException
     {
-        out.writeArrayFieldStart( "identifiers" );
+        jsonGenerator.writeArrayFieldStart( "identifiers" );
         for ( String id : planDescription.getIdentifiers() )
         {
-            out.writeString( id );
+            jsonGenerator.writeString( id );
         }
-        out.writeEndArray();
+        jsonGenerator.writeEndArray();
     }
 
     private void writeErrors()
@@ -410,26 +467,26 @@ class ExecutionResultSerializer
         try
         {
             ensureDocumentOpen();
-            out.writeArrayFieldStart( "errors" );
+            jsonGenerator.writeArrayFieldStart( "errors" );
             try
             {
                 for ( FailureEvent error : errors )
                 {
                     try
                     {
-                        out.writeStartObject();
-                        out.writeObjectField( "code", error.getStatus().code().serialize() );
-                        out.writeObjectField( "message", error.getMessage() );
+                        jsonGenerator.writeStartObject();
+                        jsonGenerator.writeObjectField( "code", error.getStatus().code().serialize() );
+                        jsonGenerator.writeObjectField( "message", error.getMessage() );
                     }
                     finally
                     {
-                        out.writeEndObject();
+                        jsonGenerator.writeEndObject();
                     }
                 }
             }
             finally
             {
-                out.writeEndArray();
+                jsonGenerator.writeEndArray();
                 currentState = State.ERRORS_WRITTEN;
             }
         }
@@ -443,7 +500,7 @@ class ExecutionResultSerializer
     {
         if ( currentState == State.EMPTY )
         {
-            out.writeStartObject();
+            jsonGenerator.writeStartObject();
             currentState = State.DOCUMENT_OPEN;
         }
     }
@@ -453,7 +510,7 @@ class ExecutionResultSerializer
         ensureDocumentOpen();
         if ( currentState == State.DOCUMENT_OPEN )
         {
-            out.writeArrayFieldStart( "results" );
+            jsonGenerator.writeArrayFieldStart( "results" );
             currentState = State.RESULTS_OPEN;
         }
     }
@@ -463,7 +520,7 @@ class ExecutionResultSerializer
         ensureResultsFieldOpen();
         if ( currentState == State.RESULTS_OPEN )
         {
-            out.writeEndArray();
+            jsonGenerator.writeEndArray();
             currentState = State.RESULTS_CLOSED;
         }
     }
@@ -472,8 +529,8 @@ class ExecutionResultSerializer
     {
         if ( currentState == State.STATEMENT_OPEN )
         {
-            out.writeEndArray();
-            out.writeEndObject();
+            jsonGenerator.writeEndArray();
+            jsonGenerator.writeEndObject();
             currentState = State.RESULTS_OPEN;
         }
     }
@@ -482,21 +539,21 @@ class ExecutionResultSerializer
     {
         try
         {
-            out.writeArrayFieldStart( "columns" );
+            jsonGenerator.writeArrayFieldStart( "columns" );
             for ( String key : columns )
             {
-                out.writeString( key );
+                jsonGenerator.writeString( key );
             }
         }
         finally
         {
-            out.writeEndArray(); // </columns>
+            jsonGenerator.writeEndArray(); // </columns>
         }
     }
 
     private void flush() throws IOException
     {
-        out.flush();
+        jsonGenerator.flush();
         output.flush();
     }
 

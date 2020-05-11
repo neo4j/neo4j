@@ -22,7 +22,7 @@ package org.neo4j.server.http.cypher.format.output.json;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Map;
+
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -30,22 +30,14 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
-import org.neo4j.server.http.cypher.format.api.FailureEvent;
-import org.neo4j.server.http.cypher.format.api.OutputEvent;
+import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
-import org.neo4j.server.http.cypher.format.api.RecordEvent;
-import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
-import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
-import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
-import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
-import org.neo4j.server.http.cypher.format.input.json.InputStatement;
-import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
+import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
 @Provider
 @Produces( MediaType.APPLICATION_JSON )
 public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
 {
-
     @Override
     public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
     {
@@ -57,38 +49,13 @@ public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSourc
             MultivaluedMap<String,Object> httpHeaders, OutputStream entityStream ) throws WebApplicationException
     {
         var transaction = outputEventSource.getTransactionHandle();
-        TransactionUriScheme uriInfo = outputEventSource.getUriInfo();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( entityStream, uriInfo.dbUri(), transaction );
+        var parameters = outputEventSource.getParameters();
+        var uriInfo = outputEventSource.getUriInfo();
 
-        outputEventSource.produceEvents( outputEvent -> handleEvent( outputEvent, serializer, outputEventSource.getParameters() ) );
-    }
+        var jsonFactory = DefaultJsonFactory.INSTANCE.get();
+        var serializer = new ExecutionResultSerializer( transaction, parameters, uriInfo.dbUri(),
+            Neo4jJsonCodec.class, jsonFactory, entityStream );
 
-    private void handleEvent( OutputEvent event, ExecutionResultSerializer serializer, Map<String,Object> parameters )
-    {
-        switch ( event.getType() )
-        {
-        case STATEMENT_START:
-            StatementStartEvent statementStartEvent = (StatementStartEvent) event;
-            InputStatement inputStatement = JsonMessageBodyReader.getInputStatement( parameters, statementStartEvent.getStatement() );
-            serializer.writeStatementStart( statementStartEvent, inputStatement );
-            break;
-        case RECORD:
-            serializer.writeRecord( (RecordEvent) event );
-            break;
-        case STATEMENT_END:
-            StatementEndEvent statementEndEvent = (StatementEndEvent) event;
-            serializer.writeStatementEnd( statementEndEvent );
-            break;
-        case FAILURE:
-            FailureEvent failureEvent = (FailureEvent) event;
-            serializer.writeFailure( failureEvent );
-            break;
-        case TRANSACTION_INFO:
-            TransactionInfoEvent transactionInfoEvent = (TransactionInfoEvent) event;
-            serializer.writeTransactionInfo( transactionInfoEvent );
-            break;
-        default:
-            throw new IllegalStateException( "Unsupported event encountered:"  + event.getType() );
-        }
+        outputEventSource.produceEvents( serializer::handleEvent );
     }
 }

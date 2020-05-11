@@ -20,11 +20,11 @@
 package org.neo4j.server.http.cypher.format.input.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
-import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
 
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
@@ -48,10 +47,9 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 class StatementDeserializer
 {
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private static final Map<String,Object> NO_PARAMETERS = unmodifiableMap( map() );
 
-    private final JsonParser input;
+    private final JsonParser parser;
     private State state;
 
     private enum State
@@ -61,11 +59,11 @@ class StatementDeserializer
         FINISHED
     }
 
-    StatementDeserializer( InputStream input )
+    StatementDeserializer( JsonFactory jsonFactory, InputStream input )
     {
         try
         {
-            this.input = JSON_FACTORY.createJsonParser( input );
+            this.parser = jsonFactory.createParser( input );
             this.state = State.BEFORE_OUTER_ARRAY;
         }
         catch ( IOException e )
@@ -95,7 +93,7 @@ class StatementDeserializer
             try
             {
 
-                while ( (tok = input.nextToken()) != null && tok != END_OBJECT )
+                while ( (tok = parser.nextToken()) != null && tok != END_OBJECT )
                 {
                     if ( tok == END_ARRAY )
                     {
@@ -104,24 +102,24 @@ class StatementDeserializer
                         return null;
                     }
 
-                    input.nextValue();
-                    String currentName = input.getCurrentName();
+                    parser.nextValue();
+                    String currentName = parser.getCurrentName();
                     switch ( currentName )
                     {
                     case "statement":
-                        statement = input.readValueAs( String.class );
+                        statement = parser.readValueAs( String.class );
                         break;
                     case "parameters":
-                        parameters = readMap( input );
+                        parameters = readMap();
                         break;
                     case "resultDataContents":
-                        resultsDataContents = readArray( input );
+                        resultsDataContents = readArray();
                         break;
                     case "includeStats":
-                        includeStats = input.getBooleanValue();
+                        includeStats = parser.getBooleanValue();
                         break;
                     default:
-                        discardValue( input );
+                        discardValue();
                     }
                 }
 
@@ -153,22 +151,22 @@ class StatementDeserializer
         return null;
     }
 
-    private void discardValue( JsonParser input ) throws IOException
+    private void discardValue() throws IOException
     {
         // This could be done without building up an object
-        input.readValueAs( Object.class );
+        parser.readValueAs( Object.class );
     }
 
     @SuppressWarnings( "unchecked" )
-    private static Map<String,Object> readMap( JsonParser input ) throws IOException
+    private Map<String,Object> readMap() throws IOException
     {
-        return input.readValueAs( Map.class );
+        return parser.readValueAs( Map.class );
     }
 
     @SuppressWarnings( "unchecked" )
-    private static List<Object> readArray( JsonParser input ) throws IOException
+    private List<Object> readArray() throws IOException
     {
-        return input.readValueAs( List.class );
+        return parser.readValueAs( List.class );
     }
 
     private boolean beginsWithCorrectTokens()
@@ -182,16 +180,16 @@ class StatementDeserializer
         {
             for ( int i = 0; i < expectedTokens.size(); i++ )
             {
-                JsonToken token = input.nextToken();
+                JsonToken token = parser.nextToken();
                 if ( i == 0 && token == null )
                 {
                     return false;
                 }
-                if ( token == FIELD_NAME && !expectedField.equals( input.getText() ) )
+                if ( token == FIELD_NAME && !expectedField.equals( parser.getText() ) )
                 {
                     throw new InputFormatException(
                             String.format( "Unable to deserialize request. " + "Expected first field to be '%s', but was '%s'.", expectedField,
-                                    input.getText() ) );
+                                    parser.getText() ) );
                 }
                 foundTokens.add( token );
             }
