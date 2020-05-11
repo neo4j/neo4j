@@ -36,7 +36,7 @@ class EnvelopeSettings
     private static final double DEFAULT_MIN_LONGITUDE = -180;
     private static final double DEFAULT_MAX_LONGITUDE = 180;
 
-    private CoordinateReferenceSystem crs;
+    private final CoordinateReferenceSystem crs;
     private Double[] min;
     private Double[] max;
 

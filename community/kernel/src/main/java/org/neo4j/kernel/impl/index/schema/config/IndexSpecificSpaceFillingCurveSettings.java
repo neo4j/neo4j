@@ -87,9 +87,9 @@ public class IndexSpecificSpaceFillingCurveSettings
     public void visitIndexSpecificSettings( SettingVisitor visitor )
     {
         visitor.count( specificIndexConfigCache.size() );
-        for ( CoordinateReferenceSystem crs : specificIndexConfigCache.keysView() )
+        for ( var keyValuePair : specificIndexConfigCache.keyValuesView() )
         {
-            visitor.visit( crs, specificIndexConfigCache.get( crs ) );
+            visitor.visit( keyValuePair.getOne(), keyValuePair.getTwo() );
         }
     }
 

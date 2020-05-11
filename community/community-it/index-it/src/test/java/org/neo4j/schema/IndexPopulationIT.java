@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,14 +41,20 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.database.DatabaseMemoryTrackers;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -61,7 +67,7 @@ class IndexPopulationIT
     @Inject
     private TestDirectory directory;
 
-    private static GraphDatabaseService database;
+    private static GraphDatabaseAPI database;
     private static ExecutorService executorService;
     private static AssertableLogProvider logProvider;
     private static DatabaseManagementService managementService;
@@ -73,7 +79,7 @@ class IndexPopulationIT
         managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setInternalLogProvider( logProvider )
                 .build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
+        database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         executorService = Executors.newCachedThreadPool();
     }
 
@@ -82,6 +88,51 @@ class IndexPopulationIT
     {
         executorService.shutdown();
         managementService.shutdown();
+    }
+
+    @Test
+    void trackMemoryOnIndexPopulation()
+    {
+        Label nodeLabel = Label.label( "nodeLabel" );
+        var propertyName = "testProperty";
+        var indexName = "testIndex";
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            var node = transaction.createNode( nodeLabel );
+            node.setProperty( propertyName, randomAscii( 1024 ) );
+            transaction.commit();
+        }
+
+        var monitors = database.getDependencyResolver().resolveDependency( Monitors.class );
+        var memoryTrackers = database.getDependencyResolver().resolveDependency( DatabaseMemoryTrackers.class );
+        var otherTracker = memoryTrackers.getOtherTracker();
+        var estimatedHeapBefore = otherTracker.estimatedHeapMemory();
+        var usedNativeBefore = otherTracker.usedNativeMemory();
+        AtomicLong peakUsage = new AtomicLong();
+        monitors.addMonitorListener( new IndexingService.MonitorAdapter()
+        {
+            @Override
+            public void populationJobCompleted( long peakDirectMemoryUsage )
+            {
+                peakUsage.set( otherTracker.usedNativeMemory() );
+            }
+        });
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.schema().indexFor( nodeLabel ).on( propertyName ).withName( indexName ).create();
+            transaction.commit();
+        }
+
+        try ( var tx = database.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( indexName, 10, MINUTES );
+        }
+
+        assertEquals( estimatedHeapBefore, otherTracker.estimatedHeapMemory() );
+        assertThat( peakUsage.get() ).isGreaterThan( otherTracker.usedNativeMemory() );
+        assertEquals( usedNativeBefore, otherTracker.usedNativeMemory() );
     }
 
     @Test
@@ -256,7 +307,7 @@ class IndexPopulationIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 1, MINUTES );
             transaction.commit();
         }
     }

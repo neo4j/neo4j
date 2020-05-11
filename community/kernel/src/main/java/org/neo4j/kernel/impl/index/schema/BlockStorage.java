@@ -41,6 +41,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.Math.ceil;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Cancellation.NOT_CANCELLABLE;
 
 /**
  * Transforms an unordered stream of key-value pairs ({@link BlockEntry}) to an ordered one. It does so in two phases:
@@ -478,12 +479,13 @@ class BlockStorage<KEY, VALUE> implements Closeable
         Monitor NO_MONITOR = new Adapter();
     }
 
+    @FunctionalInterface
     public interface Cancellation
     {
+        Cancellation NOT_CANCELLABLE = () -> false;
+
         boolean cancelled();
     }
-
-    static final Cancellation NOT_CANCELLABLE = () -> false;
 
     private static class CompositeScopedBuffer implements AutoCloseable
     {
