@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.InputDataStreamImpl;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.Rx2SyncStream;
@@ -36,7 +37,6 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.StatementResults;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -63,10 +63,10 @@ public class FabricKernelTransaction
         this.config = config;
     }
 
-    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input, FabricQueryMonitoring.QueryMonitor parentQueryMonitor )
+    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input, StatementLifecycle parentLifecycle )
     {
-        var childExecutionContext = makeChildTransactionalContext( parentQueryMonitor );
-        var childQueryMonitor = parentQueryMonitor.getChildQueryMonitor();
+        var childExecutionContext = makeChildTransactionalContext( parentLifecycle );
+        var childQueryMonitor = parentLifecycle.getChildQueryMonitor();
         openExecutionContexts.add( childExecutionContext );
 
         var result = StatementResults.create( subscriber -> execute( query, params, childExecutionContext, convert( input ), childQueryMonitor, subscriber ) );
@@ -95,11 +95,11 @@ public class FabricKernelTransaction
         }
     }
 
-    private TransactionalContext makeChildTransactionalContext( FabricQueryMonitoring.QueryMonitor queryMonitor )
+    private TransactionalContext makeChildTransactionalContext( StatementLifecycle lifecycle )
     {
-        var parentQuery = queryMonitor.getMonitoredQuery();
+        var parentQuery = lifecycle.getMonitoredQuery();
 
-        if ( queryMonitor.isParentChildMonitoringMode() )
+        if ( lifecycle.isParentChildMonitoringMode() )
         {
             // Cypher engine reports separately for each child query
             String queryText = "Internal query for parent query id: " + parentQuery.id();

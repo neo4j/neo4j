@@ -48,7 +48,7 @@ import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricDatabaseAccess;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
-import org.neo4j.fabric.executor.FabricQueryMonitoring;
+import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.pipeline.SignatureResolver;
@@ -116,14 +116,14 @@ public abstract class FabricServicesBootstrap
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
-        var monitoring = new FabricQueryMonitoring( dependencies, monitors );
+        var statementLifecycles = new FabricStatementLifecycles( monitors );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 
         register( new FabricReactorHooksService( internalLogProvider ), FabricReactorHooksService.class );
 
         Executor fabricWorkerExecutor = jobScheduler.executor( FABRIC_WORKER );
-        var fabricExecutor = new FabricExecutor( fabricConfig, planner, useEvaluation, catalogManager, internalLogProvider, monitoring, fabricWorkerExecutor );
+        var fabricExecutor = new FabricExecutor( fabricConfig, planner, useEvaluation, catalogManager, internalLogProvider, statementLifecycles, fabricWorkerExecutor );
         register( fabricExecutor, FabricExecutor.class );
 
         register( new TransactionBookmarkManagerFactory( fabricDatabaseManager ), TransactionBookmarkManagerFactory.class );

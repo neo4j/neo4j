@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.transaction.CompositeTransaction;
@@ -85,11 +86,11 @@ public class FabricLocalExecutor
             this.bookmarkManager = bookmarkManager;
         }
 
-        public StatementResult run( Location.Local location, TransactionMode transactionMode, FabricQueryMonitoring.QueryMonitor parentQueryMonitor,
+        public StatementResult run( Location.Local location, TransactionMode transactionMode, StatementLifecycle parentLifecycle,
                                     FullyParsedQuery query, MapValue params, Flux<Record> input )
         {
             var kernelTransaction = getOrCreateTx( location, transactionMode );
-            return kernelTransaction.run( query, params, input, parentQueryMonitor );
+            return kernelTransaction.run( query, params, input, parentLifecycle );
         }
 
         @Override

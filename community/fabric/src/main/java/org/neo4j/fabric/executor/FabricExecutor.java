@@ -40,6 +40,7 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.eval.UseEvaluation;
+import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.planning.FabricQuery;
@@ -84,26 +85,25 @@ public class FabricExecutor
     private final UseEvaluation useEvaluation;
     private final CatalogManager catalogManager;
     private final Log log;
-    private final FabricQueryMonitoring monitoring;
+    private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
 
     public FabricExecutor( FabricConfig config, FabricPlanner planner, UseEvaluation useEvaluation, CatalogManager catalogManager,
-                           LogProvider internalLog, FabricQueryMonitoring monitoring, Executor fabricWorkerExecutor )
+                           LogProvider internalLog, FabricStatementLifecycles statementLifecycles, Executor fabricWorkerExecutor )
     {
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
         this.catalogManager = catalogManager;
         this.log = internalLog.getLog( getClass() );
-        this.monitoring = monitoring;
+        this.statementLifecycles = statementLifecycles;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
     }
 
     public FabricExecutionStatementResult run( FabricTransaction fabricTransaction, String queryString, MapValue queryParams )
     {
-        FabricQueryMonitoring.QueryMonitor queryMonitor =
-                monitoring.queryMonitor( fabricTransaction.getTransactionInfo(), queryString, queryParams );
-        queryMonitor.startProcessing();
+        StatementLifecycle lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), queryString, queryParams );
+        lifecycle.startProcessing();
 
         String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
         FabricPlanner.PlannerInstance plannerInstance = planner.instance( queryString, queryParams, defaultGraphName );
@@ -111,7 +111,7 @@ public class FabricExecutor
         FabricPlan plan = plannerInstance.plan();
         Fragment query = plan.query();
 
-        queryMonitor.fabricPlanningDone( plan );
+        lifecycle.doneFabricProcessing( plan );
 
         AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
 
@@ -126,13 +126,13 @@ public class FabricExecutor
                     if ( plan.debugOptions().logRecords() )
                     {
                         execution = new FabricLoggingStatementExecution(
-                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, log, queryMonitor, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, log, lifecycle, dataStreamConfig
                         );
                     }
                     else
                     {
                         execution = new FabricStatementExecution(
-                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, queryMonitor, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, lifecycle, dataStreamConfig
                         );
                     }
                     return execution.run();
@@ -183,7 +183,7 @@ public class FabricExecutor
         private final FabricTransaction.FabricExecutionContext ctx;
         private final MergedQueryStatistics statistics = new MergedQueryStatistics();
         private final Set<Notification> notifications = ConcurrentHashMap.newKeySet();
-        private final FabricQueryMonitoring.QueryMonitor queryMonitor;
+        private final StatementLifecycle lifecycle;
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
 
@@ -194,7 +194,7 @@ public class FabricExecutor
                 MapValue queryParams,
                 AccessMode accessMode,
                 FabricTransaction.FabricExecutionContext ctx,
-                FabricQueryMonitoring.QueryMonitor queryMonitor,
+                StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig )
         {
             this.plan = plan;
@@ -202,7 +202,7 @@ public class FabricExecutor
             this.useEvaluator = useEvaluator;
             this.queryParams = queryParams;
             this.ctx = ctx;
-            this.queryMonitor = queryMonitor;
+            this.lifecycle = lifecycle;
             this.prefetcher = new Prefetcher( dataStreamConfig );
             this.accessMode = accessMode;
         }
@@ -211,7 +211,7 @@ public class FabricExecutor
         {
             notifications.addAll( seqAsJavaList( plannerInstance.notifications() ) );
 
-            queryMonitor.startExecution();
+            lifecycle.startExecution();
             var query = plan.query();
             Flux<String> columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
 
@@ -219,7 +219,7 @@ public class FabricExecutor
             // because it is very hard to produce anything better without actually executing the query
             if ( plan.executionType() == FabricPlan.EXPLAIN() && plan.inFabricContext() )
             {
-                queryMonitor.endSuccess();
+                lifecycle.endSuccess();
                 return StatementResults.create(
                         columns,
                         Flux.empty(),
@@ -232,8 +232,8 @@ public class FabricExecutor
             return StatementResults.create(
                     columns,
                     fragmentResult.records
-                            .doOnComplete( queryMonitor::endSuccess )
-                            .doOnError( queryMonitor::endFailure ),
+                            .doOnComplete( lifecycle::endSuccess )
+                            .doOnError( lifecycle::endFailure ),
                     Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) )
             );
         }
@@ -336,7 +336,7 @@ public class FabricExecutor
                                       Flux<Record> input )
         {
 
-            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, queryMonitor, query, parameters, input );
+            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, lifecycle, query, parameters, input );
             Flux<Record> records = localStatementResult.records().doOnComplete( () -> localStatementResult.summary().subscribe( this::updateSummary ) );
 
             Mono<ExecutionPlanDescription> planDescription = localStatementResult.summary()
@@ -499,10 +499,10 @@ public class FabricExecutor
                 AccessMode accessMode,
                 FabricTransaction.FabricExecutionContext ctx,
                 Log log,
-                FabricQueryMonitoring.QueryMonitor queryMonitor,
+                StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig )
         {
-            super( plan, plannerInstance, useEvaluator, params, accessMode, ctx, queryMonitor, dataStreamConfig );
+            super( plan, plannerInstance, useEvaluator, params, accessMode, ctx, lifecycle, dataStreamConfig );
             this.step = new AtomicInteger( 0 );
             this.log = log;
         }
