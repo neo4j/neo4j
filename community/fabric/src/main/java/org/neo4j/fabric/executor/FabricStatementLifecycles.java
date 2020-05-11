@@ -21,6 +21,9 @@ package org.neo4j.fabric.executor;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.cypher.internal.CypherQueryObfuscator;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
@@ -30,23 +33,39 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.memory.OptionalMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class FabricStatementLifecycles
 {
     private final Monitors monitors;
-    private final AtomicReference<CpuClock> cpuClockReference;
     private final ExecutingQueryFactory executingQueryFactory;
 
-    public FabricStatementLifecycles( Monitors monitors )
+    public FabricStatementLifecycles( Monitors monitors, Config config, SystemNanoClock systemNanoClock )
     {
         this.monitors = monitors;
-        // TODO: Fix clock setup here
-        this.cpuClockReference = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
         this.executingQueryFactory = new ExecutingQueryFactory(
-                Clocks.nanoClock(),
-                cpuClockReference );
+                systemNanoClock,
+                setupCpuClockAtomicReference( config ) );
+    }
+
+    private AtomicReference<CpuClock> setupCpuClockAtomicReference( Config config )
+    {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+        SettingChangeListener<Boolean> cpuClockUpdater = ( before, after ) ->
+        {
+            if ( after )
+            {
+                cpuClock.set( CpuClock.CPU_CLOCK );
+            }
+            else
+            {
+                cpuClock.set( CpuClock.NOT_AVAILABLE );
+            }
+        };
+        cpuClockUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_cpu_time ) );
+        config.addListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        return cpuClock;
     }
 
     StatementLifecycle create( FabricTransactionInfo transactionInfo, String statement, MapValue params )

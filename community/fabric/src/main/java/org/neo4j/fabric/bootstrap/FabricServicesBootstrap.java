@@ -116,7 +116,8 @@ public abstract class FabricServicesBootstrap
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
-        var statementLifecycles = new FabricStatementLifecycles( monitors );
+        var systemNanoClock = dependencies.resolveDependency( SystemNanoClock.class );
+        var statementLifecycles = new FabricStatementLifecycles( monitors, config, systemNanoClock );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 
