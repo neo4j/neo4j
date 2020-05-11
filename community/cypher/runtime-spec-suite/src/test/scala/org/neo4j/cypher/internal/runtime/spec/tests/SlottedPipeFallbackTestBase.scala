@@ -88,6 +88,33 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "n", "m").withRows(expected)
   }
 
+  test("should use fallback correctly if output morsel has more slots than input morsel") {
+    // given
+    val rels = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "foo")
+      .projection("n.prop AS foo")
+      .projectEndpoints("(n)-[r]-(m)", startInScope = true, endInScope = false)
+      .input(nodes = Seq("n"), relationships = Seq("r"))
+      .build()
+
+    val input = for {
+      r <- rels
+      n = r.getStartNode
+    } yield Array[Any](n, r)
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expected = rels.map { r => Array(r, null) }
+    runtimeResult should beColumns("r", "foo").withRows(expected)
+  }
+
   test("should get exception with error plan") {
     given { nodeGraph(10) }
 
