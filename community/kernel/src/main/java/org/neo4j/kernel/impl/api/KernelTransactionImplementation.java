@@ -425,6 +425,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 statementLocks.stop();
             }
             transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
+
+            var internalTransaction = this.internalTransaction;
+
+            if ( internalTransaction != null && internalTransaction.getTerminationCallback() != null )
+            {
+                internalTransaction.getTerminationCallback().accept( reason );
+            }
+
             return true;
         }
         return false;

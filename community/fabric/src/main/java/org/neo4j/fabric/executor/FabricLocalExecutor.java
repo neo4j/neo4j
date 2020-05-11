@@ -25,7 +25,6 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
@@ -183,19 +182,11 @@ public class FabricLocalExecutor
 
         private InternalTransaction beginInternalTransaction( GraphDatabaseFacade databaseFacade, FabricTransactionInfo transactionInfo )
         {
-            InternalTransaction internalTransaction;
             KernelTransaction.Type kernelTransactionType = getKernelTransactionType( transactionInfo );
             var loginContext = databaseAccess.maybeRestrictLoginContext( transactionInfo.getLoginContext(), databaseFacade.databaseName() );
 
-            if ( transactionInfo.getTxTimeout() == null )
-            {
-                internalTransaction = databaseFacade.beginTransaction( kernelTransactionType, loginContext, transactionInfo.getClientConnectionInfo() );
-            }
-            else
-            {
-                internalTransaction = databaseFacade.beginTransaction( kernelTransactionType, loginContext, transactionInfo.getClientConnectionInfo(),
-                        transactionInfo.getTxTimeout().toMillis(), TimeUnit.MILLISECONDS );
-            }
+            var internalTransaction = databaseFacade.beginTransaction( kernelTransactionType, loginContext, transactionInfo.getClientConnectionInfo(),
+                    compositeTransaction::childTransactionTerminated );
 
             if ( transactionInfo.getTxMetadata() != null )
             {
@@ -253,6 +244,12 @@ public class FabricLocalExecutor
         private void doRollback()
         {
             fabricKernelTransaction.rollback();
+        }
+
+        @Override
+        public Mono<Void> terminate()
+        {
+            return Mono.fromRunnable( fabricKernelTransaction::terminate );
         }
 
         @Override

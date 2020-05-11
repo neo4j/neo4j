@@ -57,7 +57,7 @@ class TransactionImplTest
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
                 "Proving that transaction does the right thing" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null );
 
         // WHEN
         transaction.commit();
@@ -70,7 +70,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null );
 
         // WHEN
         transaction.commit();
@@ -83,7 +83,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransientDatabaseFailureException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null );
 
         // WHEN
         transaction.commit();
@@ -96,7 +96,7 @@ class TransactionImplTest
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null );
 
         transaction.commit();
     }
@@ -108,7 +108,7 @@ class TransactionImplTest
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Terminated ) );
 
-        TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
+        TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

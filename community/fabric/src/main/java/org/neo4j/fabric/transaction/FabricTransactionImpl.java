@@ -242,7 +242,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 return;
             }
 
-            doRollback();
+            doRollback( SingleDbTransaction::rollback );
         }
         finally
         {
@@ -250,7 +250,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         }
     }
 
-    void doRollback()
+    private void doRollback( Function<SingleDbTransaction, Mono<Void>> operation )
     {
         // the transaction has already been rolled back as part of the failure clean up
         if ( terminated )
@@ -271,7 +271,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                     .fromIterable( readingTransactions )
                     .map( txWrapper -> txWrapper.singleDbTransaction )
                     .concatWith( Mono.justOrEmpty( writingTransaction ) )
-                    .flatMap( tx -> catchErrors( tx.rollback() ) )
+                    .flatMap( tx -> catchErrors( operation.apply( tx ) ) )
                     .doOnNext( err -> userLog.error( "Failed to rollback a child read transaction", err ) )
                     .collectList()
                     .block();
@@ -355,10 +355,15 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         exclusiveLock.lock();
         try
         {
+            if ( terminated )
+            {
+                return;
+            }
+
             internalLog.debug( "Terminating transaction %d", id );
             terminationStatus = reason;
 
-            doRollback();
+            doRollback( SingleDbTransaction::terminate );
         }
         finally
         {
@@ -484,6 +489,18 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         }
     }
 
+    @Override
+    public void childTransactionTerminated( Status reason )
+    {
+        if ( terminated )
+        {
+            return;
+        }
+
+        internalLog.debug( "Child transaction belonging to composite transaction %d terminated", id );
+        markForTermination( reason );
+    }
+
     private FabricException multipleWriteError( Location attempt )
     {
         return new FabricException(
@@ -551,7 +568,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
             userLog.info( "Terminating transaction %d because of timeout", id );
             terminationStatus = Status.Transaction.TransactionTimedOut;
-            doRollback();
+            doRollback( SingleDbTransaction::terminate );
         }
         finally
         {

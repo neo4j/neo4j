@@ -31,5 +31,7 @@ public interface SingleDbTransaction
 
     Mono<Void> rollback();
 
+    Mono<Void> terminate();
+
     Location getLocation();
 }

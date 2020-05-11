@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -115,17 +116,19 @@ public class TransactionImpl implements InternalTransaction
     private final TransactionalContextFactory contextFactory;
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final QueryExecutionEngine executionEngine;
+    private final Consumer<Status> terminationCallback;
     private KernelTransaction transaction;
     private boolean closed;
 
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
-            KernelTransaction transaction )
+            KernelTransaction transaction, Consumer<Status> terminationCallback )
     {
         this.tokenHolders = tokenHolders;
         this.contextFactory = contextFactory;
         this.availabilityGuard = availabilityGuard;
         this.executionEngine = executionEngine;
+        this.terminationCallback = terminationCallback;
         setTransaction( transaction );
     }
 
@@ -673,6 +676,12 @@ public class TransactionImpl implements InternalTransaction
     public boolean isOpen()
     {
         return !closed;
+    }
+
+    @Override
+    public Consumer<Status> getTerminationCallback()
+    {
+        return terminationCallback;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int labelId, IndexQuery... queries )

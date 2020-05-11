@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A container for {@link SingleDbTransaction}s.
@@ -49,4 +50,5 @@ public interface CompositeTransaction
 
     <TX extends SingleDbTransaction> void upgradeToWritingTransaction( TX writingTransaction ) throws FabricException;
 
+    void childTransactionTerminated( Status reason );
 }

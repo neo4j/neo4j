@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.factory;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
@@ -36,6 +37,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
@@ -115,14 +117,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis() );
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), null );
     }
 
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
             TimeUnit unit )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ) );
+        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ), null );
+    }
+
+    public InternalTransaction beginTransaction(  Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Consumer<Status> terminationCallback )
+    {
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), terminationCallback );
     }
 
     @Override
@@ -159,10 +166,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return transformedResult;
     }
 
-    protected InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeoutMillis )
+    protected InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+            long timeoutMillis, Consumer<Status> terminationCallback )
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
-        return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction );
+        return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction,
+                terminationCallback );
     }
 
     @Override

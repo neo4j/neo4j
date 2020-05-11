@@ -27,6 +27,7 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -74,7 +75,7 @@ public class TransactionManager extends LifecycleAdapter
     @Override
     public void stop()
     {
-        openTransactions.forEach( FabricTransactionImpl::doRollback );
+        openTransactions.forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
 
     void removeTransaction( FabricTransactionImpl transaction )
