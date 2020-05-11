@@ -124,7 +124,8 @@ public abstract class FabricServicesBootstrap
         register( new FabricReactorHooksService( internalLogProvider ), FabricReactorHooksService.class );
 
         Executor fabricWorkerExecutor = jobScheduler.executor( FABRIC_WORKER );
-        var fabricExecutor = new FabricExecutor( fabricConfig, planner, useEvaluation, catalogManager, internalLogProvider, statementLifecycles, fabricWorkerExecutor );
+        var fabricExecutor = new FabricExecutor(
+                fabricConfig, planner, useEvaluation, catalogManager, internalLogProvider, statementLifecycles, fabricWorkerExecutor );
         register( fabricExecutor, FabricExecutor.class );
 
         register( new TransactionBookmarkManagerFactory( fabricDatabaseManager ), TransactionBookmarkManagerFactory.class );
