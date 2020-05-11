@@ -1099,9 +1099,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val resultString = call.callResultTypes
       .map { case (name, typ) => pretty"${asPrettyString(name)} :: ${asPrettyString.raw(typ.toNeoTypeString)}" }
       .mkPrettyString(SEPARATOR)
-    // TODO: should we call prettify on what is being returned from toString method in QualifiedName?
-    // Or should we copy the toString method and prettify it like this:
-    // (namespace :+ name).map(PrettyStringCreator(_)).mkPrettyString(".")
     pretty"${asPrettyString.raw(call.qualifiedName.toString)}($argString) :: ($resultString)"
   }
 
