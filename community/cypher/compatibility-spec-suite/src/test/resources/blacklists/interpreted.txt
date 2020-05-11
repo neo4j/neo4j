@@ -13,6 +13,5 @@ Feature "LargeCreateQuery": Scenario "Generate the movie graph correctly"
 Feature "SemanticErrorAcceptance": Scenario "Failing when using MATCH after OPTIONAL MATCH"
 
 // TCK needs to be updated, expects wrong error type or message
-Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index into a map with a non-string"
 Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index something which is not a map or list"
 Feature "ListOperations": Scenario "Fail at runtime when trying to index into a list with a list"

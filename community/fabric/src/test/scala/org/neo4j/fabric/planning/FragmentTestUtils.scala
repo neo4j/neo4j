@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.FloatType
+import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.pipeline.SignatureResolver
 import org.neo4j.fabric.planning.Fragment.Apply
@@ -95,7 +95,7 @@ trait FragmentTestUtils {
 
   object ct {
     val any: AnyType = org.neo4j.cypher.internal.util.symbols.CTAny
-    val float: FloatType = org.neo4j.cypher.internal.util.symbols.CTFloat
+    val int: IntegerType = org.neo4j.cypher.internal.util.symbols.CTInteger
   }
 
   private object AstUtils extends AstConstructionTestSupport

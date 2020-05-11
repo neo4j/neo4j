@@ -1318,13 +1318,13 @@ class FabricPlannerTest
 
       val inst = instance(
         "RETURN $p AS p",
-        VirtualValues.map(Array("p"), Array(Values.of(1.1))))
+        VirtualValues.map(Array("p"), Array(Values.of(1))))
 
       val local = inst.asLocal(inst.plan.query.as[Fragment.Exec])
 
       local.query.state.statement()
         .shouldEqual(
-          query(return_(parameter("p", ct.float).as("p")))
+          query(return_(parameter("p", ct.int).as("p")))
         )
 
     }
