@@ -65,6 +65,18 @@ class GrowingArrayTest extends CypherFunSuite {
     builder shouldBe Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
   }
 
+  test("foreach ignores gaps and nulls") {
+    val x = new GrowingArray[String]
+    x.set(0, "0")
+    x.set(2, "2")
+    x.set(3, null)
+    x.set(4, "4")
+
+    val builder = Seq.newBuilder[String]
+    x.foreach(str => builder += str)
+    builder shouldBe Seq("0", "2", "4")
+  }
+
   test("hasNeverSeenData") {
     val x = new GrowingArray[String]
     x.hasNeverSeenData shouldBe true

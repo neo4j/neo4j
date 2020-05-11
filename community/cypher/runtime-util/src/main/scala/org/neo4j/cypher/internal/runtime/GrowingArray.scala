@@ -61,12 +61,15 @@ class GrowingArray[T <: AnyRef] {
   /**
    * Apply the given function `f` once for each element.
    *
-   * If there are gaps, `f` will be called with `null` as argument.
+   * `f` will not be called for gaps or `null` elements.
    */
   def foreach(f: T => Unit): Unit = {
     var i = 0
     while (i < highWaterMark) {
-      f(get(i))
+      val t = get(i)
+      if (t != null) {
+        f(t)
+      }
       i += 1
     }
   }
