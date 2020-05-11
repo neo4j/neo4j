@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Construct
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
-import org.neo4j.cypher.internal.expressions.Pattern.findDuplicateRelationships
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.Property
@@ -55,12 +54,9 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
-    pattern match {
-      case x: Pattern =>
-        semanticCheckFold(x.patternParts)(declareVariables(ctx)) chain
-          semanticCheckFold(x.patternParts)(check(ctx)) chain
-          ensureNoDuplicateRelationships(x, ctx)
-    }
+        semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
+          semanticCheckFold(pattern.patternParts)(check(ctx)) chain
+          ensureNoDuplicateRelationships(pattern)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
     declareVariables(ctx, pattern.element) chain
@@ -90,6 +86,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         declareVariables(ctx, x.element)
     }
 
+  @scala.annotation.tailrec
   def check(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
       case x: NamedPatternPart =>
@@ -104,11 +101,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case SemanticContext.Merge =>
               SemanticError(s"${
                 x.name
-              }(...) cannot be used to MERGE", x.position, x.element.position)
+              }(...) cannot be used to MERGE", x.position)
             case SemanticContext.Create | SemanticContext.CreateUnique =>
               SemanticError(s"${
                 x.name
-              }(...) cannot be used to CREATE", x.position, x.element.position)
+              }(...) cannot be used to CREATE", x.position)
             case _ =>
               None
           }
@@ -120,12 +117,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                 props =>
                   SemanticError(s"${
                     x.name
-                  }(...) contains properties $props. This is currently not supported.", x.position, x.element.position)
+                  }(...) contains properties $props. This is currently not supported.", x.position)
               }
             case _ =>
               SemanticError(s"${
                 x.name
-              }(...) requires a pattern containing a single relationship", x.position, x.element.position)
+              }(...) requires a pattern containing a single relationship", x.position)
           }
 
         def checkKnownEnds: SemanticCheck =
@@ -135,11 +132,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               if (l.variable.isEmpty)
                 SemanticError(s"A ${
                   x.name
-                }(...) requires bound nodes when not part of a MATCH clause.", x.position, l.position)
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position)
               else if (r.variable.isEmpty)
                 SemanticError(s"A ${
                   x.name
-                }(...) requires bound nodes when not part of a MATCH clause.", x.position, r.position)
+                }(...) requires bound nodes when not part of a MATCH clause.", x.position)
               else
                 None
             case (_, _) =>
@@ -155,7 +152,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                     SemanticCheckResult(state, Seq(SemanticError(s"${
                       x.name
                     }(...) does not support a minimal length different " +
-                      s"from 0 or 1", x.position, x.element.position)))
+                      s"from 0 or 1", x.position)))
 
                   case Some(None) =>
                     val newState = state.addNotification(UnboundedShortestPathNotification(x.element.position))
@@ -173,7 +170,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   case Some(symbol) if symbol.positions.size > 1 => {
                     SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in ${
                       x.name
-                    }(...)", rel.position, symbol.positions.head))
+                    }(...)", rel.position))
                   }
                   case _ =>
                     SemanticCheckResult.success(state)
@@ -298,13 +295,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         }
     }
 
-  private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
-    findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) {
+  private def ensureNoDuplicateRelationships(pattern: Pattern): SemanticCheck = {
+    pattern.findDuplicateRelationships.foldLeft(SemanticCheckResult.success) {
       (acc, duplicates) =>
         val id = duplicates.head
-        val dups = duplicates.tail
 
-        acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns", id.position, dups.map(_.position): _*)
+        acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns", id.position)
     }
   }
 

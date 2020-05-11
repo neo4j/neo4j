@@ -216,9 +216,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case Seq(_: With, _: Start) =>
             None
           case Seq(clause, start: Start) =>
-            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.position, start.position))
+            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.position))
           case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
-            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.position, match1.position))
+            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.position))
           case Seq(clause: ReturnGraph, _) =>
             Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
           case Seq(clause: Return, _) =>
@@ -230,7 +230,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case Seq(_: UpdateClause, _: Return) =>
             None
           case Seq(update: UpdateClause, clause) =>
-            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position, update.position))
+            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position))
           case _ =>
             None
         }

@@ -106,7 +106,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
               case _: PatternExpression => None
               case _: ContainerIndex => None
               case e =>
-                Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
+                Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position))
             })
         } chain specifyType(CTBoolean, invocation)
 

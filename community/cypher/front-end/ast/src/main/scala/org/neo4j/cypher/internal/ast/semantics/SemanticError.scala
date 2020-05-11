@@ -21,18 +21,15 @@ import org.neo4j.cypher.internal.util.InputPosition
 sealed trait SemanticErrorDef {
   def msg: String
   def position: InputPosition
-  def references: Seq[InputPosition]
   def withMsg(message: String): SemanticErrorDef
 }
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef {
-  override def withMsg(message: String): SemanticError = SemanticError(message, position, references:_*)
+final case class SemanticError(msg: String, position: InputPosition) extends SemanticErrorDef {
+  override def withMsg(message: String): SemanticError = SemanticError(message, position)
 }
 
 sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 
 final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references: Seq[InputPosition] = Seq.empty
-
   override def withMsg(message: String): FeatureError = copy(msg = message)
 }

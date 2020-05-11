@@ -297,7 +297,7 @@ case class SemanticState(currentScope: ScopeLocation,
                       overriding: Boolean = false): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case Some(symbol) if !overriding =>
-        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
+        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position))
       case _ =>
         Right(updateVariable(variable, possibleTypes, positions + variable.position))
     }
@@ -319,7 +319,7 @@ case class SemanticState(currentScope: ScopeLocation,
           val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
             s"Type mismatch: ${variable.name} defined with conflicting type $existingTypes (expected $expectedTypes)",
-            variable.position, symbol.positions.toSeq: _*))
+            variable.position))
         }
     }
 

@@ -104,8 +104,8 @@ object Errors {
   def errorContext[T](query: String, node: ASTNode)(block: => T): T =
     try block catch {
       case e: HasErrors => throw e.update {
-        case SemanticError(msg, InputPosition.NONE, _*) => syntax(msg, query, node.position)
-        case SemanticError(msg, pos, _*) => syntax(msg, query, pos)
+        case SemanticError(msg, InputPosition.NONE) => syntax(msg, query, node.position)
+        case SemanticError(msg, pos) => syntax(msg, query, pos)
         case FeatureError(msg, InputPosition.NONE) => syntax(msg, query, node.position)
         case FeatureError(msg, pos) => syntax(msg, query, pos)
         case o => o
