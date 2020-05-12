@@ -94,7 +94,15 @@ public final class BoltConnector implements SettingsDeclaration
 
     @Description( "The address the routing connector should bind to" )
     public static final Setting<SocketAddress> connector_routing_listen_address =
-            newBuilder( "dbms.connector.bolt.routing.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_CONNECTOR_PORT ) ).build();
+            newBuilder( "dbms.connector.bolt.routing.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_CONNECTOR_PORT ) )
+                    .setDependency( default_listen_address )
+                    .build();
+
+    @Description( "The advertised address for the intra-cluster routing connector" )
+    public static final Setting<SocketAddress> connector_routing_advertised_address =
+            newBuilder( "dbms.connector.bolt.routing.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_CONNECTOR_PORT ) )
+                    .setDependency( default_advertised_address )
+                    .build();
 
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     @Internal
