@@ -37,7 +37,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 public class DistinctSet<T extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( DistinctSet.class );
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private ScopedMemoryTracker scopedMemoryTracker;
     private final MutableSet<T> distinctSet;
 
     public static <T extends Measurable> DistinctSet<T> createDistinctSet( MemoryTracker memoryTracker )
@@ -51,6 +51,11 @@ public class DistinctSet<T extends Measurable> implements AutoCloseable
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         distinctSet = newSet( scopedMemoryTracker );
+    }
+
+    public void setMemoryTracker( MemoryTracker memoryTracker )
+    {
+        this.scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
     }
 
     public boolean add( T element )
