@@ -125,10 +125,7 @@ class IndexPopulationIT
             transaction.commit();
         }
 
-        try ( var tx = database.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( indexName, 10, MINUTES );
-        }
+        waitForOnlineIndexes();
 
         assertEquals( estimatedHeapBefore, otherTracker.estimatedHeapMemory() );
         assertThat( peakUsage.get() ).isGreaterThan( otherTracker.usedNativeMemory() );
