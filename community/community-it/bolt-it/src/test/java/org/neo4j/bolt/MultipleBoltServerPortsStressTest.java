@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
@@ -37,7 +38,12 @@ import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -60,7 +66,7 @@ public class MultipleBoltServerPortsStressTest
     private static TransportTestUtil util;
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), new SharedAuthManagerDbmsBuilder(), settings ->
     {
         settings.put( BoltConnector.enabled, true );
         settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
@@ -163,5 +169,21 @@ public class MultipleBoltServerPortsStressTest
                 }
             }
         };
+    }
+
+    private static class SharedAuthManagerDbmsBuilder extends TestDatabaseManagementServiceBuilder
+    {
+        @Override
+        protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
+        {
+            return globalModule -> new CommunityEditionModule( globalModule )
+            {
+                @Override
+                public AuthManager getBoltInClusterAuthManager()
+                {
+                    return getBoltAuthManager( globalModule.getGlobalDependencies() );
+                }
+            };
+        }
     }
 }
