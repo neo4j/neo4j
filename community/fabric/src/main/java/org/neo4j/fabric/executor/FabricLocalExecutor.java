@@ -247,9 +247,9 @@ public class FabricLocalExecutor
         }
 
         @Override
-        public Mono<Void> terminate()
+        public Mono<Void> terminate( Status reason )
         {
-            return Mono.fromRunnable( fabricKernelTransaction::terminate );
+            return Mono.fromRunnable( () -> fabricKernelTransaction.terminate( reason ) );
         }
 
         @Override

@@ -148,9 +148,9 @@ public class FabricKernelTransaction
         openExecutionContexts.forEach( TransactionalContext::close );
     }
 
-    public void terminate()
+    public void terminate( Status reason )
     {
-        internalTransaction.terminate();
+        internalTransaction.terminate( reason );
     }
 
     /**

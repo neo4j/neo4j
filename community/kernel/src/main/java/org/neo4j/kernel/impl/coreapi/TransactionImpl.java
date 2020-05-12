@@ -478,7 +478,17 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public final void terminate()
     {
-        transaction.markForTermination( Terminated );
+        terminate( Terminated );
+    }
+
+    @Override
+    public void terminate( Status reason )
+    {
+        transaction.markForTermination( reason );
+        if ( terminationCallback != null )
+        {
+            terminationCallback.accept( reason );
+        }
     }
 
     @Override
@@ -676,12 +686,6 @@ public class TransactionImpl implements InternalTransaction
     public boolean isOpen()
     {
         return !closed;
-    }
-
-    @Override
-    public Consumer<Status> getTerminationCallback()
-    {
-        return terminationCallback;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int labelId, IndexQuery... queries )

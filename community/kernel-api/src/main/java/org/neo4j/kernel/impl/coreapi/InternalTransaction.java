@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -56,5 +55,5 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     boolean isOpen();
 
-    Consumer<Status> getTerminationCallback();
+    void terminate( Status reason );
 }

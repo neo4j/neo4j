@@ -294,9 +294,9 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public Consumer<Status> getTerminationCallback()
+        public void terminate( Status reason )
         {
-            return transaction.getTerminationCallback();
+            transaction.terminate( reason );
         }
 
         @Override

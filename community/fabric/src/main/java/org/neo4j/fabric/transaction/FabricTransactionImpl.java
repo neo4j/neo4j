@@ -363,7 +363,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             internalLog.debug( "Terminating transaction %d", id );
             terminationStatus = reason;
 
-            doRollback( SingleDbTransaction::terminate );
+            doRollback( singleDbTransaction -> singleDbTransaction.terminate( reason ) );
         }
         finally
         {
@@ -568,7 +568,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
             userLog.info( "Terminating transaction %d because of timeout", id );
             terminationStatus = Status.Transaction.TransactionTimedOut;
-            doRollback( SingleDbTransaction::terminate );
+            doRollback( singleDbTransaction -> singleDbTransaction.terminate( terminationStatus ) );
         }
         finally
         {
