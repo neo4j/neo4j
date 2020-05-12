@@ -257,10 +257,10 @@ public interface ProcedureITBase
                                 "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
                         "List all accepted network connections at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.upgradeStatus", "() :: (component :: STRING?, status :: STRING?, description :: STRING?, resolution :: STRING?)",
+                proc( "dbms.upgradeStatus", "() :: (status :: STRING?, description :: STRING?, resolution :: STRING?)",
                         "Report the current status of the system database sub-graph schema.",
                         stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.upgrade", "() :: (component :: STRING?, status :: STRING?, upgradeResult :: STRING?)",
+                proc( "dbms.upgrade", "() :: (status :: STRING?, upgradeResult :: STRING?)",
                         "Upgrade the system database schema if it is not the current schema.",
                         stringArray( "admin" ), "DBMS" )
         ));
