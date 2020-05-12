@@ -151,15 +151,12 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.CoerceTo
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
-import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -726,7 +723,7 @@ object Prettifier {
   def extractScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): String = {
     val (dbString, _, multipleDbs) = extractDbScope(dbScope)
     val graphWord = if (multipleDbs) "GRAPHS" else "GRAPH"
-    s"$graphWord $dbString ${extractQualifierPart(qualifier)}"
+    s"$graphWord $dbString${extractQualifierString(qualifier)}"
   }
 
   def extractLabelScope(dbScope: List[GraphScope], resource: ActionResource): String = {
@@ -764,30 +761,31 @@ object Prettifier {
     } else {
       s"DATABASE $dbName"
     }
-
-    qualifier match {
-      case _: AllQualifier =>
-        s"$privilegeName ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
-      case _ =>
-        val qualifierString = Prettifier.extractQualifierPart(qualifier)
-        s"$privilegeName $qualifierString ON $db $preposition ${Prettifier.escapeNames(roleNames)}"
-    }
+    s"$privilegeName${extractQualifierString(qualifier)} ON $db $preposition ${escapeNames(roleNames)}"
   }
 
-  def extractQualifierPart(qualifier: PrivilegeQualifier): String = qualifier match {
-    case LabelQualifier(name)          => "NODE " + ExpressionStringifier.backtick(name)
-    case LabelsQualifier(names)        => "NODES " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
-    case LabelAllQualifier()           => "NODES *"
-    case RelationshipQualifier(name)   => "RELATIONSHIP " + ExpressionStringifier.backtick(name)
-    case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
-    case RelationshipAllQualifier()    => "RELATIONSHIPS *"
-    case ElementsQualifier(names)      => "ELEMENTS " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
-    case ElementsAllQualifier()        => "ELEMENTS *"
-    case UsersQualifier(names)         => "(" + names.map(escapeName).mkString(", ") + ")"
-    case UserQualifier(name)           => "(" + escapeName(name) + ")"
-    case UserAllQualifier()            => "(*)"
-    case AllQualifier()                => "*"
-    case _                             => "<unknown>"
+  def extractQualifierPart(qualifier: PrivilegeQualifier): Option[String] = qualifier match {
+    case LabelQualifier(name)          => Some("NODE " + ExpressionStringifier.backtick(name))
+    case LabelsQualifier(names)        => Some("NODES " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
+    case LabelAllQualifier()           => Some("NODES *")
+    case RelationshipQualifier(name)   => Some("RELATIONSHIP " + ExpressionStringifier.backtick(name))
+    case RelationshipsQualifier(names) => Some("RELATIONSHIPS " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
+    case RelationshipAllQualifier()    => Some("RELATIONSHIPS *")
+    case ElementsQualifier(names)      => Some("ELEMENTS " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
+    case ElementsAllQualifier()        => Some("ELEMENTS *")
+    case UsersQualifier(names)         => Some("(" + names.map(escapeName).mkString(", ") + ")")
+    case UserQualifier(name)           => Some("(" + escapeName(name) + ")")
+    case UserAllQualifier()            => Some("(*)")
+    case AllQualifier()                => None
+    case _                             => Some("<unknown>")
+  }
+
+  private def extractQualifierString(qualifier: PrivilegeQualifier): String = {
+    val qualifierPart = extractQualifierPart(qualifier)
+    qualifierPart match {
+      case Some(string) => s" $string"
+      case _ => ""
+    }
   }
 
   def extractDbScope(dbScope: List[GraphScope]): (String, Boolean, Boolean) = dbScope match {

@@ -725,63 +725,66 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case GrantGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
-        PlanDescriptionImpl(id, s"Grant${action.planName}", children, Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText,getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, s"Grant${action.planName}", children,
+          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case DenyGraphAction(_, action, resource, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
-        PlanDescriptionImpl(id, s"Deny${action.planName}", children, Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, s"Deny${action.planName}", children,
+          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case RevokeGraphAction(_, action, resource, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
+        val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
-          Seq(Details(Seq(dbName) ++ resourceText ++ Seq(qualifierText, getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))), variables)
+        val qualifierText = extractQualifierSeq(qualifier)
+        PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case DenyTraverse(_, database, qualifier, roleName) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))), variables)
+        val qualifierText = extractQualifierSeq(qualifier)
+        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
         val dbName = extractGraphScope(database)
-        val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
-        val details = Details(Seq(dbName, qualifierText, getRoleInfo(roleName)))
+        val qualifierText = extractQualifierSeq(qualifier)
+        val details = Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), children, Seq(details), variables)
 
       case GrantRead(_, resource, database, qualifier, roleName) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "GrantRead", children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "GrantRead", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case DenyRead(_, resource, database, qualifier, roleName) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "DenyRead", children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "DenyRead", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), children,
-          Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case GrantMatch(_, resource, database, qualifier, roleName) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "GrantMatch", children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "GrantMatch", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case DenyMatch(_, resource, database, qualifier, roleName) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "DenyMatch", children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, "DenyMatch", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case RevokeMatch(_, resource, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children, Seq(Details(Seq(dbName, resourceText, qualifierText, getRoleInfo(roleName)))), variables)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children,
+          Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case ShowPrivileges(_, scope) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "ShowPrivileges", children, Seq(Details(asPrettyString.raw(Prettifier.extractScope(scope)))), variables)
@@ -1200,9 +1203,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
   }
 
-  private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, PrettyString, PrettyString) = {
+  private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, Seq[PrettyString], PrettyString) = {
     val dbName = extractGraphScope(dbScope)
-    val qualifierText = asPrettyString.raw(Prettifier.extractQualifierPart(qualifier))
+    val qualifierText = extractQualifierSeq(qualifier)
     val resourceText = resource match {
       case PropertyResource(name) => pretty"PROPERTY ${asPrettyString(name)}"
       case AllPropertyResource() => pretty"ALL PROPERTIES"
@@ -1214,6 +1217,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
    dbScope match {
       case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
       case AllGraphsScope() => pretty"ALL GRAPHS"
+    }
+  }
+
+  private def extractQualifierSeq(qualifier: PrivilegeQualifier): Seq[PrettyString] = {
+    Prettifier.extractQualifierPart(qualifier) match {
+      case Some(qualifierString) => Seq(asPrettyString.raw(qualifierString))
+      case _ => Seq.empty
     }
   }
 
