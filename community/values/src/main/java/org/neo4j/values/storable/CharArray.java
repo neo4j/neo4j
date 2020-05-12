@@ -58,7 +58,12 @@ public final class CharArray extends TextArray
     @Override
     public int computeHash()
     {
-        return NumberValues.hash( value );
+        int result = 1;
+        for ( char element : value )
+        {
+            result = 31 * result + (Character.hashCode( element ) + 31);  // last 31 due to CharValues hashcode
+        }
+        return result;
     }
 
     @Override

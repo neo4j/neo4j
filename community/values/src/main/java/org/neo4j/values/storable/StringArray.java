@@ -70,7 +70,12 @@ public class StringArray extends TextArray
     @Override
     public int computeHash()
     {
-        return Arrays.hashCode( value );
+        int result = 1;
+        for ( String element : value )
+        {
+            result = 31 * result + (element == null ? 0 : Values.stringValue( element ).hashCode());
+        }
+        return result;
     }
 
     @Override
