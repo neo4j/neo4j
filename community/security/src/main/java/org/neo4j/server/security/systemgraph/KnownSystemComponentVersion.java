@@ -29,11 +29,10 @@ import org.neo4j.server.security.systemgraph.versions.NoUserSecurityGraph;
 
 public abstract class KnownSystemComponentVersion
 {
-    protected final Label userLabel = Label.label( "User" );
     private final Label versionLabel = Label.label( "Version" );
-    private final String componentVersionProperty;
+    protected final String componentVersionProperty;
     public final int version;
-    protected final String description;
+    public final String description;
     protected final Log log;
 
     protected KnownSystemComponentVersion( String property, int version, String description, Log log )
@@ -125,18 +124,16 @@ public abstract class KnownSystemComponentVersion
         {
             int oldVersion = (Integer) versionNode.getProperty( componentVersionProperty );
             log.info( String.format( "Upgrading '%s' version property from %d to %d", componentVersionProperty, oldVersion, newVersion ) );
-            versionNode.setProperty( componentVersionProperty, newVersion );
         }
         else
         {
             log.info( String.format( "Setting version for '%s' to %d", componentVersionProperty, newVersion ) );
-            versionNode.setProperty( componentVersionProperty, newVersion );
         }
+        versionNode.setProperty( componentVersionProperty, newVersion );
     }
 
     private Node findOrCreateVersionNode( Transaction tx )
     {
-        // Upgrade from 4.1.0-Drop01 to 4.1.0-Drop02, which means add the Version node
         ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
         if ( nodes.hasNext() )
         {
