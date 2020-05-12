@@ -64,7 +64,6 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                            subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.kernelTransactionalContext
-    assertPrivilegeAction(tc.transaction())
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
@@ -72,6 +71,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
+      assertPrivilegeAction(tc.transaction())
 
       val updatedParams = safeMergeParameters(systemParams, params, parameterGenerator.apply(tc.transaction(), securityContext), parameterConverter)
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
