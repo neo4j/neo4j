@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+import scala.collection.immutable.BitSet
 
-  self =>
+class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   implicit def converter(s: Symbol): String = s.toString()
 
@@ -71,9 +71,9 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)  // a - [r1] - b
 
-      val patternX = PatternRelationship("r2", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val patternX = PatternRelationship("r2", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength) // a - [r2] -> b
 
       expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx).toSet should equal(Set(
         Expand(plan1, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandInto),
@@ -112,6 +112,23 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       ))
     }
   }
+
+  test("does not expand if goal is entirely compacted") {
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+
+    new given().withLogicalPlanningContext { (_, ctx) =>
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
+      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+
+      val compactedPattern1 = BitSet(registry.compact(register(pattern1)))
+      val compactedPattern2 = BitSet(registry.compact(register(pattern2)))
+
+      table.put(compactedPattern1, InterestingOrder.empty, plan1)
+
+      expandSolverStep(qg)(registry, compactedPattern1 ++ compactedPattern2, table, ctx).toSet should be(empty)
+    }
+  }
+
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = registry.registerAll(patRels)
 }

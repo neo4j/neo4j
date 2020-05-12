@@ -30,10 +30,8 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
-import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
@@ -43,10 +41,11 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
   override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
-      for {patternId <- goal.iterator
-           (interestingOrder, plan) <- table(goal - patternId)
-           pattern <- registry.lookup(patternId)
-           } yield {
+      for {
+        patternId <- goal.iterator
+        (interestingOrder, plan) <- table(goal - patternId)
+        pattern <- registry.lookup(patternId)
+      } yield {
         if (plan.availableSymbols.contains(pattern.name))
           Iterator(
             planSingleProjectEndpoints(pattern, plan, context)
@@ -79,22 +78,7 @@ object expandSolverStep {
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
-    /*
-     * Method to find implicit leaf plan arguments, except explicit Argument
-     */
-    def leafArguments(plan:LogicalPlan): Set[String] = plan match {
-      case _: Argument => Set.empty
-      case p: LogicalLeafPlan => p.argumentIds
-      case _ =>
-        val lhs = plan.lhs.map(inner => leafArguments(inner)).toSet.flatten
-        val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
-        lhs ++ rhs
-    }
-    // Remove the leaf arguments as to not try and join disjoint plans only on arguments.
-    // This reduces the solution space for the expands generator, since the joins generator should consider these cases.
-    val symbols = availableSymbols -- leafArguments(sourcePlan)
-
-    if (symbols(nodeId)) {
+    if (availableSymbols(nodeId)) {
       Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, interestingOrder, context))
     } else {
       None
