@@ -851,6 +851,15 @@ class PrettifierIT extends CypherFunSuite {
           s"$action set property {*} on graph foo, $$bar $preposition role1, role2, role3" ->
             s"$action SET PROPERTY {*} ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role1, role2, role3",
 
+          s"$action all on graph * $preposition role" ->
+            s"$action ALL GRAPH PRIVILEGES ON GRAPH * $preposition role",
+
+          s"$action all privileges on graph foo $preposition role" ->
+            s"$action ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role",
+
+          s"$action all graph privileges on graph foo, $$bar $preposition role1, role2, role3" ->
+            s"$action ALL GRAPH PRIVILEGES ON GRAPHS foo, $$bar $preposition role1, role2, role3",
+
         ) ++ Seq(
           ("access", "ACCESS"),
           ("start", "START"),

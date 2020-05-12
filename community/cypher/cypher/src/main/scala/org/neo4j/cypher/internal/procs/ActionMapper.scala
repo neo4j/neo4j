@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDbmsAction
+import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllRoleActions
@@ -90,6 +91,8 @@ object ActionMapper {
     case SetLabelAction => security.PrivilegeAction.SET_LABEL
     case RemoveLabelAction => security.PrivilegeAction.REMOVE_LABEL
     case SetPropertyAction => security.PrivilegeAction.SET_PROPERTY
+
+    case AllGraphAction => security.PrivilegeAction.GRAPH_ACTIONS
 
     case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
 
