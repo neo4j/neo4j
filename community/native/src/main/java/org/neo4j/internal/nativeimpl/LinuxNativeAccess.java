@@ -202,7 +202,14 @@ public class LinuxNativeAccess implements NativeAccess
         {
             try
             {
+//                The strerror_r() function is similar to strerror(), but is thread safe.
+//                This function is available in two versions: an XSI-compliant version specified in POSIX.1-2001 (available
+//                since glibc 2.3.4, but not POSIX-compliant until glibc 2.13), and a GNU-specific version (available since glibc 2.0).
+//                The XSI-compliant version is provided with the feature test
+//                macros  settings  shown in the SYNOPSIS; otherwise the GNU-specific version is provided.
+//                The XSI-compliant strerror_r() is preferred for portable applications.
                 long result = strerror_r( errorCode, bufferPointer, bufferLength );
+
 //                The GNU-specific strerror_r() returns a pointer to a string containing the error message.
 //                This may be either a pointer to a string that the function stores in buf, or a  pointer
 //                to  some  (immutable)  static  string (in which case buf is unused).
