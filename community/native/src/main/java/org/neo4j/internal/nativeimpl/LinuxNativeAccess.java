@@ -47,6 +47,9 @@ public class LinuxNativeAccess implements NativeAccess
      */
     private static final int POSIX_FADV_DONTNEED = 4;
 
+    private static final int EINVAL = 22;
+    private static final int ERANGE = 34;
+
     private static final boolean NATIVE_ACCESS_AVAILABLE;
     private static final Throwable INITIALIZATION_FAILURE;
 
@@ -215,7 +218,7 @@ public class LinuxNativeAccess implements NativeAccess
                     return new Pointer( bufferPointer ).getString( 0 );
                 }
                 // not error, not EINVAL and not ERANGE
-                if ( result != ERROR && result != 22 && result != 34 )
+                if ( result != ERROR && result != EINVAL && result != ERANGE )
                 {
                     return new Pointer( result ).getString( 0 );
                 }
