@@ -325,15 +325,27 @@ public class TransportWriteThrottleTest
         @Override
         public void lock( Channel channel, long timeout ) throws InterruptedException
         {
-            actualLock.lock( channel, timeout );
-            lockCount.incrementAndGet();
+            try
+            {
+                actualLock.lock( channel, timeout );
+            }
+            finally
+            {
+                lockCount.incrementAndGet();
+            }
         }
 
         @Override
         public void unlock( Channel channel )
         {
-            actualLock.unlock( channel );
-            unlockCount.incrementAndGet();
+            try
+            {
+                actualLock.unlock( channel );
+            }
+            finally
+            {
+                unlockCount.incrementAndGet();
+            }
         }
 
         public int lockCallCount()
