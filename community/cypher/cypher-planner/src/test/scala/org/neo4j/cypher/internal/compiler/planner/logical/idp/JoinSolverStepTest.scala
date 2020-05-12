@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 import scala.language.implicitConversions
 
+import scala.collection.immutable.BitSet
+
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   implicit def converter(s: Symbol): String = s.toString()
@@ -156,6 +158,37 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+    }
+  }
+
+  test("does join plans that overlap on arguments if all of the goal is compacted") {
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
+    new given().withLogicalPlanningContext { (_, ctx) =>
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // symbols
+      ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b").addArgumentIds(Seq("b")))) // nodes
+      val plan2 = fakeLogicalPlanFor(ctx.planningAttributes,"b", "c")
+      ctx.planningAttributes.solveds.set(plan2.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b").addArgumentIds(Seq("b"))))
+
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c").addArgumentIds(Seq("b"))
+
+      val id1: Goal = register(pattern1)
+      val id2: Goal = register(pattern2)
+
+      // Compact goals
+      val compactedId1 = BitSet(registry.compact(id1))
+      val compactedId2 = BitSet(registry.compact(id2))
+      table.removeAllTracesOf(id1)
+
+      // Table is not completely compacted
+      table.put(id2, InterestingOrder.empty, plan2)
+      table.put(compactedId1, InterestingOrder.empty, plan1)
+      table.put(compactedId2, InterestingOrder.empty, plan2)
+
+      // Goal is completely compacted - should result in expandStillPossible == false
+      joinSolverStep(qg)(registry, compactedId1 ++ compactedId2, table, ctx).toSet should equal(Set(
+        NodeHashJoin(Set("b"), plan1, plan2),
+        NodeHashJoin(Set("b"), plan2, plan1)
+      ))
     }
   }
 
