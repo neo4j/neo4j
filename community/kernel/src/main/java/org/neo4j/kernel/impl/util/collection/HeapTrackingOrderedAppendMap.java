@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.block.function.Function;
+import org.eclipse.collections.api.block.procedure.Procedure;
 import org.eclipse.collections.impl.tuple.AbstractImmutableEntry;
 
 import java.util.Iterator;
@@ -114,6 +115,14 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         {
             throw new UnsupportedOperationException( "Replacing an existing value is not supported." );
         }
+    }
+
+    /**
+     * Apply the procedure for each value in the map.
+     */
+    public void forEachValue( Procedure<? super V> p )
+    {
+        map.forEachValue( entry -> p.accept( entry.getValue() ) );
     }
 
     /**
