@@ -55,9 +55,10 @@ public class DatabaseMigrator
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
 
-    public DatabaseMigrator( FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
-                             JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator,
-                             StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    public DatabaseMigrator(
+            FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
+            JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.config = config;
@@ -66,7 +67,7 @@ public class DatabaseMigrator
         this.pageCache = pageCache;
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
-        this.legacyLogsLocator = legacyLogsLocator;
+        this.legacyLogsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
@@ -83,12 +84,11 @@ public class DatabaseMigrator
                 fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver, pageCacheTracer, memoryTracker );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) );
         LogProvider logProvider = logService.getInternalLogProvider();
-        StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, logsUpgrader,
-                storageEngineFactory, pageCacheTracer );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, logsUpgrader, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
-        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService, pageCacheTracer,
-                memoryTracker );
+        var storeParticipants = storageEngineFactory.migrationParticipants(
+                fs, config, pageCache, jobScheduler, logService, pageCacheTracer, memoryTracker );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
@@ -97,8 +97,8 @@ public class DatabaseMigrator
                 fs, config, pageCache, logService, storageEngineFactory, indexProviderMap, userLog, pageCacheTracer, memoryTracker );
         storeUpgrader.addParticipant( indexConfigMigrator );
 
-        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer,
-                memoryTracker );
+        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator(
+                fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer, memoryTracker );
         storeUpgrader.addParticipant( indexProviderMigrator );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.

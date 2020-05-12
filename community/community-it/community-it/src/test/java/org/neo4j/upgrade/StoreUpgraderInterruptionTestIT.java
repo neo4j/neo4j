@@ -183,7 +183,6 @@ public class StoreUpgraderInterruptionTestIT
     public void tracePageCacheAccessOnIdStoreUpgrade() throws IOException, ConsistencyCheckIncompleteException
     {
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
@@ -198,7 +197,6 @@ public class StoreUpgraderInterruptionTestIT
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
-        pageCache.close();
 
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
@@ -271,7 +269,7 @@ public class StoreUpgraderInterruptionTestIT
         LogsUpgrader logsUpgrader = new LogsUpgrader(
                 fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE );
         StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, storageEngineFactory, NULL );
+                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

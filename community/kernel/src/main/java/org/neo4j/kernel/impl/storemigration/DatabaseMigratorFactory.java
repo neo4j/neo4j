@@ -59,9 +59,8 @@ public class DatabaseMigratorFactory
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
             DependencyResolver dependencies )
     {
-        final DatabaseConfig dbConfig = new DatabaseConfig( config, namedDatabaseId );
-        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
+        DatabaseConfig dbConfig = new DatabaseConfig( config, namedDatabaseId );
         return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, jobScheduler, databaseLayout,
-                logsLocator, storageEngineFactory, pageCacheTracer, memoryTracker );
+                storageEngineFactory, pageCacheTracer, memoryTracker );
     }
 }

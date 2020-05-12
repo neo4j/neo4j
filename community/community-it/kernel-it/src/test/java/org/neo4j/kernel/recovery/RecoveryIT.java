@@ -573,7 +573,8 @@ class RecoveryIT
     @Test
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Throwable
     {
-        GraphDatabaseService database = createDatabase( ByteUnit.mebiBytes( 1 ) );
+        long logThreshold = ByteUnit.mebiBytes( 1 );
+        GraphDatabaseService database = createDatabase( logThreshold );
         while ( countTransactionLogFiles() < 5 )
         {
             generateSomeData( database );
@@ -598,8 +599,9 @@ class RecoveryIT
         // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
         assertEquals( 2, countCheckPointsInTransactionLogs() );
         removeLastCheckpointRecordFromLastLogFile();
+        builder = null; // Reset log rotation threshold setting to avoid immediate rotation on `createSingleNode()`.
 
-        GraphDatabaseService service = createDatabase();
+        GraphDatabaseService service = createDatabase( logThreshold * 2 ); // Bigger log, to avoid rotation.
         createSingleNode( service );
         this.managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
@@ -730,7 +732,8 @@ class RecoveryIT
 
     private void startStopDatabase()
     {
-        createDatabase();
+        GraphDatabaseService db = createDatabase();
+        db.beginTx().close();
         managementService.shutdown();
     }
 

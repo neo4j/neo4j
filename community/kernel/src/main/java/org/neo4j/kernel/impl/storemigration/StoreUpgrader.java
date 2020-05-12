@@ -40,7 +40,6 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -88,12 +87,11 @@ public class StoreUpgrader
     private final Log log;
     private final LogsUpgrader logsUpgrader;
     private final String configuredFormat;
-    private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
 
     public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config config,
                           FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader,
-                          StorageEngineFactory storageEngineFactory, PageCacheTracer pageCacheTracer )
+                          PageCacheTracer pageCacheTracer )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
@@ -102,7 +100,6 @@ public class StoreUpgrader
         this.logsUpgrader = logsUpgrader;
         this.log = logProvider.getLog( getClass() );
         this.configuredFormat = storeVersionCheck.configuredVersion();
-        this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
     }
 
@@ -130,7 +127,7 @@ public class StoreUpgrader
         {
             return;
         }
-        boolean upgradeAllowed = isUpgradeAllowed();
+        logsUpgrader.assertLogVersionIsCurrent( layout );
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             // TODO: System database does not (yet) support migration, remove this when it does!
@@ -151,7 +148,7 @@ public class StoreUpgrader
                 return;
             }
 
-            if ( upgradeAllowed )
+            if ( isUpgradeAllowed() )
             {
                 migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
             }
@@ -203,7 +200,7 @@ public class StoreUpgrader
         {
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorTracer );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
-            logsUpgrader.assertCleanlyShutDownByCheckPoint( dbDirectoryLayout );
+            logsUpgrader.assertCleanlyShutDown( dbDirectoryLayout );
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );

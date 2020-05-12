@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -58,6 +60,8 @@ public class LogsUpgrader
     private final DependencyResolver dependencyResolver;
     private final PageCacheTracer tracer;
     private final MemoryTracker memoryTracker;
+    private final boolean isUpgradeAllowed;
+    private final Map<DatabaseLayout, LogTailScanner> tailScanners;
 
     public LogsUpgrader(
             FileSystemAbstraction fs,
@@ -79,9 +83,23 @@ public class LogsUpgrader
         this.dependencyResolver = dependencyResolver;
         this.tracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
+        this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade );
+        tailScanners = new HashMap<>();
     }
 
-    public void assertCleanlyShutDownByCheckPoint( DatabaseLayout layout )
+//    public void checkLogs( DatabaseLayout layout )
+//    {
+//        if ( isUpgradeAllowed )
+//        {
+//            assertCleanlyShutDown( layout );
+//        }
+//        else
+//        {
+//            assertLogVersionIsCurrent( layout );
+//        }
+//    }
+
+    public void assertCleanlyShutDown( DatabaseLayout layout )
     {
         Throwable suppressibleException = null;
         try
@@ -89,8 +107,7 @@ public class LogsUpgrader
             // we should not use provided database layout here since transaction log location is different compare to previous versions
             // and that's why we need to use custom transaction logs locator and database layout
             DatabaseLayout oldDatabaseLayout = buildLegacyLogsLayout( layout );
-            LogTailScanner logTailScanner = buildLogTailScanner( oldDatabaseLayout );
-            boolean isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade );
+            LogTailScanner logTailScanner = getLogTailScanner( oldDatabaseLayout );
             LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
 
             LogTailScanner.LogTailInformation tail = logTailScanner.getTailInformation();
@@ -103,7 +120,7 @@ public class LogsUpgrader
             {
                 // There are no log files in the legacy logs location.
                 // Either log files are missing entirely, or they are already in their correct place.
-                logTailScanner = buildLogTailScanner( layout );
+                logTailScanner = getLogTailScanner( layout );
                 LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
                 tail = logTailScanner.getTailInformation();
 
@@ -132,9 +149,20 @@ public class LogsUpgrader
         throw exception;
     }
 
+    public void assertLogVersionIsCurrent( DatabaseLayout layout )
+    {
+        LogTailScanner logTailScanner = getLogTailScanner( layout );
+        LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
+    }
+
     private DatabaseLayout buildLegacyLogsLayout( DatabaseLayout databaseLayout )
     {
         return new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(), legacyLogsLocator );
+    }
+
+    private LogTailScanner getLogTailScanner( DatabaseLayout layout )
+    {
+        return tailScanners.computeIfAbsent( layout, this::buildLogTailScanner );
     }
 
     private LogTailScanner buildLogTailScanner( DatabaseLayout layout )

@@ -563,8 +563,8 @@ public class StoreUpgraderTest
         dependencies.satisfyDependencies( new Monitors() );
         LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
                 logsLocator, config, dependencies, pageCacheTracer, INSTANCE );
-        StoreUpgrader upgrader = new StoreUpgrader( storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,
-                storageEngineFactory, pageCacheTracer );
+        StoreUpgrader upgrader = new StoreUpgrader(
+                storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader, pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );
