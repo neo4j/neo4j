@@ -24,9 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -47,8 +45,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 @SkipThreadLeakageGuard
 @EphemeralTestDirectoryExtension
@@ -71,7 +67,7 @@ class DatabaseManagementServiceFactoryTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
         RuntimeException startupError = new RuntimeException();
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( config, startupError, null );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, null );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
         assertEquals( startupError, getRootCause( startException ) );
@@ -84,7 +80,7 @@ class DatabaseManagementServiceFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( config, startupError, shutdownError );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
 
@@ -93,16 +89,10 @@ class DatabaseManagementServiceFactoryTest
         assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
     }
 
-    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( Config config, final RuntimeException startupError,
+    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
             RuntimeException shutdownError )
     {
-
-        GlobalModule globalModule = new GlobalModule( config, COMMUNITY, newDependencies() );
-        AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
-        {
-        };
-        globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule ) );
-        return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
+        return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, CommunityEditionModule::new )
         {
             @Override
             protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
