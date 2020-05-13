@@ -26,6 +26,8 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.NoValue.NO_VALUE;
+import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 public class StringArray extends TextArray
 {
@@ -73,7 +75,7 @@ public class StringArray extends TextArray
         int result = 1;
         for ( String element : value )
         {
-            result = 31 * result + (element == null ? 0 : Values.stringValue( element ).hashCode());
+            result = HASH_CONSTANT * result + (element == null ? NO_VALUE.hashCode() : Values.stringValue( element ).hashCode());
         }
         return result;
     }

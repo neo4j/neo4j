@@ -33,6 +33,8 @@ import static org.neo4j.values.storable.Values.longValue;
  */
 public final class ValueMath
 {
+    public static final int HASH_CONSTANT = 31;
+
     private ValueMath()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );

@@ -41,6 +41,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqualValues;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqualWithNoValues;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
@@ -119,6 +120,7 @@ class ListTest
                 byteArray( "This is just a test".getBytes() ) );
         assertEqualValues( list( 'h' ), charArray( new char[]{'h'} ) );
         assertEqualValues( list( 'h', 'i' ), charArray( new char[]{'h', 'i'} ) );
+        assertEqualValues( list( 'h', 'i', '!' ), charArray( new char[]{'h', 'i', '!'} ) );
         assertEqualValues( list( 1.0 ), doubleArray( new double[]{1.0} ) );
         assertEqualValues( list( 1.0, 2.0 ), doubleArray( new double[]{1.0, 2.0} ) );
         assertEqualValues( list( 1.5f ), floatArray( new float[]{1.5f} ) );
@@ -131,6 +133,7 @@ class ListTest
         assertEqualValues( list( (short) 2, (short) -3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertEqualValues( list( "hi" ), stringArray( "hi" ) );
         assertEqualValues( list( "hi", "ho" ), stringArray( "hi", "ho" ) );
+        assertEqualValues( list( "hi", "ho", "hu", "hm" ), stringArray( "hi", "ho", "hu", "hm" ) );
     }
 
     @Test
@@ -180,6 +183,7 @@ class ListTest
         assertNotEqual( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertNotEqual( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertNotEqual( list( "hi", "hello" ), stringArray( "hi" ) );
+        assertNotEqual( list( "hi", "hello" ), stringArray( "hello", "hi" ) );
         assertNotEqual( list( "hello" ), stringArray( "hi" ) );
 
         assertNotEqual( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
@@ -189,7 +193,12 @@ class ListTest
     void shouldHandleNullInList()
     {
         assertIncomparable( list( 1, null ), list( 1, 2 ) );
+        assertEqualWithNoValues( list( NO_VALUE ), list( NO_VALUE ) );
         assertNotEqual( list( 1, null ), list( 2, 3 ) );
+
+        assertEqualWithNoValues( list( NO_VALUE ), stringArray( new String[]{null} ) );
+        assertEqualWithNoValues( list( null, null ), stringArray( null, null ) );
+        assertEqualWithNoValues( list( "hi", null ), stringArray( "hi", null ) );
     }
 
     @Test

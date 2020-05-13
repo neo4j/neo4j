@@ -28,6 +28,7 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static java.lang.String.format;
+import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 public final class CharValue extends TextValue
@@ -67,7 +68,7 @@ public final class CharValue extends TextValue
     public int computeHash()
     {
         //The 31 is there to give it the same hash as the string equivalent
-        return 31 + value;
+        return HASH_CONSTANT + value;
     }
 
     @Override
