@@ -165,8 +165,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                singleComponentPlanner: SingleComponentPlannerTrait): Map[PlannedComponent, (PlannedComponent, PlannedComponent)]  = {
     (for {
       join <- valueJoins(qg.selections.flatPredicates)
-      t1@PlannedComponent(_, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs)
-      t2@PlannedComponent(_, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
+      t1@PlannedComponent(_, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs) && !planA.satisfiesExpressionDependencies(join.rhs)
+      t2@PlannedComponent(_, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && !planB.satisfiesExpressionDependencies(join.lhs) && planA != planB
     } yield {
       val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join, context), qg)
       val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join, context), qg)

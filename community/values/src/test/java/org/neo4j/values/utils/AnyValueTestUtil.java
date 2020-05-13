@@ -47,6 +47,16 @@ public class AnyValueTestUtil
         assertEquals( b, a, a + " should be equivalent to " + b );
         assertEquals( Equality.TRUE, a.ternaryEquals( b ), a + " should be equal to " + b );
         assertEquals( Equality.TRUE, b.ternaryEquals( a ), a + " should be equal to " + b );
+        assertEquals( a.hashCode(), b.hashCode(), a + ".hashCode() should be equivalent to " + b + ".hashCode()" );
+    }
+
+    public static void assertEqualWithNoValues( AnyValue a, AnyValue b )
+    {
+        assertEquals( a, b, a + " should be equivalent to " + b );
+        assertEquals( b, a, a + " should be equivalent to " + b );
+        assertEquals( Equality.UNDEFINED, a.ternaryEquals( b ), a + " should not be equal to " + b );
+        assertEquals( Equality.UNDEFINED, b.ternaryEquals( a ), a + " should not be equal to " + b );
+        assertEquals( a.hashCode(), b.hashCode(), a + ".hashCode() should be equivalent to " + b + ".hashCode()" );
     }
 
     public static void assertNotEqual( AnyValue a, AnyValue b )

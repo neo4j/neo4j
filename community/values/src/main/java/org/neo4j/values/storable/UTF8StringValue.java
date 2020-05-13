@@ -28,6 +28,7 @@ import org.neo4j.hashing.HashFunction;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.storable.Values.utf8Value;
+import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
@@ -159,7 +160,7 @@ public final class UTF8StringValue extends StringValue
 
         while ( cpc.i < len )
         {
-            hash = 31 * hash + (int) cpc.nextCodePoint();
+            hash = HASH_CONSTANT * hash + (int) cpc.nextCodePoint();
         }
         return hash;
     }

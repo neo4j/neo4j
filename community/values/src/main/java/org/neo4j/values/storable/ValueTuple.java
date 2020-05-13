@@ -23,6 +23,7 @@ import java.util.Comparator;
 
 import static org.neo4j.util.Preconditions.requireNoNullElements;
 import static org.neo4j.util.Preconditions.requireNonEmpty;
+import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 /**
  * A tuple of n values.
@@ -108,7 +109,7 @@ public class ValueTuple
         int result = 1;
         for ( Object value : values )
         {
-            result = 31 * result + value.hashCode();
+            result = HASH_CONSTANT * result + value.hashCode();
         }
         return result;
     }
