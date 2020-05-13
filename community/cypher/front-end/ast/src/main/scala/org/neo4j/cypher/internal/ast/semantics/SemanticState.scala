@@ -257,8 +257,7 @@ case class SemanticState(currentScope: ScopeLocation,
                          notifications: Set[InternalNotification] = Set.empty,
                          features: Set[SemanticFeature] = Set.empty,
                          initialWith: Boolean = false,
-                         declareVariablesToSuppressDuplicateErrors: Boolean = true,
-                         cypher9ComparabilitySemantics: Boolean = false) {
+                         declareVariablesToSuppressDuplicateErrors: Boolean = true) {
 
   def recogniseInitialWith: SemanticState = copy(initialWith = true)
 
@@ -282,10 +281,6 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def importValuesFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.importValuesFromScope(scope, exclude))
-
-  @Deprecated
-  // Use withFeature(SemanticFeature.Cypher9Comparability) instead
-  def withCypher9ComparabilitySemantics(cypher9ComparabilitySemantics: Boolean): SemanticState = copy(cypher9ComparabilitySemantics = cypher9ComparabilitySemantics)
 
   /**
    * @param overriding if `true` then a previous occurrence of that variable is overridden.

@@ -67,7 +67,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 object CompilationPhases {
 
   val defaultSemanticFeatures = Seq(
-    Cypher9Comparability,
     MultipleDatabases,
     CorrelatedSubQueries,
   )

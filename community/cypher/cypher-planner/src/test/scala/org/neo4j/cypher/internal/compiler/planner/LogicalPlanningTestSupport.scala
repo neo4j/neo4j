@@ -309,7 +309,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine =
     Parsing andThen
       PreparatoryRewriting(Deprecations.V1) andThen
-      SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability, SemanticFeature.CorrelatedSubQueries) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
       AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
+class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
 
   override def initTest(): Unit = {
     SemanticExpressionCheck.semanticCheckFallback =
@@ -48,8 +48,6 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
             SemanticExpressionCheck.crashOnUnknownExpression(ctx, x)
         }
   }
-
-  val pos = DummyPosition(0)
 
   def literal(x:String) = StringLiteral(x)(pos)
   def literal(x:Double) = DecimalDoubleLiteral(x.toString)(pos)
