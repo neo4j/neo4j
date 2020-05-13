@@ -100,7 +100,7 @@ class DiagnosticsReportCommandIT
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {
-            String threadDump = new String( Files.readAllBytes( fs.getPath( "threaddump.txt" ) ) );
+            String threadDump = Files.readString( fs.getPath( "threaddump.txt" ) );
             assertThat( threadDump ).contains( DiagnosticsReportCommandIT.class.getCanonicalName() );
         }
     }
