@@ -339,7 +339,7 @@ public abstract class AbstractNeoServer implements NeoServer
             // blocking in LifeSupport#start() and the blocked starting components may be using this guard as a bail out signal
             if ( globalAvailabilityGuard != null )
             {
-                globalAvailabilityGuard.shutdown();
+                globalAvailabilityGuard.stop();
             }
         }
         catch ( Throwable t )
