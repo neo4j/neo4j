@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -101,7 +102,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close()
 
@@ -124,7 +125,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close()
 
@@ -143,7 +144,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // WHEN
     val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
@@ -164,7 +165,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(Right(new URL("http://localhost:7474/data.csv")))
@@ -181,7 +182,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     startGraph(GraphDatabaseSettings.allow_file_urls -> FALSE)
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
@@ -220,7 +221,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     val resource1 = mock[AutoCloseablePlus]
     val resource2 = mock[AutoCloseablePlus]
     val resource3 = mock[AutoCloseablePlus]
@@ -241,7 +242,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
 
     // WHEN
@@ -257,7 +258,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
 
     // WHEN
@@ -273,7 +274,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     val initSize = context.resources.allResources.size
 
     // WHEN

@@ -229,12 +229,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         executionPlan.runtimeName,
         executionPlan.metadata)
 
-    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String]) = {
+    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String], taskCloser: TaskCloser) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
         case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
         case None => (null, new ResourceManager(resourceMonitor))
       }
       val txContextWrapper = TransactionalContextWrapper(transactionalContext, threadSafeCursorFactory)
+      val statement = transactionalContext.statement()
+      statement.registerCloseableResource(resourceManager)
+      taskCloser.addTask(_ => statement.unregisterCloseableResource(resourceManager))
+
       val ctx = new TransactionBoundQueryContext(txContextWrapper, resourceManager)(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
@@ -250,7 +254,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions)
+      val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions, taskCloser)
       if (isOutermostQuery) taskCloser.addTask(success => {
         val context = queryContext.transactionalContext
         if (!success) {

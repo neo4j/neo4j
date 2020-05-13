@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, NoMemoryTracker, QueryContext}
@@ -63,7 +64,7 @@ object QueryStateHelper extends MockitoSugar {
     val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
-    val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
+    val queryContext = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(searchMonitor)
     emptyWith(db = db,
               query = queryContext,
               params = params,

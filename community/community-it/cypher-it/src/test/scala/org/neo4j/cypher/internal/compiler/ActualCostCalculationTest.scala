@@ -27,6 +27,7 @@ import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, Si
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, IndexOrderNone, IndexedProperty, SingleQueryExpression}
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
@@ -246,7 +247,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     graph.withTx { tx =>
       val tc = transactionContext(graph, tx)
       val tcWrapper = TransactionalContextWrapper(tc)
-      val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
+      val queryContext = new TransactionBoundQueryContext(tcWrapper, new ResourceManager)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(query = queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
