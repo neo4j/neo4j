@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
@@ -91,6 +92,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
@@ -202,15 +204,24 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomBytesToLastLogFile( this::randomBytes );
+        Supplier<Byte> randomBytesSupplier = this::randomBytes;
+        BytesCaptureSupplier capturingSupplier = new BytesCaptureSupplier( randomBytesSupplier );
+        addRandomBytesToLastLogFile( capturingSupplier );
+        assertFalse( recoveryMonitor.wasRecoveryRequired() );
 
         startStopDbRecoveryOfCorruptedLogs();
 
-        assertThat( logProvider )
-                .containsMessages( "Fail to read transaction log version 0.",
-                "Fail to read transaction log version 0. " +
-                "Last valid transaction start offset is: " + (5570 + HEADER_OFFSET) + "." );
-        assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+        try
+        {
+            assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+            assertTrue( recoveryMonitor.wasRecoveryRequired() );
+            assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
+                    "Fail to read transaction log version 0. " + "Last valid transaction start offset is: " + (5570 + HEADER_OFFSET) + "." );
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( "Generated random bytes: " + capturingSupplier.getCapturedBytes(), t );
+        }
     }
 
     @Test
@@ -932,10 +943,12 @@ class RecoveryCorruptedTransactionLogIT
     {
         private final List<Long> recoveredTransactions = new ArrayList<>();
         private int numberOfRecoveredTransactions;
+        private final AtomicBoolean recoveryRequired = new AtomicBoolean();
 
         @Override
         public void recoveryRequired( LogPosition recoveryPosition )
         {
+            recoveryRequired.set( true );
         }
 
         @Override
@@ -948,6 +961,11 @@ class RecoveryCorruptedTransactionLogIT
         public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
         {
             this.numberOfRecoveredTransactions = numberOfRecoveredTransactions;
+        }
+
+        boolean wasRecoveryRequired()
+        {
+            return recoveryRequired.get();
         }
 
         int getNumberOfRecoveredTransactions()
@@ -983,6 +1001,30 @@ class RecoveryCorruptedTransactionLogIT
         {
             version++;
             return version;
+        }
+    }
+
+    private static class BytesCaptureSupplier implements Supplier<Byte>
+    {
+        private final Supplier<Byte> generator;
+        private final List<Byte> capturedBytes = new ArrayList<>();
+
+        BytesCaptureSupplier( Supplier<Byte> generator )
+        {
+            this.generator = generator;
+        }
+
+        @Override
+        public Byte get()
+        {
+            Byte data = generator.get();
+            capturedBytes.add( data );
+            return data;
+        }
+
+        public List<Byte> getCapturedBytes()
+        {
+            return capturedBytes;
         }
     }
 }
