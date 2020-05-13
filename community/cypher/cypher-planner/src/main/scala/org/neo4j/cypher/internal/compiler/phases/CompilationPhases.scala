@@ -21,17 +21,24 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
-import org.neo4j.cypher.internal.compiler.planner.logical.{OptionalMatchRemover, QueryPlanner}
-import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.compiler.{MultiDatabaseAdministrationCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
+import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
+import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
+import org.neo4j.cypher.internal.compiler.MultiDatabaseAdministrationCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{IfNoParameter, InnerVariableNamer, LiteralExtraction}
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.IfNoParameter
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 
 object CompilationPhases {
 
@@ -47,13 +54,13 @@ object CompilationPhases {
         PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
         SyntaxDeprecationWarnings(Deprecations.V2) andThen
         PreparatoryRewriting(Deprecations.V2) andThen
-        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
+        SemanticAnalysis(warn = true, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
         AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
     } else {
       Parsing.adds(BaseContains[Statement]) andThen
         SyntaxDeprecationWarnings(Deprecations.V2) andThen
         PreparatoryRewriting(Deprecations.V2) andThen
-        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
+        SemanticAnalysis(warn = true, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
         AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
     }
 }
@@ -68,16 +75,16 @@ object CompilationPhases {
   def planPipeLine(sequencer: String => RewriterStepSequencer, pushdownPropertyReads: Boolean = true): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-        SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+        SemanticAnalysis(warn = false, MultipleDatabases) andThen
           Namespacer andThen
           isolateAggregation andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          SemanticAnalysis(warn = false, MultipleDatabases) andThen
           Namespacer andThen
           transitiveClosure andThen
           rewriteEqualityToInPredicate andThen
           CNFNormalizer andThen
           LateAstRewriting andThen
-          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          SemanticAnalysis(warn = false, MultipleDatabases) andThen
           ResolveTokens andThen
           CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
           OptionalMatchRemover andThen

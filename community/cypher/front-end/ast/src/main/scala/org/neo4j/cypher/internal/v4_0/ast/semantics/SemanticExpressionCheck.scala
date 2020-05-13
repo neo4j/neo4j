@@ -87,7 +87,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x:Equals =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:Equivalent =>
         requireCypher10Support("`~` (equivalence)", x.position) chain
@@ -95,7 +95,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x:NotEquals =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:InvalidNotEquals =>
         SemanticError(
@@ -152,16 +152,16 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x:LessThan =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:LessThanOrEqual =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:GreaterThan =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:GreaterThanOrEqual =>
-        check(ctx, x.arguments) chain checkComparison(x, x.signatures)
+        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
 
       case x:PartialPredicate[_] =>
         check(ctx, x.coveredPredicate)
@@ -642,16 +642,5 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         specifyType(types(x.expression), x)
       }
     }
-
-  private def checkComparison(x: Expression, signatures: Seq[TypeSignature]): SemanticCheck = (state: SemanticState) => {
-    //According to spec comparing unrelated types should yield null not error
-    if (state.features(SemanticFeature.Cypher9Comparability)) {
-      specifyType(CTBoolean, x)(state) match {
-        case Left(err) => SemanticCheckResult(state, List(err))
-        case Right(s) => SemanticCheckResult(s, List.empty)
-      }
-    }
-    else checkTypes(x, signatures)(state)
-  }
 }
 

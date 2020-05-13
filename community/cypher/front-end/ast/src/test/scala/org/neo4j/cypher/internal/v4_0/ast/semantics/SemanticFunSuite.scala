@@ -16,12 +16,13 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Variable}
 
-class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
+class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
 
   override def initTest(): Unit = {
     SemanticExpressionCheck.semanticCheckFallback =
@@ -40,8 +41,6 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
             SemanticExpressionCheck.crashOnUnknownExpression(ctx, x)
         }
   }
-
-  val pos = DummyPosition(0)
 
   def literal(x:String) = StringLiteral(x)(pos)
   def literal(x:Double) = DecimalDoubleLiteral(x.toString)(pos)

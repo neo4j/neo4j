@@ -24,10 +24,10 @@ class NotEqualsTest extends InfixExpressionTestBase(expressions.NotEquals(_, _)(
   private val types = List(CTList(CTAny), CTInteger, CTFloat, CTNumber, CTNode, CTPath, CTRelationship, CTMap, CTPoint,
                    CTDate, CTDuration, CTBoolean, CTString, CTDateTime, CTGeometry, CTLocalDateTime, CTLocalTime, CTTime)
 
-  test("should support equality checks among all types with Cypher 9 comparison semantics") {
+  test("should support equality checks among all types") {
     types.foreach { t1 =>
       types.foreach { t2 =>
-        testValidTypes(t1, t2, useCypher9ComparisonSemantics = true)(CTBoolean)
+        testValidTypes(t1, t2)(CTBoolean)
       }
     }
   }

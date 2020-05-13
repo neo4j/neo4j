@@ -18,10 +18,14 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.helpers.{TreeElem, TreeZipper}
-import org.neo4j.cypher.internal.v4_0.util.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.v4_0.util.helpers.TreeElem
+import org.neo4j.cypher.internal.v4_0.util.helpers.TreeZipper
+import org.neo4j.cypher.internal.v4_0.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps
@@ -250,8 +254,7 @@ case class SemanticState(currentScope: ScopeLocation,
                          notifications: Set[InternalNotification] = Set.empty,
                          features: Set[SemanticFeature] = Set.empty,
                          initialWith: Boolean = false,
-                         declareVariablesToSuppressDuplicateErrors: Boolean = true,
-                         cypher9ComparabilitySemantics: Boolean = false) {
+                         declareVariablesToSuppressDuplicateErrors: Boolean = true) {
 
   def recogniseInitialWith: SemanticState = copy(initialWith = true)
 
@@ -275,10 +278,6 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def importValuesFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.importValuesFromScope(scope, exclude))
-
-  @Deprecated
-  // Use withFeature(SemanticFeature.Cypher9Comparability) instead
-  def withCypher9ComparabilitySemantics(cypher9ComparabilitySemantics: Boolean): SemanticState = copy(cypher9ComparabilitySemantics = cypher9ComparabilitySemantics)
 
   /**
     * @param overriding if `true` then a previous occurrence of that variable is overridden.

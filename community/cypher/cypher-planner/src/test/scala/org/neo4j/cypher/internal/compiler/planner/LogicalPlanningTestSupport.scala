@@ -23,29 +23,41 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.phases.{CreatePlannerQuery, LogicalPlanState, PlannerContext, RewriteProcedureCalls}
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 
 import scala.collection.mutable
 
@@ -253,7 +265,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine =
     Parsing andThen
     PreparatoryRewriting(Deprecations.V1) andThen
-    SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
+    SemanticAnalysis(warn = true) andThen
     AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
     RewriteProcedureCalls andThen
     Namespacer andThen

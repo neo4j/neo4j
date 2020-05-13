@@ -22,46 +22,14 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 class LessThanOrEqualTest extends InfixExpressionTestBase(expressions.LessThanOrEqual(_, _)(DummyPosition(0))) {
 
-  test("should support comparing integers") {
-    testValidTypes(CTInteger, CTInteger)(CTBoolean)
-  }
-
-  test("should support comparing doubles") {
-    testValidTypes(CTFloat, CTFloat)(CTBoolean)
-  }
-
-  test("should support comparing strings") {
-    testValidTypes(CTString, CTString)(CTBoolean)
-  }
-
-  test("should support comparing points") {
-    testValidTypes(CTPoint, CTPoint)(CTBoolean)
-  }
-
-  test("should support comparing temporals") {
-    testValidTypes(CTDate, CTDate)(CTBoolean)
-    testValidTypes(CTTime, CTTime)(CTBoolean)
-    testValidTypes(CTLocalTime, CTLocalTime)(CTBoolean)
-    testValidTypes(CTDateTime, CTDateTime)(CTBoolean)
-    testValidTypes(CTLocalDateTime, CTLocalDateTime)(CTBoolean)
-  }
-
-  test("should return error if invalid argument types") {
-    testInvalidApplication(CTNode, CTInteger)(
-      "Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Node")
-    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Float or Integer but was Node")
-    testInvalidApplication(CTDuration, CTDuration)(
-      "Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Duration")
-  }
-
-  test("should support comparing all types with Cypher 9 comparison semantics") {
+  test("should support comparing all types") {
     val types = List(CTList(CTAny), CTInteger, CTFloat, CTNumber, CTNode, CTPath, CTRelationship, CTMap, CTPoint,
                      CTDate, CTDuration, CTBoolean, CTString, CTDateTime, CTGeometry, CTLocalDateTime, CTLocalTime,
                      CTTime)
 
     types.foreach { t1 =>
       types.foreach { t2 =>
-        testValidTypes(t1, t2, useCypher9ComparisonSemantics = true)(CTBoolean)
+        testValidTypes(t1, t2)(CTBoolean)
       }
     }
   }

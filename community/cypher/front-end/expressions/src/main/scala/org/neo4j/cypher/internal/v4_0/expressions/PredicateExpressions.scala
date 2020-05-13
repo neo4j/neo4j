@@ -164,19 +164,7 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
 }
 
 sealed trait InequalityExpression extends Expression with BinaryOperatorExpression {
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTDate, CTDate), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTTime, CTTime), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTDateTime, CTDateTime), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTLocalTime, CTLocalTime), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTLocalDateTime, CTLocalDateTime), outputType = CTBoolean)
-  )
+  override val signatures = Vector(TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean))
 
   def includeEquality: Boolean
 

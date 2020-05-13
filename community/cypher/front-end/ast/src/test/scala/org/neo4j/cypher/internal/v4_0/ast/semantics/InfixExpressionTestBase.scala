@@ -16,35 +16,41 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, Expression}
+import org.neo4j.cypher.internal.v4_0.expressions.DummyExpression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends SemanticFunSuite {
 
-  protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean = false)(expected: TypeSpec) {
-    val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes, useCypher9ComparisonSemantics)
+  test("Should type check infix expressions deeply") {
+    val exp1 = index(parameter("p", CTAny), 0)
+    val exp2 = index(parameter("p", CTAny), 1)
+
+    val result = SemanticExpressionCheck.simple(ctr(exp1, exp2))(SemanticState.clean)
+    result.errors should be(empty)
+    result.state.typeTable.keys should contain(exp1)
+    result.state.typeTable.keys should contain(exp2)
+  }
+
+  protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec) {
+    val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes)
     result.errors shouldBe empty
     types(expression)(result.state) should equal(expected)
   }
 
-  protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean = false)(message: String) {
-    val (result, _) = evaluateWithTypes(lhsTypes, rhsTypes, useCypher9ComparisonSemantics)
+  protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(message: String) {
+    val (result, _) = evaluateWithTypes(lhsTypes, rhsTypes)
     result.errors should not be empty
     result.errors.head.msg should equal(message)
   }
 
-  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec, useCypher9ComparisonSemantics: Boolean): (SemanticCheckResult, Expression) = {
+  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec): (SemanticCheckResult, Expression) = {
     val lhs = DummyExpression(lhsTypes)
     val rhs = DummyExpression(rhsTypes)
 
     val expression = ctr(lhs, rhs)
 
-    val initialState = if (useCypher9ComparisonSemantics)
-      SemanticState.clean.withFeature(SemanticFeature.Cypher9Comparability)
-    else
-      SemanticState.clean
-
-    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(initialState).state
+    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(SemanticState.clean).state
     (SemanticExpressionCheck.simple(expression)(state), expression)
   }
 }
