@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
@@ -690,8 +691,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   }
 
   test("should split too long word in details rows on multiple lines") {
-    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details(Seq((0 until 101).map(_ => "a").mkString(""), "b"))), Set())
-    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(Details((0 until 5).map(_.toString))), Set())
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details(Seq((0 until 101).map(_ => "a").mkString(""), "b"))), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
       """+----------+------------------------------------------------------------------------------------------------------+
@@ -706,8 +707,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   }
 
   test("should add separator to next row if word exactly fits the row") {
-    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details(Seq((0 until 100).map(_ => "a").mkString(""), "b"))), Set())
-    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(Details((0 until 5).map(_.toString))), Set())
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details(Seq((0 until 100).map(_ => "a").mkString(""), "b"))), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     print(leaf)
     renderAsTreeTable(root) should equal(
@@ -719,6 +720,34 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || +NODE    | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
         ||          | , b                                                                                                  |
         |+----------+------------------------------------------------------------------------------------------------------+
+        |""".stripMargin)
+  }
+
+  test("multiline details on table with child plans"){
+    val leaf1 = PlanDescriptionImpl(id, "LEAF1", NoChildren, Seq.empty, Set())
+    val leaf3 = PlanDescriptionImpl(id, "LEAF3", NoChildren, Seq(details("c"*101)), Set())
+    val leaf2 = PlanDescriptionImpl(id, "LEAF2", NoChildren, Seq(details("b"*101)), Set())
+    val intermediate = PlanDescriptionImpl(id, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq(details("c"*101)), Set())
+    val plan = PlanDescriptionImpl(id, "ROOT", TwoChildren(leaf3, intermediate), Seq(details("a"*101)), Set())
+
+    renderAsTreeTable(plan) should equal(
+      """+-----------------+------------------------------------------------------------------------------------------------------+
+        || Operator        | Details                                                                                              |
+        |+-----------------+------------------------------------------------------------------------------------------------------+
+        || +ROOT           | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        || |               | a                                                                                                    |
+        || |\              +------------------------------------------------------------------------------------------------------+
+        || | +INTERMEDIATE | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
+        || | |             | c                                                                                                    |
+        || | |\            +------------------------------------------------------------------------------------------------------+
+        || | | +LEAF2      | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb |
+        || | |             | b                                                                                                    |
+        || | |             +------------------------------------------------------------------------------------------------------+
+        || | +LEAF1        |                                                                                                      |
+        || |               +------------------------------------------------------------------------------------------------------+
+        || +LEAF3          | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
+        ||                 | c                                                                                                    |
+        |+-----------------+------------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
 

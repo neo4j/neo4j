@@ -70,16 +70,6 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
     val columns = new mutable.HashMap[String, Int]()
     val lines = accumulate(plan, columns)
-
-    def compactLine(line: Line, previous: Seq[(Line, CompactedLine)]) = {
-      CompactedLine(line)
-    }
-
-    val compactedLines = lines.reverse.foldLeft(Seq.empty[(Line, CompactedLine)]) { (acc, line) =>
-      val compacted = compactLine(line, acc)
-      (line, compacted) +: acc
-    } map (_._2)
-
     val headers = HEADERS.filter(columns.contains)
 
     def width(header:String) = {
@@ -88,15 +78,19 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
     val result = new StringBuilder((2 + newLine.length + headers.map(width).sum) * (lines.size * 2 + 3))
 
-    def pad(width:Int, char:String=" ") =
-      for (_ <- 1 to width) result.append(char)
+    def pad(width:Int, char:String=" ") = for (_ <- 1 to width) result.append(char)
+
+    def writeConnection(line: LineDetails) = {
+      val connection = line.connection.get
+      result.append(connection)
+      pad(width(OPERATOR) - connection.length - 1)
+    }
+
     def divider(line:LineDetails = null) = {
       for (header <- headers) {
         if (line != null && header == OPERATOR && line.connection.isDefined) {
-          result.append("|")
-          val connection = line.connection.get
-          result.append(" ").append(connection)
-          pad(width(header) - connection.length - 1)
+          result.append("| ")
+          writeConnection(line)
         } else {
           result.append("+")
           pad(width(header), "-")
@@ -105,21 +99,26 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       result.append("+").append(newLine)
     }
 
-    for ( line <- CompactedLine(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap)) +: compactedLines ) {
-      if(line.line.newRow)
+    for (line <- Line(OPERATOR, headers.map(header => header -> Left(header)).toMap) +: lines) {
+      if (line.newRow) {
         divider(line)
-      for ( header <- headers ) {
+      }
+      for (header <- headers) {
         val detail = line(header)
         result.append("| ")
-        detail match {
-          case Left(text) =>
-            result.append(text)
-            pad(width(header) - text.length - 2)
-          case Right(text) =>
-            pad(width(header) - text.length - 2)
-            result.append(text)
+        if (header == OPERATOR && line.connection.isDefined && !line.newRow) {
+          writeConnection(line)
+        } else {
+          detail match {
+            case Left(text) =>
+              result.append(text)
+              pad(width(header) - text.length - 2)
+            case Right(text) =>
+              pad(width(header) - text.length - 2)
+              result.append(text)
+          }
+          result.append(" ")
         }
-        result.append(" ")
       }
       result.append("|").append(newLine)
     }
@@ -140,14 +139,18 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       mapping(OPERATOR, Left(line), columns)
       val rowLines = tableRowLines(tableRow(plan, columns))
       rowLines.headOption.foreach(row => lines.append(Line(line, row, level.connector)))
-      rowLines.tail.foreach(row => lines.append(Line("", row, level.connector, false)))
-      plan.children match {
+      val childConnector = plan.children match {
         case NoChildren =>
-        case SingleChild(inner) => stack.push((compactPlan(inner), level.child))
+          if (stack.isEmpty) None else level.connector
+        case SingleChild(inner) =>
+          stack.push((compactPlan(inner), level.child))
+          level.child.connector
         case TwoChildren(lhs, rhs) =>
           stack.push((compactPlan(lhs), level.child))
           stack.push((compactPlan(rhs), level.fork))
+          level.fork.connector
       }
+      rowLines.tail.foreach(row => lines.append(Line("", row, childConnector.map(_.replace("\\", "")), false)))
     }
     lines
   }
@@ -200,7 +203,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
     if (details.isEmpty) return Seq.empty
 
-    details.take(details.length - 1)
+    details.init
       .foreach { detail =>
         val (newCurrentRow, newRows) = splitDetail(detail, currentRow, length, isLastDetail = false)
         currentRow = newCurrentRow
@@ -306,12 +309,6 @@ case class Line(tree: String, allColumns: Map[String, Justified], connection: Op
   } else {
     allColumns.getOrElse(key, Left(""))
   }
-}
-
-case class CompactedLine(line: Line) extends LineDetails {
-  def apply(key: String): Justified = line(key)
-
-  def connection: Option[String] = line.connection
 }
 
 sealed abstract class Justified(text:String) {
