@@ -62,6 +62,7 @@ public class LogsUpgrader
     private final MemoryTracker memoryTracker;
     private final boolean isUpgradeAllowed;
     private final Map<DatabaseLayout, LogTailScanner> tailScanners;
+    private final Monitors monitors;
 
     public LogsUpgrader(
             FileSystemAbstraction fs,
@@ -85,19 +86,8 @@ public class LogsUpgrader
         this.memoryTracker = memoryTracker;
         this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade );
         tailScanners = new HashMap<>();
+        monitors = dependencyResolver.resolveDependency( Monitors.class );
     }
-
-//    public void checkLogs( DatabaseLayout layout )
-//    {
-//        if ( isUpgradeAllowed )
-//        {
-//            assertCleanlyShutDown( layout );
-//        }
-//        else
-//        {
-//            assertLogVersionIsCurrent( layout );
-//        }
-//    }
 
     public void assertCleanlyShutDown( DatabaseLayout layout )
     {
@@ -151,6 +141,7 @@ public class LogsUpgrader
 
     public void assertLogVersionIsCurrent( DatabaseLayout layout )
     {
+        layout = buildLegacyLogsLayout( layout );
         LogTailScanner logTailScanner = getLogTailScanner( layout );
         LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
     }
@@ -180,7 +171,6 @@ public class LogsUpgrader
         {
             throw new RuntimeException( e );
         }
-        Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
         boolean failOnCorruptedLogFiles = config.get( fail_on_corrupted_log_files );
         return new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles, memoryTracker );
     }
