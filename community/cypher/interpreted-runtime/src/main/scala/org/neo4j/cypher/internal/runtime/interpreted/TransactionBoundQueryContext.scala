@@ -113,8 +113,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
-                                          val resources: ResourceManager = new ResourceManager,
-                                          trackResourcesInTransaction: Boolean = true)
+                                          val resources: ResourceManager)
                                          (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
 
@@ -123,10 +122,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.tc.transaction()
   private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(
     transactionalContext.tc.transaction())
-
-  // We don't need to unregister this anywhere since the TransactionBoundQueryContext will be closed together with the Statement
-  if (trackResourcesInTransaction)
-    transactionalContext.tc.statement().registerCloseableResource(resources)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count

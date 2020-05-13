@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -168,7 +169,7 @@ trait ExecutionEngineHelper {
   def execute(q: String, params: Map[String, Any], tx: InternalTransaction): RewindableExecutionResult = {
     val subscriber = new RecordingQuerySubscriber
     val context = graph.transactionalContext(tx, query = q -> params.toMap)
-    val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context))
+    val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context), new ResourceManager)
     RewindableExecutionResult(eengine.execute(q,
       ExecutionEngineHelper.asMapValue(params),
       context,
@@ -183,7 +184,7 @@ trait ExecutionEngineHelper {
     val subscriber = new RecordingQuerySubscriber
     graph.withTx { tx =>
       val context = graph.transactionalContext(tx, query = fpq.description -> params.toMap)
-      val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context))
+      val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context), new ResourceManager)
       RewindableExecutionResult(
         eengine.execute(
           query = fpq,

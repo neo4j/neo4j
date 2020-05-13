@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -272,7 +273,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     graph.withTx { tx =>
       val tc = transactionContext(graph, tx)
       val tcWrapper = TransactionalContextWrapper(tc)
-      val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
+      val queryContext = new TransactionBoundQueryContext(tcWrapper, new ResourceManager)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(query = queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
