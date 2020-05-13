@@ -48,10 +48,6 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
 
   private val testedOperators = mutable.Set[String]()
 
-  private val settings = new Settings()
-  settings.usejavacp.value = true
-  private val interpreter = new IMain(settings)
-
   testPlan("produceResults",
     new TestPlanBuilder()
       .produceResults("x")
@@ -654,6 +650,10 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
          |$code""".stripMargin
     val res = Array[AnyRef](null)
 
+    val settings = new Settings()
+    settings.usejavacp.value = true
+    val interpreter = new IMain(settings)
+
     try {
       interpreter.beSilentDuring {
         // imports
@@ -670,6 +670,8 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
     } catch {
       case t: Throwable =>
         fail("Failed to interpret generated code: ", t)
+    } finally {
+      interpreter.close()
     }
     res(0).asInstanceOf[LogicalPlan]
   }
