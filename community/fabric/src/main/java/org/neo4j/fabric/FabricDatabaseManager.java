@@ -44,7 +44,7 @@ public abstract class FabricDatabaseManager
 
     public static boolean fabricByDefault()
     {
-        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, false );
+        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, true );
     }
 
     public DatabaseIdRepository databaseIdRepository()
