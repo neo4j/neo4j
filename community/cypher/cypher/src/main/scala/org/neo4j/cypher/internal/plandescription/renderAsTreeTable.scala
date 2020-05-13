@@ -64,9 +64,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val HEADERS = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
     ORDER, OTHER)
   private val newLine = System.lineSeparator()
-  private val SEPARATOR = ", "
-  private val ELLIPSIS = "..."
-  private val SUFFIX = s"$SEPARATOR$ELLIPSIS"
+  private val SEPARATOR = ","
 
   def apply(plan: InternalPlanDescription): String = {
 
@@ -107,8 +105,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       result.append("+").append(newLine)
     }
 
-    for ( line <- Seq(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap)) ++ compactedLines ) {
-      divider(line)
+    for ( line <- CompactedLine(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap)) +: compactedLines ) {
+      if(line.line.newRow)
+        divider(line)
       for ( header <- headers ) {
         val detail = line(header)
         result.append("| ")
@@ -139,7 +138,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
       val line = level.line + plan.name
       mapping(OPERATOR, Left(line), columns)
-      lines.append(Line(line, operatorDetails(plan, columns), level.connector))
+      val rowLines = tableRowLines(tableRow(plan, columns))
+      rowLines.headOption.foreach(row => lines.append(Line(line, row, level.connector)))
+      rowLines.tail.foreach(row => lines.append(Line("", row, level.connector, false)))
       plan.children match {
         case NoChildren =>
         case SingleChild(inner) => stack.push((compactPlan(inner), level.child))
@@ -149,6 +150,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       }
     }
     lines
+  }
+
+  private def tableRowLines(operatorRows: Map[String, Seq[Justified]]): Seq[Map[String, Justified]] = {
+    val numRows = operatorRows
+      .map { case (_, rows) => rows.length }
+      .max
+    (0 until numRows)
+      .map(row => operatorRows.mapValues(_.lift(row).getOrElse(Left(""))))
   }
 
   private def compactPlan(plan: InternalPlanDescription): InternalPlanDescription = {
@@ -168,7 +177,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     CompactedPlanDescription.create(similar)
   }
 
-  private def operatorDetails(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Justified] = description.arguments.flatMap {
+  private def tableRow(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Seq[Justified]] = description.arguments.flatMap {
     case EstimatedRows(count) => mapping(ESTIMATED_ROWS, Right(format(count)), columns)
     case Rows(count) => mapping(ROWS, Right(count.toString), columns)
     case DbHits(count) => mapping(HITS, Right(count.toString), columns)
@@ -179,44 +188,72 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)), columns)
     case Order(providedOrder) => mapping(ORDER, Left(providedOrder.prettifiedString), columns)
     case Details(detailsList) => {
-      val truncatedDetails = formatDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
-      mapping(DETAILS, Left(truncatedDetails), columns)
+      val detailsLines = splitDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
+      mapping(DETAILS, detailsLines.map(Left(_)), columns)
     }
     case _ => None
-  }.toMap + (
-    OTHER -> Left(other(description, columns)))
+  }.toMap + (OTHER -> Seq(Left(other(description, columns))))
 
-  protected[plandescription] def formatDetails(details: List[String], length: Int): String = {
-    if (details.isEmpty) ""
-    else if (details.head.length > length) details.head.substring(0, length - ELLIPSIS.length) + ELLIPSIS
-    else rest("", details, length)
+  protected[plandescription] def splitDetails(details: List[String], length: Int = MAX_DETAILS_COLUMN_WIDTH): Seq[String] = {
+    var currentRow = ""
+    var rows = Seq.empty[String]
+
+    if (details.isEmpty) return Seq.empty
+
+    details.take(details.length - 1)
+      .foreach { detail =>
+        val (newCurrentRow, newRows) = splitDetail(detail, currentRow, length, isLastDetail = false)
+        currentRow = newCurrentRow
+        rows = rows ++ newRows
+      }
+
+    val (newCurrentRow, newRows) = splitDetail(details.last, currentRow, length, isLastDetail = true)
+    if (newCurrentRow.isEmpty) {
+      rows ++ newRows
+    } else {
+      (rows ++ newRows) :+ newCurrentRow
+    }
   }
 
-  @scala.annotation.tailrec
-  private def rest(alreadyFormatted: String, list: List[String], remainingLength: Int): String = {
-    list match {
-      case Nil => alreadyFormatted ++ ""
-      case head :: Nil =>
-        if (head.length > remainingLength) alreadyFormatted ++ ELLIPSIS
-        else alreadyFormatted ++ head
-      case head :: last :: Nil =>
-        if (head.length + SEPARATOR.length + last.length > remainingLength && head.length + SUFFIX.length > remainingLength)
-          // We can't fit "head, last", and we can't fit "head, ..." either. Since there is nothing to come after last, we can add head unless both cases do not fit.
-          alreadyFormatted ++ ELLIPSIS
-        else
-          rest(alreadyFormatted ++ head ++ SEPARATOR, List(last), remainingLength - head.length - SEPARATOR.length)
-      case head :: next :: tail =>
-        if (head.length + SEPARATOR.length + next.length > remainingLength || head.length + SUFFIX.length > remainingLength)
-          // Either "head, next" or "head, ..." does not fit. Since there is more to come after next, we have to stop in either cases.
-          alreadyFormatted ++ ELLIPSIS
-        else
-          rest(alreadyFormatted ++ head ++ SEPARATOR, next :: tail, remainingLength - head.length - SEPARATOR.length)
+  private def splitDetail(detail: String, currentRow: String, length: Int, isLastDetail: Boolean): (String, Seq[String]) = {
+    val separator = if (isLastDetail) "" else SEPARATOR
+    val spaceLeftOnCurrentRow = length - currentRow.length
+
+    val (newCurrentRow, rows) =
+      if (detail.length + separator.length <= spaceLeftOnCurrentRow) {
+        // Can fit in the current row
+        (currentRow + detail + separator, Seq.empty)
+      } else if (detail.length + separator.length <= length) {
+        // Can't fit in the current row, but it can fit on the next row - add detail to new row
+        (detail + separator, Seq(currentRow))
+      } else {
+        // Too long to fit on it's own row - add to current row and continue on next row(s)
+        val firstRow = currentRow + detail.take(spaceLeftOnCurrentRow)
+        val multiRows = detail.drop(spaceLeftOnCurrentRow).grouped(length).toSeq
+        val rows = firstRow +: multiRows
+        if (rows.last.length + separator.length <= length) {
+          (rows.last + separator, rows.take(rows.length - 1))
+        } else {
+          (separator, rows)
+        }
+      }
+
+    // Add space only if it's not the last row and it can fit on the current row.
+    if (!isLastDetail && newCurrentRow.length < length && newCurrentRow.nonEmpty) {
+      (s"$newCurrentRow ", rows)
+    } else {
+      (newCurrentRow, rows)
     }
+  }
+
+  private def mapping(key: String, value: Seq[Justified], columns: mutable.Map[String,Int]) = {
+    update(columns, key, value.map(_.length).max)
+    Some(key -> value)
   }
 
   private def mapping(key: String, value: Justified, columns: mutable.Map[String,Int]) = {
     update(columns, key, value.length)
-    Some(key -> value)
+    Some(key -> Seq(value))
   }
 
   private def update(columns: mutable.Map[String, Int], key: String, length: Int): Unit = {
@@ -263,7 +300,7 @@ trait LineDetails extends (String => Justified) {
   def connection: Option[String]
 }
 
-case class Line(tree: String, allColumns: Map[String, Justified], connection: Option[String] = None) extends LineDetails {
+case class Line(tree: String, allColumns: Map[String, Justified], connection: Option[String] = None, newRow: Boolean = true) extends LineDetails {
   def apply(key: String): Justified = if (key == renderAsTreeTable.OPERATOR) {
     Left(tree)
   } else {

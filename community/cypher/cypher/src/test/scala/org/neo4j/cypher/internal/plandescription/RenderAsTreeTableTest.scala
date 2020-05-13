@@ -673,65 +673,99 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |""".stripMargin)
   }
 
-  test("should compact long details rows") {
-    val leaf = planDescription(id, "NODE", NoChildren, Seq(details((0 until 100).map(_.toString))), Set())
+  test("should write long details on multiple lines") {
+    val leaf = planDescription(id, "NODE", NoChildren, Seq(details((0 until 35).map(_.toString))), Set())
     val root = planDescription(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
-      """+----------+---------------------------------------------------------------------------------------------------+
-        || Operator | Details                                                                                           |
-        |+----------+---------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4                                                                                     |
-        || |        +---------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, ... |
-        |+----------+---------------------------------------------------------------------------------------------------+
+      """+----------+----------------------------------------------------------------------------------------------------+
+        || Operator | Details                                                                                            |
+        |+----------+----------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4                                                                                      |
+        || |        +----------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,  |
+        ||          | 27, 28, 29, 30, 31, 32, 33, 34                                                                     |
+        |+----------+----------------------------------------------------------------------------------------------------+
+        |""".stripMargin)
+  }
+
+  test("should split too long word in details rows on multiple lines") {
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details(Seq((0 until 101).map(_ => "a").mkString(""), "b"))), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(Details((0 until 5).map(_.toString))), Set())
+
+    renderAsTreeTable(root) should equal(
+      """+----------+------------------------------------------------------------------------------------------------------+
+        || Operator | Details                                                                                              |
+        |+----------+------------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4                                                                                        |
+        || |        +------------------------------------------------------------------------------------------------------+
+        || +NODE    | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        ||          | a, b                                                                                                 |
+        |+----------+------------------------------------------------------------------------------------------------------+
+        |""".stripMargin)
+  }
+
+  test("should add separator to next row if word exactly fits the row") {
+    val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(Details(Seq((0 until 100).map(_ => "a").mkString(""), "b"))), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(Details((0 until 5).map(_.toString))), Set())
+
+    print(leaf)
+    renderAsTreeTable(root) should equal(
+      """+----------+------------------------------------------------------------------------------------------------------+
+        || Operator | Details                                                                                              |
+        |+----------+------------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4                                                                                        |
+        || |        +------------------------------------------------------------------------------------------------------+
+        || +NODE    | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        ||          | , b                                                                                                  |
+        |+----------+------------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
 
   test("format empty details") {
-    renderAsTreeTable.formatDetails(List(), 10) should be("")
+    renderAsTreeTable.splitDetails(List(), 10) should be(Seq())
   }
 
   test("format single short detail") {
-    renderAsTreeTable.formatDetails(List("12345678"), 10) should be("12345678")
+    renderAsTreeTable.splitDetails(List("12345678"), 10) should be(Seq("12345678"))
   }
 
   test("format single exactly fitting detail") {
-    renderAsTreeTable.formatDetails(List("1234567890"), 10) should be("1234567890")
+    renderAsTreeTable.splitDetails(List("1234567890"), 10) should be(Seq("1234567890"))
   }
 
   test("format single too long detail") {
-    renderAsTreeTable.formatDetails(List("12345678901"), 10) should be("1234567...")
+    renderAsTreeTable.splitDetails(List("12345678901"), 10) should be(Seq("1234567890", "1"))
   }
 
   test("format multiple too long detail") {
-    renderAsTreeTable.formatDetails(List("1234567890123456789", "1234567890123456789"), 10) should be("1234567...")
+    renderAsTreeTable.splitDetails(List("1234567890123456789", "1234567890123456789"), 10) should be(Seq("1234567890", "123456789,", "1234567890", "123456789"))
   }
 
   test("format two short details") {
-    renderAsTreeTable.formatDetails(List("abc", "def"), 10) should be("abc, def")
+    renderAsTreeTable.splitDetails(List("abc", "def"), 10) should be(Seq("abc, def"))
   }
 
   test("format four short details, in sum too long") {
-    renderAsTreeTable.formatDetails(List("123", "123", "1234", "12345"), 15) should be("123, 123, ...")
+    renderAsTreeTable.splitDetails(List("123", "123", "1234", "12345"), 15) should be(Seq("123, 123, 1234,", "12345"))
   }
 
   test("format one char details") {
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 3) should be("...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 4) should be("...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 5) should be("...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 6) should be("1, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 7) should be("1, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 8) should be("1, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 9) should be("1, 2, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 10) should be("1, 2, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 11) should be("1, 2, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 12) should be("1, 2, 3, ...")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 13) should be("1, 2, 3, 4, 5")
-    renderAsTreeTable.formatDetails(List("1", "2", "3", "4", "5"), 14) should be("1, 2, 3, 4, 5")
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 3) should be(Seq("1, ", "2, ", "3, ", "4, ", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 4) should be(Seq("1, ", "2, ", "3, ", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 5) should be(Seq("1, 2,",  "3, 4,",  "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 6) should be(Seq("1, 2, ", "3, 4, ", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 7) should be(Seq("1, 2, ", "3, 4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 8) should be(Seq("1, 2, 3,", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 9) should be(Seq("1, 2, 3, ", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 10) should be(Seq("1, 2, 3, ", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 11) should be(Seq("1, 2, 3, 4,", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 12) should be(Seq("1, 2, 3, 4, ", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 13) should be(Seq("1, 2, 3, 4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 14) should be(Seq("1, 2, 3, 4, 5"))
   }
 
   test("format one short and one long detail") {
-    renderAsTreeTable.formatDetails(List("123", "1234567890123456789"), 15) should be("123, ...")
+    renderAsTreeTable.splitDetails(List("123", "1234567890123456789"), 15) should be(Seq("123, 1234567890", "123456789"))
   }
 }
