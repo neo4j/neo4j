@@ -120,7 +120,9 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
 
           test(s"$command $privilege ON GRAPH * $preposition role") {
             // GRAPH instead of DATABASE
-            failsToParse
+            if (!(privilege.equals("ALL") || privilege.equals("ALL PRIVILEGES"))) {
+              failsToParse
+            }
           }
 
           test(s"$command $privilege ON DATABASE fo:o $preposition role") {
