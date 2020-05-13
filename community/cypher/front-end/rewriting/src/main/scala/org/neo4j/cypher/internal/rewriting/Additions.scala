@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RoleManagementAction
@@ -123,18 +125,22 @@ object Additions {
 
       // grant fine-grained write
       case p@GrantPrivilege(GraphPrivilege(action), _, _, _, _) if !action.equals(WriteAction) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
+        throw cypherExceptionFactory.syntaxException(errorMessage(action), p.position)
 
       // deny fine-grained write
       case p@DenyPrivilege(GraphPrivilege(action), _, _, _, _) if !action.equals(WriteAction) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
+        throw cypherExceptionFactory.syntaxException(errorMessage(action), p.position)
 
       // revoke fine-grained
       case p@RevokePrivilege(GraphPrivilege(action), _, _, _, _, _) if !action.equals(WriteAction) =>
-        throw cypherExceptionFactory.syntaxException("Fine-grained writes are not supported in this Cypher version.", p.position)
+        throw cypherExceptionFactory.syntaxException(errorMessage(action), p.position)
     }
   }
 
+  private def errorMessage(action: GraphAction) = {
+    val prefix = if (action.equals(AllGraphAction)) s"${action.name} is" else "Fine-grained writes are"
+    s"$prefix not supported in this Cypher version."
+  }
 }
 
 trait Additions extends {
