@@ -218,7 +218,7 @@ public class BoltServer extends LifecycleAdapter
         else
         {
             // otherwise use same host as external connector but with default internal port
-            internalListenAddress = new SocketAddress( config.get( BoltConnector.advertised_address ).getHostname(),
+            internalListenAddress = new SocketAddress( config.get( BoltConnector.listen_address ).getHostname(),
                                                        config.get( BoltConnector.connector_routing_listen_address ).getPort() );
         }
 
