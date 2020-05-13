@@ -147,6 +147,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.fs.FileUtils.writeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
@@ -2249,7 +2250,7 @@ public class FullCheckIntegrationTest
                     buffer.put( (byte) 9 );
                 }
                 buffer.flip();
-                channel.write( buffer );
+                writeAll( channel, buffer );
             }
             return true;
         }

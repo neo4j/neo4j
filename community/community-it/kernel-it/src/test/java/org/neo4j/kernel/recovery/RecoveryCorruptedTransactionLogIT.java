@@ -311,7 +311,7 @@ class RecoveryCorruptedTransactionLogIT
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
                 {
-                    writeChannel.write( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
+                    writeChannel.writeAll( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
                 }
             }
         }
@@ -346,7 +346,7 @@ class RecoveryCorruptedTransactionLogIT
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
                 {
-                    writeChannel.write( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
+                    writeChannel.writeAll( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
                 }
             }
         }
@@ -380,7 +380,7 @@ class RecoveryCorruptedTransactionLogIT
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
                 {
-                    writeChannel.write( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
+                    writeChannel.writeAll( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
                 }
             }
             logFiles.getLogFile().rotate();
@@ -409,7 +409,7 @@ class RecoveryCorruptedTransactionLogIT
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
                 {
-                    writeChannel.write( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
+                    writeChannel.writeAll( ByteBuffer.wrap( new byte[]{0, 0, 0, 0, 0} ) );
                 }
             }
             logFiles.getLogFile().rotate();
@@ -737,7 +737,7 @@ class RecoveryCorruptedTransactionLogIT
                 writeChannel.position( position.getByteOffset() + someRandomPaddingAfterEndOfDataInLogFile );
                 for ( int i = 0; i < 10; i++ )
                 {
-                    writeChannel.write( source.get() );
+                    writeChannel.writeAll( source.get() );
                 }
             }
         }

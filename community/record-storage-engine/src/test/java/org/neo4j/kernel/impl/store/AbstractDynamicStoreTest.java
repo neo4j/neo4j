@@ -78,7 +78,7 @@ class AbstractDynamicStoreTest
             ByteBuffer buffer = ByteBuffers.allocate( 4, INSTANCE );
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
-            channel.write( buffer );
+            channel.writeAll( buffer );
         }
     }
 

@@ -162,7 +162,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     private void flush() throws IOException
     {
         buffer.flip();
-        storeChannel.write( buffer );
+        storeChannel.writeAll( buffer );
         buffer.clear();
     }
 

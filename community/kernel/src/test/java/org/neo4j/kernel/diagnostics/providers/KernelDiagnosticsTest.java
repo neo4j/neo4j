@@ -127,7 +127,7 @@ class KernelDiagnosticsTest
         {
             ByteBuffer buffer = ByteBuffers.allocate( size, INSTANCE );
             buffer.position( size ).flip();
-            channel.write( buffer );
+            channel.writeAll( buffer );
         }
         return file;
     }

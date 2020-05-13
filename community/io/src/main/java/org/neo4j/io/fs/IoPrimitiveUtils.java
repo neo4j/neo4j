@@ -75,38 +75,6 @@ public final class IoPrimitiveUtils
         return readString( channel, length );
     }
 
-    private static char[] readCharArray( ReadableByteChannel channel,
-            ByteBuffer buffer, char[] charArray ) throws IOException
-    {
-        buffer.clear();
-        int charsLeft = charArray.length;
-        int maxSize = buffer.capacity() / 2;
-        int offset = 0; // offset in chars
-        while ( charsLeft > 0 )
-        {
-            if ( charsLeft > maxSize )
-            {
-                buffer.limit( maxSize * 2 );
-                charsLeft -= maxSize;
-            }
-            else
-            {
-                buffer.limit( charsLeft * 2 );
-                charsLeft = 0;
-            }
-            if ( channel.read( buffer ) != buffer.limit() )
-            {
-                return null;
-            }
-            buffer.flip();
-            int length = buffer.limit() / 2;
-            buffer.asCharBuffer().get( charArray, offset, length );
-            offset += length;
-            buffer.clear();
-        }
-        return charArray;
-    }
-
     public static boolean readAndFlip( ReadableByteChannel channel, ByteBuffer buffer, int bytes )
             throws IOException
     {
@@ -153,61 +121,13 @@ public final class IoPrimitiveUtils
         return map;
     }
 
-    public static String readLengthAndString( ReadableByteChannel channel,
-            ByteBuffer buffer ) throws IOException
-    {
-        Integer length = readInt( channel, buffer );
-        if ( length != null )
-        {
-            char[] chars = new char[length];
-            chars = readCharArray( channel, buffer, chars );
-            return chars == null ? null : new String( chars );
-        }
-        return null;
-    }
-
-    public static void writeLengthAndString( StoreChannel channel, ByteBuffer buffer, String value )
-            throws IOException
-    {
-        char[] chars = value.toCharArray();
-        int length = chars.length;
-        writeInt( channel, buffer, length );
-        writeChars( channel, buffer, chars );
-    }
-
-    private static void writeChars( StoreChannel channel, ByteBuffer buffer, char[] chars )
-            throws IOException
-    {
-        int position = 0;
-        do
-        {
-            buffer.clear();
-            int leftToWrite = chars.length - position;
-            if ( leftToWrite * 2 < buffer.capacity() )
-            {
-                buffer.asCharBuffer().put( chars, position, leftToWrite );
-                buffer.limit( leftToWrite * 2);
-                channel.write( buffer );
-                position += leftToWrite;
-            }
-            else
-            {
-                int length = buffer.capacity() / 2;
-                buffer.asCharBuffer().put( chars, position, length );
-                buffer.limit( length * 2 );
-                channel.write( buffer );
-                position += length;
-            }
-        } while ( position < chars.length );
-    }
-
     public static void writeInt( StoreChannel channel, ByteBuffer buffer, int value )
             throws IOException
     {
         buffer.clear();
         buffer.putInt( value );
         buffer.flip();
-        channel.write( buffer );
+        channel.writeAll( buffer );
     }
 
     public static Object[] asArray( Object propertyValue )

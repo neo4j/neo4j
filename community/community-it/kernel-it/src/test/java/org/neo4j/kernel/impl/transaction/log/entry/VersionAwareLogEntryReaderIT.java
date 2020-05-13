@@ -156,7 +156,7 @@ class VersionAwareLogEntryReaderIT
             try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ) ) )
             {
                 storeChannel.position( CURRENT_FORMAT_LOG_HEADER_SIZE );
-                storeChannel.write( ByteBuffer.wrap( new byte[]{0} ) );
+                storeChannel.writeAll( ByteBuffer.wrap( new byte[]{0} ) );
             }
 
             try ( ReadableLogChannel logChannel = logFiles.getLogFile().getReader( new LogPosition( 0, initialPosition ) ) )

@@ -153,7 +153,7 @@ class ReadAheadLogChannelTest
             ByteBuffer buffer = ByteBuffers.allocate( 1, KibiByte, INSTANCE );
             visitor.visit( buffer );
             buffer.flip();
-            channel.write( buffer );
+            channel.writeAll( buffer );
         }
     }
 

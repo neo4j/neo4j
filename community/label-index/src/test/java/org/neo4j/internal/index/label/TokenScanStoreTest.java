@@ -90,6 +90,7 @@ import static org.neo4j.internal.index.label.TokenScanStore.LABEL_SCAN_STORE_MON
 import static org.neo4j.internal.index.label.TokenScanStore.labelScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.relationshipTypeScanStore;
 import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
+import static org.neo4j.io.fs.FileUtils.writeAll;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -814,7 +815,7 @@ public class TokenScanStoreTest
             putRandomBytes( random, bytes );
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
             channel.position( 0 );
-            channel.write( buffer );
+            writeAll( channel, buffer );
         }
     }
 

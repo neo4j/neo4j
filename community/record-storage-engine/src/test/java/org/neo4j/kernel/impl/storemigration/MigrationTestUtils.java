@@ -52,7 +52,7 @@ public class MigrationTestUtils
         try ( StoreChannel fileChannel = fileSystem.write( storeFile ) )
         {
             fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
-            fileChannel.write( ByteBuffer.wrap( versionBytes ) );
+            fileChannel.writeAll( ByteBuffer.wrap( versionBytes ) );
         }
     }
 

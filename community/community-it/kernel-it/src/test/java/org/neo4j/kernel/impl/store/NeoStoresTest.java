@@ -415,7 +415,7 @@ public class NeoStoresTest
         try ( StoreChannel channel = fs.write( file ) )
         {
             channel.position( 0 );
-            channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
+            channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, NULL );
