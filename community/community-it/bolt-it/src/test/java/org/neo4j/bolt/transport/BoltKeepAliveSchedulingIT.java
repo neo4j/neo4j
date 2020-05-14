@@ -56,8 +56,8 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 public class BoltKeepAliveSchedulingIT
 {
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server =
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final Neo4jWithSocket server =
             new Neo4jWithSocket( getClass(), new TestDatabaseManagementServiceBuilder(), fsRule,
                     getSettingsFunction() );
 
@@ -125,7 +125,7 @@ public class BoltKeepAliveSchedulingIT
                     {
                         try
                         {
-                            Thread.sleep( 50 );
+                            Thread.sleep( 100 );
                         }
                         catch ( InterruptedException e )
                         {
