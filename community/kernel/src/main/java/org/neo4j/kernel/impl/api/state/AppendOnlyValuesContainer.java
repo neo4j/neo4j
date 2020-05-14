@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -34,7 +36,6 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.util.collection.Memory;
 import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
@@ -464,7 +465,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         final int len = chunk.getInt( offset );
         if ( len == 0 )
         {
-            return "";
+            return StringUtils.EMPTY;
         }
         offset += Integer.BYTES;
 
@@ -474,7 +475,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
             chars[i] = chunk.getChar( offset );
             offset += Character.BYTES;
         }
-        return UnsafeUtil.newSharedArrayString( chars );
+        return new String( chars );
     }
 
     private static ShortValue readShort( ByteBuffer chunk, int offset )

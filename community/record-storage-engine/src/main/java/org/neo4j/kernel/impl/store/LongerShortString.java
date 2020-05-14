@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.TextValue;
@@ -237,7 +236,7 @@ public enum LongerShortString
             int offset = encOffset + 0x1B;
             switch ( b )
             {
-            case 1: return 0 + offset;
+            case 1: return 0;
             case 2: return 1 + offset;
             case 3: return 2 + offset;
             case 6: return 3 + offset;
@@ -925,7 +924,7 @@ public enum LongerShortString
             char[] result = new char[stringLength];
             decode( result, blocks, offset, table );
             // We know the char array is unshared, so use sharing constructor explicitly
-            return Values.stringValue( UnsafeUtil.newSharedArrayString( result ) );
+            return Values.stringValue( new String( result ) );
         }
 
         // All resulting characters is within byte value 0-127 and so fits in one non-negative byte,
@@ -1096,7 +1095,7 @@ public enum LongerShortString
             }
             result[i] = codePoint;
         }
-        return Values.stringValue( UnsafeUtil.newSharedArrayString( result ) );
+        return Values.stringValue( new String( result ) );
     }
 
     private static TextValue decodeUTF8( long[] blocks, int offset, int stringLength )

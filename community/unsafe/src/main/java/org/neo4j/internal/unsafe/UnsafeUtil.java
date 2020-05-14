@@ -22,7 +22,6 @@ package org.neo4j.internal.unsafe;
 import com.sun.jna.Native;
 import sun.misc.Unsafe;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -69,7 +68,6 @@ public final class UnsafeUtil
     private static boolean nativeAccessCheckEnabled = true;
 
     private static final Unsafe unsafe;
-    private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty = "org.neo4j.internal.unsafe.UnsafeUtil.allowUnalignedMemoryAccess";
 
     private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>( Long::compareUnsigned );
@@ -95,7 +93,6 @@ public final class UnsafeUtil
         unsafe = getUnsafe();
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        sharedStringConstructor = getSharedStringConstructorMethodHandle( lookup );
 
         Class<?> dbbClass = null;
         Constructor<?> ctor = null;
@@ -242,21 +239,6 @@ public final class UnsafeUtil
         }
     }
 
-    private static MethodHandle getSharedStringConstructorMethodHandle(
-            MethodHandles.Lookup lookup )
-    {
-        try
-        {
-            Constructor<String> constructor = String.class.getDeclaredConstructor( char[].class, Boolean.TYPE );
-            constructor.setAccessible( true );
-            return lookup.unreflectConstructor( constructor );
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
     /**
      * Get the object-relative field offset.
      */
@@ -392,31 +374,6 @@ public final class UnsafeUtil
             }
         }
         while ( !UnsafeUtil.compareAndSwapLong( object, fieldOffset, currentValue, newValue ) );
-    }
-
-    /**
-     * Create a string with a char[] that you know is not going to be modified, so avoid the copy constructor.
-     *
-     * @param chars array that will back the new string
-     * @return the created string
-     */
-    public static String newSharedArrayString( char[] chars )
-    {
-        if ( sharedStringConstructor != null )
-        {
-            try
-            {
-                return (String) sharedStringConstructor.invokeExact( chars, true );
-            }
-            catch ( Throwable throwable )
-            {
-                throw new LinkageError( "Unexpected 'String constructor' intrinsic failure", throwable );
-            }
-        }
-        else
-        {
-            return new String( chars );
-        }
     }
 
     /**
