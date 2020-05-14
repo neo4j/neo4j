@@ -69,28 +69,24 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   def apply(plan: InternalPlanDescription): String = {
 
     val columns = new mutable.HashMap[String, Int]()
-    val lines = accumulate(plan, columns)
+    val rows = accumulate(plan, columns)
     val headers = HEADERS.filter(columns.contains)
 
     def width(header:String) = {
       2 + math.max(header.length, columns(header))
     }
 
-    val result = new StringBuilder((2 + newLine.length + headers.map(width).sum) * (lines.size * 2 + 3))
+    val result = new StringBuilder((2 + newLine.length + headers.map(width).sum) * (rows.size * 2 + 3))
 
-    def pad(width:Int, char:String=" ") = for (_ <- 1 to width) result.append(char)
+    def pad(width:Int, char:String=" "): Unit = for (_ <- 1 to width) result.append(char)
 
-    def writeConnection(line: LineDetails) = {
-      val connection = line.connection.get
-      result.append(connection)
-      pad(width(OPERATOR) - connection.length - 1)
-    }
-
-    def divider(line:LineDetails = null) = {
+    def divider(line: TableRow = null) = {
       for (header <- headers) {
         if (line != null && header == OPERATOR && line.connection.isDefined) {
           result.append("| ")
-          writeConnection(line)
+          val connection = line.connection.get
+          result.append(connection)
+          pad(width(OPERATOR) - connection.length - 1)
         } else {
           result.append("+")
           pad(width(header), "-")
@@ -99,46 +95,47 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       result.append("+").append(newLine)
     }
 
-    for (line <- Line(OPERATOR, headers.map(header => header -> Left(header)).toMap) +: lines) {
-      if (line.newRow) {
-        divider(line)
-      }
-      for (header <- headers) {
-        val detail = line(header)
-        result.append("| ")
-        if (header == OPERATOR && line.connection.isDefined && !line.newRow) {
-          writeConnection(line)
-        } else {
-          detail match {
-            case Left(text) =>
+    val headersRow = TableRow(OPERATOR, headers.map(header => header -> LeftJustifiedCell(header)).toMap, None, None)
+    for (row <- headersRow +: rows) {
+      divider(row)
+      for (currentHeight <- 0 until row.height) {
+        for (header <- headers) {
+          val cell = row(header)
+          val text = cell.lines.lift(currentHeight).getOrElse {
+            if (header == OPERATOR)
+              row.childConnection.getOrElse("")
+            else
+              ""
+          }
+          result.append("| ")
+          cell match {
+            case _: LeftJustifiedCell =>
               result.append(text)
               pad(width(header) - text.length - 2)
-            case Right(text) =>
+            case _: RightJustifiedCell =>
               pad(width(header) - text.length - 2)
               result.append(text)
           }
           result.append(" ")
         }
+        result.append("|").append(newLine)
       }
-      result.append("|").append(newLine)
     }
     divider()
 
     result.toString()
   }
 
-  private def accumulate(incoming: InternalPlanDescription, columns: mutable.Map[String, Int]): Seq[Line] = {
+  private def accumulate(incoming: InternalPlanDescription, columns: mutable.Map[String, Int]): Seq[TableRow] = {
 
     val stack = new mutable.ArrayStack[(InternalPlanDescription, Level)]
     stack.push((compactPlan(incoming), Root))
-    val lines = new ArrayBuffer[Line]()
+    val rows = new ArrayBuffer[TableRow]()
     while (stack.nonEmpty) {
       val (plan, level) = stack.pop()
 
       val line = level.line + plan.name
-      mapping(OPERATOR, Left(line), columns)
-      val rowLines = tableRowLines(tableRow(plan, columns))
-      rowLines.headOption.foreach(row => lines.append(Line(line, row, level.connector)))
+      mapping(OPERATOR, LeftJustifiedCell(line), columns)
       val childConnector = plan.children match {
         case NoChildren =>
           if (stack.isEmpty) None else level.connector
@@ -150,17 +147,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
           stack.push((compactPlan(rhs), level.fork))
           level.fork.connector
       }
-      rowLines.tail.foreach(row => lines.append(Line("", row, childConnector.map(_.replace("\\", "")), false)))
+      rows.append(TableRow(line, tableRow(plan, columns), level.connector, childConnector.map(_.replace("\\", ""))))
     }
-    lines
-  }
-
-  private def tableRowLines(operatorRows: Map[String, Seq[Justified]]): Seq[Map[String, Justified]] = {
-    val numRows = operatorRows
-      .map { case (_, rows) => rows.length }
-      .max
-    (0 until numRows)
-      .map(row => operatorRows.mapValues(_.lift(row).getOrElse(Left(""))))
+    rows
   }
 
   private def compactPlan(plan: InternalPlanDescription): InternalPlanDescription = {
@@ -180,83 +169,77 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     CompactedPlanDescription.create(similar)
   }
 
-  private def tableRow(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Seq[Justified]] = description.arguments.flatMap {
-    case EstimatedRows(count) => mapping(ESTIMATED_ROWS, Right(format(count)), columns)
-    case Rows(count) => mapping(ROWS, Right(count.toString), columns)
-    case DbHits(count) => mapping(HITS, Right(count.toString), columns)
-    case Memory(count) => mapping(MEMORY, Right(count.toString), columns)
-    case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, Right(count.toString), columns)
-    case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, Right(count.toString), columns)
-    case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)), columns)
-    case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)), columns)
-    case Order(providedOrder) => mapping(ORDER, Left(providedOrder.prettifiedString), columns)
-    case Details(detailsList) => {
+  private def tableRow(description: InternalPlanDescription, columns: mutable.Map[String,Int]): Predef.Map[String, Cell] = description.arguments.flatMap {
+    case EstimatedRows(count) => mapping(ESTIMATED_ROWS, RightJustifiedCell(format(count)), columns)
+    case Rows(count) => mapping(ROWS, RightJustifiedCell(count.toString), columns)
+    case DbHits(count) => mapping(HITS, RightJustifiedCell(count.toString), columns)
+    case Memory(count) => mapping(MEMORY, RightJustifiedCell(count.toString), columns)
+    case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, RightJustifiedCell(count.toString), columns)
+    case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, RightJustifiedCell(count.toString), columns)
+    case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, RightJustifiedCell("%.4f".format(ratio)), columns)
+    case Time(nanos) => mapping(TIME, RightJustifiedCell("%.3f".format(nanos/1000000.0)), columns)
+    case Order(providedOrder) => mapping(ORDER, LeftJustifiedCell(providedOrder.prettifiedString), columns)
+    case Details(detailsList) =>
       val detailsLines = splitDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
-      mapping(DETAILS, detailsLines.map(Left(_)), columns)
-    }
+      mapping(DETAILS, LeftJustifiedCell(detailsLines:_*), columns)
     case _ => None
-  }.toMap + (OTHER -> Seq(Left(other(description, columns))))
+  }.toMap + (OTHER -> LeftJustifiedCell(other(description, columns)))
 
   protected[plandescription] def splitDetails(details: List[String], length: Int = MAX_DETAILS_COLUMN_WIDTH): Seq[String] = {
-    var currentRow = ""
-    var rows = Seq.empty[String]
+    var currentLine = ""
+    var lines = Seq.empty[String]
 
     if (details.isEmpty) return Seq.empty
 
     details.init
       .foreach { detail =>
-        val (newCurrentRow, newRows) = splitDetail(detail, currentRow, length, isLastDetail = false)
-        currentRow = newCurrentRow
-        rows = rows ++ newRows
+        val (newCurrentLine, newLines) = splitDetail(detail, currentLine, length, isLastDetail = false)
+        currentLine = newCurrentLine
+        lines = lines ++ newLines
       }
 
-    val (newCurrentRow, newRows) = splitDetail(details.last, currentRow, length, isLastDetail = true)
-    if (newCurrentRow.isEmpty) {
-      rows ++ newRows
+    val (newCurrentLine, newLines) = splitDetail(details.last, currentLine, length, isLastDetail = true)
+    if (newCurrentLine.isEmpty) {
+      lines ++ newLines
     } else {
-      (rows ++ newRows) :+ newCurrentRow
+      (lines ++ newLines) :+ newCurrentLine
     }
   }
 
-  private def splitDetail(detail: String, currentRow: String, length: Int, isLastDetail: Boolean): (String, Seq[String]) = {
+  private def splitDetail(detail: String, currentLine: String, length: Int, isLastDetail: Boolean): (String, Seq[String]) = {
     val separator = if (isLastDetail) "" else SEPARATOR
-    val spaceLeftOnCurrentRow = length - currentRow.length
+    val spaceLeftOnCurrentLine = length - currentLine.length
 
-    val (newCurrentRow, rows) =
-      if (detail.length + separator.length <= spaceLeftOnCurrentRow) {
-        // Can fit in the current row
-        (currentRow + detail + separator, Seq.empty)
+    val (newCurrentLine, lines) =
+      if (detail.length + separator.length <= spaceLeftOnCurrentLine) {
+        // Can fit in the current line
+        (currentLine + detail + separator, Seq.empty)
       } else if (detail.length + separator.length <= length) {
-        // Can't fit in the current row, but it can fit on the next row - add detail to new row
-        (detail + separator, Seq(currentRow))
+        // Can't fit in the current line, but it can fit on the next line - add detail to new line
+        (detail + separator, Seq(currentLine))
       } else {
-        // Too long to fit on it's own row - add to current row and continue on next row(s)
-        val firstRow = currentRow + detail.take(spaceLeftOnCurrentRow)
-        val multiRows = detail.drop(spaceLeftOnCurrentRow).grouped(length).toSeq
-        val rows = firstRow +: multiRows
-        if (rows.last.length + separator.length <= length) {
-          (rows.last + separator, rows.take(rows.length - 1))
+        // Too long to fit on it's own line - add to current line and continue on next line(s)
+        val firstLine = currentLine + detail.take(spaceLeftOnCurrentLine)
+        val multiLines = detail.drop(spaceLeftOnCurrentLine).grouped(length).toSeq
+        val lines = firstLine +: multiLines
+        if (lines.last.length + separator.length <= length) {
+          (lines.last + separator, lines.init)
         } else {
-          (separator, rows)
+          (separator, lines)
         }
       }
 
-    // Add space only if it's not the last row and it can fit on the current row.
-    if (!isLastDetail && newCurrentRow.length < length && newCurrentRow.nonEmpty) {
-      (s"$newCurrentRow ", rows)
+    // Add space only if it's not the last line and it can fit on the current line.
+    if (!isLastDetail && newCurrentLine.length < length && newCurrentLine.nonEmpty) {
+      (s"$newCurrentLine ", lines)
     } else {
-      (newCurrentRow, rows)
+      (newCurrentLine, lines)
     }
   }
 
-  private def mapping(key: String, value: Seq[Justified], columns: mutable.Map[String,Int]) = {
-    update(columns, key, value.map(_.length).max)
-    Some(key -> value)
-  }
-
-  private def mapping(key: String, value: Justified, columns: mutable.Map[String,Int]) = {
+  private def mapping(key: String, value: Cell, columns: mutable.Map[String,Int]) = {
     update(columns, key, value.length)
-    Some(key -> Seq(value))
+    Some(key -> value)
   }
 
   private def update(columns: mutable.Map[String, Int], key: String, length: Int): Unit = {
@@ -299,23 +282,22 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
 }
 
-trait LineDetails extends (String => Justified) {
-  def connection: Option[String]
-}
-
-case class Line(tree: String, allColumns: Map[String, Justified], connection: Option[String] = None, newRow: Boolean = true) extends LineDetails {
-  def apply(key: String): Justified = if (key == renderAsTreeTable.OPERATOR) {
-    Left(tree)
+case class TableRow(tree: String, allColumns: Map[String, Cell], connection: Option[String], childConnection: Option[String]) {
+  def apply(key: String): Cell = if (key == renderAsTreeTable.OPERATOR) {
+    LeftJustifiedCell(tree)
   } else {
-    allColumns.getOrElse(key, Left(""))
+    allColumns.getOrElse(key, LeftJustifiedCell(""))
   }
+
+  def height: Int = allColumns.values.map(_.lines.length).max
 }
 
-sealed abstract class Justified(text:String) {
-  def length: Int = text.length
+sealed abstract class Cell {
+  val lines: Seq[String]
+  def length: Int = lines.maxBy(_.length).length
 }
-case class Left(text:String) extends Justified(text)
-case class Right(text:String) extends Justified(text)
+case class LeftJustifiedCell(lines: String*) extends Cell
+case class RightJustifiedCell(lines: String*) extends Cell
 
 sealed abstract class Level {
   def child: Level
