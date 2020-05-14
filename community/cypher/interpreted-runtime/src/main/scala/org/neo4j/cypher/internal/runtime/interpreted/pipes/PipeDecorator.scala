@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
-import org.neo4j.exceptions.{Neo4jException, LoadCsvStatusWrapCypherException}
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ResourceLinenumber
+import org.neo4j.exceptions.LoadCsvStatusWrapCypherException
+import org.neo4j.exceptions.Neo4jException
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
@@ -128,5 +130,7 @@ class LinenumberPipeDecorator() extends PipeDecorator {
     }
   }
 
-  override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = {}
+  override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = {
+    inner.afterCreateResults(pipe, state)
+  }
 }
