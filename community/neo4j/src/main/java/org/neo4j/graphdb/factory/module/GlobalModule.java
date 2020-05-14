@@ -73,6 +73,7 @@ import org.neo4j.kernel.internal.locker.GlobalLockerService;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
@@ -82,7 +83,6 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
@@ -94,6 +94,7 @@ import org.neo4j.time.SystemNanoClock;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
@@ -177,7 +178,7 @@ public class GlobalModule
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        memoryPools = new MemoryPools();
+        memoryPools = new MemoryPools( globalConfig.get( memory_tracking ) );
         otherMemoryPool = memoryPools.pool( MemoryGroup.OTHER, 0 );
         transactionsMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ) );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );

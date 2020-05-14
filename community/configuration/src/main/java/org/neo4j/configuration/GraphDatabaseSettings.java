@@ -1171,6 +1171,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L) ) )
                     .dynamic().build();
 
+    @Description( "Enable off heap and on heap memory tracking." )
+    public static final Setting<Boolean> memory_tracking = newBuilder( "dbms.memory.tracking.enable", BOOL, true ).build();
+
     public enum TransactionStateMemoryAllocation
     {
         ON_HEAP, OFF_HEAP

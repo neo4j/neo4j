@@ -47,7 +47,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -376,16 +376,16 @@ public final class SettingMigrators
             String maxAllocations = values.remove( "cypher.query_max_allocations" );
             if ( isNotBlank( maxAllocations ) )
             {
-                if ( !values.containsKey( memory_transaction_max_size.name() ) )
+                if ( !values.containsKey( memory_tracking.name() ) )
                 {
-                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s.", memory_transaction_max_size.name() );
-                    values.put( memory_transaction_max_size.name(), maxAllocations );
+                    log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s.", memory_tracking.name() );
+                    values.put( memory_tracking.name(), maxAllocations );
                 }
                 else
                 {
                     log.warn( "The setting cypher.query_max_allocations is removed and replaced by %s. Since both are set, %s will take " +
                                     "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
-                            memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations );
+                            memory_tracking.name(), memory_tracking.name(), maxAllocations );
                 }
             }
         }

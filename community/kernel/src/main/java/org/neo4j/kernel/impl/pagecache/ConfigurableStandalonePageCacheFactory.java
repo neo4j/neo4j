@@ -32,6 +32,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 /*
@@ -49,12 +50,13 @@ public final class ConfigurableStandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, pageCacheTracer, Config.defaults(), EMPTY, jobScheduler, new MemoryPools() );
+        var config = Config.defaults();
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ) );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools() );
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ) );
     }
 
     /**

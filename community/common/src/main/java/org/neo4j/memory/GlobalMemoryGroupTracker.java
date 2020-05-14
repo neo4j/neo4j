@@ -32,13 +32,15 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
 
     private final List<DatabaseMemoryGroupTracker> databasePools = new CopyOnWriteArrayList<>();
     private final MemoryTracker memoryTracker;
+    private final boolean trackingEnabled;
 
-    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict )
+    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict, boolean trackingEnabled )
     {
         super( new MemoryPoolImpl( limit, strict ) );
         this.pools = pools;
         this.group = group;
-        this.memoryTracker = new MemoryPoolTracker( this );
+        this.trackingEnabled = trackingEnabled;
+        this.memoryTracker = trackingEnabled ? new MemoryPoolTracker( this ) : EmptyMemoryTracker.INSTANCE;
     }
 
     void releasePool( DatabaseMemoryGroupTracker databaseMemoryGroupTracker )
@@ -62,7 +64,7 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
 
     public ScopedMemoryPool newDatabasePool( String name, long limit )
     {
-        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true );
+        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true, trackingEnabled );
         databasePools.add( subTracker );
         return subTracker;
     }

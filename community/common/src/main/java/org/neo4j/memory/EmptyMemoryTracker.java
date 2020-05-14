@@ -19,7 +19,7 @@
  */
 package org.neo4j.memory;
 
-public final class EmptyMemoryTracker implements MemoryTracker
+public final class EmptyMemoryTracker implements LimitedMemoryTracker
 {
     public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
 
@@ -67,6 +67,11 @@ public final class EmptyMemoryTracker implements MemoryTracker
 
     @Override
     public void reset()
+    {
+    }
+
+    @Override
+    public void setLimit( long localBytesLimit )
     {
     }
 }

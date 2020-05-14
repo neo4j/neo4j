@@ -181,6 +181,7 @@ import static java.util.Collections.emptyList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -273,8 +274,8 @@ public class BatchInserterImpl implements BatchInserter
 
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, pageCacheTracer, NullLog.getInstance(),
-                EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
+                fileSystem, config, pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
+                    new MemoryPools( config.get( memory_tracking ) ) );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 

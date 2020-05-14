@@ -84,6 +84,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -158,8 +159,8 @@ public class ConsistencyCheckService
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
+                new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY,
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try

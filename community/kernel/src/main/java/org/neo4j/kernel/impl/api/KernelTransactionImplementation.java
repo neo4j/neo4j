@@ -102,6 +102,8 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.LimitedMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
@@ -121,6 +123,7 @@ import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
@@ -198,7 +201,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
-    private final LocalMemoryTracker memoryTracker;
+    private final LimitedMemoryTracker memoryTracker;
     private volatile long transactionHeapBytesLimit;
 
     /**
@@ -223,7 +226,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
-        this.memoryTracker = new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES );
+        this.memoryTracker = config.get( memory_tracking ) ?
+                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES ) : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
@@ -288,7 +292,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = transactionTracer.beginTransaction( pageCursorTracer );
-        assert transactionEvent != null : "transactionEvent was null!";
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;

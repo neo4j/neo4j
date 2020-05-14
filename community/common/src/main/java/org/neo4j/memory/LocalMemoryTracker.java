@@ -34,7 +34,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
  * reserved. Calling {@link #reset()} will give back all the reserved bytes to the parent. Forgetting to call this will "leak" bytes and starve the database of
  * allocations.
  */
-public class LocalMemoryTracker implements MemoryTracker
+public class LocalMemoryTracker implements LimitedMemoryTracker
 {
     private static final long NO_LIMIT = Long.MAX_VALUE;
     private static final long DEFAULT_GRAB_SIZE = 1024;

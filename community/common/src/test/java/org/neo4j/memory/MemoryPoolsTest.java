@@ -22,6 +22,7 @@ package org.neo4j.memory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.memory.MemoryGroup.QUERY_CACHE;
 import static org.neo4j.memory.MemoryGroup.TRANSACTION;
 
@@ -35,6 +36,44 @@ class MemoryPoolsTest
         var pool1 = pools.pool( QUERY_CACHE, 2, true );
         var pool2 = pools.pool( TRANSACTION, 2, true );
         assertThat( pools.getPools() ).contains( pool1, pool2 );
+    }
+
+    @Test
+    void poolsWithDisabledMemoryTracking()
+    {
+        var pools = new MemoryPools( false );
+        var pool = pools.pool( TRANSACTION, 2, true );
+
+        assertEquals( 0, pool.usedNative() );
+        assertEquals( 0, pool.usedHeap() );
+        assertEquals( 0, pool.totalUsed() );
+
+        var memoryTracker = pool.getPoolMemoryTracker();
+        memoryTracker.allocateHeap( 100 );
+        memoryTracker.allocateNative( 1000 );
+
+        assertEquals( 0, pool.usedNative() );
+        assertEquals( 0, pool.usedHeap() );
+        assertEquals( 0, pool.totalUsed() );
+    }
+
+    @Test
+    void subpoolWithDisabledMemoryTracking()
+    {
+        var pools = new MemoryPools( false );
+        var pool = pools.pool( TRANSACTION, 2, true ).newDatabasePool( "test", 1 );
+
+        assertEquals( 0, pool.usedNative() );
+        assertEquals( 0, pool.usedHeap() );
+        assertEquals( 0, pool.totalUsed() );
+
+        var memoryTracker = pool.getPoolMemoryTracker();
+        memoryTracker.allocateHeap( 100 );
+        memoryTracker.allocateNative( 1000 );
+
+        assertEquals( 0, pool.usedNative() );
+        assertEquals( 0, pool.usedHeap() );
+        assertEquals( 0, pool.totalUsed() );
     }
 
     @Test
@@ -54,7 +93,7 @@ class MemoryPoolsTest
         var pools = new MemoryPools();
         assertThat( pools.getPools() ).isEmpty();
 
-        var externalPool = new GlobalMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true );
+        var externalPool = new GlobalMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true, true );
         pools.registerPool( externalPool );
 
         assertThat( pools.getPools() ).hasSize( 1 );

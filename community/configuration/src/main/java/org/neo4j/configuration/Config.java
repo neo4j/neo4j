@@ -69,7 +69,7 @@ public class Config implements Configuration
         private final Map<String,Object> settingValueObjects = new HashMap<>();
         private final Map<String,Object> overriddenDefaults = new HashMap<>();
         private Config fromConfig;
-        private Log log = new BufferingLog();
+        private final Log log = new BufferingLog();
 
         private static boolean allowedToLogOverriddenValues( String setting )
         {

@@ -29,6 +29,17 @@ public final class MemoryPools
 {
     public static final ScopedMemoryPool NO_TRACKING = new NoTrackingMemoryPool();
     private final List<GlobalMemoryGroupTracker> pools = new CopyOnWriteArrayList<>();
+    private final boolean trackingEnabled;
+
+    public MemoryPools()
+    {
+        this( true );
+    }
+
+    public MemoryPools( boolean trackingEnabled )
+    {
+        this.trackingEnabled = trackingEnabled;
+    }
 
     public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit )
     {
@@ -37,7 +48,7 @@ public final class MemoryPools
 
     public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, boolean strict )
     {
-        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict );
+        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict, trackingEnabled );
         pools.add( pool );
         return pool;
     }
