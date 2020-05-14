@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
-import org.neo4j.fabric.ProcedureRegistryTestSupport
+import org.neo4j.fabric.FragmentTestUtils
+import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Leaf
 import org.neo4j.fabric.planning.Use.Declared
@@ -38,10 +39,10 @@ import scala.reflect.ClassTag
 
 class FabricFragmenterTest
   extends FabricTest
-    with AstConstructionTestSupport
-    with ProcedureRegistryTestSupport
     with Inside
-    with FragmentTestUtils {
+    with ProcedureSignatureResolverTestSupport
+    with FragmentTestUtils
+    with AstConstructionTestSupport {
 
   "USE handling: " - {
 
@@ -370,7 +371,7 @@ class FabricFragmenterTest
       )
 
       frag.as[Fragment.Segment].input.as[Fragment.Segment].input.outputColumns
-          .shouldEqual(Seq("x"))
+        .shouldEqual(Seq("x"))
     }
   }
 

@@ -100,12 +100,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-procedure</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
         </dependency>

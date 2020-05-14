@@ -21,17 +21,18 @@ package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.fabric.FabricTest
-import org.neo4j.fabric.ProcedureRegistryTestSupport
+import org.neo4j.fabric.FragmentTestUtils
+import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
 import org.scalatest.Inside
 
 class FabricStitcherTest
   extends FabricTest
-    with AstConstructionTestSupport
-    with ProcedureRegistryTestSupport
     with Inside
-    with FragmentTestUtils {
+    with ProcedureSignatureResolverTestSupport
+    with FragmentTestUtils
+    with AstConstructionTestSupport {
 
   private def importParams(names: String*) =
     with_(names.map(v => parameter(Columns.paramName(v), ct.any).as(v)): _*)

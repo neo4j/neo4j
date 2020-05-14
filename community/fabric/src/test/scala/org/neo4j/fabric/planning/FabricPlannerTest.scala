@@ -48,7 +48,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.fabric.FabricTest
-import org.neo4j.fabric.ProcedureRegistryTestSupport
+import org.neo4j.fabric.FragmentTestUtils
+import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
@@ -69,10 +70,10 @@ import scala.util.Try
 
 class FabricPlannerTest
   extends FabricTest
-    with AstConstructionTestSupport
-    with ProcedureRegistryTestSupport
+    with TableDrivenPropertyChecks
+    with ProcedureSignatureResolverTestSupport
     with FragmentTestUtils
-    with TableDrivenPropertyChecks {
+    with AstConstructionTestSupport {
 
   private def makeConfig(fabricDbName: String) = new FabricConfig(Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false ) {
 

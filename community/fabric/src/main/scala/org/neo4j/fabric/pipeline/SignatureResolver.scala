@@ -58,46 +58,33 @@ import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
-class SignatureResolver(
-                         registrySupplier: Supplier[GlobalProcedures]
-                       ) extends ProcedureSignatureResolver {
+class SignatureResolver(registrySupplier: Supplier[GlobalProcedures]) extends ProcedureSignatureResolver {
 
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    Option(registrySupplier.get().function(asKernelQualifiedName(name)))
-      .map { fcn =>
-
-        val signature = fcn.signature()
-
-        UserFunctionSignature(
-          name = name,
-          inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
-            name = s.name(),
-            typ = asCypherType(s.neo4jType()),
-            default = s.defaultValue().asScala.map(asCypherValue))),
-          outputType = asCypherType(signature.outputType()),
-          deprecationInfo = signature.deprecated().asScala,
-          allowed = signature.allowed(),
-          description = signature.description().asScala,
-          isAggregate = false,
-          id = fcn.id(),
-          threadSafe = fcn.threadSafe()
-        )
-      }
-  }
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
+    Option(registrySupplier.get().function(SignatureResolver.asKernelQualifiedName(name)))
+      .map(fcn => SignatureResolver.toCypherFunction(fcn))
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val handle = registrySupplier.get().procedure(kn)
-    val signature = handle.signature()
+    SignatureResolver.toCypherProcedure(handle)
+  }
+}
 
+object SignatureResolver {
+
+  def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
+    val signature = handle.signature()
     ProcedureSignature(
-      name = name,
+      name = asCypherQualifiedName(signature.name()),
       inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
         name = s.name(),
         typ = asCypherType(s.neo4jType()),
@@ -119,8 +106,29 @@ class SignatureResolver(
     )
   }
 
-  private def asKernelQualifiedName(name: QualifiedName): procs.QualifiedName =
+  def toCypherFunction(fcn: UserFunctionHandle): UserFunctionSignature = {
+    val signature = fcn.signature()
+    UserFunctionSignature(
+      name = asCypherQualifiedName(signature.name()),
+      inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s => FieldSignature(
+        name = s.name(),
+        typ = asCypherType(s.neo4jType()),
+        default = s.defaultValue().asScala.map(asCypherValue))),
+      outputType = asCypherType(signature.outputType()),
+      deprecationInfo = signature.deprecated().asScala,
+      allowed = signature.allowed(),
+      description = signature.description().asScala,
+      isAggregate = false,
+      id = fcn.id(),
+      threadSafe = fcn.threadSafe()
+    )
+  }
+
+  def asKernelQualifiedName(name: QualifiedName): procs.QualifiedName =
     new procs.QualifiedName(name.namespace.toArray, name.name)
+
+  def asCypherQualifiedName(name: procs.QualifiedName): QualifiedName =
+    QualifiedName(name.namespace().toSeq, name.name())
 
   private def asCypherValue(neo4jValue: DefaultParameterValue) =
     CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
@@ -148,7 +156,7 @@ class SignatureResolver(
     case Neo4jTypes.NTAny           => CTAny
   }
 
-  def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
+  private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
     case Mode.READ    => ProcedureReadOnlyAccess(allowed)
     case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
     case Mode.WRITE   => ProcedureReadWriteAccess(allowed)

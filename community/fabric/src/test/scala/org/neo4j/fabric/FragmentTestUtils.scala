@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.planning
+package org.neo4j.fabric
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CypherConfiguration
@@ -32,22 +32,24 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Condition
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.fabric.pipeline.FabricFrontEnd
-import org.neo4j.fabric.pipeline.SignatureResolver
+import org.neo4j.fabric.planning.FabricFragmenter
+import org.neo4j.fabric.planning.Fragment
 import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Chain
 import org.neo4j.fabric.planning.Fragment.Exec
 import org.neo4j.fabric.planning.Fragment.Init
 import org.neo4j.fabric.planning.Fragment.Leaf
 import org.neo4j.fabric.planning.Fragment.Union
+import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.monitoring.Monitors
-import org.neo4j.procedure.impl.GlobalProceduresRegistry
 import org.neo4j.values.virtual.MapValue
 
 trait FragmentTestUtils {
@@ -107,9 +109,8 @@ trait FragmentTestUtils {
   val defaultUse: Use.Inherited = Use.Inherited(Use.Default(defaultGraph))(InputPosition.NONE)
   val params: MapValue = MapValue.EMPTY
 
-  def procedures: GlobalProceduresRegistry
+  def signatures: ProcedureSignatureResolver
   val cypherConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
-  val signatures = new SignatureResolver(() => procedures)
   val monitors: Monitors = new Monitors
 
   val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, signatures)
