@@ -45,7 +45,10 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -56,6 +59,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Collect
@@ -822,8 +826,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Projection") {
+    val pathExpression = PathExpression(NodePathStep(varFor("c"),SingleRelationshipPathStep(varFor("  REL42"),OUTGOING,Some(varFor("  UNNAMED32")),NilPathStep)))(pos)
+
     assertGood(attach(Projection(lhsLP, Map("x" -> varFor("y"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x")))
+
+    assertGood(attach(Projection(lhsLP, Map("x" -> pathExpression)), 2345.0),
+      planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(s"c-[${anonVar("42")}]->${anonVar("32")} AS x")), Set("a", "x")))
 
     assertGood(attach(Projection(lhsLP, Map("x" -> varFor("  REL42"), "n.prop" -> prop("n", "prop"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(Seq(s"${anonVar("42")} AS x", "n.prop AS `n.prop`"))), Set("a", "x", "`n.prop`")))

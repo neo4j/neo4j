@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Pow
@@ -93,6 +94,8 @@ case class ExpressionStringifier(
 ) {
 
   val patterns = PatternStringifier(this)
+
+  val pathSteps = PathStepStringifier(this)
 
   def apply(ast: Expression): String =
     stringify(ast)
@@ -260,6 +263,9 @@ case class ExpressionStringifier(
 
       case ShortestPathExpression(pattern) =>
         patterns.apply(pattern)
+
+      case PathExpression(pathStep) =>
+        pathSteps(pathStep)
 
       case ReduceExpression(ReduceScope(Variable(acc), Variable(identifier), expression), init, list) =>
         val a = backtick(acc)
