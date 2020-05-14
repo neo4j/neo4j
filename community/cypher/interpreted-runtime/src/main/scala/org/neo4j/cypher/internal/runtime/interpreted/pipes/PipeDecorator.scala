@@ -131,5 +131,7 @@ class LinenumberPipeDecorator() extends PipeDecorator {
     }
   }
 
-  override def afterCreateResults(planId: Id, state: QueryState): Unit = {}
+  override def afterCreateResults(planId: Id, state: QueryState): Unit = {
+    inner.afterCreateResults(planId, state)
+  }
 }
