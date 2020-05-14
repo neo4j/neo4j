@@ -20,657 +20,33 @@
 package org.neo4j.kernel.impl.store;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
+import org.neo4j.internal.codec.ShortStringCodec;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.internal.codec.ShortStringCodec.ALPHANUM;
+import static org.neo4j.internal.codec.ShortStringCodec.ALPHASYM;
+import static org.neo4j.internal.codec.ShortStringCodec.CODECS;
+import static org.neo4j.internal.codec.ShortStringCodec.ENCODING_LATIN1;
+import static org.neo4j.internal.codec.ShortStringCodec.ENCODING_UTF8;
+import static org.neo4j.internal.codec.ShortStringCodec.EUROPEAN;
+import static org.neo4j.internal.codec.ShortStringCodec.URI;
+import static org.neo4j.internal.codec.ShortStringCodec.bitMask;
+import static org.neo4j.internal.codec.ShortStringCodec.codecById;
+import static org.neo4j.internal.codec.ShortStringCodec.prepareEncode;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
  *
  * (This version assumes 14bytes property block, instead of 8bytes)
  */
-public enum LongerShortString
+public class LongerShortString
 {
-    /**
-     * Binary coded decimal with punctuation.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7    8  9 SP  .  -  +  ,  '
-     * </pre>
-     */
-    NUMERICAL( 1, 4, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
-                return b - '0';
-            }
-            switch ( b )
-            {
-            // interm.    encoded
-            case 0: return 0xA;
-            case 2: return 0xB;
-            case 3: return 0xC;
-            case 6: return 0xD;
-            case 7: return 0xE;
-            case 8: return 0xF;
-            default: throw cannotEncode( b );
-            }
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
-                return (byte) (codePoint + '0');
-            }
-            return decPunctuation( codePoint - 10 + 6 );
-        }
-    },
-    /**
-     * Binary coded decimal with punctuation.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7    8  9 SP  -  :  /  +  ,
-     * </pre>
-     */
-    DATE( 2, 4, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
-                return b - '0';
-            }
-            switch ( b )
-            {
-            case 0: return 0xA;
-            case 3: return 0xB;
-            case 4: return 0xC;
-            case 5: return 0xD;
-            case 6: return 0xE;
-            case 7: return 0xF;
-            default: throw cannotEncode( b );
-            }
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 0xA )
-            {
-                return (byte) (codePoint + '0');
-            }
-            switch ( codePoint )
-            {
-            case 0xA: return ' ';
-            case 0xB: return '-';
-            case 0xC: return ':';
-            case 0xD: return '/';
-            case 0xE: return '+';
-            default: return ',';
-            }
-        }
-    },
-    /**
-     * Upper-case characters with punctuation.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
-     * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  _  .  -  :  /
-     * </pre>
-     */
-    UPPER( 3, 5, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            return super.encTranslate(b) - 0x40;
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            return b == 0 ? 0x40 : b + 0x5a;
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
-                return ' ';
-            }
-            if ( codePoint <= 0x1A )
-            {
-                return (byte) (codePoint + 'A' - 1);
-            }
-            return decPunctuation( codePoint - 0x1A );
-        }
-    },
-    /**
-     * Lower-case characters with punctuation.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 1-  p  q  r  s  t  u  v  w    x  y  z  _  .  -  :  /
-     * </pre>
-     */
-    LOWER( 4, 5, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            return super.encTranslate(b) - 0x60;
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            return b == 0 ? 0x60 : b + 0x7a;
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
-                return ' ';
-            }
-            if ( codePoint <= 0x1A )
-            {
-                return (byte) (codePoint + 'a' - 1);
-            }
-            return decPunctuation( codePoint - 0x1A );
-        }
-    },
-    /**
-     * Lower-case characters with punctuation.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  ,  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 1-  p  q  r  s  t  u  v  w    x  y  z  _  .  -  +  @
-     * </pre>
-     */
-    EMAIL( 5, 5, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            return super.encTranslate(b) - 0x60;
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            int encOffset = 0x60;
-            if ( b == 7 )
-            {
-                return encOffset;
-            }
-
-            int offset = encOffset + 0x1B;
-            switch ( b )
-            {
-            case 1: return offset;
-            case 2: return 1 + offset;
-            case 3: return 2 + offset;
-            case 6: return 3 + offset;
-            case 9: return 4 + offset;
-            default: throw cannotEncode( b );
-            }
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
-                return ',';
-            }
-            if ( codePoint <= 0x1A )
-            {
-                return (byte) (codePoint + 'a' - 1);
-            }
-            switch ( codePoint )
-            {
-            case 0x1E: return '+';
-            case 0x1F: return '@';
-            default: return decPunctuation( codePoint - 0x1A );
-            }
-        }
-    },
-    /**
-     * Lower-case characters, digits and punctuation and symbols.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 1-  p  q  r  s  t  u  v  w    x  y  z
-     * 2-  0  1  2  3  4  5  6  7    8  9  _  .  -  :  /  +
-     * 3-  ,  '  @  |  ;  *  ?  &    %  #  (  )  $  <  >  =
-     * </pre>
-     */
-    URI( 6, 6, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            if ( b == 0 )
-            {
-                return 0; // space
-            }
-            if ( b >= 0x61 && b <= 0x7A )
-            {
-                return b - 0x60; // lower-case letters
-            }
-            if ( b >= 0x30 && b <= 0x39 )
-            {
-                return b - 0x10; // digits
-            }
-            if ( b >= 0x1 && b <= 0x16 )
-            {
-                return b + 0x29; // symbols
-            }
-            throw cannotEncode( b );
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            // Handled by encTranslate
-            throw cannotEncode( b );
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0 )
-            {
-                return ' ';
-            }
-            if ( codePoint <= 0x1A )
-            {
-                return (byte) (codePoint + 'a' - 1);
-            }
-            if ( codePoint <= 0x29 )
-            {
-                return (byte) (codePoint - 0x20 + '0');
-            }
-            if ( codePoint <= 0x2E )
-            {
-                return decPunctuation( codePoint - 0x29 );
-            }
-            return decPunctuation( codePoint - 0x2F + 9 );
-        }
-    },
-    /**
-     * Alpha-numerical characters space and underscore.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
-     * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  0  1  2  3  4
-     * 2-  _  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 3-  p  q  r  s  t  u  v  w    x  y  z  5  6  7  8  9
-     * </pre>
-     */
-    ALPHANUM( 7, 6, false )
-    {
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            return EUROPEAN.decTranslate( (byte) ( codePoint + 0x40 ) );
-        }
-
-        @Override
-        int encTranslate( byte b )
-        {
-            // Punctuation is in the same places as European
-            if ( b < 0x20 )
-            {
-                return encPunctuation( b ); // Punctuation
-            }
-            // But the rest is transposed by 0x40
-            return EUROPEAN.encTranslate( b ) - 0x40;
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0:
-                return 0x00; // SPACE
-            case 1:
-                return 0x20; // UNDERSCORE
-            default:
-                throw cannotEncode( b );
-            }
-        }
-    },
-    /**
-     * Alpha-numerical characters space and underscore.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
-     * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  _  .  -  :  /
-     * 2-  ;  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 3-  p  q  r  s  t  u  v  w    x  y  z  +  ,  '  @  |
-     * </pre>
-     */
-    ALPHASYM( 8, 6, false )
-    {
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint == 0x0 )
-            {
-                return ' ';
-            }
-            if ( codePoint <= 0x1A )
-            {
-                return (byte) ('A' + codePoint - 0x1);
-            }
-            if ( codePoint <= 0x1F )
-            {
-                return decPunctuation( codePoint - 0x1B + 1 );
-            }
-            if ( codePoint == 0x20 )
-            {
-                return ';';
-            }
-            if ( codePoint <= 0x3A )
-            {
-                return (byte) ('a' + codePoint - 0x21);
-            }
-            return decPunctuation( codePoint - 0x3B + 9 );
-        }
-
-        @Override
-        int encTranslate( byte b )
-        {
-            // Punctuation is in the same places as European
-            if ( b < 0x20 )
-            {
-                return encPunctuation( b ); // Punctuation
-            }
-            // But the rest is transposed by 0x40
-//            return EUROPEAN.encTranslate( b ) - 0x40;
-            return b - 0x40;
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0x0: return 0x0;
-            case 0x1: return 0x1B;
-            case 0x2: return 0x1C;
-            case 0x3: return 0x1D;
-            case 0x4: return 0x1E;
-            case 0x5: return 0x1F;
-
-            case 0x6: return 0x3B;
-            case 0x7: return 0x3C;
-            case 0x8: return 0x3D;
-            case 0x9: return 0x3E;
-            case 0xA: return 0x3F;
-
-            case 0xB: return 0x20;
-            default: throw cannotEncode( b );
-            }
-        }
-    },
-    /**
-     * The most common European characters (latin-1 but with less punctuation).
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  À  Á  Â  Ã  Ä  Å  Æ  Ç    È  É  Ê  Ë  Ì  Í  Î  Ï
-     * 1-  Ð  Ñ  Ò  Ó  Ô  Õ  Ö  .    Ø  Ù  Ú  Û  Ü  Ý  Þ  ß
-     * 2-  à  á  â  ã  ä  å  æ  ç    è  é  ê  ë  ì  í  î  ï
-     * 3-  ð  ñ  ò  ó  ô  õ  ö  -    ø  ù  ú  û  ü  ý  þ  ÿ
-     * 4- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
-     * 5-  P  Q  R  S  T  U  V  W    X  Y  Z  0  1  2  3  4
-     * 6-  _  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 7-  p  q  r  s  t  u  v  w    x  y  z  5  6  7  8  9
-     * </pre>
-     */
-    EUROPEAN( 9, 7, true )
-    {
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            int code = codePoint & 0xFF;
-            if ( code < 0x40 )
-            {
-                if ( code == 0x17 )
-                {
-                    return '.';
-                }
-                if ( code == 0x37 )
-                {
-                    return '-';
-                }
-                return (byte) (code + 0xC0);
-            }
-            else
-            {
-                if ( code == 0x40 )
-                {
-                    return ' ';
-                }
-                if ( code == 0x60 )
-                {
-                    return '_';
-                }
-                if ( code >= 0x5B && code < 0x60 )
-                {
-                    return (byte) ('0' + code - 0x5B);
-                }
-                if ( code >= 0x7B && code < 0x80 )
-                {
-                    return (byte) ('5' + code - 0x7B);
-                }
-                return (byte) code;
-            }
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            switch ( b )
-            {
-            case 0x00:
-                return 0x40; // SPACE
-            case 0x01:
-                return 0x60; // UNDERSCORE
-            case 0x02:
-                return 0x17; // DOT
-            case 0x03:
-                return 0x37; // DASH
-            case 0x07:
-                // TODO
-                return 0;
-            default:
-                throw cannotEncode( b );
-            }
-        }
-    },
-    // ENCODING_LATIN1 is 10th
-    /**
-     * Lower-case characters a-f and digits.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-     * </pre>
-     */
-    LOWERHEX( 11, 4, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
-                return b - '0';
-            }
-            if ( b >= 'a' && b <= 'f' )
-            {
-                return b - 'a' + 10;
-            }
-            throw cannotEncode( b );
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
-                return (byte) (codePoint + '0');
-            }
-            return (byte) ( codePoint + 'a' - 10 );
-        }
-    },
-    /**
-     * Upper-case characters A-F and digits.
-     *
-     * <pre>
-     *    -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-     * </pre>
-     */
-    UPPERHEX( 12, 4, false )
-    {
-        @Override
-        int encTranslate( byte b )
-        {
-            if ( b >= '0' && b <= '9' )
-            {
-                return b - '0';
-            }
-            if ( b >= 'A' && b <= 'F' )
-            {
-                return b - 'A' + 10;
-            }
-            throw cannotEncode( b );
-        }
-
-        @Override
-        int encPunctuation( byte b )
-        {
-            throw cannotEncode( b );
-        }
-
-        @Override
-        byte decTranslate( byte codePoint )
-        {
-            if ( codePoint < 10 )
-            {
-                return (byte) (codePoint + '0');
-            }
-            return (byte) ( codePoint + 'A' - 10 );
-        }
-    };
-    public static final int REMOVE_LARGE_ENCODINGS_MASK = invertedBitMask( ALPHANUM, ALPHASYM, URI, EUROPEAN );
-    public static final LongerShortString[] ENCODINGS = values();
-    public static final int ENCODING_COUNT = ENCODINGS.length;
-    public static final int ALL_BIT_MASK = bitMask( LongerShortString.values() );
-    public static final int ENCODING_UTF8 = 0;
-    public static final int ENCODING_LATIN1 = 10;
     private static final int HEADER_SIZE = 39; // bits
-
-    final int encodingHeader;
-    final long mask;
-    final int step;
-    final boolean needsChars;
-
-    LongerShortString( int encodingHeader, int step, boolean needsChars )
-    {
-        this.encodingHeader = encodingHeader;
-        this.mask = Bits.rightOverflowMask( step );
-        this.step = step;
-        this.needsChars = needsChars;
-    }
-
-    int maxLength( int payloadSize )
-    {
-        // key-type-encoding-length
-        return ((payloadSize << 3) - 24 - 4 - 4 - 6) / step;
-    }
-
-    final IllegalArgumentException cannotEncode( byte b )
-    {
-        return new IllegalArgumentException( "Cannot encode as " + this.name() + ": " + b );
-    }
-
-    /** Lookup table for decoding punctuation */
-    private static final byte[] PUNCTUATION = {
-        ' ', '_', '.', '-', ':', '/',
-        ' ', '.', '-', '+', ',', '\'', '@', '|', ';', '*', '?', '&', '%', '#', '(', ')', '$', '<', '>', '=' };
-
-    static byte decPunctuation( int code )
-    {
-        return PUNCTUATION[code];
-    }
-
-    int encTranslate( byte b )
-    {
-        if ( b < 0 )
-        {
-            return (0xFF & b) - 0xC0; // European chars
-        }
-        if ( b < 0x20 )
-        {
-            return encPunctuation( b ); // Punctuation
-        }
-        if ( b >= '0' && b <= '4' )
-        {
-            return 0x5B + b - '0'; // Numbers
-        }
-        if ( b >= '5' && b <= '9' )
-        {
-            return 0x7B + b - '5'; // Numbers
-        }
-        return b; // Alphabetical
-    }
-
-    abstract int encPunctuation( byte b );
-
-    abstract byte decTranslate( byte codePoint );
+    private static final int REMOVE_LARGE_ENCODINGS_MASK = ~bitMask( ALPHANUM, ALPHASYM, URI, EUROPEAN );
 
     /**
      * Encodes a short string.
@@ -700,15 +76,14 @@ public enum LongerShortString
      * E-  à  á  â  ã  ä  å  æ  ç    è  é  ê  ë  ì  í  î  ï
      * F-  ð  ñ  ò  ó  ô  õ  ö       ø  ù  ú  û  ü  ý  þ  ÿ
      */
-    public static boolean encode( int keyId, String string,
-                                  PropertyBlock target, int payloadSize )
+    public static boolean encode( int keyId, String string, PropertyBlock target, int payloadSize )
     {
         // NUMERICAL can carry most characters, so compare to that
         int dataLength = string.length();
         // We only use 6 bits for storing the string length
         // TODO could be dealt with by having string length zero and go for null bytes,
         // at least for LATIN1 (that's what the ShortString implementation initially did)
-        if ( dataLength > NUMERICAL.maxLength( payloadSize ) || dataLength > 63 )
+        if ( dataLength > maxLength( ShortStringCodec.NUMERICAL, payloadSize ) || dataLength > 63 )
         {
             return false; // Not handled by any encoding
         }
@@ -719,16 +94,20 @@ public enum LongerShortString
 
         // Keep track of the possible encodings that can be used for the string
         // 0 means none applies
-        int encodings = determineEncoding( string, data, dataLength, payloadSize );
-        if ( encodings != 0 && tryEncode( encodings, keyId, target, payloadSize, data, dataLength ) )
+        int codecs = prepareEncode( string, data, dataLength );
+        if ( dataLength > maxLength( ALPHANUM, payloadSize ) )
+        {
+            codecs &= REMOVE_LARGE_ENCODINGS_MASK;
+        }
+
+        if ( codecs != 0 && tryEncode( codecs, keyId, target, payloadSize, data, dataLength ) )
         {
             return true;
         }
         return encodeWithCharSet( keyId, string, target, payloadSize, dataLength );
     }
 
-    private static boolean encodeWithCharSet( int keyId, String string, PropertyBlock target, int payloadSize,
-            int stringLength )
+    private static boolean encodeWithCharSet( int keyId, String string, PropertyBlock target, int payloadSize, int stringLength )
     {
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
@@ -741,141 +120,18 @@ public enum LongerShortString
     private static boolean tryEncode( int encodings, int keyId, PropertyBlock target, int payloadSize, byte[] data, final int length )
     {
         // find encoders in order that are still selected and try to encode the data
-        for ( LongerShortString encoding : ENCODINGS )
+        for ( ShortStringCodec codec : CODECS )
         {
-            if ( (encoding.bitMask() & encodings) == 0 )
+            if ( (codec.bitMask() & encodings) == 0 )
             {
                 continue;
             }
-            if ( encoding.doEncode( keyId, data, target, payloadSize, length ) )
+            if ( doEncode( keyId, data, target, payloadSize, length, codec ) )
             {
                 return true;
             }
         }
         return false;
-    }
-
-    // inverted combined bit-mask for the encoders
-    static int invertedBitMask( LongerShortString... encoders )
-    {
-        return ~bitMask( encoders );
-    }
-
-    // combined bit-mask for the encoders
-    private static int bitMask( LongerShortString[] encoders )
-    {
-        int result = 0;
-        for ( LongerShortString encoder : encoders )
-        {
-            result |= encoder.bitMask();
-        }
-        return result;
-    }
-
-    // translation lookup for each ascii character
-    private static final int TRANSLATION_COUNT = 256;
-    // transformation for the char to byte according to the default translation table
-    private static final byte[] TRANSLATION = new byte[TRANSLATION_COUNT];
-    // mask for encoders that are not applicable for this character
-    private static final int[] REMOVE_MASK = new int[TRANSLATION_COUNT];
-
-    private static void setUp( char pos, int value, LongerShortString... removeEncodings )
-    {
-        TRANSLATION[pos] = (byte) value;
-        REMOVE_MASK[pos] = invertedBitMask( removeEncodings );
-    }
-
-    static
-    {
-        Arrays.fill( TRANSLATION, (byte) 0xFF );
-        Arrays.fill( REMOVE_MASK, invertedBitMask( ENCODINGS ) );
-        setUp( ' ', 0, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '_', 1, NUMERICAL, DATE, LOWERHEX, UPPERHEX );
-        setUp( '.', 2, DATE, ALPHANUM, LOWERHEX, UPPERHEX );
-        setUp( '-', 3, ALPHANUM, LOWERHEX, UPPERHEX );
-        setUp( ':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
-        setUp( '+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( ',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        setUp( '|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
-        final LongerShortString[] retainUri = {NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN, LOWERHEX, UPPERHEX};
-        setUp( ';', 0xB, retainUri );
-        setUp( '*', 0xC, retainUri );
-        setUp( '?', 0xD, retainUri );
-        setUp( '&', 0xE, retainUri );
-        setUp( '%', 0xF, retainUri );
-        setUp( '#', 0x10, retainUri );
-        setUp( '(', 0x11, retainUri );
-        setUp( ')', 0x12, retainUri );
-        setUp( '$', 0x13, retainUri );
-        setUp( '<', 0x14, retainUri );
-        setUp( '>', 0x15, retainUri );
-        setUp( '=', 0x16, retainUri );
-        for ( char c = 'A'; c <= 'F'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX );
-        }
-        for ( char c = 'G'; c <= 'Z'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX, UPPERHEX );
-        }
-        for ( char c = 'a'; c <= 'f'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX );
-        }
-        for ( char c = 'g'; c <= 'z'; c++ )
-        {
-            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX, LOWERHEX );
-        }
-        for ( char c = '0'; c <= '9'; c++ )
-        {
-            setUp( c, (byte) c, UPPER, LOWER, EMAIL, ALPHASYM );
-        }
-        for ( char c = 'À'; c <= 'ÿ'; c++ )
-        {
-            if ( c != 0xD7 && c != 0xF7 )
-            {
-                setUp( c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM, LOWERHEX, UPPERHEX );
-            }
-        }
-    }
-
-    private static int determineEncoding( String string, byte[] data, int length, int payloadSize )
-    {
-        if ( length == 0 )
-        {
-            return 0;
-        }
-        int encodings = ALL_BIT_MASK;
-        // filter out larger encodings in one go
-        if ( length > ALPHANUM.maxLength( payloadSize ) )
-        {
-            encodings &= REMOVE_LARGE_ENCODINGS_MASK;
-        }
-        for ( int i = 0; i < length; i++ )
-        {
-            char c = string.charAt( i );
-            // non ASCII chars not supported
-            if ( c >= TRANSLATION_COUNT )
-            {
-                return 0;
-            }
-            data[i] = TRANSLATION[c];
-            // remove not matching encoders
-            encodings &= REMOVE_MASK[c];
-            if ( encodings == 0 )
-            {
-                return 0;
-            }
-        }
-        return encodings;
-    }
-
-    int bitMask()
-    {
-        return 1 << ordinal();
     }
 
     private static void writeHeader( Bits bits, int keyId, int encoding, int stringLength )
@@ -903,21 +159,21 @@ public enum LongerShortString
             return Values.EMPTY_STRING;
         }
         // key(24b) + type(4) = 28
-        int encoding = (int) ((firstLong & 0x1F0000000L) >>> 28); // 5 bits of encoding
+        int codecId = (int) ((firstLong & 0x1F0000000L) >>> 28); // 5 bits of encoding
         int stringLength = (int) ((firstLong & 0x7E00000000L) >>> 33); // 6 bits of stringLength
-        if ( encoding == ENCODING_UTF8 )
+        if ( codecId == ENCODING_UTF8 )
         {
             return decodeUTF8( blocks, offset, stringLength );
         }
-        if ( encoding == ENCODING_LATIN1 )
+        if ( codecId == ENCODING_LATIN1 )
         {
             return decodeLatin1( blocks, offset, stringLength );
         }
 
-        LongerShortString table = getEncodingTable( encoding );
+        ShortStringCodec table = codecById( codecId );
         assert table != null : "We only decode LongerShortStrings after we have consistently read the PropertyBlock " +
                 "data from the page cache. Thus, we should never have an invalid encoding header here.";
-        if ( table.needsChars )
+        if ( table.needsChars() )
         {
             // Special since it's an encoding containing characters, which although within one byte, is larger than 127 and so
             // would becomes negative and that doesn't sit well with utf-8. So in this case we need to go the char[] route
@@ -935,73 +191,49 @@ public enum LongerShortString
         return Values.utf8Value( result );
     }
 
-    private static void decode( byte[] result, long[] blocks, int offset, LongerShortString table )
+    private static void decode( byte[] result, long[] blocks, int offset, ShortStringCodec table )
     {
         // encode shifts in the bytes with the first at the MSB, therefore
         // we must "unshift" in the reverse order
         int block = offset;
         int maskShift = HEADER_SIZE;
-        long baseMask = table.mask;
+        long baseMask = table.mask();
         for ( int i = 0; i < result.length; i++ )
         {
             byte codePoint = (byte) ((blocks[block] >>> maskShift) & baseMask);
-            maskShift += table.step;
+            maskShift += table.bitsPerCharacter();
             if ( maskShift >= 64 && block + 1 < blocks.length )
             {
                 maskShift %= 64;
-                codePoint |= (blocks[++block] & (baseMask >>> (table.step - maskShift))) << (table.step - maskShift);
+                codePoint |= (blocks[++block] & (baseMask >>> (table.bitsPerCharacter() - maskShift))) << (table.bitsPerCharacter() - maskShift);
             }
             result[i] = table.decTranslate( codePoint );
         }
     }
 
-    private static void decode( char[] result, long[] blocks, int offset, LongerShortString table )
+    private static void decode( char[] result, long[] blocks, int offset, ShortStringCodec table )
     {
         // encode shifts in the bytes with the first at the MSB, therefore
         // we must "unshift" in the reverse order
         int block = offset;
         int maskShift = HEADER_SIZE;
-        long baseMask = table.mask;
+        long baseMask = table.mask();
         for ( int i = 0; i < result.length; i++ )
         {
             byte codePoint = (byte) ((blocks[block] >>> maskShift) & baseMask);
-            maskShift += table.step;
+            maskShift += table.bitsPerCharacter();
             if ( maskShift >= 64 && block + 1 < blocks.length )
             {
                 maskShift %= 64;
-                codePoint |= (blocks[++block] & (baseMask >>> (table.step - maskShift))) << (table.step - maskShift);
+                codePoint |= (blocks[++block] & (baseMask >>> (table.bitsPerCharacter() - maskShift))) << (table.bitsPerCharacter() - maskShift);
             }
             result[i] = (char) (table.decTranslate( codePoint ) & 0xFF);
         }
     }
 
-    // lookup table by encoding header
-    // +2 because of ENCODING_LATIN1 gap and one based index
-    private static final LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 2];
-
-    static
+    private static Bits newBits( ShortStringCodec codec, int length )
     {
-        for ( LongerShortString encoding : ENCODINGS )
-        {
-            ENCODINGS_BY_ENCODING[encoding.encodingHeader] = encoding;
-        }
-    }
-
-    /**
-     * Get encoding table for the given encoding header, or {@code null} if the encoding header is invalid.
-     */
-    private static LongerShortString getEncodingTable( int encodingHeader )
-    {
-        if ( encodingHeader < 0 || ENCODINGS_BY_ENCODING.length <= encodingHeader )
-        {
-            return null;
-        }
-        return ENCODINGS_BY_ENCODING[encodingHeader];
-    }
-
-    private static Bits newBits( LongerShortString encoding, int length )
-    {
-        return Bits.bits(calculateNumberOfBlocksUsed( encoding, length ) << 3 ); //*8
+        return Bits.bits( calculateNumberOfBlocksUsed( codec, length ) * 8 );
     }
 
     private static Bits newBitsForStep8( int length )
@@ -1055,27 +287,33 @@ public enum LongerShortString
         return true;
     }
 
-    private boolean doEncode( int keyId, byte[] data, PropertyBlock target, int payloadSize, final int length )
+    private static int maxLength( ShortStringCodec codec, int payloadSize )
     {
-        if ( length > maxLength( payloadSize ) )
+        // key-type-encoding-length
+        return ((payloadSize << 3) - 24 - 4 - 4 - 6) / codec.bitsPerCharacter();
+    }
+
+    private static boolean doEncode( int keyId, byte[] data, PropertyBlock target, int payloadSize, final int length, ShortStringCodec codec )
+    {
+        if ( length > maxLength( codec, payloadSize ) )
         {
             return false;
         }
-        Bits bits = newBits( this, length );
-        writeHeader( bits, keyId, encodingHeader, length );
+        Bits bits = newBits( codec, length );
+        writeHeader( bits, keyId, codec.id(), length );
         if ( length > 0 )
         {
-            translateData( bits, data, length, step );
+            translateData( bits, data, length, codec.bitsPerCharacter(), codec );
         }
         target.setValueBlocks( bits.getLongs() );
         return true;
     }
 
-    private void translateData( Bits bits, byte[] data, int length, final int step )
+    private static void translateData( Bits bits, byte[] data, int length, final int step, ShortStringCodec codec )
     {
         for ( int i = 0; i < length; i++ )
         {
-            bits.put(encTranslate(data[i]), step);
+            bits.put( codec.encTranslate( data[i] ), step );
         }
     }
 
@@ -1122,20 +360,20 @@ public enum LongerShortString
         /*
          * [ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
          */
-        int encoding = (int) ( ( firstBlock & 0x1F0000000L ) >> 28 );
+        int codecId = (int) ( ( firstBlock & 0x1F0000000L ) >> 28 );
         int length = (int) ( ( firstBlock & 0x7E00000000L ) >> 33 );
-        if ( encoding == ENCODING_UTF8 || encoding == ENCODING_LATIN1 )
+        if ( codecId == ENCODING_UTF8 || codecId == ENCODING_LATIN1 )
         {
             return calculateNumberOfBlocksUsedForStep8(length);
         }
 
-        LongerShortString encodingTable = getEncodingTable( encoding );
-        if ( encodingTable == null )
+        ShortStringCodec codec = codecById( codecId );
+        if ( codec == null )
         {
             // We probably did an inconsistent read of the first block
             return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
         }
-        return calculateNumberOfBlocksUsed( encodingTable, length );
+        return calculateNumberOfBlocksUsed( codec, length );
     }
 
     public static int calculateNumberOfBlocksUsedForStep8( int length )
@@ -1143,9 +381,9 @@ public enum LongerShortString
         return totalBits( length << 3 ); // * 8
     }
 
-    public static int calculateNumberOfBlocksUsed( LongerShortString encoding, int length )
+    public static int calculateNumberOfBlocksUsed( ShortStringCodec codec, int length )
     {
-        return totalBits( length * encoding.step );
+        return totalBits( length * codec.bitsPerCharacter() );
     }
 
     private static int totalBits( int bitsForCharacters )
