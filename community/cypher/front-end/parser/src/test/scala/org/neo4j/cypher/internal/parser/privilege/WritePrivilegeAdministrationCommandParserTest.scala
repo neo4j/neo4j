@@ -17,114 +17,150 @@
 package org.neo4j.cypher.internal.parser.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.util.InputPosition
 
-abstract class WritePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class WritePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
-  def privilegeTests(command: String, preposition: String, func: noResourcePrivilegeFunc): Unit = {
-    Seq("GRAPH", "GRAPHS").foreach {
-      graphKeyword =>
+  type privilegeTypeFunction = () => InputPosition => PrivilegeType
 
-        Seq("ELEMENT", "ELEMENTS").foreach {
-          elementKeyword =>
+  Seq(
+    ("GRANT", "TO", grant: noResourcePrivilegeFunc),
+    ("DENY", "TO", deny: noResourcePrivilegeFunc),
+    ("REVOKE GRANT", "FROM", revokeGrant: noResourcePrivilegeFunc),
+    ("REVOKE DENY", "FROM", revokeDeny: noResourcePrivilegeFunc),
+    ("REVOKE", "FROM", revokeBoth: noResourcePrivilegeFunc)
+  ).foreach {
+    case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
 
-            Seq(
-              ("*", ast.AllGraphsScope()(pos)),
-              ("foo", ast.NamedGraphScope(literal("foo"))(pos)),
-              ("$foo", ast.NamedGraphScope(param("foo"))(pos))
-            ).foreach {
-              case (dbName: String, graphScope: ast.GraphScope) =>
-                val graphScopes = List(graphScope)
+      test(s"$verb WRITE ON GRAPH foo $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition $$role") {
-                  yields(func(ast.GraphPrivilege(WriteAction)(pos), graphScopes, ast.ElementsAllQualifier() _, Seq(param("role"))))
-                }
+      test(s"$verb WRITE ON GRAPHS foo $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
-                  yields(func(ast.GraphPrivilege(WriteAction)(pos), graphScopes, ast.ElementsAllQualifier() _, Seq(literal("role"))))
-                }
+      // Multiple graphs should be allowed (with and without plural GRAPHS)
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") {
-                  yields(func(ast.GraphPrivilege(WriteAction)(pos), graphScopes, ast.ElementsAllQualifier() _, Seq(literal("r:ole"))))
-                }
+      test(s"$verb WRITE ON GRAPH * $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A $preposition role") {
-                  yields(func(ast.GraphPrivilege(WriteAction)(pos), graphScopes, ast.ElementsQualifier(Seq("A")) _, Seq(literal("role"))))
-                }
+      test(s"$verb WRITE ON GRAPHS * $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-                test(s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") {
-                  yields(func(ast.GraphPrivilege(WriteAction)(pos), graphScopes, ast.ElementsQualifier(Seq("A")) _, Seq(literal("role"))))
-                }
+      test(s"$verb WRITE ON GRAPH foo, baz $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), ast.ElementsAllQualifier() _, List(literal("role"))))
+      }
 
-                test(s"failToParseStatements $graphKeyword $dbName $elementKeyword $preposition") {
-                  // Missing `ON`
-                  assertFails( s"$command WRITE $graphKeyword $dbName $elementKeyword * (*) $preposition role")
-                  // Missing role
-                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (*)")
-                  // Invalid role name
-                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
-                  // Does not support write on specific label yet
-                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword * (foo) $preposition role")
-                  assertFails( s"$command WRITE ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
-                  // Does not support write on specific property
-                  assertFails( s"$command WRITE {*} ON $graphKeyword $dbName $elementKeyword * $preposition role")
-                  assertFails( s"$command WRITE {prop} ON $graphKeyword $dbName $elementKeyword * $preposition role")
-                }
-            }
+      test(s"$verb WRITE ON GRAPHS foo, baz $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), ast.ElementsAllQualifier() _, List(literal("role"))))
+      }
 
-            test(s"$command WRITE ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
-              yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("f:oo")) _), ast.ElementsAllQualifier() _, Seq(literal("role"))))
-            }
+      // Multiple roles should be allowed
+      test(s"$verb WRITE ON GRAPH foo $preposition role1, role2") {
+        yields(func(ast.GraphPrivilege(WriteAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier()(_), Seq(literal("role1"), literal("role2"))))
+      }
 
-            // Multiple graphs allowed
-            test(s"$command WRITE ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role") {
-              yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), ast.ElementsQualifier(Seq("A")) _, List(literal("role"))))
-            }
+      // Parameters and escaped strings should be allowed
 
-            test(s"parseErrors $command $graphKeyword $elementKeyword $preposition") {
-              // Invalid graph name
-              assertFails(s"$command WRITE ON $graphKeyword f:oo $elementKeyword * $preposition role")
-              assertFails(s"$command WRITE ON $graphKeyword $elementKeyword * (*) $preposition role")
-            }
-        }
+      test(s"$verb WRITE ON GRAPH $$foo $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(param("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-        // Needs to be separate loop to avoid duplicate tests since the test does not have any $elementKeyword
-        Seq(
-          ("*", ast.AllGraphsScope()(pos)),
-          ("foo", ast.NamedGraphScope(literal("foo"))(pos)),
-          ("$foo", ast.NamedGraphScope(param("foo"))(pos))
-        ).foreach {
-          case (dbName: String, graphScope: ast.GraphScope) =>
+      test(s"$verb WRITE ON GRAPH `f:oo` $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("f:oo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+      }
 
-            test(s"$command WRITE ON $graphKeyword $dbName $preposition role") {
-              yields(func(ast.GraphPrivilege(WriteAction)(pos), List(graphScope), ast.ElementsAllQualifier() _, Seq(literal("role"))))
-            }
-        }
-    }
+      test(s"$verb WRITE ON GRAPH foo $preposition $$role") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(param("role"))))
+      }
 
-    // Mix of specific graph and *
+      test(s"$verb WRITE ON GRAPH foo $preposition `r:ole`") {
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("r:ole"))))
+      }
 
-    test(s"$command WRITE ON GRAPH foo, * $preposition role") {
-      failsToParse
-    }
+      // Resource or qualifier should not be supported
+      test(s"$verb WRITE {*} ON GRAPH foo $preposition role") {
+        failsToParse
+      }
 
-    test(s"$command WRITE ON GRAPH *, foo $preposition role") {
-      failsToParse
-    }
+      test(s"$verb WRITE {prop} ON GRAPH foo $preposition role") {
+        failsToParse
+      }
 
-    // Database instead of graph keyword
+      test(s"$verb WRITE ON GRAPH foo NODE A $preposition role") {
+        failsToParse
+      }
 
-    test(s"$command WRITE ON DATABASES * $preposition role") {
-      failsToParse
-    }
+      test(s"$verb WRITE ON GRAPH foo NODES * $preposition role") {
+        failsToParse
+      }
 
-    test(s"$command WRITE ON DATABASE foo $preposition role") {
-      failsToParse
-    }
+      test(s"$verb WRITE ON GRAPH foo RELATIONSHIP R $preposition role") {
+        failsToParse
+      }
 
-    test(s"$command WRITE ON DEFAULT DATABASE $preposition role") {
-      failsToParse
-    }
+      test(s"$verb WRITE ON GRAPH foo RELATIONSHIPS * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH foo ELEMENT A $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH foo ELEMENTS * $preposition role") {
+        failsToParse
+      }
+
+      // Invalid/missing part of the command
+
+      test(s"$verb WRITE ON GRAPH f:oo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH foo $preposition ro:le") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH foo $preposition") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE GRAPH foo $preposition role") {
+        failsToParse
+      }
+
+      // Mix of specific graph and *
+
+      test(s"$verb WRITE ON GRAPH foo, * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON GRAPH *, foo $preposition role") {
+        failsToParse
+      }
+
+      // Database instead of graph keyword
+
+      test(s"$verb WRITE ON DATABASES * $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON DEFAULT DATABASE $preposition role") {
+        failsToParse
+      }
   }
 }

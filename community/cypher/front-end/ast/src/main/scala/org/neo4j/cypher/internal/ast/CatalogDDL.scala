@@ -481,15 +481,7 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: Priv
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      writeQualifierCheck chain
       SemanticState.recordCurrentScope(this)
-
-  private def writeQualifierCheck: SemanticCheck = privilege match {
-    case GraphPrivilege(WriteAction) if !qualifier.isInstanceOf[ElementsAllQualifier] =>
-      SemanticError("The use of ELEMENT, NODE or RELATIONSHIP with the WRITE privilege is not supported in this version.", position)
-    case _ => SemanticCheckResult.success
-  }
-
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]])

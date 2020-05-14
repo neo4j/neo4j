@@ -335,17 +335,17 @@ case class Prettifier(
       val scope = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON $scope (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x@GrantPrivilege(GraphPrivilege(WriteAction), _, dbScope, qualifier, roleNames) =>
-      val scope = Prettifier.extractScope(dbScope, qualifier)
-      s"${x.name} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+    case x@GrantPrivilege(GraphPrivilege(WriteAction), _, dbScope, _, roleNames) =>
+      val scope = Prettifier.extractGraphScope(dbScope)
+      s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x@DenyPrivilege(GraphPrivilege(WriteAction), _, dbScope, qualifier, roleNames) =>
-      val scope = Prettifier.extractScope(dbScope, qualifier)
-      s"${x.name} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+    case x@DenyPrivilege(GraphPrivilege(WriteAction), _, dbScope, _, roleNames) =>
+      val scope = Prettifier.extractGraphScope(dbScope)
+      s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x@RevokePrivilege(GraphPrivilege(WriteAction), _, dbScope, qualifier, roleNames, _) =>
-      val scope = Prettifier.extractScope(dbScope, qualifier)
-      s"${x.name} ON $scope (*) FROM ${Prettifier.escapeNames(roleNames)}"
+    case x@RevokePrivilege(GraphPrivilege(WriteAction), _, dbScope, _, roleNames, _) =>
+      val scope = Prettifier.extractGraphScope(dbScope)
+      s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x@GrantPrivilege(GraphPrivilege(_), None, dbScope, qualifier, roleNames) =>
       val scope = Prettifier.extractScope(dbScope, qualifier)
@@ -720,10 +720,14 @@ object Prettifier {
     }
   }
 
-  def extractScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): String = {
+  def extractGraphScope(dbScope: List[GraphScope]): String = {
     val (dbString, _, multipleDbs) = extractDbScope(dbScope)
     val graphWord = if (multipleDbs) "GRAPHS" else "GRAPH"
-    s"$graphWord $dbString${extractQualifierString(qualifier)}"
+    s"$graphWord $dbString"
+  }
+
+  def extractScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): String = {
+    s"${extractGraphScope(dbScope)}${extractQualifierString(qualifier)}"
   }
 
   def extractLabelScope(dbScope: List[GraphScope], resource: ActionResource): String = {
