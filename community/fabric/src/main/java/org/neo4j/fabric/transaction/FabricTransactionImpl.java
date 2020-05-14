@@ -179,12 +179,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 if ( !allFailures.isEmpty() )
                 {
                     errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::rollback );
-                    errors.forEach( err ->  userLog.error( "Failed to rollback a child write transaction", err ) );
+                    errors.forEach( err -> userLog.error( "Failed to rollback a child write transaction", err ) );
                 }
                 else
                 {
                     errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::commit );
-                    errors.forEach( err ->  userLog.error( "Failed to commit a child write transaction", err ) );
+                    errors.forEach( err -> userLog.error( "Failed to commit a child write transaction", err ) );
                 }
                 allFailures.addAll( errors );
             }
@@ -221,7 +221,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 return;
             }
 
-            if (terminated)
+            if ( terminated )
             {
                 // Wait for all children to be rolled back. Ignore errors
                 doOnChildren( readingTransactions, writingTransaction, SingleDbTransaction::rollback );
@@ -236,7 +236,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         }
     }
 
-    private void doRollback( Function<SingleDbTransaction, Mono<Void>> operation )
+    private void doRollback( Function<SingleDbTransaction,Mono<Void>> operation )
     {
         terminated = true;
         internalLog.debug( "Rolling back transaction %d", id );
@@ -268,7 +268,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
     private List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
                                           SingleDbTransaction writingTransaction,
-                                          Function<SingleDbTransaction, Mono<Void>> operation )
+                                          Function<SingleDbTransaction,Mono<Void>> operation )
     {
         var failures = Flux
                 .fromIterable( readingTransactions )

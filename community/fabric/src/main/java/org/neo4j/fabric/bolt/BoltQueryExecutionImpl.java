@@ -73,7 +73,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
             queryExecution.await();
         }
 
-        if (subscriber instanceof ResultSubscriber && !isReadOnly)
+        if ( subscriber instanceof ResultSubscriber && !isReadOnly )
         {
             ((ResultSubscriber) subscriber).materialize( queryExecution );
         }
@@ -109,7 +109,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
         private final Supplier<List<String>> columns;
 
         private QueryExecutionImpl( Rx2SyncStream rx2SyncStream, QuerySubscriber subscriber, Flux<String> columns, Mono<Summary> summary,
-                Mono<QueryExecutionType> queryExecutionType )
+                                    Mono<QueryExecutionType> queryExecutionType )
         {
             this.rx2SyncStream = rx2SyncStream;
             this.subscriber = subscriber;
@@ -200,7 +200,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
             }
             catch ( Exception e )
             {
-                throw Exceptions.transform(Status.Statement.ExecutionFailed, e);
+                throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
             }
         }
 
