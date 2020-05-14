@@ -114,19 +114,8 @@ public class SystemGraphComponents implements SystemGraphComponent
         List<Exception> errors = new ArrayList<>();
         for ( SystemGraphComponent component : componentsToUpgrade )
         {
-            Optional<Exception> error = SystemGraphComponent.executeWithFullAccess( system, tx ->
-            {
-                try
-                {
-                    component.upgradeToCurrent( system );
-                }
-                catch ( Exception e )
-                {
-                    throw new IllegalStateException(
-                            String.format( "Failed to upgrade system graph component '%s': %s", component.component(), e.getMessage() ), e );
-                }
-            } );
-            error.ifPresent( errors::add );
+            Optional<Exception> exception = component.upgradeToCurrent( system );
+            exception.ifPresent( errors::add );
         }
 
         if ( !errors.isEmpty() )
