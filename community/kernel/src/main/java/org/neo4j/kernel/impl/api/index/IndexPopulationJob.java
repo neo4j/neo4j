@@ -139,8 +139,8 @@ public class IndexPopulationJob implements Runnable
             // will only close "additional" resources, not the actual populators, since that's managed by flip
             Runnables.runAll( "Failed to close resources in IndexPopulationJob",
                     multiPopulator::close,
-                    () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
                     bufferFactory::close,
+                    () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
                     doneSignal::countDown );
         }
     }

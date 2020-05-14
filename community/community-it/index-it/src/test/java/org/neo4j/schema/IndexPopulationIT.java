@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.database.DatabaseMemoryTrackers;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -91,7 +93,7 @@ class IndexPopulationIT
     }
 
     @Test
-    void trackMemoryOnIndexPopulation()
+    void trackMemoryOnIndexPopulation() throws InterruptedException
     {
         Label nodeLabel = Label.label( "nodeLabel" );
         var propertyName = "testProperty";
@@ -110,12 +112,19 @@ class IndexPopulationIT
         var estimatedHeapBefore = otherTracker.estimatedHeapMemory();
         var usedNativeBefore = otherTracker.usedNativeMemory();
         AtomicLong peakUsage = new AtomicLong();
+        CountDownLatch populationJobCompleted = new CountDownLatch( 1 );
         monitors.addMonitorListener( new IndexingService.MonitorAdapter()
         {
             @Override
-            public void populationJobCompleted( long peakDirectMemoryUsage )
+            public void populationCompleteOn( IndexDescriptor descriptor )
             {
-                peakUsage.set( otherTracker.usedNativeMemory() );
+                peakUsage.set( Math.max( otherTracker.usedNativeMemory(), peakUsage.get() ) );
+            }
+
+            @Override
+            public void indexPopulationScanComplete()
+            {
+                populationJobCompleted.countDown();
             }
         });
 
@@ -126,10 +135,12 @@ class IndexPopulationIT
         }
 
         waitForOnlineIndexes();
+        populationJobCompleted.await();
 
+        long nativeMemoryAfterIndexCompletion = otherTracker.usedNativeMemory();
         assertEquals( estimatedHeapBefore, otherTracker.estimatedHeapMemory() );
-        assertThat( peakUsage.get() ).isGreaterThan( otherTracker.usedNativeMemory() );
-        assertEquals( usedNativeBefore, otherTracker.usedNativeMemory() );
+        assertEquals( usedNativeBefore, nativeMemoryAfterIndexCompletion );
+        assertThat( peakUsage.get() ).isGreaterThan( nativeMemoryAfterIndexCompletion );
     }
 
     @Test
