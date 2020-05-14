@@ -88,6 +88,7 @@ org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_BLOCK_SIZE int public sta
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASES_ROOT_DIR_NAME java.lang.String public static final = databases
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASE_NAME java.lang.String public static final = neo4j
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATA_DIR_NAME java.lang.String public static final = data
+org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DUMPS_DIR_NAME java.lang.String public static final = dumps
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_LABEL_BLOCK_SIZE int public static final = 64
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_TX_LOGS_ROOT_DIR_NAME java.lang.String public static final = transactions
 org.neo4j.configuration.GraphDatabaseSettings::GraphDatabaseSettings() void public
@@ -143,6 +144,7 @@ org.neo4j.configuration.GraphDatabaseSettings::cypher_worker_count org.neo4j.gra
 org.neo4j.configuration.GraphDatabaseSettings::data_collector_max_query_text_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::data_collector_max_recent_query_count org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::data_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
+org.neo4j.configuration.GraphDatabaseSettings::database_dumps_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::databases_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::db_temporal_timezone org.neo4j.graphdb.config.Setting<java.time.ZoneId> public static final
 org.neo4j.configuration.GraphDatabaseSettings::db_timezone org.neo4j.graphdb.config.Setting<org.neo4j.logging.LogTimeZone> public static final

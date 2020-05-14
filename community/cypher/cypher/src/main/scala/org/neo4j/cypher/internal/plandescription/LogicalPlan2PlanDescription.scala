@@ -795,7 +795,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "CreateDatabase", children, Seq(Details(escapeName(dbName))), variables)
 
       case DropDatabase(_, dbName, additionalAction) =>
-        PlanDescriptionImpl(id, "DropDatabase", children, Seq(Details(Seq(escapeName(dbName), additionalAction.name))), variables)
+        val details = Details(Seq(escapeName(dbName), asPrettyString.raw(additionalAction.name)))
+        PlanDescriptionImpl(id, "DropDatabase", children, Seq(details), variables)
 
       case StartDatabase(_, dbName) =>
         PlanDescriptionImpl(id, "StartDatabase", children, Seq(Details(escapeName(dbName))), variables)
