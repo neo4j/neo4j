@@ -80,17 +80,24 @@ public class FabricStatementLifecycles
         return new StatementLifecycle( executingQuery, queryExecutionMonitor );
     }
 
-    static class StatementLifecycle
+    public enum StatementPhase
     {
-        protected final ExecutingQuery executingQuery;
-        protected final QueryExecutionMonitor monitor;
+        FABRIC, CYPHER, ENDED
+    }
 
+    public static class StatementLifecycle
+    {
+        private final ExecutingQuery executingQuery;
+        private final QueryExecutionMonitor monitor;
+
+        private StatementPhase phase;
         private MonitoringMode monitoringMode;
 
         private StatementLifecycle( ExecutingQuery executingQuery, QueryExecutionMonitor monitor )
         {
             this.executingQuery = executingQuery;
             this.monitor = monitor;
+            this.phase = StatementPhase.FABRIC;
         }
 
         void startProcessing()
@@ -118,19 +125,31 @@ public class FabricStatementLifecycles
             monitoringMode.startExecution();
         }
 
+        void doneFabricPhase()
+        {
+            phase = StatementPhase.CYPHER;
+        }
+
         void endSuccess()
         {
+            phase = StatementPhase.ENDED;
             monitor.beforeEnd( executingQuery, true );
             monitor.endSuccess( executingQuery );
         }
 
         void endFailure( Throwable failure )
         {
+            phase = StatementPhase.ENDED;
             monitor.beforeEnd( executingQuery, false );
             monitor.endFailure( executingQuery, failure );
         }
 
-        ExecutingQuery getMonitoredQuery()
+        public boolean inFabricPhase()
+        {
+            return phase == StatementPhase.FABRIC;
+        }
+
+        public ExecutingQuery getMonitoredQuery()
         {
             return executingQuery;
         }

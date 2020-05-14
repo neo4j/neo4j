@@ -108,6 +108,8 @@ public class FabricKernelTransaction
         }
         else
         {
+            // Mark query as no longer in Fabric phase
+            lifecycle.doneFabricPhase();
             // Cypher engine reports directly to parent query
             return transactionalContextFactory.newContextForQuery( internalTransaction, parentQuery );
         }

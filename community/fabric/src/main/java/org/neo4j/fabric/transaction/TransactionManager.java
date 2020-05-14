@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric.transaction;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,6 +29,7 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.internal.LogService;
@@ -83,8 +86,17 @@ public class TransactionManager extends LifecycleAdapter
         openTransactions.remove( transaction );
     }
 
-    public Set<FabricTransactionImpl> getOpenTransactions()
+    public Set<FabricTransaction> getOpenTransactions()
     {
-        return openTransactions;
+        return Collections.unmodifiableSet( openTransactions );
+    }
+
+    public Optional<FabricTransaction> findTransactionContaining( InternalTransaction transaction )
+    {
+        return openTransactions.stream()
+                               .filter( tx -> tx.getInternalTransactions().stream()
+                                                .anyMatch( itx -> itx.kernelTransaction() == transaction.kernelTransaction() ) )
+                               .map( FabricTransaction.class::cast )
+                               .findFirst();
     }
 }

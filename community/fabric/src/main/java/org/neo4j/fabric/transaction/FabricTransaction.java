@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,6 +46,10 @@ public interface FabricTransaction
     FabricTransactionInfo getTransactionInfo();
 
     TransactionBookmarkManager getBookmarkManager();
+
+    void setLastSubmittedStatement( StatementLifecycle statement );
+
+    Optional<StatementLifecycle> getLastSubmittedStatement();
 
     interface FabricExecutionContext
     {

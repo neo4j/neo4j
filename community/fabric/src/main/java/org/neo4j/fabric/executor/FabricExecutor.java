@@ -100,14 +100,17 @@ public class FabricExecutor
         this.fabricWorkerExecutor = fabricWorkerExecutor;
     }
 
-    public FabricExecutionStatementResult run( FabricTransaction fabricTransaction, String queryString, MapValue queryParams )
+    public FabricExecutionStatementResult run( FabricTransaction fabricTransaction, String statement, MapValue parameters )
     {
-        StatementLifecycle lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), queryString, queryParams );
+
+        StatementLifecycle lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), statement, parameters );
         lifecycle.startProcessing();
 
+        fabricTransaction.setLastSubmittedStatement( lifecycle );
+
         String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
-        FabricPlanner.PlannerInstance plannerInstance = planner.instance( queryString, queryParams, defaultGraphName );
-        UseEvaluation.Instance useEvaluator = useEvaluation.instance( queryString );
+        FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
+        UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
         FabricPlan plan = plannerInstance.plan();
         Fragment query = plan.query();
 
@@ -126,13 +129,13 @@ public class FabricExecutor
                     if ( plan.debugOptions().logRecords() )
                     {
                         execution = new FabricLoggingStatementExecution(
-                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, log, lifecycle, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, parameters, accessMode, ctx, log, lifecycle, dataStreamConfig
                         );
                     }
                     else
                     {
                         execution = new FabricStatementExecution(
-                                plan, plannerInstance, useEvaluator, queryParams, accessMode, ctx, lifecycle, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, parameters, accessMode, ctx, lifecycle, dataStreamConfig
                         );
                     }
                     return execution.run();

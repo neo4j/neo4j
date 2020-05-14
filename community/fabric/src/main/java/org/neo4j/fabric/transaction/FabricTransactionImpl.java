@@ -80,6 +80,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private boolean terminated;
     private Status terminationStatus;
     private AtomicReference<StatementType> statementType = new AtomicReference<>();
+    private StatementLifecycle lastSubmittedStatement;
 
     private SingleDbTransaction writingTransaction;
 
@@ -330,6 +331,18 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             rollback();
             throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
         }
+    }
+
+    @Override
+    public void setLastSubmittedStatement( StatementLifecycle statement )
+    {
+        lastSubmittedStatement = statement;
+    }
+
+    @Override
+    public Optional<StatementLifecycle> getLastSubmittedStatement()
+    {
+        return Optional.ofNullable( lastSubmittedStatement );
     }
 
     @Override
