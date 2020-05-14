@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
+import org.neo4j.cypher.internal.javacompat.ResultSubscriber;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.stream.FabricExecutionStatementResult;
@@ -45,13 +46,37 @@ import org.neo4j.kernel.impl.query.QuerySubscriber;
 public class BoltQueryExecutionImpl implements BoltQueryExecution
 {
     private final QueryExecutionImpl queryExecution;
+    private final QuerySubscriber subscriber;
 
     public BoltQueryExecutionImpl( FabricExecutionStatementResult statementResult, QuerySubscriber subscriber, FabricConfig fabricConfig )
     {
+        this.subscriber = subscriber;
         var config = fabricConfig.getDataStream();
         var rx2SyncStream = new Rx2SyncStream( statementResult.records(), config.getBatchSize() );
         queryExecution =
                 new QueryExecutionImpl( rx2SyncStream, subscriber, statementResult.columns(), statementResult.summary(), statementResult.queryExecutionType() );
+    }
+
+    public void initialize() throws Exception
+    {
+        // Mimic eager execution as triggered in org.neo4j.cypher.internal.result.StandardInternalExecutionResult
+
+        boolean isWriteOnly = queryExecution.executionType().queryType() == QueryExecutionType.QueryType.WRITE;
+        boolean isReadOnly = queryExecution.executionType().queryType() == QueryExecutionType.QueryType.READ_ONLY;
+        boolean noResult = queryExecution.fieldNames().length == 0;
+
+        boolean triggerArtificialDemand = isWriteOnly || noResult;
+
+        if ( triggerArtificialDemand )
+        {
+            queryExecution.request( 1 );
+            queryExecution.await();
+        }
+
+        if (subscriber instanceof ResultSubscriber && !isReadOnly)
+        {
+            ((ResultSubscriber) subscriber).materialize( queryExecution );
+        }
     }
 
     @Override

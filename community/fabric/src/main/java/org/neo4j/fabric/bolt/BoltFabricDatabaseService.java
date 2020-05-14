@@ -60,11 +60,11 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
 
     public BoltFabricDatabaseService( NamedDatabaseId namedDatabaseId,
-            FabricExecutor fabricExecutor,
-            FabricConfig config,
-            TransactionManager transactionManager,
-            LocalGraphTransactionIdTracker transactionIdTracker,
-            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
+                                      FabricExecutor fabricExecutor,
+                                      FabricConfig config,
+                                      TransactionManager transactionManager,
+                                      LocalGraphTransactionIdTracker transactionIdTracker,
+                                      TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.config = config;
@@ -76,7 +76,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
 
     @Override
     public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
-            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
+                                             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
     {
         if ( txTimeout == null )
         {
@@ -161,7 +161,16 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
         public BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber )
         {
             FabricExecutionStatementResult statementResult = fabricExecutor.run( fabricTransaction, query, parameters );
-            return new BoltQueryExecutionImpl( statementResult, subscriber, config );
+            final BoltQueryExecutionImpl queryExecution = new BoltQueryExecutionImpl( statementResult, subscriber, config );
+            try
+            {
+                queryExecution.initialize();
+            }
+            catch ( Exception e )
+            {
+                QuerySubscriber.safelyOnError( subscriber, e );
+            }
+            return queryExecution;
         }
 
         /**
