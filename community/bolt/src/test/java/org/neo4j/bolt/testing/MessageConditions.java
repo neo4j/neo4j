@@ -191,6 +191,41 @@ public class MessageConditions
         };
     }
 
+    /**
+     * Validates both cases and fails only if neither of them succeed (Used because fabric returns a more specific error status in one case)
+     */
+    public static Consumer<ResponseMessage> either( final Consumer<ResponseMessage> caseA, final Consumer<ResponseMessage> caseB )
+    {
+        return message ->
+        {
+            AssertionError errorA = null;
+            AssertionError errorB = null;
+            try
+            {
+                caseA.accept( message );
+            }
+            catch ( AssertionError e )
+            {
+                errorA = e;
+            }
+            try
+            {
+                caseB.accept( message );
+            }
+            catch ( AssertionError e )
+            {
+                errorB = e;
+            }
+            if ( errorA != null && errorB != null )
+            {
+                var err = new AssertionError( "Neither case matched" );
+                err.addSuppressed( errorA );
+                err.addSuppressed( errorB );
+                throw err;
+            }
+        };
+    }
+
     public static byte[] serialize( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
     {
         RecordingByteChannel rawData = new RecordingByteChannel();

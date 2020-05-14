@@ -63,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
+import static org.neo4j.bolt.testing.MessageConditions.either;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
@@ -137,7 +138,8 @@ public class ShutdownSequenceIT
         // Expect the connection to have the following interactions
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) );
+                either( msgFailure( Status.Transaction.Terminated, "The transaction has been terminated" ),
+                        msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
@@ -184,7 +186,8 @@ public class ShutdownSequenceIT
         Condition<AnyValue> equalRecord = new Condition<>( record -> record.equals( stringValue( "0" ) ), "Equal record" );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( equalRecord ) ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives(
-                msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) );
+                either( msgFailure( Status.Transaction.TransactionCommitFailed, "Explicitly terminated by the user." ),
+                        msgFailure( Status.General.UnknownError, "The transaction has been terminated" ) ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
         assertThat( internalLogProvider ).forClass( ExecutorBoltScheduler.class )
                 .forLevel( DEBUG ).containsMessages( "Thread pool shut down" );
