@@ -39,6 +39,7 @@ import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -50,6 +51,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
@@ -483,6 +485,8 @@ public class BoltV3TransportIT extends BoltV3TransportBase
     @Test
     public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
     {
+        assumeFalse( FabricDatabaseManager.fabricByDefault() );
+
         negotiateBoltV3();
 
         // bookmark is expected to advance once the auto-commit transaction is committed

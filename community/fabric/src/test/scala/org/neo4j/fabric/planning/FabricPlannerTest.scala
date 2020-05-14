@@ -74,7 +74,7 @@ class FabricPlannerTest
     with FragmentTestUtils
     with TableDrivenPropertyChecks {
 
-  private def makeConfig(fabricDbName: String) = new FabricConfig(Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0) ) {
+  private def makeConfig(fabricDbName: String) = new FabricConfig(Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false ) {
 
     override def getFabricDatabaseName: Optional[NormalizedDatabaseName] = Optional.of(new NormalizedDatabaseName(fabricDbName))
   }

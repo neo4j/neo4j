@@ -44,6 +44,7 @@ import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.bolt.v41.BoltProtocolV41;
+import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -54,6 +55,7 @@ import org.neo4j.values.AnyValue;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
@@ -105,6 +107,8 @@ public class BoltV41TransportIT
     @Test
     public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
     {
+        assumeFalse( FabricDatabaseManager.fabricByDefault() );
+
         negotiateBoltV41();
 
         // bookmark is expected to advance once the auto-commit transaction is committed
@@ -122,6 +126,8 @@ public class BoltV41TransportIT
     @Test
     public void shouldReturnUpdatedBookmarkAfterExplicitTransaction() throws Throwable
     {
+        assumeFalse( FabricDatabaseManager.fabricByDefault() );
+
         negotiateBoltV41();
 
         // bookmark is expected to advance once the auto-commit transaction is committed

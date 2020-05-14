@@ -34,11 +34,17 @@ public abstract class FabricDatabaseManager
 
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
+    private final boolean multiGraphEverywhere = fabricByDefault();
 
     public FabricDatabaseManager( DatabaseManager<DatabaseContext> databaseManager )
     {
         this.databaseManager = databaseManager;
         this.databaseIdRepository = databaseManager.databaseIdRepository();
+    }
+
+    public static boolean fabricByDefault()
+    {
+        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, false );
     }
 
     public DatabaseIdRepository databaseIdRepository()
@@ -53,7 +59,7 @@ public abstract class FabricDatabaseManager
 
     private boolean multiGraphCapabilitiesEnabledForAllDatabases()
     {
-        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, false );
+        return multiGraphEverywhere;
     }
 
     public GraphDatabaseFacade getDatabase( String databaseNameRaw ) throws UnavailableException
