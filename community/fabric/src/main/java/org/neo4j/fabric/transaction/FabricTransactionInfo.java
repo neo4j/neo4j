@@ -34,7 +34,7 @@ public class FabricTransactionInfo
     private final String databaseName;
     private final boolean implicitTransaction;
     private final Duration txTimeout;
-    private final Map<String,Object> txMetadata;
+    private Map<String,Object> txMetadata;
 
     public FabricTransactionInfo( AccessMode accessMode,
             LoginContext loginContext,
@@ -86,5 +86,10 @@ public class FabricTransactionInfo
     public Map<String,Object> getTxMetadata()
     {
         return txMetadata;
+    }
+
+    public void setMetaData( Map<String,Object> txMeta )
+    {
+        txMetadata = txMeta;
     }
 }

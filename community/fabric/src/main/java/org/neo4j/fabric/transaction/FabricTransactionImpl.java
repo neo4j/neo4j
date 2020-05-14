@@ -385,6 +385,16 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     }
 
     @Override
+    public void setMetaData( Map<String,Object> txMeta )
+    {
+        transactionInfo.setMetaData( txMeta );
+        for ( InternalTransaction internalTransaction : getInternalTransactions() )
+        {
+            internalTransaction.setMetaData( txMeta );
+        }
+    }
+
+    @Override
     public <TX extends SingleDbTransaction> TX startWritingTransaction( Location location, Supplier<TX> writeTransactionSupplier ) throws FabricException
     {
         exclusiveLock.lock();

@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.transaction;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -50,6 +51,8 @@ public interface FabricTransaction
     void setLastSubmittedStatement( StatementLifecycle statement );
 
     Optional<StatementLifecycle> getLastSubmittedStatement();
+
+    void setMetaData( Map<String, Object> txMeta );
 
     interface FabricExecutionContext
     {

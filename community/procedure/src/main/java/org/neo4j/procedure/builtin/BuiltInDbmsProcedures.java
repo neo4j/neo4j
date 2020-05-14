@@ -34,6 +34,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
@@ -151,7 +152,14 @@ public class BuiltInDbmsProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        ((InternalTransaction) transaction).setMetaData( data );
+        InternalTransaction internalTransaction = (InternalTransaction) this.transaction;
+
+        graph.getDependencyResolver().resolveDependency( TransactionManager.class )
+             .findTransactionContaining( internalTransaction )
+             .ifPresentOrElse(
+                     parent -> parent.setMetaData( data ),
+                     () -> internalTransaction.setMetaData( data )
+             );
     }
 
     @SystemProcedure
