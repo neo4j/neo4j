@@ -294,7 +294,7 @@ case class TableRow(tree: String, allColumns: Map[String, Cell], connection: Opt
 
 sealed abstract class Cell {
   val lines: Seq[String]
-  def length: Int = lines.maxBy(_.length).length
+  def length: Int = if (lines.nonEmpty) lines.maxBy(_.length).length else 0
 }
 case class LeftJustifiedCell(lines: String*) extends Cell
 case class RightJustifiedCell(lines: String*) extends Cell
