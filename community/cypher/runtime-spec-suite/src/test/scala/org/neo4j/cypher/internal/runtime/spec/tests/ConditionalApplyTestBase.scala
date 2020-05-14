@@ -22,9 +22,12 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],
@@ -104,7 +107,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     given {
       nodeGraph(sizeHint)
-      nodeGraph(3, "RHS")
+      nodeGraph(sizeHint, "RHS")
     }
     val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
 
@@ -119,7 +122,8 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-    runtimeResult should beColumns("x").withRows(Seq(Array("42"), Array("42"), Array("42"), Array[Any](null), Array("43"), Array("43"), Array("43")))
+    val expected = (Seq.fill(sizeHint)(Array[Any]("42")) :+ Array[Any](null)) ++ Seq.fill(sizeHint)(Array[Any]("43"))
+    runtimeResult should beColumns("x").withRows(expected)
   }
 
   test("conditional apply on non-nullable node") {
@@ -135,7 +139,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .conditionalApply("x")
       .|.limit(limit)
       .|.expand("(y)--(z)")
-      .|.nodeByLabelScan("y", "L", "x")
+      .|.nodeByLabelScan("y", "L", IndexOrderNone, "x")
       .allNodeScan("x")
       .build()
 
@@ -144,6 +148,217 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     //then
     runtimeResult should beColumns("x").withRows(nodes.flatMap(n => Seq.fill(limit)(Array[Any](n))))
-
   }
+
+  test("conditional apply on the RHS of an apply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.conditionalApply("x")
+      .|.|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.filter("x = '42' OR x IS NULL")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected = Seq.fill(sizeHint)(Array[Any]("42")) :+ Array[Any](null)
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("conditional apply with limit on rhs") {
+    val limit = 10
+
+    val unfilteredNodes = given {
+      val size = 100
+      val nodes = nodeGraph(size)
+      randomlyConnect(nodes, Connectivity(1, limit, "REL"))
+      nodes
+    }
+
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.limit(limit)
+      .|.expandInto("(y)--(x)")
+      .|.allNodeScan("y", "x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expectedRowCountsFromRhs = for {
+      x <- nodes
+      if x != null
+      subquery = for {
+        y <- unfilteredNodes
+        rel <- y.getRelationships.asScala if rel.getOtherNode(y) == x
+      } yield Array(x)
+    } yield math.min(subquery.size, limit)
+
+    val expectedRowCount = expectedRowCountsFromRhs.sum + nodes.count(_ == null)
+    runtimeResult should beColumns("x").withRows(rowCount(expectedRowCount))
+  }
+
+  test("should support limit on top of conditional apply") {
+    // given
+    val nodesPerLabel = 50
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val limit = nodesPerLabel * nodesPerLabel - 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(limit)
+      .conditionalApply("x")
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x").withRows(rowCount(limit))
+  }
+
+  test("should support reduce -> limit on the RHS of apply") {
+    // given
+    val nodesPerLabel = 100
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.limit(10)
+      .|.sort(Seq(Ascending("y")))
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for{
+      x <- aNodes
+      _ <- 1 to 10
+    } yield Array[Any](x)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("counts")
+      .aggregation(Seq.empty, Seq("collect(c) AS counts"))
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expand("(x)-[:R]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x","A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map(_ => limit).toArray
+
+    runtimeResult should beColumns("counts").withSingleRow(expected)
+  }
+
+  test("should aggregate with no grouping on top of conditional apply with expand on RHS") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("xs")
+      .aggregation(Seq.empty, Seq("count(x) AS xs"))
+      .conditionalApply("x")
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x","A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("xs").withSingleRow(aNodes.size * bNodes.size)
+  }
+
+  test("should aggregate on top of conditional apply with expand on RHS") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "xs")
+      .aggregation(Seq("x AS x"), Seq("count(x) AS xs"))
+      .conditionalApply("x")
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x","A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = aNodes.map(x => Array[Any](x, bNodes.size))
+    runtimeResult should beColumns("x", "xs").withRows(expected)
+  }
+
+  test("should aggregate on top of conditional apply with expand on RHS with nulls") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R",
+      { case i if i % 2 == 0 => Map("prop" -> i)})}
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "xs")
+      .aggregation(Seq("x AS x"), Seq("count(x) AS xs"))
+      .conditionalApply("prop")
+      .|.expandAll("(x)-->(y)")
+      .|.argument("x")
+      .projection("x AS x", "x.prop AS prop")
+      .nodeByLabelScan("x","A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = aNodes.map {
+      case x if x.hasProperty("prop") => Array[Any](x, bNodes.size)
+      case x  => Array[Any](x, 1)
+    }
+    runtimeResult should beColumns("x", "xs").withRows(expected)
+  }
+
 }

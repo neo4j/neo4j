@@ -234,7 +234,6 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(rowCount(expectedRowCount))
   }
 
-
   test("apply union with aliased variables") {
     // given
     val lhsRows = inputValues()
