@@ -165,9 +165,30 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("should not plan a count for rel count with both ended labels and rel type") {
-
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r:X]-(:Label2)", "r")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a count when node variable is a dependency") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = {
+      val plannerQuery = producePlannerQuery("MATCH (n:Label)", "n")
+      val qg = plannerQuery.queryGraph
+      plannerQuery.withQueryGraph(qg.addArgumentId("n"))
+    }
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a count when rel variable is a dependency") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = {
+      val plannerQuery = producePlannerQuery("MATCH (n)-[r:REL]->(m)", "r")
+      val qg = plannerQuery.queryGraph
+      plannerQuery.withQueryGraph(qg.addArgumentId("r"))
+    }
 
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
