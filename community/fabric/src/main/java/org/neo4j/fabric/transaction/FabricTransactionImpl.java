@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +44,7 @@ import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.fabric.planning.StatementType;
@@ -153,7 +155,11 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             // the transaction has failed and been rolled back as part of the failure clean up
             if ( terminated )
             {
-                throw new FabricException( Status.Transaction.TransactionCommitFailed, "Trying to commit terminated transaction" );
+                // Wait for all children to be rolled back. Ignore errors
+                doOnChildren( readingTransactions, writingTransaction, SingleDbTransaction::rollback );
+
+                var reason = getReasonIfTerminated().map( s -> s.code().description() ).orElse( "Trying to commit terminated transaction" );
+                throw new FabricException( Status.Transaction.TransactionCommitFailed, reason );
             }
             terminated = true;
 
@@ -165,49 +171,21 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             {
                 cancelTimeout();
 
-                List<Throwable> readFailures = Flux
-                        .fromIterable( readingTransactions )
-                        .map( txWrapper -> txWrapper.singleDbTransaction )
-                        .flatMap( tx -> catchErrors( tx.commit() ) )
-                        .doOnNext( err -> userLog.error( "Failed to commit a child read transaction", err ) )
-                        .collectList()
-                        .block();
+                allFailures.addAll( doOnChildren( readingTransactions, null, SingleDbTransaction::commit ) );
+                allFailures.forEach( err -> userLog.error( "Failed to commit a child read transaction", err ) );
 
-                if ( readFailures != null )
-                {
-                    allFailures.addAll( readFailures );
-                }
-
+                List<Throwable> errors;
                 if ( !allFailures.isEmpty() )
                 {
-                    if ( writingTransaction != null )
-                    {
-                        try
-                        {
-                            writingTransaction.rollback().block();
-                        }
-                        catch ( Exception writeRollbackException )
-                        {
-                            userLog.error( "Failed to rollback a child write transaction", writeRollbackException );
-                            allFailures.add( writeRollbackException );
-                        }
-                    }
+                    errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::rollback );
+                    errors.forEach( err ->  userLog.error( "Failed to rollback a child write transaction", err ) );
                 }
                 else
                 {
-                    if ( writingTransaction != null )
-                    {
-                        try
-                        {
-                            writingTransaction.commit().block();
-                        }
-                        catch ( Exception writeCommitException )
-                        {
-                            userLog.error( "Failed to commit a child write transaction", writeCommitException );
-                            allFailures.add( writeCommitException );
-                        }
-                    }
+                    errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::commit );
+                    errors.forEach( err ->  userLog.error( "Failed to commit a child write transaction", err ) );
                 }
+                allFailures.addAll( errors );
             }
             catch ( Exception e )
             {
@@ -242,6 +220,13 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 return;
             }
 
+            if (terminated)
+            {
+                // Wait for all children to be rolled back. Ignore errors
+                doOnChildren( readingTransactions, writingTransaction, SingleDbTransaction::rollback );
+                return;
+            }
+
             doRollback( SingleDbTransaction::rollback );
         }
         finally
@@ -252,12 +237,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
     private void doRollback( Function<SingleDbTransaction, Mono<Void>> operation )
     {
-        // the transaction has already been rolled back as part of the failure clean up
-        if ( terminated )
-        {
-            return;
-        }
-
         terminated = true;
         internalLog.debug( "Rolling back transaction %d", id );
 
@@ -267,19 +246,8 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         {
             cancelTimeout();
 
-            var failures = Flux
-                    .fromIterable( readingTransactions )
-                    .map( txWrapper -> txWrapper.singleDbTransaction )
-                    .concatWith( Mono.justOrEmpty( writingTransaction ) )
-                    .flatMap( tx -> catchErrors( operation.apply( tx ) ) )
-                    .doOnNext( err -> userLog.error( "Failed to rollback a child read transaction", err ) )
-                    .collectList()
-                    .block();
-
-            if ( failures != null )
-            {
-                allFailures.addAll( failures );
-            }
+            allFailures.addAll( doOnChildren( readingTransactions, writingTransaction, operation ) );
+            allFailures.forEach( err -> userLog.error( "Failed to rollback a child read transaction", err ) );
         }
         catch ( Exception e )
         {
@@ -295,6 +263,21 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         throwIfNonEmpty( allFailures, this::rollbackFailedError );
 
         internalLog.debug( "Transaction %d rolled back", id );
+    }
+
+    private List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
+                                          SingleDbTransaction writingTransaction,
+                                          Function<SingleDbTransaction, Mono<Void>> operation )
+    {
+        var failures = Flux
+                .fromIterable( readingTransactions )
+                .map( txWrapper -> txWrapper.singleDbTransaction )
+                .concatWith( Mono.justOrEmpty( writingTransaction ) )
+                .flatMap( tx -> catchErrors( operation.apply( tx ) ) )
+                .collectList()
+                .block();
+
+        return failures == null ? List.of() : failures;
     }
 
     private Mono<Throwable> catchErrors( Mono<Void> action )
