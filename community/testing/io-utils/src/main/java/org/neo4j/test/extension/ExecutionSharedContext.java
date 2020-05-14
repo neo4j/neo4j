@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ExecutionSharedContext
 {
     public static final String SHARED_RESOURCE = "sharedContext";
-    static final String FAILED_TEST_FILE_KEY = "failedFileName";
+    static final String CREATED_TEST_FILE_PAIRS_KEY = "createdTestFilePairs";
     static final String LOCKED_TEST_FILE_KEY = "lockedFileName";
     static final String SUCCESSFUL_TEST_FILE_KEY = "successfulFileName";
     private static final ConcurrentHashMap<String,Object> map = new ConcurrentHashMap<>();

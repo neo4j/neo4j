@@ -35,7 +35,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -52,7 +54,7 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
-import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
@@ -100,7 +102,7 @@ class TestDirectoryExtensionTestSupport
     {
         CONTEXT.clear();
         execute( "failAndKeepDirectory" );
-        File failedFile = CONTEXT.getValue( FAILED_TEST_FILE_KEY );
+        File failedFile = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
         assertNotNull( failedFile );
         assertTrue( failedFile.exists() );
     }
@@ -134,11 +136,38 @@ class TestDirectoryExtensionTestSupport
     @Test
     void failedTestShouldKeepDirectoryInPerClassLifecycle()
     {
+        List<Pair<File,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class, 6 );
+        for ( var pair : pairs )
+        {
+            assertThat( pair.first() ).exists();
+        }
+    }
+
+    @Test
+    void failedTestShouldNotKeepDirectoryInPerMethodLifecycle()
+    {
+        List<Pair<File,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerMethodTest.class, 6 );
+        for ( var pair : pairs )
+        {
+            if ( pair.other() )
+            {
+                assertThat( pair.first() ).exists();
+            }
+            else
+            {
+                assertThat( pair.first() ).doesNotExist();
+            }
+        }
+    }
+
+    private static List<Pair<File,Boolean>> executeAndReturnCreatedFiles( Class testClass, int count )
+    {
         CONTEXT.clear();
-        executeClass( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class );
-        File failedFile = CONTEXT.getValue( FAILED_TEST_FILE_KEY );
-        assertNotNull( failedFile );
-        assertTrue( failedFile.exists() );
+        executeClass( testClass );
+        List<Pair<File,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+        assertNotNull( pairs );
+        assertThat( pairs.size() ).isEqualTo( count );
+        return pairs;
     }
 
     private static void execute( String testName, TestExecutionListener... testExecutionListeners )

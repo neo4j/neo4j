@@ -93,7 +93,7 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
 
     public void prepare( ExtensionContext context ) throws IOException
     {
-        String name = context.getTestMethod().map( Method::getName )
+        String name = context.getTestMethod().map( method -> method.getName().concat( context.getDisplayName() ) )
                 .orElseGet( () -> context.getRequiredTestClass().getSimpleName() );
         TestDirectory testDirectory = getStoredValue( context );
         testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
@@ -104,7 +104,8 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
         TestDirectory testDirectory = getStoredValue( context );
         try
         {
-            testDirectory.complete( context.getExecutionException().isEmpty() && !isFailed( context ) );
+            testDirectory.complete( context.getExecutionException().isEmpty() &&
+                                    !hasFailureMarker( context ) );
         }
         catch ( Exception e )
         {
@@ -141,14 +142,18 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     @Override
     public void handleTestExecutionException( ExtensionContext context, Throwable throwable ) throws Throwable
     {
-        var store = getTestDirectoryStore( context );
-        store.put( FAILURE_MARKER, TRUE );
+        if ( getLifecycle( context ) == PER_CLASS )
+        {
+            var store = getTestDirectoryStore( context );
+            store.put( FAILURE_MARKER, TRUE );
+        }
         throw throwable;
     }
 
-    private boolean isFailed( ExtensionContext context )
+    private boolean hasFailureMarker( ExtensionContext context )
     {
-        return getLocalStore( context ).get( FAILURE_MARKER ) != null;
+        return getLifecycle( context ) == PER_CLASS &&
+               getLocalStore( context ).get( FAILURE_MARKER ) != null;
     }
 
     private ExtensionContext.Store getTestDirectoryStore( ExtensionContext context )
