@@ -122,15 +122,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
             }
             else if ( (mayUpgrade && status == Status.REQUIRES_UPGRADE) || status == Status.UNSUPPORTED_BUT_CAN_UPGRADE )
             {
-                try ( Transaction tx = system.beginTx() )
-                {
-                    Optional<Exception> maybeException = upgradeToCurrent( tx );
-                    tx.commit();
-                    if ( maybeException.isPresent() )
-                    {
-                        return maybeException;
-                    }
-                }
+                return upgradeToCurrent( system );
             }
             else
             {

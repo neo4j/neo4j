@@ -21,8 +21,12 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
 /**
  * The system database is used to store information of interest to many parts of the DBMS. Each sub-graph can be thought of as being of primary interest to (or
@@ -120,5 +124,20 @@ public interface SystemGraphComponent
      *
      * @return Any possible error raised by the upgrade process
      */
-    Optional<Exception> upgradeToCurrent( Transaction tx );
+    Optional<Exception> upgradeToCurrent( GraphDatabaseService system );
+
+    static Optional<Exception> executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer )
+    {
+        try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
+              KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
+        {
+            consumer.accept( tx );
+            tx.commit();
+            return Optional.empty();
+        }
+        catch ( Exception e )
+        {
+            return Optional.of( e );
+        }
+    }
 }

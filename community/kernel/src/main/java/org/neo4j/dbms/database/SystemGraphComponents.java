@@ -20,14 +20,11 @@
 package org.neo4j.dbms.database;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -55,6 +52,7 @@ public class SystemGraphComponents implements SystemGraphComponent
         components.add( initializer );
     }
 
+    @SuppressWarnings( "WeakerAccess" )
     public void deregister( String key )
     {
         SystemGraphComponent removed = componentMap.remove( key );
@@ -104,33 +102,33 @@ public class SystemGraphComponents implements SystemGraphComponent
         return Optional.empty();
     }
 
-    public Optional<Exception> upgradeToCurrent( Transaction tx )
+    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
     {
-        return processWith( tx, c -> c.upgradeToCurrent( tx ), "upgrade", SystemGraphComponent.Status.REQUIRES_UPGRADE,
-                SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE );
-    }
+        List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
+        SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->
+        {
+            Status status = c.detect( tx );
+            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE;
+        } ).forEach( componentsToUpgrade::add ) );
 
-    @SuppressWarnings( "SameParameterValue" )
-    private Optional<Exception> processWith( Transaction tx, Consumer<SystemGraphComponent> process, String verb, SystemGraphComponent.Status... statuses )
-    {
-        Function<SystemGraphComponent,Boolean> statusMatches = c ->
+        List<Exception> errors = new ArrayList<>();
+        for ( SystemGraphComponent component : componentsToUpgrade )
         {
-            SystemGraphComponent.Status detected = c.detect( tx );
-            return Arrays.stream( statuses ).anyMatch( s -> detected == s );
-        };
-        List<IllegalStateException> errors = components.stream().filter( statusMatches::apply ).flatMap( initializer ->
-        {
-            try
+            Optional<Exception> error = SystemGraphComponent.executeWithFullAccess( system, tx ->
             {
-                process.accept( initializer );
-            }
-            catch ( Exception e )
-            {
-                return Stream.of( new IllegalStateException(
-                                String.format( "Failed to %s system graph component '%s': %s", verb, initializer.component(), e.getMessage() ), e ) );
-            }
-            return Stream.empty();
-        } ).collect( Collectors.toList() );
+                try
+                {
+                    component.upgradeToCurrent( system );
+                }
+                catch ( Exception e )
+                {
+                    throw new IllegalStateException(
+                            String.format( "Failed to upgrade system graph component '%s': %s", component.component(), e.getMessage() ), e );
+                }
+            } );
+            error.ifPresent( errors::add );
+        }
+
         if ( !errors.isEmpty() )
         {
             if ( errors.size() == 1 )
@@ -139,7 +137,7 @@ public class SystemGraphComponents implements SystemGraphComponent
             }
             else
             {
-                StringBuilder sb = new StringBuilder( String.format( "Multiple components failed to %s the system graph:", verb ) );
+                StringBuilder sb = new StringBuilder( String.format( "Multiple components failed to %s the system graph:", "upgrade" ) );
                 errors.forEach( e -> sb.append( "\n\t" ).append( e.toString() ) );
                 return Optional.of( new IllegalStateException( sb.toString() ) );
             }

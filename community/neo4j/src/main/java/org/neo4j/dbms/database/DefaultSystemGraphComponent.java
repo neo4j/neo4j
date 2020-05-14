@@ -96,7 +96,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( Transaction tx )
+    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
     {
         return Optional.empty();
     }

@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -99,38 +100,26 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( Transaction tx )
+    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
     {
-        KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
-        if ( component.version == NoUserSecurityGraph.VERSION )
+        return SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
-            try
+            KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+            if ( currentVersion.version == NoUserSecurityGraph.VERSION )
             {
                 initializeLatestSystemGraph( tx );
             }
-            catch ( Exception e )
-            {
-                return Optional.of( e );
-            }
-        }
-        else
-        {
-            if ( component.migrationSupported() )
-            {
-                try
-                {
-                    component.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestSecurityGraphVersion() );
-                }
-                catch ( Exception e )
-                {
-                    return Optional.of( e );
-                }
-            }
             else
             {
-                return Optional.of( component.unsupported() );
+                if ( currentVersion.migrationSupported() )
+                {
+                    currentVersion.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestSecurityGraphVersion() );
+                }
+                else
+                {
+                    throw currentVersion.unsupported();
+                }
             }
-        }
-        return Optional.empty();
+        } );
     }
 }
