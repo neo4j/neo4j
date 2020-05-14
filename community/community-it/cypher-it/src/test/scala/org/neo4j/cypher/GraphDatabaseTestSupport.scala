@@ -24,7 +24,8 @@ import java.nio.file.Files
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
@@ -32,14 +33,20 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.procs._
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.Kernel
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
-import org.neo4j.kernel.api.{Kernel, KernelTransaction}
+import org.neo4j.kernel.api.procedure.CallableProcedure
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
+import org.neo4j.kernel.api.procedure.CallableUserFunction
+import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.logging.LogProvider
+import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -236,13 +243,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def relate(a: Node, b: Node, pk: (String, Any)*): Relationship = relate(a, b, "REL", pk.toMap)
 
   def relate(n1: Node, n2: Node, relType: String, name: String): Relationship = relate(n1, n2, relType, Map("name" -> name))
-
-  def relate(a: Node, b: Node, c: Node*) {
-    (Seq(a, b) ++ c).reduce((n1, n2) => {
-      relate(n1, n2)
-      n2
-    })
-  }
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = inTestTx( tx => {
     val r = tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n2.getId), RelationshipType.withName(relType))
