@@ -66,6 +66,15 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         this.map = newMap( scopedMemoryTracker );
     }
 
+    /**
+     * Get and return the value in the Map at the specified key. Alternatively, if there is no value in the map for that key
+     * return the result of evaluating the specified Function given the internal scoped memory tracker, and put that value in the
+     * map at the specified key.
+     *
+     * @param key The key to look up or insert a new value for
+     * @param function A function that takes a memory tracker and returns a value.
+     * @return The value for the given key
+     */
     public V getIfAbsentPutWithMemoryTracker( K key, Function<MemoryTracker,? extends V> function )
     {
         return map.getIfAbsentPutWith( key, p ->
@@ -110,6 +119,10 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     /**
      * After calling this you can only consume the existing entries through the returned iterator.
      * The map will be closed and no further entries can be added.
+     *
+     * When the iterator is exhausted it will call close() automatically.
+     * (Everything allocated by the function given to getIfAbsentPutWithMemoryTracker() will then
+     *  also be released when the scoped memory tracker is closed.)
      */
     public Iterator<Map.Entry<K, V>> autoClosingEntryIterator()
     {
