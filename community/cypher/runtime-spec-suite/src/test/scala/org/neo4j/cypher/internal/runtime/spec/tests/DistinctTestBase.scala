@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Direction.OUTGOING
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
                                                             edition: Edition[CONTEXT],
@@ -47,6 +50,63 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x").withRows(input.flatten)
+  }
+
+  test("should work on distinct on single primitive node column") {
+    // given
+    val nodes = given {nodeGraph(sizeHint)}
+    val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .distinct("x AS x")
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputNodes)
+
+    // then
+    runtimeResult should beColumns("x").withRows(nodes.map(Array[Any](_)))
+  }
+
+  test("should work on distinct on single primitive relationship column") {
+    // given
+    val (_, relationships) = given {circleGraph(sizeHint)}
+    val inputNodes = inputValues(relationships.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .distinct("x AS x")
+      .input(relationships = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputNodes)
+
+    // then
+    runtimeResult should beColumns("x").withRows(relationships.map(Array[Any](_)))
+  }
+
+  test("should work on distinct on multiple primitive columns") {
+    // given
+    val (nodes, relationships) = given {circleGraph(sizeHint)}
+    val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r")
+      .distinct("x AS x", "r AS r")
+      .expand("(x)-[r]->(y)")
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputNodes)
+
+    val expected = for {n <- nodes
+                        r <- n.getRelationships(OUTGOING).asScala} yield Array[Any](n, r)
+    // then
+    runtimeResult should beColumns("x", "r").withRows(expected)
   }
 
   test("should work on input with no projection, one column") {
