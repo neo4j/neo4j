@@ -363,7 +363,11 @@ public class FabricExecutor
                                         Flux<Record> input )
         {
 
-            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, lifecycle, query, parameters, input );
+            ExecutionOptions executionOptions = plan.inFabricContext()
+                                                ? new ExecutionOptions( location.getGraphId() )
+                                                : new ExecutionOptions();
+
+            StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, lifecycle, query, parameters, input, executionOptions );
             Flux<Record> records = localStatementResult.records().doOnComplete( () -> localStatementResult.summary().subscribe( this::updateSummary ) );
 
             Mono<ExecutionPlanDescription> planDescription =

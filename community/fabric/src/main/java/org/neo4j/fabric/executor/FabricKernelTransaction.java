@@ -31,18 +31,18 @@ import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.InputDataStreamImpl;
+import org.neo4j.fabric.stream.QuerySubject;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.Rx2SyncStream;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.StatementResults;
+import org.neo4j.fabric.stream.StatementResults.SubscribableExecution;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
-import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.values.virtual.MapValue;
@@ -64,36 +64,46 @@ public class FabricKernelTransaction
         this.config = config;
     }
 
-    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input, StatementLifecycle parentLifecycle )
+    public StatementResult run( FullyParsedQuery query, MapValue params, Flux<Record> input,
+                                StatementLifecycle parentLifecycle, ExecutionOptions executionOptions )
     {
         var childExecutionContext = makeChildTransactionalContext( parentLifecycle );
         var childQueryMonitor = parentLifecycle.getChildQueryMonitor();
         openExecutionContexts.add( childExecutionContext );
 
-        var result = StatementResults.create( subscriber -> execute( query, params, childExecutionContext, convert( input ), childQueryMonitor, subscriber ) );
+        SubscribableExecution execution = execute( query, params, childExecutionContext, convert( input ), childQueryMonitor );
+
+        QuerySubject subject = executionOptions.addSourceTag()
+                               ? new QuerySubject.TaggingQuerySubject( executionOptions.sourceId() )
+                               : new QuerySubject.BasicQuerySubject();
+
+        StatementResult result = StatementResults.connectVia( execution, subject );
         return new ContextClosingResultInterceptor( result, childExecutionContext );
     }
 
-    private QueryExecution execute( FullyParsedQuery query, MapValue params, TransactionalContext executionContext, InputDataStream input,
-                                    QueryExecutionMonitor queryMonitor, QuerySubscriber subscriber )
+    private SubscribableExecution execute( FullyParsedQuery query, MapValue params, TransactionalContext executionContext, InputDataStream input,
+                                           QueryExecutionMonitor queryMonitor )
     {
-        try
+        return subscriber ->
         {
-            return queryExecutionEngine.executeQuery( query, params, executionContext, true, input, queryMonitor, subscriber );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            // all exception thrown from execution engine are wrapped in QueryExecutionKernelException,
-            // let's see if there is something better hidden in it
-            if ( e.getCause() == null )
+            try
             {
-                throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
+                return queryExecutionEngine.executeQuery( query, params, executionContext, true, input, queryMonitor, subscriber );
             }
-            else
+            catch ( QueryExecutionKernelException e )
             {
-                throw Exceptions.transform( Status.Statement.ExecutionFailed, e.getCause() );
+                // all exception thrown from execution engine are wrapped in QueryExecutionKernelException,
+                // let's see if there is something better hidden in it
+                if ( e.getCause() == null )
+                {
+                    throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
+                }
+                else
+                {
+                    throw Exceptions.transform( Status.Statement.ExecutionFailed, e.getCause() );
+                }
             }
-        }
+        };
     }
 
     private TransactionalContext makeChildTransactionalContext( StatementLifecycle lifecycle )

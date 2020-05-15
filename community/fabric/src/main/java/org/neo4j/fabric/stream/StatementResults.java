@@ -19,26 +19,18 @@
  */
 package org.neo4j.fabric.stream;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-import org.neo4j.fabric.executor.FabricException;
-import org.neo4j.fabric.executor.LocalExecutionSummary;
-import org.neo4j.fabric.stream.summary.EmptySummary;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
-import org.neo4j.values.AnyValue;
 
 public final class StatementResults
 {
@@ -59,15 +51,14 @@ public final class StatementResults
         return new BasicStatementResult( Flux.empty(), Flux.just( Records.empty() ), Mono.empty(), Mono.empty() );
     }
 
-    public static StatementResult create( Function<QuerySubscriber,QueryExecution> execution )
+    public static StatementResult connectVia( SubscribableExecution execution, QuerySubject subject )
     {
-        QuerySubject querySubject = new QuerySubject();
-        QueryExecution queryExecution = execution.apply( querySubject );
-        querySubject.setQueryExecution( queryExecution );
+        QueryExecution queryExecution = execution.subscribe( subject );
+        subject.setQueryExecution( queryExecution );
         return create(
                 Flux.fromArray( queryExecution.fieldNames() ),
-                Flux.from( querySubject ),
-                querySubject.getSummary(),
+                Flux.from( subject ),
+                subject.getSummary(),
                 Mono.just( queryExecution.executionType() )
         );
     }
@@ -157,224 +148,9 @@ public final class StatementResults
         }
     }
 
-    private static class QuerySubject extends RecordQuerySubscriber implements Publisher<Record>
+    @FunctionalInterface
+    public interface SubscribableExecution
     {
-        private final CompletableFuture<Summary> summaryFuture = new CompletableFuture<>();
-
-        private Subscriber<? super Record> subscriber;
-        private QueryExecution queryExecution;
-        private QueryStatistics statistics;
-        private Throwable cachedError;
-        private boolean cachedCompleted;
-        private boolean errorReceived;
-
-        void setQueryExecution( QueryExecution queryExecution )
-        {
-            this.queryExecution = queryExecution;
-        }
-
-        Mono<Summary> getSummary()
-        {
-            return Mono.fromFuture( summaryFuture );
-        }
-
-        @Override
-        public void onNext( Record record )
-        {
-            subscriber.onNext( record );
-        }
-
-        @Override
-        public void onError( Throwable throwable )
-        {
-            errorReceived = true;
-
-            if ( subscriber == null )
-            {
-                cachedError = throwable;
-            }
-            else
-            {
-                subscriber.onError( throwable );
-            }
-
-            summaryFuture.completeExceptionally( throwable );
-        }
-
-        @Override
-        public void onResultCompleted( QueryStatistics statistics )
-        {
-            this.statistics = statistics;
-            if ( subscriber == null )
-            {
-                cachedCompleted = true;
-            }
-            else
-            {
-                subscriber.onComplete();
-                completeSummary();
-            }
-        }
-
-        private void completeSummary()
-        {
-            summaryFuture.complete( new LocalExecutionSummary( queryExecution, statistics ) );
-        }
-
-        @Override
-        public void subscribe( Subscriber<? super Record> subscriber )
-        {
-
-            if ( this.subscriber != null )
-            {
-                throw new FabricException( Status.General.UnknownError, "Already subscribed" );
-            }
-            this.subscriber = subscriber;
-            Subscription subscription = new Subscription()
-            {
-
-                private final Object requestLock = new Object();
-                private long pendingRequests;
-                // a flag indicating if there is a thread requesting from upstream
-                private boolean producing;
-
-                @Override
-                public void request( long size )
-                {
-                    synchronized ( requestLock )
-                    {
-                        pendingRequests += size;
-                        // check if another thread is already requesting
-                        if ( producing )
-                        {
-                            return;
-                        }
-
-                        producing = true;
-                    }
-
-                    try
-                    {
-                        while ( true )
-                        {
-                            long toRequest;
-                            synchronized ( requestLock )
-                            {
-                                toRequest = pendingRequests;
-                                if ( toRequest == 0 )
-                                {
-                                    return;
-                                }
-
-                                pendingRequests = 0;
-                            }
-
-                            doRequest( toRequest );
-                        }
-                    }
-                    finally
-                    {
-                        synchronized ( requestLock )
-                        {
-                            producing = false;
-                        }
-                    }
-                }
-
-                private void doRequest( long size )
-                {
-                    maybeSendCachedEvents();
-                    try
-                    {
-                        queryExecution.request( size );
-
-                        // If 'await' is called after an error has been received, it will throw with the same error.
-                        // Reactor operators don't like when 'onError' is called more than once. Typically, the second call throws an exception,
-                        // which can have a disastrous effect on the RX pipeline
-                        if ( !errorReceived )
-                        {
-                            var hasMore = queryExecution.await();
-                            // Workaround for some queryExecution:s where there are no results but onResultCompleted is never called.
-                            if ( !hasMore )
-                            {
-                                cachedCompleted = true;
-                                maybeSendCachedEvents();
-                            }
-                        }
-                    }
-                    catch ( Exception e )
-                    {
-                        subscriber.onError( e );
-                    }
-                }
-
-                @Override
-                public void cancel()
-                {
-                    try
-                    {
-                        queryExecution.cancel();
-                    }
-                    catch ( Throwable e )
-                    {
-                        // ignore
-                    }
-
-                    if ( !summaryFuture.isDone() )
-                    {
-                        summaryFuture.complete( new EmptySummary() );
-                    }
-                }
-            };
-            subscriber.onSubscribe( subscription );
-            maybeSendCachedEvents();
-        }
-
-        private void maybeSendCachedEvents()
-        {
-            if ( cachedError != null )
-            {
-                subscriber.onError( cachedError );
-                cachedError = null;
-            }
-            else if ( cachedCompleted )
-            {
-                subscriber.onComplete();
-                cachedCompleted = false;
-                completeSummary();
-            }
-        }
-    }
-
-    private abstract static class RecordQuerySubscriber implements QuerySubscriber
-    {
-        private int numberOfFields;
-        private AnyValue[] fields;
-
-        @Override
-        public void onResult( int numberOfFields )
-        {
-            this.numberOfFields = numberOfFields;
-        }
-
-        @Override
-        public void onRecord()
-        {
-            fields = new AnyValue[numberOfFields];
-        }
-
-        @Override
-        public void onField( int offset, AnyValue value )
-        {
-            fields[offset] = value;
-        }
-
-        @Override
-        public void onRecordCompleted()
-        {
-            onNext( Records.of( fields ) );
-        }
-
-        abstract void onNext( Record record );
+        QueryExecution subscribe(QuerySubscriber subscriber);
     }
 }

@@ -87,10 +87,10 @@ public class FabricLocalExecutor
         }
 
         public StatementResult run( Location.Local location, TransactionMode transactionMode, StatementLifecycle parentLifecycle,
-                                    FullyParsedQuery query, MapValue params, Flux<Record> input )
+                                    FullyParsedQuery query, MapValue params, Flux<Record> input, ExecutionOptions executionOptions )
         {
             var kernelTransaction = getOrCreateTx( location, transactionMode );
-            return kernelTransaction.run( query, params, input, parentLifecycle );
+            return kernelTransaction.run( query, params, input, parentLifecycle, executionOptions );
         }
 
         @Override
