@@ -621,118 +621,118 @@ class PrettifierIT extends CypherFunSuite {
       case (action, preposition) =>
         Seq(
           s"$action traverse on graph * $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action traverse on graph * nodes * $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * NODES * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * NODES * $preposition role",
 
           s"$action traverse on graph * nodes * (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * NODES * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * NODES * $preposition role",
 
           s"$action traverse on graph foo nodes * (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH foo NODES * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH foo NODES * $preposition role",
 
           s"$action traverse on graph $$foo nodes * (*) $preposition $$role" ->
-            s"$action TRAVERSE ON GRAPH $$foo NODES * (*) $preposition $$role",
+            s"$action TRAVERSE ON GRAPH $$foo NODES * $preposition $$role",
 
           s"$action traverse on graph FoO nodes A (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH FoO NODES A (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH FoO NODES A $preposition role",
 
           s"$action traverse on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH `#%¤` NODES `()/&` $preposition role",
 
           s"$action traverse on graph foo nodes A,B,C (*) $preposition x,y,z" ->
-            s"$action TRAVERSE ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
+            s"$action TRAVERSE ON GRAPH foo NODES A, B, C $preposition x, y, z",
 
           s"$action traverse on graph * relationships * $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * $preposition role",
 
           s"$action traverse on graph * relationships * (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * $preposition role",
 
           s"$action traverse on graph foo relationships * (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS * (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS * $preposition role",
 
           s"$action traverse on graph FoO relationships A (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH FoO RELATIONSHIPS A (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH FoO RELATIONSHIPS A $preposition role",
 
           s"$action traverse on graph `#%¤` relationships `()/&` (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH `#%¤` RELATIONSHIPS `()/&` (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH `#%¤` RELATIONSHIPS `()/&` $preposition role",
 
           s"$action traverse on graph foo relationships A,B,C (*) $preposition x,y,z" ->
-            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C (*) $preposition x, y, z",
+            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C $preposition x, y, z",
 
           s"$action traverse on graphs $$foo, $$bar nodes * (*) $preposition $$role" ->
-            s"$action TRAVERSE ON GRAPHS $$foo, $$bar NODES * (*) $preposition $$role",
+            s"$action TRAVERSE ON GRAPHS $$foo, $$bar NODES * $preposition $$role",
 
           s"$action traverse on graph * elements A (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH * ELEMENTS A (*) $preposition role",
+            s"$action TRAVERSE ON GRAPH * ELEMENTS A $preposition role",
 
           s"$action read {*} on graph * $preposition role" ->
-            s"$action READ {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action READ {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action read {*} on graph * nodes * $preposition role" ->
-            s"$action READ {*} ON GRAPH * NODES * (*) $preposition role",
+            s"$action READ {*} ON GRAPH * NODES * $preposition role",
 
           s"$action read {*} on graph * nodes * (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH * NODES * (*) $preposition role",
+            s"$action READ {*} ON GRAPH * NODES * $preposition role",
 
           s"$action read {*} on graph foo node * (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH foo NODES * (*) $preposition role",
+            s"$action READ {*} ON GRAPH foo NODES * $preposition role",
 
           s"$action read {*} on graph foo nodes A (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH foo NODES A (*) $preposition role",
+            s"$action READ {*} ON GRAPH foo NODES A $preposition role",
 
           s"$action read {bar} on graph FoO nodes A (*) $preposition role" ->
-            s"$action READ {bar} ON GRAPH FoO NODES A (*) $preposition role",
+            s"$action READ {bar} ON GRAPH FoO NODES A $preposition role",
 
           s"$action read { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action READ {`&bar`} ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+            s"$action READ {`&bar`} ON GRAPH `#%¤` NODES `()/&` $preposition role",
 
           s"$action read {foo,bar} on graph foo nodes A,B,C (*) $preposition x,y,$$z" ->
-            s"$action READ {foo, bar} ON GRAPH foo NODES A, B, C (*) $preposition x, y, $$z",
+            s"$action READ {foo, bar} ON GRAPH foo NODES A, B, C $preposition x, y, $$z",
 
           s"$action read {*} on graph $$foo relationships * (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH $$foo RELATIONSHIPS * (*) $preposition role",
+            s"$action READ {*} ON GRAPH $$foo RELATIONSHIPS * $preposition role",
 
           s"$action read {*} on graph foo, bar relationships * (*) $preposition role" ->
-            s"$action READ {*} ON GRAPHS foo, bar RELATIONSHIPS * (*) $preposition role",
+            s"$action READ {*} ON GRAPHS foo, bar RELATIONSHIPS * $preposition role",
 
           s"$action read {*} on graph * elements A (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH * ELEMENTS A (*) $preposition role",
+            s"$action READ {*} ON GRAPH * ELEMENTS A $preposition role",
 
           s"$action match {*} on graph * $preposition role" ->
-            s"$action MATCH {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action match {*} on graph * node * $preposition role" ->
-            s"$action MATCH {*} ON GRAPH * NODES * (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH * NODES * $preposition role",
 
           s"$action match {*} on graph * nodes * (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPH * NODES * (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH * NODES * $preposition role",
 
           s"$action match {*} on graph foo nodes * (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPH foo NODES * (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH foo NODES * $preposition role",
 
           s"$action match {*} on graph foo nodes A (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPH foo NODES A (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH foo NODES A $preposition role",
 
           s"$action match {bar} on graph foo nodes A (*) $preposition role" ->
-            s"$action MATCH {bar} ON GRAPH foo NODES A (*) $preposition role",
+            s"$action MATCH {bar} ON GRAPH foo NODES A $preposition role",
 
           s"$action match { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action MATCH {`&bar`} ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+            s"$action MATCH {`&bar`} ON GRAPH `#%¤` NODES `()/&` $preposition role",
 
           s"$action match {foo,bar} on graph foo nodes A,B,C (*) $preposition x,$$y,z" ->
-            s"$action MATCH {foo, bar} ON GRAPH foo NODES A, B, C (*) $preposition x, $$y, z",
+            s"$action MATCH {foo, bar} ON GRAPH foo NODES A, B, C $preposition x, $$y, z",
 
           s"$action match {foo,bar} on graph $$foo relationship A,B,C (*) $preposition x,y,z" ->
-            s"$action MATCH {foo, bar} ON GRAPH $$foo RELATIONSHIPS A, B, C (*) $preposition x, y, z",
+            s"$action MATCH {foo, bar} ON GRAPH $$foo RELATIONSHIPS A, B, C $preposition x, y, z",
 
           s"$action match {*} on graph $$foo, bar nodes * (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPHS $$foo, bar NODES * (*) $preposition role",
+            s"$action MATCH {*} ON GRAPHS $$foo, bar NODES * $preposition role",
 
           s"$action match {*} on graph * elements A (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPH * ELEMENTS A (*) $preposition role",
+            s"$action MATCH {*} ON GRAPH * ELEMENTS A $preposition role",
 
           s"$action write on graph * $preposition role" ->
             s"$action WRITE ON GRAPH * $preposition role",
@@ -822,19 +822,19 @@ class PrettifierIT extends CypherFunSuite {
             s"$action REMOVE LABEL label ON GRAPHS foo, $$bar $preposition role",
 
           s"$action set property {*} on graph * $preposition role" ->
-            s"$action SET PROPERTY {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action SET PROPERTY {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action set property {foo} on graph * NODES bar $preposition role" ->
-            s"$action SET PROPERTY {foo} ON GRAPH * NODES bar (*) $preposition role",
+            s"$action SET PROPERTY {foo} ON GRAPH * NODES bar $preposition role",
 
           s"$action set property {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
-            s"$action SET PROPERTY {*} ON GRAPH * RELATIONSHIPS bar, baz (*) $preposition role",
+            s"$action SET PROPERTY {*} ON GRAPH * RELATIONSHIPS bar, baz $preposition role",
 
           s"$action set property {Foo, BAR} on graph * $preposition role" ->
-            s"$action SET PROPERTY {Foo, BAR} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action SET PROPERTY {Foo, BAR} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action set property {*} on graph foo, $$bar $preposition role1, role2, role3" ->
-            s"$action SET PROPERTY {*} ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role1, role2, role3",
+            s"$action SET PROPERTY {*} ON GRAPHS foo, $$bar ELEMENTS * $preposition role1, role2, role3",
 
           s"$action all on graph * $preposition role" ->
             s"$action ALL GRAPH PRIVILEGES ON GRAPH * $preposition role",
@@ -846,19 +846,19 @@ class PrettifierIT extends CypherFunSuite {
             s"$action ALL GRAPH PRIVILEGES ON GRAPHS foo, $$bar $preposition role1, role2, role3",
 
           s"$action merge {*} on graph * $preposition role" ->
-            s"$action MERGE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action MERGE {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action merge {foo} on graph * NODES bar $preposition role" ->
-            s"$action MERGE {foo} ON GRAPH * NODES bar (*) $preposition role",
+            s"$action MERGE {foo} ON GRAPH * NODES bar $preposition role",
 
           s"$action merge {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
-            s"$action MERGE {*} ON GRAPH * RELATIONSHIPS bar, baz (*) $preposition role",
+            s"$action MERGE {*} ON GRAPH * RELATIONSHIPS bar, baz $preposition role",
 
           s"$action merge {Foo, BAR} on graph * $preposition role" ->
-            s"$action MERGE {Foo, BAR} ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action MERGE {Foo, BAR} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action merge {*} on graph foo, $$bar $preposition role1, role2, role3" ->
-            s"$action MERGE {*} ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role1, role2, role3",
+            s"$action MERGE {*} ON GRAPHS foo, $$bar ELEMENTS * $preposition role1, role2, role3",
 
         ) ++ Seq(
           ("access", "ACCESS"),

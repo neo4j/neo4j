@@ -320,15 +320,15 @@ case class Prettifier(
 
       case x@GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
         val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
       case x@DenyPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
         val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
       case x@RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames, _) =>
         val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope (*) FROM ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
       case x@GrantPrivilege(GraphPrivilege(WriteAction), _, dbScope, _, roleNames) =>
         val scope = Prettifier.extractGraphScope(dbScope)
@@ -371,15 +371,15 @@ case class Prettifier(
 
       case x @ GrantPrivilege(_, Some(resource), dbScope, qualifier, roleNames) =>
         val (resourceName, scope) = Prettifier.extractScope(resource, dbScope, qualifier)
-        s"${x.name} {$resourceName} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} {$resourceName} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ DenyPrivilege(_, Some(resource), dbScope, qualifier, roleNames) =>
         val (resourceName, scope) = Prettifier.extractScope(resource, dbScope, qualifier)
-        s"${x.name} {$resourceName} ON $scope (*) TO ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} {$resourceName} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ RevokePrivilege(_, Some(resource), dbScope, qualifier, roleNames, _) =>
         val (resourceName, scope) = Prettifier.extractScope(resource, dbScope, qualifier)
-        s"${x.name} {$resourceName} ON $scope (*) FROM ${Prettifier.escapeNames(roleNames)}"
+        s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
       case ShowPrivileges(scope) =>
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
