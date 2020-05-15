@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDbmsAction
+import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllLabelResource
@@ -146,6 +147,7 @@ import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
+import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
@@ -174,6 +176,7 @@ import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TransactionManagementAction
+import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UnionAll
@@ -1249,7 +1252,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // Privilege commands
 
   def _graphAction: Gen[GraphAction] = oneOf(
-    CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction
+    CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
     // TODO: TraverseAction, ReadAction and MatchAction are used as individual Privileges and not as actions
   )
 
@@ -1280,22 +1283,38 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       AllQualifier()(pos)
     }
 
+  def _graphQualifier: Gen[PrivilegeQualifier] = for {
+    qualifierNames <- oneOrMore(_identifier)
+    qualifier      <- oneOf(RelationshipsQualifier(qualifierNames)(pos), RelationshipAllQualifier()(pos),
+                            LabelsQualifier(qualifierNames)(pos), LabelAllQualifier()(pos),
+                            ElementsQualifier(qualifierNames)(pos), ElementsAllQualifier()(pos))
+  } yield qualifier
+
   def _graphQualifierAndResource(graphAction: GraphAction): Gen[(PrivilegeQualifier, Option[ActionResource])] =
-    if (graphAction == SetLabelAction || graphAction == RemoveLabelAction) {
+    if (graphAction == AllGraphAction) {
+      // ALL GRAPH PRIVILEGES has AllQualifier and no resource
+      (AllQualifier()(pos), None)
+    } else if (graphAction == WriteAction) {
+      // WRITE has AllElementsQualifier and no resource
+      (ElementsAllQualifier()(pos), None)
+    } else if (graphAction == SetLabelAction || graphAction == RemoveLabelAction) {
       // SET/REMOVE LABEL have AllLabelQualifier and label resource
       for {
         resourceNames  <- oneOrMore(_identifier)
         resource       <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
       } yield (LabelAllQualifier()(pos), Some(resource))
-    } else {
-      // CREATE/DELETE ELEMENT, WRITE have any graph qualifier and no resource
-      // TRAVERSE, READ, MATCH have any graph qualifier and property resource, TODO: add case returning correct resource
+    } else if (graphAction == TraverseAction || graphAction == CreateElementAction || graphAction == DeleteElementAction) {
+      // TRAVERSE, CREATE/DELETE ELEMENT have any graph qualifier and no resource
       for {
-        qualifierNames <- oneOrMore(_identifier)
-        qualifier      <- oneOf(RelationshipsQualifier(qualifierNames)(pos), RelationshipAllQualifier()(pos),
-                                LabelsQualifier(qualifierNames)(pos), LabelAllQualifier()(pos),
-                                ElementsQualifier(qualifierNames)(pos), ElementsAllQualifier()(pos))
+        qualifier      <- _graphQualifier
       } yield (qualifier, None)
+    } else {
+      // READ, MATCH, SET PROPERTY have any graph qualifier and property resource
+      for {
+        qualifier      <- _graphQualifier
+        resourceNames  <- oneOrMore(_identifier)
+        resource       <- oneOf(PropertiesResource(resourceNames)(pos), AllPropertyResource()(pos))
+      } yield (qualifier, Some(resource))
     }
 
   def _showPrivileges: Gen[ShowPrivileges] = for {
@@ -1336,30 +1355,33 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     graphAction                 <- _graphAction
     namedScope                  <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
     graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)))
-    (qualifier, labelResource)  <- _graphQualifierAndResource(graphAction)
+    // qualifier and resource for WRITE, CREATE/DELETE ELEMENT, SET/REMOVE LABEL, SET PROPERTY, ALL
+    (qualifier, maybeResource)  <- _graphQualifierAndResource(graphAction)
+    // qualifier and resource for TRAVERSE, READ, MATCH
     propertyNames               <- oneOrMore(_identifier)
     propertyResource            <- oneOf(PropertiesResource(propertyNames)(pos), AllPropertyResource()(pos))
+    matchQualifier              <- _graphQualifier
     roleNames                   <- _listOfNameOfEither
-    graphGrant                  = GrantPrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
-    traverseGrant               = GrantPrivilege.traverse(graphScope, qualifier, roleNames)(pos)
-    readGrant                   = GrantPrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
-    matchGrant                  = GrantPrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
-    graphDeny                   = DenyPrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
-    traverseDeny                = DenyPrivilege.traverse(graphScope, qualifier, roleNames)(pos)
-    readDeny                    = DenyPrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
-    matchDeny                   = DenyPrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
-    graphRevokeGrant            = RevokePrivilege.grantedGraphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
-    traverseRevokeGrant         = RevokePrivilege.grantedTraverse(graphScope, qualifier, roleNames)(pos)
-    readRevokeGrant             = RevokePrivilege.grantedRead(propertyResource, graphScope, qualifier, roleNames)(pos)
-    matchRevokeGrant            = RevokePrivilege.grantedAsMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
-    graphRevokeDeny             = RevokePrivilege.deniedGraphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
-    traverseRevokeDeny          = RevokePrivilege.deniedTraverse(graphScope, qualifier, roleNames)(pos)
-    readRevokeDeny              = RevokePrivilege.deniedRead(propertyResource, graphScope, qualifier, roleNames)(pos)
-    matchRevokeDeny             = RevokePrivilege.deniedAsMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
-    graphRevoke                 = RevokePrivilege.graphAction(graphAction, labelResource, graphScope, qualifier, roleNames)(pos)
-    traverseRevoke              = RevokePrivilege.traverse(graphScope, qualifier, roleNames)(pos)
-    readRevoke                  = RevokePrivilege.read(propertyResource, graphScope, qualifier, roleNames)(pos)
-    matchRevoke                 = RevokePrivilege.asMatch(propertyResource, graphScope, qualifier, roleNames)(pos)
+    graphGrant                  = GrantPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    traverseGrant               = GrantPrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
+    readGrant                   = GrantPrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    matchGrant                  = GrantPrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    graphDeny                   = DenyPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    traverseDeny                = DenyPrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
+    readDeny                    = DenyPrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    matchDeny                   = DenyPrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    graphRevokeGrant            = RevokePrivilege.grantedGraphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevokeGrant         = RevokePrivilege.grantedTraverse(graphScope, matchQualifier, roleNames)(pos)
+    readRevokeGrant             = RevokePrivilege.grantedRead(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    matchRevokeGrant            = RevokePrivilege.grantedAsMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    graphRevokeDeny             = RevokePrivilege.deniedGraphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevokeDeny          = RevokePrivilege.deniedTraverse(graphScope, matchQualifier, roleNames)(pos)
+    readRevokeDeny              = RevokePrivilege.deniedRead(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    matchRevokeDeny             = RevokePrivilege.deniedAsMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    graphRevoke                 = RevokePrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    traverseRevoke              = RevokePrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
+    readRevoke                  = RevokePrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
+    matchRevoke                 = RevokePrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
     grant                       <- oneOf(graphGrant, traverseGrant, readGrant, matchGrant)
     deny                        <- oneOf(graphDeny, traverseDeny, readDeny, matchDeny)
     revokeGrant                 <- oneOf(graphRevokeGrant, traverseRevokeGrant, readRevokeGrant, matchRevokeGrant)
