@@ -260,10 +260,10 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.upgradeStatus", "() :: (status :: STRING?, description :: STRING?, resolution :: STRING?)",
                         "Report the current status of the system database sub-graph schema.",
-                        stringArray( "admin" ), "DBMS" ),
+                        stringArray( "admin" ), "READ" ),
                 proc( "dbms.upgrade", "() :: (status :: STRING?, upgradeResult :: STRING?)",
                         "Upgrade the system database schema if it is not the current schema.",
-                        stringArray( "admin" ), "DBMS" )
+                        stringArray( "admin" ), "WRITE" )
         ));
         return result;
     }
