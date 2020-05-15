@@ -986,7 +986,7 @@ class ExecutionResultSerializerTest
     private static ExecutionResultSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
         return new ExecutionResultSerializer( transactionHandle, Collections.emptyMap(), uri == null ? null : URI.create( uri ), Neo4jJsonCodec.class,
-                                              JSON_FACTORY.copy(), output );
+                                              JSON_FACTORY, output );
     }
 
     private static void writeStatementStart( ExecutionResultSerializer serializer, String... columns )

@@ -17,21 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.output.json;
+package org.neo4j.server.http.cypher.format;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
-/**
- * This configures a {@link JsonFactory} and binds it to the same class in the Jersey context.
- */
-public class JsonFactoryBinder extends AbstractBinder
+public enum DefaultJsonFactory
 {
-    @Override
-    protected void configure()
+    INSTANCE( new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM ) );
+
+    private final JsonFactory value;
+
+    DefaultJsonFactory( JsonFactory value )
     {
-        var jsonFactory = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
-        bind( jsonFactory ).to( JsonFactory.class );
+        this.value = value;
+    }
+
+    /**
+     * @return A blueprint of the {@link JsonFactory} to be used by both the JSON input and output.
+     */
+    public JsonFactory get()
+    {
+        return value;
     }
 }

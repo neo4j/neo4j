@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.inject.Inject;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -31,23 +30,14 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
+import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
-
-import com.fasterxml.jackson.core.JsonFactory;
 
 @Provider
 @Produces( MediaType.APPLICATION_JSON )
 public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
 {
-    private final JsonFactory jsonFactory;
-
-    @Inject
-    public JsonMessageBodyWriter( JsonFactory jsonFactory )
-    {
-        this.jsonFactory = jsonFactory;
-    }
-
     @Override
     public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
     {
@@ -62,6 +52,7 @@ public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSourc
         var parameters = outputEventSource.getParameters();
         var uriInfo = outputEventSource.getUriInfo();
 
+        var jsonFactory = DefaultJsonFactory.INSTANCE.get();
         var serializer = new ExecutionResultSerializer( transaction, parameters, uriInfo.dbUri(),
             Neo4jJsonCodec.class, jsonFactory, entityStream );
 
