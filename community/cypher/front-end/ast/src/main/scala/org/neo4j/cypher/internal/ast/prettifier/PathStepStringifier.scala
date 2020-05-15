@@ -29,7 +29,7 @@ case class PathStepStringifier(expr: ExpressionStringifier) {
   def apply(pathStep: PathStep): String = pathStep match {
     case SingleRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = false)
 
-    case NodePathStep(node, next) => expr(node) + apply(next)
+    case NodePathStep(node, next) => s"(${expr(node)})${apply(next)}"
 
     case MultiRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = true)
 
@@ -43,6 +43,6 @@ case class PathStepStringifier(expr: ExpressionStringifier) {
     val stringifiedRel = expr(rel)
     val multiRel = if (isMultiRel) "*" else ""
 
-    s"$lArrow-[$stringifiedRel$multiRel]-$rArrow$stringifiedToNode" + this(next)
+    s"$lArrow-[$stringifiedRel$multiRel]-$rArrow($stringifiedToNode)" + this(next)
   }
 }

@@ -832,7 +832,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x")))
 
     assertGood(attach(Projection(lhsLP, Map("x" -> pathExpression)), 2345.0),
-      planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(s"c-[${anonVar("42")}]->${anonVar("32")} AS x")), Set("a", "x")))
+      planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(s"(c)-[${anonVar("42")}]->(${anonVar("32")}) AS x")), Set("a", "x")))
 
     assertGood(attach(Projection(lhsLP, Map("x" -> varFor("  REL42"), "n.prop" -> prop("n", "prop"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details(Seq(s"${anonVar("42")} AS x", "n.prop AS `n.prop`"))), Set("a", "x", "`n.prop`")))
