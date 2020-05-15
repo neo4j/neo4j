@@ -44,7 +44,7 @@ class HeapTrackingAppendListTest
 
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final HeapTrackingAppendList<Long> list = HeapTrackingAppendList.newAppendList( memoryTracker );
+    private final HeapTrackingAppendList<Long> list = HeapTrackingAppendList.newAppendList( 16, memoryTracker );
 
     @AfterEach
     void tearDown()

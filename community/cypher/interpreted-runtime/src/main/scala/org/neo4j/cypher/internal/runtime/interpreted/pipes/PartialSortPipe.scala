@@ -37,7 +37,7 @@ case class PartialSortPipe(source: Pipe,
   class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
-    private val buffer = HeapTrackingAppendList.newAppendList[CypherRow](memoryTracker)
+    private val buffer = HeapTrackingAppendList.newAppendList[CypherRow](16, memoryTracker)
 
     override def clear(): Unit = {
       rowsMemoryTracker.reset()

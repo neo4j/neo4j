@@ -29,6 +29,7 @@ import org.neo4j.memory.MemoryTracker;
 import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.util.Preconditions.requireNonNegative;
 
 /**
  * A heap tracking append list. It only tracks the internal structure, not the elements within.
@@ -39,25 +40,35 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingAppendList.class );
-    private static final long ARRAY_INITIAL_SIZE = shallowSizeOfObjectArray( 1 );
 
     private final MemoryTracker memoryTracker;
 
     private long trackedSize;
     private int size;
-    private T[] items = (T[]) new Object[1];
+    private T[] items;
 
     /**
      * @return a new heap tracking append list with initial size 1
      */
     public static <T> HeapTrackingAppendList<T> newAppendList( MemoryTracker memoryTracker )
     {
-        memoryTracker.allocateHeap( SHALLOW_SIZE + ARRAY_INITIAL_SIZE );
-        return new HeapTrackingAppendList<>( memoryTracker, ARRAY_INITIAL_SIZE );
+        return newAppendList( 1, memoryTracker );
     }
 
-    private HeapTrackingAppendList( MemoryTracker memoryTracker, long trackedSize )
+    /**
+     * @return a new heap tracking append list with the specified initial size
+     */
+    public static <T> HeapTrackingAppendList<T> newAppendList( int initialSize, MemoryTracker memoryTracker )
     {
+        requireNonNegative( initialSize );
+        long trackedSize = shallowSizeOfObjectArray( initialSize );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
+        return new HeapTrackingAppendList<>( initialSize, memoryTracker, trackedSize );
+    }
+
+    private HeapTrackingAppendList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
+    {
+        this.items = (T[]) new Object[initialSize];
         this.memoryTracker = memoryTracker;
         this.trackedSize = trackedSize;
     }
