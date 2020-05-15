@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Values
 abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
                                                                  edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT],
-                                                                 sizeHint: Int
+                                                                 val sizeHint: Int
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private var testVar = 0
@@ -103,36 +103,6 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     testVar should be(sizeHint)
   }
 
-  test("should call write void procedure") {
-    // given
-    val nodes = given {
-      nodeGraph(sizeHint, "OUTPROC")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .procedureCall("writeVoidProc()")
-      .nodeByLabelScan("x", "OUTPROC", IndexOrderNone)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
-
-    // and when
-    val verificationQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeByLabelScan("x", "INPROC", IndexOrderNone)
-      .build()
-
-    val verificationResult = execute(verificationQuery, runtime)
-
-    // then
-    verificationResult should beColumns("x").withRows(rowCount(sizeHint))
-  }
-
   test("should call read int procedure") {
     // given
     val nodes = given {
@@ -168,5 +138,39 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (0 to sizeHint).flatMap { j => Seq(Array(j, j * 2), Array(j, j * 2)) }
     runtimeResult should beColumns("j", "i").withRows(expected)
+  }
+}
+
+trait WriteProcedureCallTestBase[CONTEXT <: RuntimeContext] {
+  self: ProcedureCallTestBase[CONTEXT] =>
+
+  test("should call write void procedure") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint, "OUTPROC")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .procedureCall("writeVoidProc()")
+      .nodeByLabelScan("x", "OUTPROC", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
+
+    // and when
+    val verificationQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeByLabelScan("x", "INPROC", IndexOrderNone)
+      .build()
+
+    val verificationResult = execute(verificationQuery, runtime)
+
+    // then
+    verificationResult should beColumns("x").withRows(rowCount(sizeHint))
   }
 }
