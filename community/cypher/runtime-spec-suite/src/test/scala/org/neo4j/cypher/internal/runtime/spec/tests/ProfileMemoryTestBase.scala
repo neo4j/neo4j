@@ -164,26 +164,6 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
   }
 
-  test("should profile memory of value hash join") {
-    // given
-    val nodes = given {
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      })
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b")
-      .valueHashJoin("a.prop=b.prop")
-      .|.allNodeScan("b")
-      .allNodeScan("a")
-      .build()
-
-    // then
-    assertOnMemory(logicalQuery, NO_INPUT, 4, 1)
-  }
-
   test("should profile memory of top n, where n < max array size") {
     given {
       nodeGraph(SIZE)
