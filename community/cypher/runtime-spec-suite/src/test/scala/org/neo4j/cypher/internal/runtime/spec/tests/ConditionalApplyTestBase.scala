@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -219,7 +219,9 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support limit on top of conditional apply") {
     // given
     val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (nodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val input = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream()
+
     val limit = nodesPerLabel * nodesPerLabel - 1
 
     // when
@@ -229,16 +231,17 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .conditionalApply("x")
       .|.expandAll("(x)-->(y)")
       .|.argument()
-      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .input(nodes = Seq("x"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
+    input.hasMore shouldBe true
   }
 
-  test("should support reduce -> limit on the RHS of apply") {
+  test("should support reduce -> limit on the RHS of conditional apply") {
     // given
     val nodesPerLabel = 100
     val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
@@ -265,7 +268,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected)
   }
 
-  test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
+  test("should aggregation on top of conditional apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
     val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
@@ -275,8 +278,8 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("counts")
-      .aggregation(Seq.empty, Seq("collect(c) AS counts"))
-      .apply()
+      .aggregation(Seq.empty, Seq("count(x) AS counts"))
+      .conditionalApply("x")
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.limit(limit)
       .|.expand("(x)-[:R]->(y)")
@@ -285,10 +288,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
-
-    val expected = aNodes.map(_ => limit).toArray
-
-    runtimeResult should beColumns("counts").withSingleRow(expected)
+    runtimeResult should beColumns("counts").withSingleRow(nodesPerLabel)
   }
 
   test("should aggregate with no grouping on top of conditional apply with expand on RHS") {
