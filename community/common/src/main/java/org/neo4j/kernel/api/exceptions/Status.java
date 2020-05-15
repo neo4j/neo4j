@@ -500,7 +500,9 @@ public interface Status
 
         NotALeader( ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
-                ;
+        TransactionTooBig( ClientError,
+                "Transaction is too large." ),
+        ;
 
         private final Code code;
 
