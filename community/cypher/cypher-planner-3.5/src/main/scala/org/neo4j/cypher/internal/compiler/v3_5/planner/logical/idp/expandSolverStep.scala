@@ -65,22 +65,7 @@ object expandSolverStep {
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
-    /*
-     * Method to find implicit leaf plan arguments, except explicit Argument
-     */
-    def leafArguments(plan:LogicalPlan): Set[String] = plan match {
-      case _: Argument => Set.empty
-      case p: LogicalLeafPlan => p.argumentIds
-      case _ =>
-        val lhs = plan.lhs.map(inner => leafArguments(inner)).toSet.flatten
-        val rhs = plan.rhs.map(inner => leafArguments(inner)).toSet.flatten
-        lhs ++ rhs
-    }
-    // Remove the leaf arguments as to not try and join disjoint plans only on arguments.
-    // This reduces the solution space for the expands generator, since the joins generator should consider these cases.
-    val symbols = availableSymbols -- leafArguments(sourcePlan)
-
-    if (symbols(nodeId)) {
+    if (availableSymbols(nodeId)) {
       Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
     } else {
       None
