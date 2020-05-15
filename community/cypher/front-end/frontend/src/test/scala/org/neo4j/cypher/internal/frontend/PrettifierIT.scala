@@ -845,6 +845,21 @@ class PrettifierIT extends CypherFunSuite {
           s"$action all graph privileges on graph foo, $$bar $preposition role1, role2, role3" ->
             s"$action ALL GRAPH PRIVILEGES ON GRAPHS foo, $$bar $preposition role1, role2, role3",
 
+          s"$action merge {*} on graph * $preposition role" ->
+            s"$action MERGE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action merge {foo} on graph * NODES bar $preposition role" ->
+            s"$action MERGE {foo} ON GRAPH * NODES bar (*) $preposition role",
+
+          s"$action merge {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
+            s"$action MERGE {*} ON GRAPH * RELATIONSHIPS bar, baz (*) $preposition role",
+
+          s"$action merge {Foo, BAR} on graph * $preposition role" ->
+            s"$action MERGE {Foo, BAR} ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action merge {*} on graph foo, $$bar $preposition role1, role2, role3" ->
+            s"$action MERGE {*} ON GRAPHS foo, $$bar ELEMENTS * (*) $preposition role1, role2, role3",
+
         ) ++ Seq(
           ("access", "ACCESS"),
           ("start", "START"),

@@ -100,17 +100,21 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     "ALL DBMS PRIVILEGES ON DBMS"
   )
 
-  private val privilegeTypes = Seq(
+  private val grantPrivilegeTypes = Seq(
     ("GRANT", "TO"),
-    ("DENY", "TO"),
     ("REVOKE", "FROM"),
     ("REVOKE GRANT", "FROM"),
+
+  )
+
+  private val denyPrivilegeTypes = Seq(
+    ("DENY", "TO"),
     ("REVOKE DENY", "FROM")
   )
 
   enterprisePrivileges.foreach {
     privilege =>
-      privilegeTypes.foreach {
+      (grantPrivilegeTypes ++ denyPrivilegeTypes).foreach {
         case (privilegeType, preposition) =>
           test(s"should fail on $privilegeType $privilege from community") {
             val command = s"$privilegeType $privilege $preposition custom"
@@ -118,4 +122,13 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
           }
       }
   }
+
+  (grantPrivilegeTypes).foreach {
+    case (privilegeType, preposition) =>
+      test(s"should fail on $privilegeType MERGE {*} ON GRAPH * from community") {
+        val command = s"$privilegeType MERGE {*} ON GRAPH * $preposition custom"
+        assertFailure(command, s"Unsupported administration command: $command")
+      }
+  }
+
 }

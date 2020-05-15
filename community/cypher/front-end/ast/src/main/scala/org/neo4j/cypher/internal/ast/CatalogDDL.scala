@@ -392,6 +392,7 @@ case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIV
 abstract class GraphAction(override val name: String, val planName: String) extends AdminAction
 case object ReadAction extends GraphAction("READ", "Read")
 case object MatchAction extends GraphAction("MATCH", "Match")
+case object MergeAdminAction extends GraphAction("MERGE", "Merge")
 case object TraverseAction extends GraphAction("TRAVERSE", "Traverse")
 case object CreateElementAction extends GraphAction("CREATE", "CreateElement")
 case object DeleteElementAction extends GraphAction("DELETE", "DeleteElement")
@@ -494,6 +495,13 @@ final case class DenyPrivilege(privilege: PrivilegeType, resource: Option[Action
                                 (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"DENY ${privilege.name}"
+
+  override def semanticCheck: SemanticCheck = {
+    privilege match {
+      case GraphPrivilege(MergeAdminAction) => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
+      case _ => super.semanticCheck
+    }
+  }
 }
 
 final case class RevokePrivilege(privilege: PrivilegeType, resource: Option[ActionResource], scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]],
@@ -506,6 +514,14 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: Option[Acti
       s"REVOKE ${privilege.name}"
     }
   }
+
+  override def semanticCheck: SemanticCheck = {
+    (privilege, revokeType) match {
+      case (GraphPrivilege(MergeAdminAction), RevokeDenyType())  => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
+      case _ => super.semanticCheck
+    }
+  }
+
 }
 
 final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends ReadAdministrationCommand {

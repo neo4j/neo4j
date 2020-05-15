@@ -56,6 +56,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MERGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.READ;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.REMOVE_LABEL;
@@ -96,6 +97,7 @@ class PrivilegeActionTest
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
         expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY ) );
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
+        expected.put( MERGE, Set.of( MATCH, TRAVERSE, READ, CREATE_ELEMENT, SET_PROPERTY  ) );
         expected.put( MATCH, Set.of( TRAVERSE, READ ) );
         expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );

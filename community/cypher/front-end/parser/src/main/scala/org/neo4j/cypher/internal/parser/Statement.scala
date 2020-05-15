@@ -555,6 +555,7 @@ trait Statement extends Parser
   )
 
   private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified graph action with resource")(
+    group(keyword("MERGE") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.MergeAdminAction)) |
     group(keyword("SET PROPERTY") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.SetPropertyAction))
   )
 

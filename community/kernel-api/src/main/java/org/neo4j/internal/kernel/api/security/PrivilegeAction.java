@@ -286,6 +286,25 @@ public enum PrivilegeAction
                 }
     },
 
+    MERGE
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case MATCH:
+                    case TRAVERSE:
+                    case READ:
+                    case CREATE_ELEMENT:
+                    case SET_PROPERTY:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
     GRAPH_ACTIONS
             {
                 @Override

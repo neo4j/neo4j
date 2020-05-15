@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -91,6 +92,7 @@ object ActionMapper {
     case SetLabelAction => security.PrivilegeAction.SET_LABEL
     case RemoveLabelAction => security.PrivilegeAction.REMOVE_LABEL
     case SetPropertyAction => security.PrivilegeAction.SET_PROPERTY
+    case MergeAdminAction => security.PrivilegeAction.MERGE
 
     case AllGraphAction => security.PrivilegeAction.GRAPH_ACTIONS
 
