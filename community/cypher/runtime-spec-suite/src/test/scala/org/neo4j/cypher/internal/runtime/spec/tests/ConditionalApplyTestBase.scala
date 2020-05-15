@@ -271,7 +271,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregation on top of conditional apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -323,7 +323,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .aggregation(Seq("x AS x"), Seq("count(x) AS xs"))
       .conditionalApply("x")
       .|.expandAll("(x)-->(y)")
-      .|.argument()
+      .|.argument("x")
       .nodeByLabelScan("x","A", IndexOrderNone)
       .build()
 
