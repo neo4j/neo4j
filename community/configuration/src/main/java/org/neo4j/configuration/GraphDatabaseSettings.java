@@ -1098,7 +1098,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         ON_HEAP, OFF_HEAP
     }
 
-    @Description( "Defines whether memory for transaction state should be allocated on- or off-heap." )
+    @Description( "Defines whether memory for transaction state should be allocated on- or off-heap. " +
+                  "Note that for small transactions you can gain up to 25% write speed by setting it to `ON_HEAP`." )
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation =
             newBuilder( "dbms.tx_state.memory_allocation", ofEnum( TransactionStateMemoryAllocation.class ), OFF_HEAP ).build();
 
