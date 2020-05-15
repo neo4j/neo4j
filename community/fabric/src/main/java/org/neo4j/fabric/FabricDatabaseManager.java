@@ -57,7 +57,7 @@ public abstract class FabricDatabaseManager
         return multiGraphCapabilitiesEnabledForAllDatabases() || isFabricDatabase( databaseNameRaw );
     }
 
-    private boolean multiGraphCapabilitiesEnabledForAllDatabases()
+    public boolean multiGraphCapabilitiesEnabledForAllDatabases()
     {
         return multiGraphEverywhere;
     }

@@ -34,7 +34,6 @@ import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.planning.FabricQuery.LocalQuery
 import org.neo4j.fabric.planning.FabricQuery.RemoteQuery
-import org.neo4j.graphdb.Notification
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
@@ -70,7 +69,7 @@ case class FabricPlanner(
     fabricContextName: Option[String],
   ) {
 
-    private val pipeline = frontend.Pipeline(query, queryParams)
+    lazy private val pipeline = frontend.Pipeline(query, queryParams)
 
     lazy val plan: FabricPlan = {
       val plan = queryCache.computeIfAbsent(
@@ -100,7 +99,8 @@ case class FabricPlanner(
         queryString = query.statement,
         debugOptions = DebugOptions.from(query.options.debugOptions),
         obfuscationMetadata = prepared.obfuscationMetadata(),
-        inFabricContext = fabricContext
+        inFabricContext = fabricContext,
+        pipeline.notifications
       )
     }
 
@@ -122,9 +122,6 @@ case class FabricPlanner(
       try compute
       finally event.close()
     }
-
-    def notifications: Seq[Notification] =
-      pipeline.notifications
 
     def asLocal(fragment: Fragment.Exec): LocalQuery = LocalQuery(
       FullyParsedQuery(fragment.localQuery, optionsFor(fragment)),

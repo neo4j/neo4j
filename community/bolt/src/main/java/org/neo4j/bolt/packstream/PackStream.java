@@ -233,13 +233,20 @@ public class PackStream
         private static final char PACKED_CHAR_START_CHAR = (char) 32;
         private static final char PACKED_CHAR_END_CHAR = (char) 126;
         private static final String[] PACKED_CHARS = prePackChars();
-        private UTF8Encoder utf8 = UTF8Encoder.EncoderLoader.ENCODER_LOADER.fastestAvailableEncoder();
+        private final UTF8Encoder utf8;
 
         protected PackOutput out;
 
         public Packer( PackOutput out )
         {
             this.out = out;
+            this.utf8 = UTF8Encoder.EncoderLoader.ENCODER_LOADER.fastestAvailableEncoder();
+        }
+
+        protected Packer( PackOutput out, UTF8Encoder utf8 )
+        {
+            this.out = out;
+            this.utf8 = utf8;
         }
 
         private static String[] prePackChars()

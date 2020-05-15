@@ -209,7 +209,7 @@ public class FabricExecutor
 
         StatementResult run()
         {
-            notifications.addAll( seqAsJavaList( plannerInstance.notifications() ) );
+            notifications.addAll( seqAsJavaList( plan.notifications() ) );
 
             lifecycle.startExecution();
             var query = plan.query();

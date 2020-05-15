@@ -21,11 +21,13 @@ package org.neo4j.fabric.bookmark;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.packstream.PackStream;
 import org.neo4j.bolt.packstream.PackedInputArray;
 import org.neo4j.fabric.bolt.FabricBookmark;
@@ -66,7 +68,7 @@ public class BookmarkStateSerializer
     private static class Packer
     {
         final PackedOutputArray packedOutputArray = new PackedOutputArray();
-        final PackStream.Packer packer = new PackStream.Packer( packedOutputArray );
+        final PackStream.Packer packer = new BookmarkPackStreamPacker( packedOutputArray );
         final FabricBookmark fabricBookmark;
 
         Packer( FabricBookmark fabricBookmark )
@@ -203,6 +205,20 @@ public class BookmarkStateSerializer
             long low = byteBuffer.getLong();
 
             return new UUID( high, low );
+        }
+    }
+
+    private static class BookmarkPackStreamPacker extends PackStream.Packer
+    {
+        // The default PackStream.Packer creates a UTF-8 encoder
+        // whose construction is quite expensive (created using reflection, allocating 16K buffer, ...).
+        // And since external bookmarks are the only Strings encoded,
+        // it is better to use the JDK UTF 8 encoder.
+        // Also the external bookmarks should be already UTF-8 encoded (we should not rely on that),
+        // which means quite an easy job for the encoder.
+        BookmarkPackStreamPacker( PackOutput out )
+        {
+            super( out, input -> ByteBuffer.wrap( input.getBytes( StandardCharsets.UTF_8 ) ) );
         }
     }
 }

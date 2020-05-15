@@ -22,6 +22,7 @@ package org.neo4j.fabric.planning
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
+import org.neo4j.graphdb.Notification
 
 case class FabricPlan(
   query: Fragment,
@@ -30,7 +31,8 @@ case class FabricPlan(
   queryString: String,
   debugOptions: DebugOptions,
   obfuscationMetadata: ObfuscationMetadata,
-  inFabricContext: Boolean
+  inFabricContext: Boolean,
+  notifications: Seq[Notification]
 )
 
 object FabricPlan {
