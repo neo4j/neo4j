@@ -71,10 +71,12 @@ import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
@@ -86,6 +88,7 @@ import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
@@ -1415,7 +1418,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _nameAsEither
     ifExists <- boolean
-  } yield DropDatabase(dbName, ifExists)(pos)
+    additionalAction <- Gen.oneOf( DumpData, DestroyData )
+  } yield DropDatabase(dbName, ifExists, additionalAction)(pos)
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _nameAsEither
