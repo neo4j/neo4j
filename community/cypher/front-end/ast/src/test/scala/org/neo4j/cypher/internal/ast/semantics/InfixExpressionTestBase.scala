@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.scalatest.Assertion
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends SemanticFunSuite {
 
