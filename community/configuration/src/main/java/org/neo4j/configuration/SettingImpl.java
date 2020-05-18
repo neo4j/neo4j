@@ -242,6 +242,11 @@ public final class SettingImpl<T> implements Setting<T>
         this.documentedDefaultValue = documentedDefaultValue;
     }
 
+    SettingValueParser<T> parser()
+    {
+        return parser;
+    }
+
     public static class Builder<T>
     {
         private final String name;
@@ -273,6 +278,7 @@ public final class SettingImpl<T> implements Setting<T>
 
         public Builder<T> addConstraint( SettingConstraint<T> constraint )
         {
+            constraint.setParser( parser );
             constraints.add( constraint );
             return this;
         }
