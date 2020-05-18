@@ -107,6 +107,13 @@ public class CommunitySecurityModule extends SecurityModule
 
     public static File getUserRepositoryFile( Config config )
     {
+        // Because it contains sensitive information there is a legacy setting to configure
+        // the location of the user store file that we still respect
+        File authStore = config.get( GraphDatabaseSettings.auth_store ).toFile();
+        if ( authStore.isFile() )
+        {
+            return authStore;
+        }
         return getUserRepositoryFile( config, USER_STORE_FILENAME );
     }
 
@@ -118,15 +125,6 @@ public class CommunitySecurityModule extends SecurityModule
     private static File getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
-
-        // Because it contains sensitive information there is a legacy setting to configure
-        // the location of the user store file that we still respect
-
-        File authStore = config.get( GraphDatabaseSettings.auth_store ).toFile();
-        if ( authStore.isFile() )
-        {
-            return authStore;
-        }
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory ).toFile();
         return new File( authStoreDir, fileName );
     }
