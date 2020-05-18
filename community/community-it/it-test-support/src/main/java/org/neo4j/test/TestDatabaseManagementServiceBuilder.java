@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.time.SystemNanoClock;
 
 /**
@@ -63,6 +65,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected boolean impermanent;
     private Config fromConfig;
     private boolean noOpSystemGraphInitializer;
+    private boolean emptyExternalProcedures;
 
     public TestDatabaseManagementServiceBuilder()
     {
@@ -100,6 +103,12 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         if ( noOpSystemGraphInitializer )
         {
             dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
+        }
+        if ( emptyExternalProcedures )
+        {
+            var dependencyWrapper = new Dependencies( dependencies );
+            dependencyWrapper.satisfyDependency( new GlobalProceduresRegistry() );
+            dependencies = dependencyWrapper;
         }
 
         return newDatabaseManagementService( cfg, databaseDependencies() );
@@ -202,6 +211,12 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
     {
         config.setRaw( raw );
+        return this;
+    }
+
+    public TestDatabaseManagementServiceBuilder useEmptyExternalProcedures( boolean useEmptyExternalProcedureSet )
+    {
+        this.emptyExternalProcedures = useEmptyExternalProcedureSet;
         return this;
     }
 

@@ -45,6 +45,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.collector.DataCollector;
@@ -77,6 +78,7 @@ import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.module.edition.CommunityEditionModule.tryResolveOrCreate;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
@@ -220,64 +222,70 @@ public class DatabaseManagementServiceFactory
     @SuppressWarnings( "unused" )
     private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
     {
-        Config globalConfig = globalModule.getGlobalConfig();
-        File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
-        LogService logService = globalModule.getLogService();
-        Log internalLog = logService.getInternalLog( GlobalProcedures.class );
-        Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
+        return tryResolveOrCreate( GlobalProcedures.class, globalModule.getExternalDependencyResolver(), () ->
+                {
+                    Config globalConfig = globalModule.getGlobalConfig();
+                    File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
+                    LogService logService = globalModule.getLogService();
+                    Log internalLog = logService.getInternalLog( GlobalProcedures.class );
+                    Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
 
-        ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
-        Edition neo4jEdition = globalModule.getDatabaseInfo().edition;
-        SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), neo4jEdition.toString() );
-        GlobalProceduresRegistry globalProcedures = new GlobalProceduresRegistry( builtInProcedures, proceduresDirectory, internalLog, procedureConfig );
+                    ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
+                    Edition neo4jEdition = globalModule.getDatabaseInfo().edition;
+                    SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), neo4jEdition.toString() );
+                    GlobalProceduresRegistry globalProcedures = new GlobalProceduresRegistry( builtInProcedures, proceduresDirectory, internalLog,
+                            procedureConfig );
 
-        globalProcedures.registerType( Node.class, NTNode );
-        globalProcedures.registerType( NodeValue.class, NTNode );
-        globalProcedures.registerType( Relationship.class, NTRelationship );
-        globalProcedures.registerType( RelationshipValue.class, NTRelationship );
-        globalProcedures.registerType( Path.class, NTPath );
-        globalProcedures.registerType( PathValue.class, NTPath );
-        globalProcedures.registerType( Geometry.class, NTGeometry );
-        globalProcedures.registerType( Point.class, NTPoint );
-        globalProcedures.registerType( PointValue.class, NTPoint );
+                    globalProcedures.registerType( Node.class, NTNode );
+                    globalProcedures.registerType( NodeValue.class, NTNode );
+                    globalProcedures.registerType( Relationship.class, NTRelationship );
+                    globalProcedures.registerType( RelationshipValue.class, NTRelationship );
+                    globalProcedures.registerType( Path.class, NTPath );
+                    globalProcedures.registerType( PathValue.class, NTPath );
+                    globalProcedures.registerType( Geometry.class, NTGeometry );
+                    globalProcedures.registerType( Point.class, NTPoint );
+                    globalProcedures.registerType( PointValue.class, NTPoint );
 
-        // Below components are not public API, but are made available for internal
-        // procedures to call, and to provide temporary workarounds for the following
-        // patterns:
-        //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
-        //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
-        //                              combine lots of small ones)
-        //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
-        globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
-        globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
-        globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
+                    // Below components are not public API, but are made available for internal
+                    // procedures to call, and to provide temporary workarounds for the following
+                    // patterns:
+                    //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
+                    //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
+                    //                              combine lots of small ones)
+                    //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
+                    globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
+                    globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
+                    globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
+                    globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
 
-        // Register injected public API components
-        globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
-        globalProcedures.registerComponent( Transaction.class, new ProcedureTransactionProvider(), true );
-        globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
-        globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
-        globalProcedures.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
-        globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
-        globalProcedures.registerComponent( GraphDatabaseService.class,
-                ctx -> new GraphDatabaseFacade( (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer( ctx ) ), true );
+                    // Register injected public API components
+                    globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
+                    globalProcedures.registerComponent( Transaction.class, new ProcedureTransactionProvider(), true );
+                    globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
+                    globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
+                    globalProcedures.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
+                    globalProcedures.registerComponent( FulltextAdapter.class, ctx ->
+                            ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
+                    globalProcedures.registerComponent( GraphDatabaseService.class, ctx ->
+                            new GraphDatabaseFacade( (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer( ctx ) ), true );
 
-        globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
+                    globalProcedures.registerComponent( DataCollector.class,
+                            ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
 
-        // Edition procedures
-        try
-        {
-            editionModule.registerProcedures( globalProcedures, procedureConfig, globalModule, databaseManager );
-        }
-        catch ( KernelException e )
-        {
-            internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
-        }
+                    // Edition procedures
+                    try
+                    {
+                        editionModule.registerProcedures( globalProcedures, procedureConfig, globalModule, databaseManager );
+                    }
+                    catch ( KernelException e )
+                    {
+                        internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
+                    }
 
-        globalModule.getGlobalLife().add( globalProcedures );
-        globalModule.getGlobalDependencies().satisfyDependency( globalProcedures );
-        return globalProcedures;
+                    globalModule.getGlobalLife().add( globalProcedures );
+                    globalModule.getGlobalDependencies().satisfyDependency( globalProcedures );
+                    return globalProcedures;
+                } );
     }
 
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
