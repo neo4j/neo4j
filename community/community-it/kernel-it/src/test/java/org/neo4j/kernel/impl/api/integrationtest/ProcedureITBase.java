@@ -46,7 +46,8 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS", true ),
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", stringArray( "admin" ), "DBMS" ),
-                proc( "db.constraints", "() :: (name :: STRING?, description :: STRING?)", "List all constraints in the database.",
+                proc( "db.constraints", "() :: (name :: STRING?, description :: STRING?, details :: STRING?)",
+                        "List all constraints in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.indexes",
                         "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +

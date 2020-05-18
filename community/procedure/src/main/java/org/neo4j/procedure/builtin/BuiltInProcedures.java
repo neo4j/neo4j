@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -456,7 +455,9 @@ public class BuiltInProcedures
         final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
         for ( ConstraintDescriptor constraint : constraintDescriptors )
         {
-            result.add( new ConstraintResult( constraint.getName(), constraint.userDescription( kernelTransaction.tokenRead() ) ) );
+            String description = ConstraintsProcedureUtil.prettyPrint( constraint, kernelTransaction.tokenRead() );
+            String details = constraint.userDescription( kernelTransaction.tokenRead() );
+            result.add( new ConstraintResult( constraint.getName(), description, details ) );
         }
         result.sort( Comparator.comparing( r -> r.name ) );
         return result.stream();
@@ -707,11 +708,13 @@ public class BuiltInProcedures
     {
         public final String name;
         public final String description;
+        public final String details;
 
-        private ConstraintResult( String name, String description )
+        private ConstraintResult( String name, String description, String details )
         {
             this.name = name;
             this.description = description;
+            this.details = details;
         }
     }
 
