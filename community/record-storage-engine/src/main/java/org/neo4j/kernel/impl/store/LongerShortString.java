@@ -236,7 +236,7 @@ public enum LongerShortString
             int offset = encOffset + 0x1B;
             switch ( b )
             {
-            case 1: return 0;
+            case 1: return offset;
             case 2: return 1 + offset;
             case 3: return 2 + offset;
             case 6: return 3 + offset;
