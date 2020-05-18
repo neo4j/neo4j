@@ -60,6 +60,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     void addUser( Transaction tx, String username, Credential credentials, boolean passwordChangeRequired, boolean suspended )
     {
         // NOTE: If username already exists we will violate a constraint
+        log.info( String.format( "Creating new user '%s' (passwordChangeRequired=%b, suspended=%b)", username, passwordChangeRequired, suspended ) );
         Node node = tx.createNode( USER_LABEL );
         node.setProperty( "name", username );
         node.setProperty( "credentials", credentials.serialize() );
@@ -74,8 +75,13 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         // The set-initial-password command should only take effect if the only existing user is the default user with the default password.
         ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL );
         List<Node> users = nodes.stream().collect( Collectors.toList() );
-        if ( users.size() == 1 )
+        if ( users.size() == 0 )
         {
+            log.warn( String.format( "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name() ) );
+        }
+        else if ( users.size() == 1 )
+        {
+            log.info( String.format( "Updating initial user password from `auth.ini` file: %s", initialUser.name() ) );
             Node user = users.get( 0 );
             if ( user.getProperty( "name" ).equals( INITIAL_USER_NAME ) )
             {
@@ -86,6 +92,10 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                     user.setProperty( "passwordChangeRequired", initialUser.passwordChangeRequired() );
                 }
             }
+        }
+        else
+        {
+            log.error( String.format( "Multiple users matching initial user password from `auth.ini` file: %s", initialUser.name() ) );
         }
     }
 

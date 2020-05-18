@@ -76,11 +76,13 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
         if ( initialUser.isPresent() )
         {
             User user = initialUser.get();
+            log.info( String.format( "Setting up initial user from `auth.ini` file: %s", user.name() ) );
             addUser( tx, INITIAL_USER_NAME, user.credentials(), user.passwordChangeRequired(), user.hasFlag( IS_SUSPENDED ) );
         }
         else
         {
             SystemGraphCredential credential = SystemGraphCredential.createCredentialForPassword( UTF8.encode( INITIAL_PASSWORD ), secureHasher );
+            log.info( String.format( "Setting up initial user from defaults: %s", INITIAL_USER_NAME ) );
             addUser( tx, INITIAL_USER_NAME, credential, true, false );
         }
     }
@@ -94,6 +96,10 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
             if ( initialUser.isPresent() )
             {
                 updateInitialUserPassword( tx, initialUser.get() );
+            }
+            else
+            {
+                log.info( "Not updating initial user password: No initial user found in `auth.ini" );
             }
         }
         catch ( Exception e )

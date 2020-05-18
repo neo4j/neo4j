@@ -84,6 +84,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     @Override
     protected void postInitialization( GraphDatabaseService system, boolean wasInitialized ) throws Exception
     {
+        // Do not need to setup initial password when initialized, because that is already done by the initialization code in `setupUsers`
         if ( !wasInitialized )
         {
             try ( Transaction tx = system.beginTx() )
