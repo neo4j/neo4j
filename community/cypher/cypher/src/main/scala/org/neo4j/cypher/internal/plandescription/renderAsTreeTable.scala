@@ -282,6 +282,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
 }
 
+/**
+ * TableRow contains rendering information about a single entry in the plan table.
+ *
+ * @param tree - the plan tree string including the operator name
+ * @param allColumns - arguments to be rendered
+ * @param connection - tree connection to previous table entry
+ * @param childConnection - tree connection on the next table entry
+ */
 case class TableRow(tree: String, allColumns: Map[String, Cell], connection: Option[String], childConnection: Option[String]) {
   def apply(key: String): Cell = if (key == renderAsTreeTable.OPERATOR) {
     LeftJustifiedCell(tree)
