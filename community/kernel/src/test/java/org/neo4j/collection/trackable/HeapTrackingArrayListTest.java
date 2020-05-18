@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( RandomExtension.class )
-class HeapTrackingAppendListTest
+class HeapTrackingArrayListTest
 {
     @Inject
     private RandomRule rnd;
 
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final HeapTrackingAppendList<Long> list = HeapTrackingAppendList.newAppendList( 16, memoryTracker );
+    private final HeapTrackingArrayList<Long> list = HeapTrackingArrayList.newArrayList( 16, memoryTracker );
 
     @AfterEach
     void tearDown()

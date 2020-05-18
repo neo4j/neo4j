@@ -26,7 +26,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.collection.trackable.HeapTrackingAppendList;
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
@@ -53,7 +53,6 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.collection.trackable.HeapTrackingAppendList.newAppendList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -66,13 +65,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final StorageReader store;
     private final KernelTransaction transaction;
 
-    private final HeapTrackingAppendList<PropertyEntry<Node>> assignedNodeProperties;
-    private final HeapTrackingAppendList<PropertyEntry<Relationship>> assignedRelationshipProperties;
-    private final HeapTrackingAppendList<LabelEntry> assignedLabels;
+    private final HeapTrackingArrayList<PropertyEntry<Node>> assignedNodeProperties;
+    private final HeapTrackingArrayList<PropertyEntry<Relationship>> assignedRelationshipProperties;
+    private final HeapTrackingArrayList<LabelEntry> assignedLabels;
 
-    private final HeapTrackingAppendList<PropertyEntry<Node>> removedNodeProperties;
-    private final HeapTrackingAppendList<PropertyEntry<Relationship>> removedRelationshipProperties;
-    private final HeapTrackingAppendList<LabelEntry> removedLabels;
+    private final HeapTrackingArrayList<PropertyEntry<Node>> removedNodeProperties;
+    private final HeapTrackingArrayList<PropertyEntry<Relationship>> removedRelationshipProperties;
+    private final HeapTrackingArrayList<LabelEntry> removedLabels;
     private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore;
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
@@ -87,13 +86,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         this.memoryTracker = transaction.memoryTracker();
         this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
         this.relationshipsReadFromStore = newLongObjectMap( memoryTracker );
-        this.removedLabels = newAppendList( memoryTracker );
-        this.removedRelationshipProperties = newAppendList( memoryTracker );
-        this.removedNodeProperties = newAppendList( memoryTracker );
+        this.removedLabels = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.removedRelationshipProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.removedNodeProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
 
-        this.assignedLabels = newAppendList( memoryTracker );
-        this.assignedRelationshipProperties = newAppendList( memoryTracker );
-        this.assignedNodeProperties = newAppendList( memoryTracker );
+        this.assignedLabels = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.assignedRelationshipProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.assignedNodeProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
@@ -344,7 +343,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         relationship.close();
     }
 
-    private void addLabelEntriesTo( long nodeId, LongSet labelIds, HeapTrackingAppendList<LabelEntry> target )
+    private void addLabelEntriesTo( long nodeId, LongSet labelIds, HeapTrackingArrayList<LabelEntry> target )
     {
         labelIds.each( labelId ->
         {

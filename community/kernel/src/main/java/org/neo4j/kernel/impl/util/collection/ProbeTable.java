@@ -24,7 +24,7 @@ import org.eclipse.collections.api.map.MutableMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.trackable.HeapTrackingAppendList;
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -43,7 +43,7 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
     private final ScopedMemoryTracker scopedMemoryTracker;
-    private final MutableMap<K,HeapTrackingAppendList<V>> map;
+    private final MutableMap<K,HeapTrackingArrayList<V>> map;
 
     public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
     {
@@ -63,7 +63,7 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
         map.getIfAbsentPutWith( key, p ->
         {
             p.allocateHeap( key.estimatedHeapUsage() );
-            return HeapTrackingAppendList.newAppendList( p );
+            return HeapTrackingArrayList.newArrayList( p );
         }, scopedMemoryTracker ).add( value );
         scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
     }

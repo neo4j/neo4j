@@ -32,14 +32,14 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
 /**
- * A heap tracking append list. It only tracks the internal structure, not the elements within.
+ * A heap tracking array list. It only tracks the internal structure, not the elements within.
  *
  * @param <T> element type
  */
 @SuppressWarnings( "unchecked" )
-public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
+public class HeapTrackingArrayList<T> implements Iterable<T>, AutoCloseable
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingAppendList.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingArrayList.class );
 
     private final MemoryTracker memoryTracker;
 
@@ -48,25 +48,25 @@ public class HeapTrackingAppendList<T> implements Iterable<T>, AutoCloseable
     private T[] items;
 
     /**
-     * @return a new heap tracking append list with initial size 1
+     * @return a new heap tracking array list with initial size 1
      */
-    public static <T> HeapTrackingAppendList<T> newAppendList( MemoryTracker memoryTracker )
+    public static <T> HeapTrackingArrayList<T> newArrayList( MemoryTracker memoryTracker )
     {
-        return newAppendList( 1, memoryTracker );
+        return newArrayList( 1, memoryTracker );
     }
 
     /**
-     * @return a new heap tracking append list with the specified initial size
+     * @return a new heap tracking array list with the specified initial size
      */
-    public static <T> HeapTrackingAppendList<T> newAppendList( int initialSize, MemoryTracker memoryTracker )
+    public static <T> HeapTrackingArrayList<T> newArrayList( int initialSize, MemoryTracker memoryTracker )
     {
         requireNonNegative( initialSize );
         long trackedSize = shallowSizeOfObjectArray( initialSize );
         memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
-        return new HeapTrackingAppendList<>( initialSize, memoryTracker, trackedSize );
+        return new HeapTrackingArrayList<>( initialSize, memoryTracker, trackedSize );
     }
 
-    private HeapTrackingAppendList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
+    private HeapTrackingArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
     {
         this.items = (T[]) new Object[initialSize];
         this.memoryTracker = memoryTracker;
