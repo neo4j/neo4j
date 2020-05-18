@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.DefaultComparatorTopTable
+import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
@@ -38,8 +38,6 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
  */
 case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[CypherRow])
                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-
-  private val initialFallbackSortArraySize = Int.MaxValue / 8 // This should not be too big so as to risk out-of-memory on the first allocation
 
   protected override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     val limitNumber = NumericHelper.evaluateStaticallyKnownNumber(countExpression, state)
