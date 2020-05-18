@@ -149,6 +149,49 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * Create one directed connected graph, by cross-linking multiple chain graphs.
+   * E.g., for `chainCount=3` & `chainDepth=4`, the following graph would be created:
+   *
+   *      *-->*-->*-->*
+   *    /   X   X   X   \
+   *  *-->*-->*-->*-->*-->*
+   *    \   X   X   X   /
+   *      *-->*-->*-->*
+   *
+   * @return start & end nodes
+   */
+  def linkedChainGraph(chainCount: Int, chainDepth: Int): (Node,Node) = {
+    val relType = RelationshipType.withName("R")
+    val start = runtimeTestSupport.tx.createNode()
+
+    def extendChain(prevHeads: Seq[Node]): Seq[Node] = {
+      val newHeads = (0 until chainCount).map(_ => runtimeTestSupport.tx.createNode())
+      for {newHead <- newHeads
+           prevHead <- prevHeads} {
+        prevHead.createRelationshipTo(newHead, relType)
+      }
+      newHeads
+    }
+
+    @scala.annotation.tailrec
+    def makeLinkedChain(prevHeads: Seq[Node], depth: Int): Seq[Node] ={
+      if (depth >= chainDepth) {
+        prevHeads
+      } else {
+        makeLinkedChain(extendChain(prevHeads), depth + 1)
+      }
+    }
+
+    val chainHeads = makeLinkedChain(Seq(start), 0)
+    val end = runtimeTestSupport.tx.createNode()
+    for( n <- chainHeads) {
+      n.createRelationshipTo(end, relType)
+    }
+
+    (start, end)
+  }
+
+  /**
    * Create a lollipop graph:
    *
    *             -[r1:R]->

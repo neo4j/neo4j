@@ -39,6 +39,32 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   protected  val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("shortest path in a linked chain graph") {
+    // given
+    val chainCount = 4
+    val chainDepth = 4
+    // number of shortest paths = chainCount^chainDepth, i.e., 256 in this case
+    val (start, end) = given {
+      linkedChainGraph(chainCount, chainDepth)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPath("(x)-[r*]->(y)", pathName = Some("path"), all = true)
+      .cartesianProduct()
+      .|.nodeByIdSeek("y", Set.empty, end.getId)
+      .nodeByIdSeek("x", Set.empty, start.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedRowCount = Math.pow(chainCount, chainDepth).toInt
+
+    runtimeResult should beColumns("path").withRows(rowCount(expectedRowCount))
+  }
+
   test("shortest path in a sine graph") {
     // given
     val (start, end, rels) = given {
