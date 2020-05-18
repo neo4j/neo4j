@@ -11,6 +11,8 @@ org.neo4j.kernel.api.exceptions.Status.Classification::values() org.neo4j.kernel
 org.neo4j.kernel.api.exceptions.Status.Cluster public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Cluster> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Cluster::NotALeader org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ReplicationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::SerializationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::TransactionSizeExceedsLimit org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Cluster::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Cluster public static
 org.neo4j.kernel.api.exceptions.Status.Cluster::values() org.neo4j.kernel.api.exceptions.Status.Cluster[] public static

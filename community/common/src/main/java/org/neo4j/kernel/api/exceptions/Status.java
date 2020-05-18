@@ -495,13 +495,14 @@ public interface Status
     enum Cluster implements Status
     {
         // transient errors
-        ReplicationFailure( TransientError,
-                "Replication failure." ),
+        ReplicationFailure( TransientError, "Replication failure." ),
 
-        NotALeader( ClientError,
-                "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
-        TransactionTooBig( ClientError,
-                "Transaction is too large." ),
+        // client errors
+        NotALeader( ClientError, "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
+        TransactionSizeExceedsLimit( ClientError, "Transaction size exceeds supported limit." ),
+
+        // database errors
+        SerializationFailure( DatabaseError, "Failed to serialise the transaction." )
         ;
 
         private final Code code;
