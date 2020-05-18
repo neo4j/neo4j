@@ -116,14 +116,14 @@ public final class SettingConstraints
 
                 if ( minValue.compareTo( value ) > 0 )
                 {
-                    throw new IllegalArgumentException( format( "minimum allowed value is %s", minValue ) );
+                    throw new IllegalArgumentException( format( "minimum allowed value is %s", valueToString( minValue ) ) );
                 }
             }
 
             @Override
             public String getDescription()
             {
-                return format( "is minimum `%s`", minValue );
+                return format( "is minimum `%s`", valueToString( minValue ) );
             }
         };
     }
@@ -142,14 +142,14 @@ public final class SettingConstraints
 
                 if ( maxValue.compareTo( value ) < 0 )
                 {
-                    throw new IllegalArgumentException( format( "maximum allowed value is %s", maxValue ) );
+                    throw new IllegalArgumentException( format( "maximum allowed value is %s", valueToString( maxValue ) ) );
                 }
             }
 
             @Override
             public String getDescription()
             {
-                return format( "is maximum `%s`", maxValue );
+                return format( "is maximum `%s`", valueToString( maxValue ) );
             }
         };
     }
@@ -171,7 +171,7 @@ public final class SettingConstraints
             @Override
             public String getDescription()
             {
-                return format( "is in the range `%s` to `%s`", minValue, maxValue );
+                return format( "is in the range `%s` to `%s`", valueToString( minValue ), valueToString( maxValue ) );
             }
         };
     }
@@ -185,14 +185,14 @@ public final class SettingConstraints
             {
                 if ( !Objects.equals( value, expected  ) )
                 {
-                    throw new IllegalArgumentException( format( "is not `%s`", expected ) );
+                    throw new IllegalArgumentException( format( "is not `%s`", valueToString( expected ) ) );
                 }
             }
 
             @Override
             public String getDescription()
             {
-                return format( "is `%s`", expected );
+                return format( "is `%s`", valueToString( expected ) );
             }
         };
     }
@@ -226,6 +226,13 @@ public final class SettingConstraints
             {
                 return Arrays.stream( constraints ).map( SettingConstraint::getDescription ).collect( Collectors.joining( " or " ));
             }
+
+            @Override
+            void setParser( SettingValueParser<T> parser )
+            {
+                super.setParser( parser );
+                Arrays.stream( constraints ).forEach( constraint -> constraint.setParser( parser ) );
+            }
         };
     }
 
@@ -244,23 +251,6 @@ public final class SettingConstraints
         public String getDescription()
         {
             return "is power of 2";
-        }
-    };
-
-    public static final SettingConstraint<Integer> PORT = new SettingConstraint<>()
-    {
-        private final SettingConstraint<Integer> range = range( 0, 65535 );
-
-        @Override
-        public void validate( Integer value )
-        {
-            range.validate( value );
-        }
-
-        @Override
-        public String getDescription()
-        {
-            return "is a valid port number";
         }
     };
 
@@ -326,7 +316,7 @@ public final class SettingConstraints
         {
             if ( !value.isAbsolute() )
             {
-                throw new IllegalArgumentException( format( "`%s` is not an absolute path.", value ) );
+                throw new IllegalArgumentException( format( "`%s` is not an absolute path.", valueToString( value ) ) );
             }
         }
 

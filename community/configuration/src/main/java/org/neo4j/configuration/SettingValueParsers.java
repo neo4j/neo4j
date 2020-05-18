@@ -360,7 +360,7 @@ public final class SettingValueParsers
         @Override
         public String valueToString( Duration value )
         {
-            return TimeUtil.nanosToString( value.toNanos() );
+            return Duration.ZERO.equals( value ) ? "0s" : TimeUtil.nanosToString( value.toNanos() );
         }
     };
 
@@ -493,6 +493,12 @@ public final class SettingValueParsers
         public Class<Long> getType()
         {
             return Long.class;
+        }
+
+        @Override
+        public String valueToString( Long value )
+        {
+            return ByteUnit.bytesToString( value );
         }
     };
 

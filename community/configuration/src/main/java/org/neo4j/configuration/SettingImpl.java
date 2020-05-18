@@ -263,6 +263,7 @@ public final class SettingImpl<T> implements Setting<T>
 
         public Builder<T> addConstraint( SettingConstraint<T> constraint )
         {
+            constraint.setParser( parser );
             constraints.add( constraint );
             return this;
         }

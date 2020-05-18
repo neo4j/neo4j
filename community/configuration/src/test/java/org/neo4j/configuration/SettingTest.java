@@ -36,8 +36,10 @@ import java.util.function.BiFunction;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.string.SecureString;
 
+import static java.time.Duration.ofMinutes;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
-import static org.neo4j.configuration.SettingConstraints.PORT;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.except;
@@ -203,7 +204,15 @@ class SettingTest
 
         assertEquals( "1s", setting.valueToString( setting.parse( "1s" ) ) );
         assertEquals( "3m", setting.valueToString( setting.parse( "3m" ) ) );
-        assertEquals( "0ns", setting.valueToString( setting.parse( "0s" ) ) );
+        assertEquals( "0s", setting.valueToString( setting.parse( "0s" ) ) );
+
+        String descriptionWithConstraint = SettingImpl.newBuilder( "setting", DURATION, ofMinutes( 1 ) )
+                .addConstraint( min( Duration.ofSeconds( 10 ) ) )
+                .build()
+                .description();
+
+        String expected = "setting, a duration (Valid units are: 'ns', 'ms', 's', 'm' and 'h'; default unit is 's') which is minimum `10s`";
+        assertEquals( expected, descriptionWithConstraint );
     }
 
     @Test
@@ -254,6 +263,14 @@ class SettingTest
         assertEquals( 2048, setting.parse( "2k" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "1gig" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1M" ) );
+
+        String descriptionWithConstraint = SettingImpl.newBuilder( "setting", BYTES, ByteUnit.gibiBytes( 2 ) )
+                .addConstraint( range( ByteUnit.mebiBytes( 100 ), ByteUnit.gibiBytes( 10 ) ) )
+                .build()
+                .description();
+
+        String expected = "setting, a byte size (valid multipliers are `k`, `m`, `g`, `K`, `M`, `G`) which is in the range `100.0MiB` to `10.00GiB`";
+        assertEquals( expected, descriptionWithConstraint );
     }
 
     @Test
@@ -379,15 +396,6 @@ class SettingTest
     }
 
     @Test
-    void testPortConstraint()
-    {
-        var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( PORT ).build();
-        assertDoesNotThrow( () -> setting.validate( 7474 ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.validate( 200000 ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.validate( -1 ) );
-    }
-
-    @Test
     void testIsConstraint()
     {
         var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( is( 10 ) ).build();
@@ -409,13 +417,15 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> intSetting.validate( -9 ) );
 
         var durationSetting = (SettingImpl<Duration>) settingBuilder( "setting", DURATION )
-                .addConstraint( any( min( Duration.ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
-        assertDoesNotThrow( () -> durationSetting.validate( Duration.ofMinutes( 30 ) ) );
+                .addConstraint( any( min( ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
+        assertDoesNotThrow( () -> durationSetting.validate( ofMinutes( 30 ) ) );
         assertDoesNotThrow( () -> durationSetting.validate( Duration.ofHours( 1 ) ) );
         assertDoesNotThrow( () -> durationSetting.validate( Duration.ZERO ) );
-        assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMinutes( 29 ) ) );
+        assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( ofMinutes( 29 ) ) );
         assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMillis( 1 ) ) );
 
+        String expected = "setting, a duration (Valid units are: 'ns', 'ms', 's', 'm' and 'h'; default unit is 's') which is minimum `30m` or is `0s`";
+        assertEquals( expected, durationSetting.description() );
     }
 
     @Test

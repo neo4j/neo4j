@@ -19,6 +19,8 @@
  */
 package org.neo4j.configuration;
 
+import java.util.function.Function;
+
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -26,20 +28,32 @@ import org.neo4j.graphdb.config.Setting;
  * @param <T> the type of the objects this constraint is working on
  */
 
-public interface SettingConstraint<T>
+public abstract class SettingConstraint<T>
 {
+    private Function<T,String> valueToString = T::toString;
+
     /**
      * Validates if an object is satisfying the constraint
      *
      * @param value the object to be checked if it satisfies the constraint
      * @throws IllegalArgumentException if the constraint is not satisfied
      */
-    void validate( T value );
+    public abstract void validate( T value );
 
     /**
      * A textual representation of the constraint, including information about valid/invalid values
      *
      * @return the description
      */
-    String getDescription();
+    public abstract String getDescription();
+
+    protected String valueToString( T value )
+    {
+        return valueToString.apply( value );
+    }
+
+    void setParser( SettingValueParser<T> parser )
+    {
+        this.valueToString = parser::valueToString;
+    }
 }
