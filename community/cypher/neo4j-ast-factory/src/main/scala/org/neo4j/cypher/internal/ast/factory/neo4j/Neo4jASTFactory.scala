@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.ReturnItemsDef
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
@@ -229,7 +228,7 @@ class Neo4jASTFactory(query: String)
                                order: util.List[SortItem],
                                skip: Expression,
                                limit: Expression): Return = {
-    val items: ReturnItemsDef = ReturnItems(returnAll, returnItems.asScala.toList)(p)
+    val items = ReturnItems(returnAll, returnItems.asScala.toList)(p)
     Return(distinct,
       items,
       if (order.isEmpty) None else Some(OrderBy(order.asScala.toList)(p)),
