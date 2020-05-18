@@ -83,7 +83,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagement
     databaseName = new NormalizedDatabaseName(namedDatabaseId.name())
   } yield InternalGraph(id, namedDatabaseId.databaseId().uuid(), graphName, databaseName)
 
-  override def locationOf(graph: Catalog.Graph, requireWritable: Boolean): Location = graph match {
+  override def locationOf(graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException( s"Unexpected graph type $graph" )

@@ -25,6 +25,6 @@ trait CatalogManager {
 
   def currentCatalog(): Catalog
 
-  def locationOf(graph: Catalog.Graph, requireWritable: Boolean): Location
+  def locationOf(graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location
 
 }

@@ -33,6 +33,7 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManagerFactory;
+import org.neo4j.fabric.bootstrap.TestOverrides;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.stream.StatementResult;
@@ -90,7 +91,8 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                 namedDatabaseId.name(),
                 false,
                 txTimeout,
-                txMetadata
+                txMetadata,
+                TestOverrides.routingContext( routingContext )
         );
 
         var transactionBookmarkManager = transactionBookmarkManagerFactory.createTransactionBookmarkManager( transactionIdTracker );

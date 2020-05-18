@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
@@ -34,6 +35,7 @@ public class FabricTransactionInfo
     private final String databaseName;
     private final boolean implicitTransaction;
     private final Duration txTimeout;
+    private final RoutingContext routingContext;
     private Map<String,Object> txMetadata;
 
     public FabricTransactionInfo( AccessMode accessMode,
@@ -42,7 +44,8 @@ public class FabricTransactionInfo
             String databaseName,
             boolean implicitTransaction,
             Duration txTimeout,
-            Map<String,Object> txMetadata )
+            Map<String,Object> txMetadata,
+            RoutingContext routingContext )
     {
         this.accessMode = accessMode;
         this.loginContext = loginContext;
@@ -51,6 +54,7 @@ public class FabricTransactionInfo
         this.implicitTransaction = implicitTransaction;
         this.txTimeout = txTimeout;
         this.txMetadata = txMetadata;
+        this.routingContext = routingContext;
     }
 
     public AccessMode getAccessMode()
@@ -91,5 +95,10 @@ public class FabricTransactionInfo
     public void setMetaData( Map<String,Object> txMeta )
     {
         txMetadata = txMeta;
+    }
+
+    public RoutingContext getRoutingContext()
+    {
+        return routingContext;
     }
 }

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.GraphSelection;
@@ -116,6 +117,7 @@ public class FabricExecutor
         lifecycle.doneFabricProcessing( plan );
 
         AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
+        RoutingContext routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
 
         if ( plan.debugOptions().logPlan() )
         {
@@ -128,13 +130,13 @@ public class FabricExecutor
                     if ( plan.debugOptions().logRecords() )
                     {
                         execution = new FabricLoggingStatementExecution(
-                                plan, plannerInstance, useEvaluator, parameters, accessMode, ctx, log, lifecycle, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, log, lifecycle, dataStreamConfig
                         );
                     }
                     else
                     {
                         execution = new FabricStatementExecution(
-                                plan, plannerInstance, useEvaluator, parameters, accessMode, ctx, lifecycle, dataStreamConfig
+                                plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, lifecycle, dataStreamConfig
                         );
                     }
                     return execution.run();
@@ -159,7 +161,7 @@ public class FabricExecutor
         {
             var dbName = fabricTransaction.getTransactionInfo().getDatabaseName();
             var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.<String>empty() ) );
-            var location = (Location.Local) catalogManager.locationOf( graph, false );
+            var location = (Location.Local) catalogManager.locationOf( graph, false, false );
             var internalTransaction = new CompletableFuture<InternalTransaction>();
             fabricTransaction.execute( ctx ->
                                        {
@@ -188,6 +190,7 @@ public class FabricExecutor
         private final StatementLifecycle lifecycle;
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
+        private final RoutingContext routingContext;
 
         FabricStatementExecution(
                 FabricPlan plan,
@@ -195,6 +198,7 @@ public class FabricExecutor
                 UseEvaluation.Instance useEvaluator,
                 MapValue queryParams,
                 AccessMode accessMode,
+                RoutingContext routingContext,
                 FabricTransaction.FabricExecutionContext ctx,
                 StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig )
@@ -207,6 +211,7 @@ public class FabricExecutor
             this.lifecycle = lifecycle;
             this.prefetcher = new Prefetcher( dataStreamConfig );
             this.accessMode = accessMode;
+            this.routingContext = routingContext;
         }
 
         StatementResult run()
@@ -314,7 +319,7 @@ public class FabricExecutor
 
             Catalog.Graph graph = evalUse( fragment.use().graphSelection(), argumentValues );
             var transactionMode = getTransactionMode( fragment.queryType(), graph.toString() );
-            Location location = catalogManager.locationOf( graph, transactionMode.requiresWrite() );
+            Location location = catalogManager.locationOf( graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
             if ( location instanceof Location.Local )
             {
                 Location.Local local = (Location.Local) location;
@@ -533,12 +538,13 @@ public class FabricExecutor
                 FabricPlanner.PlannerInstance plannerInstance,
                 UseEvaluation.Instance useEvaluator, MapValue params,
                 AccessMode accessMode,
+                RoutingContext routingContext,
                 FabricTransaction.FabricExecutionContext ctx,
                 Log log,
                 StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig )
         {
-            super( plan, plannerInstance, useEvaluator, params, accessMode, ctx, lifecycle, dataStreamConfig );
+            super( plan, plannerInstance, useEvaluator, params, accessMode, routingContext, ctx, lifecycle, dataStreamConfig );
             this.step = new AtomicInteger( 0 );
             this.log = log;
         }
