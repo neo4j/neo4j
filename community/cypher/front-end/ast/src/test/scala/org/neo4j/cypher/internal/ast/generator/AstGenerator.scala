@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
+import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
@@ -1255,7 +1256,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // Privilege commands
 
   def _graphAction: Gen[GraphAction] = oneOf(
-    CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
+    MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
     // TODO: TraverseAction, ReadAction and MatchAction are used as individual Privileges and not as actions
   )
 
@@ -1312,7 +1313,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         qualifier      <- _graphQualifier
       } yield (qualifier, None)
     } else {
-      // READ, MATCH, SET PROPERTY have any graph qualifier and property resource
+      // READ, MATCH, MERGE, SET PROPERTY have any graph qualifier and property resource
       for {
         qualifier      <- _graphQualifier
         resourceNames  <- oneOrMore(_identifier)
