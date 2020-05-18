@@ -31,6 +31,7 @@ import org.neo4j.util.FeatureToggles;
 public abstract class FabricDatabaseManager
 {
     public static final String FABRIC_BY_DEFAULT_FLAG_NAME = "fabric_by_default";
+    public static final boolean FABRIC_BY_DEFAULT_DEFAULT_VALUE = true;
 
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
@@ -44,7 +45,7 @@ public abstract class FabricDatabaseManager
 
     public static boolean fabricByDefault()
     {
-        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, true );
+        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, FABRIC_BY_DEFAULT_DEFAULT_VALUE );
     }
 
     public DatabaseIdRepository databaseIdRepository()
