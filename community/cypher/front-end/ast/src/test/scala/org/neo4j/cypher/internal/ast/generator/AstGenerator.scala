@@ -1386,12 +1386,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     traverseRevoke              = RevokePrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
     readRevoke                  = RevokePrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
     matchRevoke                 = RevokePrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
-    grant                       <- oneOf(graphGrant, traverseGrant, readGrant, matchGrant)
-    deny                        <- oneOf(graphDeny, traverseDeny, readDeny, matchDeny)
-    revokeGrant                 <- oneOf(graphRevokeGrant, traverseRevokeGrant, readRevokeGrant, matchRevokeGrant)
-    revokeDeny                  <- oneOf(graphRevokeDeny, traverseRevokeDeny, readRevokeDeny, matchRevokeDeny)
-    revoke                      <- oneOf(graphRevoke, traverseRevoke, readRevoke, matchRevoke)
-    graph                       <- oneOf(grant, deny, revokeGrant, revokeDeny, revoke)
+    graphPrivilege              <- oneOf(graphGrant, graphDeny, graphRevokeGrant, graphRevokeDeny, graphRevoke)
+    traversePrivilege           <- oneOf(traverseGrant, traverseDeny, traverseRevokeGrant, traverseRevokeDeny, traverseRevoke)
+    readPrivilege               <- oneOf(readGrant, readDeny, readRevokeGrant, readRevokeDeny, readRevoke)
+    matchPrivilege              <- oneOf(matchGrant, matchDeny, matchRevokeGrant, matchRevokeDeny, matchRevoke)
+    graph                       <- oneOf(graphPrivilege, traversePrivilege, readPrivilege, matchPrivilege)
   } yield graph
 
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
