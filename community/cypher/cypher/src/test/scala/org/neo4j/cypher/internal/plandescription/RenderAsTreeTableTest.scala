@@ -763,6 +763,10 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     renderAsTreeTable.splitDetails(List("1234567890"), 10) should be(Seq("1234567890"))
   }
 
+  test("Should not split single detail into multiple lines if it can fit on a separate line") {
+    renderAsTreeTable.splitDetails(List("123456", "123456"), 10) should be(Seq("123456,", "123456"))
+  }
+
   test("format single too long detail") {
     renderAsTreeTable.splitDetails(List("12345678901"), 10) should be(Seq("1234567890", "1"))
   }
