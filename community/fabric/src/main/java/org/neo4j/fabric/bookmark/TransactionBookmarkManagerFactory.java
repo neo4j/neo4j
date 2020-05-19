@@ -35,13 +35,6 @@ public class TransactionBookmarkManagerFactory
 
     public TransactionBookmarkManager createTransactionBookmarkManager( LocalGraphTransactionIdTracker transactionIdTracker )
     {
-        if ( fabricDatabaseManager.multiGraphCapabilitiesEnabledForAllDatabases() )
-        {
-            return new FabricOnlyBookmarkManager( transactionIdTracker );
-        }
-        else
-        {
-            return new MixedModeBookmarkManager( transactionIdTracker );
-        }
+        return new TransactionBookmarkManagerImpl( transactionIdTracker, fabricDatabaseManager.multiGraphCapabilitiesEnabledForAllDatabases() );
     }
 }

@@ -123,16 +123,16 @@ public final class BookmarksParserV4 implements BookmarksParser
             return buildBookmarks( NAMED_SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
         }
 
-        if ( maxUserDbTxId != ABSENT_BOOKMARK_ID )
-        {
-            throw newInvalidBookmarkMixtureError( bookmarks );
-        }
-
-        var customBookmarks =  customBookmarkFormatParser.parse( customBookmarkStrings );
+        var customBookmarks = customBookmarkFormatParser.parse( customBookmarkStrings );
 
         if ( maxSystemDbTxId != ABSENT_BOOKMARK_ID )
         {
             customBookmarks.add( new BookmarkWithDatabaseId( maxSystemDbTxId, NAMED_SYSTEM_DATABASE_ID ) );
+        }
+
+        if ( maxUserDbTxId != ABSENT_BOOKMARK_ID )
+        {
+            customBookmarks.add( new BookmarkWithDatabaseId( maxUserDbTxId, userDbId ) );
         }
 
         return customBookmarks;

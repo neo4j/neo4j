@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmarkMixture;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
@@ -321,13 +320,14 @@ class BookmarksParserV4Test
     }
 
     @Test
-    void shouldParseCustomBookmarksAndSystemDbBookmark() throws BoltIOException
+    void shouldParseCustomBookmarksMixUp() throws BoltIOException
     {
         var parser = new BookmarksParserV4( databaseIdRepository, new CustomParser() );
 
         var metadata = metadata( List.of(
                 customBookmarkString( "text1" ),
                 bookmarkString( 1234, NAMED_SYSTEM_DATABASE_ID ),
+                bookmarkString( 4321, databaseIdRepository.getRaw( "molly" ) ),
                 customBookmarkString( "text2" )
                 ) );
 
@@ -336,34 +336,9 @@ class BookmarksParserV4Test
         assertEquals( List.of(
                 new CustomBookmark( "text1" ),
                 new CustomBookmark( "text2" ),
-                new BookmarkWithDatabaseId( 1234, NAMED_SYSTEM_DATABASE_ID )
+                new BookmarkWithDatabaseId( 1234, NAMED_SYSTEM_DATABASE_ID ),
+                new BookmarkWithDatabaseId( 4321, databaseIdRepository.getRaw( "molly" ) )
         ), bookmarks );
-    }
-
-    @Test
-    void shouldParseCustomBookmarksMixUp()
-    {
-        var parser = new BookmarksParserV4( databaseIdRepository, new CustomParser() );
-
-        var metadata = metadata( List.of(
-                customBookmarkString( "text1" ),
-                bookmarkString( 1234, databaseIdRepository.getRaw( "molly" ) ),
-                customBookmarkString( "text2" )
-        ) );
-
-        try
-        {
-            parser.parseBookmarks( metadata );
-            fail( "Exception expected" );
-        }
-        catch ( BookmarkParsingException e )
-        {
-            assertThat( e.getMessage() ).contains( "Supplied bookmarks are from different databases" );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception", e );
-        }
     }
 
     private static MapValue metadata( Object bookmarks )

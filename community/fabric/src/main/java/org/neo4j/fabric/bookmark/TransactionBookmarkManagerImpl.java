@@ -30,10 +30,13 @@ import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FabricOnlyBookmarkManager implements TransactionBookmarkManager
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+
+public class TransactionBookmarkManagerImpl implements TransactionBookmarkManager
 {
     private final FabricBookmarkParser fabricBookmarkParser = new FabricBookmarkParser();
     private final LocalGraphTransactionIdTracker transactionIdTracker;
+    private final boolean multiGraphEverywhere;
 
     // must be taken when updating the final bookmark
     private final Object finalBookmarkLock = new Object();
@@ -41,9 +44,10 @@ public class FabricOnlyBookmarkManager implements TransactionBookmarkManager
     private volatile FabricBookmark submittedBookmark;
     private volatile FabricBookmark finalBookmark;
 
-    public FabricOnlyBookmarkManager( LocalGraphTransactionIdTracker transactionIdTracker )
+    public TransactionBookmarkManagerImpl( LocalGraphTransactionIdTracker transactionIdTracker, boolean multiGraphEverywhere )
     {
         this.transactionIdTracker = transactionIdTracker;
+        this.multiGraphEverywhere = multiGraphEverywhere;
     }
 
     @Override
@@ -63,13 +67,31 @@ public class FabricOnlyBookmarkManager implements TransactionBookmarkManager
     {
         return bookmarks.stream().map( bookmark ->
         {
-            if ( !(bookmark instanceof FabricBookmark) )
+            if ( bookmark instanceof FabricBookmark )
             {
-                throw new FabricException( Status.Transaction.InvalidBookmarkMixture, "Bookmark of unexpected type encountered: " + bookmark );
+                return (FabricBookmark) bookmark;
             }
 
-            return (FabricBookmark) bookmark;
+            // Getting non-fabric bookmarks when 'multi graph everywhere' is enabled
+            // can only happen during rolling upgrade.
+            // Let's be nice and convert the bookmarks into Fabric ones in this case.
+            // If 'multi graph everywhere' is not enabled, only System DB bookmarks
+            // can be mixed with target database bookmarks. That is not a Fabric restriction,
+            // but how non-fabric bookmarks work.
+            if ( !multiGraphEverywhere && !bookmark.databaseId().equals( NAMED_SYSTEM_DATABASE_ID ) )
+            {
+                throw new FabricException( Status.Transaction.InvalidBookmarkMixture, "Bookmark for unexpected database encountered: " + bookmark );
+            }
+
+            return convertNonFabricBookmark( bookmark );
         } ).collect( Collectors.toList() );
+    }
+
+    private FabricBookmark convertNonFabricBookmark( Bookmark bookmark )
+    {
+        var databaseUuid = bookmark.databaseId().databaseId().uuid();
+        var internalGraphState = new FabricBookmark.InternalGraphState( databaseUuid, bookmark.txId() );
+        return new FabricBookmark( List.of( internalGraphState ), List.of() );
     }
 
     private void awaitSystemGraphUpToDate()
