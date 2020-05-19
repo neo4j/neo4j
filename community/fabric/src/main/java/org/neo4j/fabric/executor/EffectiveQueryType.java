@@ -20,6 +20,7 @@
 package org.neo4j.fabric.executor;
 
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.graphdb.QueryExecutionType;
 
@@ -67,5 +68,26 @@ public class EffectiveQueryType
         }
 
         throw new IllegalArgumentException( "Unexpected query type: " + queryType );
+    }
+
+    public static QueryExecutionType queryExecutionType( FabricPlan plan, AccessMode accessMode )
+    {
+        QueryExecutionType.QueryType effectiveQueryType = effectiveQueryType( accessMode, plan.queryType() );
+        if ( plan.executionType() == FabricPlan.EXECUTE() )
+        {
+            return QueryExecutionType.query( effectiveQueryType );
+        }
+        else if ( plan.executionType() == FabricPlan.EXPLAIN() )
+        {
+            return QueryExecutionType.explained( effectiveQueryType );
+        }
+        else if ( plan.executionType() == FabricPlan.PROFILE() )
+        {
+            return QueryExecutionType.profiled( effectiveQueryType );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unexpected execution type: " + plan.executionType() );
+        }
     }
 }

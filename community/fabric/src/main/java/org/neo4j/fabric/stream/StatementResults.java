@@ -33,6 +33,7 @@ import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.LocalExecutionSummary;
 import org.neo4j.fabric.stream.summary.EmptySummary;
 import org.neo4j.fabric.stream.summary.Summary;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -47,12 +48,15 @@ public final class StatementResults
 
     public static StatementResult map( StatementResult statementResult, UnaryOperator<Flux<Record>> func )
     {
-        return new BasicStatementResult( statementResult.columns(), func.apply( statementResult.records() ), statementResult.summary() );
+        return new BasicStatementResult( statementResult.columns(),
+                                         func.apply( statementResult.records() ),
+                                         statementResult.summary(),
+                                         statementResult.executionType() );
     }
 
     public static StatementResult initial()
     {
-        return new BasicStatementResult( Flux.empty(), Flux.just( Records.empty() ), Mono.empty() );
+        return new BasicStatementResult( Flux.empty(), Flux.just( Records.empty() ), Mono.empty(), Mono.empty() );
     }
 
     public static StatementResult create( Function<QuerySubscriber,QueryExecution> execution )
@@ -65,7 +69,8 @@ public final class StatementResults
             return create(
                     Flux.fromArray( queryExecution.fieldNames() ),
                     Flux.from( querySubject ),
-                    querySubject.getSummary()
+                    querySubject.getSummary(),
+                    Mono.just( queryExecution.executionType() )
             );
         }
         catch ( RuntimeException re )
@@ -74,9 +79,9 @@ public final class StatementResults
         }
     }
 
-    public static StatementResult create( Flux<String> columns, Flux<Record> records, Mono<Summary> summary )
+    public static StatementResult create( Flux<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType )
     {
-        return new BasicStatementResult( columns, records, summary );
+        return new BasicStatementResult( columns, records, summary, executionType );
     }
 
     public static <E extends Throwable> StatementResult withErrorMapping( StatementResult statementResult, Class<E> type,
@@ -85,13 +90,14 @@ public final class StatementResults
         var columns = statementResult.columns().onErrorMap( type, mapper );
         var records = statementResult.records().onErrorMap( type, mapper );
         var summary = statementResult.summary().onErrorMap( type, mapper );
+        var executionType = statementResult.executionType().onErrorMap( type, mapper );
 
-        return create( columns, records, summary );
+        return create( columns, records, summary, executionType );
     }
 
     public static StatementResult error( Throwable err )
     {
-        return new BasicStatementResult( Flux.error( err ), Flux.error( err ), Mono.error( err ) );
+        return new BasicStatementResult( Flux.error( err ), Flux.error( err ), Mono.error( err ), Mono.error( err ) );
     }
 
     public static StatementResult trace( StatementResult input )
@@ -113,8 +119,8 @@ public final class StatementResults
                         System.out.println( String.join( ", ", signal.getType().toString() ) );
                     }
                 } ),
-                input.summary()
-        );
+                input.summary(),
+                input.executionType() );
     }
 
     private static class BasicStatementResult implements StatementResult
@@ -122,12 +128,15 @@ public final class StatementResults
         private final Flux<String> columns;
         private final Flux<Record> records;
         private final Mono<Summary> summary;
+        private final Mono<QueryExecutionType> executionType;
 
-        BasicStatementResult( Flux<String> columns, Flux<Record> records, Mono<Summary> summary )
+        BasicStatementResult( Flux<String> columns, Flux<Record> records, Mono<Summary> summary,
+                              Mono<QueryExecutionType> executionType )
         {
             this.columns = columns;
             this.records = records;
             this.summary = summary;
+            this.executionType = executionType;
         }
 
         @Override
@@ -146,6 +155,12 @@ public final class StatementResults
         public Mono<Summary> summary()
         {
             return summary;
+        }
+
+        @Override
+        public Mono<QueryExecutionType> executionType()
+        {
+            return executionType;
         }
     }
 

@@ -36,6 +36,7 @@ import org.neo4j.fabric.stream.Rx2SyncStream;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.StatementResults;
 import org.neo4j.fabric.stream.summary.Summary;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -197,6 +198,12 @@ public class FabricKernelTransaction
         public Mono<Summary> summary()
         {
             return wrappedResult.summary();
+        }
+
+        @Override
+        public Mono<QueryExecutionType> executionType()
+        {
+            return wrappedResult.executionType();
         }
     }
 }

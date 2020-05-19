@@ -30,9 +30,9 @@ import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.Exceptions;
-import org.neo4j.fabric.stream.FabricExecutionStatementResult;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.Rx2SyncStream;
+import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
@@ -48,13 +48,13 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
     private final QueryExecutionImpl queryExecution;
     private final QuerySubscriber subscriber;
 
-    public BoltQueryExecutionImpl( FabricExecutionStatementResult statementResult, QuerySubscriber subscriber, FabricConfig fabricConfig )
+    public BoltQueryExecutionImpl( StatementResult statementResult, QuerySubscriber subscriber, FabricConfig fabricConfig )
     {
         this.subscriber = subscriber;
         var config = fabricConfig.getDataStream();
         var rx2SyncStream = new Rx2SyncStream( statementResult.records(), config.getBatchSize() );
         queryExecution =
-                new QueryExecutionImpl( rx2SyncStream, subscriber, statementResult.columns(), statementResult.summary(), statementResult.queryExecutionType() );
+                new QueryExecutionImpl( rx2SyncStream, subscriber, statementResult.columns(), statementResult.summary(), statementResult.executionType() );
     }
 
     public void initialize() throws Exception

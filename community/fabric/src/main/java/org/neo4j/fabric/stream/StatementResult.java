@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.neo4j.fabric.stream.summary.Summary;
+import org.neo4j.graphdb.QueryExecutionType;
 
 public interface StatementResult
 {
@@ -31,4 +32,6 @@ public interface StatementResult
     Flux<Record> records();
 
     Mono<Summary> summary();
+
+    Mono<QueryExecutionType> executionType();
 }

@@ -24,57 +24,18 @@ import reactor.core.publisher.Mono;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.fabric.planning.FabricPlan;
-import org.neo4j.fabric.stream.FabricExecutionStatementResult;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.QueryExecutionType;
 
-class FabricExecutionStatementResultImpl implements FabricExecutionStatementResult
+class FabricExecutionStatementResultImpl implements StatementResult
 {
     private final StatementResult statementResult;
-    private final Mono<QueryExecutionType> queryExecutionType;
 
     FabricExecutionStatementResultImpl( StatementResult statementResult, FabricPlan plan, AccessMode accessMode )
     {
         this.statementResult = statementResult;
-        this.queryExecutionType = Mono.just(queryExecutionType( plan, accessMode ));
-    }
-
-    private static QueryExecutionType queryExecutionType( FabricPlan plan, AccessMode accessMode )
-    {
-        if ( plan.executionType() == FabricPlan.EXECUTE() )
-        {
-            return QueryExecutionType.query( queryType( plan, accessMode ) );
-        }
-        else if ( plan.executionType() == FabricPlan.EXPLAIN() )
-        {
-            return QueryExecutionType.explained( queryType( plan, accessMode ) );
-        }
-        else if ( plan.executionType() == FabricPlan.PROFILE() )
-        {
-            return QueryExecutionType.profiled( queryType( plan, accessMode ) );
-        }
-        else
-        {
-            throw unexpected( "execution type", plan.executionType().toString() );
-        }
-    }
-
-    private static QueryExecutionType.QueryType queryType( FabricPlan plan, AccessMode accessMode )
-    {
-        return EffectiveQueryType.effectiveQueryType( accessMode, plan.queryType());
-    }
-
-    private static IllegalArgumentException unexpected( String type, String got )
-    {
-        return new IllegalArgumentException( "Unexpected " + type + ": " + got );
-    }
-
-    @Override
-    public Mono<QueryExecutionType> queryExecutionType()
-    {
-        return queryExecutionType;
     }
 
     @Override
@@ -93,5 +54,11 @@ class FabricExecutionStatementResultImpl implements FabricExecutionStatementResu
     public Mono<Summary> summary()
     {
         return statementResult.summary();
+    }
+
+    @Override
+    public Mono<QueryExecutionType> executionType()
+    {
+        return statementResult.executionType();
     }
 }

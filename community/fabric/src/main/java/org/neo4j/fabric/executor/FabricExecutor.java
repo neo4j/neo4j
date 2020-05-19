@@ -47,7 +47,6 @@ import org.neo4j.fabric.planning.FabricQuery;
 import org.neo4j.fabric.planning.Fragment;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.fabric.stream.CompletionDelegatingOperator;
-import org.neo4j.fabric.stream.FabricExecutionStatementResult;
 import org.neo4j.fabric.stream.Prefetcher;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.Records;
@@ -60,6 +59,7 @@ import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.Log;
@@ -100,9 +100,8 @@ public class FabricExecutor
         this.fabricWorkerExecutor = fabricWorkerExecutor;
     }
 
-    public FabricExecutionStatementResult run( FabricTransaction fabricTransaction, String statement, MapValue parameters )
+    public StatementResult run( FabricTransaction fabricTransaction, String statement, MapValue parameters )
     {
-
         StatementLifecycle lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), statement, parameters );
         lifecycle.startProcessing();
 
@@ -226,19 +225,23 @@ public class FabricExecutor
                 return StatementResults.create(
                         columns,
                         Flux.empty(),
-                        Mono.just( new MergedSummary( Mono.just( plan.query().description() ), statistics, notifications ) ) );
-
+                        Mono.just( new MergedSummary( Mono.just( plan.query().description() ), statistics, notifications ) ),
+                        Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) )
+                );
             }
+            else
+            {
+                FragmentResult fragmentResult = run( query, null );
 
-            FragmentResult fragmentResult = run( query, null );
-
-            return StatementResults.create(
-                    columns,
-                    fragmentResult.records
-                            .doOnComplete( lifecycle::endSuccess )
-                            .doOnError( lifecycle::endFailure ),
-                    Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) )
-            );
+                return StatementResults.create(
+                        columns,
+                        fragmentResult.records
+                                .doOnComplete( lifecycle::endSuccess )
+                                .doOnError( lifecycle::endFailure ),
+                        Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) ),
+                        fragmentResult.executionType
+                );
+            }
         }
 
         FragmentResult run( Fragment fragment, Record argument )
@@ -268,7 +271,7 @@ public class FabricExecutor
 
         FragmentResult runInit()
         {
-            return new FragmentResult( Flux.just( Records.empty() ), Mono.empty() );
+            return new FragmentResult( Flux.just( Records.empty() ), Mono.empty(), Mono.empty() );
         }
 
         FragmentResult runApply( Fragment.Apply apply, Record argument )
@@ -280,7 +283,11 @@ public class FabricExecutor
                     dataStreamConfig.getConcurrency(), 1
             );
 
-            return new FragmentResult( resultRecords, Mono.empty() );
+            // TODO: merge executionType here for subqueries
+            // For now, just return global value as seen by fabric
+            Mono<QueryExecutionType> executionType = Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) );
+
+            return new FragmentResult( resultRecords, Mono.empty(), executionType );
         }
 
         FragmentResult runUnion( Fragment.Union union, Record argument )
@@ -288,13 +295,14 @@ public class FabricExecutor
             FragmentResult lhs = run( union.lhs(), argument );
             FragmentResult rhs = run( union.rhs(), argument );
             Flux<Record> merged = Flux.merge( lhs.records, rhs.records );
+            Mono<QueryExecutionType> executionType = mergeExecutionType( lhs.executionType, rhs.executionType );
             if ( union.distinct() )
             {
-                return new FragmentResult( merged.distinct(), Mono.empty() );
+                return new FragmentResult( merged.distinct(), Mono.empty(), executionType );
             }
             else
             {
-                return new FragmentResult( merged, Mono.empty() );
+                return new FragmentResult( merged, Mono.empty(), executionType );
             }
         }
 
@@ -314,7 +322,9 @@ public class FabricExecutor
                 if ( fragment.executable() )
                 {
                     FabricQuery.LocalQuery localQuery = plannerInstance.asLocal( fragment );
-                    return runLocalQueryAt( local, transactionMode, localQuery.query(), parameters, input.records );
+                    FragmentResult fragmentResult = runLocalQueryAt( local, transactionMode, localQuery.query(), parameters, input.records );
+                    Mono<QueryExecutionType> executionType = mergeExecutionType( input.executionType, fragmentResult.executionType );
+                    return new FragmentResult( fragmentResult.records, fragmentResult.planDescription, executionType );
                 }
                 else
                 {
@@ -336,16 +346,17 @@ public class FabricExecutor
         }
 
         FragmentResult runLocalQueryAt( Location.Local location, TransactionMode transactionMode, FullyParsedQuery query, MapValue parameters,
-                                      Flux<Record> input )
+                                        Flux<Record> input )
         {
 
             StatementResult localStatementResult = ctx.getLocal().run( location, transactionMode, lifecycle, query, parameters, input );
             Flux<Record> records = localStatementResult.records().doOnComplete( () -> localStatementResult.summary().subscribe( this::updateSummary ) );
 
-            Mono<ExecutionPlanDescription> planDescription = localStatementResult.summary()
-                    .map( Summary::executionPlanDescription )
-                    .map( pd -> new TaggingPlanDescriptionWrapper( pd, location.getDatabaseName() ) );
-            return new FragmentResult( records, planDescription );
+            Mono<ExecutionPlanDescription> planDescription =
+                    localStatementResult.summary()
+                                        .map( Summary::executionPlanDescription )
+                                        .map( pd -> new TaggingPlanDescriptionWrapper( pd, location.getDatabaseName() ) );
+            return new FragmentResult( records, planDescription, localStatementResult.executionType() );
         }
 
         FragmentResult runRemoteQueryAt( Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters )
@@ -364,7 +375,12 @@ public class FabricExecutor
                     .flatMap( StatementResult::summary )
                     .map( Summary::executionPlanDescription )
                     .map( remotePlanDescription -> new RemoteExecutionPlanDescription( remotePlanDescription, location ) );
-            return new FragmentResult( prefetchedRecords, planDescription );
+
+            // TODO: We currently need to override here since we can't get it from remote properly
+            // but our result here is not as accurate as what the remote might report.
+            Mono<QueryExecutionType> executionType = Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) );
+
+            return new FragmentResult( prefetchedRecords, planDescription, executionType );
         }
 
         private Map<String,AnyValue> argumentValues( Fragment fragment, Record argument )
@@ -439,6 +455,14 @@ public class FabricExecutor
             }
         }
 
+        private Mono<QueryExecutionType> mergeExecutionType( Mono<QueryExecutionType> lhs, Mono<QueryExecutionType> rhs )
+        {
+            return Mono.zip( lhs, rhs )
+                       .map( both -> QueryTypes.merge( both.getT1(), both.getT2() ) )
+                       .switchIfEmpty( lhs )
+                       .switchIfEmpty( rhs );
+        }
+
         private RuntimeException notImplemented( String msg, Object object )
         {
             return notImplemented( msg, object.toString() );
@@ -487,11 +511,15 @@ public class FabricExecutor
     {
         private final Flux<Record> records;
         private final Mono<ExecutionPlanDescription> planDescription;
+        private final Mono<QueryExecutionType> executionType;
 
-        FragmentResult( Flux<Record> records, Mono<ExecutionPlanDescription> planDescription )
+        FragmentResult( Flux<Record> records,
+                        Mono<ExecutionPlanDescription> planDescription,
+                        Mono<QueryExecutionType> executionType )
         {
             this.records = records;
             this.planDescription = planDescription;
+            this.executionType = executionType;
         }
     }
 
@@ -517,7 +545,7 @@ public class FabricExecutor
 
         @Override
         FragmentResult runLocalQueryAt( Location.Local location, TransactionMode transactionMode, FullyParsedQuery query, MapValue parameters,
-                                      Flux<Record> input )
+                                        Flux<Record> input )
         {
             String id = executionId();
             trace( id, "local " + location.getGraphId(), compact( query.description() ) );
@@ -539,14 +567,15 @@ public class FabricExecutor
 
         private FragmentResult traceRecords( String id, FragmentResult fragmentResult )
         {
-            var records = fragmentResult.records.doOnNext( record ->
-                                  {
-                                      String rec = IntStream.range( 0, record.size() )
-                                                            .mapToObj( i -> record.getValue( i ).toString() )
-                                                            .collect( Collectors.joining( ", ", "[", "]" ) );
-                                      trace( id, "output", rec );
-                                  } );
-            return new FragmentResult( records, fragmentResult.planDescription );
+            var records = fragmentResult.records
+                    .doOnNext( record ->
+                               {
+                                   String rec = IntStream.range( 0, record.size() )
+                                                         .mapToObj( i -> record.getValue( i ).toString() )
+                                                         .collect( Collectors.joining( ", ", "[", "]" ) );
+                                   trace( id, "output", rec );
+                               } );
+            return new FragmentResult( records, fragmentResult.planDescription, fragmentResult.executionType );
         }
 
         private void trace( String id, String event, String data )
