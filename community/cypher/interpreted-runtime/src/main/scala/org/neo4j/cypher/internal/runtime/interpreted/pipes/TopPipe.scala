@@ -23,6 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -36,7 +37,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[CypherRow])
+case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
@@ -69,7 +70,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     topTable.sort()
 
     // TODO: Use an auto-closing iterator that closes the topTable and deallocates its heap usage
-    topTable.iterator.asScala
+    topTable.iterator.asScala.asInstanceOf[Iterator[CypherRow]]
   }
 }
 
@@ -77,7 +78,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class Top1Pipe(source: Pipe, comparator: Comparator[CypherRow])
+case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected override def internalCreateResults(input: Iterator[CypherRow],
@@ -102,7 +103,7 @@ case class Top1Pipe(source: Pipe, comparator: Comparator[CypherRow])
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
-case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[CypherRow])
+case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
                            (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected override def internalCreateResults(input: Iterator[CypherRow],

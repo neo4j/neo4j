@@ -22,17 +22,18 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.HeapEstimator
 
-case class SortPipe(source: Pipe, comparator: Comparator[CypherRow])
+case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    val array = state.memoryTracker.memoryTrackingIterator(input, id.x).toArray
+    val array: Array[ReadableRow] = state.memoryTracker.memoryTrackingIterator(input, id.x).toArray
     state.memoryTracker.memoryTrackerForOperator(id.x).allocateHeap(HeapEstimator.shallowSizeOfObjectArray(array.length))
     java.util.Arrays.sort(array, comparator)
-    array.toIterator
+    array.toIterator.asInstanceOf[Iterator[CypherRow]]
   }
 }

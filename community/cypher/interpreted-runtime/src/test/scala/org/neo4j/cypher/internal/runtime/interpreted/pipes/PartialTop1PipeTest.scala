@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -29,8 +30,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PartialTop1PipeTest extends CypherFunSuite {
 
-  private val compareX: Comparator[CypherRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
-  private val compareY: Comparator[CypherRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))
+  private val compareX: Comparator[ReadableRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
+  private val compareY: Comparator[ReadableRow] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))
 
   test("partial top 1 should be lazy") {
     val input = List(

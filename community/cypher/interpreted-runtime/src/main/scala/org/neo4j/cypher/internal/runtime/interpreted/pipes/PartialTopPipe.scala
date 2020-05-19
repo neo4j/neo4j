@@ -23,6 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.ScopedMemoryTracker
@@ -32,8 +33,8 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
-                           prefixComparator: Comparator[CypherRow],
-                           suffixComparator: Comparator[CypherRow])
+                           prefixComparator: Comparator[ReadableRow],
+                           suffixComparator: Comparator[ReadableRow])
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
@@ -42,7 +43,7 @@ case class PartialTopNPipe(source: Pipe,
   class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
-    private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
+    private val topTable = new DefaultComparatorTopTable[ReadableRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
       topTable.reset(remainingLimit)
@@ -70,7 +71,7 @@ case class PartialTopNPipe(source: Pipe,
 
     override def result(): Iterator[CypherRow] = {
       topTable.sort()
-      topTable.iterator().asScala
+      topTable.iterator().asScala.asInstanceOf[Iterator[CypherRow]]
     }
 
     override def processNextChunk: Boolean = remainingLimit > 0
@@ -101,7 +102,7 @@ case class PartialTopNPipe(source: Pipe,
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[CypherRow], suffixComparator: Comparator[CypherRow])
+case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
                           (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected override def internalCreateResults(input: Iterator[CypherRow],
@@ -134,7 +135,7 @@ case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[CypherRow]
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
-case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[CypherRow], suffixComparator: Comparator[CypherRow])
+case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
                                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected override def internalCreateResults(input: Iterator[CypherRow],
