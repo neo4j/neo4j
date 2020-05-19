@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -92,7 +93,7 @@ class KernelStatementTest
     private static KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase() );
+                                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase(), Config.defaults() );
     }
 
     private static ExecutingQuery getQueryWithWaitingTime()

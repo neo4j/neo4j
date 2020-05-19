@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.resources.CpuClock;
@@ -33,10 +34,10 @@ public class StatementQueryRegistry implements QueryRegistry
     private final KernelStatement statement;
     private final ExecutingQueryFactory factory;
 
-    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef )
+    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config )
     {
         this.statement = statement;
-        this.factory = new ExecutingQueryFactory( clock, cpuClockRef );
+        this.factory = new ExecutingQueryFactory( clock, cpuClockRef, config );
     }
 
     @Override

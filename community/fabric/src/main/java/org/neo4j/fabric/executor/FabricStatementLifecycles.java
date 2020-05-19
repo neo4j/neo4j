@@ -46,7 +46,8 @@ public class FabricStatementLifecycles
         this.monitors = monitors;
         this.executingQueryFactory = new ExecutingQueryFactory(
                 systemNanoClock,
-                setupCpuClockAtomicReference( config ) );
+                setupCpuClockAtomicReference( config ),
+                config );
     }
 
     private AtomicReference<CpuClock> setupCpuClockAtomicReference( Config config )

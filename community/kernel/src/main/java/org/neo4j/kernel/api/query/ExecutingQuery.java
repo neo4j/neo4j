@@ -81,13 +81,13 @@ public class ExecutingQuery
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
-    private OptionalMemoryTracker memoryTracker = OptionalMemoryTracker.NONE;
+    private OptionalMemoryTracker memoryTracker;
     private TransactionBinding transactionBinding = TransactionBinding.EMPTY;
 
     public ExecutingQuery(
             long queryId, ClientConnectionInfo clientConnection, String username, String queryText, MapValue queryParameters,
             Map<String,Object> transactionAnnotationData,
-            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock )
+            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
     {
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
@@ -104,12 +104,14 @@ public class ExecutingQuery
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.clock = clock;
         this.cpuClock = cpuClock;
+        this.memoryTracker = trackQueryAllocations ? OptionalMemoryTracker.ZERO : OptionalMemoryTracker.NONE;
     }
 
+    // NOTE: test/benchmarking constructor
     public ExecutingQuery(
             long queryId, ClientConnectionInfo clientConnection, NamedDatabaseId namedDatabaseId, String username, String queryText, MapValue queryParameters,
             Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, LongSupplier hitsSupplier, LongSupplier faultsSupplier,
-            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock )
+            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
     {
         this(
                 queryId,
@@ -121,7 +123,8 @@ public class ExecutingQuery
                 threadExecutingTheQueryId,
                 threadExecutingTheQueryName,
                 clock,
-                cpuClock
+                cpuClock,
+                trackQueryAllocations
         );
         onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount ) );
     }

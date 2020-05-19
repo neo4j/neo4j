@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockTracer;
@@ -73,7 +74,7 @@ class StatementLifecycleTest
     private static KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase() );
+                                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase(), Config.defaults() );
     }
 
 }

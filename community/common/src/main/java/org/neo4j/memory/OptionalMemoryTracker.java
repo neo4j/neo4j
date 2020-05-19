@@ -28,6 +28,8 @@ public interface OptionalMemoryTracker
 
     OptionalMemoryTracker NONE = () -> ALLOCATIONS_NOT_TRACKED;
 
+    OptionalMemoryTracker ZERO = () -> 0L;
+
     /**
      * Get the total allocated memory of this query, in bytes.
      *

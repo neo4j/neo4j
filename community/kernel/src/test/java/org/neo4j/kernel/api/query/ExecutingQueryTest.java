@@ -203,7 +203,8 @@ class ExecutingQueryTest
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                FakeCpuClock.NOT_AVAILABLE );
+                FakeCpuClock.NOT_AVAILABLE,
+                true );
 
         // when
         QuerySnapshot snapshot = query.snapshot();
@@ -214,26 +215,51 @@ class ExecutingQueryTest
     }
 
     @Test
-    void shouldNotReportHeapAllocationIfUnavailable()
+    void shouldNotReportHeapAllocationIfNotTracked()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
-                EMPTY_MAP,
-                Collections.emptyMap(),
-                () -> lockCount,
-                () -> 0,
-                () -> 1,
-                Thread.currentThread().getId(),
-                Thread.currentThread().getName(),
-                clock,
-                FakeCpuClock.NOT_AVAILABLE );
+                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
+                                                   EMPTY_MAP,
+                                                   Collections.emptyMap(),
+                                                   () -> lockCount,
+                                                   () -> 0,
+                                                   () -> 1,
+                                                   Thread.currentThread().getId(),
+                                                   Thread.currentThread().getName(),
+                                                   clock,
+                                                   FakeCpuClock.NOT_AVAILABLE,
+                                                   false );
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
         assertEquals( OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes() );
+    }
+
+    @Test
+    void shouldReportZeroHeapAllocationIfTracked()
+    {
+        // given
+        ExecutingQuery query = new ExecutingQuery( 17,
+                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
+                                                   EMPTY_MAP,
+                                                   Collections.emptyMap(),
+                                                   () -> lockCount,
+                                                   () -> 0,
+                                                   () -> 1,
+                                                   Thread.currentThread().getId(),
+                                                   Thread.currentThread().getName(),
+                                                   clock,
+                                                   FakeCpuClock.NOT_AVAILABLE,
+                                                   true );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertEquals( 0L, snapshot.allocatedBytes() );
     }
 
     @Test
@@ -375,7 +401,7 @@ class ExecutingQueryTest
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", hello_world,
                 params, Collections.emptyMap(), () -> lockCount, page::hits, page::faults, Thread.currentThread().getId(),
-                Thread.currentThread().getName(), clock, cpuClock );
+                Thread.currentThread().getName(), clock, cpuClock, true );
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters

@@ -30,6 +30,7 @@ import java.util.Deque;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -91,10 +92,11 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private long initialStatementFaults;
 
     public KernelStatement( KernelTransactionImplementation transaction, LockTracer systemLockTracer, ClockContext clockContext,
-            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId )
+                            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId,
+                            Config config )
     {
         this.transaction = transaction;
-        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef );
+        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, config );
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;

@@ -20,8 +20,11 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
@@ -34,11 +37,16 @@ public class ExecutingQueryFactory
     private static final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
+    private final AtomicBoolean trackQueryAllocations;
 
-    public ExecutingQueryFactory( SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef )
+    public ExecutingQueryFactory( SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config )
     {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
+        this.trackQueryAllocations = new AtomicBoolean( config.get( GraphDatabaseSettings.track_query_allocation ) );
+        config.addListener( GraphDatabaseSettings.track_query_allocation,
+                            ( before, after ) -> trackQueryAllocations.set( after ) );
+
     }
 
     public ExecutingQuery createForStatement( KernelStatement statement, String queryText, MapValue queryParameters )
@@ -63,7 +71,8 @@ public class ExecutingQueryFactory
                 thread.getId(),
                 thread.getName(),
                 clock,
-                cpuClockRef.get() );
+                cpuClockRef.get(),
+                trackQueryAllocations.get() );
     }
 
     public void bindToStatement( ExecutingQuery executingQuery, KernelStatement statement )

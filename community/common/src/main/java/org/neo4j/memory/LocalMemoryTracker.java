@@ -36,7 +36,8 @@ import static org.neo4j.util.Preconditions.requirePositive;
  */
 public class LocalMemoryTracker implements LimitedMemoryTracker
 {
-    private static final long NO_LIMIT = Long.MAX_VALUE;
+    public static final long NO_LIMIT = 0;
+    private static final long INFINITY = Long.MAX_VALUE;
     private static final long DEFAULT_GRAB_SIZE = 1024;
 
     /**
@@ -76,18 +77,18 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
 
     public LocalMemoryTracker()
     {
-        this( NO_TRACKING, NO_LIMIT, DEFAULT_GRAB_SIZE );
+        this( NO_TRACKING, INFINITY, DEFAULT_GRAB_SIZE );
     }
 
     public LocalMemoryTracker( MemoryPool memoryPool )
     {
-        this( memoryPool, NO_LIMIT, DEFAULT_GRAB_SIZE );
+        this( memoryPool, INFINITY, DEFAULT_GRAB_SIZE );
     }
 
     public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize )
     {
         this.memoryPool = requireNonNull( memoryPool );
-        this.localBytesLimit = localBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localBytesLimit );
+        this.localBytesLimit = validateLimit( localBytesLimit );
         this.grabSize = requireNonNegative( grabSize );
     }
 
@@ -204,6 +205,6 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
 
     private static long validateLimit( long localBytesLimit )
     {
-        return localBytesLimit == 0 ? NO_LIMIT : requireNonNegative( localBytesLimit );
+        return localBytesLimit == NO_LIMIT ? INFINITY : requireNonNegative( localBytesLimit );
     }
 }

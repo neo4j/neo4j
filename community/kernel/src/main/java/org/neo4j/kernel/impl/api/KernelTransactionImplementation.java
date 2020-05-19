@@ -241,7 +241,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = tracers.getDatabaseTracer();
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
-        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId );
+        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();
