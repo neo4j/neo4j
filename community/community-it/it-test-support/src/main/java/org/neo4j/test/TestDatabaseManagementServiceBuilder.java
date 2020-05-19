@@ -46,7 +46,9 @@ import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.LazyProcedures;
+import org.neo4j.test.fabric.TestFabricDatabaseManagementServiceFactory;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Boolean.FALSE;
 
@@ -59,6 +61,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 {
     private static final File EPHEMERAL_PATH = new File( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
+    public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
+    public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
 
     protected FileSystemAbstraction fileSystem;
     protected LogProvider internalLogProvider;
@@ -115,9 +119,20 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        return new TestDatabaseManagementServiceFactory( getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock,
-                                                         internalLogProvider ).build( augmentConfig( config ),
-                                                                                      GraphDatabaseDependencies.newDependencies( dependencies ) );
+        var factory = fabricInEmbeddedTestTransactionsEnabled()
+                      ? new TestFabricDatabaseManagementServiceFactory(
+                              getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider, config )
+                      : new TestDatabaseManagementServiceFactory(
+                              getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider );
+
+        return factory.build( augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
+    }
+
+    private boolean fabricInEmbeddedTestTransactionsEnabled()
+    {
+        return FeatureToggles.flag( TestDatabaseManagementServiceBuilder.class,
+                                    FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME,
+                                    FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE );
     }
 
     @Override
