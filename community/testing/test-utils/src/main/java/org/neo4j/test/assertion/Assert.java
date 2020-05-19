@@ -21,6 +21,7 @@ package org.neo4j.test.assertion;
 
 import org.assertj.core.api.Condition;
 import org.awaitility.core.ConditionFactory;
+import org.junit.jupiter.api.function.Executable;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -29,6 +30,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
@@ -39,6 +41,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.test.conditions.Conditions.condition;
 
 public final class Assert
@@ -118,6 +121,18 @@ public final class Assert
             var value = actual.call();
             assertThat( value ).as( messageGenerator.apply( value ) ).satisfies( condition );
         } );
+    }
+
+    public static <T extends Throwable> void assertEventuallyThrows(
+            String message, Class<T> expectedType, Executable actual, long timeout, TimeUnit timeUnit )
+    {
+        assertEventuallyThrows( Suppliers.singleton( message ), expectedType, actual, timeout, timeUnit );
+    }
+
+    public static <T extends Throwable> void assertEventuallyThrows(
+            Supplier<String> messageGenerator, Class<T> expectedType, Executable actual, long timeout, TimeUnit timeUnit )
+    {
+        awaitCondition( "should throw", timeout, timeUnit ).untilAsserted( () -> assertThrows( expectedType, actual, messageGenerator ) );
     }
 
     private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
