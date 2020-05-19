@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.collection;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.memory.MemoryTracker;
@@ -117,6 +118,35 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
     Iterator<T> getIterator()
     {
         return Iterators.iterator( size, heap );
+    }
+
+    Iterator<T> getAutoClosingIterator()
+    {
+        return new Iterator<>()
+        {
+            int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                if ( index >= size )
+                {
+                    close();
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public T next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return heap[index++];
+            }
+        };
     }
 
     /**

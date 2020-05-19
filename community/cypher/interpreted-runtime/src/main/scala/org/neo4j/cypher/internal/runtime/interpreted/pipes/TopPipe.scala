@@ -69,8 +69,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     topTable.sort()
 
-    // TODO: Use an auto-closing iterator that closes the topTable and deallocates its heap usage
-    topTable.iterator.asScala.asInstanceOf[Iterator[CypherRow]]
+    topTable.autoClosingIterator().asScala.asInstanceOf[Iterator[CypherRow]]
   }
 }
 

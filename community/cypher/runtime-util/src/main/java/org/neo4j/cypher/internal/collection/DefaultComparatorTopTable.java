@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.collection;
 import java.util.Comparator;
 import java.util.Iterator;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -148,6 +150,7 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
      * Must call after calling <code>sort()</code>.
      */
     @Override
+    @Nonnull
     public Iterator<T> iterator()
     {
         if ( !isSorted )
@@ -156,6 +159,20 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
             throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
         }
         return getIterator();
+    }
+
+    /**
+     * Must call after calling <code>sort()</code>.
+     */
+    @Nonnull
+    public Iterator<T> autoClosingIterator()
+    {
+        if ( !isSorted )
+        {
+            // This should never happen in generated code but is here to simplify debugging if used incorrectly
+            throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
+        }
+        return getAutoClosingIterator();
     }
 
     @Override
