@@ -22,11 +22,11 @@ package org.neo4j.server.security.systemgraph.versions;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
-public class CommunityVersion_2_41d2 extends SupportedCommunityVersion
+public class CommunityVersion_2_41 extends SupportedCommunityVersion
 {
-    public CommunityVersion_2_41d2( Log log, UserRepository userRepository )
+    public CommunityVersion_2_41( Log log, UserRepository userRepository )
     {
-        super( 2, "Neo4j 4.1.0-Drop02", log, userRepository );
+        super( 2, "Neo4j 4.1", log, userRepository );
     }
 
     @Override
