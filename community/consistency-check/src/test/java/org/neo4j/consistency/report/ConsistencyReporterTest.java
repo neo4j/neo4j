@@ -272,7 +272,7 @@ class ConsistencyReporterTest
             }
             if ( type == NodeRecord.class )
             {
-                return new NodeRecord( 0, false, 1, 2 );
+                return new NodeRecord( 0 ).initialize( false, 2, false, 1, 0 );
             }
             if ( type == RelationshipRecord.class )
             {
@@ -336,7 +336,9 @@ class ConsistencyReporterTest
             }
             if ( type == RelationshipGroupRecord.class )
             {
-                return new RelationshipGroupRecord( 0, 1 );
+                RelationshipGroupRecord record = new RelationshipGroupRecord( 0 );
+                record.setType( 1 );
+                return record;
             }
             if ( type == long.class )
             {

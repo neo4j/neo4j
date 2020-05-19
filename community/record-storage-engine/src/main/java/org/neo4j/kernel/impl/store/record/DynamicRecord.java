@@ -45,26 +45,6 @@ public class DynamicRecord extends AbstractBaseRecord
         this.startRecord = other.startRecord;
     }
 
-    /**
-     * @deprecated use {@link #initialize(boolean, boolean, long, int)} instead.
-     */
-    @Deprecated
-    public static DynamicRecord dynamicRecord( long id, boolean inUse )
-    {
-        return new DynamicRecord( id ).initialize( inUse, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
-    }
-
-    /**
-     * @deprecated use {@link #initialize(boolean, boolean, long, int)} instead.
-     */
-    @Deprecated
-    public static DynamicRecord dynamicRecord( long id, boolean inUse, boolean isStartRecord, long nextBlock, int type, byte[] data )
-    {
-        DynamicRecord record = new DynamicRecord( id ).initialize( inUse, isStartRecord, nextBlock, type );
-        record.setData( data );
-        return record;
-    }
-
     public DynamicRecord( long id )
     {
         super( id );

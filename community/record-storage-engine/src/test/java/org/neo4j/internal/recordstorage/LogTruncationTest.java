@@ -64,21 +64,23 @@ class LogTruncationTest
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
         permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand(
-                new NodeRecord( 12, false, 13, 13 ), new NodeRecord( 0, false, 0, 0 ) ) } );
+                new NodeRecord( 12 ).initialize( false, 13, false, 13, 0 ),
+                new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 ) ) } );
         RelationshipRecord relationship = new RelationshipRecord( 1 );
         relationship.setLinks( 2, 3, 4 );
         permutations.put( Command.RelationshipCommand.class,
                 new Command[] { new Command.RelationshipCommand( new RelationshipRecord( 1 ),
                         relationship ) } );
         permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand(
-                new PropertyRecord( 1, new NodeRecord( 12, false, 13, 13 ) ), new PropertyRecord( 1, new NodeRecord(
-                        12, false, 13, 13 ) ) ) } );
+                new PropertyRecord( 1, new NodeRecord( 12 ).initialize( false, 13, false, 13, 0 ) ),
+                new PropertyRecord( 1, new NodeRecord( 12 ).initialize( false, 13, false, 13, 0 ) ) ) } );
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
         IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).withName( "index_1" ).materialise( 1 );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
-                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
+                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ),
+                        new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ), null ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ), null ),} );

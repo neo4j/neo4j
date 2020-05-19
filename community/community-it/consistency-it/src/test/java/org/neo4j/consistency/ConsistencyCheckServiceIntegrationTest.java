@@ -459,7 +459,7 @@ public class ConsistencyCheckServiceIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                     GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
+                tx.create( new NodeRecord( next.node() ).initialize( false, -1, false, next.relationship(), 0 ) );
             }
         } );
     }

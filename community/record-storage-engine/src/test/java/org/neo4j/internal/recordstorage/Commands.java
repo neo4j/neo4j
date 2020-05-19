@@ -137,7 +137,8 @@ public class Commands
     public static RelationshipGroupCommand createRelationshipGroup( long id, int type )
     {
         RelationshipGroupRecord before = new RelationshipGroupRecord( id );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( id, type );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( id );
+        after.setType( type );
         after.setInUse( true );
         after.setCreated();
         return new RelationshipGroupCommand( before, after );

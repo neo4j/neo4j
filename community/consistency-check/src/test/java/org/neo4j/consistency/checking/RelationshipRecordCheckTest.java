@@ -95,8 +95,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -115,9 +115,9 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, relationship.getId(), NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 53, NONE ) ) );
-        add( inUse( new NodeRecord( 3, false, NONE, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, relationship.getId(), 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 53, 0 ) ) );
+        add( inUse( new NodeRecord( 3 ).initialize( false, NONE, false, NONE, 0 ) ) );
         add( inUse( new PropertyRecord( 101 ) ) );
         relationship.setNextProp( 101 );
 
@@ -152,8 +152,8 @@ class RelationshipRecordCheckTest extends
         checkSingleDirection();
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, NONE );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -171,8 +171,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         RelationshipTypeTokenRecord relationshipType = add( notInUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -190,7 +190,7 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( NONE, 1, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -209,8 +209,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        NodeRecord node = add( notInUse( new NodeRecord( 1, false, NONE, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        NodeRecord node = add( notInUse( new NodeRecord( 1 ).initialize( false, NONE, false, NONE, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -228,7 +228,7 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, NONE, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -247,8 +247,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        NodeRecord node = add( notInUse( new NodeRecord( 2, false, NONE, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        NodeRecord node = add( notInUse( new NodeRecord( 2 ).initialize( false, NONE, false, NONE, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -267,8 +267,8 @@ class RelationshipRecordCheckTest extends
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         PropertyRecord property = add( notInUse( new PropertyRecord( 11 ) ) );
 
         // when
@@ -288,8 +288,8 @@ class RelationshipRecordCheckTest extends
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
         relationship.setNextProp( 11 );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         PropertyRecord property = add( inUse( new PropertyRecord( 11 ) ) );
         property.setPrevProp( 6 );
 
@@ -310,8 +310,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        NodeRecord source = add( inUse( new NodeRecord( 1, false, 7, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        NodeRecord source = add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 7, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -330,8 +330,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        NodeRecord target = add( inUse( new NodeRecord( 2, false, 7, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        NodeRecord target = add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 7, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -350,8 +350,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        NodeRecord source = add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) );
-        NodeRecord target = add( inUse( new NodeRecord( 2, false, NONE, NONE ) ) );
+        NodeRecord source = add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, NONE, 0 ) ) );
+        NodeRecord target = add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, NONE, 0 ) ) );
 
         // when
         RelationshipConsistencyReport report = check( relationship );
@@ -371,8 +371,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        NodeRecord source = add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        NodeRecord source = add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, NONE, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         sPrev.setLinks( 1, 0, 0 );
         relationship.setFirstPrevRel( sPrev.getId() );
@@ -396,8 +396,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        NodeRecord target = add( inUse( new NodeRecord( 2, false, NONE, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        NodeRecord target = add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, NONE, 0 ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         tPrev.setLinks( 0, 2, 0 );
         relationship.setSecondPrevRel( tPrev.getId() );
@@ -419,8 +419,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 0, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 0, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         sPrev.setLinks( 8, 9, 0 );
         relationship.setFirstPrevRel( sPrev.getId() );
@@ -441,8 +441,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 0, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 0, 0 ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         tPrev.setLinks( 8, 9, 0 );
         relationship.setSecondPrevRel( tPrev.getId() );
@@ -463,8 +463,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51 ) ) );
         sNext.setLinks( 8, 9, 0 );
         relationship.setFirstNextRel( sNext.getId() );
@@ -484,8 +484,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51 ) ) );
         tNext.setLinks( 8, 9, 0 );
         relationship.setSecondNextRel( tNext.getId() );
@@ -505,8 +505,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 0, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 0, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         sPrev.setLinks( 2, 0, 0 );
         relationship.setFirstPrevRel( sPrev.getId() );
@@ -527,8 +527,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 0, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 0, 0 ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         tPrev.setLinks( 1, 0, 0 );
         relationship.setSecondPrevRel( tPrev.getId() );
@@ -549,8 +549,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51 ) ) );
         sNext.setLinks( 2, 0, 0 );
         relationship.setFirstNextRel( sNext.getId() );
@@ -570,8 +570,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51 ) ) );
         tNext.setLinks( 1, 0, 0 );
         relationship.setSecondNextRel( tNext.getId() );
@@ -591,8 +591,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 0, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 0, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         sPrev.setLinks( 1, 3, 0 );
         relationship.setFirstPrevRel( sPrev.getId() );
@@ -613,8 +613,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 0, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 0, 0 ) ) );
         RelationshipRecord tPrev = add( inUse( new RelationshipRecord( 51 ) ) );
         tPrev.setLinks( 2, 3, 0 );
         relationship.setSecondPrevRel( tPrev.getId() );
@@ -635,8 +635,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord sNext = add( inUse( new RelationshipRecord( 51 ) ) );
         sNext.setLinks( 3, 1, 0 );
         relationship.setFirstNextRel( sNext.getId() );
@@ -656,8 +656,8 @@ class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = inUse( new RelationshipRecord( 42 ) );
         relationship.setLinks( 1, 2, 4 );
         add( inUse( new RelationshipTypeTokenRecord( 4 ) ) );
-        add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
-        add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
+        add( inUse( new NodeRecord( 1 ).initialize( false, NONE, false, 42, 0 ) ) );
+        add( inUse( new NodeRecord( 2 ).initialize( false, NONE, false, 42, 0 ) ) );
         RelationshipRecord tNext = add( inUse( new RelationshipRecord( 51 ) ) );
         tNext.setLinks( 3, 2, 0 );
         relationship.setSecondNextRel( tNext.getId() );

@@ -35,34 +35,6 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     // Not stored, just kept in memory temporarily when loading the group chain
     private long prev;
 
-    @Deprecated
-    public RelationshipGroupRecord( long id, int type )
-    {
-        super( id );
-        this.type = type;
-    }
-
-    @Deprecated
-    public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode,
-            boolean inUse )
-    {
-        this( id, type, firstOut, firstIn, firstLoop, owningNode, NULL_REFERENCE.intValue(), inUse );
-    }
-
-    @Deprecated
-    public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode,
-            long next, boolean inUse )
-    {
-        super( id );
-        setInUse( inUse );
-        this.type = type;
-        this.firstOut = firstOut;
-        this.firstIn = firstIn;
-        this.firstLoop = firstLoop;
-        this.owningNode = owningNode;
-        this.next = next;
-    }
-
     public RelationshipGroupRecord( long id )
     {
         super( id );

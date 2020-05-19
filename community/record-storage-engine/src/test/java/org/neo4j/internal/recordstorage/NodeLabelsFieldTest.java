@@ -530,7 +530,7 @@ class NodeLabelsFieldTest
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )
     {
-        NodeRecord node = new NodeRecord( 0, false, 0, 0 );
+        NodeRecord node = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
         if ( labels.length > 0 )
         {
             node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.emptyList() );
@@ -545,7 +545,7 @@ class NodeLabelsFieldTest
 
     private NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, long... labels )
     {
-        NodeRecord node = new NodeRecord( nodeId, false, 0, 0 );
+        NodeRecord node = new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 );
         Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, node.getId(), labels );
         node.setLabelField( dynamicLabelsLongRepresentation( initialRecords ), initialRecords );
         return node;

@@ -58,7 +58,7 @@ class NodeInUseWithCorrectLabelsCheckTest
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        NodeRecord node = notInUse( new NodeRecord( nodeId, false, 0, 0 ) );
+        NodeRecord node = notInUse( new NodeRecord( nodeId ).initialize( false, 0,false, 0, 0 ) );
 
         // when
         checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null, NULL );
@@ -75,7 +75,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long[] storeLabelIds = new long[] {7, 9};
         long[] indexLabelIds = new long[] {   9, 10};
 
-        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -95,7 +95,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long[] storeLabelIds = new long[] {7, 9};
         long[] indexLabelIds = new long[] {   9, 10};
 
-        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -116,7 +116,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long[] storeLabelIds = {1, 2, 3, 4, 5, 6,    8, 9, 10, 11};
 
         RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -141,7 +141,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long missingLabelId = 7;
 
         RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -164,7 +164,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long missingLabelId = 3;
 
         RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report = mock( ConsistencyReport.LabelScanConsistencyReport.class );
 
@@ -186,7 +186,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         long[] missingLabelIds = {3, 7, 9, 10};
 
         RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ), storeLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -210,7 +210,7 @@ class NodeInUseWithCorrectLabelsCheckTest
         int nodeId = 42;
         int labelId = 7;
 
-        NodeRecord node = withInlineLabels( inUse( new NodeRecord( nodeId, false, 0, 0 ) ), labelId );
+        NodeRecord node = withInlineLabels( inUse( new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 ) ), labelId );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );

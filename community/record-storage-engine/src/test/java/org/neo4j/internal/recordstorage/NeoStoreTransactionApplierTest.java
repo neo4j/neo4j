@@ -111,9 +111,9 @@ class NeoStoreTransactionApplierTest
     private final SchemaCache schemaCache = mock( SchemaCache.class );
 
     private final long transactionId = 55555;
-    private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
-    private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
-    private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
+    private final DynamicRecord one = new DynamicRecord( 1 ).initialize(  true,true, -1, -1 );
+    private final DynamicRecord two = new DynamicRecord( 2 ).initialize( true, true, -1, -1 );
+    private final DynamicRecord three = new DynamicRecord( 3 ).initialize( true, true, -1, -1 );
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
@@ -397,8 +397,9 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( false );
         // when
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 );
+        before.setType( 1 );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 1, 2, 3, 4, 5, 6 );
         Command command = new Command.RelationshipGroupCommand( before, after );
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -414,8 +415,9 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( true );
         // when
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 );
+        before.setType( 1 );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 1, 2, 3, 4, 5, 6 );
         Command command = new Command.RelationshipGroupCommand( before, after );
 
         boolean result = apply( applier, command::handle, transactionToApply );

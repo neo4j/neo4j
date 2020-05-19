@@ -74,8 +74,7 @@ class IntegrityValidatorTest
         NeoStores store = mock( NeoStores.class );
         IntegrityValidator validator = new IntegrityValidator( store );
 
-        NodeRecord record = new NodeRecord( 1L, false, 1L, -1L );
-        record.setInUse( false );
+        NodeRecord record = new NodeRecord( 1 ).initialize(  false, -1,false, 1, 0 );
 
         // When
         assertThrows( Exception.class, () -> validator.validateNodeRecord( record ) );

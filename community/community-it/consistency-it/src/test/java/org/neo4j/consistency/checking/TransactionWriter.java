@@ -99,8 +99,8 @@ public class TransactionWriter
     public void create( NodeRecord node )
     {
         node.setCreated();
-        update( new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(),
-                NO_NEXT_PROPERTY.intValue() ), node );
+        update( new NodeRecord( node.getId() ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_PREV_RELATIONSHIP.intValue(),
+                0 ), node );
     }
 
     public void create( LabelTokenRecord labelToken )
@@ -118,7 +118,9 @@ public class TransactionWriter
     public void create( RelationshipGroupRecord group )
     {
         group.setCreated();
-        update( new RelationshipGroupRecord( group.getId(), group.getType() ), group );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( group.getId() );
+        before.setType( group.getType() );
+        update( before, group );
     }
 
     public void update( NodeRecord before, NodeRecord node )
@@ -136,7 +138,7 @@ public class TransactionWriter
     public void delete( NodeRecord node )
     {
         node.setInUse( false );
-        add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
+        add( node, new NodeRecord( node.getId() ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_PREV_RELATIONSHIP.intValue(), 0 ) );
     }
 
     public void create( RelationshipRecord record )
@@ -148,7 +150,9 @@ public class TransactionWriter
     public void delete( RelationshipGroupRecord group )
     {
         group.setInUse( false );
-        add( group, new RelationshipGroupRecord( group.getId(), group.getType() ) );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( group.getId() );
+        after.setType( group.getType() );
+        add( group, after );
     }
 
     public void createSchema( SchemaRecord before, SchemaRecord after, SchemaRule rule )

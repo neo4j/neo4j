@@ -82,8 +82,8 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord node1 = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        NodeRecord node2 = records.add( inUse( new NodeRecord( 2, false, NONE, 8 ) ) );
+        NodeRecord node1 = records.add( inUse( new NodeRecord( 1 ).initialize( false, 7, false, NONE, 0 ) ) );
+        NodeRecord node2 = records.add( inUse( new NodeRecord( 2 ).initialize( false, 8, false, NONE, 0 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report1 =
@@ -106,8 +106,8 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord node1 = records.add( notInUse( new NodeRecord( 1, false, NONE, 6 ) ) );
-        NodeRecord node2 = records.add( notInUse( new NodeRecord( 2, false, NONE, 6 ) ) );
+        NodeRecord node1 = records.add( notInUse( new NodeRecord( 1 ).initialize( false, 6, false, NONE, 0 ) ) );
+        NodeRecord node2 = records.add( notInUse( new NodeRecord( 2 ).initialize( false, 6, false, NONE, 0 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report1 =
@@ -160,8 +160,8 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord node1 = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        NodeRecord node2 = records.add( inUse( new NodeRecord( 2, false, NONE, 7 ) ) );
+        NodeRecord node1 = records.add( inUse( new NodeRecord( 1 ).initialize( false, 7, false, NONE, 0 ) ) );
+        NodeRecord node2 = records.add( inUse( new NodeRecord( 2 ).initialize( false, 7, false, NONE, 0 ) ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report1 =
@@ -216,7 +216,7 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
+        NodeRecord node = records.add( inUse( new NodeRecord( 1 ).initialize( false, 7, false, NONE, 0 ) ) );
         RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1 ) ) );
         relationship.setLinks( 0, 1, 0 );
         relationship.setNextProp( node.getNextProp() );
@@ -245,7 +245,7 @@ class OwnerCheckTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
+        NodeRecord node = records.add( inUse( new NodeRecord( 1 ).initialize( false, 7, false, NONE, 0 ) ) );
         RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1 ) ) );
         relationship.setLinks( 0, 1, 0 );
         relationship.setNextProp( node.getNextProp() );
@@ -299,7 +299,7 @@ class OwnerCheckTest
         ConsistencyReport.NodeConsistencyReport nodeReport =
                 check( ConsistencyReport.NodeConsistencyReport.class,
                        decorator.decorateNodeChecker( dummyNodeCheck() ),
-                       inUse( new NodeRecord( 10, false, NONE, 42 ) ), records );
+                       inUse( new NodeRecord( 10 ).initialize( false, 42, false, NONE, 0 ) ), records );
 
         // when
         decorator.scanForOrphanChains( ProgressMonitorFactory.NONE );

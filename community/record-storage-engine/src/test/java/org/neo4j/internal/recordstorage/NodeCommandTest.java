@@ -58,7 +58,6 @@ import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
@@ -108,7 +107,7 @@ class NodeCommandTest
     {
         // Given
         NodeRecord before = new NodeRecord( 12 );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setCreated();
         after.setInUse( true );
         // When
@@ -119,9 +118,9 @@ class NodeCommandTest
     void shouldSerializeDenseRecord() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        NodeRecord after = new NodeRecord( 12, true, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, true, 2, 0 );
         after.setInUse( true );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
@@ -131,9 +130,9 @@ class NodeCommandTest
     void shouldSerializeUpdatedRecord() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
@@ -143,9 +142,9 @@ class NodeCommandTest
     void shouldSerializeInlineLabels() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
@@ -158,10 +157,10 @@ class NodeCommandTest
     {
         // Given
         // a record that is changed to include a secondary unit
-        NodeRecord before = new NodeRecord( 13, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 13 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
         before.setSecondaryUnitIdOnLoad( NO_ID ); // this and the previous line set the defaults, they are here for clarity
-        NodeRecord after = new NodeRecord( 13, false, 1, 2 );
+        NodeRecord after = new NodeRecord( 13 ).initialize( false, 2, false, 1, 0 );
         after.setInUse( true );
         after.setSecondaryUnitIdOnCreate( 14L );
 
@@ -175,9 +174,9 @@ class NodeCommandTest
     void shouldSerializeDynamicRecordLabels() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
@@ -193,15 +192,17 @@ class NodeCommandTest
     {
         channel.reset();
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        List<DynamicRecord> beforeDyn = singletonList( dynamicRecord(
-                0, true, true, -1L, LONG.intValue(), new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
+        DynamicRecord beforeDynamicRecord = new DynamicRecord( 0 ).initialize( true, true, -1L, LONG.intValue() );
+        beforeDynamicRecord.setData( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} );
+        List<DynamicRecord> beforeDyn = singletonList( beforeDynamicRecord );
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
-        List<DynamicRecord> dynamicRecords = singletonList( dynamicRecord(
-                0, false, true, -1L, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
+        DynamicRecord afterDynamicRecord = new DynamicRecord( 0 ).initialize( false, true, -1L, LONG.intValue() );
+        afterDynamicRecord.setData( new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} );
+        List<DynamicRecord> dynamicRecords = singletonList( afterDynamicRecord );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
         Command.NodeCommand cmd = new Command.NodeCommand( before, after );

@@ -37,7 +37,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeRecordTest
@@ -50,7 +49,7 @@ class NodeRecordTest
         long propId = 1338L;
         long inlinedLabels = 12L;
 
-        NodeRecord node = new NodeRecord( 1L, false, relId, propId );
+        NodeRecord node = new NodeRecord( 1L ).initialize( false, propId, false, relId, 0 );
         node.setLabelField( inlinedLabels, asList( new DynamicRecord( 1L ), new DynamicRecord( 2L ) ) );
         node.setInUse( true );
 
@@ -70,11 +69,11 @@ class NodeRecordTest
     void shouldListLabelRecordsInUse()
     {
         // Given
-        NodeRecord node = new NodeRecord( 1, false, -1, -1 );
+        NodeRecord node = new NodeRecord( 1 ).initialize( false, -1, false, -1, 0 );
         long inlinedLabels = 12L;
-        DynamicRecord dynamic1 = dynamicRecord( 1L, true );
-        DynamicRecord dynamic2 = dynamicRecord( 2L, true );
-        DynamicRecord dynamic3 = dynamicRecord( 3L, true );
+        DynamicRecord dynamic1 = new DynamicRecord( 1 ).initialize( true, true, -1, -1 );
+        DynamicRecord dynamic2 = new DynamicRecord( 2 ).initialize( true, true, -1, -1 );
+        DynamicRecord dynamic3 = new DynamicRecord( 3 ).initialize( true, true, -1, -1 );
 
         node.setLabelField( inlinedLabels, asList( dynamic1, dynamic2, dynamic3 ) );
 

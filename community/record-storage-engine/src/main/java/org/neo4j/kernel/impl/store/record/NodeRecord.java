@@ -72,29 +72,6 @@ public class NodeRecord extends PrimitiveRecord
         return this;
     }
 
-    @Deprecated
-    public NodeRecord( long id, boolean dense, long nextRel, long nextProp )
-    {
-        this( id, false, dense, nextRel, nextProp, 0 );
-    }
-
-    @Deprecated
-    public NodeRecord( long id, boolean inUse, boolean dense, long nextRel, long nextProp, long labels )
-    {
-        super( id, nextProp );
-        this.nextRel = nextRel;
-        this.dense = dense;
-        this.labels = labels;
-        setInUse( inUse );
-    }
-
-    @Deprecated
-    public NodeRecord( long id, boolean dense, long nextRel, long nextProp, boolean inUse )
-    {
-        this( id, dense, nextRel, nextProp );
-        setInUse( inUse );
-    }
-
     @Override
     public void clear()
     {
