@@ -166,7 +166,7 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
         {
             int parent = (k - 1) >>> 1;
             T e = heap[parent];
-            if (comparator.compare( x, e ) <= 0 )
+            if ( comparator.compare( x, e ) <= 0 )
             {
                 break;
             }
