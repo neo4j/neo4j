@@ -199,11 +199,12 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       }
 
     val (newCurrentLine, newLines) = splitDetail(details.last, currentLine, length, isLastDetail = true)
-    if (newCurrentLine.isEmpty) {
-      lines ++ newLines
-    } else {
-      (lines ++ newLines) :+ newCurrentLine
+    lines ++= newLines
+    if (newCurrentLine.strip().nonEmpty) {
+      lines = lines :+ newCurrentLine
     }
+
+    lines.map(_.strip())
   }
 
   private def splitDetail(detail: String, currentLine: String, length: Int, isLastDetail: Boolean): (String, Seq[String]) = {
@@ -229,12 +230,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         }
       }
 
-    // Add space only if it's not the last line and it can fit on the current line.
-    if (!isLastDetail && newCurrentLine.length < length && newCurrentLine.nonEmpty) {
-      (s"$newCurrentLine ", lines)
-    } else {
-      (newCurrentLine, lines)
-    }
+    // If it is the last detail on the row, the space will be removed
+    (s"$newCurrentLine ", lines)
   }
 
   private def mapping(key: String, value: Cell, columns: mutable.Map[String,Int]) = {

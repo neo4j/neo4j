@@ -679,14 +679,14 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val root = planDescription(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
-      """+----------+----------------------------------------------------------------------------------------------------+
-        || Operator | Details                                                                                            |
-        |+----------+----------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4                                                                                      |
-        || |        +----------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,  |
-        ||          | 27, 28, 29, 30, 31, 32, 33, 34                                                                     |
-        |+----------+----------------------------------------------------------------------------------------------------+
+      """+----------+---------------------------------------------------------------------------------------------------+
+        || Operator | Details                                                                                           |
+        |+----------+---------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4                                                                                     |
+        || |        +---------------------------------------------------------------------------------------------------+
+        || +NODE    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, |
+        ||          | 27, 28, 29, 30, 31, 32, 33, 34                                                                    |
+        |+----------+---------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
 
@@ -780,16 +780,16 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   }
 
   test("format one char details") {
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 3) should be(Seq("1, ", "2, ", "3, ", "4, ", "5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 4) should be(Seq("1, ", "2, ", "3, ", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 3) should be(Seq("1,", "2,", "3,", "4,", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 4) should be(Seq("1,", "2,", "3,", "4, 5"))
     renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 5) should be(Seq("1, 2,",  "3, 4,",  "5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 6) should be(Seq("1, 2, ", "3, 4, ", "5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 7) should be(Seq("1, 2, ", "3, 4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 6) should be(Seq("1, 2,", "3, 4,", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 7) should be(Seq("1, 2,", "3, 4, 5"))
     renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 8) should be(Seq("1, 2, 3,", "4, 5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 9) should be(Seq("1, 2, 3, ", "4, 5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 10) should be(Seq("1, 2, 3, ", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 9) should be(Seq("1, 2, 3,", "4, 5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 10) should be(Seq("1, 2, 3,", "4, 5"))
     renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 11) should be(Seq("1, 2, 3, 4,", "5"))
-    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 12) should be(Seq("1, 2, 3, 4, ", "5"))
+    renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 12) should be(Seq("1, 2, 3, 4,", "5"))
     renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 13) should be(Seq("1, 2, 3, 4, 5"))
     renderAsTreeTable.splitDetails(List("1", "2", "3", "4", "5"), 14) should be(Seq("1, 2, 3, 4, 5"))
   }
