@@ -82,7 +82,6 @@ public abstract class AbstractEditionModule
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
-    protected GlobalProcedures globalProcedures;
 
     public abstract EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId );
 
@@ -108,12 +107,6 @@ public abstract class AbstractEditionModule
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
         BaseRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager );
         routingProcedureInstaller.install( globalProcedures );
-        this.globalProcedures = globalProcedures;
-    }
-
-    public GlobalProcedures getGlobalProcedures()
-    {
-        return globalProcedures;
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager )

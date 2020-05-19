@@ -44,7 +44,6 @@ import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -286,7 +285,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
             SecurityModule securityModule = new CommunitySecurityModule(
                     globalModule.getLogService(),
                     globalModule.getGlobalConfig(),
-                    globalProcedures,
                     globalModule.getGlobalDependencies()
             );
             securityModule.setup();
@@ -300,14 +298,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
     {
-        try
-        {
-            return dependencies.resolveDependency( clazz );
-        }
-        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
-        {
-            return newInstanceMethod.get();
-        }
+        return dependencies.containsDependency( clazz ) ? dependencies.resolveDependency( clazz ) : newInstanceMethod.get();
     }
 
     private static boolean createReadOnlyTokens( Config config, NamedDatabaseId namedDatabaseId )

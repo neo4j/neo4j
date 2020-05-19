@@ -77,6 +77,13 @@ public interface DependencyResolver
     <T> Supplier<T> provideDependency( Class<T> type );
 
     /**
+     * Check if dependency resolver contains dependencies of provided type
+     * @param type dependency type to lookup
+     * @return true if dependency resolver contains dependency of requested type, false otherwise
+     */
+    boolean containsDependency( Class<?> type );
+
+    /**
      * Responsible for making the choice between available candidates.
      */
     interface SelectionStrategy

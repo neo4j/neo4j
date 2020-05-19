@@ -59,7 +59,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
         sysCreate.accept( sysDb );
     }
 
-    protected DatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
     }

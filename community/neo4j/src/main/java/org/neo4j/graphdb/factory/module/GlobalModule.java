@@ -32,7 +32,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -249,14 +248,7 @@ public class GlobalModule
 
     private <T> T tryResolveOrCreate( Class<T> clazz, Supplier<T> newInstanceMethod )
     {
-        try
-        {
-            return externalDependencyResolver.resolveDependency( clazz );
-        }
-        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
-        {
-            return newInstanceMethod.get();
-        }
+        return externalDependencyResolver.containsDependency( clazz ) ? externalDependencyResolver.resolveDependency( clazz ) : newInstanceMethod.get();
     }
 
     private void checkLegacyDefaultDatabase()

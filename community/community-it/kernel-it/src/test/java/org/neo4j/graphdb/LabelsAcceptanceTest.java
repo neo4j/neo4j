@@ -42,9 +42,9 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -69,9 +69,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.glassfish.jersey.internal.guava.Iterators.size;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -179,21 +179,13 @@ class LabelsAcceptanceTest
         // When I set an empty label
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode().addLabel( label( "" ) );
-            fail( "Should have thrown exception" );
-        }
-        catch ( ConstraintViolationException ex )
-        {   // Happy
+            assertThrows( ConstraintViolationException.class, () -> tx.createNode().addLabel( label( "" ) ) );
         }
 
         // And When I set a null label
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode().addLabel( () -> null );
-            fail( "Should have thrown exception" );
-        }
-        catch ( ConstraintViolationException ex )
-        {   // Happy
+            assertThrows( ConstraintViolationException.class, () -> tx.createNode().addLabel( () -> null ) );
         }
     }
 
@@ -245,11 +237,7 @@ class LabelsAcceptanceTest
             // When
             try ( Transaction tx = graphDatabase.beginTx() )
             {
-                tx.createNode().addLabel( Labels.MY_LABEL );
-                fail( "Should have thrown exception" );
-            }
-            catch ( ConstraintViolationException ex )
-            {   // Happy
+                assertThrows( ConstraintViolationException.class, () -> tx.createNode().addLabel( Labels.MY_LABEL ) );
             }
 
             managementService.shutdown();

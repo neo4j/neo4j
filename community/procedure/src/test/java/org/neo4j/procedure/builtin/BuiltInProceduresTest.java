@@ -68,6 +68,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -553,7 +554,7 @@ class BuiltInProceduresTest
 
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( GraphDatabaseAPI.class ) ).thenReturn( graphDatabaseAPI );
-        when( resolver.resolveDependency( GlobalProceduresRegistry.class ) ).thenReturn( procs );
+        when( resolver.resolveDependency( GlobalProcedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaReadCore.indexGetPopulationProgress( any( IndexDescriptor.class) ) ).thenReturn( PopulationProgress.DONE );
         AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );

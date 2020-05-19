@@ -107,6 +107,12 @@ public abstract class AbstractExtensions extends DependencyResolver.Adapter impl
         return life.getLifecycleInstances().stream().filter( type::isInstance ).map( type::cast ).collect( toList() );
     }
 
+    @Override
+    public boolean containsDependency( Class<?> type )
+    {
+        return life.getLifecycleInstances().stream().anyMatch( type::isInstance );
+    }
+
     private Object getExtensionDependencies( ExtensionFactory<?> factory )
     {
         Class<?> factoryType = factory.getClass();

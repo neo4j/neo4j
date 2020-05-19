@@ -59,7 +59,7 @@ public class DependenciesProxy
 
     private static class ProxyHandler implements InvocationHandler
     {
-        private DependencyResolver dependencyResolver;
+        private final DependencyResolver dependencyResolver;
 
         ProxyHandler( DependencyResolver dependencyResolver )
         {

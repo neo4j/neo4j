@@ -21,7 +21,9 @@ package org.neo4j.graphdb.facade;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -249,7 +251,7 @@ public class DatabaseManagementServiceFactory
     @SuppressWarnings( "unused" )
     private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
     {
-        return tryResolveOrCreate( GlobalProcedures.class, globalModule.getExternalDependencyResolver(), () ->
+        Supplier<GlobalProcedures> procedureInitializer = () ->
         {
             Config globalConfig = globalModule.getGlobalConfig();
             File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
@@ -306,11 +308,17 @@ public class DatabaseManagementServiceFactory
             {
                 internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
             }
-
             globalModule.getGlobalLife().add( globalProcedures );
-            globalModule.getGlobalDependencies().satisfyDependency( globalProcedures );
+
             return globalProcedures;
-        } );
+        };
+        GlobalProcedures procedures = tryResolveOrCreate( GlobalProcedures.class, globalModule.getExternalDependencyResolver(), procedureInitializer );
+        if ( procedures instanceof Consumer )
+        {
+            ((Consumer) procedures).accept( procedureInitializer );
+        }
+        globalModule.getGlobalDependencies().satisfyDependency( procedures );
+        return procedures;
     }
 
     private static BoltServer createBoltServer( GlobalModule globalModule, AbstractEditionModule edition,

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
@@ -51,7 +52,6 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 import static java.lang.String.format;
@@ -177,7 +177,7 @@ public class BuiltInDbmsProcedures
     public Stream<ProcedureResult> listProcedures()
     {
         securityContext.assertCredentialsNotExpired();
-        return graph.getDependencyResolver().resolveDependency( GlobalProceduresRegistry.class ).getAllProcedures().stream()
+        return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllProcedures().stream()
                 .filter( proc -> !proc.internal() )
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
@@ -193,17 +193,18 @@ public class BuiltInDbmsProcedures
         DependencyResolver resolver = graph.getDependencyResolver();
         QueryExecutionEngine queryExecutionEngine = resolver.resolveDependency( QueryExecutionEngine.class );
         List<FunctionInformation> providedLanguageFunctions = queryExecutionEngine.getProvidedLanguageFunctions();
+        var globalProcedures = resolver.resolveDependency( GlobalProcedures.class );
 
         // gets you all functions provided by the query language
         Stream<FunctionResult> languageFunctions =
                 providedLanguageFunctions.stream().map( FunctionResult::new );
 
         // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedFunctions = resolver.resolveDependency( GlobalProceduresRegistry.class ).getAllNonAggregatingFunctions()
+        Stream<FunctionResult> loadedFunctions = globalProcedures.getAllNonAggregatingFunctions()
                 .map( f -> new FunctionResult( f, false ) );
 
         // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedAggregationFunctions = resolver.resolveDependency( GlobalProceduresRegistry.class ).getAllAggregatingFunctions()
+        Stream<FunctionResult> loadedAggregationFunctions = globalProcedures.getAllAggregatingFunctions()
                 .map( f -> new FunctionResult( f, true ) );
 
         return Stream.concat( Stream.concat( languageFunctions, loadedFunctions ), loadedAggregationFunctions )

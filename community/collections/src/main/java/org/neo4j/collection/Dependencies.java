@@ -109,6 +109,20 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         return dependency;
     }
 
+    @Override
+    public boolean containsDependency( Class<?> type )
+    {
+        if ( typeDependencies.containsKey( type ) )
+        {
+            return true;
+        }
+        if ( parent != null )
+        {
+            return parent.containsDependency( type );
+        }
+        return false;
+    }
+
     private <T> void addInterfaces( Class<?> type, T dependency )
     {
         List<Class<?>> interfaces = getAllInterfaces( type );

@@ -45,7 +45,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.procedure.impl.GlobalProceduresRegistry;
+import org.neo4j.procedure.LazyProcedures;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.Boolean.FALSE;
@@ -66,7 +66,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected boolean impermanent;
     private Config fromConfig;
     private boolean noOpSystemGraphInitializer;
-    private boolean emptyExternalProcedures;
+    private boolean lazyProcedures = true;
 
     public TestDatabaseManagementServiceBuilder()
     {
@@ -102,10 +102,10 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         {
             dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
         }
-        if ( emptyExternalProcedures )
+        if ( lazyProcedures )
         {
             var dependencyWrapper = new Dependencies( dependencies );
-            dependencyWrapper.satisfyDependency( new GlobalProceduresRegistry() );
+            dependencyWrapper.satisfyDependency( new LazyProcedures() );
             dependencies = dependencyWrapper;
         }
 
@@ -218,9 +218,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
-    public TestDatabaseManagementServiceBuilder useEmptyExternalProcedures( boolean useEmptyExternalProcedureSet )
+    public TestDatabaseManagementServiceBuilder useLazyProcedures( boolean useLazyProcedures )
     {
-        this.emptyExternalProcedures = useEmptyExternalProcedureSet;
+        this.lazyProcedures = useLazyProcedures;
         return this;
     }
 

@@ -28,7 +28,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseConfig;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.BufferedIdController;
@@ -76,6 +75,8 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.GlobalLockerService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.NullLog;
@@ -86,9 +87,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
-import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -184,14 +183,11 @@ public class DatabaseRule extends ExternalResource
 
     private static <T> T dependency( Dependencies dependencies, Class<T> type, Function<DependencyResolver,T> defaultSupplier )
     {
-        try
+        if ( dependencies.containsDependency( type ) )
         {
             return dependencies.resolveDependency( type );
         }
-        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
-        {
-            return dependencies.satisfyDependency( defaultSupplier.apply( dependencies ) );
-        }
+        return dependencies.satisfyDependency( defaultSupplier.apply( dependencies ) );
     }
 
     private void shutdownAnyRunning()

@@ -19,13 +19,23 @@
  */
 package org.neo4j.kernel.api;
 
+import java.io.File;
+
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class IndexQueryingTest extends AbstractIndexQueryingTest<ReadTestSupport>
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
-        return new ReadTestSupport();
+        return new ReadTestSupport()
+        {
+            @Override
+            protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+            {
+                return super.newManagementServiceBuilder( storeDir ).useLazyProcedures( false );
+            }
+        };
     }
 }

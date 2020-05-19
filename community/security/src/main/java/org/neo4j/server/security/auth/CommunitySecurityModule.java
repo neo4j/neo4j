@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.common.DependencySatisfier;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -48,29 +48,25 @@ public class CommunitySecurityModule extends SecurityModule
 {
     private final LogProvider logProvider;
     private final Config config;
-    private final GlobalProcedures globalProcedures;
-    private final DependencySatisfier dependencySatisfier;
+    private final Dependencies globalDependencies;
     private BasicSystemGraphRealm authManager;
 
     public CommunitySecurityModule(
             LogService logService,
             Config config,
-            GlobalProcedures procedures,
-            DependencySatisfier dependencySatisfier )
+            Dependencies globalDependencies )
     {
         this.logProvider = logService.getUserLogProvider();
         this.config = config;
-        this.globalProcedures = procedures;
-        this.dependencySatisfier = dependencySatisfier;
+        this.globalDependencies = globalDependencies;
     }
 
     @Override
     public void setup()
     {
-        org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencySatisfier;
         Supplier<GraphDatabaseService> systemSupplier = () ->
         {
-            DatabaseManager<?> databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
+            DatabaseManager<?> databaseManager = globalDependencies.resolveDependency( DatabaseManager.class );
             return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                     () -> new RuntimeException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
         };
@@ -80,7 +76,7 @@ public class CommunitySecurityModule extends SecurityModule
                 createAuthenticationStrategy( config )
         );
 
-        registerProcedure( globalProcedures, logProvider.getLog( getClass() ), AuthProcedures.class, null );
+        registerProcedure( globalDependencies.resolveDependency( GlobalProcedures.class ), logProvider.getLog( getClass() ), AuthProcedures.class, null );
     }
 
     @Override

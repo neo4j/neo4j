@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -34,6 +35,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextArray;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -90,11 +92,6 @@ abstract class CommunityProcedureITBase extends KernelIntegrationTest implements
 
     private String printElementsOfArray( AnyValue[] array )
     {
-        StringBuilder result = new StringBuilder();
-        for ( AnyValue anyValue : array )
-        {
-            result.append( anyValue ).append( "\n" );
-        }
-        return result.toString();
+        return Arrays.stream( array ).map( AnyValue::toString ).collect( joining( "\n" ) );
     }
 }
