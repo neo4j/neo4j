@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
+import org.neo4j.memory.ScopedMemoryTracker;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
@@ -55,8 +55,8 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
  * This is often a computationally heavy operation so that given direction and types an instance of this class can be reused
  * and previously found connections will be cached and can significantly speed up traversals.
  */
-@SuppressWarnings( "unused" )
-public class CachingExpandInto
+@SuppressWarnings( {"unused", "UnnecessaryLocalVariable"} )
+public class CachingExpandInto implements AutoCloseable
 {
     private static final long RELATIONSHIP_SIZE = shallowSizeOfInstance( Relationship.class );
 
@@ -64,11 +64,11 @@ public class CachingExpandInto
 
     private final RelationshipCache relationshipCache;
     private final NodeDegreeCache degreeCache;
-    private long fromNode = -1L;
-    private long toNode = -1L;
 
     private final Read read;
     private final Direction direction;
+
+    private final ScopedMemoryTracker scopedMemoryTracker;
 
     //NOTE: this constructor is here for legacy compiled runtime where we don't track memory
     //when we remove the legacy_compiled this should go as well.
@@ -85,102 +85,100 @@ public class CachingExpandInto
 
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
     {
+        this.scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
         this.read = read;
         this.direction = direction;
-        this.relationshipCache = new RelationshipCache( capacity, memoryTracker );
-        this.degreeCache = new NodeDegreeCache( capacity, memoryTracker );
+        this.relationshipCache = new RelationshipCache( capacity, scopedMemoryTracker );
+        this.degreeCache = new NodeDegreeCache( capacity, scopedMemoryTracker );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        scopedMemoryTracker.close();
     }
 
     /**
-     * Creates a cursor for all connecting relationships given a start- and an endnode.
+     * Creates a cursor for all connecting relationships given a first and a second node.
      *
      * @param nodeCursor Node cursor used in traversal
      * @param traversalCursor Traversal cursor used in traversal
-     * @param fromNode The start node
-     * @param toNode The end node
+     * @param firstNode The first node
+     * @param secondNode The second node
      * @return The interconnecting relationships in the given direction with any of the given types.
      */
     public RelationshipTraversalCursor connectingRelationships(
             NodeCursor nodeCursor,
             RelationshipTraversalCursor traversalCursor,
-            long fromNode,
+            long firstNode,
             int[] types,
-            long toNode )
+            long secondNode )
     {
-        Preconditions.requireNegative( this.fromNode );
-        Preconditions.requireNegative( this.toNode );
-        List<Relationship> connections = relationshipCache.get( fromNode, toNode, direction );
-
-        this.fromNode = fromNode;
-        this.toNode = toNode;
+        List<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
 
         if ( connections != null )
         {
-            return new FromCachedSelectionCursor( connections.iterator(), read );
+            return new FromCachedSelectionCursor( connections.iterator(), read, firstNode, secondNode );
         }
         Direction reverseDirection = direction.reverse();
-        //Check toNode, will position nodeCursor at toNode
-        int toDegree = degreeCache.getIfAbsentPut( toNode,
-                () -> calculateTotalDegreeIfCheap( read, toNode, nodeCursor, reverseDirection, types ));
+        //Check secondNode, will position nodeCursor at secondNode
+        int secondDegree = degreeCache.getIfAbsentPut( secondNode,
+                () -> calculateTotalDegreeIfCheap( read, secondNode, nodeCursor, reverseDirection, types ));
 
-        if ( toDegree == 0 )
-        {
-            done();
-            return RelationshipTraversalCursor.EMPTY;
-        }
-        boolean toNodeHasCheapDegrees = toDegree != EXPENSIVE_DEGREE;
-
-        //Check fromNode, note that nodeCursor is now pointing at fromNode
-        if ( !singleNode( read, nodeCursor, fromNode ) )
+        if ( secondDegree == 0 )
         {
             return RelationshipTraversalCursor.EMPTY;
         }
-        boolean fromNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
+        boolean secondNodeHasCheapDegrees = secondDegree != EXPENSIVE_DEGREE;
+
+        //Check firstNode, note that nodeCursor is now pointing at firstNode
+        if ( !singleNode( read, nodeCursor, firstNode ) )
+        {
+            return RelationshipTraversalCursor.EMPTY;
+        }
+        boolean firstNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
 
         //Both can determine degree cheaply, start with the one with the lesser degree
-        if ( fromNodeHasCheapDegrees && toNodeHasCheapDegrees )
+        if ( firstNodeHasCheapDegrees && secondNodeHasCheapDegrees )
         {
-            //Note that we have already position the cursor at fromNode
-            int fromDegree = degreeCache.getIfAbsentPut( fromNode, () -> calculateTotalDegree( nodeCursor, direction, types ));
-            long startNode;
-            long endNode;
+            //Note that we have already position the cursor at firstNode
+            int firstDegree = degreeCache.getIfAbsentPut( firstNode, () -> calculateTotalDegree( nodeCursor, direction, types ));
+            long toNode;
             Direction relDirection;
-            if ( fromDegree < toDegree )
+            if ( firstDegree < secondDegree )
             {
                 // Everything is correctly positioned
-                endNode = toNode;
+                toNode = secondNode;
                 relDirection = direction;
             }
             else
             {
-                //cursor is already pointing at fromNode
-                singleNode( read, nodeCursor, toNode );
-                endNode = fromNode;
+                //cursor is already pointing at firstNode
+                singleNode( read, nodeCursor, secondNode );
+                toNode = firstNode;
                 relDirection = reverseDirection;
             }
 
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), endNode );
+            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), toNode, firstNode, secondNode );
         }
-        else if ( toNodeHasCheapDegrees )
+        else if ( secondNodeHasCheapDegrees )
         {
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
+            long toNode = secondNode;
+            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode, firstNode, secondNode );
         }
-        else if ( fromNodeHasCheapDegrees )
+        else if ( firstNodeHasCheapDegrees )
         {
-            //must move to toNode
-            singleNode( read, nodeCursor, toNode );
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, reverseDirection ), fromNode );
+            //must move to secondNode
+            singleNode( read, nodeCursor, secondNode );
+            long toNode = firstNode;
+            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, reverseDirection ), toNode, firstNode, secondNode );
         }
         else
         {
             //Both are sparse
-            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode );
+            long toNode = secondNode;
+            return connectingRelationshipsCursor( relationshipsCursor( traversalCursor, nodeCursor, types, direction ), toNode, firstNode, secondNode );
         }
-    }
-
-    private void done()
-    {
-        this.toNode = this.fromNode = -1L;
     }
 
     public RelationshipTraversalCursor connectingRelationships(
@@ -220,22 +218,30 @@ public class CachingExpandInto
     }
 
     private RelationshipTraversalCursor connectingRelationshipsCursor(
-            final RelationshipTraversalCursor allRelationships, final long toNode )
+            final RelationshipTraversalCursor allRelationships,
+            final long toNode,
+            final long firstNode,
+            final long secondNode )
     {
-        return new ExpandIntoSelectionCursor( allRelationships, toNode );
+        return new ExpandIntoSelectionCursor( allRelationships, toNode, firstNode, secondNode );
     }
 
-    private class FromCachedSelectionCursor implements RelationshipTraversalCursor
+    private static class FromCachedSelectionCursor implements RelationshipTraversalCursor
     {
         private final Iterator<Relationship> relationships;
         private Relationship currentRelationship;
         private final Read read;
         private int token;
 
-        FromCachedSelectionCursor( Iterator<Relationship> relationships, Read read )
+        private final long firstNode;
+        private final long secondNode;
+
+        FromCachedSelectionCursor( Iterator<Relationship> relationships, Read read, long firstNode, long secondNode )
         {
             this.relationships = relationships;
             this.read = read;
+            this.firstNode = firstNode;
+            this.secondNode = secondNode;
         }
 
         @Override
@@ -248,7 +254,6 @@ public class CachingExpandInto
             }
             else
             {
-                done();
                 return false;
             }
         }
@@ -338,7 +343,7 @@ public class CachingExpandInto
         @Override
         public long otherNodeReference()
         {
-            return currentRelationship.from == fromNode ? toNode : fromNode;
+            return currentRelationship.from == firstNode ? secondNode : firstNode;
         }
 
         @Override
@@ -383,12 +388,22 @@ public class CachingExpandInto
         private final RelationshipTraversalCursor allRelationships;
         private final long otherNode;
 
-        private List<Relationship> connections = new ArrayList<>( 2 );
+        private final long firstNode;
+        private final long secondNode;
 
-        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships, long otherNode )
+        private final List<Relationship> connections = new ArrayList<>( 2 );
+
+        /**
+         * @param otherNode the node we are expanding into
+         * @param firstNode the first node given to connectingRelationships
+         * @param secondNode the second node given to connectingRelationships
+         */
+        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships, long otherNode, long firstNode, long secondNode )
         {
             this.allRelationships = allRelationships;
             this.otherNode = otherNode;
+            this.firstNode = firstNode;
+            this.secondNode = secondNode;
         }
 
         @Override
@@ -468,8 +483,7 @@ public class CachingExpandInto
                 }
             }
 
-            relationshipCache.add( fromNode, toNode, direction, connections );
-            done();
+            relationshipCache.add( firstNode, secondNode, direction, connections );
             close();
             return false;
         }
@@ -517,7 +531,7 @@ public class CachingExpandInto
     {
         private final int capacity;
         private final MemoryTracker memoryTracker;
-        private MutableLongIntMap degreeCache = new LongIntHashMap();
+        private final MutableLongIntMap degreeCache = new LongIntHashMap();
 
         NodeDegreeCache( MemoryTracker memoryTracker )
         {
@@ -566,11 +580,6 @@ public class CachingExpandInto
         private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
         private final int capacity;
         private final MemoryTracker memoryTracker;
-
-        RelationshipCache( MemoryTracker memoryTracker )
-        {
-            this( DEFAULT_CAPACITY, memoryTracker );
-        }
 
         RelationshipCache( int capacity, MemoryTracker memoryTracker )
         {
