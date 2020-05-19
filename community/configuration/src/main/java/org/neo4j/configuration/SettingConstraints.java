@@ -415,6 +415,36 @@ public final class SettingConstraints
         };
     }
 
+    public static SettingConstraint<Integer> lessThanOrEqual( Setting<Integer> other )
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( Integer value, Configuration config )
+            {
+                var otherValue = config.get( other );
+                if ( value == null )
+                {
+                    throw new IllegalArgumentException( "can not be null" );
+                }
+                if ( otherValue == null )
+                {
+                    throw new IllegalArgumentException( other.name() + " can not be null" );
+                }
+                if ( value > otherValue )
+                {
+                    throw new IllegalArgumentException( getDescription() + format( "was %d, which is not less than or equal to %d", value, otherValue ) );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return format( "Must be set less than or equal to value of '%s'", other.name() );
+            }
+        };
+    }
+
     public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
     {
         return dependency( settingConstraint, unconstrained(),

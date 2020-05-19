@@ -60,7 +60,7 @@ public final class BoltConnector implements SettingsDeclaration
     @DocumentedDefaultValue( "true" ) // Should document server defaults.
     public static final Setting<Boolean> enabled =
             newBuilder( "dbms.connector.bolt.enabled", BOOL, false )
-                    .addConstraint( ifCluster( is( Boolean.TRUE ) ) ).build();
+                    .build();
 
     @Description( "Encryption level to require this connector to use" )
     public static final Setting<EncryptionLevel> encryption_level =
