@@ -68,8 +68,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
   def apply(plan: InternalPlanDescription): String = {
 
-    val columns = new mutable.HashMap[String, Int]()
-    val rows = accumulate(plan, columns)
+    val (rows, columns) = accumulate(plan)
     val headers = HEADERS.filter(columns.contains)
 
     def width(header:String) = {
@@ -126,8 +125,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     result.toString()
   }
 
-  private def accumulate(incoming: InternalPlanDescription, columns: mutable.Map[String, Int]): Seq[TableRow] = {
-
+  private def accumulate(incoming: InternalPlanDescription): (Seq[TableRow], Map[String, Int]) = {
+    val columns = mutable.Map[String, Int]()
     val stack = new mutable.ArrayStack[(InternalPlanDescription, Level)]
     stack.push((compactPlan(incoming), Root))
     val rows = new ArrayBuffer[TableRow]()
@@ -149,7 +148,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       }
       rows.append(TableRow(line, tableRow(plan, columns), level.connector, childConnector.map(_.replace("\\", ""))))
     }
-    rows
+    (rows, columns.toMap)
   }
 
   private def compactPlan(plan: InternalPlanDescription): InternalPlanDescription = {
