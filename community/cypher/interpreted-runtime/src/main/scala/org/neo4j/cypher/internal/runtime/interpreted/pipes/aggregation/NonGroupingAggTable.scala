@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.memory.ScopedMemoryTracker
+import org.neo4j.memory.MemoryTracker
 
 /**
  * This table can be used when we have no grouping columns, or there is a provided order for all grouping columns.
@@ -38,7 +38,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
                           executionContextFactory: ExecutionContextFactory,
                           operatorId: Id) extends AggregationTable {
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
-  private val scopedMemoryTracker: ScopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+  private val scopedMemoryTracker: MemoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
 
   override def clear(): Unit = {
     scopedMemoryTracker.reset()

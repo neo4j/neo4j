@@ -70,6 +70,12 @@ public class ThreadSafePeakMemoryTracker implements MemoryTracker
     }
 
     @Override
+    public MemoryTracker getScopedMemoryTracker()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long usedNativeMemory()
     {
         return allocated.get();

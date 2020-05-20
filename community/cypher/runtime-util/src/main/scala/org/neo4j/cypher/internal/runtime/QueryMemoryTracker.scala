@@ -27,6 +27,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.Measurable
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.AnyValue
 
 trait QueryMemoryTracker {
@@ -183,6 +184,8 @@ object BoundedMemoryTracker {
       _highWaterMark = 0L
       transactionMemoryTracker.reset()
     }
+
+    override def getScopedMemoryTracker: MemoryTracker = new ScopedMemoryTracker(this)
   }
 
   class MemoryTrackerPerOperator extends GrowingArray[MemoryTracker]

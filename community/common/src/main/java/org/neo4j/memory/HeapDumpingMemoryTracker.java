@@ -129,6 +129,12 @@ public class HeapDumpingMemoryTracker implements MemoryTracker
         delegate.close();
     }
 
+    @Override
+    public MemoryTracker getScopedMemoryTracker()
+    {
+        return new ScopedMemoryTracker( this );
+    }
+
     public long lastAllocatedBytes()
     {
         return lastAllocatedBytes;

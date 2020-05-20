@@ -24,7 +24,6 @@ import org.eclipse.collections.api.set.MutableSet;
 
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newSet;
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
@@ -37,17 +36,17 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 public class DistinctSet<T extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( DistinctSet.class );
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
     private final MutableSet<T> distinctSet;
 
     public static <T extends Measurable> DistinctSet<T> createDistinctSet( MemoryTracker memoryTracker )
     {
-        ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         return new DistinctSet<>( scopedMemoryTracker );
     }
 
-    private DistinctSet( ScopedMemoryTracker scopedMemoryTracker )
+    private DistinctSet( MemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         distinctSet = newSet( scopedMemoryTracker );

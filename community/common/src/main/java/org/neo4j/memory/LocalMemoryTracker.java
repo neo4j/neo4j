@@ -186,6 +186,12 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         heapHighWaterMark = 0;
     }
 
+    @Override
+    public MemoryTracker getScopedMemoryTracker()
+    {
+        return new ScopedMemoryTracker( this );
+    }
+
     public void setLimit( long localBytesLimit )
     {
         this.localBytesLimit = validateLimit( localBytesLimit );

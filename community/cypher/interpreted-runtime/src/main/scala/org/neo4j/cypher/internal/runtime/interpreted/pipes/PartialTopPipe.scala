@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -42,7 +41,7 @@ case class PartialTopNPipe(source: Pipe,
 
   class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
-    private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
+    private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val topTable = new DefaultComparatorTopTable[ReadableRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {

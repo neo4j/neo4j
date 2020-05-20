@@ -89,4 +89,10 @@ public class ScopedMemoryTracker implements MemoryTracker
         trackedNative = 0;
         trackedHeap = 0;
     }
+
+    @Override
+    public MemoryTracker getScopedMemoryTracker()
+    {
+        return new ScopedMemoryTracker( this );
+    }
 }

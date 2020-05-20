@@ -71,6 +71,12 @@ public final class EmptyMemoryTracker implements LimitedMemoryTracker
     }
 
     @Override
+    public MemoryTracker getScopedMemoryTracker()
+    {
+        return this;
+    }
+
+    @Override
     public void setLimit( long localBytesLimit )
     {
     }

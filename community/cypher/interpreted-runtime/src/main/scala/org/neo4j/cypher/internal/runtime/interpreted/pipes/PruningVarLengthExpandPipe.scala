@@ -30,7 +30,6 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
@@ -353,7 +352,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                               private val queryState: QueryState
   ) extends Iterator[CypherRow] {
 
-    private val memoryTracker = new ScopedMemoryTracker(queryState.memoryTracker.memoryTrackerForOperator(id.x))
+    private val memoryTracker = queryState.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     private var outputRow:CypherRow = _
     private var fullPruneState:FullPruneState = new FullPruneState(queryState, memoryTracker)
     private var hasPrefetched = false

@@ -25,7 +25,6 @@ import java.util.function.IntUnaryOperator;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
@@ -48,7 +47,7 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( EagerBuffer.class );
 
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
     private final IntUnaryOperator growthStrategy;
 
     private EagerBuffer.Chunk<T> first;
@@ -69,17 +68,17 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
     public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(
             MemoryTracker memoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
     {
-        ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance( IntUnaryOperator.class ) );
         return new EagerBuffer<T>( scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy );
     }
 
-    private EagerBuffer( ScopedMemoryTracker scopedMemoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
+    private EagerBuffer( MemoryTracker scopedMemoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.maxChunkSize = maxChunkSize;
         this.growthStrategy = growthStrategy;
-        first = new EagerBuffer.Chunk<>( initialChunkSize, new ScopedMemoryTracker( scopedMemoryTracker ) );
+        first = new EagerBuffer.Chunk<>( initialChunkSize, scopedMemoryTracker.getScopedMemoryTracker() );
         current = first;
     }
 
@@ -88,7 +87,7 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
         if ( !current.add( element ) )
         {
             int newChunkSize = grow( current.elements.length );
-            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>( newChunkSize, new ScopedMemoryTracker( scopedMemoryTracker ) );
+            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>( newChunkSize, scopedMemoryTracker.getScopedMemoryTracker() );
             current.next = newChunk;
             current = newChunk;
             current.add( element );

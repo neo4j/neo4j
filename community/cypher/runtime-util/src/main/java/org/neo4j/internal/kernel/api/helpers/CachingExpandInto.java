@@ -76,7 +76,7 @@ public class CachingExpandInto implements AutoCloseable
     @Unmetered
     private final Direction direction;
 
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
 
     //NOTE: this constructor is here for legacy compiled runtime where we don't track memory
     //when we remove the legacy_compiled this should go as well.
@@ -93,7 +93,7 @@ public class CachingExpandInto implements AutoCloseable
 
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
     {
-        this.scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        this.scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         this.scopedMemoryTracker.allocateHeap( CACHING_EXPAND_INTO_SHALLOW_SIZE );
         this.read = read;
         this.direction = direction;

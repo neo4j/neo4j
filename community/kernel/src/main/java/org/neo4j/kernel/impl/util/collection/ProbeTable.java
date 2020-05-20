@@ -28,7 +28,6 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
@@ -43,17 +42,17 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 public class ProbeTable<K extends Measurable,V extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
     private final MutableMap<K,HeapTrackingArrayList<V>> map;
 
     public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
     {
-        ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         return new ProbeTable<>( scopedMemoryTracker );
     }
 
-    private ProbeTable( ScopedMemoryTracker scopedMemoryTracker )
+    private ProbeTable( MemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.map = newMap( scopedMemoryTracker );

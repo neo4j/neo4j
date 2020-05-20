@@ -29,7 +29,6 @@ import java.util.Objects;
 
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
@@ -49,19 +48,19 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedAppendMap.class );
 
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
     private HeapTrackingUnifiedMap<K,Entry<K,V>> map;
     private Entry<K,V> first;
     private Entry<K,V> last;
 
     public static <K, V> HeapTrackingOrderedAppendMap<K,V> createOrderedMap( MemoryTracker memoryTracker )
     {
-        ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         return new HeapTrackingOrderedAppendMap<>( scopedMemoryTracker );
     }
 
-    private HeapTrackingOrderedAppendMap( ScopedMemoryTracker scopedMemoryTracker )
+    private HeapTrackingOrderedAppendMap( MemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.map = newMap( scopedMemoryTracker );
@@ -170,7 +169,7 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         };
     }
 
-    public ScopedMemoryTracker scopedMemoryTracker()
+    public MemoryTracker scopedMemoryTracker()
     {
         return scopedMemoryTracker;
     }

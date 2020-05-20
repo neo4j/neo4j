@@ -37,17 +37,17 @@ public class LongProbeTable<V extends Measurable> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongProbeTable.class );
     static final long SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
-    private final ScopedMemoryTracker scopedMemoryTracker;
+    private final MemoryTracker scopedMemoryTracker;
     private final MutableLongObjectMap<HeapTrackingArrayList<V>> map;
 
     public static <V extends Measurable> LongProbeTable<V> createLongProbeTable( MemoryTracker memoryTracker )
     {
-        ScopedMemoryTracker scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         return new LongProbeTable<>( scopedMemoryTracker );
     }
 
-    private LongProbeTable( ScopedMemoryTracker scopedMemoryTracker )
+    private LongProbeTable( MemoryTracker scopedMemoryTracker )
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.map = newLongObjectMap( scopedMemoryTracker );

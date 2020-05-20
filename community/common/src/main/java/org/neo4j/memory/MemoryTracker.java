@@ -75,4 +75,13 @@ public interface MemoryTracker extends AutoCloseable
     {
         reset();
     }
+
+    /**
+     * Get a memory tracker that can track sub-allocations and be closed in a single call.
+     * Can be useful for collections when the items are tracked, to avoid iterating over all
+     * of the elements and releasing them individual.
+     *
+     * @return The scoped memory tracker.
+     */
+    MemoryTracker getScopedMemoryTracker();
 }

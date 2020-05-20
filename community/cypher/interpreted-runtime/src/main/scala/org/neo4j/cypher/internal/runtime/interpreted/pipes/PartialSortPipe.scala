@@ -25,7 +25,6 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.memory.ScopedMemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -37,7 +36,7 @@ case class PartialSortPipe(source: Pipe,
 
   class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
-    private val rowsMemoryTracker = new ScopedMemoryTracker(memoryTracker)
+    private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val buffer = HeapTrackingArrayList.newArrayList[CypherRow](16, memoryTracker)
 
     override def clear(): Unit = {
