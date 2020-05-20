@@ -20,16 +20,19 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningTestSupport2, StubbedLogicalPlanningConfiguration}
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.SetExtractor
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
@@ -361,6 +364,40 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeByIdSeek("n", ManySeekableArgs(parameter("param", CTAny)), Set.empty)
       )
     )
+  }
+
+  test("should plan NodeByIdSeek and Argument instead of scans") {
+    val query =
+      """
+        |MATCH (n)-[:REL]->(m)
+        |WHERE id(m) = 1
+        |OPTIONAL MATCH (n)-->()-->(:Role)
+        |RETURN n
+        |""".stripMargin
+
+      val plan = (new given {
+         statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+           override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality(10.0)
+           override def nodesAllCardinality(): Cardinality = Cardinality(100.0)
+         }
+      } getLogicalPlanFor query)._2
+
+      plan should beLike {
+        case Apply(
+              Expand(
+                NodeByIdSeek("m", _, _),
+              "m", _, _, "n", _, _),
+              Optional(
+                Selection(_,
+                  Expand(
+                    Expand(
+                        Argument(SetExtractor("n")),
+                    _, _, _, _, _, _)
+                  , _, _, _, _, _, _)
+                ),
+              _)
+            ) => ()
+      }
   }
 
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {

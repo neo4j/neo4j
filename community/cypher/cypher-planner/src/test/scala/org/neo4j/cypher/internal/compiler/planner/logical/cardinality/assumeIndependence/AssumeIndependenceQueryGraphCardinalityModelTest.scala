@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDCardinalityData
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.RandomizedCardinalityModelTestSuite
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
@@ -236,14 +237,53 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     shouldHaveQueryGraphCardinality(1000.0 / 500.0 * 13.0)
   }
 
-  test("input cardinality of zero on a different variable should affect cardinality estimation of the pattern") {
+  // Tests for the cardinality factor c
+
+  test("input cardinality below 1.0 and no argument => 1.0 * scan cardinality") {
     givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds("e").
-    withInboundCardinality(0.0).
+    withInboundCardinality(0.5).
     withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(0)
+    shouldHaveQueryGraphCardinality(500)
   }
 
+  test("input cardinality above 1.0 and no argument => 1.0 * scan cardinality") {
+    givenPattern("MATCH (a)").
+    withInboundCardinality(1.5).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(500)
+  }
+
+  test("input cardinality below 1.0 and same argument => input cardinality") {
+    givenPattern("MATCH (a)").
+    withQueryGraphArgumentIds("a").
+    withInboundCardinality(0.5).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(0.5)
+  }
+
+  test("input cardinality above 1.0 and same argument => input cardinality") {
+    givenPattern("MATCH (a)").
+    withQueryGraphArgumentIds("a").
+    withInboundCardinality(1.5).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(1.5)
+  }
+
+  test("input cardinality below 1.0 and different argument => 1.0 * scan cardinality") {
+    givenPattern("MATCH (a)").
+    withQueryGraphArgumentIds("e").
+    withInboundCardinality(0.5).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(500)
+  }
+
+  test("input cardinality above 1.0 and different argument => input cardinality * scan cardinality") {
+    givenPattern("MATCH (a)").
+    withQueryGraphArgumentIds("e").
+    withInboundCardinality(1.5).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(750)
+  }
 
   // TODO: Add a test for a relpatterns where the number of matching nodes is zero
 

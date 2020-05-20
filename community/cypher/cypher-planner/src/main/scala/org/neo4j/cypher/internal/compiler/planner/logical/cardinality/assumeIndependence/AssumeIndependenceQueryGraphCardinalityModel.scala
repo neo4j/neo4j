@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.{QueryGraph, Selections, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.Selectivity
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {
-  import AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
+  import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
 
   override val expressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityCalculator = PatternSelectivityCalculator(stats, combiner)
@@ -77,8 +83,17 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
+    /*
+     * The existence of any arguments means that the cardinality is dependent on the inbound cardinality.
+     * Unless the current node pattern is already solved by the arguments, the cost for solving it is 1.0.
+     * The cardinality factor c is the maximum of those two parts.
+     */
     val c = if (qg.argumentIds.nonEmpty) {
+      if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {
+        Cardinality.max(Cardinality(1.0), input.inboundCardinality)
+      } else {
         input.inboundCardinality
+      }
     } else {
       Cardinality(1.0)
     }
