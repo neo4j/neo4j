@@ -108,42 +108,50 @@ public class FabricExecutor
 
         fabricTransaction.setLastSubmittedStatement( lifecycle );
 
-        String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
-        FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
-        UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
-        FabricPlan plan = plannerInstance.plan();
-        Fragment query = plan.query();
-
-        lifecycle.doneFabricProcessing( plan );
-
-        AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
-        RoutingContext routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
-
-        if ( plan.debugOptions().logPlan() )
+        try
         {
-            log.debug( String.format( "Fabric plan: %s", Fragment.pretty().asString( query ) ) );
-        }
-        var statementResult = fabricTransaction.execute(
-                ctx ->
-                {
-                    FabricStatementExecution execution;
-                    if ( plan.debugOptions().logRecords() )
-                    {
-                        execution = new FabricLoggingStatementExecution(
-                                plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, log, lifecycle, dataStreamConfig
-                        );
-                    }
-                    else
-                    {
-                        execution = new FabricStatementExecution(
-                                plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, lifecycle, dataStreamConfig
-                        );
-                    }
-                    return execution.run();
-                } );
+            String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
+            FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
+            UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
+            FabricPlan plan = plannerInstance.plan();
+            Fragment query = plan.query();
 
-        var resultWithErrorMapping = withErrorMapping( statementResult, FabricSecondaryException.class, FabricSecondaryException::getPrimaryException );
-        return new FabricExecutionStatementResultImpl( resultWithErrorMapping, plan, accessMode );
+            lifecycle.doneFabricProcessing( plan );
+
+            AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
+            RoutingContext routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
+
+            if ( plan.debugOptions().logPlan() )
+            {
+                log.debug( String.format( "Fabric plan: %s", Fragment.pretty().asString( query ) ) );
+            }
+            var statementResult = fabricTransaction.execute(
+                    ctx ->
+                    {
+                        FabricStatementExecution execution;
+                        if ( plan.debugOptions().logRecords() )
+                        {
+                            execution = new FabricLoggingStatementExecution(
+                                    plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, log, lifecycle, dataStreamConfig
+                            );
+                        }
+                        else
+                        {
+                            execution = new FabricStatementExecution(
+                                    plan, plannerInstance, useEvaluator, parameters, accessMode, routingContext, ctx, lifecycle, dataStreamConfig
+                            );
+                        }
+                        return execution.run();
+                    } );
+
+            var resultWithErrorMapping = withErrorMapping( statementResult, FabricSecondaryException.class, FabricSecondaryException::getPrimaryException );
+            return new FabricExecutionStatementResultImpl( resultWithErrorMapping, plan, accessMode );
+        }
+        catch ( RuntimeException e )
+        {
+            lifecycle.endFailure( e );
+            throw e;
+        }
     }
 
     public boolean isPeriodicCommit( String query )
@@ -242,6 +250,7 @@ public class FabricExecutor
                         columns,
                         fragmentResult.records
                                 .doOnComplete( lifecycle::endSuccess )
+                                .doOnCancel( lifecycle::endSuccess )
                                 .doOnError( lifecycle::endFailure ),
                         Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) ),
                         fragmentResult.executionType

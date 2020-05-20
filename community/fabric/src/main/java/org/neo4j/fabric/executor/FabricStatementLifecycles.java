@@ -142,7 +142,7 @@ public class FabricStatementLifecycles
         {
             phase = StatementPhase.ENDED;
             monitor.beforeEnd( executingQuery, false );
-            monitor.endFailure( executingQuery, failure );
+            monitor.endFailure( executingQuery, failure.getMessage() );
         }
 
         public boolean inFabricPhase()

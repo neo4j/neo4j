@@ -22,7 +22,6 @@ package org.neo4j.test.fabric;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -46,9 +45,6 @@ import static java.util.Objects.requireNonNull;
 
 public class TestFabricGraphDatabaseService extends GraphDatabaseFacade
 {
-    private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
-    private static final String TAG_NAME = "fabric-tx-id";
-
     final Supplier<BoltGraphDatabaseServiceSPI> boltFabricDatabaseServiceSupplier;
     final Config config;
 
@@ -69,11 +65,10 @@ public class TestFabricGraphDatabaseService extends GraphDatabaseFacade
                                                             Consumer<Status> terminationCallback )
     {
 
-        var fabricTxId = TRANSACTION_COUNTER.incrementAndGet();
         var databaseService = boltFabricDatabaseServiceSupplier.get();
         var boltTransaction = databaseService.beginTransaction( type, loginContext, connectionInfo, List.of(),
                                                                           Duration.ofMillis( timeoutMillis ), AccessMode.WRITE,
-                                                                          Map.of( TAG_NAME, fabricTxId ),
+                                                                          Map.of(),
                                                                           new RoutingContext( false, Map.of() ) );
         var internalTransaction = forceKernelTxCreation( boltTransaction );
         return new TestFabricTransaction( boltTransaction, internalTransaction );
