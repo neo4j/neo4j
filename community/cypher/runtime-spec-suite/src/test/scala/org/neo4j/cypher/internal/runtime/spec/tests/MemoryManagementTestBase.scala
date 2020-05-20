@@ -556,51 +556,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill caching expand-into query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .expandInto("(x)-->(y)")
-      .cartesianProduct()
-      .|.allNodeScan("y")
-      .allNodeScan("x")
-      .build()
-
-
-    // when
-    circleGraph(1000)
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
-
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill caching optional expand-into query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .optionalExpandInto("(x)-->(y)")
-      .cartesianProduct()
-      .|.allNodeScan("y")
-      .allNodeScan("x")
-      .build()
-
-    // when
-    circleGraph(1000)
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
-
   test("should kill ordered distinct query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -689,6 +644,54 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
+  }
+
+  test("should kill distinct aggregation query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
+      .input(nodes = Seq("x"))
+      .build()
+
+    // when
+    val (nodes, _) = circleGraph(1) // Just for size estimation
+    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
+
+    // then
+    a[MemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should not kill ordered count aggregation query") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
+  }
+
+  test("should not kill ordered collect aggregation query") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
+
+    // then
+    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
+    consume(result)
   }
 
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
@@ -783,54 +786,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     }
   }
 
-  test("should kill distinct aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val (nodes, _) = circleGraph(1) // Just for size estimation
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill ordered count aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
-    consume(result)
-  }
-
-  test("should not kill ordered collect aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i ,i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input:_*).stream())
-    consume(result)
-  }
-
   test("should kill node left outer hash join query before it runs out of memory") {
     // given
     val nodes = given { nodeGraph(1) }
@@ -868,6 +823,54 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // then
     a[MemoryLimitExceeded] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  // expandInto and optionalExpandInto _are_ supported by pipelined.
+  // But since the cache is shorter lived there, it does not make sense to have this test for pipelined.
+
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  test("should kill caching expand-into query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[MemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
+  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+  //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+  test("should kill caching optional expand-into query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .optionalExpandInto("(x)-->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    // when
+    circleGraph(1000)
+
+    // then
+    a[MemoryLimitExceeded] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
     }
   }
 }
