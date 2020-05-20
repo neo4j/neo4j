@@ -86,10 +86,11 @@ case class FabricPlanner(
 
       val fragmenter = new FabricFragmenter(defaultContextName, query.statement, prepared.statement(), prepared.semantics())
       val fragments = fragmenter.fragment
+      val periodicCommitHint = fragmenter.periodicCommitHint
 
       val fabricContext = inFabricContext(fragments)
 
-      val stitcher = FabricStitcher(query.statement, fabricContext, fabricContextName, pipeline)
+      val stitcher = FabricStitcher(query.statement, fabricContext, fabricContextName, periodicCommitHint, pipeline)
       val stitchedFragments = stitcher.convert(fragments)
 
       FabricPlan(
@@ -100,7 +101,7 @@ case class FabricPlanner(
         debugOptions = DebugOptions.from(query.options.debugOptions),
         obfuscationMetadata = prepared.obfuscationMetadata(),
         inFabricContext = fabricContext,
-        pipeline.notifications
+        notifications = pipeline.notifications
       )
     }
 

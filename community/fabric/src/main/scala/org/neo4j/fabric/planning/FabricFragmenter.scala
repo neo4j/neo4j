@@ -42,13 +42,18 @@ class FabricFragmenter(
   private val start = Init(defaultUse)
 
   def fragment: Fragment = queryStatement match {
-    case ast.Query(_, part)  => fragmentPart(start, part)
+    case query: ast.Query  => fragmentPart(start, query.part)
     case ddl: ast.MultiGraphDDL => Errors.notSupported(ddl.name)
     case command: ast.AdministrationCommand =>
       Fragment.AdminCommand(systemUse, command)
     case command: ast.SchemaCommand =>
       val use = command.useGraph.map(Use.Declared).getOrElse(defaultUse)
       Fragment.SchemaCommand(use, command)
+  }
+
+  def periodicCommitHint: Option[ast.PeriodicCommitHint] = queryStatement match {
+    case query: ast.Query => query.periodicCommitHint
+    case _                => None
   }
 
   private def fragmentPart(

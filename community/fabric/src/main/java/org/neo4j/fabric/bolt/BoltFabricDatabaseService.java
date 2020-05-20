@@ -89,7 +89,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                 loginContext,
                 clientInfo,
                 namedDatabaseId.name(),
-                false,
+                KernelTransaction.Type.IMPLICIT == type,
                 txTimeout,
                 txMetadata,
                 TestOverrides.routingContext( routingContext )

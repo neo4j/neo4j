@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -132,6 +134,25 @@ class FabricPlannerTest
       parse(remote.query)
         .shouldEqual(
           CreateIndexNewSyntax(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"))(pos)
+        )
+    }
+
+    "periodic commit" in {
+      val remote = asRemote(
+        """USING PERIODIC COMMIT 200
+          |LOAD CSV FROM 'someurl' AS line
+          |CREATE (n)
+          |RETURN line
+          |""".stripMargin)
+
+      parse(remote.query)
+        .shouldEqual(
+          Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
+            singleQuery(
+              LoadCSV(false, literal("someurl"), varFor("line"), None)(pos),
+              create(nodePat("n")),
+              return_(varFor("line").as("line"))
+            ))(pos)
         )
     }
 
@@ -614,6 +635,30 @@ class FabricPlannerTest
         .check(_.query.withoutLocalAndRemote.shouldEqual(
           init(defaultUse).exec(query(return_(literal(1).as("x"))), Seq("x"))
         ))
+    }
+
+    "passes periodic commit on to local parts" in {
+      val inst = instance(
+        """USING PERIODIC COMMIT 200
+          |LOAD CSV FROM 'someurl' AS line
+          |CREATE (n)
+          |RETURN line
+          |""".stripMargin)
+
+      val exec = inst.plan.query.as[Fragment.Exec]
+
+      val local = inst.asLocal(exec).query
+
+      local.state.statement().shouldEqual(
+        Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
+          singleQuery(
+            LoadCSV(false, literal("someurl"), varFor("line"), None)(pos),
+            create(nodePat("n")),
+            return_(varFor("line").as("line"))
+          ))(pos)
+      )
+
+      local.options.isPeriodicCommit.shouldEqual(true)
     }
 
     "passes options on in remote and local parts" in {

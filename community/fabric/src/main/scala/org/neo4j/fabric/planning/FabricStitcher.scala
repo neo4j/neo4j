@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.InputDataStream
+import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.Return
@@ -54,6 +55,7 @@ case class FabricStitcher(
   queryString: String,
   allowMultiGraph: Boolean,
   fabricContextName: Option[String],
+  periodicCommitHint: Option[PeriodicCommitHint],
   pipeline: FabricFrontEnd#Pipeline,
 ) {
 
@@ -119,7 +121,7 @@ case class FabricStitcher(
 
     asExec(
       input = leaf.input,
-      query = Query(None, SingleQuery(clauses)(pos))(pos),
+      statement = Query(None, SingleQuery(clauses)(pos))(pos),
       outputColumns = leaf.outputColumns
     )
   }
@@ -159,22 +161,29 @@ case class FabricStitcher(
 
   private def asExec(
     input: Fragment.Chain,
-    query: Statement,
+    statement: Statement,
     outputColumns: Seq[String],
   ): Fragment.Exec = {
 
-    val sensitive = query.treeExists {
+    val updatedStatement = withPeriodicCommitHint(statement)
+
+    val sensitive = updatedStatement.treeExists {
       case _: SensitiveParameter => true
       case _: SensitiveString => true
     }
 
-    val local = pipeline.checkAndFinalize.process(query)
+    val local = pipeline.checkAndFinalize.process(updatedStatement)
 
-    val (rewriter, extracted) = sensitiveLiteralReplacement(query)
-    val toRender = query.endoRewrite(rewriter)
+    val (rewriter, extracted) = sensitiveLiteralReplacement(updatedStatement)
+    val toRender = updatedStatement.endoRewrite(rewriter)
     val remote = Fragment.RemoteQuery(QueryRenderer.render(toRender), extracted)
 
-    Fragment.Exec(input, query, local, remote, sensitive, outputColumns)
+    Fragment.Exec(input, updatedStatement, local, remote, sensitive, outputColumns)
+  }
+
+  private def withPeriodicCommitHint(statement: Statement) = statement match {
+    case query: Query => query.copy(periodicCommitHint = periodicCommitHint)(query.position)
+    case stmt         => stmt
   }
 
   private def failDynamicGraph(use: Use): Nothing =
