@@ -20,15 +20,14 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import org.eclipse.collections.api.block.function.primitive.IntFunction0;
-import org.eclipse.collections.api.factory.Maps;
-import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
+import org.github.jamm.Unmetered;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -58,14 +57,23 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 @SuppressWarnings( {"unused", "UnnecessaryLocalVariable"} )
 public class CachingExpandInto implements AutoCloseable
 {
-    private static final long RELATIONSHIP_SIZE = shallowSizeOfInstance( Relationship.class );
+    static final long SCOPED_MEM_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
+
+    static final long CACHING_EXPAND_INTO_SHALLOW_SIZE =
+            shallowSizeOfInstance( CachingExpandInto.class )
+            + SCOPED_MEM_TRACKER_SHALLOW_SIZE;
+
+    static final long EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( ExpandIntoSelectionCursor.class );
+    static final long FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( FromCachedSelectionCursor.class );
 
     private static final int EXPENSIVE_DEGREE = -1;
 
     private final RelationshipCache relationshipCache;
     private final NodeDegreeCache degreeCache;
 
+    @Unmetered
     private final Read read;
+    @Unmetered
     private final Direction direction;
 
     private final ScopedMemoryTracker scopedMemoryTracker;
@@ -86,6 +94,7 @@ public class CachingExpandInto implements AutoCloseable
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
     {
         this.scopedMemoryTracker = new ScopedMemoryTracker( memoryTracker );
+        this.scopedMemoryTracker.allocateHeap( CACHING_EXPAND_INTO_SHALLOW_SIZE );
         this.read = read;
         this.direction = direction;
         this.relationshipCache = new RelationshipCache( capacity, scopedMemoryTracker );
@@ -114,11 +123,11 @@ public class CachingExpandInto implements AutoCloseable
             int[] types,
             long secondNode )
     {
-        List<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
+        Iterator<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
 
         if ( connections != null )
         {
-            return new FromCachedSelectionCursor( connections.iterator(), read, firstNode, secondNode );
+            return new FromCachedSelectionCursor( connections, read, firstNode, secondNode );
         }
         Direction reverseDirection = direction.reverse();
         //Check secondNode, will position nodeCursor at secondNode
@@ -223,13 +232,15 @@ public class CachingExpandInto implements AutoCloseable
             final long firstNode,
             final long secondNode )
     {
-        return new ExpandIntoSelectionCursor( allRelationships, toNode, firstNode, secondNode );
+        return new ExpandIntoSelectionCursor( allRelationships, scopedMemoryTracker, toNode, firstNode, secondNode );
     }
 
-    private static class FromCachedSelectionCursor implements RelationshipTraversalCursor
+    private class FromCachedSelectionCursor implements RelationshipTraversalCursor
     {
+        @Unmetered
         private final Iterator<Relationship> relationships;
         private Relationship currentRelationship;
+        @Unmetered
         private final Read read;
         private int token;
 
@@ -242,6 +253,7 @@ public class CachingExpandInto implements AutoCloseable
             this.read = read;
             this.firstNode = firstNode;
             this.secondNode = secondNode;
+            scopedMemoryTracker.allocateHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
         }
 
         @Override
@@ -254,6 +266,7 @@ public class CachingExpandInto implements AutoCloseable
             }
             else
             {
+                close();
                 return false;
             }
         }
@@ -284,7 +297,7 @@ public class CachingExpandInto implements AutoCloseable
         @Override
         public void close()
         {
-          //nothing to close
+            scopedMemoryTracker.releaseHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
         }
 
         @Override
@@ -385,25 +398,35 @@ public class CachingExpandInto implements AutoCloseable
 
     private class ExpandIntoSelectionCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
     {
+        @Unmetered
         private final RelationshipTraversalCursor allRelationships;
         private final long otherNode;
 
         private final long firstNode;
         private final long secondNode;
 
-        private final List<Relationship> connections = new ArrayList<>( 2 );
+        private HeapTrackingArrayList<Relationship> connections;
+        private final ScopedMemoryTracker innerMemoryTracker;
 
         /**
          * @param otherNode the node we are expanding into
          * @param firstNode the first node given to connectingRelationships
          * @param secondNode the second node given to connectingRelationships
          */
-        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships, long otherNode, long firstNode, long secondNode )
+        ExpandIntoSelectionCursor( RelationshipTraversalCursor allRelationships,
+                                   MemoryTracker outerMemoryTracker,
+                                   long otherNode,
+                                   long firstNode,
+                                   long secondNode )
         {
             this.allRelationships = allRelationships;
             this.otherNode = otherNode;
             this.firstNode = firstNode;
             this.secondNode = secondNode;
+            this.innerMemoryTracker = new ScopedMemoryTracker( outerMemoryTracker );
+            this.connections = HeapTrackingArrayList.newArrayList( innerMemoryTracker );
+            innerMemoryTracker.allocateHeap( EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE );
+            innerMemoryTracker.allocateHeap( SCOPED_MEM_TRACKER_SHALLOW_SIZE );
         }
 
         @Override
@@ -438,6 +461,8 @@ public class CachingExpandInto implements AutoCloseable
         public void closeInternal()
         {
             allRelationships.close();
+            connections = null;
+            innerMemoryTracker.close();
         }
 
         @Override
@@ -477,13 +502,16 @@ public class CachingExpandInto implements AutoCloseable
             {
                 if ( allRelationships.otherNodeReference() == otherNode )
                 {
+                    innerMemoryTracker.allocateHeap( Relationship.RELATIONSHIP_SHALLOW_SIZE );
                     connections.add( relationship( allRelationships ) );
 
                     return true;
                 }
             }
 
-            relationshipCache.add( firstNode, secondNode, direction, connections );
+            // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the shallow size of this cursor is discarded.
+            long diff = innerMemoryTracker.estimatedHeapMemory() - EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE;
+            relationshipCache.add( firstNode, secondNode, direction, connections, diff );
             close();
             return false;
         }
@@ -529,9 +557,10 @@ public class CachingExpandInto implements AutoCloseable
 
     static class NodeDegreeCache
     {
+        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( NodeDegreeCache.class );
+
         private final int capacity;
-        private final MemoryTracker memoryTracker;
-        private final MutableLongIntMap degreeCache = new LongIntHashMap();
+        private final MutableLongIntMap degreeCache;
 
         NodeDegreeCache( MemoryTracker memoryTracker )
         {
@@ -541,7 +570,8 @@ public class CachingExpandInto implements AutoCloseable
         NodeDegreeCache( int capacity, MemoryTracker memoryTracker )
         {
             this.capacity = capacity;
-            this.memoryTracker = memoryTracker;
+            memoryTracker.allocateHeap( DEGREE_CACHE_SHALLOW_SIZE );
+            this.degreeCache = HeapTrackingCollections.newLongIntMap( memoryTracker );
         }
 
         public int getIfAbsentPut( long node, IntFunction0 update )
@@ -568,7 +598,6 @@ public class CachingExpandInto implements AutoCloseable
                 {
                     int value = update.getAsInt();
                     degreeCache.put( node, value );
-                    memoryTracker.allocateHeap( Long.BYTES + Integer.BYTES );
                     return value;
                 }
             }
@@ -577,7 +606,9 @@ public class CachingExpandInto implements AutoCloseable
 
     static class RelationshipCache
     {
-        private final MutableMap<Key,List<Relationship>> map = Maps.mutable.withInitialCapacity( 8 );
+        static final long REL_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( RelationshipCache.class );
+
+        private final HeapTrackingUnifiedMap<Key,HeapTrackingArrayList<Relationship>> map;
         private final int capacity;
         private final MemoryTracker memoryTracker;
 
@@ -585,21 +616,27 @@ public class CachingExpandInto implements AutoCloseable
         {
             this.capacity = capacity;
             this.memoryTracker = memoryTracker;
+            this.memoryTracker.allocateHeap( REL_CACHE_SHALLOW_SIZE );
+            this.map = HeapTrackingCollections.newMap( memoryTracker );
         }
 
-        public void add( long start, long end, Direction direction, List<Relationship> relationships )
+        public void add( long start, long end, Direction direction, HeapTrackingArrayList<Relationship> relationships, long heapSizeOfRelationships )
         {
             if ( map.size() < capacity )
             {
                 map.put( key( start, end, direction ), relationships );
-                memoryTracker.allocateHeap( 2 * Long.BYTES + //two longs for the key
-                        relationships.size() * RELATIONSHIP_SIZE ); //relationship.size * RELATIONSHIP_SIZE for the value
+                memoryTracker.allocateHeap( heapSizeOfRelationships );
+                memoryTracker.allocateHeap( Key.KEY_SHALLOW_SIZE );
             }
         }
 
-        public List<Relationship> get( long start, long end, Direction direction )
+        /**
+         * Read the relationships from the cache. Returns `null` if not cached.
+         */
+        public Iterator<Relationship> get( long start, long end, Direction direction )
         {
-            return map.get( key( start, end, direction ) );
+            HeapTrackingArrayList<Relationship> cachedValue = map.get( key( start, end, direction ) );
+            return cachedValue == null ? null : cachedValue.iterator();
         }
 
         public Key key( long startNode, long endNode, Direction direction )
@@ -622,6 +659,8 @@ public class CachingExpandInto implements AutoCloseable
 
         static class Key
         {
+            static long KEY_SHALLOW_SIZE = shallowSizeOfInstance(Key.class);
+
             private final long a, b;
 
             Key( long a, long b )
@@ -674,6 +713,8 @@ public class CachingExpandInto implements AutoCloseable
 
     private static class Relationship
     {
+        static final long RELATIONSHIP_SHALLOW_SIZE = shallowSizeOfInstance( Relationship.class );
+
         private final long id, from, to, properties;
         private final int type;
 

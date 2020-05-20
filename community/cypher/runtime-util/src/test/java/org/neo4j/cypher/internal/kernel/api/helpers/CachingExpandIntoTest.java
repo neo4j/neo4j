@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.kernel.api.helpers;
 
+import org.github.jamm.MemoryMeter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto;
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeastOnce;
@@ -40,25 +45,39 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 
 class CachingExpandIntoTest
 {
-    @Test
-    void shouldComputeDegreeOfStartAndEndNode()
+    private final MemoryMeter meter = new MemoryMeter();
+    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
+
+    @AfterEach
+    void tearDown()
     {
-        // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
-        NodeCursor cursor = mockCursor();
-
-        // When
-       findConnections( expandInto, cursor, 42, 43 );
-
-        // Then
-        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+        memoryTracker.reset();
     }
 
     @Test
-    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame()
+    void shouldComputeDegreeOfStartAndEndNode() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
+        NodeCursor cursor = mockCursor();
+
+        // Then
+        assertEstimatesCorrectly( expandInto );
+
+        // When
+        findConnections( expandInto, cursor, 42, 43 );
+
+        // Then
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame() throws Exception
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -66,13 +85,15 @@ class CachingExpandIntoTest
 
         // Then
         verify( cursor ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNodeOnlyOnce()
+    void shouldComputeDegreeOfStartAndEndNodeOnlyOnce() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
         NodeCursor cursor = mockCursor();
 
         // When, calling multiple times with different types
@@ -82,13 +103,15 @@ class CachingExpandIntoTest
 
         // Then, only call once for 42 and once for 43
         verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull()
+    void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE, 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -100,13 +123,15 @@ class CachingExpandIntoTest
 
         // Then, only call 5 times for 42 and 5 times for 43
         verify( cursor, times( 10 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
     }
 
     @Test
-    void shouldNotRecomputeAnythingIfSameNodesAndTypes()
+    void shouldNotRecomputeAnythingIfSameNodesAndTypes() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 
@@ -115,13 +140,15 @@ class CachingExpandIntoTest
 
         // Then
         verifyNoInteractions( cursor );
+
+        assertReleasesHeap( expandInto );
     }
 
     @Test
-    void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull()
+    void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, EmptyMemoryTracker.INSTANCE, 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 
@@ -130,18 +157,25 @@ class CachingExpandIntoTest
 
         // Then
         verify( cursor, atLeastOnce() ).next();
+
+        assertReleasesHeap( expandInto );
     }
 
-    @SuppressWarnings( "StatementWithEmptyBody" )
     private void findConnections( CachingExpandInto expandInto, NodeCursor cursor, long from, long to, int...types )
     {
         RelationshipTraversalCursor relationships =
                 expandInto.connectingRelationships( cursor, mock( RelationshipTraversalCursor.class ), from,
                        types, to );
+
+        // While we traverse the relationships, we estimate with the cursor, which references the CachingExpandInto
+        assertEstimatesCorrectly( relationships );
+
         while ( relationships.next() )
         {
-            //do nothing
+            assertEstimatesCorrectly( relationships );
         }
+        // Once the cursor is exhausted, it will close itself. Now we need to measure using expandInto directly again
+        assertEstimatesCorrectly( expandInto );
     }
 
     private NodeCursor mockCursor()
@@ -151,5 +185,17 @@ class CachingExpandIntoTest
         when( mock.supportsFastDegreeLookup()).thenReturn( true );
         when( mock.degree( any( RelationshipSelection.class ) ) ).thenReturn( 7 );
         return mock;
+    }
+
+    private void assertEstimatesCorrectly( Object toMeasure )
+    {
+        long actualSize = meter.measureDeep( toMeasure ) - meter.measureDeep( memoryTracker );
+        assertThat( memoryTracker.estimatedHeapMemory(), equalTo( actualSize ) );
+    }
+
+    private void assertReleasesHeap( CachingExpandInto expandInto ) throws Exception
+    {
+        expandInto.close();
+        assertThat( memoryTracker.estimatedHeapMemory(), equalTo( 0L ) );
     }
 }

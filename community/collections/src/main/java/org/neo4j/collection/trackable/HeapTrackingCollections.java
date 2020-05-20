@@ -20,6 +20,7 @@
 package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.MutableSet;
 
@@ -44,6 +45,11 @@ public final class HeapTrackingCollections
     public static <V> MutableLongObjectMap<V> newLongObjectMap( MemoryTracker memoryTracker )
     {
         return HeapTrackingLongObjectHashMap.createLongObjectHashMap( memoryTracker );
+    }
+
+    public static MutableLongIntMap newLongIntMap( MemoryTracker memoryTracker )
+    {
+        return HeapTrackingLongIntHashMap.createLongIntHashMap( memoryTracker );
     }
 
     public static <K,V> HeapTrackingUnifiedMap<K,V> newMap( MemoryTracker memoryTracker )

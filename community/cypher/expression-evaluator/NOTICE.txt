@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Jettison
   Lucene Common Analyzers
