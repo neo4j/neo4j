@@ -71,12 +71,15 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
@@ -408,6 +411,40 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeByIdSeek("n", ManySeekableArgs(parameter("param", CTAny)), Set.empty)
       )
     )
+  }
+
+  test("should plan NodeByIdSeek and Argument instead of scans") {
+    val query =
+      """
+        |MATCH (n)-[:REL]->(m)
+        |WHERE id(m) = 1
+        |OPTIONAL MATCH (n)-->()-->(:Role)
+        |RETURN n
+        |""".stripMargin
+
+      val plan = (new given {
+         statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+           override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality(10.0)
+           override def nodesAllCardinality(): Cardinality = Cardinality(100.0)
+         }
+      } getLogicalPlanFor query)._2
+
+      plan should beLike {
+        case Apply(
+              Expand(
+                NodeByIdSeek("m", _, _),
+              "m", _, _, "n", _, _, _),
+              Optional(
+                Selection(_,
+                  Expand(
+                    Expand(
+                        Argument(SetExtractor("n")),
+                    _, _, _, _, _, _, _)
+                  , _, _, _, _, _, _, _)
+                ),
+              _)
+            ) => ()
+      }
   }
 
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {

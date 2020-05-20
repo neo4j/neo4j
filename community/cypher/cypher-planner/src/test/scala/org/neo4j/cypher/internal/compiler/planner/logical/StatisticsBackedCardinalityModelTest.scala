@@ -159,7 +159,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        DEFAULT_RANGE_SELECTIVITY
+        1.0
       )
   }
 
