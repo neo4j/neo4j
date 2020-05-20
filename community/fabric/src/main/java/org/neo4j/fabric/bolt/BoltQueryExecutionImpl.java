@@ -63,6 +63,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
 
         boolean isWriteOnly = queryExecution.executionType().queryType() == QueryExecutionType.QueryType.WRITE;
         boolean isReadOnly = queryExecution.executionType().queryType() == QueryExecutionType.QueryType.READ_ONLY;
+        boolean isExplain = queryExecution.executionType().isExplained();
         boolean noResult = queryExecution.fieldNames().length == 0;
 
         boolean triggerArtificialDemand = isWriteOnly || noResult;
@@ -73,7 +74,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
             queryExecution.await();
         }
 
-        if ( subscriber instanceof ResultSubscriber && !isReadOnly )
+        if ( subscriber instanceof ResultSubscriber && (!isReadOnly || isExplain) )
         {
             ((ResultSubscriber) subscriber).materialize( queryExecution );
         }

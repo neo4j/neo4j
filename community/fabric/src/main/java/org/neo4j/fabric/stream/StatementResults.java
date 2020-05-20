@@ -61,22 +61,15 @@ public final class StatementResults
 
     public static StatementResult create( Function<QuerySubscriber,QueryExecution> execution )
     {
-        try
-        {
-            QuerySubject querySubject = new QuerySubject();
-            QueryExecution queryExecution = execution.apply( querySubject );
-            querySubject.setQueryExecution( queryExecution );
-            return create(
-                    Flux.fromArray( queryExecution.fieldNames() ),
-                    Flux.from( querySubject ),
-                    querySubject.getSummary(),
-                    Mono.just( queryExecution.executionType() )
-            );
-        }
-        catch ( RuntimeException re )
-        {
-            return error( re );
-        }
+        QuerySubject querySubject = new QuerySubject();
+        QueryExecution queryExecution = execution.apply( querySubject );
+        querySubject.setQueryExecution( queryExecution );
+        return create(
+                Flux.fromArray( queryExecution.fieldNames() ),
+                Flux.from( querySubject ),
+                querySubject.getSummary(),
+                Mono.just( queryExecution.executionType() )
+        );
     }
 
     public static StatementResult create( Flux<String> columns, Flux<Record> records, Mono<Summary> summary, Mono<QueryExecutionType> executionType )
