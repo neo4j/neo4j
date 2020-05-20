@@ -84,9 +84,8 @@ public enum Group
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
     RAFT_CLIENT( "RaftClient" ),
     RAFT_SERVER( "RaftServer" ),
-    RAFT_TIMER( "RaftTimer" ),
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
-    RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
+    RAFT_HANDLER( "RaftBatchHandler" ),
     RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
     LEADER_TRANSFER_SERVICE( "LeaderTransferService" ),
     CORE_STATE_APPLIER( "CoreStateApplier" ),
