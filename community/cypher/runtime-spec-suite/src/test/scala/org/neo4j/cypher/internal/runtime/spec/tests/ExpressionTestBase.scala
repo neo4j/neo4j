@@ -414,6 +414,82 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val expected = (0 until halfSize).map(i => Array[Any](i, halfSize+i))
     runtimeResult should beColumns("longNodeProp", "refNodeProp").withRows(expected)
   }
+
+  test("result of all function should be a boolean") {
+    // given
+    val size = 100
+    val input = for (i <- 0 until size) yield Array[Any](i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("all(a IN [x] WHERE [1,2,3]) AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any](i, true)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("result of none function should be a boolean") {
+    // given
+    val size = 100
+    val input = for (i <- 0 until size) yield Array[Any](i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("none(a IN [x] WHERE [1,2,3]) AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any](i, false)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("result of any function should be a boolean") {
+    // given
+    val size = 100
+    val input = for (i <- 0 until size) yield Array[Any](i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("any(a IN [x] WHERE [1,2,3]) AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any](i, true)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("result of single function should be a boolean") {
+    // given
+    val size = 100
+    val input = for (i <- 0 until size) yield Array[Any](i)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("single(a IN [x] WHERE [1,2,3]) AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any](i, true)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
 }
 
 // Supported by all non-parallel runtimes
