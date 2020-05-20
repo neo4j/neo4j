@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import java.util.Locale
 
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
@@ -29,6 +30,9 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
+import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
@@ -42,6 +46,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -710,7 +715,6 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val leaf = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details(Seq((0 until 100).map(_ => "a").mkString(""), "b"))), Set())
     val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
-    print(leaf)
     renderAsTreeTable(root) should equal(
       """+----------+------------------------------------------------------------------------------------------------------+
         || Operator | Details                                                                                              |
@@ -800,5 +804,22 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("format one short and one long detail") {
     renderAsTreeTable.splitDetails(List("123", "1234567890123456789"), 15) should be(Seq("123, 1234567890", "123456789"))
+  }
+
+  test("MultiNodeIndexSeek") {
+    val logicalPlan = MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[IndexSeekLeafPlan], IndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[IndexSeekLeafPlan]))
+    val cardinalities = new Cardinalities
+    cardinalities.set(logicalPlan.id, 2.0)
+    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities , new ProvidedOrders, StubExecutionPlan())
+
+    renderAsTreeTable(plan) should equal(
+      """+---------------------+------------------------------------------------------------------------------------------------------+----------------+
+        || Operator            | Details                                                                                              | Estimated Rows |
+        |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
+        || +MultiNodeIndexSeek | UNIQUE x:Label(Prop, Foo, Distance, Name) WHERE Prop = 10 AND Foo = 1 AND Distance = 6 AND Name = "K |              2 |
+        ||                     | aroline Getinge", y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                              |                |
+        ||                     | z:Label(Prop, Name) WHERE Prop > 100 AND exists(Name)                                                |                |
+        |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
+        |""".stripMargin)
   }
 }
