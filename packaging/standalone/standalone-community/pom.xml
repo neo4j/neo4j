@@ -65,6 +65,7 @@
                  parameter substitution pattern to not clash with those. -->
                         <delimiter>#{*}</delimiter>
                     </delimiters>
+                    <recompressZippedFiles>false</recompressZippedFiles>
                 </configuration>
                 <executions>
                     <execution>
