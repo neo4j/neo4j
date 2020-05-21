@@ -93,6 +93,7 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
             if ( !heapified )
             {
                 heapify();
+                heapified = true;
             }
             super.replace( e );
         }
