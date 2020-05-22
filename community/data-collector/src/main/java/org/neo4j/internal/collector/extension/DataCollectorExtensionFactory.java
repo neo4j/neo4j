@@ -22,6 +22,7 @@ package org.neo4j.internal.collector.extension;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.collector.DataCollector;
+import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -43,6 +44,8 @@ public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollecto
         Database database();
 
         Config config();
+
+        RecentQueryBuffer recentQueryBuffer();
     }
 
     public DataCollectorExtensionFactory()
@@ -56,6 +59,7 @@ public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollecto
         return new DataCollector( dependencies.database(),
                                   dependencies.jobScheduler(),
                                   dependencies.monitors(),
-                                  dependencies.config() );
+                                  dependencies.config(),
+                                  dependencies.recentQueryBuffer() );
     }
 }

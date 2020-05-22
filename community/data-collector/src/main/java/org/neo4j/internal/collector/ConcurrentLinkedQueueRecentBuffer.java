@@ -19,9 +19,12 @@
  */
 package org.neo4j.internal.collector;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Implementation of {@link RecentBuffer} using {@link ConcurrentLinkedQueue}.
@@ -56,12 +59,24 @@ public class ConcurrentLinkedQueueRecentBuffer<T> implements RecentBuffer<T>
     /* ---- single consumer ---- */
 
     @Override
-    public void clear()
+    public void clearIf( Predicate<T> predicate )
     {
-        queue.clear();
-        // might go out of sync with queue here, but should be minor slippage.
+        var removeCount = new MutableInt( 0 );
+        queue.removeIf( q ->
+                        {
+                            if ( predicate.test( q ) )
+                            {
+                                removeCount.increment();
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        } );
+        // Might go out of sync with queue here, but should be minor slippage.
         // Will not accumulate leaks either, but reset on every clear.
-        size.set( 0 );
+        size.addAndGet( -removeCount.intValue() );
     }
 
     @Override

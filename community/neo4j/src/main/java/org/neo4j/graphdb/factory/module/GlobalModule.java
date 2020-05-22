@@ -36,6 +36,7 @@ import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
+import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -93,6 +94,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_collector_max_recent_query_count;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
@@ -133,6 +135,7 @@ public class GlobalModule
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
+    private final RecentQueryBuffer recentQueryBuffer;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
@@ -183,6 +186,9 @@ public class GlobalModule
         transactionsMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ) );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
+
+        recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ) );
+        globalDependencies.satisfyDependency( recentQueryBuffer );
 
         systemGraphComponents = tryResolveOrCreate( SystemGraphComponents.class, SystemGraphComponents::new );
         globalDependencies.satisfyDependency( systemGraphComponents );

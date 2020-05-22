@@ -35,11 +35,12 @@ public class DataCollector extends LifecycleAdapter
     private final Database database;
     private final QueryCollector queryCollector;
 
-    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors, Config config )
+    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors, Config config, RecentQueryBuffer recentQueryBuffer )
     {
         this.database = database;
-        this.queryCollector = new QueryCollector( jobScheduler,
-                                                  config.get( GraphDatabaseSettings.data_collector_max_recent_query_count ),
+        this.queryCollector = new QueryCollector( database.getNamedDatabaseId(),
+                                                  jobScheduler,
+                                                  recentQueryBuffer,
                                                   config.get( GraphDatabaseSettings.data_collector_max_query_text_size ) );
         try
         {

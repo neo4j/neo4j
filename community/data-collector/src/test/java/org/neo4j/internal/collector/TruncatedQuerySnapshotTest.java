@@ -49,7 +49,8 @@ class TruncatedQuerySnapshotTest
     void shouldTruncateNode()
     {
         // when
-        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( "",
+        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( null,
+                                                               "",
                                                                null,
                                                                map( "n", NODE ),
                                                                -1L,
@@ -67,7 +68,8 @@ class TruncatedQuerySnapshotTest
     void shouldTruncateRelationship()
     {
         // when
-        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( "",
+        TruncatedQuerySnapshot x = new TruncatedQuerySnapshot( null,
+                                                               "",
                                                                null,
                                                                map( "r", RELATIONSHIP ),
                                                                -1L,

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -35,32 +36,32 @@ import org.neo4j.scheduler.JobScheduler;
 /**
  * Thread-safe query collector.
  *
- * Delegates to RingRecentBuffer to hard limit the number of collected queries at any point in time.
+ * Delegates to {@link RecentQueryBuffer} to hard limit the number of collected queries at any point in time.
  */
 class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapshot>> implements QueryExecutionMonitor
 {
     private volatile boolean isCollecting;
-    private final RingRecentBuffer<TruncatedQuerySnapshot> queries;
+    private final RecentQueryBuffer recentQueryBuffer;
+    private final NamedDatabaseId databaseId;
     private final JobScheduler jobScheduler;
     private final int maxQueryTextSize;
 
-    QueryCollector( JobScheduler jobScheduler,
-                    int maxRecentQueryCount,
+    QueryCollector( NamedDatabaseId databaseId,
+                    JobScheduler jobScheduler,
+                    RecentQueryBuffer recentQueryBuffer,
                     int maxQueryTextSize )
     {
         super( true );
+        this.databaseId = databaseId;
         this.jobScheduler = jobScheduler;
         this.maxQueryTextSize = maxQueryTextSize;
+        this.recentQueryBuffer = recentQueryBuffer;
         isCollecting = false;
-
-        // Round down to the nearest power of 2
-        int queryBufferSize = Integer.highestOneBit( maxRecentQueryCount );
-        queries = new RingRecentBuffer<>( queryBufferSize );
     }
 
     long numSilentQueryDrops()
     {
-        return queries.numSilentQueryDrops();
+        return recentQueryBuffer.numSilentQueryDrops();
     }
 
     @Override
@@ -85,7 +86,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     @Override
     protected Result doClear()
     {
-        queries.clear();
+        recentQueryBuffer.clear( databaseId );
         return success( "Data cleared." );
     }
 
@@ -93,7 +94,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     protected Iterator<TruncatedQuerySnapshot> doGetData()
     {
         List<TruncatedQuerySnapshot> querySnapshots = new ArrayList<>();
-        queries.foreach( querySnapshots::add );
+        recentQueryBuffer.foreach( databaseId, querySnapshots::add );
         return querySnapshots.iterator();
     }
 
@@ -125,14 +126,22 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
         if ( isCollecting )
         {
             QuerySnapshot snapshot = query.snapshot();
-            queries.produce(
-                    new TruncatedQuerySnapshot( snapshot.obfuscatedQueryText().get(),
+            var databaseId = query.databaseId().orElse( null );
+            var queryText = snapshot.obfuscatedQueryText().orElse( null );
+            var parameters = snapshot.obfuscatedQueryParameters().orElse( null );
+
+            if ( databaseId != null && queryText != null && parameters != null )
+            {
+                recentQueryBuffer.produce(
+                    new TruncatedQuerySnapshot( databaseId,
+                                                queryText,
                                                 snapshot.queryPlanSupplier(),
-                                                snapshot.obfuscatedQueryParameters().get(),
+                                                parameters,
                                                 snapshot.elapsedTimeMicros(),
                                                 snapshot.compilationTimeMicros(),
                                                 snapshot.startTimestampMillis(),
                                                 maxQueryTextSize ) );
+            }
         }
     }
 }

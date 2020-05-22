@@ -22,6 +22,7 @@ package org.neo4j.internal.collector;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
@@ -52,6 +53,7 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 class TruncatedQuerySnapshot
 {
+    final NamedDatabaseId databaseId;
     final int fullQueryTextHash;
     final String queryText;
     final Supplier<ExecutionPlanDescription> queryPlanSupplier;
@@ -60,7 +62,8 @@ class TruncatedQuerySnapshot
     final Long compilationTimeMicros;
     final Long startTimestampMillis;
 
-    TruncatedQuerySnapshot( String fullQueryText,
+    TruncatedQuerySnapshot( NamedDatabaseId databaseId,
+                            String fullQueryText,
                             Supplier<ExecutionPlanDescription> queryPlanSupplier,
                             MapValue queryParameters,
                             Long elapsedTimeMicros,
@@ -68,6 +71,7 @@ class TruncatedQuerySnapshot
                             Long startTimestampMillis,
                             int maxQueryTextLength )
     {
+        this.databaseId = databaseId;
         this.fullQueryTextHash = fullQueryText.hashCode();
         this.queryText = truncateQueryText( fullQueryText, maxQueryTextLength );
         this.queryPlanSupplier = queryPlanSupplier;

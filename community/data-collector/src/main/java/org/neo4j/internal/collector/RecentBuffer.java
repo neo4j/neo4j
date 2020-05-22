@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Bounded buffer which holds the last n elements. When the buffer is full, each
@@ -41,9 +42,9 @@ public interface RecentBuffer<T>
     void produce( T t );
 
     /**
-     * Clear all elements from the buffer.
+     * Clear all elements from the buffer that meet the provided predicate.
      */
-    void clear();
+    void clearIf( Predicate<T> predicate );
 
     /**
      * Iterate over all elements in the buffer. No elements are removed from the buffer.
