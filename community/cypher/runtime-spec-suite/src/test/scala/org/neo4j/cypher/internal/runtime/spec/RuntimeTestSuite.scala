@@ -215,9 +215,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                  input: InputValues
                                 ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
-  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false, lastAllocation: Long = 0, stackTrace: Option[String] = None): Unit = {
+  def printQueryProfile(fileName: String, maxAllocatedMemory: Long, logToStdOut: Boolean, lastAllocation: Long, stackTrace: Option[String]): Unit = {
     val pw = new PrintWriter(new File(fileName))
-    val maxAllocatedMemory = queryProfile.maxAllocatedMemory()
     val logString = new StringBuilder("Estimation of max allocated memory: ")
     logString.append(maxAllocatedMemory)
     if (lastAllocation > 0) {
@@ -238,7 +237,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  // PROCEDURES
+  def printQueryProfile(fileName: String, queryProfile: QueryProfile, logToStdOut: Boolean = false, lastAllocation: Long = 0, stackTrace: Option[String] = None): Unit = {
+    printQueryProfile(fileName, queryProfile.maxAllocatedMemory(), logToStdOut, lastAllocation, stackTrace)
+  }
+
+    // PROCEDURES
 
   def registerProcedure(proc: CallableProcedure): Unit = {
     kernel.registerProcedure(proc)
