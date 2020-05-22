@@ -81,7 +81,18 @@ public class TestFabricTransaction implements InternalTransaction
             BoltQueryExecution boltQueryExecution = fabricTransaction.executeQuery( query, params, false, result );
             result.init( boltQueryExecution.getQueryExecution() );
         }
-        catch ( QueryExecutionKernelException | Neo4jException | FabricException e )
+        catch ( FabricException e )
+        {
+            if ( e.getCause() instanceof RuntimeException )
+            {
+                throw (RuntimeException) e.getCause();
+            }
+            else
+            {
+                throw new QueryExecutionException( e.getMessage(), e, e.status().code().serialize() );
+            }
+        }
+        catch ( QueryExecutionKernelException | Neo4jException e )
         {
             throw new QueryExecutionException( e.getMessage(), e, e.status().code().serialize() );
         }
