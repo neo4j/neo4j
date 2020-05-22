@@ -44,8 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.test.conditions.Conditions.FALSE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.FALSE;
 
 class KernelIT extends KernelIntegrationTest
 {
@@ -91,7 +91,7 @@ class KernelIT extends KernelIntegrationTest
         // THEN schema state is eventually updated (clearing the schema cache is not atomic with respect to flipping
         // the new index to the ONLINE state, but happens as soon as possible *after* the index becomes ONLINE).
         assertEventually( "Schema state should have been updated",
-                () -> schemaStateContains( "my key" ), FALSE, 1, TimeUnit.SECONDS );
+                () -> schemaStateContains( "my key" ), FALSE, 10, TimeUnit.SECONDS );
     }
 
     @Test
