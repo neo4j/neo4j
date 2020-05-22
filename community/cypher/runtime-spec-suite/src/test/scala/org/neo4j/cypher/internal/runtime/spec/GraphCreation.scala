@@ -192,6 +192,36 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * Create one directed connected graph, by linking multiple chain graphs.
+   * E.g., for `chainCount=3` & `chainDepth=4`, the following graph would be created:
+   *
+   *      *-->*-->*-->*
+   *    /               \
+   *  *-->*-->*-->*-->*-->*
+   *    \               /
+   *      *-->*-->*-->*
+   *
+   * @return start & end nodes
+   */
+  def linkedChainGraphNoCrossLinking(chainCount: Int, chainDepth: Int): (Node,Node) = {
+    val relType = RelationshipType.withName("R")
+    val start = runtimeTestSupport.tx.createNode()
+    val end = runtimeTestSupport.tx.createNode()
+
+    for (_ <- 0 until chainCount) {
+      var currentNode = start
+      for (_ <- 0 until chainDepth) {
+        val n = runtimeTestSupport.tx.createNode()
+        currentNode.createRelationshipTo(n, relType)
+        currentNode = n
+      }
+      currentNode.createRelationshipTo(end, relType)
+    }
+
+    (start, end)
+  }
+
+  /**
    * Create a lollipop graph:
    *
    *             -[r1:R]->
