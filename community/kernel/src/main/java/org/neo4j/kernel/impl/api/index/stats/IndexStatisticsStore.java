@@ -64,7 +64,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent writers
     // It's assumed that the data in this map will be so small that everything can just be in it always.
-    private final ConcurrentHashMap<IndexStatisticsKey,IndexStatisticsValue> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
@@ -94,7 +94,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             throw new IllegalStateException(
                     "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + file, e );
         }
-        scanTree( cache::put );
+        scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ) );
     }
 
     /**
@@ -109,10 +109,10 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
      */
     public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
     {
-        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
+        ImmutableIndexStatistics value = cache.get( indexId );
         if ( value != null )
         {
-            target.write( value.getUpdatesCount(), value.getIndexSize() );
+            target.write( value.updatesCount, value.indexSize );
         }
         else
         {
@@ -133,10 +133,10 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
      */
     public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
     {
-        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
+        ImmutableIndexStatistics value = cache.get( indexId );
         if ( value != null )
         {
-            target.write( value.getSampleUniqueValues(), value.getSampleSize() );
+            target.write( value.sampleUniqueValues, value.sampleSize );
         }
         else
         {
@@ -154,32 +154,29 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long updatesCount, long indexSize )
     {
         assertNotReadOnly();
-        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
-        IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize, updatesCount, indexSize );
-        cache.put( key, value );
+        cache.put( indexId, new ImmutableIndexStatistics( numberOfUniqueValuesInSample, sampleSize, updatesCount, indexSize ) );
     }
 
     public void removeIndex( long indexId )
     {
         assertNotReadOnly();
-        cache.remove( new IndexStatisticsKey( indexId ) );
+        cache.remove( indexId );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
     {
         assertNotReadOnly();
-        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
+        Long key = indexId;
         boolean replaced;
         do
         {
-            IndexStatisticsValue existing = cache.get( key );
+            ImmutableIndexStatistics existing = cache.get( key );
             if ( existing == null )
             {
                 return;
             }
-            IndexStatisticsValue value = new IndexStatisticsValue(
-                    existing.getSampleUniqueValues(), existing.getSampleSize(), existing.getUpdatesCount() + delta, existing.getIndexSize() );
-            replaced = cache.replace( key, existing, value );
+            replaced = cache.replace( key, existing,
+                    new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
         }
         while ( !replaced );
     }
@@ -234,7 +231,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             while ( seek.next() )
             {
                 IndexStatisticsKey key = layout.copyKey( seek.key(), new IndexStatisticsKey() );
-                IndexStatisticsValue value = seek.value().copy();
+                IndexStatisticsValue value = seek.value();
                 consumer.accept( key, value );
             }
         }
@@ -261,9 +258,11 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     {
         try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer() )
         {
-            for ( Map.Entry<IndexStatisticsKey,IndexStatisticsValue> entry : cache.entrySet() )
+            for ( Map.Entry<Long,ImmutableIndexStatistics> entry : cache.entrySet() )
             {
-                writer.put( entry.getKey(), entry.getValue() );
+                ImmutableIndexStatistics stats = entry.getValue();
+                writer.put( new IndexStatisticsKey( entry.getKey() ),
+                        new IndexStatisticsValue( stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize ) );
             }
         }
     }
@@ -285,5 +284,26 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void shutdown() throws IOException
     {
         tree.close();
+    }
+
+    private static class ImmutableIndexStatistics
+    {
+        private final long sampleUniqueValues;
+        private final long sampleSize;
+        private final long updatesCount;
+        private final long indexSize;
+
+        ImmutableIndexStatistics( long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize )
+        {
+            this.sampleUniqueValues = sampleUniqueValues;
+            this.sampleSize = sampleSize;
+            this.updatesCount = updatesCount;
+            this.indexSize = indexSize;
+        }
+
+        ImmutableIndexStatistics( IndexStatisticsValue value )
+        {
+            this( value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() );
+        }
     }
 }

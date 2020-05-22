@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-// this is a necessary evil for GBP tree
-@SuppressWarnings( {"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"} )
 class IndexStatisticsValue
 {
     static final int SIZE = Long.SIZE * 4;
@@ -80,49 +78,5 @@ class IndexStatisticsValue
     public void setIndexSize( long indexSize )
     {
         this.indexSize = indexSize;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = (int) (sampleUniqueValues ^ (sampleUniqueValues >>> 32));
-        result = 31 * result + (int) (sampleSize ^ (sampleSize >>> 32));
-        result = 31 * result + (int) (updatesCount ^ (updatesCount >>> 32));
-        result = 31 * result + (int) (indexSize ^ (indexSize >>> 32));
-        return result;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        final IndexStatisticsValue that = (IndexStatisticsValue) o;
-
-        if ( sampleUniqueValues != that.sampleUniqueValues )
-        {
-            return false;
-        }
-        if ( sampleSize != that.sampleSize )
-        {
-            return false;
-        }
-        if ( updatesCount != that.updatesCount )
-        {
-            return false;
-        }
-        return indexSize == that.indexSize;
-    }
-
-    public IndexStatisticsValue copy()
-    {
-        return new IndexStatisticsValue( sampleUniqueValues, sampleSize, updatesCount, indexSize );
     }
 }
