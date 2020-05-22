@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_STATISTICS;
 
 /**
  * A simple store for keeping index statistics counts, like number of updates, index size, number of unique values a.s.o.
@@ -56,6 +55,8 @@ import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsValue.EMPTY_S
  */
 public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable
 {
+    private static final ImmutableIndexStatistics EMPTY_STATISTICS = new ImmutableIndexStatistics( 0, 0, 0, 0 );
+
     // Used in GBPTree.seek. Please don't use for writes
     private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Long.MIN_VALUE );
     private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Long.MAX_VALUE );
@@ -70,7 +71,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent writers
     // It's assumed that the data in this map will be so small that everything can just be in it always.
-    private final ConcurrentHashMap<IndexStatisticsKey,IndexStatisticsValue> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
             PageCacheTracer pageCacheTracer )
@@ -104,45 +105,42 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INIT_TAG ) )
         {
-            scanTree( cache::put, cursorTracer );
+            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorTracer );
         }
     }
 
     public IndexSample indexSample( long indexId )
     {
-        IndexStatisticsValue value = cache.getOrDefault( new IndexStatisticsKey( indexId ), EMPTY_STATISTICS );
-        return new IndexSample( value.getIndexSize(), value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount() );
+        ImmutableIndexStatistics value = cache.getOrDefault( indexId, EMPTY_STATISTICS );
+        return new IndexSample( value.indexSize, value.sampleUniqueValues, value.sampleSize, value.updatesCount );
     }
 
     public void replaceStats( long indexId, IndexSample sample )
     {
         assertNotReadOnly();
-        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
-        IndexStatisticsValue value = new IndexStatisticsValue( sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize() );
-        cache.put( key, value );
+        cache.put( indexId, new ImmutableIndexStatistics( sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize() ) );
     }
 
     public void removeIndex( long indexId )
     {
         assertNotReadOnly();
-        cache.remove( new IndexStatisticsKey( indexId ) );
+        cache.remove( indexId );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
     {
         assertNotReadOnly();
-        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
+        Long key = indexId;
         boolean replaced;
         do
         {
-            IndexStatisticsValue existing = cache.get( key );
+            ImmutableIndexStatistics existing = cache.get( key );
             if ( existing == null )
             {
                 return;
             }
-            IndexStatisticsValue value = new IndexStatisticsValue(
-                    existing.getSampleUniqueValues(), existing.getSampleSize(), existing.getUpdatesCount() + delta, existing.getIndexSize() );
-            replaced = cache.replace( key, existing, value );
+            replaced = cache.replace( key, existing,
+                    new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
         }
         while ( !replaced );
     }
@@ -197,7 +195,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             while ( seek.next() )
             {
                 IndexStatisticsKey key = layout.copyKey( seek.key(), new IndexStatisticsKey() );
-                IndexStatisticsValue value = seek.value().copy();
+                IndexStatisticsValue value = seek.value();
                 consumer.accept( key, value );
             }
         }
@@ -224,9 +222,11 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     {
         try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer( cursorTracer ) )
         {
-            for ( Map.Entry<IndexStatisticsKey,IndexStatisticsValue> entry : cache.entrySet() )
+            for ( Map.Entry<Long,ImmutableIndexStatistics> entry : cache.entrySet() )
             {
-                writer.put( entry.getKey(), entry.getValue() );
+                ImmutableIndexStatistics stats = entry.getValue();
+                writer.put( new IndexStatisticsKey( entry.getKey() ),
+                        new IndexStatisticsValue( stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize ) );
             }
         }
     }
@@ -248,5 +248,26 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void shutdown() throws IOException
     {
         tree.close();
+    }
+
+    private static class ImmutableIndexStatistics
+    {
+        private final long sampleUniqueValues;
+        private final long sampleSize;
+        private final long updatesCount;
+        private final long indexSize;
+
+        ImmutableIndexStatistics( long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize )
+        {
+            this.sampleUniqueValues = sampleUniqueValues;
+            this.sampleSize = sampleSize;
+            this.updatesCount = updatesCount;
+            this.indexSize = indexSize;
+        }
+
+        ImmutableIndexStatistics( IndexStatisticsValue value )
+        {
+            this( value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() );
+        }
     }
 }
