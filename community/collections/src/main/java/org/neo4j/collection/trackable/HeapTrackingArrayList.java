@@ -56,6 +56,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
     private int size;
     private int modCount;
     private Object[] elementData;
+    private E[] items;
 
     /**
      * @return a new heap tracking array list with initial size 1
@@ -76,11 +77,31 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         return new HeapTrackingArrayList<>( initialSize, memoryTracker, trackedSize );
     }
 
+    private HeapTrackingArrayList( HeapTrackingArrayList<E> other )
+    {
+        int otherSize = other.size;
+        this.size = otherSize;
+        this.items = (E[]) new Object[otherSize];
+        System.arraycopy( other.items, 0, this.items, 0, otherSize );
+        this.memoryTracker = other.memoryTracker;
+        this.trackedSize = shallowSizeOfObjectArray( otherSize );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
+    }
+
     private HeapTrackingArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
     {
         this.elementData = new Object[initialSize];
         this.memoryTracker = memoryTracker;
         this.trackedSize = trackedSize;
+    }
+
+    /*
+     * Compacts the items list of the original array
+     */
+    @Override
+    public HeapTrackingArrayList<E> clone()
+    {
+        return new HeapTrackingArrayList<>( this );
     }
 
     @Override
@@ -321,7 +342,35 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         }
     }
 
-    @Override
+    public Iterator<E> autoClosingIterator()
+    {
+        return new Iterator<>()
+        {
+            int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                if ( index >= size )
+                {
+                    close();
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public E next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return items[index++];
+            }
+        };
+    }
+
     public void sort( Comparator<? super E> c )
     {
         final int expectedModCount = modCount;
