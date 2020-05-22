@@ -32,6 +32,7 @@ import java.util.stream.Collector;
 import org.neo4j.memory.Measurable;
 import org.neo4j.values.AnyValue;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public abstract class ListValueBuilder
 {
@@ -97,9 +98,17 @@ public abstract class ListValueBuilder
         }
     }
 
+    private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ArrayList.class );
+    public static final long UNKNOWN_LIST_VALUE_BUILDER_SHALLOW_SIZE = shallowSizeOfInstance( UnknownSizeListValueBuilder.class ) + ARRAY_LIST_SHALLOW_SIZE;
     public static class UnknownSizeListValueBuilder extends ListValueBuilder implements Measurable
     {
         private final List<AnyValue> values = new ArrayList<>();
+
+        public UnknownSizeListValueBuilder()
+        {
+            super();
+            estimatedHeapSize += ARRAY_LIST_SHALLOW_SIZE;
+        }
 
         @Override
         void internalAdd( AnyValue value )
