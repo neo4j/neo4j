@@ -106,8 +106,6 @@ case class FabricFrontEnd(
     params: MapValue,
   ) {
 
-    private val queryString = query.statement
-
     def traceStart(): CompilationTracer.QueryCompilationEvent =
       compilationTracer.compileQuery(query.description)
 
@@ -115,7 +113,7 @@ case class FabricFrontEnd(
       val monitors: Monitors = WrappedMonitors(kernelMonitors)
       val tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
       val notificationLogger: InternalNotificationLogger = new RecordingNotificationLogger(Some(query.options.offset))
-      val cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory(queryString, None)
+      val cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory(query.rawStatement, Some(query.options.offset))
 
       val errorHandler: Seq[SemanticErrorDef] => Unit = (errors: Seq[SemanticErrorDef]) =>
         errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
@@ -148,7 +146,7 @@ case class FabricFrontEnd(
         CompilationPhases.fabricParsing(parsingConfig, signatures)
 
       def process(): BaseState =
-        transformer.transform(InitialState(queryString, None, null), context)
+        transformer.transform(InitialState(query.statement, Some(query.options.offset), null), context)
     }
 
     object checkAndFinalize {
