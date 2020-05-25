@@ -155,9 +155,17 @@ public class ThreadingRule extends ExternalResource
                 {
                     for ( StackTraceElement element : thread.getStackTrace() )
                     {
-                        if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                        try
                         {
-                            return true;
+                            var currentClass = Class.forName( element.getClassName() );
+                            var currentClassIsSubtype = owner.isAssignableFrom( currentClass );
+                            if ( currentClassIsSubtype && element.getMethodName().equals( method ) )
+                            {
+                                return true;
+                            }
+                        }
+                        catch ( ClassNotFoundException ignored )
+                        {
                         }
                     }
                 }
