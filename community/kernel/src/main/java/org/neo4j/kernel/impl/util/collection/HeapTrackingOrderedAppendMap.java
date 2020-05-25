@@ -20,20 +20,23 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.block.function.Function;
+import org.eclipse.collections.api.block.function.Function2;
 import org.eclipse.collections.api.block.procedure.Procedure;
-import org.eclipse.collections.impl.tuple.AbstractImmutableEntry;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
 import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
 /**
  * A heap tracking, ordered, append-only, map. It only tracks the internal structure, not the elements within.
@@ -47,11 +50,15 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedAppendMap.class );
+    private static final int INITIAL_CHUNK_SIZE = 32; // Must be even, preferably a power of 2 (32 matches the HeapTrackingUnifiedMap initial size)
+    private static final int MAX_CHUNK_SIZE = 8192; // Must be even, preferably a power of 2
 
     private final MemoryTracker scopedMemoryTracker;
-    private HeapTrackingUnifiedMap<K,Entry<K,V>> map;
-    private Entry<K,V> first;
-    private Entry<K,V> last;
+    private HeapTrackingUnifiedMap<K,V> map;
+
+    // Linked chunk list used to store key-value pairs in order
+    private Chunk first;
+    private Chunk current;
 
     public static <K, V> HeapTrackingOrderedAppendMap<K,V> createOrderedMap( MemoryTracker memoryTracker )
     {
@@ -64,6 +71,8 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.map = newMap( scopedMemoryTracker );
+        first = new Chunk( INITIAL_CHUNK_SIZE, scopedMemoryTracker );
+        current = first;
     }
 
     /**
@@ -80,23 +89,41 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         return map.getIfAbsentPutWith( key, p ->
         {
             MemoryTracker memoryTracker = scopedMemoryTracker;
-            V result = p.valueOf( memoryTracker );
-            memoryTracker.allocateHeap( Entry.SHALLOW_SIZE );
-            Entry<K,V> entry = new Entry<>( key, result );
-            append( entry );
-            return entry;
-        }, function ).getValue();
+            V value = p.valueOf( memoryTracker );
+            addToBuffer( key, value );
+            return value;
+        }, function );
+    }
+
+    /**
+     * Get and return the value in the Map at the specified key. Alternatively, if there is no value in the map for that key
+     * return the result of evaluating the specified Function given the internal scoped memory tracker, and put that value in the
+     * map at the specified key.
+     *
+     * @param key The key to look up or insert a new value for
+     * @param function A function that takes the key and a memory tracker and returns a value.
+     * @return The value for the given key
+     */
+    public V getIfAbsentPutWithMemoryTracker2( K key, Function2<K, MemoryTracker,? extends V> function )
+    {
+        // NOTE: Based on profiling it seems that because of the overhead of creating an linking a lambda in this method it is faster to do
+        //       separate gets and puts, especially when we expect more gets to happen on existing values.
+        V value = map.get( key );
+        if ( value != null )
+        {
+            return value;
+        }
+        // Put a new value
+        V newValue = function.value( key, scopedMemoryTracker );
+        map.put( key, newValue );
+        addToBuffer( key, newValue );
+        return newValue;
     }
 
     @CalledFromGeneratedCode
     public V get( K key )
     {
-        Entry<K,V> entry = map.get( key );
-        if ( entry != null )
-        {
-            return entry.getValue();
-        }
-        return null;
+        return map.get( key );
     }
 
     /**
@@ -107,10 +134,8 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     @CalledFromGeneratedCode
     public void put( K key, V value )
     {
-        scopedMemoryTracker.allocateHeap( Entry.SHALLOW_SIZE );
-        Entry<K,V> entry = new Entry( key, value );
-        append( entry );
-        if ( map.put( key, entry ) != null )
+        addToBuffer( key, value );
+        if ( map.put( key, value ) != null )
         {
             throw new UnsupportedOperationException( "Replacing an existing value is not supported." );
         }
@@ -119,9 +144,19 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     /**
      * Apply the procedure for each value in the map.
      */
+    @SuppressWarnings( "unchecked" )
     public void forEachValue( Procedure<? super V> p )
     {
-        map.forEachValue( entry -> p.accept( entry.getValue() ) );
+        Chunk chunk = first;
+        while ( chunk != null )
+        {
+            // Value is at odd indicies (1, 3, 5, ...)
+            for ( int i = 1; i < chunk.cursor; i += 2 )
+            {
+                p.accept( (V) chunk.elements[i] );
+            }
+            chunk = chunk.next;
+        }
     }
 
     /**
@@ -131,6 +166,8 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
      * When the iterator is exhausted it will call close() automatically.
      * (Everything allocated by the function given to getIfAbsentPutWithMemoryTracker() will then
      *  also be released when the scoped memory tracker is closed.)
+     *
+     * WARNING: The entries returned by next() are transient and must be consumed before calling next() again!
      */
     public Iterator<Map.Entry<K, V>> autoClosingEntryIterator()
     {
@@ -138,35 +175,7 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         map.close();
         map = null;
 
-        return new Iterator<>()
-        {
-            private Entry<K,V> current;
-
-            {
-                current = first;
-                first = null;
-                last = null;
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                if ( current == null )
-                {
-                    close();
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            public Entry<K,V> next()
-            {
-                var entry = current;
-                current = current.next;
-                return entry;
-            }
-        };
+        return new AutoClosingTransientEntryIterator();
     }
 
     public MemoryTracker scopedMemoryTracker()
@@ -177,34 +186,92 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     @Override
     public void close()
     {
-        first = null;
-        last = null;
         map = null;
+        first = null;
+        current = null;
         scopedMemoryTracker.close();
     }
 
-    private void append( Entry<K, V> entry )
+    public void addToBuffer( Object key, Object value )
     {
-        if ( first == null )
+        if ( !current.add( key, value ) )
         {
-            first = last = entry;
-        }
-        else
-        {
-            last.next = entry;
-            last = entry;
+            int newChunkSize = grow( current.elements.length );
+            Chunk newChunk = new Chunk( newChunkSize, scopedMemoryTracker );
+            current.next = newChunk;
+            current = newChunk;
+            current.add( key, value );
         }
     }
 
-    private static class Entry<K, V> extends AbstractImmutableEntry<K, V>
+    private class AutoClosingTransientEntryIterator implements Iterator<Map.Entry<K,V>>, Map.Entry<K,V>
     {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( Entry.class );
+        private Chunk chunk;
+        private Chunk nextChunk;
+        private int index;
+        private int nextIndex;
 
-        Entry<K, V> next;
-
-        Entry( K key, V value )
         {
-            super( key, value );
+            chunk = nextChunk = first;
+            first = null;
+            current = null;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            if ( nextChunk == null || nextIndex >= nextChunk.cursor )
+            {
+                close();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public Map.Entry<K,V> next()
+        {
+            if ( nextChunk == null )
+            {
+                throw new NoSuchElementException();
+            }
+
+            // Set current entry
+            index = nextIndex;
+            chunk = nextChunk;
+
+            // Advance next entry
+            nextIndex += 2;
+            if ( nextIndex >= nextChunk.cursor )
+            {
+                //var chunkToRelease = chunk;
+                nextChunk = nextChunk.next;
+                nextIndex = 0;
+                //chunkToRelease.close();
+            }
+
+            // This is now a view of the current entry
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings( "unchecked" )
+        public K getKey()
+        {
+            return (K) chunk.elements[index];
+        }
+
+        @Override
+        @SuppressWarnings( "unchecked" )
+        public V getValue()
+        {
+            return (V) chunk.elements[index + 1];
+        }
+
+        @Override
+        public V setValue( V value )
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -213,7 +280,7 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
             if ( o instanceof Map.Entry )
             {
                 Map.Entry<?,?> that = (Map.Entry<?,?>) o;
-                return Objects.equals( this.key, that.getKey() ) && Objects.equals( this.value, that.getValue() );
+                return Objects.equals( this.getKey(), that.getKey() ) && Objects.equals( this.getValue(), that.getValue() );
             }
             return false;
         }
@@ -221,9 +288,63 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
         @Override
         public int hashCode()
         {
-            K key = this.key;
-            V value = this.value;
+            K key = this.getKey();
+            V value = this.getValue();
             return (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
+        }
+    }
+
+    @VisibleForTesting
+    int numberOfChunks()
+    {
+        int i = 0;
+        var chunk = first;
+        while ( chunk != null )
+        {
+            chunk = chunk.next;
+            i++;
+        }
+        return i;
+    }
+
+    private int grow( int size )
+    {
+        if ( size == MAX_CHUNK_SIZE )
+        {
+            return size;
+        }
+        int newSize = size << 1;
+        if ( newSize <= 0 || newSize > MAX_CHUNK_SIZE ) // Check overflow
+        {
+            return MAX_CHUNK_SIZE;
+        }
+        return newSize;
+    }
+
+    private static class Chunk
+    {
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance( Chunk.class );
+
+        private final Object[] elements;
+        private Chunk next;
+        private int cursor;
+
+        Chunk( int size, MemoryTracker memoryTracker )
+        {
+            memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( size ) );
+            elements = new Object[size];
+        }
+
+        boolean add( Object key, Object value )
+        {
+            if ( cursor < elements.length )
+            {
+                elements[cursor] = key;
+                elements[cursor + 1] = value;
+                cursor += 2;
+                return true;
+            }
+            return false;
         }
     }
 }

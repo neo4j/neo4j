@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.eclipse.collections.api.block.function.Function2
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.HeapEstimator
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
@@ -130,4 +134,21 @@ object AggregationPipe {
           }
         }
     }
+
+  /**
+   * Precompute a function that creates new aggregators for a given grouping key
+   */
+  def computeNewAggregatorsFunction[KeyType <: AnyValue](aggregations: Array[AggregationExpression]): Function2[KeyType, MemoryTracker, Array[AggregationFunction]] =
+    (groupingValue: KeyType, scopedMemoryTracker: MemoryTracker) => {
+      val nAggregations = aggregations.length
+      scopedMemoryTracker.allocateHeap(groupingValue.estimatedHeapUsage() + HeapEstimator.shallowSizeOfObjectArray(nAggregations))
+      val functions = new Array[AggregationFunction](nAggregations)
+      var i = 0
+      while (i < nAggregations) {
+        functions(i) = aggregations(i).createAggregationFunction(scopedMemoryTracker)
+        i += 1
+      }
+      functions
+    }
+
 }

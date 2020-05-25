@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.eclipse.collections.api.block.function.Function2
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.computeNewAggregatorsFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
-import org.neo4j.memory.HeapEstimator
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
 /**
@@ -46,9 +48,11 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        executionContextFactory: ExecutionContextFactory,
                        operatorId: Id) extends AggregationTable {
 
-  protected var resultMap: HeapTrackingOrderedAppendMap[AnyValue, Array[AggregationFunction]] = _
-  protected val addKeys: (CypherRow, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
-  private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
+  private[this] var resultMap: HeapTrackingOrderedAppendMap[AnyValue, Array[AggregationFunction]] = _
+  private[this] val addKeys: (CypherRow, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
+  private[this] val memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
+  private[this] val newAggregators: Function2[AnyValue, MemoryTracker, Array[AggregationFunction]] =
+    computeNewAggregatorsFunction(aggregations.map(_.expression))
 
   override def clear(): Unit = {
     if (resultMap != null) {
@@ -59,17 +63,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
 
   override def processRow(row: CypherRow): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
-    val aggregationFunctions = resultMap.getIfAbsentPutWithMemoryTracker(groupingValue, scopedMemoryTracker => {
-      val nAggregations = aggregations.length
-      scopedMemoryTracker.allocateHeap(groupingValue.estimatedHeapUsage() + HeapEstimator.shallowSizeOfObjectArray(nAggregations))
-      val functions = new Array[AggregationFunction](nAggregations)
-      var i = 0
-      while (i < nAggregations) {
-        functions(i) = aggregations(i).expression.createAggregationFunction(scopedMemoryTracker)
-        i += 1
-      }
-      functions
-    })
+    val aggregationFunctions = resultMap.getIfAbsentPutWithMemoryTracker2(groupingValue, newAggregators)
     var i = 0
     while (i < aggregationFunctions.length) {
       aggregationFunctions(i)(row, state)
@@ -83,7 +77,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
       override def hasNext: Boolean = innerIterator.hasNext
 
       override def next(): CypherRow = {
-        val entry = innerIterator.next()
+        val entry = innerIterator.next() // NOTE: This entry is transient and only valid until we call next() again
         val unorderedGroupingValue = entry.getKey
         val aggregateFunctions = entry.getValue
         val row = state.newExecutionContext(executionContextFactory)

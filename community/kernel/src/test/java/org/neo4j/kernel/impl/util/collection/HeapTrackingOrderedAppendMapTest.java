@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -37,6 +38,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -80,7 +82,7 @@ class HeapTrackingOrderedAppendMapTest
             return value1;
         } );
         table.getIfAbsentPutWithMemoryTracker( key2, scopedMemoryTracker -> {
-            scopedMemoryTracker.allocateHeap( key1.estimatedHeapUsage() + value2.estimatedHeapUsage() );
+            scopedMemoryTracker.allocateHeap( key2.estimatedHeapUsage() + value2.estimatedHeapUsage() );
             return value2;
         } );
         table.getIfAbsentPutWithMemoryTracker( key3, scopedMemoryTracker -> {
@@ -104,6 +106,7 @@ class HeapTrackingOrderedAppendMapTest
         assertTrue( iterator.hasNext() );
         assertEquals( value3, iterator.next().getValue() );
         assertFalse( iterator.hasNext() );
+        assertThrows( NoSuchElementException.class, iterator::next );
 
         // Exhausting the iterator should have closed the buffer automatically at this point
         assertEquals( externalAllocation, memoryTracker.estimatedHeapMemory() );
@@ -143,16 +146,18 @@ class HeapTrackingOrderedAppendMapTest
 
         var lhm = new LinkedHashMap<>();
         var lhmMemoryTracker = new ScopedMemoryTracker( EmptyMemoryTracker.INSTANCE );
-        // There a some slightly worse cases for estimation, e.g. 6000, 49000 or 98000 gives a mis-estimation of 9%, then add a thousand and it drops to 5%.
-        // Since we do not memory track the chains, a lot of collisions (long chains) just before rehash would be a worst case.
+        // There a some slightly worse cases for estimation, e.g. 6000, 49000 or 98000 gives an underestimation of 3%,
+        // then add a thousand and it changes to an overestimation to 6-8% after rehash.
+        // This is because we only estimate the memory used by the chains for collisions, based on an assumption of the
+        // average length of chains of 8. (See table below for more details)
         int nEntries = 49000;
         for ( int i = 0; i < nEntries; i++ )
         {
             long keyLong = random.nextLong();
             var key = Values.longValue( keyLong );
             var value = Values.longValue( i );
-            table.getIfAbsentPutWithMemoryTracker( key, scopedMemoryTracker -> {
-                scopedMemoryTracker.allocateHeap( key.estimatedHeapUsage() + value.estimatedHeapUsage() );
+            table.getIfAbsentPutWithMemoryTracker2( key, (k, scopedMemoryTracker) -> {
+                scopedMemoryTracker.allocateHeap( k.estimatedHeapUsage() + value.estimatedHeapUsage() );
                 return value;
             } );
             lhm.computeIfAbsent( key, k -> {
@@ -186,4 +191,23 @@ class HeapTrackingOrderedAppendMapTest
 
         // Exhausting the iterator should close the map
     }
+
+    //------------------------------------------------------------------------------------------
+    // Assuming average length of chains of 4 key-value pairs:
+    //    6000: HeapTrackingOrderedMap used  468696 bytes (estimation  440056 is 6% under)
+    //    7000: HeapTrackingOrderedMap used  571528 bytes (estimation  576104 is 1% over)
+    //   49000: HeapTrackingOrderedMap used 3672248 bytes (estimation 3442520 is 6% under)
+    //   50000: HeapTrackingOrderedMap used 4126160 bytes (estimation 4219984 is 2% over)
+    //   98000: HeapTrackingOrderedMap used 7350936 bytes (estimation 6884872 is 6% under)
+    //   99000: HeapTrackingOrderedMap used 8163280 bytes (estimation 8357696 is 2% over)
+    //
+    // Assuming average length of chains of 8 key-value pairs:
+    //    6000: HeapTrackingOrderedMap used  468696 bytes (estimation  454488 is 3% under)
+    //    7000: HeapTrackingOrderedMap used  571528 bytes (estimation  605544 is 6% over)
+    //   49000: HeapTrackingOrderedMap used 3672248 bytes (estimation 3558040 is 3% under)
+    //   50000: HeapTrackingOrderedMap used 4126160 bytes (estimation 4450416 is 8% over)
+    //   98000: HeapTrackingOrderedMap used 7350936 bytes (estimation 7115304 is 3% under)
+    //   99000: HeapTrackingOrderedMap used 8163280 bytes (estimation 8817088 is 8% over)
+    //
+    // (INITIAL_CHUNK_SIZE = 256, MAX_CHUNK_SIZE = 8192)
 }
