@@ -82,7 +82,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
                 {
                     try
                     {
-                        return fabricBoltDbms.database( name );
+                        return fabricBoltDbms.getDatabase( name );
                     }
                     catch ( UnavailableException e )
                     {
