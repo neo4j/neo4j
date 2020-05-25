@@ -35,9 +35,9 @@ public class ConcurrentLinkedQueueRecentBuffer<T> implements RecentBuffer<T>
     private final int maxSize;
     private final AtomicInteger size;
 
-    public ConcurrentLinkedQueueRecentBuffer( int bitSize )
+    public ConcurrentLinkedQueueRecentBuffer( int maxSize )
     {
-        maxSize = 1 << bitSize;
+        this.maxSize = maxSize;
         queue = new ConcurrentLinkedQueue<>();
         size = new AtomicInteger( 0 );
     }

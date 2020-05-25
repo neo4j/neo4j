@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
@@ -58,17 +59,21 @@ class TruncatedQuerySnapshot
     final String queryText;
     final Supplier<ExecutionPlanDescription> queryPlanSupplier;
     final MapValue queryParameters;
-    final Long elapsedTimeMicros;
-    final Long compilationTimeMicros;
-    final Long startTimestampMillis;
+    final long elapsedTimeMicros;
+    final long compilationTimeMicros;
+    final long startTimestampMillis;
+    final long estimatedHeap;
+
+    static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TruncatedQuerySnapshot.class ) +
+                                     HeapEstimator.shallowSizeOfInstance( Supplier.class );
 
     TruncatedQuerySnapshot( NamedDatabaseId databaseId,
                             String fullQueryText,
                             Supplier<ExecutionPlanDescription> queryPlanSupplier,
                             MapValue queryParameters,
-                            Long elapsedTimeMicros,
-                            Long compilationTimeMicros,
-                            Long startTimestampMillis,
+                            long elapsedTimeMicros,
+                            long compilationTimeMicros,
+                            long startTimestampMillis,
                             int maxQueryTextLength )
     {
         this.databaseId = databaseId;
@@ -79,6 +84,7 @@ class TruncatedQuerySnapshot
         this.elapsedTimeMicros = elapsedTimeMicros;
         this.compilationTimeMicros = compilationTimeMicros;
         this.startTimestampMillis = startTimestampMillis;
+        this.estimatedHeap = SHALLOW_SIZE + HeapEstimator.sizeOf( this.queryText ) + this.queryParameters.estimatedHeapUsage();
     }
 
     private static String truncateQueryText( String queryText, int maxLength )
