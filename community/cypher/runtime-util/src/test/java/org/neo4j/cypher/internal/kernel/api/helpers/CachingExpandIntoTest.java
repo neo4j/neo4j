@@ -176,6 +176,10 @@ class CachingExpandIntoTest
         }
         // Once the cursor is exhausted, it will close itself. Now we need to measure using expandInto directly again
         assertEstimatesCorrectly( expandInto );
+
+        // Make sure that next is idempotent, even if cursor is already closed
+        relationships.next();
+        assertEstimatesCorrectly( expandInto );
     }
 
     private NodeCursor mockCursor()

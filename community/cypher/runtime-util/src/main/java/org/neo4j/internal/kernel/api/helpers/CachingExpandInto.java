@@ -238,7 +238,7 @@ public class CachingExpandInto implements AutoCloseable
     private class FromCachedSelectionCursor implements RelationshipTraversalCursor
     {
         @Unmetered
-        private final Iterator<Relationship> relationships;
+        private Iterator<Relationship> relationships;
         private Relationship currentRelationship;
         @Unmetered
         private final Read read;
@@ -259,7 +259,7 @@ public class CachingExpandInto implements AutoCloseable
         @Override
         public boolean next()
         {
-            if ( relationships.hasNext() )
+            if ( relationships != null && relationships.hasNext() )
             {
                 this.currentRelationship = relationships.next();
                 return true;
@@ -297,7 +297,11 @@ public class CachingExpandInto implements AutoCloseable
         @Override
         public void close()
         {
-            scopedMemoryTracker.releaseHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
+            if ( relationships != null )
+            {
+                relationships = null;
+                scopedMemoryTracker.releaseHeap( FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE );
+            }
         }
 
         @Override
@@ -507,6 +511,12 @@ public class CachingExpandInto implements AutoCloseable
 
                     return true;
                 }
+            }
+
+            if ( connections == null )
+            {
+                // This cursor is already closed
+                return false;
             }
 
             // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the shallow size of this cursor is discarded.
