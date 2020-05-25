@@ -31,10 +31,7 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManagerFactory;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.availability.UnavailableException;
-
-import static java.lang.String.format;
 
 public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseManagementServiceSPI
 {
@@ -61,17 +58,9 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     @Override
     public BoltGraphDatabaseServiceSPI database( String databaseName ) throws UnavailableException, DatabaseNotFoundException
     {
-        try
-        {
-            var database = fabricDatabaseManager.getDatabase( databaseName );
-            return new BoltFabricDatabaseService( database.databaseId(), fabricExecutor, config, transactionManager, transactionIdTracker,
-                    transactionBookmarkManagerFactory );
-        }
-        catch ( DatabaseShutdownException | UnavailableException e )
-        {
-            throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
-        }
-
+        var database = fabricDatabaseManager.getDatabase( databaseName );
+        return new BoltFabricDatabaseService( database.databaseId(), fabricExecutor, config, transactionManager, transactionIdTracker,
+                                              transactionBookmarkManagerFactory );
     }
 
     @Override
