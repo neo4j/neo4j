@@ -49,6 +49,7 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.Log;
@@ -77,7 +78,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private final FabricRemoteExecutor.RemoteTransactionContext remoteTransactionContext;
     private final FabricLocalExecutor.LocalTransactionContext localTransactionContext;
     private JobHandle timeoutHandle;
-    private boolean terminated;
+    private State state = State.OPEN;
     private Status terminationStatus;
     private AtomicReference<StatementType> statementType = new AtomicReference<>();
     private StatementLifecycle lastSubmittedStatement;
@@ -153,16 +154,19 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         exclusiveLock.lock();
         try
         {
-            // the transaction has failed and been rolled back as part of the failure clean up
-            if ( terminated )
+            if ( state == State.TERMINATED )
             {
                 // Wait for all children to be rolled back. Ignore errors
                 doOnChildren( readingTransactions, writingTransaction, SingleDbTransaction::rollback );
-
-                var reason = getReasonIfTerminated().map( s -> s.code().description() ).orElse( "Trying to commit terminated transaction" );
-                throw new FabricException( Status.Transaction.TransactionCommitFailed, reason );
+                throw new TransactionTerminatedException( terminationStatus );
             }
-            terminated = true;
+
+            if ( state == State.CLOSED )
+            {
+                throw new FabricException( Status.Transaction.TransactionCommitFailed, "Trying to commit closed transaction" );
+            }
+
+            state = State.CLOSED;
 
             internalLog.debug( "Committing transaction %d", id );
 
@@ -221,13 +225,19 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 return;
             }
 
-            if ( terminated )
+            if ( state == State.TERMINATED )
             {
                 // Wait for all children to be rolled back. Ignore errors
                 doOnChildren( readingTransactions, writingTransaction, SingleDbTransaction::rollback );
                 return;
             }
 
+            if ( state == State.CLOSED )
+            {
+                return;
+            }
+
+            state = State.CLOSED;
             doRollback( SingleDbTransaction::rollback );
         }
         finally
@@ -238,7 +248,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
     private void doRollback( Function<SingleDbTransaction,Mono<Void>> operation )
     {
-        terminated = true;
         internalLog.debug( "Rolling back transaction %d", id );
 
         var allFailures = new ArrayList<Throwable>();
@@ -308,17 +317,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     @Override
     public StatementResult execute( Function<FabricExecutionContext,StatementResult> runLogic )
     {
-        if ( terminated )
-        {
-            Status status = terminationStatus;
-            if ( status == null )
-            {
-                status = Status.Statement.ExecutionFailed;
-            }
-
-            internalLog.error( "Trying to execute query in a terminated transaction %d", id );
-            throw new FabricException( status, "Trying to execute query in a terminated transaction" );
-        }
+        checkTransactionOpenForStatementExecution();
 
         try
         {
@@ -330,6 +329,20 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             userLog.error( "Query execution in transaction %d failed", id );
             rollback();
             throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
+        }
+    }
+
+    private void checkTransactionOpenForStatementExecution()
+    {
+        if ( state == State.TERMINATED )
+        {
+            internalLog.error( "Trying to execute query in a terminated transaction %d", id );
+            throw new TransactionTerminatedException( terminationStatus );
+        }
+
+        if ( state == State.CLOSED )
+        {
+            throw new FabricException( Status.Statement.ExecutionFailed, "Trying to execute query in a closed transaction" );
         }
     }
 
@@ -351,13 +364,14 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         exclusiveLock.lock();
         try
         {
-            if ( terminated )
+            if ( state != State.OPEN )
             {
                 return;
             }
 
             internalLog.debug( "Terminating transaction %d", id );
             terminationStatus = reason;
+            state = State.TERMINATED;
 
             doRollback( singleDbTransaction -> singleDbTransaction.terminate( reason ) );
         }
@@ -400,10 +414,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         exclusiveLock.lock();
         try
         {
-            if ( terminated )
-            {
-                throw parentTransactionTerminatedError( location );
-            }
+            checkTransactionOpenForStatementExecution();
 
             if ( writingTransaction != null )
             {
@@ -438,10 +449,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         nonExclusiveLock.lock();
         try
         {
-            if ( terminated )
-            {
-                throw parentTransactionTerminatedError( location );
-            }
+            checkTransactionOpenForStatementExecution();
 
             var tx = readingTransactionSupplier.get();
             readingTransactions.add( new ReadingTransaction( tx, readOnly ) );
@@ -498,7 +506,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     @Override
     public void childTransactionTerminated( Status reason )
     {
-        if ( terminated )
+        if ( state != State.OPEN )
         {
             return;
         }
@@ -513,14 +521,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 Status.Fabric.AccessMode,
                 "Multi-shard writes not allowed. Attempted write to %s, currently writing to %s",
                 attempt, writingTransaction.getLocation() );
-    }
-
-    private FabricException parentTransactionTerminatedError( Location location )
-    {
-        return new FabricException(
-                Status.Transaction.TransactionStartFailed,
-                "Could not start a transaction at %s, because the parent composite transaction has terminated",
-                location );
     }
 
     private FabricException commitFailedError()
@@ -567,13 +567,14 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         try
         {
             // the transaction has already been rolled back as part of the failure clean up
-            if ( terminated )
+            if ( state != State.OPEN )
             {
                 return;
             }
 
             userLog.info( "Terminating transaction %d because of timeout", id );
             terminationStatus = Status.Transaction.TransactionTimedOut;
+            state = State.TERMINATED;
             doRollback( singleDbTransaction -> singleDbTransaction.terminate( terminationStatus ) );
         }
         finally
@@ -605,5 +606,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     public Set<InternalTransaction> getInternalTransactions()
     {
         return localTransactionContext.getInternalTransactions();
+    }
+
+    private enum State
+    {
+        OPEN,
+        CLOSED,
+        TERMINATED
     }
 }
