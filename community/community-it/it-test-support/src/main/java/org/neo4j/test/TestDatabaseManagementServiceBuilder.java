@@ -68,7 +68,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected LogProvider internalLogProvider;
     protected SystemNanoClock clock;
     protected boolean impermanent;
-    private Config fromConfig;
+    protected Config fromConfig;
     private boolean noOpSystemGraphInitializer;
     private boolean lazyProcedures = true;
 

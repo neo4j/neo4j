@@ -73,7 +73,7 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
     {
         for ( T version : knownComponentVersions )
         {
-            if ( version.description.contains( substring ) )
+            if ( version.description.equals( substring ) )
             {
                 return version;
             }
