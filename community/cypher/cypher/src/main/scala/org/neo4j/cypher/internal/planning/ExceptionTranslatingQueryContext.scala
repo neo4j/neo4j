@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -285,11 +286,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] =
     translateException(tokenNameLookup, inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 
-  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]]): Option[Path] =
-    translateException(tokenNameLookup, inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Option[Path] =
+    translateException(tokenNameLookup, inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]]): Iterator[Path] =
-    translateException(tokenNameLookup, inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Iterator[Path] =
+    translateException(tokenNameLookup, inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def nodeCountByCountStore(labelId: Int): Long =
     translateException(tokenNameLookup, inner.nodeCountByCountStore(labelId))

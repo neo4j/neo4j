@@ -94,6 +94,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -858,8 +859,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
-                                  filters: Seq[KernelPredicate[Entity]]): Option[Path] = {
-    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+                                  filters: Seq[KernelPredicate[Entity]],
+                                  memoryTracker: MemoryTracker): Option[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters, memoryTracker)
 
     //could probably do without node proxies here
     Option(pathFinder.findSinglePath(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)))
@@ -867,11 +869,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
-                               filters: Seq[KernelPredicate[Entity]]): scala.Iterator[Path] = {
-    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+                               filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): scala.Iterator[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters, memoryTracker)
 
-    pathFinder.findAllPaths(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)).iterator()
-      .asScala
+    pathFinder.findAllPathsIterator(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)).asScala
   }
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
@@ -897,7 +898,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
-                              filters: Seq[KernelPredicate[Entity]]): ShortestPath = {
+                              filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): ShortestPath = {
     val startExpander = expander match {
       case OnlyDirectionExpander(_, _, dir) =>
         PathExpanderBuilder.allTypes(toGraphDb(dir))
@@ -918,7 +919,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     new ShortestPath(new BasicEvaluationContext(transactionalContext.tc.transaction(), getDatabaseService), depth,
-      expanderWithAllPredicates.build(), shortestPathPredicate) {
+      expanderWithAllPredicates.build(), shortestPathPredicate, memoryTracker) {
       override protected def filterNextLevelNodes(nextNode: Node): Node =
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode

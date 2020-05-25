@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -268,13 +269,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
-                                  filters: Seq[KernelPredicate[Entity]]): Option[Path] =
-    singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
+                                  filters: Seq[KernelPredicate[Entity]],
+                                  memoryTracker: MemoryTracker): Option[Path] =
+    singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
-                               filters: Seq[KernelPredicate[Entity]]): Iterator[Path] =
-    manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
+                               filters: Seq[KernelPredicate[Entity]],
+                               memoryTracker: MemoryTracker): Iterator[Path] =
+    manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callReadOnlyProcedure(id, args, allowed, context))

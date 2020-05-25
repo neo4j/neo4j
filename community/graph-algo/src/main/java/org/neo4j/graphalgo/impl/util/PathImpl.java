@@ -30,10 +30,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.internal.helpers.collection.ArrayIterator;
 import org.neo4j.internal.helpers.collection.ReverseArrayIterator;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.Measurable;
 
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 
-public final class PathImpl implements Path
+public final class PathImpl implements Path, Measurable
 {
     public static final class Builder
     {
@@ -316,6 +319,18 @@ public final class PathImpl implements Path
         {
             return false;
         }
+    }
+
+    private final static long INSTANCE_SIZE = HeapEstimator.shallowSizeOfInstance( PathImpl.class );
+
+    @Override
+    public long estimatedHeapUsage()
+    {
+        long estimate = INSTANCE_SIZE + HeapEstimator.shallowSizeOfObjectArray( path.length );
+        int pathLength = path.length;
+        estimate += pathLength * RelationshipEntity.SHALLOW_SIZE;
+
+        return estimate;
     }
 
     @Override

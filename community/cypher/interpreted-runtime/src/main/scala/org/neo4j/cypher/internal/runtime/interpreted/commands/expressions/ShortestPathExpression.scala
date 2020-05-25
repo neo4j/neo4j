@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
-import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AllInList
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.NoneInList
+import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
+import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.PropertyExists
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.Entity
@@ -42,6 +43,7 @@ import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeReference
@@ -54,11 +56,16 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                   perStepPredicates: Seq[Predicate] = Seq.empty,
                                   fullPathPredicates: Seq[Predicate] = Seq.empty,
                                   withFallBack: Boolean = false,
-                                  disallowSameNode: Boolean = true) extends Expression {
+                                  disallowSameNode: Boolean = true,
+                                  operatorId: Id = Id.INVALID_ID) extends Expression {
 
   val predicates = perStepPredicates ++ fullPathPredicates
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    apply(row, state, state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+  }
+
+  def apply(row: ReadableRow, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {
     if (anyStartpointsContainNull(row)) {
       Values.NO_VALUE
     } else {
@@ -66,11 +73,11 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
       val end = getEndPoint(row, state, shortestPathPattern.right)
       if (!shortestPathPattern.allowZeroLength && disallowSameNode && start
         .equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
-      getMatches(row, start, end, state)
+      getMatches(row, start, end, state, memoryTracker)
     }
   }
 
-  private def getMatches(ctx: ReadableRow, start: NodeValue, end: NodeValue, state: QueryState): AnyValue = {
+  private def getMatches(ctx: ReadableRow, start: NodeValue, end: NodeValue, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander(), state)
     val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
     /* This test is made after a full shortest path candidate has been produced,
@@ -82,7 +89,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     if (shortestPathPattern.single) {
       val result = state.query
         .singleShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
-          shortestPathPredicate, nodePredicates)
+          shortestPathPredicate, nodePredicates, memoryTracker)
       if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
         Values.NO_VALUE
       else result.map(ValueUtils.fromPath).getOrElse(Values.NO_VALUE)
@@ -90,8 +97,10 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     else {
       val result = state.query
         .allShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
-          shortestPathPredicate, nodePredicates)
-        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(ValueUtils.fromPath).toArray
+          shortestPathPredicate, nodePredicates, memoryTracker)
+        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }
+        .map(ValueUtils.fromPath)
+        .toArray
       VirtualValues.list(result:_*)
     }
   }

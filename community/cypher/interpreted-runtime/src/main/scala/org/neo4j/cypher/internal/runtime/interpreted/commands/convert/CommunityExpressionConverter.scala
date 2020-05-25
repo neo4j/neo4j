@@ -182,7 +182,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case ParameterFromSlot(offset, name, _) => commands.expressions.ParameterFromSlot(offset, name)
       case e: internal.expressions.CaseExpression => caseExpression(id, e, self)
       case e: internal.expressions.ShortestPathExpression => commands.expressions
-        .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self).head)
+        .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self).head, operatorId = id)
       case e: internal.expressions.HasLabels => hasLabels(id, e, self)
       case e: internal.expressions.ListLiteral => commands.expressions.ListLiteral(toCommandExpression(id, e.expressions, self): _*)
       case e: internal.expressions.MapExpression => commands.expressions.LiteralMap(mapItems(id, e.items, self))

@@ -41,12 +41,14 @@ case class ShortestPathPipe(source: Pipe,
   private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
 
-  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+
     input.flatMap(ctx => {
-      val result = shortestPathExpression(ctx, state) match {
+      val result = shortestPathExpression(ctx, state, memoryTracker) match {
         case in: ListValue => in
         case v if v eq Values.NO_VALUE => VirtualValues.EMPTY_LIST
-        case path: PathValue    => VirtualValues.list(path)
+        case path: PathValue => VirtualValues.list(path)
       }
 
       shortestPathCommand.relIterator match {
@@ -69,4 +71,5 @@ case class ShortestPathPipe(source: Pipe,
           }
       }
     })
+  }
 }
