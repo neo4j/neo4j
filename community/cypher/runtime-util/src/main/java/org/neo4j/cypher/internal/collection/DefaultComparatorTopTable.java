@@ -54,7 +54,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
  */
 public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implements Iterable<T> // implements SortTable<T>
 {
-    private static final long INSTANCE_SIZE = shallowSizeOfInstance( DefaultComparatorTopTable.class );
+    private static final long SHALLOW_INSTANCE_SIZE = shallowSizeOfInstance( DefaultComparatorTopTable.class );
 
     private long totalCount;
     private boolean heapified;
@@ -72,9 +72,9 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
     }
 
     @Override
-    protected long instanceSize()
+    protected long shallowInstanceSize()
     {
-        return INSTANCE_SIZE;
+        return SHALLOW_INSTANCE_SIZE;
     }
 
     public boolean add( T e )

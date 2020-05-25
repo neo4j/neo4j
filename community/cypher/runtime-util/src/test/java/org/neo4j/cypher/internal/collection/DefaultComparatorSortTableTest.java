@@ -110,8 +110,8 @@ class DefaultComparatorSortTableTest
     @Test
     void boundCheck()
     {
-        DefaultComparatorSortTable<MeasurableLong> topTable = new DefaultComparatorSortTable<>( comparator, 5 );
-        assertThrows( NoSuchElementException.class, () -> topTable.unorderedIterator().next() );
+        DefaultComparatorSortTable<MeasurableLong> sortTable = new DefaultComparatorSortTable<>( comparator, 5 );
+        assertThrows( NoSuchElementException.class, () -> sortTable.unorderedIterator().next() );
     }
 
     @Test

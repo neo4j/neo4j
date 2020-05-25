@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -33,7 +34,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
  */
 public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
 {
-    private static final long INSTANCE_SIZE = shallowSizeOfInstance( DefaultComparatorSortTable.class );
+    private static final long SHALLOW_INSTANCE_SIZE = shallowSizeOfInstance( DefaultComparatorSortTable.class );
 
     public DefaultComparatorSortTable( Comparator<? super T> comparator, int initialSize )
     {
@@ -46,9 +47,9 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
     }
 
     @Override
-    protected long instanceSize()
+    protected long shallowInstanceSize()
     {
-        return INSTANCE_SIZE;
+        return SHALLOW_INSTANCE_SIZE;
     }
 
     public int getSize()
@@ -64,7 +65,8 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
     /**
      * Returns all the elements in no particular order
      */
-    public Iterator<T> unorderedIterator()
+    @VisibleForTesting
+    Iterator<T> unorderedIterator()
     {
         return getIterator();
     }
@@ -104,7 +106,8 @@ public class DefaultComparatorSortTable<T> extends MemoryTrackingHeap<T>
     /**
      * Sift down an element in the heap from the top. O(log(n))
      *
-     * NOTE:
+     * NOTE: Use only with an element that you know is already at the top,
+     *       i.e. as was returned by peek()
      *
      * @param x element to sift down
      */

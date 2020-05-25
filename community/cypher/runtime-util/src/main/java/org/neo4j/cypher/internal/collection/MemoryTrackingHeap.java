@@ -55,13 +55,19 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
         checkArgument( initialSize > 0, "Table size must be greater than 0" );
 
         trackedSize = shallowSizeOfObjectArray( initialSize );
-        memoryTracker.allocateHeap( instanceSize() + trackedSize );
+        memoryTracker.allocateHeap( shallowInstanceSize() + trackedSize );
         heap = (T[]) new Object[initialSize];
     }
 
-    protected abstract long instanceSize();
+    /**
+     * The shallow size of an instance of the implementing class
+     */
+    protected abstract long shallowInstanceSize();
 
-    public boolean insert( T e )
+    /**
+     * Insert a new element in the heap
+     */
+    protected boolean insert( T e )
     {
         int n = size;
         if ( n >= heap.length )
@@ -73,7 +79,10 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
         return true;
     }
 
-    public boolean replace( T e )
+    /**
+     * Replace the top element of the heap
+     */
+    protected boolean replace( T e )
     {
         T head = heap[0];
         if ( comparator.compare( head, e ) > 0 )
@@ -85,7 +94,10 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
         return false;
     }
 
-    public void sort()
+    /**
+     * Sort the heapified backing array in-place
+     */
+    protected void sort()
     {
         // Heap sort the array
         int n = size - 1;
@@ -110,17 +122,25 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
     {
         if ( heap != null )
         {
-            memoryTracker.releaseHeap( instanceSize() + trackedSize  );
+            memoryTracker.releaseHeap( shallowInstanceSize() + trackedSize  );
             heap = null;
         }
     }
 
-    Iterator<T> getIterator()
+    /**
+     * Create a normal iterator.
+     * To be used by sub-classes implementing iterator().
+     */
+    protected Iterator<T> getIterator()
     {
         return Iterators.iterator( size, heap );
     }
 
-    Iterator<T> getAutoClosingIterator()
+    /**
+     * Create an iterator that will automatically call close() when it is exhausted.
+     * To be used by sub-classes implementing autoClosingIterator().
+     */
+    protected Iterator<T> getAutoClosingIterator()
     {
         return new Iterator<>()
         {
@@ -206,6 +226,9 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
         heap[k] = x;
     }
 
+    /**
+     * The implementing class gets to decide what to do in case growing results in an overflow
+     */
     protected abstract void overflow( long maxSize );
 
     /**
