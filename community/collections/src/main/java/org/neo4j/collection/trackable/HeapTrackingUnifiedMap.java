@@ -34,19 +34,20 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedMap.class );
     private final MemoryTracker memoryTracker;
-    private int trackedCapacity;
+    private long trackedHeap;
 
     static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
     {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
-        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
-        return new HeapTrackingUnifiedMap<>( memoryTracker, initialSizeToAllocate );
+        long trackedHeap = arrayHeapSize( initialSizeToAllocate );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedHeap );
+        return new HeapTrackingUnifiedMap<>( memoryTracker, trackedHeap );
     }
 
-    private HeapTrackingUnifiedMap( MemoryTracker memoryTracker, int trackedCapacity )
+    private HeapTrackingUnifiedMap( MemoryTracker memoryTracker, long trackedHeap )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
-        this.trackedCapacity = trackedCapacity;
+        this.trackedHeap = trackedHeap;
     }
 
     @Override
@@ -54,17 +55,32 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
     {
         if ( memoryTracker != null )
         {
-            memoryTracker.allocateHeap( arrayHeapSize( sizeToAllocate ) );
-            memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) );
-            trackedCapacity = sizeToAllocate;
+            long heapToAllocate = arrayHeapSize( sizeToAllocate );
+            memoryTracker.allocateHeap( heapToAllocate );
+            memoryTracker.releaseHeap( trackedHeap );
+            trackedHeap = heapToAllocate;
         }
         super.allocateTable( sizeToAllocate );
     }
 
     @Override
+    protected void rehash( int newCapacity )
+    {
+        super.rehash( newCapacity );
+        // Add an estimated heap usage of the arrays for the chains of colliding buckets
+        // Assume an average chain length of 8 key-value pairs
+        // (Based on experiments this seems to be a fair trade-off between underestimation just before rehash and overestimation just after rehash,
+        //  with a bias toward more overestimation after rehash (e.g. ~3% under --> ~8% over)
+        int nChains = getCollidingBuckets();
+        long estimatedHeapUsageForChains = nChains * arrayHeapSize( 16 );
+        memoryTracker.allocateHeap( estimatedHeapUsageForChains );
+        trackedHeap += estimatedHeapUsageForChains;
+    }
+
+    @Override
     public void close()
     {
-        memoryTracker.releaseHeap( SHALLOW_SIZE + arrayHeapSize( trackedCapacity ) );
+        memoryTracker.releaseHeap( SHALLOW_SIZE + trackedHeap );
     }
 
     private static long arrayHeapSize( int arrayLength )
