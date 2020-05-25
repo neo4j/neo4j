@@ -79,7 +79,6 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
                                               transactionBookmarkManagerFactory );
     }
 
-
     @Override
     public Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser()
     {
