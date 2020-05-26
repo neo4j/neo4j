@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RemovalsCountingDiffSets;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -79,6 +80,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public class TxState implements TransactionState, RelationshipVisitor.Home
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TxState.class );
     /**
      * This factory must be used only for creating collections representing internal state that doesn't leak outside this class.
      */
@@ -117,6 +119,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         this.collectionsFactory = collectionsFactory;
         this.memoryTracker = memoryTracker;
+        this.memoryTracker.allocateHeap( SHALLOW_SIZE );
     }
 
     @Override
@@ -794,6 +797,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 nodeState.removeIndexDiff( after );
             }
         }
+    }
+
+    @Override
+    public MemoryTracker memoryTracker()
+    {
+        return memoryTracker;
     }
 
     @VisibleForTesting

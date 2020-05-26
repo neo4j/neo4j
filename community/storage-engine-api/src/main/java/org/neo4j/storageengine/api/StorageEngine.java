@@ -42,7 +42,7 @@ public interface StorageEngine extends Lifecycle
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator,
-     * PageCursorTracer)}.
+     * PageCursorTracer, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
@@ -89,6 +89,7 @@ public interface StorageEngine extends Lifecycle
      * transaction started, i.e. before any changes were made and before any data was read.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
      * @param cursorTracer underlying page cursor tracer
+     * @param memoryTracker to report allocations to
      * @throws KernelException on known errors while creating commands.
      */
     void createCommands(
@@ -99,7 +100,8 @@ public interface StorageEngine extends Lifecycle
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
             throws KernelException;
 
     /**

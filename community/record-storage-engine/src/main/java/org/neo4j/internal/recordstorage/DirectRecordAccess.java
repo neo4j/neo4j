@@ -22,11 +22,11 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -94,17 +94,9 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
+    public Collection<DirectRecordProxy> changes()
     {
-        return new IterableWrapper<>(
-                batch.values() )
-        {
-            @Override
-            protected RecordProxy<RECORD,ADDITIONAL> underlyingObjectToObject( DirectRecordProxy object )
-            {
-                return object;
-            }
-        };
+        return batch.values();
     }
 
     private DirectRecordProxy proxy( final long key, final RECORD record, final ADDITIONAL additionalData, boolean created, PageCursorTracer cursorTracer )

@@ -54,6 +54,7 @@ import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
 import static org.neo4j.util.Bits.bitFlag;
@@ -218,6 +219,9 @@ public abstract class Command implements StorageCommand
 
     public static class NodeCommand extends BaseCommand<NodeRecord>
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeCommand.class );
+        static final long HEAP_SIZE = NodeCommand.SHALLOW_SIZE + 2 * NodeRecord.SHALLOW_SIZE;
+
         public NodeCommand( NodeRecord before, NodeRecord after )
         {
             super( before, after );
@@ -264,6 +268,9 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipCommand.class );
+        static final long HEAP_SIZE = RelationshipCommand.SHALLOW_SIZE + 2 * RelationshipRecord.SHALLOW_SIZE;
+
         public RelationshipCommand( RelationshipRecord before, RelationshipRecord after )
         {
             super( before, after );
@@ -313,6 +320,9 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipGroupCommand.class );
+        static final long HEAP_SIZE = RelationshipGroupCommand.SHALLOW_SIZE + 2 * RelationshipGroupRecord.SHALLOW_SIZE;
+
         public RelationshipGroupCommand( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
             super( before, after );
@@ -386,6 +396,9 @@ public abstract class Command implements StorageCommand
 
     public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyCommand.class );
+        static final long HEAP_SIZE = PropertyCommand.SHALLOW_SIZE + 2 * PropertyRecord.INITIAL_SIZE;
+
         public PropertyCommand( PropertyRecord before, PropertyRecord after )
         {
             super( before, after );
@@ -526,6 +539,9 @@ public abstract class Command implements StorageCommand
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyKeyTokenCommand.class );
+        static final long HEAP_SIZE = PropertyKeyTokenCommand.SHALLOW_SIZE + 2 * PropertyKeyTokenRecord.SHALLOW_SIZE;
+
         public PropertyKeyTokenCommand( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
         {
             super( before, after );
@@ -546,8 +562,7 @@ public abstract class Command implements StorageCommand
             writePropertyKeyTokenRecord( channel, after );
         }
 
-        private void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record )
-                throws IOException
+        private void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
             byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
@@ -567,8 +582,10 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
-        public RelationshipTypeTokenCommand( RelationshipTypeTokenRecord before,
-                RelationshipTypeTokenRecord after )
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipTypeTokenCommand.class );
+        static final long HEAP_SIZE = RelationshipTypeTokenCommand.SHALLOW_SIZE + 2 * RelationshipTypeTokenRecord.SHALLOW_SIZE;
+
+        public RelationshipTypeTokenCommand( RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
         {
             super( before, after );
         }
@@ -588,8 +605,7 @@ public abstract class Command implements StorageCommand
             writeRelationshipTypeTokenRecord( channel, after );
         }
 
-        private void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record )
-                throws IOException
+        private void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
             byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
@@ -609,6 +625,9 @@ public abstract class Command implements StorageCommand
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( LabelTokenCommand.class );
+        static final long HEAP_SIZE = LabelTokenCommand.SHALLOW_SIZE + 2 * LabelTokenRecord.SHALLOW_SIZE;
+
         public LabelTokenCommand( LabelTokenRecord before, LabelTokenRecord after )
         {
             super( before, after );
@@ -642,6 +661,9 @@ public abstract class Command implements StorageCommand
     public static class SchemaRuleCommand extends BaseCommand<SchemaRecord>
     {
         private final SchemaRule schemaRule;
+
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( SchemaRuleCommand.class );
+        static final long HEAP_SIZE = SchemaRuleCommand.SHALLOW_SIZE + 2 * SchemaRecord.SHALLOW_SIZE;
 
         public SchemaRuleCommand( SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule )
         {
@@ -973,6 +995,8 @@ public abstract class Command implements StorageCommand
 
     public static class NodeCountsCommand extends Command
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeCountsCommand.class );
+
         private final int labelId;
         private final long delta;
 
@@ -1018,6 +1042,8 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipCountsCommand extends Command
     {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipCountsCommand.class );
+
         private final int startLabelId;
         private final int typeId;
         private final int endLabelId;

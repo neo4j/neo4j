@@ -260,7 +260,7 @@ class SchemaStore35Test
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = store.getRecord( rule.getId(), store.newRecord(), CHECK, cursorTracer );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer, INSTANCE );
         return records;
     }
 }

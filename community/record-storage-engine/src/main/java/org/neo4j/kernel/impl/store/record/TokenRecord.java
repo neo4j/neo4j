@@ -54,7 +54,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
     {
         super.initialize( inUse );
         this.nameId = nameId;
-        this.nameRecords = new ArrayList<>();
+        this.nameRecords = new ArrayList<>( 1 );
         return this;
     }
 

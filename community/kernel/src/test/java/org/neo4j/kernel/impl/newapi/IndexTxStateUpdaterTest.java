@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -90,6 +91,7 @@ class IndexTxStateUpdaterTest
     void setup() throws IndexNotFoundKernelException
     {
         txState = mock( TransactionState.class );
+        when( txState.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
 
         StorageReader storageReader = mock( StorageReader.class );
         when( storageReader.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );

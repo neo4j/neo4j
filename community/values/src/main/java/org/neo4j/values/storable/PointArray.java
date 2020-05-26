@@ -102,6 +102,7 @@ public final class PointArray extends NonPrimitiveArray<PointValue>
     @Override
     public long estimatedHeapUsage()
     {
-        return SHALLOW_SIZE + sizeOfObjectArray( PointValue.SIZE_2D, value.length );
+        int length = value.length;
+        return SHALLOW_SIZE + (length == 0 ? 0 : sizeOfObjectArray( value[0].estimatedHeapUsage(), length ));
     }
 }

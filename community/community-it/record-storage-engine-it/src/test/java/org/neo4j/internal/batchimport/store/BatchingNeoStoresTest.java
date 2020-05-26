@@ -429,7 +429,7 @@ class BatchingNeoStoresTest
         List<StorageCommand> commands = new ArrayList<>();
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
-            storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, BASE_TX_ID, v -> v, NULL );
+            storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, BASE_TX_ID, v -> v, NULL, INSTANCE );
             CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0 ), NULL );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }

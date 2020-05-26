@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import java.util.Comparator;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOf;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.util.Preconditions.requireNoNullElements;
 import static org.neo4j.util.Preconditions.requireNonEmpty;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
@@ -30,6 +32,8 @@ import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
  */
 public class ValueTuple
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( ValueTuple.class );
+
     public static ValueTuple of( Value... values )
     {
         requireNonEmpty( values );
@@ -72,6 +76,14 @@ public class ValueTuple
     public Value[] getValues()
     {
         return values;
+    }
+
+    /**
+     * Get the "shallow" size of the tuple, this includes the object overhead and the backing array, but not the retained values.
+     */
+    public long getShallowSize()
+    {
+        return SHALLOW_SIZE + shallowSizeOf( values );
     }
 
     @Override

@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -83,6 +82,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralNeo4jLayoutExtension
 class NodeStoreTest
@@ -113,7 +113,7 @@ class NodeStoreTest
         Long expectedId = 12L;
         long[] ids = new long[]{expectedId, 23L, 42L};
         DynamicRecord firstRecord = new DynamicRecord( 0L );
-        allocateFromNumbers( new ArrayList<>(), ids, new ReusableRecordsAllocator( 60, firstRecord ), NULL );
+        allocateFromNumbers( new ArrayList<>(), ids, new ReusableRecordsAllocator( 60, firstRecord ), NULL, INSTANCE );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -129,7 +129,7 @@ class NodeStoreTest
         Long expectedId = null;
         long[] ids = new long[]{};
         DynamicRecord firstRecord = new DynamicRecord( 0L );
-        allocateFromNumbers( new ArrayList<>(), ids, new ReusableRecordsAllocator( 60, firstRecord ), NULL );
+        allocateFromNumbers( new ArrayList<>(), ids, new ReusableRecordsAllocator( 60, firstRecord ), NULL, INSTANCE );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -146,7 +146,7 @@ class NodeStoreTest
         long[] ids = new long[]{expectedId, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L};
         DynamicRecord firstRecord = new DynamicRecord( 0L );
         allocateFromNumbers( new ArrayList<>(), ids,
-                new ReusableRecordsAllocator( 8, firstRecord, new DynamicRecord( 1L ) ), NULL );
+                new ReusableRecordsAllocator( 8, firstRecord, new DynamicRecord( 1L ) ), NULL, INSTANCE );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -392,7 +392,7 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L ).initialize( true, NULL_REFERENCE.longValue(), false, 1234, NO_LABELS_FIELD.longValue() );
         NodeLabels labels = NodeLabelsField.parseLabelsField( record );
-        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL, EmptyMemoryTracker.INSTANCE );
+        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         nodeStore.updateRecord( record, NULL );
 
         // ... and where e.g. the dynamic label record is unused

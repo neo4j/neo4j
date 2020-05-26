@@ -44,7 +44,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( PointValue.class );
     static final long SIZE_2D = SHALLOW_SIZE + sizeOf( new double[2] );
-    private static final long SIZE_3D = SHALLOW_SIZE + sizeOf( new double[3] );
+    static final long SIZE_3D = SHALLOW_SIZE + sizeOf( new double[3] );
 
     // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added.
     public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );

@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
@@ -41,11 +41,9 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 /** Test utility DSL for creating store records */
 public class RecordBuilders
 {
-    public static <R extends AbstractBaseRecord, A> List<R> records(
-            Iterable<RecordAccess.RecordProxy<R,A>> changes )
+    public static <R extends AbstractBaseRecord, A> List<R> records( Collection<? extends RecordAccess.RecordProxy<R,A>> changes )
     {
-        return StreamSupport.stream( changes.spliterator(), false ).map(
-                RecordAccess.RecordProxy::forChangingData ).collect( Collectors.toList() );
+        return changes.stream().map( RecordAccess.RecordProxy::forChangingData ).collect( Collectors.toList() );
     }
 
     public static NodeRecord node( long id, Consumer<NodeRecord>... modifiers )

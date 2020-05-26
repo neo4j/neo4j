@@ -48,8 +48,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     {
         this.cursorTracer = cursorTracer;
         this.neoStores = neoStores;
-        this.loaders = new Loaders( neoStores );
         this.memoryTracker = memoryTracker;
+        this.loaders = new Loaders( neoStores );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorTracer );
         this.relationshipCreator = new RelationshipCreator( relationshipGroupGetter, denseNodeThreshold, cursorTracer );
         PropertyTraverser propertyTraverser = new PropertyTraverser( cursorTracer );

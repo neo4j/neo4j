@@ -123,7 +123,7 @@ class AbstractDynamicStoreTest
             assertZeroCursor( cursorTracer );
             prepareDirtyGenerator( store );
 
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer );
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer, INSTANCE );
 
             assertOneCursor( cursorTracer );
         }
@@ -138,7 +138,7 @@ class AbstractDynamicStoreTest
         {
             assertZeroCursor( cursorTracer );
 
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer );
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer, INSTANCE );
 
             assertZeroCursor( cursorTracer );
         }

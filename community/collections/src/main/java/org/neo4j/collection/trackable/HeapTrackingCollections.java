@@ -55,4 +55,14 @@ public final class HeapTrackingCollections
     {
         return HeapTrackingUnifiedSet.createUnifiedSet( memoryTracker );
     }
+
+    public static <T> MutableSet<T> newIdentityHashingSet( MemoryTracker memoryTracker )
+    {
+        return HeapTrackingUnifiedIdentityHashingSet.createUnifiedIdentityHashingSet( memoryTracker );
+    }
+
+    public static <T> HeapTrackingArrayList<T> newArrayList( MemoryTracker memoryTracker )
+    {
+        return HeapTrackingArrayList.newArrayList( memoryTracker );
+    }
 }

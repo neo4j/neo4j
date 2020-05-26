@@ -25,20 +25,16 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
-import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -301,9 +297,10 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return propertyBlock.getType().value( propertyBlock, this, cursorTracer );
     }
 
-    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer )
+    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, PageCursorTracer cursorTracer,
+            MemoryTracker memoryTracker )
     {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator, cursorTracer );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator, cursorTracer, memoryTracker );
     }
 
     private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator, boolean allowStorePoints,
@@ -331,7 +328,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
 
             // Fall back to dynamic array store
-            List<DynamicRecord> arrayRecords = new ArrayList<>();
+            List<DynamicRecord> arrayRecords = HeapTrackingCollections.newArrayList( memoryTracker );
             allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal, cursorTracer, memoryTracker );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
@@ -342,7 +339,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePointsAndTemporal, cursorTracer ) );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePointsAndTemporal, cursorTracer, memoryTracker ) );
         }
     }
 
@@ -394,15 +391,17 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         private final DynamicRecordAllocator stringAllocator;
         private final boolean allowStorePointsAndTemporal;
         private final PageCursorTracer cursorTracer;
+        private final MemoryTracker memoryTracker;
 
         PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePointsAndTemporal,
-                PageCursorTracer cursorTracer )
+                PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
             this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
             this.cursorTracer = cursorTracer;
+            this.memoryTracker = memoryTracker;
         }
 
         @Override
@@ -477,8 +476,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( value );
-            List<DynamicRecord> valueRecords = new ArrayList<>();
-            allocateStringRecords( valueRecords, encodedString, stringAllocator, cursorTracer );
+            List<DynamicRecord> valueRecords = HeapTrackingCollections.newArrayList( memoryTracker );
+            allocateStringRecords( valueRecords, encodedString, stringAllocator, cursorTracer, memoryTracker );
             setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {

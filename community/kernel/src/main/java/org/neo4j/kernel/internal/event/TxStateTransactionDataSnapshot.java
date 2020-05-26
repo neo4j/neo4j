@@ -53,6 +53,7 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -86,13 +87,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         this.memoryTracker = transaction.memoryTracker();
         this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
         this.relationshipsReadFromStore = newLongObjectMap( memoryTracker );
-        this.removedLabels = HeapTrackingArrayList.newArrayList( memoryTracker );
-        this.removedRelationshipProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
-        this.removedNodeProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.removedLabels = newArrayList( memoryTracker );
+        this.removedRelationshipProperties = newArrayList( memoryTracker );
+        this.removedNodeProperties = newArrayList( memoryTracker );
 
-        this.assignedLabels = HeapTrackingArrayList.newArrayList( memoryTracker );
-        this.assignedRelationshipProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
-        this.assignedNodeProperties = HeapTrackingArrayList.newArrayList( memoryTracker );
+        this.assignedLabels = newArrayList( memoryTracker );
+        this.assignedRelationshipProperties = newArrayList( memoryTracker );
+        this.assignedNodeProperties = newArrayList( memoryTracker );
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.

@@ -133,9 +133,7 @@ public final class HeapEstimator
         LOCAL_DATE_SIZE = shallowSizeOfInstance( LocalDate.class );
         OFFSET_TIME_SIZE = shallowSizeOfInstance( OffsetTime.class ) + LOCAL_TIME_SIZE; // We ignore ZoneOffset since it's cached
         LOCAL_DATE_TIME_SIZE = shallowSizeOfInstance( LocalDateTime.class ) + LOCAL_DATE_SIZE + LOCAL_TIME_SIZE;
-        ZONED_DATE_TIME_SIZE = shallowSizeOfInstance( ZonedDateTime.class ) +
-                LOCAL_DATE_TIME_SIZE +
-                alignObjectSize( OBJECT_HEADER_BYTES + OBJECT_REFERENCE_BYTES * 2 ); // ZoneRegion size, not accessible
+        ZONED_DATE_TIME_SIZE = shallowSizeOfInstance( ZonedDateTime.class ) + LOCAL_DATE_TIME_SIZE; // We ignore ZoneOffset since it's cached
     }
 
     /**

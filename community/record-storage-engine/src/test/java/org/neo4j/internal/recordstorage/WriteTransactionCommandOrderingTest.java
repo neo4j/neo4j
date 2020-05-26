@@ -93,7 +93,7 @@ class WriteTransactionCommandOrderingTest
             throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
-        tx.extractCommands( commands );
+        tx.extractCommands( commands, INSTANCE );
         return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
     }
 

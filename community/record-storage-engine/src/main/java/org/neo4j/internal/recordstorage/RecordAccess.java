@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.Collection;
+
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
@@ -54,7 +56,7 @@ public interface RecordAccess<RECORD,ADDITIONAL>
 
     int changeSize();
 
-    Iterable<RecordProxy<RECORD,ADDITIONAL>> changes();
+    Collection<? extends RecordProxy<RECORD,ADDITIONAL>> changes();
 
     /**
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is

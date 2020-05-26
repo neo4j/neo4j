@@ -21,56 +21,37 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 
-import org.neo4j.counts.CountsVisitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageCommand;
+
+import static java.lang.StrictMath.toIntExact;
 
 /**
  * A {@link CountsDelta} with an additional capability of turning counts into {@link StorageCommand commands} for storage.
  */
 public class CountsRecordState extends CountsDelta implements RecordState
 {
-    private final PageCursorTracer cursorTracer;
-
-    public CountsRecordState( PageCursorTracer cursorTracer )
-    {
-        this.cursorTracer = cursorTracer;
-    }
-
     @Override
-    public void extractCommands( Collection<StorageCommand> target )
+    public void extractCommands( Collection<StorageCommand> target, MemoryTracker memoryTracker )
     {
-        accept( new CommandCollector( target ), cursorTracer );
-    }
+        memoryTracker.allocateHeap( nodeCounts.size() * Command.NodeCountsCommand.SHALLOW_SIZE +
+                relationshipCounts.size() * Command.RelationshipCountsCommand.SHALLOW_SIZE );
 
-    // CountsDelta already implements hasChanges
-
-    private static class CommandCollector extends CountsVisitor.Adapter
-    {
-        private final Collection<StorageCommand> commands;
-
-        CommandCollector( Collection<StorageCommand> commands )
-        {
-            this.commands = commands;
-        }
-
-        @Override
-        public void visitNodeCount( int labelId, long count )
+        nodeCounts.forEachKeyValue( ( labelId, count ) ->
         {
             if ( count != 0 )
-            {   // Only add commands for counts that actually change
-                commands.add( new Command.NodeCountsCommand( labelId, count ) );
+            {
+                target.add( new Command.NodeCountsCommand( toIntExact( labelId ), count ) );
             }
-        }
-
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+        } );
+        relationshipCounts.forEachKeyValue( ( k, mutableLong ) ->
         {
+            long count = mutableLong.longValue();
             if ( count != 0 )
-            {   // Only add commands for counts that actually change
-                commands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, count ) );
+            {
+                target.add( new Command.RelationshipCountsCommand( k.startLabelId, k.typeId, k.endLabelId, count ) );
             }
-        }
+        } );
     }
 }

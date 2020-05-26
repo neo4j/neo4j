@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -85,16 +86,19 @@ public class IndexTxStateUpdater
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             for ( IndexDescriptor index : indexes )
             {
+                MemoryTracker memoryTracker = read.txState().memoryTracker();
                 int[] indexPropertyIds = index.schema().getPropertyIds();
-                Value[] values = getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds, materializedProperties );
+                Value[] values = getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds, materializedProperties, memoryTracker );
+                ValueTuple valueTuple = ValueTuple.of( values );
+                memoryTracker.allocateHeap( valueTuple.getShallowSize() );
                 switch ( changeType )
                 {
                 case ADDED_LABEL:
                     indexingService.validateBeforeCommit( index, values );
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
+                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, valueTuple );
                     break;
                 case REMOVED_LABEL:
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
+                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), valueTuple, null );
                     break;
                 default:
                     throw new IllegalStateException( changeType + " is not a supported event" );
@@ -120,10 +124,14 @@ public class IndexTxStateUpdater
             NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
+                        MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties );
+                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
+                                                        memoryTracker );
                         indexingService.validateBeforeCommit( index, values );
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), null, ValueTuple.of( values ) );
+                        ValueTuple valueTuple = ValueTuple.of( values );
+                        memoryTracker.allocateHeap( valueTuple.getShallowSize() );
+                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), null, valueTuple );
                     } );
         }
     }
@@ -138,9 +146,13 @@ public class IndexTxStateUpdater
             NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
+                        MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties );
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), ValueTuple.of( values ), null );
+                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
+                                                        memoryTracker );
+                        ValueTuple valueTuple = ValueTuple.of( values );
+                        memoryTracker.allocateHeap( valueTuple.getShallowSize() );
+                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), valueTuple, null );
                     } );
         }
     }
@@ -156,9 +168,11 @@ public class IndexTxStateUpdater
             NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
+                        MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
                         int[] propertyIds = schema.getPropertyIds();
-                        Value[] valuesAfter = getValueTuple( node, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties );
+                        Value[] valuesAfter =
+                                getValueTuple( node, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties, memoryTracker );
 
                         // The valuesBefore tuple is just like valuesAfter, except is has the afterValue instead of the beforeValue
                         Value[] valuesBefore = Arrays.copyOf( valuesAfter, valuesAfter.length );
@@ -166,15 +180,16 @@ public class IndexTxStateUpdater
                         valuesBefore[k] = beforeValue;
 
                         indexingService.validateBeforeCommit( index, valuesAfter );
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(),
-                                ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
+                        ValueTuple valuesTupleBefore = ValueTuple.of( valuesBefore );
+                        ValueTuple valuesTupleAfter = ValueTuple.of( valuesAfter );
+                        memoryTracker.allocateHeap( valuesTupleBefore.getShallowSize() * 2 ); // They are copies and same shallow size
+                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), valuesTupleBefore, valuesTupleAfter );
                     } );
         }
     }
 
-    private Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor,
-            int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds,
-            MutableIntObjectMap<Value> materializedValues )
+    private Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds,
+            MutableIntObjectMap<Value> materializedValues, MemoryTracker memoryTracker )
     {
         Value[] values = new Value[indexPropertyIds.length];
         int missing = 0;
@@ -206,6 +221,7 @@ public class IndexTxStateUpdater
                     if ( !thisIsTheChangedProperty )
                     {
                         materializedValues.put( propertyKeyId, values[k] );
+                        memoryTracker.allocateHeap( values[k].estimatedHeapUsage() );
                     }
                     missing--;
                 }

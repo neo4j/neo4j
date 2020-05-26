@@ -417,7 +417,7 @@ class RecordStorageMigratorIT
         for ( int i = 1; i <= tokenCount; i++ )
         {
             String name = prefix + i;
-            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL );
+            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL, INSTANCE );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             record.addNameRecords( nameRecords );
             record.setId( tokenStore.nextId( NULL ) );
@@ -583,7 +583,7 @@ class RecordStorageMigratorIT
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = schemaStore35.getRecord( rule.getId(), schemaStore35.newRecord(), CHECK, cursorTracer );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), schemaStore35 );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer, INSTANCE );
         return records;
     }
 

@@ -276,7 +276,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42L} ),
-                        new ReusableRecordsAllocator( 60, record ), NULL );
+                        new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
                 tx.create( nodeRecord );
@@ -727,7 +727,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 labels[0] = nodeRecord.getId(); // the first id should not be a label id, but the id of the node
                 ReusableRecordsAllocator allocator = new ReusableRecordsAllocator( 60, record1, record2, record3 );
-                allocateFromNumbers( chain, labels, allocator, NULL );
+                allocateFromNumbers( chain, labels, allocator, NULL, INSTANCE );
 
                 nodeRecord.setLabelField( dynamicPointer( chain ), chain );
 
@@ -759,7 +759,7 @@ public class FullCheckIntegrationTest
 
                 Integer labelId = labels.other().get( 0 );
                 DynamicRecord record = inUse( new DynamicRecord( labelId ) );
-                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ), NULL );
+                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
             }
         } );
 
@@ -795,7 +795,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42L} ),
-                        new ReusableRecordsAllocator( 60, record ), NULL );
+                        new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
                 tx.create( nodeRecord );

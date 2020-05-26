@@ -24,6 +24,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import java.util.Iterator;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -54,7 +55,7 @@ public class LongProbeTable<V extends Measurable> implements AutoCloseable
 
     public void put( long key, V value )
     {
-        map.getIfAbsentPutWith( key, HeapTrackingArrayList::newArrayList, scopedMemoryTracker ).add( value );
+        map.getIfAbsentPutWith( key, HeapTrackingCollections::newArrayList, scopedMemoryTracker ).add( value );
         scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
     }
 

@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -63,7 +64,7 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
         map.getIfAbsentPutWith( key, p ->
         {
             p.allocateHeap( key.estimatedHeapUsage() );
-            return HeapTrackingArrayList.newArrayList( p );
+            return HeapTrackingCollections.newArrayList( p );
         }, scopedMemoryTracker ).add( value );
         scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
     }

@@ -198,7 +198,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION, NULL );
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION, NULL, INSTANCE );
             return tx( commands );
         }
 

@@ -313,7 +313,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer,
+            MemoryTracker transactionMemoryTracker )
             throws KernelException
     {
         if ( txState != null )
@@ -327,7 +328,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
                     schemaRuleAccess, constraintSemantics, cursorTracer );
-            CountsRecordState countsRecordState = new CountsRecordState( cursorTracer );
+            CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorTracer );
             try ( TxStateVisitor visitor = txStateVisitor )
@@ -336,8 +337,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             }
 
             // Convert record state into commands
-            recordState.extractCommands( commands );
-            countsRecordState.extractCommands( commands );
+            recordState.extractCommands( commands, transactionMemoryTracker );
+            countsRecordState.extractCommands( commands, transactionMemoryTracker );
         }
     }
 

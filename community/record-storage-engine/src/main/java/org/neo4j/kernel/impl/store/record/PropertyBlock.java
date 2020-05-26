@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,8 +33,28 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+
+/**
+ * First value block in have the following layout:
+ * <pre>
+ * d = data
+ * x = maybe data
+ * i = inlined
+ * t = type
+ * k = key
+ * [dddd][dddd][dddd][dddd][xxxi,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+ * </pre>
+ * The rest of the blocks are pure data. In case of a long string or big array that does not fit in the blocks, we will
+ * have a single value block with a pointer to dynamic record chain. The dynamic records are loaded into valueRecords, in
+ * order, to provide access in a single point.
+ */
 public class PropertyBlock
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyBlock.class );
+    public static final long HEAP_SIZE = SHALLOW_SIZE + sizeOf( new long[1] );
+
     /**
      * Size of one property block in a property record. One property may be composed by one or more property blocks
      * and one property record contains several property blocks.
@@ -109,7 +128,7 @@ public class PropertyBlock
     {
         if ( valueRecords == null )
         {
-            valueRecords = new LinkedList<>();
+            valueRecords = new ArrayList<>( 1 );
         }
         valueRecords.add( record );
     }

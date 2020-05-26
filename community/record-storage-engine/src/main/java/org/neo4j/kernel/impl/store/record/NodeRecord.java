@@ -26,9 +26,11 @@ import java.util.Objects;
 import static java.util.Collections.emptyList;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class NodeRecord extends PrimitiveRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeRecord.class );
     private long nextRel;
     private long labels;
     private Collection<DynamicRecord> dynamicLabelRecords;

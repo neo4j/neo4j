@@ -38,7 +38,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(2)
+  val maxMemory: Long = ByteUnit.mebiBytes(3)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -844,7 +844,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
 
     // when
-    circleGraph(1000)
+    circleGraph(1500)
 
     // then
     a[MemoryLimitExceeded] should be thrownBy {
@@ -866,7 +866,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    circleGraph(1000)
+    circleGraph(1500)
 
     // then
     a[MemoryLimitExceeded] should be thrownBy {

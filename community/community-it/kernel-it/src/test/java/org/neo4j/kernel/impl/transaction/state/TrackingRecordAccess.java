@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.internal.helpers.collection.IterableWrapper;
+import java.util.Collection;
+
 import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
@@ -67,15 +68,8 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<RE
     }
 
     @Override
-    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
+    public Collection<? extends RecordProxy<RECORD,ADDITIONAL>> changes()
     {
-        return new IterableWrapper<>( delegate.changes() )
-        {
-            @Override
-            protected RecordProxy<RECORD,ADDITIONAL> underlyingObjectToObject( RecordProxy<RECORD,ADDITIONAL> actual )
-            {
-                return new TrackingRecordProxy<>( actual, false, tracker );
-            }
-        };
+        return delegate.changes();
     }
 }

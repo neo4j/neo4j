@@ -120,13 +120,7 @@ public class TransactionRecordState implements RecordState
     }
 
     @Override
-    public boolean hasChanges()
-    {
-        return recordChangeSet.hasChanges();
-    }
-
-    @Override
-    public void extractCommands( Collection<StorageCommand> commands ) throws TransactionFailureException
+    public void extractCommands( Collection<StorageCommand> commands, MemoryTracker memoryTracker ) throws TransactionFailureException
     {
         assert !prepared : "Transaction has already been prepared";
 
@@ -134,17 +128,23 @@ public class TransactionRecordState implements RecordState
 
         int noOfCommands = recordChangeSet.changeSize();
 
-        for ( RecordProxy<LabelTokenRecord, Void> record : recordChangeSet.getLabelTokenChanges().changes() )
+        var labelTokenChanges = recordChangeSet.getLabelTokenChanges().changes();
+        memoryTracker.allocateHeap( labelTokenChanges.size() * Command.LabelTokenCommand.HEAP_SIZE );
+        for ( RecordProxy<LabelTokenRecord, Void> record : labelTokenChanges )
         {
             commands.add( new Command.LabelTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
-        for ( RecordProxy<RelationshipTypeTokenRecord, Void> record :
-            recordChangeSet.getRelationshipTypeTokenChanges().changes() )
+
+        var relationshipTypeTokenChanges = recordChangeSet.getRelationshipTypeTokenChanges().changes();
+        memoryTracker.allocateHeap( relationshipTypeTokenChanges.size() * Command.RelationshipTypeTokenCommand.HEAP_SIZE );
+        for ( RecordProxy<RelationshipTypeTokenRecord, Void> record : relationshipTypeTokenChanges )
         {
             commands.add( new Command.RelationshipTypeTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
-        for ( RecordProxy<PropertyKeyTokenRecord, Void> record :
-            recordChangeSet.getPropertyKeyTokenChanges().changes() )
+
+        var propertyKeyTokenChanges = recordChangeSet.getPropertyKeyTokenChanges().changes();
+        memoryTracker.allocateHeap( propertyKeyTokenChanges.size() * Command.PropertyKeyTokenCommand.HEAP_SIZE );
+        for ( RecordProxy<PropertyKeyTokenRecord, Void> record : propertyKeyTokenChanges )
         {
             commands.add( new Command.PropertyKeyTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
@@ -152,11 +152,13 @@ public class TransactionRecordState implements RecordState
         // Collect nodes, relationships, properties
         Command[] nodeCommands = EMPTY_COMMANDS;
         int skippedCommands = 0;
-        if ( recordChangeSet.getNodeRecords().changeSize() > 0 )
+        var nodeChanges = recordChangeSet.getNodeRecords().changes();
+        if ( !nodeChanges.isEmpty() )
         {
-            nodeCommands = new Command[recordChangeSet.getNodeRecords().changeSize()];
+            memoryTracker.allocateHeap( nodeChanges.size() * Command.NodeCommand.HEAP_SIZE );
+            nodeCommands = new Command[nodeChanges.size()];
             int i = 0;
-            for ( RecordProxy<NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
+            for ( RecordProxy<NodeRecord, Void> change : nodeChanges )
             {
                 NodeRecord record = prepared( change, nodeStore );
                 integrityValidator.validateNodeRecord( record );
@@ -166,39 +168,41 @@ public class TransactionRecordState implements RecordState
         }
 
         Command[] relCommands = EMPTY_COMMANDS;
-        if ( recordChangeSet.getRelRecords().changeSize() > 0 )
+        var relationshipChanges = recordChangeSet.getRelRecords().changes();
+        if ( !relationshipChanges.isEmpty() )
         {
-            relCommands = new Command[recordChangeSet.getRelRecords().changeSize()];
+            memoryTracker.allocateHeap( relationshipChanges.size() * Command.RelationshipCommand.HEAP_SIZE );
+            relCommands = new Command[relationshipChanges.size()];
             int i = 0;
-            for ( RecordProxy<RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
+            for ( RecordProxy<RelationshipRecord, Void> change : relationshipChanges )
             {
-                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(),
-                        prepared( change, relationshipStore ) );
+                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(), prepared( change, relationshipStore ) );
             }
             Arrays.sort( relCommands, COMMAND_COMPARATOR );
         }
 
         Command[] propCommands = EMPTY_COMMANDS;
-        if ( recordChangeSet.getPropertyRecords().changeSize() > 0 )
+        var propertyChanges = recordChangeSet.getPropertyRecords().changes();
+        if ( !propertyChanges.isEmpty() )
         {
-            propCommands = new Command[recordChangeSet.getPropertyRecords().changeSize()];
+            memoryTracker.allocateHeap( propertyChanges.size() * Command.PropertyCommand.HEAP_SIZE );
+            propCommands = new Command[propertyChanges.size()];
             int i = 0;
-            for ( RecordProxy<PropertyRecord, PrimitiveRecord> change :
-                recordChangeSet.getPropertyRecords().changes() )
+            for ( RecordProxy<PropertyRecord, PrimitiveRecord> change : propertyChanges )
             {
-                propCommands[i++] = new Command.PropertyCommand( change.getBefore(),
-                        prepared( change, propertyStore ) );
+                propCommands[i++] = new Command.PropertyCommand( change.getBefore(), prepared( change, propertyStore ) );
             }
             Arrays.sort( propCommands, COMMAND_COMPARATOR );
         }
 
         Command[] relGroupCommands = EMPTY_COMMANDS;
-        if ( recordChangeSet.getRelGroupRecords().changeSize() > 0 )
+        var relationshipGroupChanges = recordChangeSet.getRelGroupRecords().changes();
+        if ( !relationshipGroupChanges.isEmpty() )
         {
-            relGroupCommands = new Command[recordChangeSet.getRelGroupRecords().changeSize()];
+            memoryTracker.allocateHeap( relationshipGroupChanges.size() * Command.RelationshipGroupCommand.HEAP_SIZE );
+            relGroupCommands = new Command[relationshipGroupChanges.size()];
             int i = 0;
-            for ( RecordProxy<RelationshipGroupRecord, Integer> change :
-                recordChangeSet.getRelGroupRecords().changes() )
+            for ( RecordProxy<RelationshipGroupRecord, Integer> change : relationshipGroupChanges )
             {
                 if ( change.isCreated() && !change.forReadingLinkage().inUse() )
                 {
@@ -238,7 +242,9 @@ public class TransactionRecordState implements RecordState
         addFiltered( commands, Mode.DELETE, relCommands, relGroupCommands, nodeCommands );
 
         EnumMap<Mode,List<Command>> schemaChangeByMode = new EnumMap<>( Mode.class );
-        for ( RecordProxy<SchemaRecord,SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
+        var schemaRuleChange = recordChangeSet.getSchemaRuleChanges().changes();
+        memoryTracker.allocateHeap( schemaRuleChange.size() * Command.SchemaRuleCommand.HEAP_SIZE );
+        for ( RecordProxy<SchemaRecord,SchemaRule> change : schemaRuleChange )
         {
             SchemaRecord schemaRecord = change.forReadingLinkage();
             SchemaRule rule = change.getAdditionalData();
@@ -440,7 +446,7 @@ public class TransactionRecordState implements RecordState
      */
     void createPropertyKeyToken( String key, long id, boolean internal )
     {
-        createToken( neoStores.getPropertyKeyTokenStore(), key, id, internal, recordChangeSet.getPropertyKeyTokenChanges(), cursorTracer );
+        createToken( neoStores.getPropertyKeyTokenStore(), key, id, internal, recordChangeSet.getPropertyKeyTokenChanges(), cursorTracer, memoryTracker );
     }
 
     /**
@@ -451,7 +457,7 @@ public class TransactionRecordState implements RecordState
      */
     void createLabelToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getLabelTokenStore(), name, id, internal, recordChangeSet.getLabelTokenChanges(), cursorTracer );
+        createToken( neoStores.getLabelTokenStore(), name, id, internal, recordChangeSet.getLabelTokenChanges(), cursorTracer, memoryTracker );
     }
 
     /**
@@ -463,17 +469,18 @@ public class TransactionRecordState implements RecordState
      */
     void createRelationshipTypeToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, internal, recordChangeSet.getRelationshipTypeTokenChanges(), cursorTracer );
+        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, internal, recordChangeSet.getRelationshipTypeTokenChanges(), cursorTracer,
+                     memoryTracker );
     }
 
     private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, boolean internal, RecordAccess<R,Void> recordAccess,
-            PageCursorTracer cursorTracer )
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         R record = recordAccess.create( id, null, cursorTracer ).forChangingData();
         record.setInUse( true );
         record.setInternal( internal );
         record.setCreated();
-        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer, memoryTracker );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
     }

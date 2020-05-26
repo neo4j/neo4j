@@ -263,7 +263,7 @@ class NodeRecordCheckTest
 
         labelIds[12] = labelIds.length;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL, INSTANCE );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -312,7 +312,7 @@ class NodeRecordCheckTest
 
         labelIds[12] = 11;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL, INSTANCE );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -414,7 +414,7 @@ class NodeRecordCheckTest
         labelIds[12] = labelIds[11];
         labelIds[11] = temp;
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new ReusableRecordsAllocator( 52, labelRecords ), NULL );
+                new ReusableRecordsAllocator( 52, labelRecords ), NULL, INSTANCE );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -442,7 +442,7 @@ class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         DynamicArrayStore.allocateFromNumbers( new ArrayList<>(), labelIds,
-                new NotUsedReusableRecordsAllocator( 52, labelRecords ), NULL );
+                new NotUsedReusableRecordsAllocator( 52, labelRecords ), NULL, INSTANCE );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 

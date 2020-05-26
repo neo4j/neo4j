@@ -1198,7 +1198,7 @@ public class BatchInserterImpl implements BatchInserter
         record.setInUse( true );
         record.setInternal( internal );
         record.setCreated();
-        Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
+        Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ), cursorTracer, memoryTracker );
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         store.updateRecord( record, cursorTracer );

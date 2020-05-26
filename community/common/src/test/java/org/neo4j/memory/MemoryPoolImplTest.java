@@ -94,7 +94,7 @@ class MemoryPoolImplTest
         assertState( limit, 0, limit, memoryPool );
 
         MemoryLimitExceeded memoryLimitExceeded = assertThrows( MemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 1 ) );
-        assertThat( memoryLimitExceeded.getMessage() ).contains( "The allocation of 1 would use more than the limit " + limit );
+        assertThat( memoryLimitExceeded.getMessage() ).contains( "The allocation of 1 B would use more than the limit 10 B. Currently using " + limit + " B" );
 
         memoryPool.releaseHeap( halfLimit );
         assertState( limit, halfLimit, halfLimit, memoryPool );

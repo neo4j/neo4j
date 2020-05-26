@@ -249,7 +249,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             DynamicStringStore nameStore = keyTokenStore.getNameStore();
             byte[] bytes = PropertyStore.encodeString( name );
             List<DynamicRecord> nameRecords = new ArrayList<>();
-            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer );
+            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer, memoryTracker );
             nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorTracer ) );
             nameRecords.forEach( record -> nameStore.updateRecord( record, cursorTracer ) );
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );

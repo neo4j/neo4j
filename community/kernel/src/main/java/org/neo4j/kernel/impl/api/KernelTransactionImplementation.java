@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +29,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -722,7 +722,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 Locks.Client commitLocks = statementLocks.pessimistic();
 
                 // Gather up commands from the various sources
-                Collection<StorageCommand> extractedCommands = new ArrayList<>();
+                HeapTrackingArrayList<StorageCommand> extractedCommands = HeapTrackingCollections.newArrayList( memoryTracker );
                 storageEngine.createCommands(
                         extractedCommands,
                         txState,
@@ -730,7 +730,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commandCreationContext,
                         commitLocks,
                         lastTransactionIdWhenStarted,
-                        this::enforceConstraints, pageCursorTracer );
+                        this::enforceConstraints,
+                        pageCursorTracer,
+                        memoryTracker );
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo

@@ -25,11 +25,10 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
@@ -252,7 +251,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<>() );
+            indexDiffs = HeapTrackingCollections.newIdentityHashingSet( memoryTracker );
         }
         indexDiffs.add( diff );
     }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class PropertyKeyTokenRecord extends TokenRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyKeyTokenRecord.class );
     private int propCount;
 
     public PropertyKeyTokenRecord( int id )

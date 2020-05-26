@@ -99,7 +99,7 @@ public class RelationshipChangesForNode
     public void addRelationship( long relId, int typeId, RelationshipDirection direction )
     {
         final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        final MutableLongSet rels = relTypeToRelsMap.getIfAbsentPut( typeId, LongHashSet::new );
+        final MutableLongSet rels = relTypeToRelsMap.getIfAbsentPut( typeId, () -> HeapTrackingCollections.newLongSet( memoryTracker ) );
 
         rels.add( relId );
     }

@@ -43,7 +43,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -272,7 +271,7 @@ public abstract class RecordStorageReaderTestBase
     {
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, txId, state -> state, NULL );
+        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, txId, state -> state, NULL, INSTANCE );
         storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 

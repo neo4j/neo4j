@@ -605,7 +605,7 @@ class TransactionRecordStateTest
 
         // WHEN
         Collection<StorageCommand> commands = new ArrayList<>();
-        recordState.extractCommands( commands );
+        recordState.extractCommands( commands, INSTANCE );
 
         // THEN
         Iterator<StorageCommand> commandIterator = commands.iterator();
@@ -640,7 +640,7 @@ class TransactionRecordStateTest
 
         // WHEN
         Collection<StorageCommand> commands = new ArrayList<>();
-        recordState.extractCommands( commands );
+        recordState.extractCommands( commands, INSTANCE );
 
         // THEN
         Iterator<StorageCommand> commandIterator = commands.iterator();
@@ -693,7 +693,7 @@ class TransactionRecordStateTest
 
         // Then
         Collection<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
         RelationshipGroupCommand group = singleRelationshipGroupCommand( commands );
         assertEquals( relationshipA, group.getAfter().getType() );
     }
@@ -723,7 +723,7 @@ class TransactionRecordStateTest
 
         // WHEN
         Collection<StorageCommand> commands = new ArrayList<>();
-        recordState.extractCommands( commands );
+        recordState.extractCommands( commands, INSTANCE );
 
         // THEN
         Iterator<StorageCommand> commandIterator = commands.iterator();
@@ -754,7 +754,7 @@ class TransactionRecordStateTest
         recordState.schemaRuleCreate( constraintId, true, uniqueForLabel( 1, 1 ).withId( constraintId ).withOwnedIndexId( indexId ) );
 
         // WHEN
-        recordState.extractCommands( new ArrayList<>() );
+        recordState.extractCommands( new ArrayList<>(), INSTANCE );
 
         // THEN
         verify( integrityValidator ).validateSchemaRule( any() );
@@ -773,7 +773,7 @@ class TransactionRecordStateTest
         // WHEN
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         Collection<StorageCommand> commands = new ArrayList<>();
-        recordState.extractCommands( commands );
+        recordState.extractCommands( commands, INSTANCE );
         PropertyCommand propertyCommand = singlePropertyCommand( commands );
 
         // THEN
@@ -1173,7 +1173,7 @@ class TransactionRecordStateTest
         state.relCreate( 1, 0, 0, 0 );
         state.relCreate( 2, 0, 0, 0 );
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         // THEN
         int nodes = 0;
@@ -1212,7 +1212,7 @@ class TransactionRecordStateTest
         state.schemaRuleCreate( ruleId, false, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 1 );
         SchemaRuleCommand command = (SchemaRuleCommand) commands.get( 0 );
@@ -1236,7 +1236,7 @@ class TransactionRecordStateTest
         state.schemaRuleCreate( ruleId, true, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 1 );
         SchemaRuleCommand command = (SchemaRuleCommand) commands.get( 0 );
@@ -1264,7 +1264,7 @@ class TransactionRecordStateTest
         state = newTransactionRecordState();
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 2 );
 
@@ -1288,7 +1288,7 @@ class TransactionRecordStateTest
         state = newTransactionRecordState();
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( false ), rule );
         commands.clear();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 1 );
 
@@ -1315,7 +1315,7 @@ class TransactionRecordStateTest
         state.schemaRuleDelete( ruleId, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 2 );
         SchemaRuleCommand schemaCmd = (SchemaRuleCommand) commands.get( 0 ); // Order matters. Rule deletes before property deletes.
@@ -1343,7 +1343,7 @@ class TransactionRecordStateTest
         state = newTransactionRecordState();
         state.schemaRuleSetIndexOwner( rule, 13, 42, Values.longValue( 13 ) );
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 2 );
 
@@ -1383,7 +1383,7 @@ class TransactionRecordStateTest
         state = newTransactionRecordState();
         state.schemaRuleSetIndexOwner( rule, 13, 56, Values.longValue( 13 ) );
         List<StorageCommand> commands = new ArrayList<>();
-        state.extractCommands( commands );
+        state.extractCommands( commands, INSTANCE );
 
         assertThat( commands.size() ).isEqualTo( 2 );
 
@@ -1592,7 +1592,7 @@ class TransactionRecordStateTest
     private static CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
-        recordState.extractCommands( commands );
+        recordState.extractCommands( commands, INSTANCE );
         return transaction( commands );
     }
 

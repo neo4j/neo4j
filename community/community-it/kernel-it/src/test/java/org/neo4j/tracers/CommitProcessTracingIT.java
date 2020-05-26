@@ -20,6 +20,10 @@
 package org.neo4j.tracers;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -36,9 +40,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
@@ -79,7 +80,7 @@ public class CommitProcessTracingIT
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );
 
-            storageEngine.createCommands( commands, txState, reader, context, IGNORE, 0, NO_DECORATION, cursorTracer );
+            storageEngine.createCommands( commands, txState, reader, context, IGNORE, 0, NO_DECORATION, cursorTracer, INSTANCE );
 
             assertCursor( cursorTracer, 1 );
         }

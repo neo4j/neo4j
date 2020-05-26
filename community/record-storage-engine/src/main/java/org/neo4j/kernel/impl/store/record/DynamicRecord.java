@@ -25,8 +25,11 @@ import java.util.Objects;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class DynamicRecord extends AbstractBaseRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( DynamicRecord.class );
     public static final byte[] NO_DATA = new byte[0];
     private static final int MAX_BYTES_IN_TO_STRING = 8;
     private static final int MAX_CHARS_IN_TO_STRING = 16;

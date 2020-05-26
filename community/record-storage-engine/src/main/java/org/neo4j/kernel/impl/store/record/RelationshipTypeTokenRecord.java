@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 public class RelationshipTypeTokenRecord extends TokenRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipTypeTokenRecord.class );
+
     public RelationshipTypeTokenRecord( int id )
     {
         super( id );

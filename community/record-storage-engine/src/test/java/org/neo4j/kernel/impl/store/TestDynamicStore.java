@@ -97,7 +97,7 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecordsFromBytes( records, new byte[10], NULL );
+        store.allocateRecordsFromBytes( records, new byte[10], NULL, INSTANCE );
         long blockId = Iterables.first( records ).getId();
         for ( DynamicRecord record : records )
         {

@@ -90,7 +90,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
@@ -125,7 +124,7 @@ class KernelTransactionTestBase
                     any( CommandCreationContext.class ),
                     any( ResourceLocker.class ),
                     anyLong(),
-                    any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ) );
+                    any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ), any( MemoryTracker.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

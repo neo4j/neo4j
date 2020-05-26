@@ -23,9 +23,11 @@ import java.util.Objects;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class RelationshipRecord extends PrimitiveRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipRecord.class );
     private long firstNode;
     private long secondNode;
     private int type;

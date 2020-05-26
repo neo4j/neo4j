@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.NamedToken;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -129,10 +131,10 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return new NamedToken( getStringFor( record, cursorTracer ), record.getIntId(), record.isInternal() );
     }
 
-    public Collection<DynamicRecord> allocateNameRecords( byte[] chars, PageCursorTracer cursorTracer )
+    public Collection<DynamicRecord> allocateNameRecords( byte[] chars, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        Collection<DynamicRecord> records = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( records, chars, cursorTracer );
+        Collection<DynamicRecord> records = HeapTrackingCollections.newArrayList( memoryTracker );
+        nameStore.allocateRecordsFromBytes( records, chars, cursorTracer, memoryTracker );
         return records;
     }
 

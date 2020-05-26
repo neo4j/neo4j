@@ -23,6 +23,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -88,4 +89,8 @@ public interface TransactionState extends ReadableTransactionState
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
     void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
+
+    // MEMORY TRACKING
+
+    MemoryTracker memoryTracker();
 }

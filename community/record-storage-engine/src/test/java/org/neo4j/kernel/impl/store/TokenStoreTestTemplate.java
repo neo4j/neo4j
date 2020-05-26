@@ -60,6 +60,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
 abstract class TokenStoreTestTemplate<R extends TokenRecord>
@@ -228,7 +229,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private List<DynamicRecord> allocateNameRecords( String tokenName )
     {
         List<DynamicRecord> nameRecords = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL );
+        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL, INSTANCE );
         return nameRecords;
     }
 

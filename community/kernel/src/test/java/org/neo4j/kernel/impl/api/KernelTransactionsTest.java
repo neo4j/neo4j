@@ -81,6 +81,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -124,7 +125,6 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.util.concurrent.Futures.combine;
 
@@ -647,7 +647,7 @@ class KernelTransactionsTest
                 any( CommandCreationContext.class ),
                 any( ResourceLocker.class ),
                 anyLong(),
-                any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ) );
+                any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ), any( MemoryTracker.class ) );
 
         return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions, config );
     }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -33,6 +32,9 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import static java.lang.System.arraycopy;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -43,6 +45,13 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
  */
 public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>
 {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyRecord.class );
+    private static final int PAYLOAD_SIZE = PropertyType.getPayloadSizeLongs();
+    public static final long INITIAL_SIZE = SHALLOW_SIZE +
+                                            sizeOf( new long[PAYLOAD_SIZE] ) +
+                                            shallowSizeOfObjectArray( PAYLOAD_SIZE ) +
+                                            PropertyBlock.HEAP_SIZE; // at least one block
+
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;
     private static final byte TYPE_SCHEMA_RULE = 3;
@@ -56,12 +65,12 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     // by ensureBlocksLoaded().
     // Modifications to a property record are still done on the PropertyBlock abstraction and so it's also
     // that data that gets written to the log and record when it's time to do so.
-    private final long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+    private final long[] blocks = new long[PAYLOAD_SIZE];
     private int blocksCursor;
 
     // These MUST ONLY be populated if we're accessing PropertyBlocks. On just loading this record only the
     // next/prev and blocks should be filled.
-    private final PropertyBlock[] blockRecords = new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
+    private final PropertyBlock[] blockRecords = new PropertyBlock[PAYLOAD_SIZE /*we can have at most these many*/];
     private int blockRecordsCursor;
     private boolean blocksLoaded;
     private long entityId;
@@ -269,7 +278,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         assert !record.inUse();
         if ( deletedRecords == null )
         {
-            deletedRecords = new LinkedList<>();
+            deletedRecords = new ArrayList<>( 1 );
         }
         deletedRecords.add( record );
     }

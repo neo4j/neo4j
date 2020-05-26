@@ -22,7 +22,8 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 
-import org.neo4j.internal.helpers.collection.Iterables;
+import java.util.Collection;
+
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.LocalIntCounter;
@@ -107,9 +108,9 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     }
 
     @Override
-    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
+    public Collection<RecordProxy<RECORD,ADDITIONAL>> changes()
     {
-        return Iterables.filter( RecordProxy::isChanged, recordChanges.values() );
+        return recordChanges.values();
     }
 
     public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>

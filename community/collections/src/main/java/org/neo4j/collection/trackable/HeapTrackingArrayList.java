@@ -19,11 +19,18 @@
  */
 package org.neo4j.collection.trackable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Consumer;
 
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE;
@@ -34,10 +41,12 @@ import static org.neo4j.util.Preconditions.requireNonNegative;
 /**
  * A heap tracking array list. It only tracks the internal structure, not the elements within.
  *
- * @param <T> element type
+ * This is mostly a copy of {@link ArrayList} to expose the {@link #grow(int)} method.
+ *
+ * @param <E> element type
  */
 @SuppressWarnings( "unchecked" )
-public class HeapTrackingArrayList<T> implements Iterable<T>, AutoCloseable
+public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingArrayList.class );
 
@@ -45,7 +54,8 @@ public class HeapTrackingArrayList<T> implements Iterable<T>, AutoCloseable
 
     private long trackedSize;
     private int size;
-    private T[] items;
+    private int modCount;
+    private Object[] elementData;
 
     /**
      * @return a new heap tracking array list with initial size 1
@@ -68,84 +78,735 @@ public class HeapTrackingArrayList<T> implements Iterable<T>, AutoCloseable
 
     private HeapTrackingArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
     {
-        this.items = (T[]) new Object[initialSize];
+        this.elementData = new Object[initialSize];
         this.memoryTracker = memoryTracker;
         this.trackedSize = trackedSize;
     }
 
-    public void add( T item )
+    @Override
+    public boolean add( E item )
     {
-        if ( items.length == size )
-        {
-            grow( size + 1 );
-        }
-        items[size++] = item;
-    }
-
-    public T get( int index )
-    {
-        return items[index];
-    }
-
-    public void set( int index, T value )
-    {
-        items[index] = value;
+        modCount++;
+        add( item, elementData, size );
+        return true;
     }
 
     @Override
-    public Iterator<T> iterator()
+    public boolean containsAll( Collection<?> c )
     {
-        return Iterators.iterator( size, items );
+        for ( Object e : c )
+        {
+            if ( !contains( e ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean addAll( Collection<? extends E> c )
+    {
+        Object[] a = c.toArray();
+        modCount++;
+        int numNew = a.length;
+        if ( numNew == 0 )
+        {
+            return false;
+        }
+        Object[] elementData;
+        final int s;
+        if ( numNew > (elementData = this.elementData).length - (s = size) )
+        {
+            elementData = grow( s + numNew );
+        }
+        System.arraycopy( a, 0, elementData, s, numNew );
+        size = s + numNew;
+        return true;
+    }
+
+    @Override
+    public boolean addAll( int index, Collection<? extends E> c )
+    {
+        rangeCheckForAdd( index );
+
+        Object[] a = c.toArray();
+        modCount++;
+        int numNew = a.length;
+        if ( numNew == 0 )
+        {
+            return false;
+        }
+        Object[] elementData;
+        final int s;
+        if ( numNew > (elementData = this.elementData).length - (s = size) )
+        {
+            elementData = grow( s + numNew );
+        }
+
+        int numMoved = s - index;
+        if ( numMoved > 0 )
+        {
+            System.arraycopy( elementData, index, elementData, index + numNew, numMoved );
+        }
+        System.arraycopy( a, 0, elementData, index, numNew );
+        size = s + numNew;
+        return true;
+    }
+
+    @Override
+    public boolean removeAll( Collection<?> c )
+    {
+        return batchRemove( c, false, 0, size );
+    }
+
+    @Override
+    public boolean retainAll( Collection<?> c )
+    {
+        return batchRemove( c, true, 0, size );
+    }
+
+    public E get( int index )
+    {
+        Objects.checkIndex( index, size );
+        return elementData( index );
+    }
+
+    public E set( int index, E element )
+    {
+        Objects.checkIndex( index, size );
+        E oldValue = elementData( index );
+        elementData[index] = element;
+        return oldValue;
+    }
+
+    @Override
+    public void add( int index, E element )
+    {
+        rangeCheckForAdd( index );
+        modCount++;
+        final int s;
+        Object[] elementData;
+        if ( (s = size) == (elementData = this.elementData).length )
+        {
+            elementData = grow( size + 1 );
+        }
+        System.arraycopy( elementData, index, elementData, index + 1, s - index );
+        elementData[index] = element;
+        size = s + 1;
+    }
+
+    @Override
+    public E remove( int index )
+    {
+        Objects.checkIndex( index, size );
+        final Object[] es = elementData;
+
+        E oldValue = (E) es[index];
+        fastRemove( es, index );
+
+        return oldValue;
+    }
+
+    @Override
+    public int indexOf( Object o )
+    {
+        Object[] es = elementData;
+        int size = this.size;
+        if ( o == null )
+        {
+            for ( int i = 0; i < size; i++ )
+            {
+                if ( es[i] == null )
+                {
+                    return i;
+                }
+            }
+        }
+        else
+        {
+            for ( int i = 0; i < size; i++ )
+            {
+                if ( o.equals( es[i] ) )
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf( Object o )
+    {
+        Object[] es = elementData;
+        int size = this.size;
+        if ( o == null )
+        {
+            for ( int i = size - 1; i >= 0; i-- )
+            {
+                if ( es[i] == null )
+                {
+                    return i;
+                }
+            }
+        }
+        else
+        {
+            for ( int i = size - 1; i >= 0; i-- )
+            {
+                if ( o.equals( es[i] ) )
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public ListIterator<E> listIterator()
+    {
+        return new ListItr( 0 );
+    }
+
+    @Override
+    public ListIterator<E> listIterator( int index )
+    {
+        rangeCheckForAdd( index );
+        return new ListItr( index );
+    }
+
+    @Override
+    public List<E> subList( int fromIndex, int toIndex )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<E> iterator()
+    {
+        return new Itr();
+    }
+
+    @Override
+    public Object[] toArray()
+    {
+        return Arrays.copyOf( elementData, size );
+    }
+
+    @Override
+    public <T> T[] toArray( T[] a )
+    {
+        if ( a.length < size )
+        // Make a new array of a's runtime type, but my contents:
+        {
+            return (T[]) Arrays.copyOf( elementData, size, a.getClass() );
+        }
+        System.arraycopy( elementData, 0, a, 0, size );
+        if ( a.length > size )
+        {
+            a[size] = null;
+        }
+        return a;
     }
 
     @Override
     public void close()
     {
-        if ( items != null )
+        if ( elementData != null )
         {
             memoryTracker.releaseHeap( trackedSize + SHALLOW_SIZE );
-            items = null;
+            elementData = null;
         }
     }
 
-    public void sort( Comparator<? super T> c )
+    @Override
+    public void sort( Comparator<? super E> c )
     {
-        Arrays.sort( items, 0, size, c );
+        final int expectedModCount = modCount;
+        Arrays.sort( (E[]) elementData, 0, size, c );
+        if ( modCount != expectedModCount )
+        {
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
     }
 
+    @Override
     public int size()
     {
         return size;
     }
 
+    @Override
+    public boolean isEmpty()
+    {
+        return size == 0;
+    }
+
+    @Override
+    public boolean contains( Object o )
+    {
+        return indexOf( o ) >= 0;
+    }
+
+    @Override
+    public boolean remove( Object o )
+    {
+        final Object[] es = elementData;
+        final int size = this.size;
+        int i = 0;
+        found:
+        {
+            if ( o == null )
+            {
+                for ( ; i < size; i++ )
+                {
+                    if ( es[i] == null )
+                    {
+                        break found;
+                    }
+                }
+            }
+            else
+            {
+                for ( ; i < size; i++ )
+                {
+                    if ( o.equals( es[i] ) )
+                    {
+                        break found;
+                    }
+                }
+            }
+            return false;
+        }
+        fastRemove( es, i );
+        return true;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( o == this )
+        {
+            return true;
+        }
+
+        if ( !(o instanceof List) )
+        {
+            return false;
+        }
+
+        final int expectedModCount = modCount;
+        boolean equal = (o.getClass() == HeapTrackingArrayList.class)
+                ? equalsArrayList( (HeapTrackingArrayList<?>) o )
+                : equalsRange( (List<?>) o, 0, size );
+
+        checkForComodification( expectedModCount );
+        return equal;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int expectedModCount = modCount;
+        int hash = hashCodeRange( 0, size );
+        checkForComodification( expectedModCount );
+        return hash;
+    }
+
+    @Override
     public void clear()
     {
-        Arrays.fill( items, 0, size, null );
-        size = 0;
+        modCount++;
+        final Object[] es = elementData;
+        for ( int to = size, i = size = 0; i < to; i++ )
+        {
+            es[i] = null;
+        }
+    }
+
+    @Override
+    public void forEach( Consumer<? super E> action )
+    {
+        Objects.requireNonNull( action );
+        final int expectedModCount = modCount;
+        final Object[] es = elementData;
+        final int size = this.size;
+        for ( int i = 0; modCount == expectedModCount && i < size; i++ )
+        {
+            action.accept( elementAt( es, i ) );
+        }
+        if ( modCount != expectedModCount )
+        {
+            throw new ConcurrentModificationException();
+        }
     }
 
     /**
      * Grow and report size change to tracker
      */
-    private void grow( int minimumCapacity )
+    private Object[] grow( int minimumCapacity )
     {
-        int newCapacity = size + (size >> 1) + 1; // Grow by 50%
-        if ( newCapacity > MAX_ARRAY_SIZE || newCapacity < 0 ) // Check for overflow
-        {
-            if ( minimumCapacity > MAX_ARRAY_SIZE )
-            {
-                // Nothing left to do here. We have failed to prevent an overflow.
-                throw new OutOfMemoryError();
-            }
-            newCapacity = MAX_ARRAY_SIZE;
-        }
+        int newCapacity = newCapacity( minimumCapacity );
 
         long oldHeapUsage = trackedSize;
         trackedSize = shallowSizeOfObjectArray( newCapacity );
         memoryTracker.allocateHeap( trackedSize );
-        T[] newItems = (T[]) new Object[newCapacity];
-        System.arraycopy( items, 0, newItems, 0, Math.min( size, newCapacity ) );
-        items = newItems;
+        Object[] newItems = new Object[newCapacity];
+        System.arraycopy( elementData, 0, newItems, 0, Math.min( size, newCapacity ) );
+        elementData = newItems;
         memoryTracker.releaseHeap( oldHeapUsage );
+        return elementData;
+    }
+
+    private int newCapacity( int minimumCapacity )
+    {
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        if ( newCapacity - minimumCapacity <= 0 )
+        {
+            if ( minimumCapacity < 0 ) // overflow
+            {
+                throw new OutOfMemoryError();
+            }
+            return minimumCapacity;
+        }
+        return newCapacity - MAX_ARRAY_SIZE <= 0 ? newCapacity : hugeCapacity( minimumCapacity );
+    }
+
+    private static int hugeCapacity( int minCapacity )
+    {
+        if ( minCapacity < 0 ) // overflow
+        {
+            throw new OutOfMemoryError();
+        }
+        return minCapacity > MAX_ARRAY_SIZE ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private E elementData( int index )
+    {
+        return (E) elementData[index];
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static <E> E elementAt( Object[] es, int index )
+    {
+        return (E) es[index];
+    }
+
+    private void add( E e, Object[] elementData, int s )
+    {
+        if ( s == elementData.length )
+        {
+            elementData = grow( size + 1 );
+        }
+        elementData[s] = e;
+        size = s + 1;
+    }
+
+    private void fastRemove( Object[] es, int i )
+    {
+        modCount++;
+        final int newSize;
+        if ( (newSize = size - 1) > i )
+        {
+            System.arraycopy( es, i + 1, es, i, newSize - i );
+        }
+        es[size = newSize] = null;
+    }
+
+    private void checkForComodification( final int expectedModCount )
+    {
+        if ( modCount != expectedModCount )
+        {
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    private boolean equalsRange( List<?> other, int from, int to )
+    {
+        final Object[] es = elementData;
+        if ( to > es.length )
+        {
+            throw new ConcurrentModificationException();
+        }
+        var oit = other.iterator();
+        for ( ; from < to; from++ )
+        {
+            if ( !oit.hasNext() || !Objects.equals( es[from], oit.next() ) )
+            {
+                return false;
+            }
+        }
+        return !oit.hasNext();
+    }
+
+    private boolean equalsArrayList( HeapTrackingArrayList<?> other )
+    {
+        final int otherModCount = other.modCount;
+        final int s = size;
+        boolean equal;
+        if ( equal = s == other.size )
+        {
+            final Object[] otherEs = other.elementData;
+            final Object[] es = elementData;
+            if ( s > es.length || s > otherEs.length )
+            {
+                throw new ConcurrentModificationException();
+            }
+            for ( int i = 0; i < s; i++ )
+            {
+                if ( !Objects.equals( es[i], otherEs[i] ) )
+                {
+                    equal = false;
+                    break;
+                }
+            }
+        }
+        other.checkForComodification( otherModCount );
+        return equal;
+    }
+
+    private int hashCodeRange( int from, int to )
+    {
+        final Object[] es = elementData;
+        if ( to > es.length )
+        {
+            throw new ConcurrentModificationException();
+        }
+        int hashCode = 1;
+        for ( int i = from; i < to; i++ )
+        {
+            Object e = es[i];
+            hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
+        }
+        return hashCode;
+    }
+
+    private boolean batchRemove( Collection<?> c, boolean complement, final int from, final int end )
+    {
+        Objects.requireNonNull( c );
+        final Object[] es = elementData;
+        int r;
+        // Optimize for initial run of survivors
+        for ( r = from; ; r++ )
+        {
+            if ( r == end )
+            {
+                return false;
+            }
+            if ( c.contains( es[r] ) != complement )
+            {
+                break;
+            }
+        }
+        int w = r++;
+        try
+        {
+            for ( Object e; r < end; r++ )
+            {
+                if ( c.contains( e = es[r] ) == complement )
+                {
+                    es[w++] = e;
+                }
+            }
+        }
+        catch ( Throwable ex )
+        {
+            System.arraycopy( es, r, es, w, end - r );
+            w += end - r;
+            throw ex;
+        }
+        finally
+        {
+            modCount += end - w;
+            shiftTailOverGap( es, w, end );
+        }
+        return true;
+    }
+
+    private void shiftTailOverGap( Object[] es, int lo, int hi )
+    {
+        System.arraycopy( es, hi, es, lo, size - hi );
+        for ( int to = size, i = size -= hi - lo; i < to; i++ )
+        {
+            es[i] = null;
+        }
+    }
+
+    private void rangeCheckForAdd( int index )
+    {
+        if ( index > size || index < 0 )
+        {
+            throw new IndexOutOfBoundsException( "Index: " + index + ", Size: " + size );
+        }
+    }
+
+    private class Itr implements Iterator<E>
+    {
+        int cursor;
+        int lastRet = -1;
+        int expectedModCount = modCount;
+
+        Itr()
+        {
+        }
+
+        public boolean hasNext()
+        {
+            return cursor != size;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public E next()
+        {
+            checkForComodification();
+            int i = cursor;
+            if ( i >= size )
+            {
+                throw new NoSuchElementException();
+            }
+            Object[] elementData = HeapTrackingArrayList.this.elementData;
+            if ( i >= elementData.length )
+            {
+                throw new ConcurrentModificationException();
+            }
+            cursor = i + 1;
+            return (E) elementData[lastRet = i];
+        }
+
+        public void remove()
+        {
+            if ( lastRet < 0 )
+            {
+                throw new IllegalStateException();
+            }
+            checkForComodification();
+
+            try
+            {
+                HeapTrackingArrayList.this.remove( lastRet );
+                cursor = lastRet;
+                lastRet = -1;
+                expectedModCount = modCount;
+            }
+            catch ( IndexOutOfBoundsException ex )
+            {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @Override
+        public void forEachRemaining( Consumer<? super E> action )
+        {
+            Objects.requireNonNull( action );
+            final int size = HeapTrackingArrayList.this.size;
+            int i = cursor;
+            if ( i < size )
+            {
+                final Object[] es = elementData;
+                if ( i >= es.length )
+                {
+                    throw new ConcurrentModificationException();
+                }
+                for ( ; i < size && modCount == expectedModCount; i++ )
+                {
+                    action.accept( elementAt( es, i ) );
+                }
+                // update once at end to reduce heap write traffic
+                cursor = i;
+                lastRet = i - 1;
+                checkForComodification();
+            }
+        }
+
+        final void checkForComodification()
+        {
+            if ( modCount != expectedModCount )
+            {
+                throw new ConcurrentModificationException();
+            }
+        }
+    }
+
+    private class ListItr extends Itr implements ListIterator<E>
+    {
+        ListItr( int index )
+        {
+            super();
+            cursor = index;
+        }
+
+        public boolean hasPrevious()
+        {
+            return cursor != 0;
+        }
+
+        public int nextIndex()
+        {
+            return cursor;
+        }
+
+        public int previousIndex()
+        {
+            return cursor - 1;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public E previous()
+        {
+            checkForComodification();
+            int i = cursor - 1;
+            if ( i < 0 )
+            {
+                throw new NoSuchElementException();
+            }
+            Object[] elementData = HeapTrackingArrayList.this.elementData;
+            if ( i >= elementData.length )
+            {
+                throw new ConcurrentModificationException();
+            }
+            cursor = i;
+            return (E) elementData[lastRet = i];
+        }
+
+        public void set( E e )
+        {
+            if ( lastRet < 0 )
+            {
+                throw new IllegalStateException();
+            }
+            checkForComodification();
+
+            try
+            {
+                HeapTrackingArrayList.this.set( lastRet, e );
+            }
+            catch ( IndexOutOfBoundsException ex )
+            {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        public void add( E e )
+        {
+            checkForComodification();
+
+            try
+            {
+                int i = cursor;
+                HeapTrackingArrayList.this.add( i, e );
+                cursor = i + 1;
+                lastRet = -1;
+                expectedModCount = modCount;
+            }
+            catch ( IndexOutOfBoundsException ex )
+            {
+                throw new ConcurrentModificationException();
+            }
+        }
     }
 }

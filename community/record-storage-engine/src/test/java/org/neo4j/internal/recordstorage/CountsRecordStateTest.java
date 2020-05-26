@@ -21,61 +21,35 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.storageengine.api.CountsDelta;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CountsRecordStateTest
 {
     @Test
-    void shouldReportDifferencesBetweenDifferentStates()
+    void trackCounts()
     {
         // given
-        CountsRecordState oracle = new CountsRecordState( NULL );
-        CountsRecordState victim = new CountsRecordState( NULL );
-        oracle.incrementNodeCount( 17, 5 );
-        victim.incrementNodeCount( 17, 3 );
-        oracle.incrementNodeCount( 12, 9 );
-        victim.incrementNodeCount( 12, 9 );
-        oracle.incrementRelationshipCount( 1, 2, 3, 19 );
-        victim.incrementRelationshipCount( 1, 2, 3, 22 );
-        oracle.incrementRelationshipCount( 1, 4, 3, 25 );
-        victim.incrementRelationshipCount( 1, 4, 3, 25 );
+        CountsRecordState counts = new CountsRecordState();
+        counts.incrementNodeCount( 17, 5 );
+        counts.incrementNodeCount( 12, 9 );
+        counts.incrementRelationshipCount( 1, 2, 3, 19 );
+        counts.incrementRelationshipCount( 1, 4, 3, 25 );
 
-        // when
-        Set<CountsRecordState.Difference> differences = Iterables.asSet( oracle.verify( victim, NULL ) );
+        assertEquals( 0, counts.nodeCount( 1, NULL ) );
+        assertEquals( 5, counts.nodeCount( 17, NULL ) );
+        assertEquals( 9, counts.nodeCount( 12, NULL ) );
+        assertEquals( 19, counts.relationshipCount( 1, 2, 3, NULL ) );
+        assertEquals( 25, counts.relationshipCount( 1, 4, 3, NULL ) );
 
-        // then
-        assertEquals( differences, asSet(
-                new CountsRecordState.Difference( CountsDelta.nodeKey( 17 ), 5, 3 ),
-                new CountsRecordState.Difference( CountsDelta.relationshipKey( 1, 2, 3 ), 19, 22 )
-        ) );
-    }
+        counts.incrementNodeCount( 17, 0 );
+        counts.incrementNodeCount( 12, -2 );
+        counts.incrementRelationshipCount( 1, 2, 3, 1 );
+        counts.incrementRelationshipCount( 1, 4, 3, -25 );
 
-    @Test
-    void shouldNotReportAnythingForEqualStates()
-    {
-        // given
-        CountsRecordState oracle = new CountsRecordState( NULL );
-        CountsRecordState victim = new CountsRecordState( NULL );
-        oracle.incrementNodeCount( 17, 5 );
-        victim.incrementNodeCount( 17, 5 );
-        oracle.incrementNodeCount( 12, 9 );
-        victim.incrementNodeCount( 12, 9 );
-        oracle.incrementRelationshipCount( 1, 4, 3, 25 );
-        victim.incrementRelationshipCount( 1, 4, 3, 25 );
-
-        // when
-        List<CountsRecordState.Difference> differences = oracle.verify( victim, NULL );
-
-        // then
-        assertTrue( differences.isEmpty(), differences.toString() );
+        assertEquals( 5, counts.nodeCount( 17, NULL ) );
+        assertEquals( 7, counts.nodeCount( 12, NULL ) );
+        assertEquals( 20, counts.relationshipCount( 1, 2, 3, NULL ) );
+        assertEquals( 0, counts.relationshipCount( 1, 4, 3, NULL ) );
     }
 }

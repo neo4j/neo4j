@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.store.record;
 import java.util.Objects;
 
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class RelationshipGroupRecord extends AbstractBaseRecord
 {
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipGroupRecord.class );
     private int type;
     private long next;
     private long firstOut;

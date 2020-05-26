@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -140,7 +141,7 @@ class ManyPropertyKeysIT
         {
             PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( (int) store.nextId( cursorTracer ) );
             record.setInUse( true );
-            Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorTracer );
+            Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorTracer, INSTANCE );
             record.addNameRecords( nameRecords );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             store.updateRecord( record, NULL );

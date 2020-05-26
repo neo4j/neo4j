@@ -41,8 +41,11 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
+import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 
 /**
  * An abstract representation of a dynamic store. Record size is set at creation as the contents of the
@@ -89,18 +92,33 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 storeVersion, openOptions );
     }
 
-    public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src,
-            DynamicRecordAllocator dynamicRecordAllocator, PageCursorTracer cursorTracer )
+    public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src, DynamicRecordAllocator dynamicRecordAllocator,
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         requireNonNull( src );
+
+        int dataSize = dynamicRecordAllocator.getRecordDataSize();
+        int payloadSize = src.length;
+        int lastBlockSize = payloadSize % dataSize;
+
+        long fullBlockSize = DynamicRecord.SHALLOW_SIZE + alignObjectSize( ARRAY_HEADER_BYTES + dataSize );
+        int numberOfFullBlocks = payloadSize / dataSize;
+        long totalSize = numberOfFullBlocks * fullBlockSize;
+
+        if ( lastBlockSize != 0 )
+        {
+            totalSize += DynamicRecord.SHALLOW_SIZE + alignObjectSize( ARRAY_HEADER_BYTES + lastBlockSize );
+        }
+
+        memoryTracker.allocateHeap( totalSize );
+
         DynamicRecord nextRecord = dynamicRecordAllocator.nextRecord( cursorTracer );
         int srcOffset = 0;
-        int dataSize = dynamicRecordAllocator.getRecordDataSize();
         do
         {
             DynamicRecord record = nextRecord;
             record.setStartRecord( srcOffset == 0 );
-            if ( src.length - srcOffset > dataSize )
+            if ( payloadSize - srcOffset > dataSize )
             {
                 byte[] data = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
@@ -111,7 +129,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             }
             else
             {
-                byte[] data = new byte[src.length - srcOffset];
+                byte[] data = new byte[payloadSize - srcOffset];
                 System.arraycopy( src, srcOffset, data, 0, data.length );
                 record.setData( data );
                 nextRecord = null;
@@ -192,9 +210,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         return StandardDynamicRecordAllocator.allocateRecord( nextId( cursorTracer ) );
     }
 
-    void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src, PageCursorTracer cursorTracer )
+    void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        allocateRecordsFromBytes( target, src, this, cursorTracer );
+        allocateRecordsFromBytes( target, src, this, cursorTracer, memoryTracker );
     }
 
     @Override

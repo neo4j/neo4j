@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
@@ -184,7 +185,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         RECORD record = recordInstantiator.apply( tokenId );
         record.setInUse( true );
         record.setCreated();
-        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer );
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer, EmptyMemoryTracker.INSTANCE );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
         store.updateRecord( record, cursorTracer );
