@@ -38,6 +38,8 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 
 public final class PathImpl implements Path, Measurable
 {
+    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( PathImpl.class );
+
     public static final class Builder
     {
         private final Builder previous;
@@ -324,7 +326,7 @@ public final class PathImpl implements Path, Measurable
     @Override
     public long estimatedHeapUsage()
     {
-        long estimate = HeapEstimator.shallowSizeOfInstance( PathImpl.class ) + HeapEstimator.shallowSizeOfObjectArray( path.length );
+        long estimate =  SHALLOW_SIZE + HeapEstimator.shallowSizeOfObjectArray( path.length );
         int pathLength = path.length;
         estimate += pathLength * RelationshipEntity.SHALLOW_SIZE;
 
