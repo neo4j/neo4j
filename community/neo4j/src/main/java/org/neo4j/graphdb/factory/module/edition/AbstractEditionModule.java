@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
@@ -188,5 +188,5 @@ public abstract class AbstractEditionModule
     public abstract DatabaseStartupController getDatabaseStartupController();
 
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
-            Config config, LogProvider userLogProvider, DatabaseInfo databaseInfo );
+            Config config, LogProvider userLogProvider, DbmsInfo dbmsInfo );
 }

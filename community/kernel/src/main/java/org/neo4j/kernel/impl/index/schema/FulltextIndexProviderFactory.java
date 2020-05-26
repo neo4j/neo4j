@@ -83,7 +83,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral_lucene );
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        OperationalMode operationalMode = context.databaseInfo().operationalMode;
+        OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
         JobScheduler scheduler = dependencies.scheduler();
         IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory() );

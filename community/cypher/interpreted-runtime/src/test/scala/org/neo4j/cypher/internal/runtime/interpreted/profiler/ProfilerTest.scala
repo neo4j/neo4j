@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
-import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class ProfilerTest extends CypherFunSuite {
@@ -55,7 +55,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DbmsInfo.ENTERPRISE, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -72,7 +72,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20, statisticProvider, hits = 2, misses = 7)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DbmsInfo.ENTERPRISE, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -91,7 +91,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, profile)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -112,7 +112,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2, statisticProvider, 37, 68)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DbmsInfo.ENTERPRISE, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -133,7 +133,7 @@ class ProfilerTest extends CypherFunSuite {
     val apply = ApplyPipe(lhs, rhs)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, profile)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,
@@ -157,7 +157,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, profile)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,
@@ -181,7 +181,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DbmsInfo.ENTERPRISE, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,
@@ -210,7 +210,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, profile)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,
@@ -221,7 +221,7 @@ class ProfilerTest extends CypherFunSuite {
   }
 
   test("should not count rows multiple times when the same pipe is used multiple times") {
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, new InterpretedProfileInformation)
 
     val pipe1 = ArgumentPipe()(idGen.id())
     val ctx1: QueryContext = prepareQueryContext()
@@ -246,7 +246,7 @@ class ProfilerTest extends CypherFunSuite {
   }
 
   test("should not count dbhits multiple times when the same pipe is used multiple times") {
-    val profiler = new Profiler(DatabaseInfo.COMMUNITY, new InterpretedProfileInformation)
+    val profiler = new Profiler(DbmsInfo.COMMUNITY, new InterpretedProfileInformation)
 
     val pipe1 = ArgumentPipe()(idGen.id())
     val ctx1: QueryContext = prepareQueryContext()

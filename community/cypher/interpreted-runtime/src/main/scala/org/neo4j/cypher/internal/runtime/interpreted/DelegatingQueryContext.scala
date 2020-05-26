@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -365,7 +365,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 
-  override def databaseInfo: DatabaseInfo = inner.databaseInfo
+  override def dbmsInfo: DbmsInfo = inner.dbmsInfo
 
   override def databaseId: NamedDatabaseId = inner.databaseId
 

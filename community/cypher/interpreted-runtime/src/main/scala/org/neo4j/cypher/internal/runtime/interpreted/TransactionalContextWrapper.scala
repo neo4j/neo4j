@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
-import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
@@ -67,7 +67,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
-  override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
+  override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 
   override def databaseId: NamedDatabaseId = tc.databaseId()
 

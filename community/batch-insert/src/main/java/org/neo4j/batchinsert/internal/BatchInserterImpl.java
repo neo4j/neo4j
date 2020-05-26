@@ -120,7 +120,7 @@ import org.neo4j.kernel.impl.coreapi.schema.NodeKeyConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -338,7 +338,7 @@ public class BatchInserterImpl implements BatchInserter
             deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, storeIndexStoreView, tokenHolders, pageCache, monitors, immediate() );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
-                new DatabaseExtensionContext( this.databaseLayout, DatabaseInfo.TOOL, deps ),
+                new DatabaseExtensionContext( this.databaseLayout, DbmsInfo.TOOL, deps ),
                 extensions, deps, ExtensionFailureStrategies.ignore() ) );
 
             indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );

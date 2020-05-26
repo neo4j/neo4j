@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -124,7 +124,7 @@ class CommitContentionTest
     private GraphDatabaseService createDb()
     {
         Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().toPath() );
-        managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
+        managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
             public DatabaseTransactionStats createTransactionMonitor()

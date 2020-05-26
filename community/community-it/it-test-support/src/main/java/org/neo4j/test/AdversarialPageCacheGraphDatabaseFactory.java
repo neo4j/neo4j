@@ -32,7 +32,7 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPools;
@@ -54,13 +54,13 @@ public final class AdversarialPageCacheGraphDatabaseFactory
             protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
             {
 
-                return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                return new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new )
                 {
 
                     @Override
                     protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
                     {
-                        return new GlobalModule( config, databaseInfo, dependencies )
+                        return new GlobalModule( config, dbmsInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

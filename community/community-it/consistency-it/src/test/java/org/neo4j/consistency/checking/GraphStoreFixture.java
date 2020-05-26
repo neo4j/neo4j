@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -336,7 +336,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         DatabaseExtensions extensions = fixtureLife.add( instantiateExtensions( databaseLayout(), fileSystem, config, logService,
-                pageCache, jobScheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
+                                                                                pageCache, jobScheduler, RecoveryCleanupWorkCollector.ignore(),
+                                                                                DbmsInfo.COMMUNITY, monitors, tokenHolders ) );
         return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
     }
 

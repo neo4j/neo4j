@@ -26,7 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
@@ -92,7 +92,7 @@ class DatabaseManagementServiceFactoryTest
     private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
             RuntimeException shutdownError )
     {
-        return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, CommunityEditionModule::new )
+        return new DatabaseManagementServiceFactory( DbmsInfo.UNKNOWN, CommunityEditionModule::new )
         {
             @Override
             protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
@@ -105,7 +105,7 @@ class DatabaseManagementServiceFactoryTest
                 }
                 doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new GlobalModule( config, databaseInfo, dependencies )
+                return new GlobalModule( config, dbmsInfo, dependencies )
                 {
                     @Override
                     public LifeSupport createLife()

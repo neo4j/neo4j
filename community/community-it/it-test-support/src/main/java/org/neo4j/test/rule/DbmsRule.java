@@ -42,7 +42,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 
@@ -403,9 +403,9 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public DatabaseInfo databaseInfo()
+    public DbmsInfo dbmsInfo()
     {
-        return database.databaseInfo();
+        return database.dbmsInfo();
     }
 
     @Override

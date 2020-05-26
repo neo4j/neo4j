@@ -115,8 +115,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        return new TestDatabaseManagementServiceFactory( getDatabaseInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock,
-                internalLogProvider ).build( augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
+        return new TestDatabaseManagementServiceFactory( getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock,
+                                                         internalLogProvider ).build( augmentConfig( config ),
+                                                                                      GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
     @Override

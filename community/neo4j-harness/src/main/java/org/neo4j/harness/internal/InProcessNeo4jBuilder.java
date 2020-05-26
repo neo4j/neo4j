@@ -29,7 +29,7 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
+import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 
 public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
 {

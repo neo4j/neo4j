@@ -43,7 +43,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -109,13 +109,13 @@ class DatabaseShutdownTest
         @Override
         protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
         {
-            return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+            return new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new )
             {
 
                 @Override
                 protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
                 {
-                    GlobalModule globalModule = new GlobalModule( config, databaseInfo, dependencies )
+                    GlobalModule globalModule = new GlobalModule( config, dbmsInfo, dependencies )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,

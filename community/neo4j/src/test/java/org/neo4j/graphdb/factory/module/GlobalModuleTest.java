@@ -27,7 +27,7 @@ import java.util.concurrent.Semaphore;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -72,7 +72,7 @@ class GlobalModuleTest
         assertThat( latch.getCount() ).isEqualTo( 1L );
 
         Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
-        var globalModule = new GlobalModule( cfg, DatabaseInfo.UNKNOWN, externalDependencies );
+        var globalModule = new GlobalModule( cfg, DbmsInfo.UNKNOWN, externalDependencies );
         try
         {
             assertTrue( lock.tryAcquire( 1, MINUTES ) );

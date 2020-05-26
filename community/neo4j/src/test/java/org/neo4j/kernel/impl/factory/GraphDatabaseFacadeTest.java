@@ -64,7 +64,7 @@ class GraphDatabaseFacadeTest
 
         kernelTransaction = mock( KernelTransaction.class );
 
-        graphDatabaseFacade = new GraphDatabaseFacade( database, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
+        graphDatabaseFacade = new GraphDatabaseFacade( database, config, DbmsInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }
 
     @Test

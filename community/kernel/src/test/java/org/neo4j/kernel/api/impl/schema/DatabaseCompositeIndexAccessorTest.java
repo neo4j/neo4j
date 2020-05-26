@@ -68,7 +68,7 @@ import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -149,7 +149,7 @@ public class DatabaseCompositeIndexAccessorTest
                 RecoveryCleanupWorkCollector.ignore() );
         dir.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
         Config config = Config.defaults( neo4j_home, dir.homeDir().toPath() );
-        DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DatabaseInfo.UNKNOWN, deps );
+        DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );
         DatabaseExtensions extensions = new DatabaseExtensions( context, indexProviderFactories, deps, ExtensionFailureStrategies.fail() );
 
         extensions.init();

@@ -53,7 +53,7 @@ import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -114,7 +114,7 @@ public class GlobalModule
     private final LogService logService;
     private final LifeSupport globalLife;
     private final Neo4jLayout neo4jLayout;
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
     private final DbmsDiagnosticsManager dbmsDiagnosticsManager;
     private final Tracers tracers;
     private final Config globalConfig;
@@ -139,14 +139,14 @@ public class GlobalModule
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
 
-    public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
+    public GlobalModule( Config globalConfig, DbmsInfo dbmsInfo, ExternalDependencies externalDependencies )
     {
         externalDependencyResolver = externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
 
-        this.databaseInfo = databaseInfo;
+        this.dbmsInfo = dbmsInfo;
 
         globalDependencies = new Dependencies();
-        globalDependencies.satisfyDependency( databaseInfo );
+        globalDependencies.satisfyDependency( dbmsInfo );
 
         globalClock = globalDependencies.satisfyDependency( createClock() );
         globalLife = createLife();
@@ -221,7 +221,7 @@ public class GlobalModule
 
         extensionFactories = externalDependencies.extensions();
         globalExtensions = globalDependencies.satisfyDependency(
-                new GlobalExtensions( new GlobalExtensionContext( neo4jLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
+                new GlobalExtensions( new GlobalExtensionContext( neo4jLayout, dbmsInfo, globalDependencies ), extensionFactories, globalDependencies,
                         ExtensionFailureStrategies.fail() ) );
 
         globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
@@ -483,9 +483,9 @@ public class GlobalModule
         return neo4jLayout;
     }
 
-    public DatabaseInfo getDatabaseInfo()
+    public DbmsInfo getDbmsInfo()
     {
-        return databaseInfo;
+        return dbmsInfo;
     }
 
     public LifeSupport getGlobalLife()

@@ -41,7 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -236,7 +236,7 @@ class DbmsDiagnosticsManagerTest
     {
         Database database = mock( Database.class );
         Dependencies databaseDependencies = new Dependencies();
-        databaseDependencies.satisfyDependency( DatabaseInfo.COMMUNITY );
+        databaseDependencies.satisfyDependency( DbmsInfo.COMMUNITY );
         databaseDependencies.satisfyDependency( storageEngine );
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );

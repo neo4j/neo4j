@@ -65,22 +65,22 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     protected final TransactionalContextFactory contextFactory;
     private final Config config;
     private final DatabaseAvailabilityGuard availabilityGuard;
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
-        this( facade.database, facade.config, facade.databaseInfo, facade.availabilityGuard );
+        this( facade.database, facade.config, facade.dbmsInfo, facade.availabilityGuard );
         this.loginContextTransformer = requireNonNull( loginContextTransformer );
     }
 
-    public GraphDatabaseFacade( Database database, Config config, DatabaseInfo databaseInfo,
+    public GraphDatabaseFacade( Database database, Config config, DbmsInfo dbmsInfo,
             DatabaseAvailabilityGuard availabilityGuard )
     {
         this.database = requireNonNull( database );
         this.config = requireNonNull( config );
         this.availabilityGuard = requireNonNull( availabilityGuard );
-        this.databaseInfo = requireNonNull( databaseInfo );
+        this.dbmsInfo = requireNonNull( dbmsInfo );
         this.contextFactory = Neo4jTransactionalContextFactory.create( () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
                 new FacadeKernelTransactionFactory( config, this ) );
     }
@@ -181,9 +181,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public DatabaseInfo databaseInfo()
+    public DbmsInfo dbmsInfo()
     {
-        return databaseInfo;
+        return dbmsInfo;
     }
 
     KernelTransaction beginKernelTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout )
@@ -220,6 +220,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public String toString()
     {
-        return databaseInfo + " [" + databaseLayout() + "]";
+        return dbmsInfo + " [" + databaseLayout() + "]";
     }
 }

@@ -88,7 +88,7 @@ import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorSch
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -135,6 +135,7 @@ import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
@@ -147,7 +148,6 @@ import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
-import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
@@ -222,7 +222,7 @@ public class Database extends LifecycleAdapter
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
     private final IdController idController;
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
     private final VersionContextSupplier versionContextSupplier;
     private AccessCapability accessCapability;
 
@@ -277,7 +277,7 @@ public class Database extends LifecycleAdapter
 
         this.readOnly = databaseConfig.get( read_only );
         this.idController = context.getIdController();
-        this.databaseInfo = context.getDatabaseInfo();
+        this.dbmsInfo = context.getDbmsInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
@@ -290,7 +290,7 @@ public class Database extends LifecycleAdapter
         this.storageEngineFactory = context.getStorageEngineFactory();
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
-        this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, databaseInfo, databaseAvailabilityGuard );
+        this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, dbmsInfo, databaseAvailabilityGuard );
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
         this.tracers = new DatabaseTracers( context.getTracers() );
         this.fileLockerService = context.getFileLockerService();
@@ -518,7 +518,7 @@ public class Database extends LifecycleAdapter
     {
         LifeSupport extensionsLife = new LifeSupport();
 
-        extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, databaseInfo, dependencies ), extensionFactories,
+        extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, dbmsInfo, dependencies ), extensionFactories,
                 dependencies, fail() ) );
 
         indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, databaseConfig ) );

@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -217,9 +217,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     @Override
     public Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DatabaseInfo databaseInfo )
+            LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
-        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, databaseInfo );
+        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
     }
 
     @Override

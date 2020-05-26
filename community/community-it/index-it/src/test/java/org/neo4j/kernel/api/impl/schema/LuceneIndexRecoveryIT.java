@@ -345,7 +345,7 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            boolean isSingleInstance = context.databaseInfo().operationalMode == OperationalMode.SINGLE;
+            boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), IndexProvider.Monitor.EMPTY,
                     dependencies.getConfig(), isSingleInstance );
         }
@@ -362,7 +362,7 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            boolean isSingleInstance = context.databaseInfo().operationalMode == OperationalMode.SINGLE;
+            boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), isSingleInstance )
             {

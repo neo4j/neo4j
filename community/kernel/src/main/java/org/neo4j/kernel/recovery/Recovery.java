@@ -53,7 +53,7 @@ import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
@@ -300,7 +300,8 @@ public final class Recovery
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK );
         DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
-                recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
+                                                                       recoveryCleanupCollector, DbmsInfo.TOOL, monitors, tokenHolders,
+                                                                       recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
@@ -439,7 +440,7 @@ public final class Recovery
     }
 
     private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
-            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
+            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
             Monitors monitors, TokenHolders tokenHolders, RecoveryCleanupWorkCollector recoveryCleanupCollector,
             Iterable<ExtensionFactory<?>> extensionFactories )
     {
@@ -451,7 +452,7 @@ public final class Recovery
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector );
-        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
+        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }
 

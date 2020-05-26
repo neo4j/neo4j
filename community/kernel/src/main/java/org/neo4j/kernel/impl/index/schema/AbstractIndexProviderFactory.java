@@ -57,7 +57,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         monitors.addMonitorListener( new LoggingMonitor( log ), descriptorString );
         IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, descriptorString );
         Config config = dependencies.getConfig();
-        OperationalMode operationalMode = context.databaseInfo().operationalMode;
+        OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
         return internalCreate( pageCache, databaseDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }

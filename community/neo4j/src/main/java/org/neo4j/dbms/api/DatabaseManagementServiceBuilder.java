@@ -44,7 +44,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -83,13 +83,13 @@ public class DatabaseManagementServiceBuilder
     protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         config.set( GraphDatabaseSettings.ephemeral_lucene, FALSE );
-        return new DatabaseManagementServiceFactory( getDatabaseInfo( config ), getEditionFactory( config ) )
+        return new DatabaseManagementServiceFactory( getDbmsInfo( config ), getEditionFactory( config ) )
                 .build( augmentConfig( config ), dependencies );
     }
 
-    protected DatabaseInfo getDatabaseInfo( Config config )
+    protected DbmsInfo getDbmsInfo( Config config )
     {
-        return DatabaseInfo.COMMUNITY;
+        return DbmsInfo.COMMUNITY;
     }
 
     protected Function<GlobalModule,AbstractEditionModule> getEditionFactory( Config config )

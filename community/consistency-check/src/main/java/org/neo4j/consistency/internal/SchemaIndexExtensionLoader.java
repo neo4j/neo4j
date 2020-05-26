@@ -30,7 +30,7 @@ import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -45,14 +45,14 @@ public class SchemaIndexExtensionLoader
 
     @SuppressWarnings( "unchecked" )
     public static DatabaseExtensions instantiateExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
-            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
+            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
             Monitors monitors, TokenHolders tokenHolders )
     {
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
         @SuppressWarnings( "rawtypes" )
         Iterable extensions = Services.loadAll( ExtensionFactory.class );
-        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
+        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, extensions, deps, ExtensionFailureStrategies.ignore() );
     }
 }

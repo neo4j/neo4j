@@ -20,27 +20,27 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
 
 public class VersionDiagnostics extends NamedDiagnosticsProvider
 {
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
     private final StoreId storeId;
 
-    VersionDiagnostics( DatabaseInfo databaseInfo, StoreId storeId )
+    VersionDiagnostics( DbmsInfo dbmsInfo, StoreId storeId )
     {
         super( "Version" );
-        this.databaseInfo = databaseInfo;
+        this.dbmsInfo = dbmsInfo;
         this.storeId = storeId;
     }
 
     @Override
     public void dump( Logger logger )
     {
-        logger.log( "DBMS: " + databaseInfo + " " + storeId );
+        logger.log( "DBMS: " + dbmsInfo + " " + storeId );
         logger.log( "Kernel version: " + Version.getKernelVersion() );
     }
 }

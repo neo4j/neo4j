@@ -42,11 +42,11 @@ import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
 
-class Profiler(databaseInfo: DatabaseInfo,
+class Profiler(dbmsInfo: DbmsInfo,
                stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
@@ -119,7 +119,7 @@ class Profiler(databaseInfo: DatabaseInfo,
   }
 
   private def trackPageCacheStats = {
-    databaseInfo.edition != Edition.COMMUNITY
+    dbmsInfo.edition != Edition.COMMUNITY
   }
 
   def innerDecorator(outerPlanId: Id): PipeDecorator = new PipeDecorator {

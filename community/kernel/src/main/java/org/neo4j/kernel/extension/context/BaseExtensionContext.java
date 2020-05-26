@@ -22,25 +22,25 @@ package org.neo4j.kernel.extension.context;
 import java.io.File;
 
 import org.neo4j.common.DependencySatisfier;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 
 abstract class BaseExtensionContext implements ExtensionContext
 {
     private final File contextDirectory;
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
     private final DependencySatisfier satisfier;
 
-    BaseExtensionContext( File contextDirectory, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
+    BaseExtensionContext( File contextDirectory, DbmsInfo dbmsInfo, DependencySatisfier satisfier )
     {
         this.contextDirectory = contextDirectory;
-        this.databaseInfo = databaseInfo;
+        this.dbmsInfo = dbmsInfo;
         this.satisfier = satisfier;
     }
 
     @Override
-    public DatabaseInfo databaseInfo()
+    public DbmsInfo dbmsInfo()
     {
-        return databaseInfo;
+        return dbmsInfo;
     }
 
     @Override

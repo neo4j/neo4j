@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -352,7 +352,7 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def kernelStatisticProvider: KernelStatisticProvider
 
-  def databaseInfo: DatabaseInfo
+  def dbmsInfo: DbmsInfo
 
   def databaseId: NamedDatabaseId
 }

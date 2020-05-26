@@ -62,7 +62,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.api.dbms.TransactionalDbmsOperations;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.Version;
@@ -104,12 +104,12 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
  */
 public class DatabaseManagementServiceFactory
 {
-    protected final DatabaseInfo databaseInfo;
+    protected final DbmsInfo dbmsInfo;
     private final Function<GlobalModule,AbstractEditionModule> editionFactory;
 
-    public DatabaseManagementServiceFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
+    public DatabaseManagementServiceFactory( DbmsInfo dbmsInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
     {
-        this.databaseInfo = databaseInfo;
+        this.dbmsInfo = dbmsInfo;
         this.editionFactory = editionFactory;
     }
 
@@ -175,7 +175,7 @@ public class DatabaseManagementServiceFactory
         {
             return new DisabledNeoWebServer();
         }
-        return edition.createWebServer( managementService, globalDependencies, config, userLogProvider, databaseInfo );
+        return edition.createWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
     }
 
     private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,
@@ -240,7 +240,7 @@ public class DatabaseManagementServiceFactory
      */
     protected GlobalModule createGlobalModule( Config config, final ExternalDependencies dependencies )
     {
-        return new GlobalModule( config, databaseInfo, dependencies );
+        return new GlobalModule( config, dbmsInfo, dependencies );
     }
 
     /**
@@ -260,7 +260,7 @@ public class DatabaseManagementServiceFactory
             Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
 
             ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
-            Edition neo4jEdition = globalModule.getDatabaseInfo().edition;
+            Edition neo4jEdition = globalModule.getDbmsInfo().edition;
             SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), neo4jEdition.toString() );
             GlobalProceduresRegistry globalProcedures = new GlobalProceduresRegistry( builtInProcedures, proceduresDirectory, internalLog, procedureConfig );
 

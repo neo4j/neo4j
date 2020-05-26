@@ -92,7 +92,7 @@ import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
+import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckService

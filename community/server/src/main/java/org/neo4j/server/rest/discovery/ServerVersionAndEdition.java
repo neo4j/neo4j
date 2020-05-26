@@ -54,6 +54,6 @@ public class ServerVersionAndEdition
 
     private static String neoServerEdition( NeoWebServer neoWebServer )
     {
-        return neoWebServer.getDatabaseInfo().edition.toString();
+        return neoWebServer.getDbmsInfo().edition.toString();
     }
 }

@@ -23,7 +23,7 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.common.Edition;
 
 @IgnoreApiCheck
-public enum DatabaseInfo
+public enum DbmsInfo
 {
     UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),
     TOOL( Edition.UNKNOWN, OperationalMode.SINGLE ),
@@ -35,7 +35,7 @@ public enum DatabaseInfo
     public final Edition edition;
     public final OperationalMode operationalMode;
 
-    DatabaseInfo( Edition edition, OperationalMode operationalMode )
+    DbmsInfo( Edition edition, OperationalMode operationalMode )
     {
         this.edition = edition;
         this.operationalMode = operationalMode;

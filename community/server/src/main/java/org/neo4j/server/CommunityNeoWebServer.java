@@ -26,7 +26,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
@@ -44,9 +44,9 @@ import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communit
 public class CommunityNeoWebServer extends AbstractNeoWebServer
 {
     public CommunityNeoWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DatabaseInfo databaseInfo )
+            LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
-        super( managementService, globalDependencies, config, userLogProvider, databaseInfo );
+        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
     }
 
     @Override

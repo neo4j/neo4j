@@ -28,7 +28,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -102,14 +102,14 @@ class ExtensionContextTest
     @Test
     void globalContextRootDirectoryEqualToStoreDirectory()
     {
-        GlobalExtensionContext context = new GlobalExtensionContext( neo4jLayout, DatabaseInfo.TOOL, new Dependencies() );
+        GlobalExtensionContext context = new GlobalExtensionContext( neo4jLayout, DbmsInfo.TOOL, new Dependencies() );
         assertSame( neo4jLayout.databasesDirectory(), context.directory() );
     }
 
     @Test
     void databaseContextRootDirectoryEqualToDatabaseDirectory()
     {
-        DatabaseExtensionContext context = new DatabaseExtensionContext( databaseLayout, DatabaseInfo.TOOL, new Dependencies() );
+        DatabaseExtensionContext context = new DatabaseExtensionContext( databaseLayout, DbmsInfo.TOOL, new Dependencies() );
         assertSame( databaseLayout.databaseDirectory(), context.directory() );
     }
 

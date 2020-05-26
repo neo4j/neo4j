@@ -32,7 +32,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.logging.LogProvider;
@@ -50,10 +50,10 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     private LogProvider internalLogProvider;
     private final SystemNanoClock clock;
 
-    public TestDatabaseManagementServiceFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory, boolean impermanent,
-            FileSystemAbstraction fileSystem, SystemNanoClock clock, LogProvider internalLogProvider )
+    public TestDatabaseManagementServiceFactory( DbmsInfo dbmsInfo, Function<GlobalModule,AbstractEditionModule> editionFactory, boolean impermanent,
+                                                 FileSystemAbstraction fileSystem, SystemNanoClock clock, LogProvider internalLogProvider )
     {
-        super( databaseInfo, editionFactory );
+        super( dbmsInfo, editionFactory );
         this.impermanent = impermanent;
         this.fileSystem = fileSystem;
         this.clock = clock;
@@ -68,18 +68,18 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         {
             config.set( GraphDatabaseSettings.ephemeral_lucene, TRUE );
             config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
-            return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.databaseInfo );
+            return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.dbmsInfo );
         }
 
-        return new TestDatabaseGlobalModule( config, dependencies, this.databaseInfo );
+        return new TestDatabaseGlobalModule( config, dependencies, this.dbmsInfo );
     }
 
     class TestDatabaseGlobalModule extends GlobalModule
     {
 
-        TestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
+        TestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DbmsInfo dbmsInfo )
         {
-            super( config, databaseInfo, dependencies );
+            super( config, dbmsInfo, dependencies );
         }
 
         @Override
@@ -124,9 +124,9 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule
     {
 
-        ImpermanentTestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
+        ImpermanentTestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DbmsInfo dbmsInfo )
         {
-            super( config, dependencies, databaseInfo );
+            super( config, dependencies, dbmsInfo );
         }
 
         @Override

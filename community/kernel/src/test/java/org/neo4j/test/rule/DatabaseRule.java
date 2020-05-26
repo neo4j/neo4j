@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -173,7 +173,7 @@ public class DatabaseRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory ),
-                        jobScheduler, NULL ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
+                        jobScheduler, NULL ), DbmsInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
                 storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT, memoryPools,
@@ -236,7 +236,7 @@ public class DatabaseRule extends ExternalResource
         private final SystemNanoClock clock;
         private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
         private final IdController idController;
-        private final DatabaseInfo databaseInfo;
+        private final DbmsInfo dbmsInfo;
         private final VersionContextSupplier versionContextSupplier;
         private final CollectionsFactorySupplier collectionsFactorySupplier;
         private final Iterable<ExtensionFactory<?>> extensionFactories;
@@ -253,7 +253,7 @@ public class DatabaseRule extends ExternalResource
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
                 GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock,
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
-                DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                DbmsInfo dbmsInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
                 FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController, MemoryPools memoryPools,
@@ -289,7 +289,7 @@ public class DatabaseRule extends ExternalResource
             this.clock = clock;
             this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
             this.idController = idController;
-            this.databaseInfo = databaseInfo;
+            this.dbmsInfo = dbmsInfo;
             this.versionContextSupplier = versionContextSupplier;
             this.collectionsFactorySupplier = collectionsFactorySupplier;
             this.extensionFactories = extensionFactories;
@@ -466,9 +466,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseInfo getDatabaseInfo()
+        public DbmsInfo getDbmsInfo()
         {
-            return databaseInfo;
+            return dbmsInfo;
         }
 
         @Override

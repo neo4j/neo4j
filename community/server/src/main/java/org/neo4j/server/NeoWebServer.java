@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
@@ -37,7 +37,7 @@ public interface NeoWebServer extends Lifecycle
 
     URI getBaseUri();
 
-    DatabaseInfo getDatabaseInfo();
+    DbmsInfo getDbmsInfo();
 
     Optional<URI> httpsUri();
 }

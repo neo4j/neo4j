@@ -32,7 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -119,7 +119,7 @@ class DatabaseManagementServiceFactoryIT
     private DatabaseManagementService getDatabaseManagementService()
     {
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
-                new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+                new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
         Config cfg = Config.newBuilder()
                 .set( neo4j_home, testDirectory.absolutePath().toPath() )
                 .set( preallocate_logical_logs, false )

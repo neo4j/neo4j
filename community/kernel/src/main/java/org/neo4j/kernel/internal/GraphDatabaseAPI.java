@@ -29,7 +29,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 
 /**
  * This API can be used to get access to services.
@@ -52,7 +52,7 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      */
     NamedDatabaseId databaseId();
 
-    DatabaseInfo databaseInfo();
+    DbmsInfo dbmsInfo();
 
     /**
      * Begin internal transaction with specified type and access mode

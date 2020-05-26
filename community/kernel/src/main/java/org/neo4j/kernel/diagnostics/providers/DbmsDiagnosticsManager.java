@@ -29,7 +29,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -113,12 +113,12 @@ public class DbmsDiagnosticsManager
             }
         }
         Dependencies databaseResolver = database.getDependencyResolver();
-        DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
+        DbmsInfo dbmsInfo = databaseResolver.resolveDependency( DbmsInfo.class );
         FileSystemAbstraction fs = databaseResolver.resolveDependency( FileSystemAbstraction.class );
         StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
+        diagnosticsManager.dump( new VersionDiagnostics( dbmsInfo, database.getStoreId() ), log );
         diagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );

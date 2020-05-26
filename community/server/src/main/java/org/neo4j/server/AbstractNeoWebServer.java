@@ -43,7 +43,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -90,7 +90,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     protected final LogProvider userLogProvider;
     private final Log log;
-    private final DatabaseInfo databaseInfo;
+    private final DbmsInfo dbmsInfo;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
@@ -120,14 +120,14 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected abstract WebServer createWebServer();
 
     public AbstractNeoWebServer( DatabaseManagementService databaseManagementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DatabaseInfo databaseInfo )
+            LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
         this.databaseManagementService = databaseManagementService;
         this.globalDependencies = globalDependencies;
         this.config = config;
         this.userLogProvider = userLogProvider;
         this.log = userLogProvider.getLog( getClass() );
-        this.databaseInfo = databaseInfo;
+        this.dbmsInfo = dbmsInfo;
         log.info( NEO4J_IS_STARTING_MESSAGE );
 
         verifyConnectorsConfiguration( config );
@@ -162,9 +162,9 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     }
 
     @Override
-    public DatabaseInfo getDatabaseInfo()
+    public DbmsInfo getDbmsInfo()
     {
-        return databaseInfo;
+        return dbmsInfo;
     }
 
     @Override
