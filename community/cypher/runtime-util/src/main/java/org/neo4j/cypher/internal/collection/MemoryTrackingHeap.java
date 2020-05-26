@@ -82,16 +82,16 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
     /**
      * Replace the top element of the heap
      */
-    protected boolean replace( T e )
+    protected T replace( T e )
     {
         T head = heap[0];
         if ( comparator.compare( head, e ) > 0 )
         {
             heap[0] = e;
             siftDown( 0, e, size );
-            return true;
+            return head;
         }
-        return false;
+        return e;
     }
 
     /**

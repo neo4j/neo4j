@@ -54,15 +54,17 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    val topTable = new DefaultComparatorTopTable(comparator, limit, state.memoryTracker.memoryTrackerForOperator(id.x))
+    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, memoryTracker)
 
     var i = 1L
     while (input.hasNext) {
       val row = input.next()
-      topTable.add(row)
-      if (i < limit) {
-        // This makes the assumption that rows have more or less the same size, since we don't know which ones are actually kept in the TopTable here.
-        state.memoryTracker.allocated(row, id.x)
+      val evictedRow = topTable.addAndGetEvicted(row)
+      if (row ne evictedRow) {
+        memoryTracker.allocateHeap(row.estimatedHeapUsage())
+        if (evictedRow != null)
+          memoryTracker.releaseHeap(evictedRow.estimatedHeapUsage())
       }
       i += 1
     }

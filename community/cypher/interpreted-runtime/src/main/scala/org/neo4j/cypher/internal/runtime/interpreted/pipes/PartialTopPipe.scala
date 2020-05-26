@@ -42,7 +42,7 @@ case class PartialTopNPipe(source: Pipe,
   class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
-    private val topTable = new DefaultComparatorTopTable[ReadableRow](suffixComparator, remainingLimit, memoryTracker)
+    private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
       topTable.reset(remainingLimit)
@@ -57,20 +57,19 @@ case class PartialTopNPipe(source: Pipe,
     override def isSameChunk(first: CypherRow, current: CypherRow): Boolean = prefixComparator.compare(first, current) == 0
 
     override def processRow(row: CypherRow): Unit = {
-      val sizeBefore = topTable.getSize
-
-      topTable.add(row)
-      remainingLimit = math.max(0, remainingLimit - 1)
-
-      val sizeAfter = topTable.getSize
-      if (sizeAfter > sizeBefore) {
+      val evictedRow = topTable.addAndGetEvicted(row)
+      if (row ne evictedRow) {
         rowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)
+        if (evictedRow != null)
+          rowsMemoryTracker.releaseHeap(evictedRow.estimatedHeapUsage)
       }
+
+      remainingLimit = math.max(0, remainingLimit - 1)
     }
 
     override def result(): Iterator[CypherRow] = {
       topTable.sort()
-      topTable.iterator().asScala.asInstanceOf[Iterator[CypherRow]]
+      topTable.iterator().asScala
     }
 
     override def processNextChunk: Boolean = remainingLimit > 0

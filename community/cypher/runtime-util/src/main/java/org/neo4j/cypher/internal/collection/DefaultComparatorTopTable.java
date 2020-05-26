@@ -60,12 +60,12 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
     private boolean heapified;
     private boolean isSorted;
 
-    public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount )
+    public DefaultComparatorTopTable( Comparator<? super T> comparator, long totalCount )
     {
         this( comparator, totalCount, EmptyMemoryTracker.INSTANCE );
     }
 
-    public DefaultComparatorTopTable( Comparator<T> comparator, long totalCount, MemoryTracker memoryTracker )
+    public DefaultComparatorTopTable( Comparator<? super T> comparator, long totalCount, MemoryTracker memoryTracker )
     {
         super( comparator, (int) Math.min( totalCount, 1024 ), memoryTracker );
         this.totalCount = totalCount;
@@ -79,6 +79,12 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
 
     public boolean add( T e )
     {
+        T evicted = addAndGetEvicted( e );
+        return e != evicted;
+    }
+
+    public T addAndGetEvicted( T e )
+    {
         if ( size < totalCount )
         {
             if ( size >= heap.length )
@@ -86,7 +92,7 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
                 grow( size + 1 );
             }
             heap[size++] = e;
-            return true;
+            return null;
         }
         else
         {
@@ -95,9 +101,8 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
                 heapify();
                 heapified = true;
             }
-            super.replace( e );
+            return super.replace( e );
         }
-        return false;
     }
 
     public int getSize()
