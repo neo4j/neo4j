@@ -123,7 +123,15 @@ public final class BookmarksParserV4 implements BookmarksParser
             return buildBookmarks( NAMED_SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
         }
 
-        var customBookmarks = customBookmarkFormatParser.parse( customBookmarkStrings );
+        List<Bookmark> customBookmarks;
+        try
+        {
+            customBookmarks = customBookmarkFormatParser.parse( customBookmarkStrings );
+        }
+        catch ( Exception e )
+        {
+            throw BookmarkParsingException.newInvalidBookmarkError( "Parsing of supplied bookmarks failed with message: " + e.getMessage(), e );
+        }
 
         if ( maxSystemDbTxId != ABSENT_BOOKMARK_ID )
         {

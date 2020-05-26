@@ -341,6 +341,32 @@ class BookmarksParserV4Test
         ), bookmarks );
     }
 
+    @Test
+    void shouldThrowBoltExceptionWhenCustomBookmarksParsingFails()
+    {
+        var parser = new BookmarksParserV4( databaseIdRepository, new CustomBookmarkFormatParser()
+        {
+            @Override
+            public boolean isCustomBookmark( String string )
+            {
+                return true;
+            }
+
+            @Override
+            public List<Bookmark> parse( List<String> customBookmarks )
+            {
+                throw new IllegalArgumentException( "This bookmark is just wrong" );
+            }
+        } );
+
+        var metadata = metadata( List.of( "" ) );
+        var error = assertThrows( BookmarkParsingException.class, () -> parser.parseBookmarks( metadata ) );
+
+        assertThat( error.status() ).isEqualTo( InvalidBookmark );
+        assertTrue( error.causesFailureMessage() );
+        assertThat( error.getMessage() ).contains( "Parsing of supplied bookmarks failed with message: This bookmark is just wrong" );
+    }
+
     private static MapValue metadata( Object bookmarks )
     {
         return singletonMap( "bookmarks", bookmarks );

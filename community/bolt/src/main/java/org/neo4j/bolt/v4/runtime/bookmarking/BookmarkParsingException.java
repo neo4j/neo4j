@@ -42,6 +42,11 @@ class BookmarkParsingException extends BoltIOException
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark, message );
     }
 
+    static BookmarkParsingException newInvalidBookmarkError( String message, Throwable cause )
+    {
+        return new BookmarkParsingException( Status.Transaction.InvalidBookmark, message, cause );
+    }
+
     static BookmarkParsingException newInvalidSingleBookmarkError( Object bookmarkObject, String message, Throwable cause )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
