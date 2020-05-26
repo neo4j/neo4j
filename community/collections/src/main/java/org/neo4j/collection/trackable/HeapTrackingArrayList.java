@@ -56,7 +56,6 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
     private int size;
     private int modCount;
     private Object[] elementData;
-    private E[] items;
 
     /**
      * @return a new heap tracking array list with initial size 1
@@ -81,8 +80,8 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
     {
         int otherSize = other.size;
         this.size = otherSize;
-        this.items = (E[]) new Object[otherSize];
-        System.arraycopy( other.items, 0, this.items, 0, otherSize );
+        this.elementData = new Object[otherSize];
+        System.arraycopy( other.elementData, 0, this.elementData, 0, otherSize );
         this.memoryTracker = other.memoryTracker;
         this.trackedSize = shallowSizeOfObjectArray( otherSize );
         memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
@@ -96,7 +95,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
     }
 
     /*
-     * Compacts the items list of the original array
+     * Compacts the elementData list of the original array
      */
     @Override
     public HeapTrackingArrayList<E> clone()
@@ -366,7 +365,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
                 {
                     throw new NoSuchElementException();
                 }
-                return items[index++];
+                return elementData(index++);
             }
         };
     }
