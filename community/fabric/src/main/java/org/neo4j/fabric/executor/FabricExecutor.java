@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.GraphSelection;
@@ -88,10 +90,12 @@ public class FabricExecutor
     private final Log log;
     private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
+    private final Optional<NormalizedDatabaseName> fabricDatabaseName;
 
     public FabricExecutor( FabricConfig config, FabricPlanner planner, UseEvaluation useEvaluation, CatalogManager catalogManager,
                            LogProvider internalLog, FabricStatementLifecycles statementLifecycles, Executor fabricWorkerExecutor )
     {
+        this.fabricDatabaseName = config.getFabricDatabaseName();
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
@@ -363,7 +367,7 @@ public class FabricExecutor
                                         Flux<Record> input )
         {
 
-            ExecutionOptions executionOptions = plan.inFabricContext()
+            ExecutionOptions executionOptions = plan.inFabricContext() && !isFabricDatabase( location )
                                                 ? new ExecutionOptions( location.getGraphId() )
                                                 : new ExecutionOptions();
 
@@ -462,6 +466,13 @@ public class FabricExecutor
             {
                 return value;
             }
+        }
+
+        private boolean isFabricDatabase( Location.Local location )
+        {
+            return fabricDatabaseName
+                    .map( name -> name.name().equals( location.getDatabaseName() ) )
+                    .orElse( false );
         }
 
         private void updateSummary( Summary summary )

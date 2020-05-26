@@ -44,4 +44,9 @@ public class SourceTagging
     {
         return id | sourceTag;
     }
+
+    public static long extractSourceId( long id )
+    {
+        return id >> ID_MAX_BITS;
+    }
 }
