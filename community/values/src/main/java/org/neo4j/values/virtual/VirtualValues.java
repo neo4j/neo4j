@@ -65,6 +65,11 @@ public final class VirtualValues
         return new ListValue.JavaListListValue( values, payloadSize );
     }
 
+    public static ListValue fromList( List<AnyValue> values, long payloadSize )
+    {
+        return new ListValue.JavaListListValue( values, payloadSize );
+    }
+
     public static ListValue range( long start, long end, long step )
     {
         return new ListValue.IntegralRangeListValue( start, end, step );
