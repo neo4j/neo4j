@@ -52,7 +52,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               initFunction: (MapValue, KernelTransaction) => Boolean = (_, _) => true,
                                               finallyFunction: MapValue => Unit = _ => {},
                                               parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-                                              parameterConverter: MapValue => MapValue = p => p,
+                                              parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
                                               assertPrivilegeAction: Transaction => Unit = _ => {})
   extends ChainedExecutionPlan(source) {
 
@@ -71,9 +71,10 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
-      assertPrivilegeAction(tc.transaction())
+      val tx = tc.transaction()
+      assertPrivilegeAction(tx)
 
-      val updatedParams = safeMergeParameters(systemParams, params, parameterGenerator.apply(tc.transaction(), securityContext), parameterConverter)
+      val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       try {
         tc.kernelTransaction().dataWrite() // assert that we are allowed to write

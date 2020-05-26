@@ -76,14 +76,13 @@ abstract class ChainedExecutionPlan(source: Option[ExecutionPlan]) extends Execu
     }
   }
 
-  protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue, parameterConverter: MapValue => MapValue): MapValue = {
+  protected def safeMergeParameters(systemParams: MapValue, userParams: MapValue, initialParams: MapValue): MapValue = {
     val updatedSystemParams: MapValue = systemParams.updatedWith(initialParams)
     updatedSystemParams.foreach {
       case (_, Values.NO_VALUE) => // placeholders should be replaced
       case (key, _) => if (userParams.containsKey(key)) throw new InvalidArgumentException(s"The query contains a parameter with an illegal name: '$key'")
     }
-    val mergedParams = updatedSystemParams.updatedWith(userParams)
-    parameterConverter(mergedParams)
+    updatedSystemParams.updatedWith(userParams)
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName

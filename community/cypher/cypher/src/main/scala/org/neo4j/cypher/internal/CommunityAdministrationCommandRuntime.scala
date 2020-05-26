@@ -237,7 +237,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
         },
         parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().username()))),
-        parameterConverter = m => newPw.mapValueConverter(currentConverterBytes(m))
+        parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
       )
 
     // SHOW DATABASES
@@ -313,7 +313,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case SystemProcedureCall(_, call, _, checkCredentialsExpired) => (_, parameterMapping) =>
       val queryString = QueryRenderer.render(Seq(call))
 
-      def addParameterDefaults(params: MapValue) = {
+      def addParameterDefaults(transaction: Transaction, params: MapValue): MapValue = {
         val builder = new MapValueBuilder()
         parameterMapping.foreach((name, value) =>
           value.default.foreach(builder.add(name, _))
@@ -335,7 +335,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   private val accessibleDbsKey = internalKey("accessibleDbs")
 
   private def makeShowDatabasesQuery(symbols: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return],
-                                     isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, MapValue => MapValue) = {
+                                     isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, (Transaction, MapValue) => MapValue) = {
     val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault)
     val (extraFilter, params, paramConverter) = (isDefault, dbName) match {
       // show default database
@@ -343,10 +343,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       // show database name
       case (_, Some(p)) =>
         val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
-        val combinedConverter: MapValue => MapValue = m => {
+        val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
           val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
           val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
-          converter(m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
+          converter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
         }
         (s"AND d.name = $$`$key`", VirtualValues.map(Array(key), Array(value)), combinedConverter)
       // show all databases

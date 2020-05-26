@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
@@ -74,13 +75,13 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           value: Value,
                                           bytesKey: String,
                                           bytesValue: Value,
-                                          mapValueConverter: MapValue => MapValue)
+                                          mapValueConverter: (Transaction, MapValue) => MapValue)
 
   protected def getPasswordExpression(password: expressions.Expression): PasswordExpression =
     password match {
       case parameterPassword: ParameterFromSlot =>
         validateStringParameterType(parameterPassword)
-        def convertPasswordParameters(params: MapValue): MapValue = {
+        def convertPasswordParameters(transaction: Transaction, params: MapValue): MapValue = {
           val passwordParameter = parameterPassword.name
           val encodedPassword = getValidPasswordParameter(params, passwordParameter)
           validatePassword(encodedPassword)
@@ -143,7 +144,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   protected def getNameFields(key: String,
                               name: Either[String, AnyRef],
-                              valueMapper: String => String = s => s): (String, Value, MapValue => MapValue) = name match {
+                              valueMapper: String => String = s => s): (String, Value, (Transaction, MapValue) => MapValue) = name match {
     case Left(u) =>
       (s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
@@ -154,12 +155,12 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
   }
 
-  case object IdentityConverter extends Function[MapValue, MapValue] {
-    def apply(map: MapValue): MapValue = map
+  case object IdentityConverter extends ((Transaction, MapValue) => MapValue) {
+    def apply(transaction: Transaction, map: MapValue): MapValue = map
   }
 
-  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends Function[MapValue, MapValue] {
-    def apply(params: MapValue): MapValue = {
+  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends ((Transaction, MapValue) => MapValue) {
+    def apply(transaction: Transaction, params: MapValue): MapValue = {
       val newValue = valueMapper(params.get(parameter).asInstanceOf[TextValue].stringValue())
       params.updatedWith(rename(parameter), Values.utf8Value(newValue))
     }
@@ -175,7 +176,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val suspendedKey = internalKey("suspended")
     val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
     val credentials = getPasswordExpression(password)
-    val mapValueConverter: MapValue => MapValue = p => credentials.mapValueConverter(userNameConverter(p))
+    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameConverter(tx, p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
       s"""CREATE (u:User {name: $$`$userNameKey`, credentials: $$`${credentials.key}`,
@@ -234,7 +235,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       }
       val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameKey
       val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameValue
-      val mapper: MapValue => MapValue = m => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(userNameConverter(m))
+      val mapper: (Transaction, MapValue) => MapValue = (tx, m) => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameConverter(tx, m))
       UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
         s"$query RETURN oldCredentials",
         VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
