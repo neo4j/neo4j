@@ -139,7 +139,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override def rewrite(f: Expression => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f), operatorId = operatorId))
 
   private def propertyExistsExpander(name: String) = new KernelPredicate[Entity] {
     override def test(t: Entity): Boolean = {
