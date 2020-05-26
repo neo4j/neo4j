@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
 /**
@@ -60,6 +63,11 @@ public class SecurityContext implements LoginContext
     {
         assertCredentialsNotExpired();
         return true;
+    }
+
+    public Set<String> roles()
+    {
+        return Collections.emptySet();
     }
 
     @Override
