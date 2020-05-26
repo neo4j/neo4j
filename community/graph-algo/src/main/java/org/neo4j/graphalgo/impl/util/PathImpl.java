@@ -321,12 +321,10 @@ public final class PathImpl implements Path, Measurable
         }
     }
 
-    private final static long INSTANCE_SIZE = HeapEstimator.shallowSizeOfInstance( PathImpl.class );
-
     @Override
     public long estimatedHeapUsage()
     {
-        long estimate = INSTANCE_SIZE + HeapEstimator.shallowSizeOfObjectArray( path.length );
+        long estimate = HeapEstimator.shallowSizeOfInstance( PathImpl.class ) + HeapEstimator.shallowSizeOfObjectArray( path.length );
         int pathLength = path.length;
         estimate += pathLength * RelationshipEntity.SHALLOW_SIZE;
 

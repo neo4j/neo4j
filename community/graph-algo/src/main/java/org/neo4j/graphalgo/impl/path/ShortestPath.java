@@ -380,7 +380,12 @@ public class ShortestPath implements PathFinder<Path>
         private boolean stop;
         private final PathExpander expander;
 
-        DirectionData( Node startNode, MutableInt sharedFrozenDepth, MutableBoolean sharedStop, MutableInt sharedCurrentDepth, PathExpander expander, MemoryTracker memoryTracker )
+        DirectionData( Node startNode,
+                       MutableInt sharedFrozenDepth,
+                       MutableBoolean sharedStop,
+                       MutableInt sharedCurrentDepth,
+                       PathExpander expander,
+                       MemoryTracker memoryTracker )
         {
             this.startNode = startNode;
             this.visitedNodes = HeapTrackingCollections.newMap( memoryTracker );
