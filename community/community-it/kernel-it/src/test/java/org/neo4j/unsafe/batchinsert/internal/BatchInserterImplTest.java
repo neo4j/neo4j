@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -62,11 +61,11 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 public class BatchInserterImplTest
 {
+    private static final String PAGE_CACHE_SIZE = "280K";
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final ExpectedException expected = ExpectedException.none();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -79,7 +78,7 @@ public class BatchInserterImplTest
     public void testHonorsPassedInParams() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystemRule.get(),
-                stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
+                inserterConfig() );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();
@@ -239,8 +238,7 @@ public class BatchInserterImplTest
             DatabaseLayout layout = testDirectory.databaseLayout();
             File dir = layout.databaseDirectory();
             DefaultFileSystemAbstraction fsa = fileSystemRule.get();
-            BatchInserter inserter = BatchInserters.inserter(
-                    dir, fsa, stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
+            BatchInserter inserter = BatchInserters.inserter( dir, fsa, inserterConfig() );
             Label label = Label.label( "LABEL" );
             inserter.createDeferredSchemaIndex( label ).on( "prop" ).create();
             inserter.createNode( singletonMap( "prop", 1 ), label );
@@ -270,10 +268,16 @@ public class BatchInserterImplTest
         DatabaseLayout layout = testDirectory.databaseLayout();
         File dir = layout.databaseDirectory();
         DefaultFileSystemAbstraction fsa = fileSystemRule.get();
-        Map<String,String> config = new HashMap<>();
+        Map<String,String> config = inserterConfig();
         config.put( GraphDatabaseSettings.read_only.name(), "true" );
-        config.put( GraphDatabaseSettings.pagecache_memory.name(), "280K" );
         return BatchInserters.inserter( dir, fsa, config );
+    }
+
+    private Map<String,String> inserterConfig()
+    {
+        Map<String,String> config = new HashMap<>();
+        config.put( GraphDatabaseSettings.pagecache_memory.name(), PAGE_CACHE_SIZE );
+        return config;
     }
 
     private <E extends Exception> void assertThrows( Class<E> cls, ThrowingAction<E> action )
