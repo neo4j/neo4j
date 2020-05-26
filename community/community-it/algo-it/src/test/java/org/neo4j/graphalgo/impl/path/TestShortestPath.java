@@ -92,7 +92,8 @@ class TestShortestPath extends Neo4jAlgoTestCase
             }
             final CountingPathExpander countingPathExpander = new CountingPathExpander( forTypeAndDirection( relType, OUTGOING ) );
             var context = new BasicEvaluationContext( transaction, graphDb );
-            final ShortestPath shortestPath = new ShortestPath( context, Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE, EmptyMemoryTracker.INSTANCE );
+            final ShortestPath shortestPath =
+                    new ShortestPath( context, Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE, EmptyMemoryTracker.INSTANCE );
             try ( ResourceIterator<Node> allF = transaction.findNodes( F ) )
             {
                 while ( allF.hasNext() )
@@ -540,8 +541,10 @@ class TestShortestPath extends Neo4jAlgoTestCase
             final Node start = graph.getNode( transaction, "start" );
             final Node end = graph.getNode( transaction, "end" );
             var context = new BasicEvaluationContext( transaction, graphDb );
-            assertThat( new ShortestPath( context, 2, allTypesAndDirections(), 42, EmptyMemoryTracker.INSTANCE ).findSinglePath( start, end ).length() ).isEqualTo( 2 );
-            assertThat( new ShortestPath( context, 3, allTypesAndDirections(), 42, EmptyMemoryTracker.INSTANCE ).findSinglePath( start, end ).length() ).isEqualTo( 2 );
+            assertThat( new ShortestPath( context, 2, allTypesAndDirections(), 42, EmptyMemoryTracker.INSTANCE ).findSinglePath( start, end ).length() )
+                    .isEqualTo( 2 );
+            assertThat( new ShortestPath( context, 3, allTypesAndDirections(), 42, EmptyMemoryTracker.INSTANCE ).findSinglePath( start, end ).length() )
+                    .isEqualTo( 2 );
             transaction.commit();
         }
     }

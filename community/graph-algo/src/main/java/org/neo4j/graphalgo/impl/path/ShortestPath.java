@@ -144,7 +144,15 @@ public class ShortestPath implements PathFinder<Path>
         return internalPaths( start, end, false );
     }
 
-    public Iterator<Path> findAllPathsIterator( Node start, Node end )
+    /**
+     * Finds all shortest paths and returns an auto closeable iterator. This method should
+     * be called when a memoryTracker is used in order to keep track of the memory correctly.
+     *
+     * @param start start node
+     * @param end end node
+     * @return
+     */
+    public Iterator<Path> findAllPathsAutoCloseableIterator( Node start, Node end )
     {
         return new Iterator<>()
         {
@@ -340,7 +348,7 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    private Collection<Path> filterPaths( Collection<Path> paths )
+    private <T extends Path> Collection<T> filterPaths( Collection<T> paths )
     {
         if ( predicate == null )
         {
@@ -348,8 +356,8 @@ public class ShortestPath implements PathFinder<Path>
         }
         else
         {
-            Collection<Path> filteredPaths = new ArrayList<>();
-            for ( Path path : paths )
+            Collection<T> filteredPaths = new ArrayList<>();
+            for ( T path : paths )
             {
                 if ( predicate.test( path ) )
                 {
@@ -680,9 +688,9 @@ public class ShortestPath implements PathFinder<Path>
         Set<Path> paths = HeapTrackingCollections.newSet( memoryTracker );
         for ( Hit hit : depthHits )
         {
-            for ( Path path : hitToPaths( context, hit, start, end, stopAsap ) )
+            for ( PathImpl path : hitToPaths( context, hit, start, end, stopAsap ) )
             {
-                memoryTracker.allocateHeap( ((PathImpl) path).estimatedHeapUsage() );
+                memoryTracker.allocateHeap( path.estimatedHeapUsage() );
                 paths.add( path );
                 if ( paths.size() >= maxResultCount )
                 {
@@ -693,9 +701,9 @@ public class ShortestPath implements PathFinder<Path>
         return paths;
     }
 
-    private static Collection<Path> hitToPaths( EvaluationContext context, Hit hit, Node start, Node end, boolean stopAsap )
+    private static Collection<PathImpl> hitToPaths( EvaluationContext context, Hit hit, Node start, Node end, boolean stopAsap )
     {
-        Collection<Path> paths = new ArrayList<>();
+        Collection<PathImpl> paths = new ArrayList<>();
         Iterable<List<Relationship>> startPaths = getPaths( context, hit.connectingNode, hit.start, stopAsap );
         Iterable<List<Relationship>> endPaths = getPaths( context, hit.connectingNode, hit.end, stopAsap );
         for ( List<Relationship> startPath : startPaths )
@@ -704,7 +712,7 @@ public class ShortestPath implements PathFinder<Path>
             for ( List<Relationship> endPath : endPaths )
             {
                 PathImpl.Builder endBuilder = toBuilder( end, endPath );
-                PathImpl path = (PathImpl) startBuilder.build( endBuilder );
+                PathImpl path = startBuilder.build( endBuilder );
                 paths.add( path );
             }
         }

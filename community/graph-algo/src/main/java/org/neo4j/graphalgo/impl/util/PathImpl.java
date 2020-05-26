@@ -84,7 +84,7 @@ public final class PathImpl implements Path, Measurable
             return new Builder( this, relationship );
         }
 
-        public Path build( Builder other )
+        public PathImpl build( Builder other )
         {
             return new PathImpl( this, other );
         }

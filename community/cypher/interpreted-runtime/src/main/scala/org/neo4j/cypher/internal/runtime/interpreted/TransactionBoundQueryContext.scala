@@ -872,7 +872,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters, memoryTracker)
 
-    pathFinder.findAllPathsIterator(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)).asScala
+    pathFinder.findAllPathsAutoCloseableIterator(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right)).asScala
   }
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
