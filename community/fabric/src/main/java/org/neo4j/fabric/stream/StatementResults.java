@@ -293,7 +293,13 @@ public final class StatementResults
                         // which can have a disastrous effect on the RX pipeline
                         if ( !errorReceived )
                         {
-                            queryExecution.await();
+                            var hasMore = queryExecution.await();
+                            // Workaround for some queryExecution:s where there are no results but onResultCompleted is never called.
+                            if ( !hasMore )
+                            {
+                                cachedCompleted = true;
+                                maybeSendCachedEvents();
+                            }
                         }
                     }
                     catch ( Exception e )
