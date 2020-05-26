@@ -65,6 +65,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
  * from both ends and goes one relationship at the time, alternating side
@@ -87,6 +89,7 @@ public class ShortestPath implements PathFinder<Path>
     private final EvaluationContext context;
     private DataMonitor dataMonitor;
     private MemoryTracker memoryTracker;
+    private static final long DIRECTION_DATA_SHALLOW_SIZE = shallowSizeOfInstance( DirectionData.class );
 
     public interface ShortestPathPredicate
     {
@@ -390,7 +393,7 @@ public class ShortestPath implements PathFinder<Path>
             this.startNode = startNode;
             this.visitedNodes = HeapTrackingCollections.newMap( memoryTracker );
             this.nextNodes = HeapTrackingArrayList.newArrayList( memoryTracker);
-            memoryTracker.allocateHeap( LevelData.SHALLOW_SIZE + NodeEntity.SHALLOW_SIZE );
+            memoryTracker.allocateHeap( LevelData.SHALLOW_SIZE + NodeEntity.SHALLOW_SIZE + DIRECTION_DATA_SHALLOW_SIZE );
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
             this.sharedFrozenDepth = sharedFrozenDepth;
@@ -438,6 +441,7 @@ public class ShortestPath implements PathFinder<Path>
         @Override
         public void close()
         {
+            nextNodes.close();
             visitedNodes.close();
             closeRelationshipsIterator();
         }
@@ -462,6 +466,8 @@ public class ShortestPath implements PathFinder<Path>
                     LevelData levelData = this.visitedNodes.get( result );
                     if ( levelData == null )
                     {
+                        // Instead of passing the memoryTracker to LevelData, which would require 2 calls to allocate memory,
+                        // we make a single call to allocate memory here
                         memoryTracker.allocateHeap( LevelData.SHALLOW_SIZE + NodeEntity.SHALLOW_SIZE + HeapEstimator.sizeOfLongArray( 1 ) );
                         levelData = new LevelData( nextRel, this.currentDepth );
                         this.visitedNodes.put( result, levelData );
