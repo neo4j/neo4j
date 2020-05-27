@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Direction.BOTH
 import org.neo4j.graphdb.Direction.INCOMING
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -836,5 +837,48 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       } yield row
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should not return nulls when some rows match the predicate") {
+    // given
+    val nodesAndRels = given {
+      val rels = Seq("REL", "ZERO_REL", "ONE_REL").map(RelationshipType.withName)
+      val labels = Seq("Start", "End").map(label)
+
+      for (idx <- 0 until sizeHint) yield {
+        val Seq(start, end) = labels.map(l => tx.createNode(l))
+
+        start.setProperty("idx", idx)
+
+        val Seq(_, zeroRel, oneRel) = rels.map(start.createRelationshipTo(end, _))
+
+        zeroRel.setProperty("n", 0)
+        oneRel.setProperty("n", 1)
+
+        (start, end, zeroRel, oneRel, idx)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .optionalExpandInto("(x)-[r]-(y)", Some("r.n = x.idx % 2"))
+      .expandAll("(x)-[:REL]->(y)")
+      .nodeByLabelScan("x", "Start", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      (start, end, zeroRel, oneRel, idx) <- nodesAndRels
+    } yield {
+      if (idx % 2 == 0)
+        Array[Any](start, end, zeroRel)
+      else
+        Array[Any](start, end, oneRel)
+    }
+
+    runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 }
