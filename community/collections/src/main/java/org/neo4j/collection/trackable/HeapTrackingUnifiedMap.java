@@ -67,10 +67,12 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
     protected void rehash( int newCapacity )
     {
         super.rehash( newCapacity );
-        // Add an estimated heap usage of the arrays for the chains of colliding buckets
-        // Assume an average chain length of 8 key-value pairs
-        // (Based on experiments this seems to be a fair trade-off between underestimation just before rehash and overestimation just after rehash,
-        //  with a bias toward more overestimation after rehash (e.g. ~3% under --> ~8% over)
+        // Add an estimated heap usage of the arrays for the chains of colliding buckets, which grow in multiples of 4 (2 key-value pairs).
+        // Add a fixed cost for each chain, which amounts to an average chain length of 8 key-value pairs.
+        // In actuality chains are usually much shorter, but the number of collisions is also at it lowest just after rehash and can then grow
+        // substantially before the next rehash (approximately a factor of 3).
+        // So based on experiments this heuristic seems to produce a fair trade-off between underestimation just before rehash and overestimation
+        // just after rehash, with a bias toward more overestimation after rehash (e.g. ~3% under --> ~8% over)
         int nChains = getCollidingBuckets();
         long estimatedHeapUsageForChains = nChains * arrayHeapSize( 16 );
         memoryTracker.allocateHeap( estimatedHeapUsageForChains );

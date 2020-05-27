@@ -244,10 +244,8 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
             nextIndex += 2;
             if ( nextIndex >= nextChunk.cursor )
             {
-                //var chunkToRelease = chunk;
                 nextChunk = nextChunk.next;
                 nextIndex = 0;
-                //chunkToRelease.close();
             }
 
             // This is now a view of the current entry

@@ -150,13 +150,16 @@ class HeapTrackingOrderedAppendMapTest
         // then add a thousand and it changes to an overestimation to 6-8% after rehash.
         // This is because we only estimate the memory used by the chains for collisions, based on an assumption of the
         // average length of chains of 8. (See table below for more details)
+        //     int nEntries = (int)(((double)(1 << 20)) * 0.75d);     // Just before rehash
+        //     int nEntries = (int)(((double)(1 << 20)) * 0.75d) + 1; // Just after rehash
+
         int nEntries = 49000;
         for ( int i = 0; i < nEntries; i++ )
         {
             long keyLong = random.nextLong();
             var key = Values.longValue( keyLong );
             var value = Values.longValue( i );
-            table.getIfAbsentPutWithMemoryTracker2( key, (k, scopedMemoryTracker) -> {
+            table.getIfAbsentPutWithMemoryTracker2( key, ( k, scopedMemoryTracker ) -> {
                 scopedMemoryTracker.allocateHeap( k.estimatedHeapUsage() + value.estimatedHeapUsage() );
                 return value;
             } );
@@ -176,7 +179,7 @@ class HeapTrackingOrderedAppendMapTest
         assertTrue( actualTableSize <= actualLhmSize, "Used more memory than a LinkedHashMap." );
         assertTrue( Math.abs( actualTableSize - memoryTracker.estimatedHeapMemory() ) < actualTableSize * 0.1,
                 String.format( "Mis-estimation of %s%% exceeds 10%%. Actual heap usage=%s. Estimated heap usage=%s.",
-                        Math.round( (((double) Math.abs( actualTableSize - memoryTracker.estimatedHeapMemory() )) / ((double) actualTableSize)) * 100.0f ),
+                        Math.round( (((double) Math.abs( actualTableSize - memoryTracker.estimatedHeapMemory() )) / ((double) actualTableSize)) * 100.0d ),
                         actualTableSize, memoryTracker.estimatedHeapMemory() ) );
 
         // Validate contents (assumes LinkedHashMap is correct)
@@ -202,12 +205,95 @@ class HeapTrackingOrderedAppendMapTest
     //   99000: HeapTrackingOrderedMap used 8163280 bytes (estimation 8357696 is 2% over)
     //
     // Assuming average length of chains of 8 key-value pairs:
-    //    6000: HeapTrackingOrderedMap used  468696 bytes (estimation  454488 is 3% under)
-    //    7000: HeapTrackingOrderedMap used  571528 bytes (estimation  605544 is 6% over)
-    //   49000: HeapTrackingOrderedMap used 3672248 bytes (estimation 3558040 is 3% under)
-    //   50000: HeapTrackingOrderedMap used 4126160 bytes (estimation 4450416 is 8% over)
-    //   98000: HeapTrackingOrderedMap used 7350936 bytes (estimation 7115304 is 3% under)
-    //   99000: HeapTrackingOrderedMap used 8163280 bytes (estimation 8817088 is 8% over)
+    //    6000: HeapTrackingOrderedMap used  468696 bytes (estimation  454488 is 3% under) colliding buckets =  1405
+    //    7000: HeapTrackingOrderedMap used  571528 bytes (estimation  605544 is 6% over)  colliding buckets =  1158
+    //   49000: HeapTrackingOrderedMap used 3672248 bytes (estimation 3558040 is 3% under) colliding buckets = 11237
+    //   50000: HeapTrackingOrderedMap used 4126160 bytes (estimation 4450416 is 8% over)  colliding buckets =  7416
+    //   98000: HeapTrackingOrderedMap used 7350936 bytes (estimation 7115304 is 3% under) colliding buckets = 22698
+    //   99000: HeapTrackingOrderedMap used 8163280 bytes (estimation 8817088 is 8% over)  colliding buckets = 14538
     //
     // (INITIAL_CHUNK_SIZE = 256, MAX_CHUNK_SIZE = 8192)
+
+    //--------------------------------------------------------------------------------------------
+    // Collisions for different types of value sequences:
+    // This is the result of an interaction between the LongValue hash code and the UnifiedMap hash function (index())
+    // LongValue hash code is computed by (value ^ (value >>> 32))
+    // (i is the sequence from 0 until nEntries)
+    // values            nEntries Collisions
+    // random(seed=1337) 98000    22698
+    // random(seed=42)   98000    22595
+    // i                 98000        0
+    // i*2               98000    32464
+    // i*3               98000    19663
+    // i*4               98000    32768
+    // i*8               98000        0
+    // i*16              98000        0
+    // i*32              98000        0
+
+    //--------------------------------------------------------------------------------------------
+    // Chain lengths just before rehash:
+    // random(seed=1337) 49000 entries gives 11237 colliding buckets (23%)
+    //  chain length 4 count: 8608
+    //  chain length 8 count: 2547
+    //  chain length 12 count: 80
+    //  chain length 16 count: 2
+    //  chain length 20 count: 0
+    //
+    // random(seed=1337) 98000 entries gives 22698 colliding buckets (23%)
+    //  chain length 4 count: 17502
+    //  chain length 8 count: 5059
+    //  chain length 12 count: 135
+    //  chain length 16 count: 2
+    //  chain length 20 count: 0
+    //
+    // random(seed=1337) 786432 entries gives 181837 colliding buckets (23%) (nEntries = (int)(((double)(1 << 20)) * 0.75d))
+    //  chain length 4 count: 139601
+    //  chain length 8 count: 41200
+    //  chain length 12 count: 1020
+    //  chain length 16 count: 16
+    //  chain length 20 count: 0
+    //
+    // Chains lengths just after rehash:
+    // random(seed=1337) 50000 entries gives 7416 colliding buckets (15%)
+    //  chain length 4 count: 6520
+    //  chain length 8 count: 886
+    //  chain length 12 count: 10
+    //  chain length 16 count: 0
+    //
+    // random(seed=1337) 786433 entries gives 115236 colliding buckets (15%) (nEntries = (int)(((double)(1 << 20)) * 0.75d) + 1)
+    //  chain length 4 count: 101463
+    //  chain length 8 count: 13671
+    //  chain length 12 count: 101
+    //  chain length 16 count: 1
+    //  chain length 20 count: 0
+    //
+    // Using this method in HeapTrackingUnifiedMap:
+    //    public int[] getCollidingBucketStatistics()
+    //    {
+    //        int[] histogram = new int[33];
+    //        for (int i = 0; i < this.table.length; i += 2)
+    //        {
+    //            if (this.table[i] == CHAINED_KEY)
+    //            {
+    //                Object[] chain = (Object[]) this.table[i+1];
+    //                int chainLength = chain.length;
+    //                if (chainLength <= 32)
+    //                {
+    //                    histogram[chainLength]++;
+    //                }
+    //            }
+    //        }
+    //        return histogram;
+    //    }
+    //
+    // And print with:
+    // int collidingBuckets = table.getCollidingBuckets();
+    // System.out.println( String.format( "// %s entries gives %s colliding buckets (%s%%)", nEntries, collidingBuckets,
+    //     Math.round(100.0d * ((double)collidingBuckets) / ((double)nEntries)) ) );
+    // int[] histogram = table.getCollidingBucketStatistics();
+    // for ( int i = 4; i < histogram.length; i += 4 )
+    // {
+    //     System.out.println( String.format( "//  chain length %s count: %s", i, histogram[i] ) );
+    // }
+
 }
