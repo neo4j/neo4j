@@ -29,7 +29,8 @@ public class SourceTagging
         if ( sourceId < 0 || TAG_MAX_VALUE < sourceId )
         {
             throw new IllegalArgumentException( "Source ids must be in range 0-16383. Got: " + sourceId );
-        } else
+        }
+        else
         {
             return shiftToMsb( sourceId );
         }

@@ -151,6 +151,6 @@ public final class StatementResults
     @FunctionalInterface
     public interface SubscribableExecution
     {
-        QueryExecution subscribe(QuerySubscriber subscriber);
+        QueryExecution subscribe( QuerySubscriber subscriber );
     }
 }
