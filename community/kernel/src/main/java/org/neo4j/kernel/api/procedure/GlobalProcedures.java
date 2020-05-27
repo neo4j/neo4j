@@ -88,4 +88,7 @@ public interface GlobalProcedures
     AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException;
 
     UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException;
+
+    <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe );
+
 }
