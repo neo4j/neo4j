@@ -33,6 +33,7 @@ import org.neo4j.dbms.database.DefaultSystemGraphComponent
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
@@ -229,6 +230,174 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       // THEN
     } should have message
       "This is an administration command and it should be executed against the system database: SHOW DEFAULT DATABASE"
+  }
+
+  test("should show database with yield") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASE $db YIELD name, address, role", Map("db" -> DEFAULT_DATABASE_NAME))
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j",
+      "address" -> "localhost:7687",
+      "role" -> "standalone")))
+  }
+
+  test("should show database with yield and where") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASE $db YIELD name, address, role WHERE name = 'neo4j'", Map("db" -> DEFAULT_DATABASE_NAME))
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j",
+      "address" -> "localhost:7687",
+      "role" -> "standalone")))
+  }
+
+  test("should show database with yield and where 2") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name, address, role WHERE name = 'neo4j'")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j",
+      "address" -> "localhost:7687",
+      "role" -> "standalone")))
+  }
+
+  test("should show database with yield and skip") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name ORDER BY name SKIP 1")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "system")))
+  }
+
+  test("should show database with yield and limit") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name ORDER BY name LIMIT 1")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j")))
+  }
+
+  test("should show database with yield and order by asc") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name ORDER BY name ASC")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j"),Map("name" -> "system")))
+  }
+
+  test("should show database with yield and order by desc") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name ORDER BY name DESC")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "system"),Map("name" -> "neo4j")))
+  }
+
+  test("should not show database with invalid yield") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DATABASE $db YIELD foo, bar, baz", Map("db" -> DEFAULT_DATABASE_NAME))
+    }
+
+    // THEN
+    exception.getMessage should startWith("Variable `foo` not defined")
+    exception.getMessage should include("(line 1, column 25 (offset: 24))")
+
+  }
+
+  test("should not show database with invalid where") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DATABASE $db WHERE foo = 'bar'", Map("db" -> DEFAULT_DATABASE_NAME))
+    }
+
+    // THEN
+    exception.getMessage should startWith("Variable `foo` not defined")
+    exception.getMessage should include("(line 1, column 25 (offset: 24))")
+  }
+
+  test("should not show database with yield and invalid where") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DATABASE $db YIELD name, address, role WHERE foo = 'bar'", Map("db" -> DEFAULT_DATABASE_NAME))
+    }
+
+    // THEN
+    exception.getMessage should startWith("Variable `foo` not defined")
+    exception.getMessage should include("(line 1, column 51 (offset: 50))")
+  }
+
+  test("should not show database with yield and invalid skip") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DATABASES YIELD name ORDER BY name SKIP -1")
+    }
+
+    // THEN
+    exception.getMessage should startWith("Invalid input. '-1' is not a valid value. Must be a non-negative integer")
+    exception.getMessage should include("(line 1, column 46 (offset: 45))")
+  }
+
+  test("should not show database with yield and invalid limit") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DATABASES YIELD name ORDER BY name LIMIT -1")
+    }
+
+    // THEN
+    exception.getMessage should startWith("Invalid input. '-1' is not a valid value. Must be a non-negative integer")
+    exception.getMessage should include("(line 1, column 47 (offset: 46))")
+  }
+
+  test("should not show database with invalid order by") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("SHOW DEFAULT DATABASE YIELD name ORDER BY bar")
+    }
+
+    // THEN
+    exception.getMessage should startWith("Variable `bar` not defined")
+    exception.getMessage should include("(line 1, column 43 (offset: 42))")
   }
 
   // Test for non-valid community commands

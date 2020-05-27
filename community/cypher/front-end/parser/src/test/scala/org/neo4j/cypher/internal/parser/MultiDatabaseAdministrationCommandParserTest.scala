@@ -19,29 +19,64 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.Where
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   // SHOW DATABASE
 
-  test("SHOW DATABASE foo") {
-    yields(ast.ShowDatabase(literal("foo")))
-  }
+  Seq(
+    ("DATABASES", ast.ShowDatabases.apply _),
+    ("DEFAULT DATABASE", ast.ShowDefaultDatabase.apply _),
+    ("DATABASE $db",  ast.ShowDatabase.apply(param("db"), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
+    ("DATABASE neo4j",  ast.ShowDatabase.apply(literal("neo4j"), _: Option[Return], _: Option[Where], _: Option[Return]) _  )
+  ).foreach{ case (dbType, privilege) =>
+    test(s"SHOW $dbType") {
+      yields(privilege(None, None, None))
+    }
 
-  test("SHOW DATABASE $foo") {
-    yields(ast.ShowDatabase(param("foo")))
+    test(s"SHOW $dbType WHERE access = 'GRANTED'") {
+      yields(privilege(None, Some(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _), None))
+    }
+
+    test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
+      val accessPredicate = equals(varFor("access"), literalString("GRANTED"))
+      val matchPredicate = equals(varFor("action"), literalString("match"))
+      yields(privilege(None, Some(ast.Where(and(accessPredicate, matchPredicate)) _), None))
+    }
+
+    test(s"SHOW $dbType YIELD access ORDER BY access") {
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
+      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
+      yields(privilege( Some(columns), None, None))
+    }
+
+    test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
+      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
+      val where = ast.Where(equals(varFor("access"), literalString("none"))) _
+      yields(privilege(Some(columns), Some(where), None))
+    }
+
+    test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
+      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
+        Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _)) _
+      val where = ast.Where(equals(varFor("access"), literalString("none"))) _
+      yields(privilege(Some(columns), Some(where), None))
+    }
+
+    test(s"SHOW $dbType YIELD access SKIP -1") {
+      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
+        Some(ast.Skip(literalInt(-1)) _), None) _
+      yields(privilege(Some(columns), None, None))
+    }
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(literal("foo.bar")))
-  }
-
-  test("SHOW DATABASES") {
-    yields(ast.ShowDatabases())
-  }
-
-  test("SHOW DEFAULT DATABASE") {
-    yields(ast.ShowDefaultDatabase())
+    yields(ast.ShowDatabase(literal("foo.bar"), None, None, None))
   }
 
   test("SHOW DATABASE foo.bar") {

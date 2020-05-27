@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -39,6 +40,30 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH n AS n
         |RETURN n AS n
       """.stripMargin)
+  }
+
+  test("ensure variables are aliased for SHOW PRIVILEGES") {
+    assertRewrite(
+      "SHOW PRIVILEGES YIELD role",
+      "SHOW PRIVILEGES YIELD role AS role")
+  }
+
+  test("ensure variables are aliased for SHOW USER") {
+    assertRewrite(
+      "SHOW USERS YIELD user",
+      "SHOW USERS YIELD user AS user")
+  }
+
+  test("ensure variables are aliased for SHOW ROLES") {
+    assertRewrite(
+      "SHOW ROLES YIELD role",
+      "SHOW ROLES YIELD role AS role")
+  }
+
+  test("ensure variables are aliased for SHOW DATABASES") {
+    assertRewrite(
+      "SHOW DATABASES YIELD name",
+      "SHOW DATABASES YIELD name AS name")
   }
 
   test("WITH: attach ORDER BY expressions to existing aliases") {
@@ -780,7 +805,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean)
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
     assert(checkResult.errors === Seq())
   }
 
@@ -789,7 +814,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean)
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
     semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")

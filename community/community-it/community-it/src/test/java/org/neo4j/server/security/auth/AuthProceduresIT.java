@@ -167,12 +167,12 @@ public class AuthProceduresIT
         assertSuccess( admin, "SHOW USERS", r -> {
             Map<String,Object> expectedNeo4j = new HashMap<>();
             expectedNeo4j.put( "user", "neo4j" );
-            expectedNeo4j.put( "role", null );
+            expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
-            expectedAndres.put( "role", null );
+            expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", true );
             expectedAndres.put( "suspended", null );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
@@ -187,12 +187,12 @@ public class AuthProceduresIT
         assertSuccess( admin, "SHOW USERS", r -> {
             Map<String,Object> expectedNeo4j = new HashMap<>();
             expectedNeo4j.put( "user", "neo4j" );
-            expectedNeo4j.put( "role", null );
+            expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
-            expectedAndres.put( "role", null );
+            expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", false );
             expectedAndres.put( "suspended", null );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
@@ -207,12 +207,12 @@ public class AuthProceduresIT
         assertSuccess( admin, "SHOW USERS", r -> {
             Map<String,Object> expectedNeo4j = new HashMap<>();
             expectedNeo4j.put( "user", "neo4j" );
-            expectedNeo4j.put( "role", null );
+            expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
-            expectedAndres.put( "role", null );
+            expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", true );
             expectedAndres.put( "suspended", null );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
@@ -264,7 +264,7 @@ public class AuthProceduresIT
         assertSuccess( admin, "SHOW USERS", r -> {
             Map<String,Object> expectedNeo4j = new HashMap<>();
             expectedNeo4j.put( "user", "neo4j" );
-            expectedNeo4j.put( "role", null );
+            expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );

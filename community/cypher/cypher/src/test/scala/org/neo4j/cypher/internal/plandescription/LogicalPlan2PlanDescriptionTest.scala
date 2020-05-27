@@ -1026,7 +1026,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Admin") {
-    assertGood(attach(ShowUsers(privLhsLP), 1.0),
+    assertGood(attach(ShowUsers(privLhsLP, List(), None, None, None), 1.0),
       planDescription(id, "ShowUsers", SingleChild(privLhsPD), Seq(), Set.empty))
 
     assertGood(attach(CreateUser(privLhsLP, util.Left("name"), varFor("password"), requirePasswordChange = false, suspended = None), 1.0),
@@ -1038,7 +1038,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(AlterUser(privLhsLP, util.Left("name"), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0),
       planDescription(id, "AlterUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
 
-    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true), 1.0),
+    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None, None), 1.0),
       planDescription(id, "ShowRoles", SingleChild(privLhsPD), Seq.empty, Set.empty))
 
     assertGood(attach(DropRole(privLhsLP, util.Left("role")), 1.0),
@@ -1107,7 +1107,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeMatch(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeMatch(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolePrivileges(util.Left("role1"))(pos)), 1.0),
+    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolePrivileges(util.Left("role1"))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),

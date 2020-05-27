@@ -235,11 +235,23 @@ case class Prettifier(
     useString + commandString
   }
 
-  def asString(adminCommand: AdministrationCommand): String = {
+  def asString(adminCommand: AdministrationCommand): String =  {
     val useString = asString(adminCommand.useGraph)
+
+    def showClausesAsString(yields: Option[Return],
+                      where: Option[Where],
+                      returns: Option[Return]): (String, String, String) = {
+      val ind: IndentingQueryPrettifier = base.indented()
+      val w = where.map(ind.asString).map("\n" + _).getOrElse("")
+      val y = yields.map(ind.asString).map("\n" + _.replace("RETURN", "YIELD")).getOrElse("")
+      val r = returns.map(ind.asString).map("\n" + _).getOrElse("")
+      (w, y, r)
+    }
     val commandString = adminCommand match {
-      case x: ShowUsers =>
-        s"${x.name}"
+
+      case x @ ShowUsers(yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"${x.name}$y$w$r"
 
       case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val userNameString = Prettifier.escapeName(userName)
@@ -271,8 +283,9 @@ case class Prettifier(
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
-      case x @ ShowRoles(withUsers, _) =>
-        s"${x.name}${if (withUsers) " WITH USERS" else ""}"
+      case x @ ShowRoles(withUsers, _, yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$w$r"
 
       case x @ CreateRole(roleName, None, ifExistsDo) =>
         ifExistsDo match {
@@ -383,17 +396,21 @@ case class Prettifier(
         val (resourceName, scope) = Prettifier.extractScope(resource, dbScope, qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case ShowPrivileges(scope) =>
-        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
+      case ShowPrivileges(scope, yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$w$r"
 
-      case x: ShowDatabases =>
-        s"${x.name}"
+      case x @ ShowDatabases(yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"${x.name}$y$w$r"
 
-      case x: ShowDefaultDatabase =>
-        s"${x.name}"
+      case x @ ShowDefaultDatabase(yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"${x.name}$y$w$r"
 
-      case x @ ShowDatabase(dbName) =>
-        s"${x.name} ${Prettifier.escapeName(dbName)}"
+      case x @ ShowDatabase(dbName, yields, where, returns) =>
+        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+        s"${x.name} ${Prettifier.escapeName(dbName)}$y$w$r"
 
       case x @ CreateDatabase(dbName, ifExistsDo) =>
         ifExistsDo match {
@@ -441,7 +458,7 @@ case class Prettifier(
     use.filter(_ => useInCommands).map(u => base.dispatch(u) + NL).getOrElse("")
   }
 
-  private case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
+  case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
     def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)
     val INDENT: String = "  " * indentLevel
 

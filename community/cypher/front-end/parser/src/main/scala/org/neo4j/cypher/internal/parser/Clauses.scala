@@ -126,7 +126,7 @@ trait Clauses extends Parser
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  private def Where: Rule1[ast.Where] = rule("WHERE") {
+  def Where: Rule1[ast.Where] = rule("WHERE") {
     group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }
 
@@ -165,7 +165,7 @@ trait Clauses extends Parser
       optional(Limit)
   }
 
-  private def ReturnBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  def ReturnBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
@@ -182,7 +182,23 @@ trait Clauses extends Parser
       | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
-  private def Order: Rule1[ast.OrderBy] = rule("ORDER") {
+  def YieldBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+    YieldItems ~~
+      optional(Order) ~~
+      optional(group(keyword("SKIP") ~~ SignedIntegerLiteral) ~~>> (ast.Skip(_))) ~~
+      optional(group(keyword("LIMIT") ~~ SignedIntegerLiteral) ~~>> (ast.Limit(_)))
+  }
+
+  private def YieldItems: Rule1[ast.ReturnItems] = rule("'*', an expression")(
+    oneOrMore(YieldItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
+  )
+
+  private def YieldItem: Rule1[ast.ReturnItem] = rule(
+    group(Variable ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
+      | group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
+  )
+
+  def Order: Rule1[ast.OrderBy] = rule("ORDER") {
     group(keyword("ORDER BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~~>> (ast.OrderBy(_))
   }
 

@@ -132,7 +132,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
-      case _: ShowUsers => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction)))
+      case su @ ShowUsers(yields, where, returns) => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction), su.returnColumnNames, yields, where, returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
@@ -173,12 +173,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES
-      case ShowRoles(false, showAll) =>
-        Some(plans.ShowRoles(plans.AssertDbmsAdmin(ShowRoleAction), withUsers = false, showAll = showAll))
+      case sr @ ShowRoles(false, showAll, yields, where, returns) =>
+        Some(plans.ShowRoles(plans.AssertDbmsAdmin(ShowRoleAction), withUsers = false, showAll = showAll, sr.returnColumnNames, yields, where, returns ))
 
       // SHOW [ ALL | POPULATED ] ROLES WITH USERS
-      case ShowRoles(true, showAll) =>
-        Some(plans.ShowRoles(plans.AssertDbmsAdmin(Seq(ShowRoleAction, ShowUserAction)), withUsers = true, showAll = showAll))
+      case sr @ ShowRoles(true, showAll, yields, where, returns) =>
+        Some(plans.ShowRoles(plans.AssertDbmsAdmin(Seq(ShowRoleAction, ShowUserAction)), withUsers = true, showAll = showAll,
+          sr.returnColumnNames, yields, where, returns ))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
       case c@CreateRole(roleName, None, ifExistsDo) =>
@@ -385,26 +386,26 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW USER user PRIVILEGES
-      case ShowPrivileges(scope: ShowUserPrivileges) =>
+      case sp @ ShowPrivileges(scope: ShowUserPrivileges, where, yields, returns) =>
         val user = scope.user
         val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
-        Some(plans.ShowPrivileges(source, scope))
+        Some(plans.ShowPrivileges(source, scope, sp.returnColumnNames, where, yields, returns))
 
       // SHOW [ALL | ROLE role] PRIVILEGES
-      case ShowPrivileges(scope) =>
-        Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope))
+      case sp @ ShowPrivileges(scope, where, yields, returns) =>
+        Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, sp.returnColumnNames, where, yields, returns))
 
       // SHOW DATABASES
-      case _: ShowDatabases =>
-        Some(plans.ShowDatabases())
+      case sd @ ShowDatabases(yields, where, returns) =>
+        Some(plans.ShowDatabases(sd.returnColumnNames, yields, where, returns))
 
       // SHOW DEFAULT DATABASE
-      case _: ShowDefaultDatabase =>
-        Some(plans.ShowDefaultDatabase())
+      case sd @ ShowDefaultDatabase(yields, where, returns) =>
+        Some(plans.ShowDefaultDatabase(sd.returnColumnNames, yields, where, returns))
 
       // SHOW DATABASE foo
-      case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(dbName))
+      case sd @ ShowDatabase(dbName, yields, where, returns) =>
+        Some(plans.ShowDatabase(dbName, sd.returnColumnNames, yields, where, returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>

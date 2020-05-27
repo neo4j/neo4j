@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AlterUser
@@ -133,10 +135,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SHOW USERS
-    case ShowUsers(source) => (context, parameterMapping) =>
+    case ShowUsers(source, symbols, yields, where, returns) => (context, parameterMapping) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
-        """MATCH (u:User)
-          |RETURN u.name as user, null as role, u.passwordChangeRequired AS passwordChangeRequired, null as suspended""".stripMargin,
+        s"""MATCH (u:User)
+          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
+          |${AdministrationShowCommandUtils.generateWhereClause(where)}
+          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
+          |""".stripMargin,
         VirtualValues.EMPTY_MAP,
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
       )
@@ -236,18 +241,18 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SHOW DATABASES
-    case ShowDatabases() => (_, _) =>
-      val (query, _, generator, _) = makeShowDatabasesQuery()
+    case ShowDatabases(symbols, yields, where, returns) => (_, _) =>
+      val (query, _, generator, _) = makeShowDatabasesQuery(symbols, yields, where, returns)
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DEFAULT DATABASE
-    case ShowDefaultDatabase() => (_, _) =>
-      val (query, _, generator, _) = makeShowDatabasesQuery(isDefault = true)
+    case ShowDefaultDatabase(symbols, yields, where, returns) => (_, _) =>
+      val (query, _, generator, _) = makeShowDatabasesQuery(symbols, yields, where, returns,isDefault = true)
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
 
     // SHOW DATABASE foo
-    case ShowDatabase(databaseName) => (_, _) =>
-      val (query, params, generator, converter) = makeShowDatabasesQuery(dbName = Some(databaseName))
+    case ShowDatabase(databaseName,symbols, yields, where, returns) => (_, _) =>
+      val (query, params, generator, converter) = makeShowDatabasesQuery(symbols, yields, where, returns, dbName = Some(databaseName))
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query, params, parameterGenerator = generator, parameterConverter = converter)
 
     case DoNothingIfNotExists(source, label, name, valueMapper) => (context, parameterMapping) =>
@@ -329,8 +334,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   private val accessibleDbsKey = internalKey("accessibleDbs")
 
-  private def makeShowDatabasesQuery(isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, MapValue => MapValue) = {
-    val defaultColumn = if (isDefault) "" else ", d.default as default"
+  private def makeShowDatabasesQuery(symbols: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return],
+                                     isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, MapValue => MapValue) = {
     val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault)
     val (extraFilter, params, paramConverter) = (isDefault, dbName) match {
       // show default database
@@ -347,13 +352,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       // show all databases
       case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
     }
+    val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
+    val filtering = AdministrationShowCommandUtils.generateWhereClause(where)
+
     val query = s"""
        |MATCH (d: Database)
        |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
        |CALL dbms.database.state(d.name) yield status, error, address, role
-       |WITH d, status as currentStatus, error, address, role
-       |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error $defaultColumn
-       |ORDER BY name
+       |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
+       |$filtering
+       |$returnClause
     """.stripMargin
     (query, params, paramGenerator, paramConverter)
   }

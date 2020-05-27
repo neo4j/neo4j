@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.ir.LazyMode
@@ -39,7 +41,9 @@ abstract class AdministrationCommandLogicalPlan(source: Option[AdministrationCom
 
   override def rhs: Option[LogicalPlan] = None
 
-  override val availableSymbols: Set[String] = Set.empty
+  val returnColumns: List[String] = List.empty
+
+  override val availableSymbols: Set[String] = returnColumns.toSet
 
   override def strictness: StrictnessMode = LazyMode
 
@@ -55,7 +59,9 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 }
 
 // Security administration commands
-case class ShowUsers(source: PrivilegePlan)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
+                    (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
 case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], initialPassword: Expression,
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -63,7 +69,15 @@ case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)
                          (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class ShowRoles(source: PrivilegePlan, withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
+case class ShowRoles(source: PrivilegePlan,
+                     withUsers: Boolean,
+                     showAll: Boolean,
+                     override val returnColumns: List[String],
+                     yields: Option[Return],
+                     where: Option[Where],
+                     returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
 case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class GrantRoleToUser(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter], userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -108,7 +122,12 @@ case class GrantMatch(source: PrivilegePlan, resource: ActionResource, database:
 case class DenyMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
-case class ShowPrivileges(source: Option[PrivilegePlan], scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
+case class ShowPrivileges(source: Option[PrivilegePlan],
+                          scope: ShowPrivilegeScope,
+                          override val returnColumns: List[String],
+                          yields: Option[Return],
+                          where: Option[Where],
+                          returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -116,9 +135,18 @@ case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[
 case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 // Database administration commands
-case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class ShowDatabase(databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class ShowDatabases(override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
+                        (implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+
+case class ShowDefaultDatabase(override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
+                              (implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+
+case class ShowDatabase(databaseName: Either[String, Parameter],
+                        override val returnColumns: List[String],
+                        yields: Option[Return],
+                        where: Option[Where],
+                        returns: Option[Return])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+
 case class CreateDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class DropDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], additionalAction: DropDatabaseAdditionalAction)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))

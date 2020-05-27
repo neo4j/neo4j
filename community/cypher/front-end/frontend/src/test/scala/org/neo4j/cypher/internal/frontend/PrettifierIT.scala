@@ -482,6 +482,18 @@ class PrettifierIT extends CypherFunSuite {
       "show all privileges" ->
         "SHOW ALL PRIVILEGES",
 
+      "show privileges where action = 'match'" ->
+        """SHOW ALL PRIVILEGES
+          |  WHERE action = "match"""".stripMargin,
+
+      "show users yield user order by user skip 1 limit 1 where user='neo4j'" ->
+        """SHOW USERS
+          |  YIELD user
+          |    ORDER BY user ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |  WHERE user = "neo4j"""".stripMargin,
+
       "show user abc privileges" ->
         "SHOW USER abc PRIVILEGES",
 
@@ -520,6 +532,14 @@ class PrettifierIT extends CypherFunSuite {
 
       "show database $foo" ->
         "SHOW DATABASE $foo",
+
+      "show database $foo yield name order by name skip 1 limit 1 where name='neo4j'" ->
+        """SHOW DATABASE $foo
+          |  YIELD name
+          |    ORDER BY name ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |  WHERE name = "neo4j"""".stripMargin,
 
       "catalog create database foO_Bar_42" ->
         "CREATE DATABASE foO_Bar_42",

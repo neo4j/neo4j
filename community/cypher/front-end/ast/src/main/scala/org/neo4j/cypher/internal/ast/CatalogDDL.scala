@@ -27,10 +27,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.symbols.CTGraphRef
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 
@@ -40,7 +43,7 @@ sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 sealed trait AdministrationCommand extends CatalogDDL {
   // We parse USE to give a nice error message, but it's not considered to be a part of the AST
   private var useGraphVar: Option[UseGraph] = None
-  def useGraph: Option[GraphSelection] = useGraphVar
+  def useGraph: Option[UseGraph] = useGraphVar
   def withGraph(useGraph: Option[UseGraph]): AdministrationCommand = {
     this.useGraphVar = useGraph
     this
@@ -56,14 +59,43 @@ sealed trait AdministrationCommand extends CatalogDDL {
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = true
 
-  def returnColumnNames: List[String]
+  val defaultColumnSet: List[String]
+  def returnColumnNames: List[String] = yields.map(calculateResultColumns).getOrElse(defaultColumnSet)
+
+  def where: Option[Where] = None
+  def yields: Option[Return] = None
+  def returns: Option[Return] = None
+
+  private def calculateResultColumns(resultColumns: Return): List[String] = resultColumns.returnItems.items.map(ri => ri.name).toList
+  private def createSymbol(variable: String, offset: Int): semantics.Symbol =
+    semantics.Symbol(variable, Set(new InputPosition(offset, 1, 1)), TypeSpec.exact(CTString))
 
   override def returnColumns: List[LogicalVariable] = returnColumnNames.map(name => Variable(name)(position))
+
+  private def skipCheck(skip: Skip): SemanticCheck = {
+    val skipValue = Integer.parseInt(skip.expression.asInstanceOf[SignedDecimalIntegerLiteral].stringVal)
+    if (skipValue < 1) SemanticError(s"Invalid input. '$skipValue' is not a valid value. Must be a non-negative integer.", skip.expression.position)
+    else None
+  }
+
+  private def limitCheck(limit: Limit): SemanticCheck = {
+    val limitValue = Integer.parseInt(limit.expression.asInstanceOf[SignedDecimalIntegerLiteral].stringVal)
+    if (limitValue < 1) SemanticError(s"Invalid input. '$limitValue' is not a valid value. Must be a non-negative integer.", limit.expression.position)
+    else None
+  }
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck
+      .chain(declareVariables(defaultColumnSet.zipWithIndex.map { case (name, index) => createSymbol(name, index) }))
+      .chain(where.semanticCheck)
+      .chain(yields.semanticCheck)
+      .chain(yields.flatMap(_.skip).map(skipCheck).getOrElse(None))
+      .chain(yields.flatMap(_.limit).map(limitCheck).getOrElse(None))
+      .chain(yields.flatMap(_.orderBy).semanticCheck)
 }
 
 sealed trait WriteAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = false
-
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
@@ -85,11 +117,12 @@ final case class IfExistsThrowError() extends IfExistsDo
 
 final case class IfExistsInvalidSyntax() extends IfExistsDo
 
-final case class ShowUsers()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowUsers(override  val yields: Option[Return], override val where: Option[Where],
+                           override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name: String = "SHOW USERS"
 
-  override def returnColumnNames: List[String] = List("user", "roles", "passwordChangeRequired", "suspended")
+  override val defaultColumnSet: List[String] = List("user", "roles", "passwordChangeRequired", "suspended")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -155,11 +188,12 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowRoles(withUsers: Boolean, showAll: Boolean, override val yields: Option[Return], override val where: Option[Where],
+                           override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"
 
-  override def returnColumnNames: List[String] = if (withUsers) List("role", "member") else List("role")
+  override val defaultColumnSet: List[String] = if (withUsers) List("role", "member") else List("role")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -679,11 +713,10 @@ final case class RevokePrivilege(privilege: PrivilegeType,
 
 }
 
-final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends ReadAdministrationCommand {
-
+final case class ShowPrivileges(scope: ShowPrivilegeScope, override  val yields: Option[Return], override val where: Option[Where], override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
   override def name = "SHOW PRIVILEGE"
 
-  override def returnColumnNames: List[String] = List("access", "action", "resource", "graph", "segment", "role") ++ (scope match {
+  override val defaultColumnSet: List[String] = List("access", "action", "resource", "graph", "segment", "role") ++ (scope match {
     case _: ShowUserPrivileges => List("user")
     case _ => List.empty
   })
@@ -693,33 +726,36 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabases()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDatabases(override  val yields: Option[Return], override val where: Option[Where],
+                               override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DATABASES"
 
-  override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
+  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDefaultDatabase()(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDefaultDatabase(override  val yields: Option[Return], override val where: Option[Where],
+                                     override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DEFAULT DATABASE"
 
-  override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error")
+  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowDatabase(dbName: Either[String, Parameter], override val yields: Option[Return], override val where: Option[Where],
+                              override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name = "SHOW DATABASE"
 
-  override def returnColumnNames: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
+  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
