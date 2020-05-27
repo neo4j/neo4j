@@ -66,7 +66,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
         boolean isExplain = queryExecution.executionType().isExplained();
         boolean noResult = queryExecution.fieldNames().length == 0;
 
-        boolean triggerArtificialDemand = isWriteOnly || noResult;
+        boolean triggerArtificialDemand = isWriteOnly || isExplain || noResult;
 
         if ( triggerArtificialDemand )
         {
