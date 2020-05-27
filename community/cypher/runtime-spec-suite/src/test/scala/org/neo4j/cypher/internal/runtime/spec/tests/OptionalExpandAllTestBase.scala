@@ -855,4 +855,46 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y").withSingleRow(node, null)
   }
+
+  test("should not return nulls when some rows match the predicate") {
+    // given
+    val nodes = given {
+      val relType = RelationshipType.withName("R")
+      val labels = Seq("Idx", "Zero", "One").map(label)
+
+      for (idx <- 0 until sizeHint) yield {
+        val Seq(idxNode, zeroNode, oneNode) = labels.map(l => tx.createNode(l))
+
+        idxNode.setProperty("idx", idx)
+        zeroNode.setProperty("n", 0)
+        oneNode.setProperty("n", 1)
+
+        idxNode.createRelationshipTo(zeroNode, relType)
+        idxNode.createRelationshipTo(oneNode, relType)
+
+        (idxNode, zeroNode, oneNode, idx)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .optionalExpandAll("(x)-[]->(y)", Some("y.n = x.idx % 2"))
+      .nodeByLabelScan("x", "Idx", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      (idxNode, zeroNode, oneNode, idx) <- nodes
+    } yield {
+      if (idx % 2 == 0)
+        Array[Any](idxNode, zeroNode)
+      else
+        Array[Any](idxNode, oneNode)
+    }
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
 }
