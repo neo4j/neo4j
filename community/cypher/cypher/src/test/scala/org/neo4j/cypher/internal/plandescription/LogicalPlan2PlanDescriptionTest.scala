@@ -572,57 +572,57 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("CreateUniquePropertyConstraint") {
     assertGood(attach(CreateUniquePropertyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
-      planDescription(id, "CreateUniquePropertyConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
 
     assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
-      planDescription(id, "CreateUniquePropertyConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
 
     assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
-      planDescription(id, "CreateUniquePropertyConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
   }
 
   test("CreateNodeKeyConstraint") {
     assertGood(attach(CreateNodeKeyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
-      planDescription(id, "CreateNodeKeyConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
 
     assertGood(attach(CreateNodeKeyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
-      planDescription(id, "CreateNodeKeyConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
   }
 
   test("CreateNodePropertyExistenceConstraint") {
     assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop(" x", "prop"), None), 63.2),
-      planDescription(id, "CreateNodePropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
 
     assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
-      planDescription(id, "CreateNodePropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
   }
 
   test("CreateRelationshipPropertyExistenceConstraint") {
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), None), 63.2),
-      planDescription(id, "CreateRelationshipPropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
 
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), Some("constraintName")), 63.2),
-      planDescription(id, "CreateRelationshipPropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
   }
 
   test("DropUniquePropertyConstraint") {
     assertGood(attach(DropUniquePropertyConstraint(LabelName("Label")(pos), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
-      planDescription(id, "DropUniquePropertyConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS UNIQUE")), Set.empty))
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS UNIQUE")), Set.empty))
   }
 
   test("DropNodeKeyConstraint") {
     assertGood(attach(DropNodeKeyConstraint(LabelName("Label")(pos), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
-      planDescription(id, "DropNodeKeyConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS NODE KEY")), Set.empty))
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS NODE KEY")), Set.empty))
   }
 
   test("DropNodePropertyExistenceConstraint") {
     assertGood(attach(DropNodePropertyExistenceConstraint(LabelName("Label")(pos), prop("x", " prop")), 63.2),
-      planDescription(id, "DropNodePropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT ON (x:Label) ASSERT exists(x.` prop`)")), Set.empty))
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (x:Label) ASSERT exists(x.` prop`)")), Set.empty))
   }
 
   test("DropRelationshipPropertyExistenceConstraint") {
     assertGood(attach(DropRelationshipPropertyExistenceConstraint(RelTypeName("$R")(pos), prop("x", " prop")), 63.2),
-      planDescription(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[x:`$R`]-() ASSERT exists(x.` prop`)")), Set.empty))
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[x:`$R`]-() ASSERT exists(x.` prop`)")), Set.empty))
   }
 
   test("DropConstraintOnName") {
