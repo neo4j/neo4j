@@ -57,12 +57,12 @@ class WriteTransactionCommandOrderingTest
 {
     private static NodeRecord missingNode()
     {
-        return new NodeRecord( -1, false, -1, -1 );
+        return new NodeRecord( -1 ).initialize( false, -1, false, -1, 0 );
     }
 
     private static NodeRecord createdNode()
     {
-        NodeRecord record = new NodeRecord( 2, false, -1, -1 );
+        NodeRecord record = new NodeRecord( 2 ).initialize( false, -1, false, -1, 0 );
         record.setInUse( true );
         record.setCreated();
         return record;
@@ -70,7 +70,7 @@ class WriteTransactionCommandOrderingTest
 
     private static NodeRecord inUseNode()
     {
-        NodeRecord record = new NodeRecord( 1, false, -1, -1 );
+        NodeRecord record = new NodeRecord( 1 ).initialize( false, -1, false, -1, 0 );
         record.setInUse( true );
         return record;
     }

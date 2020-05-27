@@ -54,6 +54,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class Commands
@@ -137,8 +138,9 @@ public class Commands
     public static RelationshipGroupCommand createRelationshipGroup( long id, int type )
     {
         RelationshipGroupRecord before = new RelationshipGroupRecord( id );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( id, type );
-        after.setInUse( true );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( id )
+                .initialize( true, type, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue() );
         after.setCreated();
         return new RelationshipGroupCommand( before, after );
     }

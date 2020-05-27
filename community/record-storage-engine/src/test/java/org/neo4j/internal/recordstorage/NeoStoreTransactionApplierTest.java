@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -85,6 +84,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -111,9 +111,9 @@ class NeoStoreTransactionApplierTest
     private final SchemaCache schemaCache = mock( SchemaCache.class );
 
     private final long transactionId = 55555;
-    private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
-    private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
-    private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
+    private final DynamicRecord one = new DynamicRecord( 1 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
+    private final DynamicRecord two = new DynamicRecord( 2 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
+    private final DynamicRecord three = new DynamicRecord( 3 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = new WorkSync<>( relationshipTypeUpdateListener );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
@@ -397,8 +397,10 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( false );
         // when
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 )
+                .initialize( false, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue() );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 1, 2, 3, 4, 5, 6 );
         Command command = new Command.RelationshipGroupCommand( before, after );
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -414,8 +416,10 @@ class NeoStoreTransactionApplierTest
         // given
         TransactionApplierFactory applier = newApplier( true );
         // when
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 )
+                .initialize( false, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue() );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 1, 2, 3, 4, 5, 6 );
         Command command = new Command.RelationshipGroupCommand( before, after );
 
         boolean result = apply( applier, command::handle, transactionToApply );

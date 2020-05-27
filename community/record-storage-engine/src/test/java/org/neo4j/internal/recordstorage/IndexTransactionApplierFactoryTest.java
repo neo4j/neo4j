@@ -146,8 +146,7 @@ class IndexTransactionApplierFactoryTest
 
     private NodeCommand node( long nodeId )
     {
-        NodeRecord after = new NodeRecord( nodeId,
-                true, false, NO_NEXT_RELATIONSHIP.intValue(),NO_NEXT_PROPERTY.intValue(), 0 );
+        NodeRecord after = new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
         NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, INSTANCE );
 
         return new NodeCommand( new NodeRecord( nodeId ), after );

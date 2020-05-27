@@ -312,7 +312,7 @@ public class RecordRelationshipTraversalCursorTest
 
     protected RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
     {
-        return new RelationshipGroupRecord( id, type, firstIds[0], firstIds[1], firstIds[2], FIRST_OWNING_NODE, next, true );
+        return new RelationshipGroupRecord( id ).initialize( true, type, firstIds[0], firstIds[1], firstIds[2], FIRST_OWNING_NODE, next );
     }
 
     protected long createRelationshipStructure( boolean dense, RelationshipSpec... relationshipSpecs )

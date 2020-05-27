@@ -85,6 +85,7 @@ import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class ConsistencyReporterTest
 {
@@ -272,7 +273,7 @@ class ConsistencyReporterTest
             }
             if ( type == NodeRecord.class )
             {
-                return new NodeRecord( 0, false, 1, 2 );
+                return new NodeRecord( 0 ).initialize( false, 2, false, 1, 0 );
             }
             if ( type == RelationshipRecord.class )
             {
@@ -336,7 +337,9 @@ class ConsistencyReporterTest
             }
             if ( type == RelationshipGroupRecord.class )
             {
-                return new RelationshipGroupRecord( 0, 1 );
+                return new RelationshipGroupRecord( 0 )
+                        .initialize( false, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                                NULL_REFERENCE.longValue() );
             }
             if ( type == long.class )
             {

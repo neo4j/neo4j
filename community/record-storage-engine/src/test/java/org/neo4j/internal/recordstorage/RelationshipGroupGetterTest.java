@@ -51,6 +51,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -84,7 +85,7 @@ class RelationshipGroupGetterTest
             store.updateRecord( group10, NULL );
             store.updateRecord( group23, NULL );
             RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store, NULL );
-            NodeRecord node = new NodeRecord( 0, true, group2.getId(), -1 );
+            NodeRecord node = new NodeRecord( 0 ).initialize( false, -1, true, group2.getId(), 0 );
 
             // WHEN trying to find relationship group 7
             RecordAccess<RelationshipGroupRecord, Integer> access =
@@ -123,8 +124,8 @@ class RelationshipGroupGetterTest
 
     private static RelationshipGroupRecord group( long id, int type )
     {
-        RelationshipGroupRecord group = new RelationshipGroupRecord( id, type );
-        group.setInUse( true );
-        return group;
+        return new RelationshipGroupRecord( id )
+                .initialize( true, type, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        NULL_REFERENCE.longValue() );
     }
 }

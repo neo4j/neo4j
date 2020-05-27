@@ -171,13 +171,12 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         int type = unsignedShortToInt( channel.getShort() );
-        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
-        record.setInUse( inUse );
-        record.setNext( channel.getLong() );
-        record.setFirstOut( channel.getLong() );
-        record.setFirstIn( channel.getLong() );
-        record.setFirstLoop( channel.getLong() );
-        record.setOwningNode( channel.getLong() );
+        long next = channel.getLong();
+        long firstOut = channel.getLong();
+        long firstIn = channel.getLong();
+        long firstLoop = channel.getLong();
+        long owningNode = channel.getLong();
+        RelationshipGroupRecord record = new RelationshipGroupRecord( id ).initialize( inUse, type, firstOut, firstIn, firstLoop, owningNode, next );
         record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
@@ -575,7 +574,9 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         if ( inUse )
         {
             boolean dense = channel.get() == 1;
-            record = new NodeRecord( id, dense, channel.getLong(), channel.getLong() );
+            long nextRel = channel.getLong();
+            long nextProp = channel.getLong();
+            record = new NodeRecord( id ).initialize( false, nextProp, dense, nextRel, 0 );
             // labels
             labelField = channel.getLong();
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );

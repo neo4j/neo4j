@@ -30,13 +30,6 @@ public abstract class PrimitiveRecord extends AbstractBaseRecord
         super( id );
     }
 
-    @Deprecated
-    PrimitiveRecord( long id, long nextProp )
-    {
-        super( id );
-        this.nextProp = nextProp;
-    }
-
     public PrimitiveRecord( PrimitiveRecord other )
     {
         super( other );

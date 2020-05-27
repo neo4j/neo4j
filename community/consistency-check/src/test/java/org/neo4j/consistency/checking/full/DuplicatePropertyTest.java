@@ -46,7 +46,7 @@ class DuplicatePropertyTest
 
         RecordAccessStub records = new RecordAccessStub();
 
-        NodeRecord master = records.add( inUse( new NodeRecord( 1, false, -1, 1 ) ) );
+        NodeRecord master = records.add( inUse( new NodeRecord( 1 ).initialize( false, 1, false, -1, 0 ) ) );
 
         PropertyRecord propertyRecord = inUse( new PropertyRecord( 1 ) );
         PropertyBlock firstBlock = new PropertyBlock();

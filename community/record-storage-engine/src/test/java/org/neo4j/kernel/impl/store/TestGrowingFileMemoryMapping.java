@@ -73,14 +73,14 @@ class TestGrowingFileMemoryMapping
         long nodeId = startingId;
         for ( int i = 0; i < iterations; i++ )
         {
-            NodeRecord record = new NodeRecord( nodeId, false, i, 0 );
+            NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
             record.setInUse( true );
             nodeStore.updateRecord( record, PageCursorTracer.NULL );
             nodeId = nodeStore.nextId( PageCursorTracer.NULL );
         }
 
         // then
-        NodeRecord record = new NodeRecord( 0, false, 0, 0 );
+        NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );

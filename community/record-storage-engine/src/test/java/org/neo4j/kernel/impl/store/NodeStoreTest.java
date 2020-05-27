@@ -165,7 +165,7 @@ class NodeStoreTest
         // -- a record with the msb carrying a negative value
         long nodeId = 0;
         long labels = 0x8000000001L;
-        NodeRecord record = new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( nodeId ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
         record.setInUse( true );
         record.setLabelField( labels, Collections.emptyList() );
         nodeStore.updateRecord( record, NULL );
@@ -183,7 +183,7 @@ class NodeStoreTest
     void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
     {
         // GIVEN
-        NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( 0 ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
 
         // WHEN
         record.setLabelField( 0, Collections.emptyList() );
@@ -196,7 +196,7 @@ class NodeStoreTest
     void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
     {
         // GIVEN
-        NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( 0 ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
 
         // WHEN
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );
@@ -213,11 +213,11 @@ class NodeStoreTest
         NodeStore store = newNodeStore( fs );
 
         long exists = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( exists, false, 10, 20, true ), NULL );
+        store.updateRecord( new NodeRecord( exists ).initialize( true, 20, false, 10, 0 ), NULL );
 
         long deleted = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( deleted, false, 10, 20, true ), NULL );
-        store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ), NULL );
+        store.updateRecord( new NodeRecord( deleted ).initialize( true, 20, false, 10, 0 ), NULL );
+        store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), NULL );
 
         // When & then
         assertTrue( store.isInUse( exists, NULL ) );
@@ -240,7 +240,7 @@ class NodeStoreTest
             if ( nextRelSet.add( nextRelCandidate ) )
             {
                 long nodeId = nodeStore.nextId( NULL );
-                NodeRecord record = new NodeRecord( nodeId, false, nextRelCandidate, 20, true );
+                NodeRecord record = new NodeRecord( nodeId ).initialize( true, 20, false, nextRelCandidate, 0 );
                 nodeStore.updateRecord( record, NULL );
                 if ( rng.nextInt( 0, 10 ) < 3 )
                 {

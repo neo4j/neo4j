@@ -44,9 +44,12 @@ import org.neo4j.storageengine.api.CommandReader;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV4_0.markAfterRecordAsCreatedIfCommandLooksCreated;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class PhysicalLogCommandReaderV4_0Test
 {
+    private static final long NULL_REF = NULL_REFERENCE.longValue();
+
     @Test
     void shouldReadPropertyKeyCommand() throws Exception
     {
@@ -270,8 +273,8 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setCreated();
 
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
@@ -292,8 +295,8 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
@@ -315,8 +318,8 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
@@ -338,9 +341,9 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
         before.setUseFixedReferences( true );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setUseFixedReferences( true );
         after.setCreated();
 
@@ -364,8 +367,8 @@ class PhysicalLogCommandReaderV4_0Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        NodeRecord before = new NodeRecord( 42, true, false, 33, 99, 66 );
-        NodeRecord after = new NodeRecord( 42, true, false, 33, 99, 66 );
+        NodeRecord before = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
+        NodeRecord after = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
