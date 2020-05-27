@@ -38,6 +38,7 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.transaction.CompositeTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -186,7 +187,7 @@ public class FabricLocalExecutor
             var loginContext = databaseAccess.maybeRestrictLoginContext( transactionInfo.getLoginContext(), databaseFacade.databaseName() );
 
             var internalTransaction = databaseFacade.beginTransaction( kernelTransactionType, loginContext, transactionInfo.getClientConnectionInfo(),
-                    compositeTransaction::childTransactionTerminated );
+                    compositeTransaction::childTransactionTerminated, this::transformTerminalOperationError );
 
             if ( transactionInfo.getTxMetadata() != null )
             {
@@ -206,6 +207,26 @@ public class FabricLocalExecutor
             }
 
             return KernelTransaction.Type.EXPLICIT;
+        }
+
+        private RuntimeException transformTerminalOperationError( Exception e )
+        {
+            // The main purpose of this is mapping of checked exceptions
+            // while preserving status codes
+            if ( e instanceof Status.HasStatus )
+            {
+                if ( e instanceof RuntimeException )
+                {
+                    return (RuntimeException) e;
+                }
+                return new FabricException( ((Status.HasStatus) e).status(), e.getMessage(), e );
+            }
+
+            // We don't know what operation is being executed,
+            // so it is not possible to come up with a reasonable status code here.
+            // The error is wrapped into a generic one
+            // and a proper status code will be added later.
+            throw new TransactionFailureException( "Unable to complete transaction.", e );
         }
     }
 

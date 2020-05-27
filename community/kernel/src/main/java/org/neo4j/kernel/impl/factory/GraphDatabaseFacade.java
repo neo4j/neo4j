@@ -117,19 +117,21 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), null );
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), null, null );
     }
 
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
             TimeUnit unit )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ), null );
+        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ), null, null );
     }
 
-    public InternalTransaction beginTransaction(  Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Consumer<Status> terminationCallback )
+    public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Consumer<Status> terminationCallback,
+            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), terminationCallback );
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), terminationCallback,
+                customSafeTerminalOperationErrorMapper );
     }
 
     @Override
@@ -167,11 +169,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     protected InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long timeoutMillis, Consumer<Status> terminationCallback )
+            long timeoutMillis, Consumer<Status> terminationCallback, Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction,
-                terminationCallback );
+                terminationCallback, customSafeTerminalOperationErrorMapper );
     }
 
     @Override

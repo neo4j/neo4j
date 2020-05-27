@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -117,18 +118,21 @@ public class TransactionImpl implements InternalTransaction
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
+    private final Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper;
     private KernelTransaction transaction;
     private boolean closed;
 
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
-            KernelTransaction transaction, Consumer<Status> terminationCallback )
+            KernelTransaction transaction, Consumer<Status> terminationCallback,
+            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
     {
         this.tokenHolders = tokenHolders;
         this.contextFactory = contextFactory;
         this.availabilityGuard = availabilityGuard;
         this.executionEngine = executionEngine;
         this.terminationCallback = terminationCallback;
+        this.customSafeTerminalOperationErrorMapper = customSafeTerminalOperationErrorMapper;
         setTransaction( transaction );
     }
 
@@ -499,34 +503,49 @@ public class TransactionImpl implements InternalTransaction
 
     private void safeTerminalOperation( TransactionalOperation operation )
     {
-        try
+        if ( customSafeTerminalOperationErrorMapper != null )
         {
-            operation.perform( transaction );
-            closed = true;
-        }
-        catch ( TransientFailureException e )
-        {
-            // We let transient exceptions pass through unchanged since they aren't really transaction failures
-            // in the same sense as unexpected failures are. Such exception signals that the transaction
-            // can be retried and might be successful the next time.
-            throw e;
-        }
-        catch ( ConstraintViolationTransactionFailureException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( KernelException | TransactionTerminatedException e )
-        {
-            Code statusCode = e.status().code();
-            if ( statusCode.classification() == Classification.TransientError )
+            try
             {
-                throw new TransientTransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
+                operation.perform( transaction );
+                closed = true;
             }
-            throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            catch ( Exception e )
+            {
+                throw customSafeTerminalOperationErrorMapper.apply( e );
+            }
         }
-        catch ( Exception e )
+        else
         {
-            throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            try
+            {
+                operation.perform( transaction );
+                closed = true;
+            }
+            catch ( TransientFailureException e )
+            {
+                // We let transient exceptions pass through unchanged since they aren't really transaction failures
+                // in the same sense as unexpected failures are. Such exception signals that the transaction
+                // can be retried and might be successful the next time.
+                throw e;
+            }
+            catch ( ConstraintViolationTransactionFailureException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( KernelException | TransactionTerminatedException e )
+            {
+                Code statusCode = e.status().code();
+                if ( statusCode.classification() == Classification.TransientError )
+                {
+                    throw new TransientTransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
+                }
+                throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            }
+            catch ( Exception e )
+            {
+                throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            }
         }
     }
 

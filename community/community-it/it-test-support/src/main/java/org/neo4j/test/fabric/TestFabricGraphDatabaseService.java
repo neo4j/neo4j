@@ -62,7 +62,8 @@ public class TestFabricGraphDatabaseService extends GraphDatabaseFacade
                                                             LoginContext loginContext,
                                                             ClientConnectionInfo connectionInfo,
                                                             long timeoutMillis,
-                                                            Consumer<Status> terminationCallback )
+                                                            Consumer<Status> terminationCallback,
+                                                            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
     {
 
         var databaseService = boltFabricDatabaseServiceSupplier.get();
