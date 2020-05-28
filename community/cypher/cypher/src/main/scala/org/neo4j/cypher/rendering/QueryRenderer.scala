@@ -44,7 +44,6 @@ object QueryRenderer {
 
   private object exprExtension extends ExpressionStringifier.Extension {
     override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
-      case rf: ResolvedFunctionInvocation => ctx.apply(rf.asUnresolvedFunction)
       case p: ParameterFromSlot           => ctx.apply(Parameter(p.name, p.parameterType)(p.position))
     }
   }
