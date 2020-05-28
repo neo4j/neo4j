@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -102,7 +103,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         properties.put( BoltConnector.listen_address.name(), "localhost:0" );
         properties.put( BoltConnector.encryption_level.name(), "DISABLED" );
 
-        properties.put( GraphDatabaseSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );
+        properties.put( GraphDatabaseInternalSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );
         return properties;
     }
 

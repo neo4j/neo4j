@@ -23,7 +23,7 @@ import java.io.File;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -80,7 +80,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
         boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, isSingleInstance );
-        boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
+        boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
 
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
         GenericNativeIndexProvider generic =

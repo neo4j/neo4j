@@ -52,7 +52,7 @@ import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 
 import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.NEVER;
 import static picocli.CommandLine.Option;

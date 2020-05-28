@@ -1,0 +1,3 @@
+org.neo4j.configuration.SslSystemSettings public class extends java.lang.Object implements org.neo4j.configuration.SettingsDeclaration
+org.neo4j.configuration.SslSystemSettings::SslSystemSettings() void public
+org.neo4j.configuration.SslSystemSettings::netty_ssl_provider org.neo4j.graphdb.config.Setting<io.netty.handler.ssl.SslProvider> public static final

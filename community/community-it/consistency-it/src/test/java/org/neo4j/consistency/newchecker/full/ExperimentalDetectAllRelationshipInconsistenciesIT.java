@@ -22,7 +22,7 @@ package org.neo4j.consistency.newchecker.full;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.consistency.checking.full.DetectAllRelationshipInconsistenciesIT;
 import org.neo4j.graphdb.config.Setting;
 
@@ -32,7 +32,7 @@ public class ExperimentalDetectAllRelationshipInconsistenciesIT extends DetectAl
     protected Map<Setting<?>,Object> getConfig()
     {
         Map<Setting<?>,Object> cfg = new HashMap<>( super.getConfig() );
-        cfg.put( GraphDatabaseSettings.experimental_consistency_checker, true );
+        cfg.put( GraphDatabaseInternalSettings.experimental_consistency_checker, true );
         return cfg;
     }
 }

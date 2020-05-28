@@ -51,6 +51,7 @@ import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -129,9 +130,9 @@ public class BoltServer extends LifecycleAdapter
         BoltStateMachineFactory internalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( internalAuthManager ), clock );
 
         BoltProtocolFactory externalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, externalBoltStateMachineFactory, throttleGroup,
-                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
+                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
         BoltProtocolFactory internalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, internalBoltStateMachineFactory, throttleGroup,
-                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
+                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
 
         if ( config.get( BoltConnector.enabled ) )
         {
@@ -222,8 +223,8 @@ public class BoltServer extends LifecycleAdapter
                                                        config.get( BoltConnector.connector_routing_listen_address ).getPort() );
         }
 
-        Duration channelTimeout = config.get( BoltConnector.unsupported_bolt_unauth_connection_timeout );
-        long maxMessageSize = config.get( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes );
+        Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
+        long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
                                     throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
@@ -266,8 +267,8 @@ public class BoltServer extends LifecycleAdapter
         }
 
         SocketAddress listenAddress = config.get( BoltConnector.listen_address );
-        Duration channelTimeout = config.get( BoltConnector.unsupported_bolt_unauth_connection_timeout );
-        long maxMessageSize = config.get( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes );
+        Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
+        long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
                                     throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );

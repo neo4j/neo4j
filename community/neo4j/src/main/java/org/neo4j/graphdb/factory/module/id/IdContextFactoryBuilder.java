@@ -22,7 +22,7 @@ package org.neo4j.graphdb.factory.module.id;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -92,7 +92,7 @@ public final class IdContextFactoryBuilder
         {
             // There's no point allocating large ID caches for the system database because it generally sees very low activity.
             // Also take into consideration if user has explicitly overridden the behaviour to always force small caches.
-            boolean allowLargeIdCaches = !config.get( GraphDatabaseSettings.force_small_id_cache );
+            boolean allowLargeIdCaches = !config.get( GraphDatabaseInternalSettings.force_small_id_cache );
             return new DefaultIdGeneratorFactory( fs, immediate(), allowLargeIdCaches );
         };
     }

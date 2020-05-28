@@ -29,6 +29,7 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -93,7 +94,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static org.neo4j.configuration.GraphDatabaseSettings.data_collector_max_recent_query_count;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
@@ -198,7 +199,7 @@ public class GlobalModule
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
         globalLife.setLast( globalAvailabilityGuard );
 
-        String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
+        String desiredImplementationName = globalConfig.get( GraphDatabaseInternalSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
                 logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
@@ -343,10 +344,10 @@ public class GlobalModule
         builder.withRotationListener(
                 logProvider -> dbmsDiagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
 
-        builder.withLevels( asDebugLogLevels( globalConfig.get( GraphDatabaseSettings.store_internal_debug_contexts ) ) );
+        builder.withLevels( asDebugLogLevels( globalConfig.get( GraphDatabaseInternalSettings.store_internal_debug_contexts ) ) );
         builder.withDefaultLevel( globalConfig.get( GraphDatabaseSettings.store_internal_log_level ) )
                .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
-               .withFormat( globalConfig.get( GraphDatabaseSettings.log_format ) );
+               .withFormat( globalConfig.get( GraphDatabaseInternalSettings.log_format ) );
 
         File logFile = globalConfig.get( store_internal_log_path ).toFile();
         if ( !logFile.getParentFile().exists() )
@@ -365,7 +366,7 @@ public class GlobalModule
         // Listen to changes to the dynamic log level settings.
         globalConfig.addListener( GraphDatabaseSettings.store_internal_log_level,
                 ( before, after ) -> logService.setDefaultLogLevel( after ) );
-        globalConfig.addListener( GraphDatabaseSettings.store_internal_debug_contexts,
+        globalConfig.addListener( GraphDatabaseInternalSettings.store_internal_debug_contexts,
                 ( before, after ) -> logService.setContextLogLevels( asDebugLogLevels( after ) ) );
         return globalLife.add( logService );
     }
@@ -378,9 +379,9 @@ public class GlobalModule
     private JobScheduler createJobScheduler()
     {
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock );
-        jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseSettings.index_sampling_parallelism ) );
-        jobScheduler.setParallelism( Group.INDEX_POPULATION, globalConfig.get( GraphDatabaseSettings.index_population_parallelism ) );
-        jobScheduler.setParallelism( Group.INDEX_POPULATION_WORK, globalConfig.get( GraphDatabaseSettings.index_population_workers ) );
+        jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseInternalSettings.index_sampling_parallelism ) );
+        jobScheduler.setParallelism( Group.INDEX_POPULATION, globalConfig.get( GraphDatabaseInternalSettings.index_population_parallelism ) );
+        jobScheduler.setParallelism( Group.INDEX_POPULATION_WORK, globalConfig.get( GraphDatabaseInternalSettings.index_population_workers ) );
         jobScheduler.setParallelism( Group.PAGE_CACHE_PRE_FETCHER, globalConfig.get( GraphDatabaseSettings.pagecache_scan_prefetch ) );
         return jobScheduler;
     }
@@ -393,7 +394,7 @@ public class GlobalModule
                 GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
-        if ( config.get( GraphDatabaseSettings.dump_configuration ) )
+        if ( config.get( GraphDatabaseInternalSettings.dump_configuration ) )
         {
             pageCacheFactory.dumpConfiguration();
         }

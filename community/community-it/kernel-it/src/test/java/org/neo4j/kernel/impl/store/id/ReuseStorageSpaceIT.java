@@ -36,7 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Entity;
@@ -201,7 +201,7 @@ class ReuseStorageSpaceIT
     {
         DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( storeDir )
                 // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
-                .setConfig( GraphDatabaseSettings.force_small_id_cache, true )
+                .setConfig( GraphDatabaseInternalSettings.force_small_id_cache, true )
                 .build();
         try
         {

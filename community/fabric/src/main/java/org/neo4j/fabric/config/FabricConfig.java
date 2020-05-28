@@ -62,7 +62,7 @@ public class FabricConfig
     public static FabricConfig from( Config config )
     {
         var transactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
-        var syncBatchSize = config.get( FabricSettings.batchSizeSetting );
+        var syncBatchSize = config.get( FabricSettings.batch_size_setting );
         // the rest of the settings are not used for any type of queries supported in CE
         var dataStream = new DataStream( 0, 0, syncBatchSize, 0 );
         return new FabricConfig( transactionTimeout, dataStream, false );

@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings.cypher_pipelined_batch_size_big
-import org.neo4j.configuration.GraphDatabaseSettings.cypher_pipelined_batch_size_small
-import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_count
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
@@ -44,9 +42,9 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
                                                                        runtime: CypherRuntime[CONTEXT],
                                                                        sizeHint: Int)
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    cypher_pipelined_batch_size_big -> Integer.valueOf(MORSEL_SIZE),
-    cypher_pipelined_batch_size_small -> Integer.valueOf(MORSEL_SIZE),
-    cypher_worker_count -> Integer.valueOf(WORKERS)), runtime) with Eventually {
+    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(MORSEL_SIZE),
+    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(MORSEL_SIZE),
+    GraphDatabaseInternalSettings.cypher_worker_count -> Integer.valueOf(WORKERS)), runtime) with Eventually {
   private val random = new Random(seed = 31)
 
   test("should handle allNodeScan") {

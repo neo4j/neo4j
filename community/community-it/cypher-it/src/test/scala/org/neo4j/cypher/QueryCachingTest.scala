@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.GraphDatabaseSettings.CypherExpressionEngine.ONLY_WHEN_HOT
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherExpressionEngine.ONLY_WHEN_HOT
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -36,8 +36,8 @@ import scala.collection.mutable
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
-                                                               GraphDatabaseSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
+                                                               GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
 
   private val empty_parameters = "Map()"
 

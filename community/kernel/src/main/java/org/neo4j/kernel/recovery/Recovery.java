@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
@@ -341,7 +342,7 @@ public final class Recovery
                 .withDependencies( dependencies )
                 .build();
 
-        Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
+        Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles,
                 memoryTracker ) );
 
@@ -476,7 +477,7 @@ public final class Recovery
     {
         throw new RuntimeException(
                 "Error reading transaction logs, recovery not possible. To force the database to start anyway, you can specify '" +
-                        GraphDatabaseSettings.fail_on_corrupted_log_files.name() + "=false'. This will try to recover as much " +
+                        GraphDatabaseInternalSettings.fail_on_corrupted_log_files.name() + "=false'. This will try to recover as much " +
                         "as possible and then truncate the corrupt part of the transaction log. Doing this means your database " +
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
     }

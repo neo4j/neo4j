@@ -23,7 +23,7 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -449,7 +449,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       consume(execute(logicalQuery, runtime, input))
     }
 
-    val batchSize = edition.getSetting(GraphDatabaseSettings.cypher_pipelined_batch_size_big).getOrElse(10).asInstanceOf[Int]
+    val batchSize = edition.getSetting(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).getOrElse(10).asInstanceOf[Int]
     val numberBatches = (0 until batchSize * 10).map(_ => NUMBER)
     val durationBatches = (0 until batchSize * 10).map(_ => DURATION)
 

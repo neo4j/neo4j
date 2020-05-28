@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ssl.config;
+package org.neo4j.configuration;
 
 import io.netty.handler.ssl.SslProvider;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.SettingImpl;
-import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 
 @ServiceProvider
+@PublicApi
 public class SslSystemSettings implements SettingsDeclaration
 {
     @Description( "Netty SSL provider" )

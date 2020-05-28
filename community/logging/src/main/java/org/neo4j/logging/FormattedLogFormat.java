@@ -25,9 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
-
-@IgnoreApiCheck
 public enum FormattedLogFormat
 {
     STANDARD_FORMAT,

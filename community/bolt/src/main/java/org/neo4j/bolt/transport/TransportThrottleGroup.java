@@ -24,7 +24,7 @@ import io.netty.channel.Channel;
 import java.time.Clock;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 
 /**
  * Serves as an entry point for throttling of transport related resources. Currently only
@@ -65,11 +65,11 @@ public class TransportThrottleGroup
 
     private static TransportThrottle createWriteThrottle( Config config, Clock clock )
     {
-        if ( config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle) )
+        if ( config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle) )
         {
-            return new TransportWriteThrottle( config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_low_water_mark ),
-                    config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_high_water_mark ), clock,
-                    config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration ) );
+            return new TransportWriteThrottle( config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_low_water_mark ),
+                    config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_high_water_mark ), clock,
+                    config.get( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration ) );
         }
 
         return NoOpTransportThrottle.INSTANCE;

@@ -52,7 +52,7 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker_stop_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker_stop_threshold;
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 import static org.neo4j.consistency.newchecker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;

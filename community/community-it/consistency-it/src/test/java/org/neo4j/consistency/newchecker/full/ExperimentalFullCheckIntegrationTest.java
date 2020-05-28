@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker_stop_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker_stop_threshold;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -59,7 +59,7 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
     protected Map<Setting<?>,Object> getSettings()
     {
         Map<Setting<?>,Object> cfg = new HashMap<>( super.getSettings() );
-        cfg.put( GraphDatabaseSettings.experimental_consistency_checker, true );
+        cfg.put( GraphDatabaseInternalSettings.experimental_consistency_checker, true );
         cfg.putAll( extraSettings );
         return cfg;
     }

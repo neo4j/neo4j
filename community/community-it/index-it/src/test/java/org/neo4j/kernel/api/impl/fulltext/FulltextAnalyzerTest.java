@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.kernel.api.KernelTransaction;

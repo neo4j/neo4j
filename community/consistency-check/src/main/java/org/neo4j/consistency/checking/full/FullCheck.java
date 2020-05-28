@@ -68,7 +68,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 

@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -85,7 +86,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public TestDatabaseManagementServiceBuilder( Neo4jLayout layout )
     {
         super( layout.homeDirectory() );
-        setConfig( GraphDatabaseSettings.databases_root_path, layout.databasesDirectory().toPath() );
+        setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory().toPath() );
         setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() );
     }
 

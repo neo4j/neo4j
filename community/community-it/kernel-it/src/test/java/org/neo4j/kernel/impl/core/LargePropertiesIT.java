@@ -23,7 +23,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -50,8 +50,8 @@ class LargePropertiesIT
         byte[] arrayValue = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
 
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
-                .setConfig( GraphDatabaseSettings.string_block_size, 1024 )
-                .setConfig( GraphDatabaseSettings.array_block_size, 2048 ).build();
+                .setConfig( GraphDatabaseInternalSettings.string_block_size, 1024 )
+                .setConfig( GraphDatabaseInternalSettings.array_block_size, 2048 ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

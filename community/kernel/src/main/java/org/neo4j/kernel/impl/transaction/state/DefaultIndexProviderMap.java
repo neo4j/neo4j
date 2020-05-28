@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -134,7 +135,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
                 indexProvidersByName.keySet().toString() ) );
         defaultIndexProvider = configuredDefaultProvider;
 
-        String fulltextProviderName = config.get( GraphDatabaseSettings.default_fulltext_provider );
+        String fulltextProviderName = config.get( GraphDatabaseInternalSettings.default_fulltext_provider );
         fulltextIndexProvider = indexProvidersByName.get( fulltextProviderName );
         if ( fulltextIndexProvider == null )
         {

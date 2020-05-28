@@ -30,7 +30,7 @@ import org.neo4j.bolt.runtime.scheduling.BoltScheduler;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
@@ -75,8 +75,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 
     private static BoltConnectionReadLimiter createReadLimiter( Config config, LogService logService )
     {
-        int lowWatermark = config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark );
-        int highWatermark = config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark );
+        int lowWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark );
+        int highWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark );
         return new BoltConnectionReadLimiter( logService, lowWatermark, highWatermark );
     }
 }

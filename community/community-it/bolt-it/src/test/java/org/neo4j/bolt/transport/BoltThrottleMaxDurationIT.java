@@ -42,7 +42,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -123,7 +123,7 @@ public class BoltThrottleMaxDurationIT
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds( 30 ) );
+            settings.put( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds( 30 ) );
             settings.put( BoltConnector.encryption_level, OPTIONAL );
         };
     }

@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
@@ -161,8 +161,8 @@ class BatchingNeoStoresTest
         // GIVEN
         int size = 10;
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.array_block_size, size )
-                .set( GraphDatabaseSettings.string_block_size, size )
+                .set( GraphDatabaseInternalSettings.array_block_size, size )
+                .set( GraphDatabaseInternalSettings.string_block_size, size )
                 .build();
 
         // WHEN

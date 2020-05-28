@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
@@ -67,7 +67,7 @@ class EditionLocksFactoriesTest
     @Test
     void createCommunityLocksFactoryWhenSpecified()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.lock_manager, "community");
+        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "community");
 
         LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
 
@@ -77,7 +77,7 @@ class EditionLocksFactoriesTest
     @Test
     void failToCreateWhenConfiguredFactoryNotFound()
     {
-        Config config = Config.defaults(GraphDatabaseSettings.lock_manager, "notFoundManager");
+        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "notFoundManager");
 
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class, () -> createLockFactory( config, NullLogService.getInstance() ) );

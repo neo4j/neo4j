@@ -27,7 +27,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -176,7 +176,7 @@ class QueryRestartIT
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
-                .setConfig( GraphDatabaseSettings.snapshot_query, true )
+                .setConfig( GraphDatabaseInternalSettings.snapshot_query, true )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

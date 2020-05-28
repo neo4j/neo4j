@@ -510,27 +510,27 @@ class ConfigTest
         Log log = mock( Log.class );
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
-                ExternalSettings.initialHeapSize.name() + "=5g",
-                ExternalSettings.initialHeapSize.name() + "=4g",
-                ExternalSettings.initialHeapSize.name() + "=3g",
-                ExternalSettings.maxHeapSize.name() + "=10g",
-                ExternalSettings.maxHeapSize.name() + "=11g" ) );
+                ExternalSettings.initial_heap_size.name() + "=5g",
+                ExternalSettings.initial_heap_size.name() + "=4g",
+                ExternalSettings.initial_heap_size.name() + "=3g",
+                ExternalSettings.max_heap_size.name() + "=10g",
+                ExternalSettings.max_heap_size.name() + "=11g" ) );
 
         Config config = Config.newBuilder()
                 .fromFile( confFile )
-                .setDefault( ExternalSettings.initialHeapSize, "1g" )
-                .setDefault( ExternalSettings.initialHeapSize, "2g" )
+                .setDefault( ExternalSettings.initial_heap_size, "1g" )
+                .setDefault( ExternalSettings.initial_heap_size, "2g" )
                 .build();
 
         config.setLogger( log );
 
         // We should only log the warning once for each.
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.initialHeapSize.name(), "5g", "4g" );
+                ExternalSettings.initial_heap_size.name(), "5g", "4g" );
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.initialHeapSize.name(), "4g", "3g" );
+                ExternalSettings.initial_heap_size.name(), "4g", "3g" );
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.maxHeapSize.name(), "10g", "11g" );
+                ExternalSettings.max_heap_size.name(), "10g", "11g" );
     }
 
     @Test

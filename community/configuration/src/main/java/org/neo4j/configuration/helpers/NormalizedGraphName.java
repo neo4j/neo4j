@@ -21,12 +21,14 @@ package org.neo4j.configuration.helpers;
 
 import java.util.Objects;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static java.util.Objects.requireNonNull;
 
+@PublicApi
 public class NormalizedGraphName
 {
-
-    private String name;
+    private final String name;
 
     public NormalizedGraphName( String name )
     {

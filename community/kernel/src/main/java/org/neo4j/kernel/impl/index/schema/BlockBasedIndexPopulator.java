@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -159,7 +160,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      *
      * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
      *
-     * where {@link org.neo4j.configuration.GraphDatabaseSettings#index_population_workers} controls the number of population workers.
+     * where {@link GraphDatabaseInternalSettings#index_population_workers} controls the number of population workers.
      */
     public static int parseBlockSize()
     {

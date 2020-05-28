@@ -25,21 +25,16 @@ import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
-import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.ByteUnit;
 
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
-import static org.neo4j.configuration.SettingConstraints.is;
-import static org.neo4j.configuration.SettingConstraints.ifCluster;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
-import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
@@ -106,37 +101,6 @@ public final class BoltConnector implements SettingsDeclaration
     public static final Setting<SocketAddress> connector_routing_advertised_address =
             newBuilder( "dbms.connector.bolt.routing.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_CONNECTOR_PORT ) )
                     .setDependency( default_advertised_address )
-                    .build();
-
-    @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
-    @Internal
-    public static final Setting<Integer> unsupported_thread_pool_queue_size =
-            newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
-
-    @Description( "The maximum time to wait before sending a NOOP on connections waiting for responses from active " +
-                  "ongoing queries." )
-    @Internal
-    public static final Setting<Duration> connection_keep_alive =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 1 ) )
-                    .build();
-
-    @Description( "The interval between every scheduled keep-alive check on all connections with active queries. " +
-                  "Zero duration turns off keep-alive service." )
-    @Internal
-    public static final Setting<Duration> connection_keep_alive_scheduling_interval =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive_scheduling_interval", DURATION,
-                    ofMinutes( 0 ) ).build();
-
-    @Description( "The maximum time to wait for a user to finish authentication before closing the connection." )
-    @Internal
-    public static final Setting<Duration> unsupported_bolt_unauth_connection_timeout =
-            newBuilder( "dbms.connector.bolt.unsupported_unauth_connection_timeout", DURATION, ofSeconds( 30 ) )
-                    .build();
-
-    @Description( "The maximum inbound message size in bytes are allowed before a connection is authenticated." )
-    @Internal
-    public static final Setting<Long> unsupported_bolt_unauth_connection_max_inbound_bytes =
-            newBuilder( "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes( 8 ) )
                     .build();
 
     public enum EncryptionLevel

@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -445,7 +445,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         String nonCachedQuery = "MATCH (a:L2) RETURN a";
         //make sure we cache the query
         int limit = db.getDependencyResolver().resolveDependency( Config.class )
-                .get( GraphDatabaseSettings.cypher_expression_recompilation_limit );
+                .get( GraphDatabaseInternalSettings.cypher_expression_recompilation_limit );
         try ( Transaction transaction = db.beginTx() )
         {
             for ( int i = 0; i < limit + 1; i++ )

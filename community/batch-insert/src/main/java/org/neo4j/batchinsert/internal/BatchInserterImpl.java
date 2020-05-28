@@ -39,6 +39,7 @@ import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -179,7 +180,7 @@ import org.neo4j.values.storable.Value;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -284,7 +285,7 @@ public class BatchInserterImpl implements BatchInserter
             logService = life.add( StoreLogService.withInternalLog( internalLog ).build( fileSystem ) );
             msgLog = logService.getInternalLog( getClass() );
 
-            boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
+            boolean dump = config.get( GraphDatabaseInternalSettings.dump_configuration );
             this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), true );
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
@@ -357,7 +358,7 @@ public class BatchInserterImpl implements BatchInserter
             propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorTracer, memoryTracker );
             propertyDeletor = new PropertyDeleter( propertyTraverser, cursorTracer );
 
-            flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
+            flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseInternalSettings
                 .batch_inserter_batch_size ) );
             storageReader = new RecordStorageReader( neoStores );
         }

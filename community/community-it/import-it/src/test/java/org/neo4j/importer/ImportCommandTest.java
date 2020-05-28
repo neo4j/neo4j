@@ -54,6 +54,7 @@ import java.util.function.Predicate;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -101,8 +102,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
@@ -1748,8 +1749,8 @@ class ImportCommandTest
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
                 databases_root_path.name(), databaseLayout.getNeo4jLayout().databasesDirectory().getAbsolutePath(),
-                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
+                GraphDatabaseInternalSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                GraphDatabaseInternalSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
                 transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
         List<String> nodeIds = nodeIds();
 

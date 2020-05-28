@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 
@@ -87,7 +88,7 @@ public final class Neo4jLayout
     public static Neo4jLayout of( Config config )
     {
         File homeDirectory = config.get( GraphDatabaseSettings.neo4j_home ).toFile();
-        File databasesRootDirectory = config.get( GraphDatabaseSettings.databases_root_path ).toFile();
+        File databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path ).toFile();
         File txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path ).toFile();
         return new Neo4jLayout( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
@@ -98,7 +99,7 @@ public final class Neo4jLayout
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, home )
                 .set( GraphDatabaseSettings.transaction_logs_root_path, home )
-                .set( GraphDatabaseSettings.databases_root_path, home )
+                .set( GraphDatabaseInternalSettings.databases_root_path, home )
                 .build();
         return of( config );
     }

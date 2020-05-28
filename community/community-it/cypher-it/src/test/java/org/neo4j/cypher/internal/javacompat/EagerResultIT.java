@@ -33,7 +33,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -291,7 +291,7 @@ class EagerResultIT
         dependencies.satisfyDependencies( testContextSupplier );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
-                .setConfig( GraphDatabaseSettings.snapshot_query, true ).build();
+                .setConfig( GraphDatabaseInternalSettings.snapshot_query, true ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

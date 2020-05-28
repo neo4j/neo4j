@@ -29,8 +29,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 
 import static java.util.regex.Pattern.compile;
-import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
-import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
+import static org.neo4j.configuration.ExternalSettings.max_heap_size;
 
 public class JvmChecker
 {
@@ -69,11 +69,11 @@ public class JvmChecker
         MemoryUsage heapMemoryUsage = jvmMetadataRepository.getHeapMemoryUsage();
         if ( missingOption( jvmArguments, "-Xmx" ) )
         {
-            log.warn( memorySettingWarning( maxHeapSize, heapMemoryUsage.getMax() ) );
+            log.warn( memorySettingWarning( max_heap_size, heapMemoryUsage.getMax() ) );
         }
         if ( missingOption( jvmArguments, "-Xms" ) )
         {
-            log.warn( memorySettingWarning( initialHeapSize, heapMemoryUsage.getInit() ) );
+            log.warn( memorySettingWarning( initial_heap_size, heapMemoryUsage.getInit() ) );
         }
         if ( !serializationFilterIsAvailable() )
         {

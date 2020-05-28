@@ -72,7 +72,7 @@ public class Config implements Configuration
 
         private static boolean allowedToLogOverriddenValues( String setting )
         {
-            return !Objects.equals( setting, ExternalSettings.additionalJvm.name() );
+            return !Objects.equals( setting, ExternalSettings.additional_jvm.name() );
         }
 
         private void overrideSettingValue( String setting, Object value )

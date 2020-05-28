@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -40,8 +40,8 @@ public class CustomBlockSizeStoreTest
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.string_block_size, 62 );
-        builder.setConfig( GraphDatabaseSettings.array_block_size, 302 );
+        builder.setConfig( GraphDatabaseInternalSettings.string_block_size, 62 );
+        builder.setConfig( GraphDatabaseInternalSettings.array_block_size, 302 );
     }
 
     @Test

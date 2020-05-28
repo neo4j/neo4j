@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
@@ -179,7 +180,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
-            consistencyCheckApply = config.get( GraphDatabaseSettings.consistency_check_on_apply );
+            consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
         catch ( Throwable failure )
         {

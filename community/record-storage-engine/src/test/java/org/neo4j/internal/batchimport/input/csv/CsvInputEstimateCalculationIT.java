@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
@@ -156,8 +156,8 @@ class CsvInputEstimateCalculationIT
         RecordFormats format = LATEST_RECORD_FORMATS;
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
                 format.property().getRecordSize( NO_STORE_HEADER ),
-                GraphDatabaseSettings.string_block_size.defaultValue(), 0,
-                GraphDatabaseSettings.array_block_size.defaultValue(), 0 ) );
+                GraphDatabaseInternalSettings.string_block_size.defaultValue(), 0,
+                GraphDatabaseInternalSettings.array_block_size.defaultValue(), 0 ) );
 
         // when
         Config config = Config.defaults();
@@ -204,8 +204,8 @@ class CsvInputEstimateCalculationIT
         // when
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
                 LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
-                GraphDatabaseSettings.string_block_size.defaultValue(), 0,
-                GraphDatabaseSettings.array_block_size.defaultValue(), 0 ) );
+                GraphDatabaseInternalSettings.string_block_size.defaultValue(), 0,
+                GraphDatabaseInternalSettings.array_block_size.defaultValue(), 0 ) );
 
         // then
         assertEquals( 0, estimates.numberOfNodes() );

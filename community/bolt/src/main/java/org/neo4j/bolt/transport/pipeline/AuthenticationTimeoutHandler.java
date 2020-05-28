@@ -26,12 +26,13 @@ import io.netty.handler.timeout.IdleStateEvent;
 import java.time.Duration;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 
 import static java.lang.String.format;
 
 /**
  * Close the channel directly if we failed to finish authentication within certain timeout specified by
- * {@link org.neo4j.configuration.connectors.BoltConnector#unsupported_bolt_unauth_connection_timeout}
+ * {@link BoltConnectorInternalSettings#unsupported_bolt_unauth_connection_timeout}
  */
 public class AuthenticationTimeoutHandler extends ChannelInboundHandlerAdapter
 {

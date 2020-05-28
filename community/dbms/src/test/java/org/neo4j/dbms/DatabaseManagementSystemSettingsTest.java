@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +35,6 @@ class DatabaseManagementSystemSettingsTest
     void shouldPutDatabasesDirectoriesIntoData()
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, Path.of( "the-data-directory" ) );
-        assertThat( config.get( GraphDatabaseSettings.databases_root_path ) ).isEqualTo( Path.of( "the-data-directory/databases/" ).toAbsolutePath() );
+        assertThat( config.get( GraphDatabaseInternalSettings.databases_root_path ) ).isEqualTo( Path.of( "the-data-directory/databases/" ).toAbsolutePath() );
     }
 }

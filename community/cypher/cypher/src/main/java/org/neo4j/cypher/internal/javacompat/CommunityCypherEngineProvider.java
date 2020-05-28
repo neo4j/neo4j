@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
@@ -65,7 +65,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
                     new CommunityCompilerFactory( queryService,spi.monitors(), spi.logProvider(), innerPlannerConfig, runtimeConfig );
             return new SystemExecutionEngine( queryService, spi.logProvider(), compilerFactory, innerCompilerFactory );
         }
-        else if ( spi.config().get( GraphDatabaseSettings.snapshot_query ) )
+        else if ( spi.config().get( GraphDatabaseInternalSettings.snapshot_query ) )
         {
             return new SnapshotExecutionEngine( queryService, spi.config(), spi.logProvider(), compilerFactory );
         }

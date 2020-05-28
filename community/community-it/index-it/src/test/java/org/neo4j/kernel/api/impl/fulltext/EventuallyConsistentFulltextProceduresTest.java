@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;

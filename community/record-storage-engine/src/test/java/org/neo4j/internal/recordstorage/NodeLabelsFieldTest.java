@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -95,7 +95,7 @@ class NodeLabelsFieldTest
     @BeforeEach
     void startUp()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, 60 );
+        Config config = Config.defaults( GraphDatabaseInternalSettings.label_block_size, 60 );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );

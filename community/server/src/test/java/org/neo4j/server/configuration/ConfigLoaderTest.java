@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -267,11 +268,11 @@ class ConfigLoaderTest
     void shouldNotOverwriteAuthStoreLocationIfProvided()
     {
         File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
-                GraphDatabaseSettings.auth_store, "foo/bar/auth" ).build();
+                GraphDatabaseInternalSettings.auth_store, "foo/bar/auth" ).build();
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
 
-        assertThat( config.get( GraphDatabaseSettings.auth_store ) ).isEqualTo(
+        assertThat( config.get( GraphDatabaseInternalSettings.auth_store ) ).isEqualTo(
                 new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() );
     }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -119,12 +120,12 @@ class DirectRecordStoreMigrator
         }
         if ( contains( types, StoreType.PROPERTY ) )
         {
-            config.set( GraphDatabaseSettings.array_block_size, legacyStores.getPropertyStore().getArrayStore().getRecordDataSize() );
-            config.set( GraphDatabaseSettings.string_block_size, legacyStores.getPropertyStore().getStringStore().getRecordDataSize() );
+            config.set( GraphDatabaseInternalSettings.array_block_size, legacyStores.getPropertyStore().getArrayStore().getRecordDataSize() );
+            config.set( GraphDatabaseInternalSettings.string_block_size, legacyStores.getPropertyStore().getStringStore().getRecordDataSize() );
         }
         if ( contains( types, StoreType.NODE_LABEL ) )
         {
-            config.set( GraphDatabaseSettings.label_block_size, legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() );
+            config.set( GraphDatabaseInternalSettings.label_block_size, legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() );
         }
         return config;
     }

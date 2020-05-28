@@ -37,6 +37,7 @@ import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
@@ -80,8 +81,8 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
     {
         return settings -> {
             settings.put( BoltConnector.encryption_level, OPTIONAL );
-            settings.put( BoltConnector.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 1 ) );
-            settings.put( BoltConnector.unsupported_bolt_unauth_connection_max_inbound_bytes, ByteUnit.kibiBytes( 1 ) );
+            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 1 ) );
+            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes, ByteUnit.kibiBytes( 1 ) );
         };
     }
 

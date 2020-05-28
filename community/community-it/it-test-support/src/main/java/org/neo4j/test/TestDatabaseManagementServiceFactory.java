@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -66,7 +67,7 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         config.setIfNotSet( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO );
         if ( impermanent )
         {
-            config.set( GraphDatabaseSettings.ephemeral_lucene, TRUE );
+            config.set( GraphDatabaseInternalSettings.ephemeral_lucene, TRUE );
             config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
             return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.dbmsInfo );
         }

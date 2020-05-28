@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.configuration;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords;
 
@@ -32,6 +31,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
 @ServiceProvider
+@PublicApi
 public class FulltextSettings implements SettingsDeclaration
 {
     private static final String DEFAULT_ANALYZER = StandardNoStopWords.ANALYZER_NAME;

@@ -73,7 +73,7 @@ class JVMCheckerTest
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11.0.2+9", singletonList( "-XMx" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.initialHeapSize, 12 ) );
+        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.initial_heap_size, 12 ) );
     }
 
     @Test
@@ -84,7 +84,7 @@ class JVMCheckerTest
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11", singletonList( "-XMs" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.maxHeapSize, 23 ) );
+        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.max_heap_size, 23 ) );
     }
 
     @Test
@@ -95,8 +95,8 @@ class JVMCheckerTest
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.initialHeapSize, 1 ) );
-        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.maxHeapSize, 2 ) );
+        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.initial_heap_size, 1 ) );
+        assertThat( bufferingLogger.toString() ).contains( memorySettingWarning( ExternalSettings.max_heap_size, 2 ) );
     }
 
     @Test
@@ -107,7 +107,7 @@ class JVMCheckerTest
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM", "11.0.2",
                 asList( "-xMx", "-xmS" ), 1, 2 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( bufferingLogger.toString() ).doesNotContain( memorySettingWarning( ExternalSettings.initialHeapSize, 1 ) );
-        assertThat( bufferingLogger.toString() ).doesNotContain( memorySettingWarning( ExternalSettings.maxHeapSize, 2 ) );
+        assertThat( bufferingLogger.toString() ).doesNotContain( memorySettingWarning( ExternalSettings.initial_heap_size, 1 ) );
+        assertThat( bufferingLogger.toString() ).doesNotContain( memorySettingWarning( ExternalSettings.max_heap_size, 2 ) );
     }
 }

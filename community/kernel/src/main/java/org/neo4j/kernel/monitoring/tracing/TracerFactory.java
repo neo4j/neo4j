@@ -22,7 +22,7 @@ package org.neo4j.kernel.monitoring.tracing;
 import java.time.Clock;
 
 import org.neo4j.annotations.service.Service;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
@@ -35,7 +35,7 @@ import org.neo4j.time.SystemNanoClock;
 /**
  * A TracerFactory determines the implementation of the tracers, that a database should use. Each implementation has
  * a particular name, which is given by the getImplementationName method, and is used for identifying it in the
- * {@link GraphDatabaseSettings#tracer} setting.
+ * {@link GraphDatabaseInternalSettings#tracer} setting.
  */
 @Service
 public interface TracerFactory extends NamedService

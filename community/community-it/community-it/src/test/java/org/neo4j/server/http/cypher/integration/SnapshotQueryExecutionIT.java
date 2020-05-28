@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -61,7 +61,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         var dependencies = new Dependencies();
         dependencies.satisfyDependencies( testContextSupplier );
         testWebContainer = serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.snapshot_query.name(), TRUE )
+                .withProperty( GraphDatabaseInternalSettings.snapshot_query.name(), TRUE )
                 .withDependencies( dependencies )
                 .build();
         prepareCursorContext();

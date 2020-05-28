@@ -168,11 +168,11 @@ public class ServerSettings implements SettingsDeclaration
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
             "commands with semi-colon." )
-    public static final Setting<String> browser_postConnectCmd = newBuilder( "browser.post_connect_cmd", STRING, "" ).build();
+    public static final Setting<String> browser_post_connect_cmd = newBuilder( "browser.post_connect_cmd", STRING, "" ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
-    public static final Setting<String> browser_remoteContentHostnameWhitelist =
+    public static final Setting<String> browser_remote_content_hostname_whitelist =
             newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
 
     @Internal

@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -126,7 +127,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             String locationMsg = (databaseManagementService == null) ? "" :
-                                 " Another process may be using databases at location: " + config.get( GraphDatabaseSettings.databases_root_path );
+                                 " Another process may be using databases at location: " + config.get( GraphDatabaseInternalSettings.databases_root_path );
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
@@ -180,7 +181,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .withoutRenderingContext()
                 .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
                 .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
-                .withFormat( config.get( GraphDatabaseSettings.log_format) );
+                .withFormat( config.get( GraphDatabaseInternalSettings.log_format) );
 
         LogProvider userLogProvider = config.get( GraphDatabaseSettings.store_user_log_to_stdout ) ? builder.toOutputStream( System.out )
                                                                                                    : createFileSystemUserLogProvider( config, builder );

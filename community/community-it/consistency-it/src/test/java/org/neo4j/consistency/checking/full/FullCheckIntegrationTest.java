@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -2162,7 +2163,7 @@ public class FullCheckIntegrationTest
 
     protected Map<Setting<?>,Object> getSettings()
     {
-        return MapUtil.genericMap( GraphDatabaseSettings.experimental_consistency_checker, false );
+        return MapUtil.genericMap( GraphDatabaseInternalSettings.experimental_consistency_checker, false );
     }
 
     private GraphStoreFixture createFixture()

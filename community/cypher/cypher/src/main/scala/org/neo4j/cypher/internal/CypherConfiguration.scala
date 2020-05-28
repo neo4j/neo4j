@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import java.io.File
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.SettingChangeListener
 import org.neo4j.cypher.CypherExpressionEngineOption
@@ -45,36 +46,36 @@ object CypherConfiguration {
     CypherConfiguration(
       CypherVersion(config.get(GraphDatabaseSettings.cypher_parser_version).toString),
       CypherPlannerOption(config.get(GraphDatabaseSettings.cypher_planner).toString),
-      CypherRuntimeOption(config.get(GraphDatabaseSettings.cypher_runtime).toString),
+      CypherRuntimeOption(config.get(GraphDatabaseInternalSettings.cypher_runtime).toString),
       config.get(GraphDatabaseSettings.query_cache_size).toInt,
       statsDivergenceFromConfig(config),
       config.get(GraphDatabaseSettings.cypher_hints_error),
-      config.get(GraphDatabaseSettings.cypher_idp_solver_table_threshold).toInt,
-      config.get(GraphDatabaseSettings.cypher_idp_solver_duration_threshold).toLong,
+      config.get(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold).toInt,
+      config.get(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold).toLong,
       config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath),
       config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes),
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
       config.get(GraphDatabaseSettings.csv_buffer_size).intValue(),
-      CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine).toString),
+      CypherExpressionEngineOption(config.get(GraphDatabaseInternalSettings.cypher_expression_engine).toString),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
-      config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_small),
-      config.get(GraphDatabaseSettings.cypher_pipelined_batch_size_big),
-      config.get(GraphDatabaseSettings.enable_pipelined_runtime_trace),
-      config.get(GraphDatabaseSettings.pipelined_scheduler_trace_filename).toFile,
-      config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
-      CypherOperatorEngineOption(config.get(GraphDatabaseSettings.cypher_operator_engine).toString),
-      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
+      config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small),
+      config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big),
+      config.get(GraphDatabaseInternalSettings.enable_pipelined_runtime_trace),
+      config.get(GraphDatabaseInternalSettings.pipelined_scheduler_trace_filename).toFile,
+      config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit),
+      CypherOperatorEngineOption(config.get(GraphDatabaseInternalSettings.cypher_operator_engine).toString),
+      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
       new ConfigMemoryTrackingController(config),
-      config.get(GraphDatabaseSettings.cypher_enable_runtime_monitors)
+      config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
     )
   }
 
   def statsDivergenceFromConfig(config: Config): StatsDivergenceCalculator = {
     val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
-    val targetThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue()
+    val targetThreshold = config.get(GraphDatabaseInternalSettings.query_statistics_divergence_target).doubleValue()
     val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
-    val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
-    val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm).toString
+    val targetReplanTime = config.get(GraphDatabaseInternalSettings.cypher_replan_interval_target).toMillis.longValue()
+    val divergenceAlgorithm = config.get(GraphDatabaseInternalSettings.cypher_replan_algorithm).toString
     StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm,
       divergenceThreshold,
       targetThreshold,
@@ -159,8 +160,8 @@ case class CypherConfiguration(version: CypherVersion,
       errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
       legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
       csvBufferSize = csvBufferSize,
-      nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
+      nonIndexedLabelWarningThreshold = config.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
       planSystemCommands = planSystemCommands,
-      readPropertiesFromCursor = config.get(GraphDatabaseSettings.cypher_read_properties_from_cursor)
+      readPropertiesFromCursor = config.get(GraphDatabaseInternalSettings.cypher_read_properties_from_cursor)
     )
 }

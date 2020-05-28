@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.LoggingVmPauseMonitor;
 import org.neo4j.logging.Log;
@@ -53,8 +53,8 @@ public class VmPauseMonitorComponent extends LifecycleAdapter
     {
         globalMonitors.addMonitorListener( loggingVmPauseMonitor );
         vmPauseMonitor = new VmPauseMonitor(
-                config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ),
-                config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ),
+                config.get( GraphDatabaseInternalSettings.vm_pause_monitor_measurement_duration ),
+                config.get( GraphDatabaseInternalSettings.vm_pause_monitor_stall_alert_threshold ),
                 monitor, jobScheduler
         );
         vmPauseMonitor.start();

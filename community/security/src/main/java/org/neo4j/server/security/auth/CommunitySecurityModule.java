@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -109,7 +109,7 @@ public class CommunitySecurityModule extends SecurityModule
     {
         // Because it contains sensitive information there is a legacy setting to configure
         // the location of the user store file that we still respect
-        File authStore = config.get( GraphDatabaseSettings.auth_store ).toFile();
+        File authStore = config.get( GraphDatabaseInternalSettings.auth_store ).toFile();
         if ( authStore.isFile() )
         {
             return authStore;

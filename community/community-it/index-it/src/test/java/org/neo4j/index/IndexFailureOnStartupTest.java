@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -105,7 +105,7 @@ public class IndexFailureOnStartupTest
     public void shouldArchiveFailedIndex() throws Exception
     {
         // given
-        db.withSetting( GraphDatabaseSettings.archive_failed_index, true );
+        db.withSetting( GraphDatabaseInternalSettings.archive_failed_index, true );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( PERSON );

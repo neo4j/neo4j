@@ -34,12 +34,10 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
 import static java.time.Duration.ofHours;
-import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
@@ -48,8 +46,8 @@ import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
-import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.ifCluster;
+import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
@@ -111,18 +109,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Internal
-    public static final Setting<Path> databases_root_path =
-            newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( DEFAULT_DATABASES_ROOT_DIR_NAME ) )
-                    .setDependency( data_directory ).immutable().build();
-
-    @Deprecated
-    @Internal
-    @Description( "Location where Neo4j keeps the logical transaction logs." )
-    public static final Setting<Path> logical_logs_location = newBuilder( "dbms.directories.tx_log", PATH, Path.of( DEFAULT_DATABASE_NAME ) )
-            .setDependency( databases_root_path )
-            .build();
-
     @Description( "Root location where Neo4j will store transaction logs for configured databases." )
     public static final Setting<Path> transaction_logs_root_path =
             newBuilder( "dbms.directories.transaction.logs.root", PATH, Path.of( DEFAULT_TX_LOGS_ROOT_DIR_NAME ) )
@@ -136,21 +122,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Only allow read operations from this Neo4j instance. " +
             "This mode still requires write access to the directory for lock purposes." )
     public static final Setting<Boolean> read_only = newBuilder( "dbms.read_only", BOOL, false ).build();
-
-    @Internal
-    @Description( "Configure lucene to be in memory only, for test environment. This is set in code and should never be configured explicitly." )
-    public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
-
-    @Internal
-    public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "" ).build();
-
-    @Internal
-    public static final Setting<String> tracer = newBuilder( "unsupported.dbms.tracer", STRING, null ).build();
-
-    @Description( "Print out the effective Neo4j configuration after startup." )
-    @Internal
-    public static final Setting<Boolean> dump_configuration = newBuilder( "unsupported.dbms.report_configuration", BOOL, false )
-            .build();
 
     @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
             "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc)." )
@@ -254,37 +225,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> cypher_lenient_create_relationship =
             newBuilder( "cypher.lenient_create_relationship", BOOL, false ).build();
 
-    public enum CypherRuntime
-    {
-        DEFAULT, INTERPRETED, COMPILED, SLOTTED, PIPELINED
-    }
-    @Description( "Set this to specify the default runtime for the default language version." )
-    @Internal
-    public static final Setting<CypherRuntime> cypher_runtime =
-            newBuilder( "unsupported.cypher.runtime", ofEnum( CypherRuntime.class ), CypherRuntime.DEFAULT ).build();
-
-    public enum CypherExpressionEngine
-    {
-        DEFAULT, INTERPRETED, COMPILED, ONLY_WHEN_HOT
-    }
-    @Description( "Choose the expression engine. The default is to only compile expressions that are hot, if 'COMPILED' " +
-            "is chosen all expressions will be compiled directly and if 'INTERPRETED' is chosen expressions will " +
-            "never be compiled." )
-    @Internal
-    public static final Setting<CypherExpressionEngine> cypher_expression_engine =
-            newBuilder( "unsupported.cypher.expression_engine", ofEnum( CypherExpressionEngine.class ), CypherExpressionEngine.DEFAULT ).build();
-
-    @Description( "Number of uses before an expression is considered for compilation" )
-    @Internal
-    public static final Setting<Integer> cypher_expression_recompilation_limit = newBuilder( "unsupported.cypher.expression_recompilation_limit", INT, 10 )
-            .addConstraint( min( 0 ) )
-            .build();
-
-    @Description( "Enable tracing of compilation in cypher." )
-    @Internal
-    public static final Setting<Boolean> cypher_compiler_tracing =
-            newBuilder( "unsupported.cypher.compiler_tracing", BOOL, false ).build();
-
     @Description( "The number of Cypher query execution plans that are cached." )
     public static final Setting<Integer> query_cache_size =
             newBuilder( "dbms.query_cache_size", INT, 1000 ).addConstraint( min( 0 ) ).build();
@@ -301,38 +241,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Double> query_statistics_divergence_threshold =
             newBuilder( "cypher.statistics_divergence_threshold", DOUBLE, 0.75 ).addConstraint( range( 0.0, 1.0 ) ).build();
 
-    @Description( "Large databases might change slowly, and so to prevent queries from never being replanned " +
-            "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
-            "shrink over time. " +
-            "The algorithm used to manage this change is set by unsupported.cypher.replan_algorithm " +
-            "and will cause the threshold to reach the value set here once the time since the previous " +
-            "replanning has reached unsupported.cypher.target_replan_interval. " +
-            "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the " +
-            "threshold to not decay over time." )
-    @Internal
-    public static final Setting<Double> query_statistics_divergence_target =
-            newBuilder( "unsupported.cypher.statistics_divergence_target", DOUBLE, 0.10 ).addConstraint( range( 0.0, 1.0 ) ).build();
-
-    @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
-            "where the label has no index" )
-    @Internal
-    public static final Setting<Long> query_non_indexed_label_warning_threshold =
-            newBuilder( "unsupported.cypher.non_indexed_label_warning_threshold", LONG, 10000L ).build();
-
-    @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
-            "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
-            "but the higher the risk of sub-optimal plans." )
-    @Internal
-    public static final Setting<Integer> cypher_idp_solver_table_threshold =
-            newBuilder( "unsupported.cypher.idp_solver_table_threshold", INT, 128 ).addConstraint( min( 16 ) ).build();
-
-    @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
-            "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
-            "faster the planning, but the higher the risk of sub-optimal plans." )
-    @Internal
-    public static final Setting<Long> cypher_idp_solver_duration_threshold =
-            newBuilder( "unsupported.cypher.idp_solver_duration_threshold", LONG, 1000L ).addConstraint( min( 10L ) ).build();
-
     @Description( "The minimum time between possible cypher query replanning events. After this time, the graph " +
             "statistics will be evaluated, and if they have changed by more than the value set by " +
             "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
@@ -342,36 +250,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "after a sufficiently long time interval." )
     public static final Setting<Duration> cypher_min_replan_interval =
             newBuilder( "cypher.min_replan_interval", DURATION, ofSeconds( 10 ) ).build();
-
-    @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
-            "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
-            "shrink over time. The algorithm used to manage this change is set by " +
-            "unsupported.cypher.replan_algorithm and will cause the threshold to reach " +
-            "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
-            "previous replanning has reached the value set here. Setting this value to less than the " +
-            "value of cypher.min_replan_interval will cause the threshold to not decay over time." )
-    @Internal
-    public static final Setting<Duration> cypher_replan_interval_target =
-            newBuilder( "unsupported.cypher.target_replan_interval", DURATION, Duration.ofHours( 7 ) ).build();
-
-    public enum CypherReplanAlgorithm
-    {
-        DEFAULT, NONE, INVERSE, EXPONENTIAL
-    }
-    @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
-            "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
-            "shrink over time using the algorithm set here. This will cause the threshold to reach " +
-            "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
-            "previous replanning has reached the value set in unsupported.cypher.target_replan_interval. " +
-            "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
-    @Internal
-    public static final Setting<CypherReplanAlgorithm> cypher_replan_algorithm =
-            newBuilder( "unsupported.cypher.replan_algorithm", ofEnum( CypherReplanAlgorithm.class ), CypherReplanAlgorithm.DEFAULT ).build();
-
-    @Description( "Set this to enable monitors in the Cypher runtime." )
-    @Internal
-    public static final Setting<Boolean> cypher_enable_runtime_monitors =
-            newBuilder( "unsupported.cypher.enable_runtime_monitors", BOOL, false ).build();
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
             + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -410,96 +288,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
             newBuilder( "dbms.track_query_allocation", BOOL, true ).dynamic().build();
-
-    @Description( "Enable tracing of pipelined runtime scheduler." )
-    @Internal
-    public static final Setting<Boolean> enable_pipelined_runtime_trace =
-            newBuilder( "unsupported.cypher.pipelined.enable_runtime_trace", BOOL, false ).build();
-
-    @Description( "Path to the pipelined runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
-    @Internal
-    public static final Setting<Path> pipelined_scheduler_trace_filename =
-            newBuilder( "unsupported.cypher.pipelined.runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
-
-    @Description( "The size of batches in the pipelined runtime for queries which work with few rows." )
-    @Internal
-    public static final Setting<Integer> cypher_pipelined_batch_size_small =
-            newBuilder( "unsupported.cypher.pipelined.batch_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
-
-    @Description( "The size of batches in the pipelined runtime for queries which work with many rows." )
-    @Internal
-    public static final Setting<Integer> cypher_pipelined_batch_size_big =
-            newBuilder( "unsupported.cypher.pipelined.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
-
-    @Description( "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, two workers will be started" +
-                  " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used." )
-    @Internal
-    public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
-
-    public enum CypherOperatorEngine
-    {
-        COMPILED,
-        INTERPRETED
-    }
-
-    @Description( "For compiled execution, specialized code is generated and then executed. " +
-                  "More optimizations such as operator fusion may apply. " +
-                  "Operator fusion means that multiple operators such as for example " +
-                  "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
-                  "This setting only applies to the pipelined and parallel runtime. " +
-                  "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." )
-    @Internal
-    public static final Setting<CypherOperatorEngine> cypher_operator_engine =
-            newBuilder( "unsupported.cypher.pipelined.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
-
-    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the pipelined runtime. " +
-                  "Allowed values are \"disabled\", \"default\" (the default) and \"all\" (experimental). " +
-                  "The default is to enable the use of a subset of whitelisted operators that are known to be supported, whereas \"all\" is an " +
-                  "experimental option that enables the fallback to be used for all possible operators that are not known to be unsupported." )
-    @Internal
-    public static final Setting<CypherPipelinedInterpretedPipesFallback> cypher_pipelined_interpreted_pipes_fallback =
-            newBuilder( "unsupported.cypher.pipelined_interpreted_pipes_fallback", ofEnum( CypherPipelinedInterpretedPipesFallback.class ),
-                    CypherPipelinedInterpretedPipesFallback.DEFAULT ).build();
-
-    public enum CypherPipelinedInterpretedPipesFallback
-    {
-        DISABLED, DEFAULT, ALL
-    }
-
-    @Description( "When enabled property reads will - as much as possible - be pushed down to be read at the same time as we are " +
-                  "visiting a node or relationship. This means that in some cases we will read properties at a higher cardinality point" +
-                  " which will lead to worse performance. However depending on the store format and how expensive the property read will be " +
-                  "this can also be beneficial since it will lead to less work finding nodes and relationships from the store." )
-    @Internal
-    public static final Setting<Boolean> cypher_read_properties_from_cursor =
-            newBuilder( "unsupported.cypher.read_properties_from_cursor", BOOL, false).build();
-
-    @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
-            " nearest power of two. The default number (8192 query invocations) " +
-            " was chosen as a trade-off between getting a useful amount of queries, and not" +
-            " wasting too much heap. Even with a buffer full of unique queries, the estimated" +
-            " footprint lies in tens of MBs. If the buffer is full of cached queries, the" +
-            " retained size was measured to 265 kB. Setting this to 0 will disable data collection" +
-            " of queries completely." )
-    @Internal
-    public static final Setting<Integer> data_collector_max_recent_query_count =
-            newBuilder( "unsupported.datacollector.max_recent_query_count", INT, 8192 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "Sets the upper limit for how much of the query text that will be retained by the query collector." +
-            " For queries longer than the limit, only a prefix of size limit will be retained by the collector." +
-            " Lowering this value will reduce the memory footprint of collected query invocations under loads with" +
-            " many queries with long query texts, which could occur for generated queries. The downside is that" +
-            " on retrieving queries by `db.stats.retrieve`, queries longer than this max size would be returned" +
-            " incomplete. Setting this to 0 will completely drop query texts from the collected queries." )
-    @Internal
-    public static final Setting<Integer> data_collector_max_query_text_size =
-            newBuilder( "unsupported.datacollector.max_query_text_size", INT, 10000 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "The maximum amount of time to wait for the database to become available, when " +
-            "starting a new transaction." )
-    @Internal
-    public static final Setting<Duration> transaction_start_timeout =
-            newBuilder( "unsupported.dbms.transaction_start_timeout", DURATION, ofSeconds( 1 ) ).build();
 
     @Description( "The maximum number of concurrently running transactions. If set to 0, limit is disabled." )
     public static final Setting<Integer> max_concurrent_transactions =
@@ -545,17 +333,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Internal
-    @Description( "Location of the database scripts directory." )
-    public static final Setting<Path> scripts_dir = newBuilder( "unsupported.dbms.directories.scripts", PATH, Path.of("scripts" ) )
-            .setDependency( neo4j_home )
-            .immutable()
-            .build();
-
     @Description( "Name of file containing commands to be run during initialization of the system database. " +
                   "The file should exists in the scripts directory in neo4j home directory." )
     public static final Setting<Path> system_init_file =
-            newBuilder( "dbms.init_file", PATH, null ).immutable().setDependency( scripts_dir ).build();
+            newBuilder( "dbms.init_file", PATH, null ).immutable().setDependency( GraphDatabaseInternalSettings.scripts_dir ).build();
 
     @Description( "Threshold for rotation of the user log. If set to 0 log rotation is disabled." )
     public static final Setting<Long> store_user_log_rotation_threshold =
@@ -564,11 +345,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Threshold for rotation of the debug log." )
     public static final Setting<Long> store_internal_log_rotation_threshold =
             newBuilder( "dbms.logs.debug.rotation.size", BYTES, mebiBytes( 20 ) ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
-
-    @Description( "Debug log contexts that should output debug level logging" )
-    @Internal
-    public static final Setting<List<String>> store_internal_debug_contexts =
-            newBuilder( "unsupported.dbms.logs.debug.debug_loggers", listOf( STRING ), List.of( "org.neo4j.diagnostics" ) ).dynamic().build();
 
     @Description( "Debug log level threshold." )
     public static final Setting<Level> store_internal_log_level =
@@ -581,11 +357,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
             "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone = newBuilder( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC ).build();
-
-    @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
-    @Internal
-    public static final Setting<Duration> counts_store_rotation_timeout =
-            newBuilder( "unsupported.dbms.counts_store_rotation_timeout", DURATION, ofMinutes( 10 ) ).build();
 
     @Description( "Minimum time interval after last rotation of the user log before it may be rotated again." )
     public static final Setting<Duration> store_user_log_rotation_delay =
@@ -671,26 +442,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> index_sampling_update_percentage =
             newBuilder( "dbms.index_sampling.update_percentage", INT, 5 ).addConstraint( min( 0 ) ).build();
 
-    @Description( "Set the maximum number of threads that can concurrently be used to sample indexes. Zero means unrestricted." )
-    @Internal
-    public static final Setting<Integer> index_sampling_parallelism =
-            newBuilder( "unsupported.dbms.index_sampling.parallelism", INT, 4 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "Set the maximum number of concurrent index populations across system. " +
-            "This also limit the number of threads used to scan store. " +
-            "Note that multiple indexes can be populated by a single index population if they were created in the same transaction. " +
-            "Zero means unrestricted. " )
-    @Internal
-    public static final Setting<Integer> index_population_parallelism =
-            newBuilder( "unsupported.dbms.index_population.parallelism", INT, 4 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "Set the number of threads used for index population work. " +
-            "Those threads execute individual subtasks provided by index population main threads, see unsupported.dbms.index_population.parallelism." +
-            "Zero means one thread per cpu core." )
-    @Internal
-    public static final Setting<Integer> index_population_workers =
-            newBuilder( "unsupported.dbms.index_population.workers", INT, 8 ).addConstraint( min( 0 ) ).build();
-
     // Lucene settings
     @Deprecated( since = "4.0.0", forRemoval = true )
     @Description( "The maximum number of open Lucene index searchers." )
@@ -762,11 +513,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<String> default_schema_provider =
             newBuilder( "dbms.index.default_schema_provider", STRING, SchemaIndex.NATIVE_BTREE10.toString() ).build();
 
-    @Description( "The default index provider used for managing full-text indexes. Only 'fulltext-1.0' is supported." )
-    @Internal
-    public static final Setting<String> default_fulltext_provider =
-            newBuilder( "unsupported.dbms.index.default_fulltext_provider", STRING, "fulltext-1.0" ).build();
-
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
@@ -789,28 +535,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
     public static final Setting<Boolean> preallocate_logical_logs = newBuilder( "dbms.tx_log.preallocate", BOOL, true ).dynamic().build();
 
-    @Description( "If `true`, Neo4j will abort recovery if any errors are encountered in the logical log. Setting " +
-            "this to `false` will allow Neo4j to restore as much as possible from the corrupted log files and ignore " +
-            "the rest, but, the integrity of the database might be compromised." )
-    @Internal
-    public static final Setting<Boolean> fail_on_corrupted_log_files =
-            newBuilder("unsupported.dbms.tx_log.fail_on_corrupted_log_files", BOOL, true ).build();
-
     @Description( "If `true`, Neo4j will abort recovery if logical log files are missing. Setting " +
             "this to `false` will allow Neo4j to create new empty missing files for already existing database, but, " +
             "the integrity of the database might be compromised." )
     public static final Setting<Boolean> fail_on_missing_files = newBuilder( "dbms.recovery.fail_on_missing_files", BOOL, true ).build();
-
-    @Description( "Specifies if engine should run cypher query based on a snapshot of accessed data. " +
-            "Query will be restarted in case if concurrent modification of data will be detected." )
-    @Internal
-    public static final Setting<Boolean> snapshot_query = newBuilder( "unsupported.dbms.query.snapshot", BOOL, false ).build();
-
-    @Description( "Specifies number or retries that query engine will do to execute query based on " +
-            "stable accessed data snapshot before giving up." )
-    @Internal
-    public static final Setting<Integer> snapshot_query_retries =
-            newBuilder( "unsupported.dbms.query.snapshot.retries", INT, 5 ).addConstraint( range( 1, Integer.MAX_VALUE ) ).build();
 
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
             "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
@@ -861,64 +589,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
 
-    /**
-     * Block size properties values depends from selected record format.
-     * We can't figured out record format until it will be selected by corresponding edition.
-     * As soon as we will figure it out properties will be re-evaluated and overwritten, except cases of user
-     * defined value.
-     */
-    @Description( "Specifies the block size for storing strings. This parameter is only honored when the store is " +
-            "created, otherwise it is ignored. " +
-            "Note that each character in a string occupies two bytes, meaning that e.g a block size of 120 will hold " +
-            "a 60 character long string before overflowing into a second block. " +
-            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
-            "than the configured block size" )
-    @Internal
-    public static final Setting<Integer> string_block_size =
-            newBuilder( "unsupported.dbms.block_size.strings", INT, 0 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "Specifies the block size for storing arrays. This parameter is only honored when the store is " +
-            "created, otherwise it is ignored. " +
-            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
-            "than the configured block size" )
-    @Internal
-    public static final Setting<Integer> array_block_size =
-            newBuilder( "unsupported.dbms.block_size.array_properties", INT, 0 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "Specifies the block size for storing labels exceeding in-lined space in node record. " +
-            "This parameter is only honored when the store is created, otherwise it is ignored. " +
-            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
-            "than the configured block size" )
-    @Internal
-    public static final Setting<Integer> label_block_size =
-            newBuilder( "unsupported.dbms.block_size.labels", INT, 0 ).addConstraint( min( 0 ) ).build();
-
-    @Description( "An identifier that uniquely identifies this graph database instance within this JVM. " +
-            "Defaults to an auto-generated number depending on how many instance are started in this JVM." )
-    @Internal
-    public static final Setting<String> forced_kernel_id = newBuilder( "unsupported.dbms.kernel_id", STRING, null )
-            .addConstraint( SettingConstraints.matches( "[a-zA-Z0-9]*", "has to be a valid kernel identifier" ) )
-            .build();
-
-    @Internal
-    public static final Setting<Duration> vm_pause_monitor_measurement_duration =
-            newBuilder( "unsupported.vm_pause_monitor.measurement_duration", DURATION, ofMillis( 100 ) ).build();
-
-    @Internal
-    public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
-            newBuilder( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, ofMillis( 100 ) ).build();
-
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold =
             newBuilder( "dbms.relationship_grouping_threshold", INT, 50 ).addConstraint( min( 1 ) ).build();
-
-    @Description( "Specifies the use of the new faster but experimental consistency checker" )
-    public static final Setting<Boolean> experimental_consistency_checker = newBuilder( "unsupported.consistency_checker.experimental", BOOL, true ).build();
-
-    @Description( "Specifies if the experimental consistency checker should stop when number of observed inconsistencies exceed the threshold. " +
-            "If the value is zero, all inconsistencies will be reported" )
-    public static final Setting<Integer> experimental_consistency_checker_stop_threshold =
-            newBuilder( "unsupported.consistency_checker.experimental.fail_fast", INT, 0 ).addConstraint( min( 0 ) ).build();
 
     @Description( "Log executed queries. Valid values are 'OFF', 'INFO' & 'VERBOSE'.\n" +
             "OFF:  no logging.\n" +
@@ -963,11 +636,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .setDependency( logs_directory )
             .immutable()
             .build();
-
-    @Description( "Log format to use." )
-    @Internal
-    public static final Setting<FormattedLogFormat> log_format =
-            newBuilder( "unsupported.dbms.logs.format", ofEnum( FormattedLogFormat.class ), FormattedLogFormat.STANDARD_FORMAT ).build();
 
     @Description( "Log parameters for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
@@ -1018,28 +686,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> log_queries_max_archives =
             newBuilder( "dbms.logs.query.rotation.keep_number", INT, 7 ).addConstraint( min( 1 ) ).dynamic().build();
 
-    @Description( "Create a heap dump just before the end of each query execution. " +
-            "The heap dump will be placed in log directory and the file name will contain the query id, to be correlated with an entry in the query log. " +
-            "Only live objects will be included to minimize the file size. " )
-    @Internal
-    public static final Setting<Boolean> log_queries_heap_dump_enabled =
-            newBuilder( "unsupported.dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
-
-    @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
-            "flushing data into underlying storage." )
-    @Internal
-    public static final Setting<Integer> batch_inserter_batch_size =
-            newBuilder( "unsupported.tools.batch_inserter.batch_size", INT, 10000 ).build();
-
     // Security settings
 
     @Description( "Enable auth requirement to access Neo4j." )
     @DocumentedDefaultValue( "true" ) // Should document server defaults.
     public static final Setting<Boolean> auth_enabled = newBuilder( "dbms.security.auth_enabled", BOOL, false ).build();
-
-    @Internal
-    public static final Setting<Path> auth_store =
-            newBuilder( "unsupported.dbms.security.auth_store.location", PATH, null ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "The maximum number of unsuccessful authentication attempts before imposing a user lock for the configured amount of time." +
             "The locked out user will not be able to log in until the lock period expires, even if correct credentials are provided. " +
@@ -1100,61 +751,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .addConstraint( HOSTNAME_ONLY )
                     .immutable()
                     .build();
-
-    // Bolt Settings
-
-    @Description( "Whether to apply network level outbound network buffer based throttling" )
-    @Internal
-    public static final Setting<Boolean> bolt_outbound_buffer_throttle =
-            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle", BOOL, true ).build();
-
-    @Description( "When the size (in bytes) of outbound network buffers, used by bolt's network layer, " +
-            "grows beyond this value bolt channel will advertise itself as unwritable and will block " +
-            "related processing thread until it becomes writable again." )
-    @Internal
-    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark =
-            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INT, (int) kibiBytes( 512 ) )
-                    .addConstraint( range( (int) kibiBytes( 64 ), Integer.MAX_VALUE ) )
-                    .build();
-
-    @Description( "When the size (in bytes) of outbound network buffers, previously advertised as unwritable, " +
-            "gets below this value bolt channel will re-advertise itself as writable and blocked processing " +
-            "thread will resume execution." )
-    @Internal
-    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark =
-            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark", INT, (int) kibiBytes( 128 ))
-                    .addConstraint( range( (int) kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
-
-    @Description( "When the total time outbound network buffer based throttle lock is held exceeds this value, " +
-            "the corresponding bolt channel will be aborted. Setting " +
-            "this to 0 will disable this behaviour." )
-    @Internal
-    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration =
-            newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, ofMinutes( 15 )  )
-                    .addConstraint( any( min( ofSeconds( 30 ) ), is( Duration.ZERO )  ) )
-                    .build();
-
-    @Description( "When the number of queued inbound messages grows beyond this value, reading from underlying " +
-            "channel will be paused (no more inbound messages will be available) until queued number of " +
-            "messages drops below the configured low watermark value." )
-    @Internal
-    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark =
-            newBuilder( "unsupported.dbms.bolt.inbound_message_throttle.high_watermark", INT, 300 )
-                    .addConstraint( range( 1, Integer.MAX_VALUE ) ).build();
-
-    @Description( "When the number of queued inbound messages, previously reached configured high watermark value, " +
-            "drops below this value, reading from underlying channel will be enabled and any pending messages " +
-            "will start queuing again." )
-    @Internal
-    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
-            newBuilder( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INT, 100 )
-                    .addConstraint( range( 1, Integer.MAX_VALUE ) )
-                    .build();
-
-    @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
-    @Internal
-    public static final Setting<Boolean> archive_failed_index =
-            newBuilder( "unsupported.dbms.index.archive_failed", BOOL, false ).build();
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout =
@@ -1233,14 +829,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.reconciler.max_parallelism", INT, Math.min( Runtime.getRuntime().availableProcessors(), 8 ) )
             .addConstraint( min( 0 ) )
             .build();
-
-    @Description( "Forces smaller ID cache, in order to preserve memory." )
-    @Internal
-    public static final Setting<Boolean> force_small_id_cache = newBuilder( "unsupported.dbms.force_small_id_cache", BOOL, Boolean.FALSE ).build();
-
-    @Internal
-    public static final Setting<Boolean> consistency_check_on_apply =
-            newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
 
     /**
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.

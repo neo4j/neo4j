@@ -38,6 +38,7 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -184,7 +185,7 @@ public class ResetFuzzIT
         return settings -> {
             settings.put( BoltConnector.encryption_level, OPTIONAL );
             settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-            settings.put( BoltConnector.unsupported_thread_pool_queue_size, -1 );
+            settings.put( BoltConnectorInternalSettings.unsupported_thread_pool_queue_size, -1 );
             settings.put( BoltConnector.thread_pool_min_size, 1 );
             settings.put( BoltConnector.thread_pool_max_size, 1 );
         };

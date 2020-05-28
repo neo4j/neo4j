@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
@@ -51,7 +51,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
                              CompilerFactory compilerFactory )
     {
         super( queryService, logProvider, compilerFactory );
-        this.maxQueryExecutionAttempts = config.get( GraphDatabaseSettings.snapshot_query_retries );
+        this.maxQueryExecutionAttempts = config.get( GraphDatabaseInternalSettings.snapshot_query_retries );
     }
 
     @Override

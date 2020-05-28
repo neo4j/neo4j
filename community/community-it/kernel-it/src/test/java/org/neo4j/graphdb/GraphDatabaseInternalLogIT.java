@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -94,7 +95,7 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homeDir() )
-                .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, List.of( getClass().getName(), "java.io" ) )
+                .setConfig( GraphDatabaseInternalSettings.store_internal_debug_contexts, List.of( getClass().getName(), "java.io" ) )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

@@ -27,7 +27,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Setting;
@@ -435,7 +435,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createNodeLabelStore( PageCursorTracer cursorTracer )
     {
         return createDynamicArrayStore( layout.nodeLabelStore(), layout.idNodeLabelStore(), IdType.NODE_LABELS,
-                GraphDatabaseSettings.label_block_size, cursorTracer );
+                GraphDatabaseInternalSettings.label_block_size, cursorTracer );
     }
 
     CommonAbstractStore createPropertyKeyTokenStore( PageCursorTracer cursorTracer )
@@ -467,7 +467,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createPropertyArrayStore( PageCursorTracer cursorTracer )
     {
         return createDynamicArrayStore( layout.propertyArrayStore(), layout.idPropertyArrayStore(), IdType.ARRAY_BLOCK,
-                GraphDatabaseSettings.array_block_size, cursorTracer );
+                GraphDatabaseInternalSettings.array_block_size, cursorTracer );
     }
 
     CommonAbstractStore createRelationshipStore( PageCursorTracer cursorTracer )
@@ -527,7 +527,7 @@ public class NeoStores implements AutoCloseable
 
     private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, PageCursorTracer cursorTracer )
     {
-        return createDynamicStringStore( storeFile, idFile, IdType.STRING_BLOCK, config.get( GraphDatabaseSettings.string_block_size ), cursorTracer );
+        return createDynamicStringStore( storeFile, idFile, IdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ), cursorTracer );
     }
 
     private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, IdType idType, int blockSize, PageCursorTracer cursorTracer )

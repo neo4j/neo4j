@@ -64,8 +64,8 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendO
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
-import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
-import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
+import static org.neo4j.configuration.ExternalSettings.max_heap_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
@@ -222,8 +222,8 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( initialHeapSize.name() + "=" + heap );
-        verify( output ).println( maxHeapSize.name() + "=" + heap );
+        verify( output ).println( initial_heap_size.name() + "=" + heap );
+        verify( output ).println( max_heap_size.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
         verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
     }
@@ -249,8 +249,8 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( initialHeapSize.name() + "=" + heap );
-        verify( output ).println( maxHeapSize.name() + "=" + heap );
+        verify( output ).println( initial_heap_size.name() + "=" + heap );
+        verify( output ).println( max_heap_size.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
         verify( output, never() ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
     }
@@ -298,8 +298,8 @@ class MemoryRecommendationsCommandTest
         command.execute();
 
         // then
-        verify( output ).println( contains( initialHeapSize.name() + "=" + heap ) );
-        verify( output ).println( contains( maxHeapSize.name() + "=" + heap ) );
+        verify( output ).println( contains( initial_heap_size.name() + "=" + heap ) );
+        verify( output ).println( contains( max_heap_size.name() + "=" + heap ) );
         verify( output ).println( contains( pagecache_memory.name() + "=" + pagecache ) );
 
         long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );

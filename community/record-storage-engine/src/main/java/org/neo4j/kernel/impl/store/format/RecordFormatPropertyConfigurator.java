@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.store.format;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.array_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.label_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.string_block_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
-import static org.neo4j.configuration.GraphDatabaseSettings.array_block_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.label_block_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.string_block_size;
 
 /**
  * There are couple of configuration options that should be adapted for each particular implementation of record format.

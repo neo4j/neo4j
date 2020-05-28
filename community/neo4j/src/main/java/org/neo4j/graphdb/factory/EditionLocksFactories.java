@@ -22,7 +22,7 @@ package org.neo4j.graphdb.factory;
 import java.time.Clock;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.lock.ResourceTypes;
@@ -38,7 +38,7 @@ public final class EditionLocksFactories
 
     public static LocksFactory createLockFactory( Config config, LogService logService )
     {
-        LocksFactory locksFactory = getLocksFactory( config.get( GraphDatabaseSettings.lock_manager ) );
+        LocksFactory locksFactory = getLocksFactory( config.get( GraphDatabaseInternalSettings.lock_manager ) );
         logService.getInternalLog( EditionLocksFactories.class ).info( "Locking implementation '" + locksFactory.getName() + "' selected." );
         return locksFactory;
     }

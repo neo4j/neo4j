@@ -36,18 +36,18 @@ import static org.neo4j.configuration.SettingValueParsers.STRING;
 public class ExternalSettings implements SettingsDeclaration
 {
     @Description( "Name of the Windows Service." )
-    public static final Setting<String> windowsServiceName = newBuilder( "dbms.windows_service_name", STRING, "neo4j" ).build();
+    public static final Setting<String> windows_service_name = newBuilder( "dbms.windows_service_name", STRING, "neo4j" ).build();
 
     @Description( "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock " +
             "commercial features must precede the argument to enable the specific feature in the config value string. For example, " +
             "to use Flight Recorder, `-XX:+UnlockCommercialFeatures` must come before `-XX:+FlightRecorder`." )
-    public static final Setting<String> additionalJvm = newBuilder( "dbms.jvm.additional", STRING, "" ).build();
+    public static final Setting<String> additional_jvm = newBuilder( "dbms.jvm.additional", STRING, "" ).build();
 
     @Description( "Initial heap size. By default it is calculated based on available system resources. (valid units are `k`, `K`, `m`, `M`, `g`, `G`)." )
-    public static final Setting<String> initialHeapSize = newBuilder( "dbms.memory.heap.initial_size", STRING , "").build();
+    public static final Setting<String> initial_heap_size = newBuilder( "dbms.memory.heap.initial_size", STRING , "").build();
 
     @Description( "Maximum heap size. By default it is calculated based on available system resources. (valid units are `k`, `K`, `m`, `M`, `g`, `G`)." )
-    public static final Setting<String> maxHeapSize = newBuilder( "dbms.memory.heap.max_size", STRING, "" ).build();
+    public static final Setting<String> max_heap_size = newBuilder( "dbms.memory.heap.max_size", STRING, "" ).build();
 
     @Description( "GC Logging Options" )
     public static final Setting<String> gc_logging_options = newBuilder("dbms.logs.gc.options", STRING, null ).build();

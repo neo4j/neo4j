@@ -40,12 +40,12 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.array_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.label_block_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.string_block_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
-import static org.neo4j.configuration.GraphDatabaseSettings.array_block_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.label_block_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
 class RecordFormatPropertyConfiguratorTest
