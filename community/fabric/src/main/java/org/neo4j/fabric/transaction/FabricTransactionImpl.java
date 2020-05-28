@@ -516,7 +516,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private FabricException multipleWriteError( Location attempt )
     {
         return new FabricException(
-                Status.Fabric.AccessMode,
+                Status.Statement.AccessMode,
                 "Multi-shard writes not allowed. Attempted write to %s, currently writing to %s",
                 attempt, writingTransaction.getLocation() );
     }

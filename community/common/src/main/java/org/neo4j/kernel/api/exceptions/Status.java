@@ -216,12 +216,14 @@ public interface Status
                 "This is an administration command and it should be executed against the system database." ),
         NotSystemDatabaseOnLeaderError( ClientError,
                 "This is an administration command and it should be executed against the LEADER server of the system database." ),
+        AccessMode( ClientError, "The request could not be completed due to access mode violation" ),
 
         // database errors
         ExecutionFailed( DatabaseError,
                 "The database was unable to execute the statement." ),
         CodeGenerationFailed( DatabaseError,
                               "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." ),
+        RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." ),
 
         // transient errors
         ExternalResourceFailed( ClientError,
@@ -500,6 +502,8 @@ public interface Status
 
         NotALeader( ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
+
+        Routing( TransientError, "Unable to route the request to the appropriate server" )
                 ;
 
         private final Code code;
@@ -518,9 +522,10 @@ public interface Status
 
     enum Fabric implements Status
     {
+        @Deprecated
         RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." ),
-        AccessMode( ClientError, "The request could not be completed due to access mode violation" ),
-        Routing( TransientError, "Unable to route the request to the appropriate server" );
+        @Deprecated
+        AccessMode( ClientError, "The request could not be completed due to access mode violation" );
 
         private final Code code;
 

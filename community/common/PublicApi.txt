@@ -11,6 +11,7 @@ org.neo4j.kernel.api.exceptions.Status.Classification::values() org.neo4j.kernel
 org.neo4j.kernel.api.exceptions.Status.Cluster public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Cluster> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Cluster::NotALeader org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ReplicationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::Routing org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Cluster::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Cluster public static
 org.neo4j.kernel.api.exceptions.Status.Cluster::values() org.neo4j.kernel.api.exceptions.Status.Cluster[] public static
@@ -35,7 +36,6 @@ org.neo4j.kernel.api.exceptions.Status.Database::values() org.neo4j.kernel.api.e
 org.neo4j.kernel.api.exceptions.Status.Fabric public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Fabric> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Fabric::AccessMode org.neo4j.kernel.api.exceptions.Status.Fabric public static final
 org.neo4j.kernel.api.exceptions.Status.Fabric::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Fabric public static final
-org.neo4j.kernel.api.exceptions.Status.Fabric::Routing org.neo4j.kernel.api.exceptions.Status.Fabric public static final
 org.neo4j.kernel.api.exceptions.Status.Fabric::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Fabric::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Fabric public static
 org.neo4j.kernel.api.exceptions.Status.Fabric::values() org.neo4j.kernel.api.exceptions.Status.Fabric[] public static
@@ -116,6 +116,7 @@ org.neo4j.kernel.api.exceptions.Status.Security::code() org.neo4j.kernel.api.exc
 org.neo4j.kernel.api.exceptions.Status.Security::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Security public static
 org.neo4j.kernel.api.exceptions.Status.Security::values() org.neo4j.kernel.api.exceptions.Status.Security[] public static
 org.neo4j.kernel.api.exceptions.Status.Statement public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Statement> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Statement::AccessMode org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArgumentError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArithmeticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::CartesianProductWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
@@ -135,6 +136,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo
 org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseOnLeaderError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::SemanticError org.neo4j.kernel.api.exceptions.Status.Statement public static final

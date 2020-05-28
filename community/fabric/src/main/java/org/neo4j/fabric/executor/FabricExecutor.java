@@ -526,7 +526,7 @@ public class FabricExecutor
             {
                 if ( queryMode == AccessMode.WRITE )
                 {
-                    throw new FabricException( Status.Fabric.AccessMode, "Writing in read access mode not allowed. Attempted write to %s", graph );
+                    throw new FabricException( Status.Statement.AccessMode, "Writing in read access mode not allowed. Attempted write to %s", graph );
                 }
                 else
                 {
