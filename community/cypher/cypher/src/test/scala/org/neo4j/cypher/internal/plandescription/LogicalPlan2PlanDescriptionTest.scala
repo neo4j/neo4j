@@ -64,6 +64,8 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Point
@@ -247,6 +249,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -846,10 +849,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Selection") {
     val predicate1 = In(varFor("x"), parameter("  AUTOLIST1", CTList(CTInteger)))(pos)
-    val predicate2 = LessThan(varFor("y"), number("2002"))(pos)
+    val predicate2 = LessThan(prop("a", "prop1"), number("2002"))(pos)
+    val predicate3 = GreaterThanOrEqual(cachedProp("a", "prop1"), number("1001"))(pos)
+    val predicate4 = AndedPropertyInequalities(varFor("a"), prop("a", "prop"), NonEmptyList(predicate2, predicate3))
 
-    assertGood(attach(Selection(Seq(predicate1, predicate2), lhsLP), 2345.0),
-      planDescription(id, "Filter", SingleChild(lhsPD), Seq(details("x IN $autolist_1 AND y < 2002")), Set("a")))
+    assertGood(attach(Selection(Seq(predicate1, predicate4), lhsLP), 2345.0),
+      planDescription(id, "Filter", SingleChild(lhsPD), Seq(details("x IN $autolist_1 AND a.prop1 < 2002 AND cache[a.prop1] >= 1001")), Set("a")))
   }
 
   test("Skip") {

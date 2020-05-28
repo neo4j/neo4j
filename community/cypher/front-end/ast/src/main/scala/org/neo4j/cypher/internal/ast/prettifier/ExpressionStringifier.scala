@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
@@ -257,6 +258,9 @@ case class ExpressionStringifier(
           case None        =>
             expressions.map(x => inner(ast)(x)).mkString(" AND ")
         }
+
+      case AndedPropertyInequalities(_, _, exprs) =>
+        exprs.map(apply).toIndexedSeq.mkString(" AND ")
 
       case Ors(expressions) =>
         expressions.map(x => inner(ast)(x)).mkString(" OR ")
