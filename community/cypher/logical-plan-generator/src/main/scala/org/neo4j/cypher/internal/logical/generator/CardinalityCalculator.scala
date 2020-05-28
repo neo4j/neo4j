@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -43,14 +44,16 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 
-trait CardinalityCalculator[T <: LogicalPlan] {
+trait CardinalityCalculator[-T <: LogicalPlan] {
   def apply(plan: T, state: LogicalPlanGenerator.State, stats: GraphStatistics, labelsWithIds: Map[String, Int]): Cardinality
 }
 
 object CardinalityCalculator {
 
+  private val SAME_AS_LEFT: CardinalityCalculator[LogicalPlan] = (plan, state, _, _) => state.cardinalities(plan.lhs.get.id)
+
   implicit val produceResultCardinality: CardinalityCalculator[ProduceResult] =
-    (plan, state, _, _) => state.cardinalities(plan.source.id)
+    SAME_AS_LEFT
 
   implicit val allNodesScanCardinality: CardinalityCalculator[AllNodesScan] =
     (_, state, stats, _) => state.leafCardinalityMultipliers.head * stats.nodesAllCardinality()
@@ -63,6 +66,9 @@ object CardinalityCalculator {
 
   implicit val argumentCardinality: CardinalityCalculator[Argument] =
     (_, state, _, _) => state.leafCardinalityMultipliers.head
+
+  implicit val eagerCardinality: CardinalityCalculator[Eager] =
+    SAME_AS_LEFT
 
   implicit val expandCardinality: CardinalityCalculator[Expand] = {
     (plan, state, stats, _) =>

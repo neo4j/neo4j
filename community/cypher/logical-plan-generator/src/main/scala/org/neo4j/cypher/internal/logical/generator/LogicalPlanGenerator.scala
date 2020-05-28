@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IncludeTies
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -194,6 +195,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     argument(state),
     allNodesScan(state),
     nodeByLabelScan(state),
+    Gen.lzy(eager(state)),
     Gen.lzy(expand(state)),
     Gen.lzy(skip(state)),
     Gen.lzy(limit(state)),
@@ -232,6 +234,13 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   // One child plans
+
+  def eager(state: State): Gen[WithState[Eager]] = for {
+    WithState(source, state) <- innerLogicalPlan(state)
+  } yield {
+    val plan = Eager(source)(state.idGen)
+    annotate(plan, state)
+  }
 
   def expand(state: State): Gen[WithState[Expand]] = for {
     WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, state) => plan.availableSymbols.exists(v => state.semanticTable.isNode(v)) }
