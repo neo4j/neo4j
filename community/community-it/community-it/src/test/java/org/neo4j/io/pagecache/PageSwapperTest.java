@@ -174,11 +174,11 @@ public abstract class PageSwapperTest
         putInt( page, 0, 0 );
         Thread.currentThread().interrupt();
 
-        assertThat( read( swapper, 0, new long[]{page}, 0, 1 ) ).isEqualTo( sizeOfAsLong( page ) );
+        assertThat( read( swapper, 0, new long[]{page}, 1 ) ).isEqualTo( sizeOfAsLong( page ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( getInt( page, 0 ) ).isEqualTo( 1 );
 
-        assertThat( read( swapper, 0, new long[]{page}, 0, 1 ) ).isEqualTo( sizeOfAsLong( page ) );
+        assertThat( read( swapper, 0, new long[]{page}, 1 ) ).isEqualTo( sizeOfAsLong( page ) );
         assertTrue( Thread.currentThread().isInterrupted() );
         assertThat( getInt( page, 0 ) ).isEqualTo( 1 );
     }
@@ -293,7 +293,7 @@ public abstract class PageSwapperTest
 
         Thread.currentThread().interrupt();
 
-        read( swapper, 0, new long[]{page}, 0, 1 );
+        read( swapper, 0, new long[]{page}, 1 );
 
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
@@ -411,7 +411,7 @@ public abstract class PageSwapperTest
         write( swapper, 0, page );
         swapper.close();
 
-        assertThrows( ClosedChannelException.class, () -> read( swapper, 0, new long[]{page}, 0, 1 ) );
+        assertThrows( ClosedChannelException.class, () -> read( swapper, 0, new long[]{page}, 1 ) );
     }
 
     @Test
@@ -633,7 +633,7 @@ public abstract class PageSwapperTest
         long pageD = createPage( 4 );
 
         // Read 4 pages of 4 bytes each
-        assertThat( read( swapper, 1, new long[]{pageA, pageB, pageC, pageD}, 0, 4 ) ).isEqualTo( 4 * 4L );
+        assertThat( read( swapper, 1, new long[]{pageA, pageB, pageC, pageD}, 4 ) ).isEqualTo( 4 * 4L );
 
         assertThat( getInt( pageA, 0 ) ).isEqualTo( 2 );
         assertThat( getInt( pageB, 0 ) ).isEqualTo( 3 );
@@ -650,7 +650,7 @@ public abstract class PageSwapperTest
 
         long page = createPage( 4 );
         putInt( page, 0, 1 );
-        assertThat( read( swapper, 0, new long[]{page}, 0, 1 ) ).isEqualTo( 0L );
+        assertThat( read( swapper, 0, new long[]{page}, 1 ) ).isEqualTo( 0L );
         assertThat( getInt( page, 0 ) ).isEqualTo( 0 );
     }
 
@@ -669,7 +669,7 @@ public abstract class PageSwapperTest
         long pageB = createPage( 4 );
         putInt( pageA, 0, -1 );
         putInt( pageB, 0, -1 );
-        assertThat( read( swapper, 3, new long[]{pageA, pageB}, 0, 2 ) ).isEqualTo( 0L );
+        assertThat( read( swapper, 3, new long[]{pageA, pageB}, 2 ) ).isEqualTo( 0L );
         assertThat( getInt( pageA, 0 ) ).isEqualTo( 0 );
         assertThat( getInt( pageB, 0 ) ).isEqualTo( 0 );
     }
@@ -691,7 +691,7 @@ public abstract class PageSwapperTest
         long pageB = createPage( 8 );
         putLong( pageA, 0, X );
         putLong( pageB, 0, Y );
-        assertThat( read( swapper, 1, new long[]{pageA, pageB}, 0, 2 ) ).isIn( 12L, 16L );
+        assertThat( read( swapper, 1, new long[]{pageA, pageB}, 2 ) ).isIn( 12L, 16L );
         assertThat( getLong( pageA, 0 ) ).isEqualTo( 0xFFFF_FFFF_FFFF_FFFFL );
 
 //        assertThat( getLong( 0, pageB ), is( 0xFFFF_FFFF_0000_0000L ) );
@@ -728,7 +728,7 @@ public abstract class PageSwapperTest
         putInt( pageA, 0, -1 );
         putInt( pageB, 0, -1 );
         putInt( pageC, 0, -1 );
-        assertThat( read( swapper, 0, new long[]{pageA, pageB, pageC}, 0, 3 ) ).isIn( 12L, 16L );
+        assertThat( read( swapper, 0, new long[]{pageA, pageB, pageC}, 3 ) ).isIn( 12L, 16L );
         assertThat( getInt( pageA, 0 ) ).isEqualTo( 1 );
         assertThat( getInt( pageA, 4 ) ).isEqualTo( 2 );
         assertThat( getInt( pageB, 0 ) ).isEqualTo( 3 );
@@ -772,7 +772,7 @@ public abstract class PageSwapperTest
                 if ( rng.nextBoolean() )
                 {
                     // Do read
-                    long bytesRead = read( swapper, startFilePageId, pages, 0, pages.length );
+                    long bytesRead = read( swapper, startFilePageId, pages, pages.length );
                     assertThat( bytesRead ).isEqualTo( pages.length * 4L );
                     for ( int j = 0; j < pages.length; j++ )
                     {
@@ -849,7 +849,7 @@ public abstract class PageSwapperTest
         putInt( pageC, 0, 7 );
         putInt( pageD, 0, 8 );
 
-        long bytesRead = read( swapper, 1, pages, 1, 2 );
+        long bytesRead = read( swapper, 1, pages, 2 );
         assertThat( bytesRead ).isEqualTo( 8L );
 
         int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 ), getInt( pageC, 0 ), getInt( pageD, 0 )};
@@ -889,7 +889,7 @@ public abstract class PageSwapperTest
         putInt( pageC, 0, 0 );
         putInt( pageD, 0, 0 );
 
-        long bytesRead = read( swapper, 0, pages, 0, 4 );
+        long bytesRead = read( swapper, 0, pages, 4 );
         assertThat( bytesRead ).isEqualTo( 16L );
 
         int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 ), getInt( pageC, 0 ), getInt( pageD, 0 )};
@@ -908,7 +908,7 @@ public abstract class PageSwapperTest
 
         write( swapper, 0, new long[]{page, page, page, page}, new int[]{4, 4, 4, 4}, 0, 4 );
 
-        assertThrows( NullPointerException.class, () -> read( swapper, 0, null, 0, 4 ), "vectored read with null array should have thrown" );
+        assertThrows( NullPointerException.class, () -> read( swapper, 0, null, 4 ), "vectored read with null array should have thrown" );
     }
 
     @Test
@@ -979,7 +979,7 @@ public abstract class PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
-        assertThrows( IOException.class, () -> read( swapper, -1, new long[]{createPage( 4 ), createPage( 4 )}, 0, 2 ) );
+        assertThrows( IOException.class, () -> read( swapper, -1, new long[]{createPage( 4 ), createPage( 4 )}, 2 ) );
     }
 
     @Test
@@ -1001,7 +1001,7 @@ public abstract class PageSwapperTest
 
         long[] pages = {createPage( 4 ), createPage( 4 )};
         write( swapper, 0, pages, new int[]{4, 4}, 0, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, -1, 2 ) );
+        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 2 ) );
     }
 
     @Test
@@ -1024,7 +1024,7 @@ public abstract class PageSwapperTest
 
         long[] pages = {createPage( 4 ), createPage( 4 )};
         write( swapper, 0, pages, new int[]{4, 4}, 0, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 1, 2 ) );
+        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 2 ) );
     }
 
     @Test
@@ -1047,7 +1047,7 @@ public abstract class PageSwapperTest
 
         long[] pages = {createPage( 4 ), createPage( 4 )};
         write( swapper, 0, pages, new int[]{4, 4}, 0, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 2, 1 ) );
+        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 1 ) );
     }
 
     @Test
@@ -1070,7 +1070,7 @@ public abstract class PageSwapperTest
 
         long[] pages = {createPage( 4 ), createPage( 4 )};
         write( swapper, 0, pages, new int[]{4, 4}, 0, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 3, 1 ) );
+        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, 1 ) );
     }
 
     @Test
@@ -1099,7 +1099,7 @@ public abstract class PageSwapperTest
         write( swapper, 0, pages, new int[]{4, 4}, 0, 2 );
         putInt( pageA, 0, 3 );
         putInt( pageB, 0, 4 );
-        read( swapper, 0, pages, 0, 0 );
+        read( swapper, 0, pages, 0 );
 
         int[] expectedValues = {3, 4};
         int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 )};
@@ -1122,7 +1122,7 @@ public abstract class PageSwapperTest
         putInt( pageA, 0, 3 );
         putInt( pageB, 0, 4 );
         write( swapper, 0, pages, new int[]{4, 4}, 0, 0 );
-        read( swapper, 0, pages, 0, 2 );
+        read( swapper, 0, pages, 2 );
 
         int[] expectedValues = {1, 2};
         int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 )};
@@ -1227,14 +1227,14 @@ public abstract class PageSwapperTest
         return swapper.read( filePageId, address );
     }
 
-    private long read( PageSwapper swapper, long startFilePageId, long[] pages, int arrayOffset, int length )
+    private long read( PageSwapper swapper, long startFilePageId, long[] pages, int length )
             throws IOException
     {
         if ( pages.length == 0 )
         {
             return 0;
         }
-        return swapper.read( startFilePageId, pages, arrayOffset, length );
+        return swapper.read( startFilePageId, pages, length );
     }
 
     private long write( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int arrayOffset, int length )
@@ -1244,7 +1244,7 @@ public abstract class PageSwapperTest
         {
             return 0;
         }
-        return swapper.write( startFilePageId, pages, pageSizes, arrayOffset, length, pageSizes.length );
+        return swapper.write( startFilePageId, pages, pageSizes, length, pageSizes.length );
     }
 
     private int cachePageSize()

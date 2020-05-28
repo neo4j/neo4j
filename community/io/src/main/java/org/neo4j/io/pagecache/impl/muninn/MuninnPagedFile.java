@@ -494,7 +494,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             long firstPageRef = pages[0];
             long startFilePageId = getFilePageId( firstPageRef );
             flush = flushOpportunity.beginFlush( startFilePageId, toId( firstPageRef ), swapper, pagesGrabbed, pagesMerged );
-            long bytesWritten = swapper.write( startFilePageId, bufferAddresses, bufferLengths, 0, numberOfBuffers, pagesGrabbed );
+            long bytesWritten = swapper.write( startFilePageId, bufferAddresses, bufferLengths, numberOfBuffers, pagesGrabbed );
 
             // Update the flush event
             flush.addBytesWritten( bytesWritten );

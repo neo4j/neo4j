@@ -61,7 +61,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException;
+    long read( long startFilePageId, long[] bufferAddresses, int length ) throws IOException;
 
     /**
      * Write the contents of the page given by the bufferAddress and default length of page buffer,
@@ -107,7 +107,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages ) throws IOException;
+    long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures

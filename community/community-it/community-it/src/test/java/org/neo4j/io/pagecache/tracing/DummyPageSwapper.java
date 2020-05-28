@@ -48,7 +48,7 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    public long write( long filePageId, long bufferAddress, int bufferLength )
     {
         return bufferAddress;
     }
@@ -102,13 +102,13 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
+    public long read( long startFilePageId, long[] bufferAddresses, int length )
     {
         return 0;
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages )
+    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages )
     {
         return 0;
     }

@@ -292,7 +292,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, long[] bufferAddresses, int length ) throws IOException
     {
         if ( length == 0 )
         {
@@ -307,9 +307,9 @@ public class SingleFilePageSwapper implements PageSwapper
                 {
                     if ( hasPositionLock )
                     {
-                        return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+                        return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, length );
                     }
-                    return readPositionedVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+                    return readPositionedVectoredFallback( startFilePageId, bufferAddresses, length );
                 }
                 catch ( ClosedChannelException e )
                 {
@@ -321,10 +321,10 @@ public class SingleFilePageSwapper implements PageSwapper
         return -1;
     }
 
-    private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
+        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, length );
         long bytesRead = lockPositionReadVector( fileOffset, srcs );
         if ( bytesRead == -1 )
         {
@@ -341,7 +341,7 @@ public class SingleFilePageSwapper implements PageSwapper
             int pagesNeedingZeroing = length - pagesRead;
             for ( int i = 0; i < pagesNeedingZeroing; i++ )
             {
-                long address = bufferAddresses[arrayOffset + pagesRead + i];
+                long address = bufferAddresses[pagesRead + i];
                 long bytesToZero = filePageSize;
                 if ( i == 0 )
                 {
@@ -371,12 +371,12 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int readPositionedVectoredFallback( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    private int readPositionedVectoredFallback( long startFilePageId, long[] bufferAddresses, int length ) throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
-            long address = bufferAddresses[arrayOffset + i];
+            long address = bufferAddresses[i];
             bytes += read( startFilePageId + i, address );
         }
         return bytes;
@@ -413,7 +413,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages )
+    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages )
             throws IOException
     {
         if ( length == 0 )
@@ -429,9 +429,9 @@ public class SingleFilePageSwapper implements PageSwapper
                 {
                     if ( hasPositionLock )
                     {
-                        return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
+                        return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, length );
                     }
-                    return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
+                    return writePositionVectoredFallback( startFilePageId, bufferAddresses, length );
                 }
                 catch ( ClosedChannelException e )
                 {
@@ -443,20 +443,20 @@ public class SingleFilePageSwapper implements PageSwapper
         return -1;
     }
 
-    private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
-        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
+        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, length );
         return lockPositionWriteVector( fileOffset, srcs );
     }
 
-    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length )
+    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int length )
     {
         ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
         {
-            long address = bufferAddresses[arrayOffset + i];
+            long address = bufferAddresses[i];
             try
             {
                 buffers[i] = UnsafeUtil.newDirectByteBuffer( address, filePageSize );
@@ -507,13 +507,13 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int writePositionVectoredFallback( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
+    private int writePositionVectoredFallback( long startFilePageId, long[] bufferAddresses, int length )
             throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
-            long address = bufferAddresses[arrayOffset + i];
+            long address = bufferAddresses[i];
             bytes += write( startFilePageId + i, address );
         }
         return bytes;

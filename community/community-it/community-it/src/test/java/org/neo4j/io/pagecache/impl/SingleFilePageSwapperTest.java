@@ -636,7 +636,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 {
                     clear( page );
                 }
-                assertThat( swapper.read( 0, pages, 0, pages.length ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.read( 0, pages, pages.length ) ).isEqualTo( (long) bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
@@ -684,15 +684,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroPages, pageLengths, 0, pageCount, pageCount );
+                swapper.write( 0, zeroPages, pageLengths, pageCount, pageCount );
                 adversary.setProbabilityFactor( 1 );
-                swapper.write( 0, writePages, pageLengths, 0, pageCount, pageCount );
+                swapper.write( 0, writePages, pageLengths, pageCount, pageCount );
                 for ( long readPage : readPages )
                 {
                     clear( readPage );
                 }
                 adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readPages, 0, pageCount ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.read( 0, readPages, pageCount ) ).isEqualTo( (long) bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     assertThat( array( readPages[j] ) ).containsExactly( array( writePages[j] ) );
