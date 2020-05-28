@@ -867,8 +867,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case NodeHashJoin(nodes, _, _) =>
         PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables)
 
-      case _: ForeachApply =>
-        PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
+      case ForeachApply(_, _, variable, expression) =>
+        val details = pretty"${asPrettyString(variable)} IN ${asPrettyString(expression)}"
+        PlanDescriptionImpl(id, "Foreach", children, Seq(Details(details)), variables)
 
       case LetSelectOrSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)

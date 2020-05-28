@@ -1181,8 +1181,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ForeachApply") {
-    assertGood(attach(ForeachApply(lhsLP, rhsLP, "x", ListLiteral(Seq(number("1"), number("2")))(pos)), 2345.0),
-      planDescription(id, "Foreach", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a")))
+    val testCases = Seq(
+      ("a", ListLiteral(Seq(number("1"), number("2")))(pos)) ->
+        "a IN [1, 2]",
+      ("b", Parameter("param", CTList(CTInteger))(pos)) ->
+        "b IN $param",
+      ("c", ListLiteral(Seq.empty)(pos)) ->
+        "c IN []",
+      ("d", FunctionInvocation(number("1"), FunctionName("range")(pos), number("100"))) ->
+        "d IN range(1, 100)",
+    )
+
+    for (((variable, expr), expectedDetails) <- testCases) {
+      assertGood(attach(ForeachApply(lhsLP, rhsLP, variable, expr), 2345.0),
+        planDescription(id, "Foreach", TwoChildren(lhsPD, rhsPD), Seq(details(expectedDetails)), Set("a")))
+    }
   }
 
   test("LetSelectOrSemiApply") {
