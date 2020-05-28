@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.Iterators
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -38,7 +39,7 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
       return Iterator.empty
 
     val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTracker.memoryTrackerForOperator(id.x), withNulls = false)
-    (
+    val resultIterator = (
       for {rhsRow <- rhsResult}
         yield {
           computeKey(rhsRow) match {
@@ -57,5 +58,6 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
               Seq(addNulls(rhsRow))
           }
         }).flatten
+    Iterators.resourceClosingIterator(resultIterator, probeTable)
   }
 }

@@ -38,7 +38,7 @@ public class LongProbeTable<V extends Measurable> implements AutoCloseable
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongProbeTable.class );
     static final long SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
     private final MemoryTracker scopedMemoryTracker;
-    private final MutableLongObjectMap<HeapTrackingArrayList<V>> map;
+    private MutableLongObjectMap<HeapTrackingArrayList<V>> map;
 
     public static <V extends Measurable> LongProbeTable<V> createLongProbeTable( MemoryTracker memoryTracker )
     {
@@ -77,6 +77,10 @@ public class LongProbeTable<V extends Measurable> implements AutoCloseable
     @Override
     public void close()
     {
-        scopedMemoryTracker.close();
+        if ( map != null )
+        {
+            map = null;
+            scopedMemoryTracker.close();
+        }
     }
 }

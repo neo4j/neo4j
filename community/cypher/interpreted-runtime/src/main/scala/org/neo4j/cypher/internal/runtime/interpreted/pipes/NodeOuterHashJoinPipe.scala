@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.kernel.impl.util.collection
+import org.neo4j.kernel.impl.util.collection.EagerBuffer
+import org.neo4j.kernel.impl.util.collection.EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
@@ -72,21 +74,30 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 }
 
 //noinspection ReferenceMustBePrefixed
-class ProbeTable(memoryTracker: MemoryTracker) {
-  private val table: collection.ProbeTable[LongArray, CypherRow] =
+class ProbeTable(memoryTracker: MemoryTracker) extends AutoCloseable {
+  private[this] var table: collection.ProbeTable[LongArray, CypherRow] =
     collection.ProbeTable.createProbeTable[LongArray, CypherRow](memoryTracker)
-
-  private val rowsWithNullInKey: ListBuffer[CypherRow] = new ListBuffer[CypherRow]()
+  private[this] var rowsWithNullInKey: EagerBuffer[CypherRow] =
+    EagerBuffer.createEagerBuffer[CypherRow](memoryTracker, 16, 8192, GROW_NEW_CHUNKS_BY_100_PCT)
 
   def addValue(key: LongArray, newValue: CypherRow) {
     table.put(key, newValue)
   }
 
-  def addNull(context: CypherRow): Unit = rowsWithNullInKey += context
+  def addNull(context: CypherRow): Unit = rowsWithNullInKey.add(context)
 
   def apply(key: LongArray): java.util.Iterator[CypherRow] = table.get(key)
 
   def keySet: java.util.Set[LongArray] = table.keySet
 
-  def nullRows: Iterator[CypherRow] = rowsWithNullInKey.iterator
+  def nullRows: Iterator[CypherRow] = rowsWithNullInKey.autoClosingIterator().asScala
+
+  override def close(): Unit = {
+    if (table != null) {
+      table.close()
+      rowsWithNullInKey.close()
+      table = null
+      rowsWithNullInKey = null
+    }
+  }
 }

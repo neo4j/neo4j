@@ -55,7 +55,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    val scopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(id.x))
+    val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
 
     var i = 1L

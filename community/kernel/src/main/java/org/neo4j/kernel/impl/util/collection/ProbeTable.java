@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 
@@ -39,11 +40,11 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
  * @param <K> key type
  * @param <V> value type
  */
-public class ProbeTable<K extends Measurable,V extends Measurable> implements AutoCloseable
+public class ProbeTable<K extends Measurable,V extends Measurable> implements Resource
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
     private final MemoryTracker scopedMemoryTracker;
-    private final MutableMap<K,HeapTrackingArrayList<V>> map;
+    private MutableMap<K,HeapTrackingArrayList<V>> map;
 
     public static <K extends Measurable,V extends Measurable> ProbeTable<K,V> createProbeTable( MemoryTracker memoryTracker )
     {
@@ -91,6 +92,10 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Au
     @Override
     public void close()
     {
-        scopedMemoryTracker.close();
+        if ( map != null )
+        {
+            map = null;
+            scopedMemoryTracker.close();
+        }
     }
 }

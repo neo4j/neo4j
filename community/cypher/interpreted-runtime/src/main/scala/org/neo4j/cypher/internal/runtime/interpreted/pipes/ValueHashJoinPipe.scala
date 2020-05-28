@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.Iterators
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection
@@ -44,8 +45,10 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
 
     val table = buildProbeTable(input, state)
 
-    if (table.isEmpty)
+    if (table.isEmpty) {
+      table.close()
       return Iterator.empty
+    }
 
     val result = for {rhsRow <- rhsIterator
                       joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE) }
@@ -58,10 +61,10 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
         }
       }
 
-    result.flatten
+    Iterators.resourceClosingIterator(result.flatten, table)
   }
 
-  private def buildProbeTable(input: Iterator[CypherRow], state: QueryState) = {
+  private def buildProbeTable(input: Iterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {
     val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTracker.memoryTrackerForOperator(id.x))
 
     for (context <- input;
