@@ -130,19 +130,8 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void incrementIndexUpdates( long indexId, long delta )
     {
         assertNotReadOnly();
-        Long key = indexId;
-        boolean replaced;
-        do
-        {
-            ImmutableIndexStatistics existing = cache.get( key );
-            if ( existing == null )
-            {
-                return;
-            }
-            replaced = cache.replace( key, existing,
-                    new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
-        }
-        while ( !replaced );
+        cache.computeIfPresent( indexId, ( id, existing ) ->
+                new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
     }
 
     @Override
