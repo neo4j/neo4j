@@ -65,7 +65,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
   def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: LogProvider): RuntimeContextManager[CONTEXT] =
     newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
-  private def runtimeConfig(): CypherRuntimeConfiguration = {
+  def runtimeConfig(): CypherRuntimeConfiguration = {
     cypherConfig().toCypherRuntimeConfiguration
   }
 
