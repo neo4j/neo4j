@@ -45,7 +45,7 @@ class RingRecentBufferTest
     void shouldJustWork()
     {
         int bufferSize = 4;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
 
         buffer.foreach( l -> fail( "boom" ) );
 
@@ -70,7 +70,7 @@ class RingRecentBufferTest
     @Test
     void shouldHandleSize0()
     {
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( 0, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( 0 );
 
         buffer.foreach( l -> fail( "boom" ) );
         buffer.clearIf( l -> true );
@@ -86,7 +86,7 @@ class RingRecentBufferTest
     void shouldClearIf()
     {
         int bufferSize = 4;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
 
         for ( long i = 0; i < 4; i++ )
         {
@@ -108,7 +108,7 @@ class RingRecentBufferTest
         // given
         int n = 1000;
         int bufferSize = 16;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         try
@@ -145,7 +145,7 @@ class RingRecentBufferTest
         // given
         int n = 1000000;
         int bufferSize = 16;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         try
@@ -178,7 +178,7 @@ class RingRecentBufferTest
         // given
         int n = 1000000;
         int bufferSize = 16;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize, q -> {} );
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 4 );
 
         try

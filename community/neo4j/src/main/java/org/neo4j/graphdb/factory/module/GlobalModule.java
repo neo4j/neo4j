@@ -187,8 +187,7 @@ public class GlobalModule
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
 
-        recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
-                                                   memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, Long.MAX_VALUE ).getPoolMemoryTracker() );
+        recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ) );
         globalDependencies.satisfyDependency( recentQueryBuffer );
 
         systemGraphComponents = tryResolveOrCreate( SystemGraphComponents.class, SystemGraphComponents::new );

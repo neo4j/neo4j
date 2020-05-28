@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.neo4j.memory.HeapEstimator;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -37,15 +36,9 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
 
     private final AtomicLong produceCount;
     private final AtomicLong dropEvents;
-    private final Consumer<T> onDiscard;
 
-    private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RingRecentBuffer.class ) +
-                                             2 * HeapEstimator.shallowSizeOfInstance( AtomicLong.class );
-    private static final long VOLATILE_REF_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( VolatileRef.class );
-
-    public RingRecentBuffer( int size, Consumer<T> onDiscard )
+    public RingRecentBuffer( int size )
     {
-        this.onDiscard = onDiscard;
         if ( size > 0 )
         {
             Preconditions.requirePowerOfTwo( size );
@@ -64,11 +57,6 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
 
         produceCount = new AtomicLong( 0 );
         dropEvents = new AtomicLong( 0 );
-    }
-
-    long estimatedHeapUsage()
-    {
-        return SHALLOW_SIZE + HeapEstimator.shallowSizeOf( data ) + data.length * VOLATILE_REF_SHALLOW_SIZE;
     }
 
     long numSilentQueryDrops()
@@ -91,11 +79,6 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
         VolatileRef<T> volatileRef = data[offset];
         if ( assertPreviousCompleted( produceNumber, volatileRef ) )
         {
-            var discarded = volatileRef.ref;
-            if ( discarded != null )
-            {
-                onDiscard.accept( discarded );
-            }
             volatileRef.ref = t;
             volatileRef.produceNumber = produceNumber;
         }
@@ -105,7 +88,6 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
             // all the yields in `assertPreviousCompleted`, we drop `t` to avoid causing
             // a problem in db operation. We increment dropEvents to so the RecentBuffer
             // consumer can detect that there has been a drop.
-            onDiscard.accept( t );
             dropEvents.incrementAndGet();
         }
     }
@@ -148,7 +130,6 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
             T data = volatileRef.ref;
             if ( data != null && predicate.test( data ) )
             {
-                onDiscard.accept( data );
                 volatileRef.ref = null;
             }
         }
