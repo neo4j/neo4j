@@ -139,18 +139,22 @@ class HEvents
 
     public static class FlushHEvent extends IntervalHEvent implements FlushEvent
     {
-        private long filePageId;
-        private long cachePageId;
+        private final long filePageId;
+        private final long cachePageId;
+        private final int pagesToFlush;
+        private final int mergedPages;
         private int pageCount;
-        private File file;
+        private final File file;
         private int bytesWritten;
         private IOException exception;
 
-        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper )
+        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
             super( tracer );
             this.filePageId = filePageId;
             this.cachePageId = cachePageId;
+            this.pagesToFlush = pagesToFlush;
+            this.mergedPages = mergedPages;
             this.pageCount = 1;
             this.file = swapper.file();
         }
@@ -192,13 +196,17 @@ class HEvents
             print( out, file );
             out.print( ", bytesWritten:" );
             out.print( bytesWritten );
+            out.print( ", pagesToFlush:" );
+            out.print( pagesToFlush );
+            out.print( ", mergedPages:" );
+            out.print( mergedPages );
             print( out, exception, exceptionLinePrefix );
         }
     }
 
     public static class MajorFlushHEvent extends IntervalHEvent implements MajorFlushEvent, FlushEventOpportunity
     {
-        private File file;
+        private final File file;
 
         MajorFlushHEvent( LinearHistoryTracer tracer, File file )
         {
@@ -213,9 +221,9 @@ class HEvents
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
-            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper ) );
+            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) );
         }
 
         @Override
@@ -227,9 +235,9 @@ class HEvents
 
     public static class PinHEvent extends IntervalHEvent implements PinEvent
     {
-        private boolean exclusiveLock;
-        private long filePageId;
-        private File file;
+        private final boolean exclusiveLock;
+        private final long filePageId;
+        private final File file;
         private long cachePageId;
         private boolean hit;
 
@@ -381,9 +389,9 @@ class HEvents
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
-            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper ) );
+            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) );
         }
 
         @Override

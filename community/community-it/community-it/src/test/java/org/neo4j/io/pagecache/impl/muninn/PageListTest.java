@@ -2324,7 +2324,7 @@ public class PageListTest
         // --- FlushEventOpportunity:
 
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
             return this;
         }

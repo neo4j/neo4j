@@ -81,7 +81,7 @@ public class DefaultPageCacheTracerTest
         {
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
+                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 10 );
                 flushEvent.done();
@@ -89,7 +89,7 @@ public class DefaultPageCacheTracerTest
 
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
+                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 1 );
                 flushEvent.done();
@@ -98,7 +98,7 @@ public class DefaultPageCacheTracerTest
 
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper );
+                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 2 );
                 flushEvent.done();
@@ -128,24 +128,24 @@ public class DefaultPageCacheTracerTest
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
         }
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
-            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
             flushEvent1.addPagesFlushed( 1 );
             flushEvent1.done();
 
-            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
             flushEvent2.addPagesFlushed( 2 );
             flushEvent2.done();
 
-            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper );
+            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
             flushEvent3.addPagesFlushed( 3 );
             flushEvent3.done();
         }

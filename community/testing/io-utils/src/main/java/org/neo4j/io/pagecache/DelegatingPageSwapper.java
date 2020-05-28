@@ -73,6 +73,12 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
+    public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    {
+        return delegate.write( filePageId, bufferAddress, bufferLength );
+    }
+
+    @Override
     public long getLastPageId() throws IOException
     {
         return delegate.getLastPageId();
@@ -109,8 +115,9 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages )
+            throws IOException
     {
-        return delegate.write( startFilePageId, bufferAddresses, arrayOffset, length );
+        return delegate.write( startFilePageId, bufferAddresses, bufferLengths, arrayOffset, length, totalAffectedPages );
     }
 }

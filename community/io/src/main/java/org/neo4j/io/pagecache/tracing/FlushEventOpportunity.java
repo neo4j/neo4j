@@ -31,10 +31,10 @@ public interface FlushEventOpportunity
     /**
      * A FlushEventOpportunity that only returns the FlushEvent.NULL.
      */
-    FlushEventOpportunity NULL = ( filePageId, cachePageId, swapper ) -> FlushEvent.NULL;
+    FlushEventOpportunity NULL = ( filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) -> FlushEvent.NULL;
 
     /**
      * Begin flushing the given page.
      */
-    FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper );
+    FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages );
 }

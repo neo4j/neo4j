@@ -149,10 +149,10 @@ class DefaultPageCursorTracerTest
                 {
                     FlushEventOpportunity flushEventOpportunity = evictionEvent.flushEventOpportunity();
                     {
-                        FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper );
+                        FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper, 0, 0 );
                         flushEvent.addBytesWritten( 27 );
                         flushEvent.done();
-                        FlushEvent flushEvent1 = flushEventOpportunity.beginFlush( 0, 1, swapper );
+                        FlushEvent flushEvent1 = flushEventOpportunity.beginFlush( 0, 1, swapper, 0, 0 );
                         flushEvent1.addBytesWritten( 13 );
                         flushEvent1.addPagesFlushed( 2 );
                         flushEvent1.done();
@@ -272,7 +272,7 @@ class DefaultPageCursorTracerTest
                 EvictionEvent evictionEvent = pageFaultEvent.beginEviction();
                 {
                     FlushEventOpportunity flushEventOpportunity = evictionEvent.flushEventOpportunity();
-                    FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper );
+                    FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper, 0, 0 );
                     flushEvent.addBytesWritten( 10 );
                     flushEvent.addPagesFlushed( 1 );
                     flushEvent.done();

@@ -64,7 +64,7 @@ public interface PageSwapper
     long read( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException;
 
     /**
-     * Write the contents of the page given by the bufferAddress and the bufferSize,
+     * Write the contents of the page given by the bufferAddress and default length of page buffer,
      * to the concrete file on the file system, at the located indicated by the given
      * filePageId.
      * <p>
@@ -76,6 +76,20 @@ public interface PageSwapper
      * channel and the operation must be retried.
      */
     long write( long filePageId, long bufferAddress ) throws IOException;
+
+    /**
+     * Write the contents of the page given by the bufferAddress and the bufferLength,
+     * to the concrete file on the file system, at the located indicated by the given
+     * filePageId.
+     * <p>
+     * Returns the number of bytes written to the file.
+     * <p>
+     * Note: It is possible for the channel to be asynchronously closed while
+     * this operation is taking place. For instance, if the current thread is
+     * interrupted. If this happens, then implementation must reopen the
+     * channel and the operation must be retried.
+     */
+    long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException;
 
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
@@ -93,7 +107,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException;
+    long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures

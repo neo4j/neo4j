@@ -501,7 +501,7 @@ class PageList
     private void flushModifiedPage( long pageRef, EvictionEvent evictionEvent, long filePageId, PageSwapper swapper )
             throws IOException
     {
-        FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
+        FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper, 1, 0 );
         try
         {
             long address = getAddress( pageRef );

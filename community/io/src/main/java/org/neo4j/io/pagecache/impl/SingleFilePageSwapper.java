@@ -240,11 +240,11 @@ public class SingleFilePageSwapper implements PageSwapper
         return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + ".";
     }
 
-    private int swapOut( long bufferAddress, long fileOffset ) throws IOException
+    private int swapOut( long bufferAddress, long fileOffset, int bufferLength ) throws IOException
     {
         try
         {
-            ByteBuffer bufferProxy = proxy( bufferAddress, filePageSize );
+            ByteBuffer bufferProxy = proxy( bufferAddress, bufferLength );
             channel.writeAll( bufferProxy, fileOffset );
         }
         catch ( IOException e )
@@ -385,8 +385,14 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long filePageId, long bufferAddress ) throws IOException
     {
+        return write( filePageId, bufferAddress, filePageSize );
+    }
+
+    @Override
+    public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    {
         long fileOffset = pageIdToPosition( filePageId );
-        increaseFileSizeTo( fileOffset + filePageSize );
+        increaseFileSizeTo( fileOffset + bufferLength );
 
         try ( Retry retry = new Retry() )
         {
@@ -394,7 +400,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 try
                 {
-                    return swapOut( bufferAddress, fileOffset );
+                    return swapOut( bufferAddress, fileOffset, bufferLength );
                 }
                 catch ( ClosedChannelException e )
                 {
@@ -407,7 +413,8 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages )
+            throws IOException
     {
         if ( length == 0 )
         {

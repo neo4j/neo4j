@@ -48,6 +48,12 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
+    public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    {
+        return bufferAddress;
+    }
+
+    @Override
     public void evicted( long filePageId )
     {
     }
@@ -102,7 +108,7 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
+    public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int arrayOffset, int length, int totalAffectedPages )
     {
         return 0;
     }

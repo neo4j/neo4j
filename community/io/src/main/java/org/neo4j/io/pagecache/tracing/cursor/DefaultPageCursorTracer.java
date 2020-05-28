@@ -252,7 +252,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
     {
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
             return flushEvent;
         }

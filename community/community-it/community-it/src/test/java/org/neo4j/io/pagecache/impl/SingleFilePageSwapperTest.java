@@ -669,12 +669,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         long[] writePages = new long[pageCount];
         long[] readPages = new long[pageCount];
         long[] zeroPages = new long[pageCount];
+        int[] pageLengths = new int[pageCount];
         for ( int i = 0; i < pageCount; i++ )
         {
             writePages[i] = createPage( bytesPerPage );
             putBytes( writePages[i], data, 0, i * bytesPerPage, bytesPerPage );
             readPages[i] = createPage( bytesPerPage );
             zeroPages[i] = zeroPage;
+            pageLengths[i] = bytesPerPage;
         }
 
         try
@@ -682,9 +684,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroPages, 0, pageCount );
+                swapper.write( 0, zeroPages, pageLengths, 0, pageCount, pageCount );
                 adversary.setProbabilityFactor( 1 );
-                swapper.write( 0, writePages, 0, pageCount );
+                swapper.write( 0, writePages, pageLengths, 0, pageCount, pageCount );
                 for ( long readPage : readPages )
                 {
                     clear( readPage );

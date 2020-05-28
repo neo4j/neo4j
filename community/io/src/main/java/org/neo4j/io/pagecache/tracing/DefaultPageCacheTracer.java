@@ -73,7 +73,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private final FlushEventOpportunity flushEventOpportunity = ( filePageId, cachePageId, swapper ) -> flushEvent;
+    private final FlushEventOpportunity flushEventOpportunity = ( filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) -> flushEvent;
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {
