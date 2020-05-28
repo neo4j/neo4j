@@ -85,6 +85,7 @@ import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 
 case class ExpressionStringifier(
   extension: ExpressionStringifier.Extension,
@@ -144,6 +145,9 @@ case class ExpressionStringifier(
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(inner(ast)).mkString(", ")
         s"$ns$np${apply(functionName)}($ds$as)"
+
+      case functionInvocation: UserDefinedFunctionInvocation =>
+        apply(functionInvocation.asUnresolvedFunction)
 
       case Property(m, k) =>
         s"${inner(ast)(m)}.${apply(k)}"

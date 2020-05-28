@@ -119,7 +119,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
 
   override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)
 
-  def asUnresolvedFunction: FunctionInvocation = FunctionInvocation(
+ override def asUnresolvedFunction: FunctionInvocation = FunctionInvocation(
     namespace = Namespace(qualifiedName.namespace.toList)(position),
     functionName = FunctionName(qualifiedName.name)(position),
     distinct = false,

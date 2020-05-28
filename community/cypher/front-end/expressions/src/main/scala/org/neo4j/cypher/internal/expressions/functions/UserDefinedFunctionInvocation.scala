@@ -16,6 +16,10 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+
 trait UserDefinedFunctionInvocation {
   def isAggregate:Boolean
+
+  def asUnresolvedFunction: FunctionInvocation
 }

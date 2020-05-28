@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.ShowRolePrivileges
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
@@ -100,6 +101,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExisten
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.CypherValue
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -195,6 +197,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
 import org.neo4j.cypher.internal.logical.plans.RevokeMatch
@@ -227,6 +230,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
@@ -254,6 +258,8 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.BooleanType
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -701,6 +707,33 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(OrderedAggregation(lhsLP, Map("a" -> varFor("a"), "b" -> varFor("c"), "d" -> varFor("d")), Map("collect(DISTINCT c)" -> collectDistinctFunction), Seq(varFor("d"), varFor("c"))), 1.3),
       planDescription(id, "OrderedAggregation", SingleChild(lhsPD), Seq(details("d, c AS b, a, collect(DISTINCT c) AS `collect(DISTINCT c)`")), Set("a", "b", "d", "`collect(DISTINCT c)`")))
+  }
+
+  test("FunctionInvocation") {
+    val namespace = List("ns")
+    val name = "datetime"
+    val args = IndexedSeq(number("23391882379"))
+    val functionSignature = UserFunctionSignature(
+      QualifiedName(Seq.empty, "datetime"),
+      IndexedSeq(FieldSignature("Input", CTAny, Some(CypherValue("DEFAULT_TEMPORAL_ARGUMENT", CTAny)))),
+      BooleanType.instance, None, Array.empty, None, isAggregate = false, 1
+    )
+
+    val functionInvocation = FunctionInvocation(
+      namespace = Namespace(namespace)(pos),
+      functionName = FunctionName(name)(pos),
+      distinct = false,
+      args = args,
+    )(pos)
+    assertGood(attach(SetRelationshipProperty(lhsLP, "x", key("prop"), functionInvocation), 1.0),
+      planDescription(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = ns.datetime(23391882379)")), Set("a", "x")))
+
+    val resolvedFunctionInvocation = ResolvedFunctionInvocation(
+      qualifiedName = QualifiedName(namespace, name),
+      fcnSignature = Some(functionSignature),
+      callArguments = args)(pos)
+    assertGood(attach(SetRelationshipProperty(lhsLP, "x", key("prop"), resolvedFunctionInvocation), 1.0),
+      planDescription(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = ns.datetime(23391882379)")), Set("a", "x")))
   }
 
   test("Create") {
