@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.v4_0.expressions.{NODE_TYPE, CachedProperty, PropertyKeyName, Variable}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
-class MapExecutionContextTest extends CypherFunSuite {
+class MapExecutionContextTest extends CypherFunSuite with AstConstructionTestSupport {
   test("create clone") {
     // given
     val key = "key"
@@ -155,7 +156,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val cachedPropertyKey = prop("n", "key")
+    val cachedPropertyKey = cachedNodeProp("n", "key")
     val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
     val rhsCtx = ExecutionContext.empty
     rhsCtx.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
@@ -183,7 +184,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val cachedPropertyKey = prop("n", "key")
+    val cachedPropertyKey = cachedNodeProp("n", "key")
     val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
     lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
 
@@ -214,7 +215,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // given
     val key1 = "key1"
     val key2 = "key2"
-    val cachedPropertyKey = prop("n", "key")
+    val cachedPropertyKey = cachedNodeProp("n", "key")
     val lhsCtx = ExecutionContext.empty.copyWith(key1, BooleanValue.FALSE)
     lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
 
@@ -244,7 +245,7 @@ class MapExecutionContextTest extends CypherFunSuite {
 
   test("set/get cached property") {
     // given
-    val key = prop("n", "key")
+    val key = cachedNodeProp("n", "key")
     val ctx = ExecutionContext.empty
 
     // when (written)
@@ -324,11 +325,21 @@ class MapExecutionContextTest extends CypherFunSuite {
     mutatingLeftDoesNotAffectRight(lhsCtx, newCtx)
   }
 
+  test("should not consider nulled cached properties in estimatedHeapUsage") {
+    val row = ExecutionContext.empty
+    val node = VirtualValues.node(42)
+    row.set("x", node)
+    row.setCachedProperty( cachedNodeProp("x", "prop"), Values.stringValue("foo"))
+    row.invalidateCachedNodeProperties(42)
+
+    row.estimatedHeapUsage should be >= node.estimatedHeapUsage()
+  }
+
   private def mutatingLeftDoesNotAffectRight(left: ExecutionContext, right: ExecutionContext): Unit = {
     // given
     left should not be theSameInstanceAs(right)
     val newKey = "this key should not yet exist in left or right"
-    val newCachedPropertyKey = prop("n", newKey)
+    val newCachedPropertyKey = cachedNodeProp("n", newKey)
     left.getCachedProperty(newCachedPropertyKey) shouldBe null
     right.getCachedProperty(newCachedPropertyKey) shouldBe null
 
@@ -341,7 +352,4 @@ class MapExecutionContextTest extends CypherFunSuite {
     left.getCachedProperty(newCachedPropertyKey) should equal(BooleanValue.FALSE)
     right.getCachedProperty(newCachedPropertyKey) shouldBe null
   }
-
-  private def prop(node: String, prop: String) =
-    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), NODE_TYPE)(InputPosition.NONE)
 }

@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.v4_0.expressions.ASTCachedProperty
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -277,7 +278,10 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     if (cachedProperties != null) {
       val iterator = cachedProperties.valuesIterator
       while (iterator.hasNext) {
-        total += iterator.next().estimatedHeapUsage()
+        val value = iterator.next()
+        if (value != null) {
+          total += value.estimatedHeapUsage()
+        }
       }
     }
     total
