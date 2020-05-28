@@ -53,9 +53,11 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
+import org.neo4j.fabric.transaction.FabricTransactionMonitor;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
@@ -109,14 +111,20 @@ public abstract class FabricServicesBootstrap
         var databaseAccess = createFabricDatabaseAccess();
         var remoteExecutor = bootstrapRemoteStack();
         var localExecutor = register( new FabricLocalExecutor( fabricConfig, fabricDatabaseManager, databaseAccess ), FabricLocalExecutor.class );
-        register( new TransactionManager( remoteExecutor, localExecutor, logService, jobScheduler, fabricConfig ), TransactionManager.class );
+
+        var systemNanoClock = resolve( SystemNanoClock.class );
+        var transactionMonitor = new FabricTransactionMonitor( systemNanoClock, logService, fabricConfig );
+
+        var transactionCheckInterval = config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis();
+        register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval ), TransactionMonitorScheduler.class );
+
+        register( new TransactionManager( remoteExecutor, localExecutor, logService, fabricConfig, transactionMonitor ), TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
-        var systemNanoClock = dependencies.resolveDependency( SystemNanoClock.class );
         var statementLifecycles = new FabricStatementLifecycles( monitors, config, systemNanoClock );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );

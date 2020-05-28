@@ -26,17 +26,17 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
-public class KernelTransactionMonitorScheduler extends LifecycleAdapter
+public class TransactionMonitorScheduler extends LifecycleAdapter
 {
-    private final KernelTransactionMonitor kernelTransactionMonitor;
+    private final TransactionMonitor transactionMonitor;
     private final JobScheduler scheduler;
     private final long checkIntervalMillis;
     private JobHandle monitorJobHandle;
 
-    public KernelTransactionMonitorScheduler( KernelTransactionMonitor kernelTransactionMonitor,
+    public TransactionMonitorScheduler( TransactionMonitor transactionMonitor,
             JobScheduler scheduler, long checkIntervalMillis )
     {
-        this.kernelTransactionMonitor = kernelTransactionMonitor;
+        this.transactionMonitor = transactionMonitor;
         this.scheduler = scheduler;
         this.checkIntervalMillis = checkIntervalMillis;
     }
@@ -46,7 +46,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( checkIntervalMillis > 0 )
         {
-            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, kernelTransactionMonitor,
+            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, transactionMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
         }
     }

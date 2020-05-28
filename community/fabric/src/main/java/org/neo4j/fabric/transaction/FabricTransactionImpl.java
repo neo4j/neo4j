@@ -55,9 +55,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobScheduler;
-
-import static org.neo4j.scheduler.Group.SERVER_TRANSACTION_TIMEOUT;
 
 public class FabricTransactionImpl implements FabricTransaction, CompositeTransaction, FabricTransaction.FabricExecutionContext
 {
@@ -71,13 +68,11 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private final TransactionBookmarkManager bookmarkManager;
     private final Log internalLog;
     private final TransactionManager transactionManager;
-    private final JobScheduler jobScheduler;
     private final FabricConfig fabricConfig;
     private final long id;
     private final FabricRemoteExecutor.RemoteTransactionContext remoteTransactionContext;
     private final FabricLocalExecutor.LocalTransactionContext localTransactionContext;
     private final AtomicReference<StatementType> statementType = new AtomicReference<>();
-    private JobHandle timeoutHandle;
     private State state = State.OPEN;
     private Status terminationStatus;
     private StatementLifecycle lastSubmittedStatement;
@@ -85,13 +80,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private SingleDbTransaction writingTransaction;
 
     FabricTransactionImpl( FabricTransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager, FabricRemoteExecutor remoteExecutor,
-                           FabricLocalExecutor localExecutor, LogService logService, TransactionManager transactionManager, JobScheduler jobScheduler,
+                           FabricLocalExecutor localExecutor, LogService logService, TransactionManager transactionManager,
                            FabricConfig fabricConfig )
     {
         this.transactionInfo = transactionInfo;
         this.internalLog = logService.getInternalLog( FabricTransactionImpl.class );
         this.transactionManager = transactionManager;
-        this.jobScheduler = jobScheduler;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.id = ID_GENERATOR.incrementAndGet();
@@ -103,7 +97,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             remoteTransactionContext = remoteExecutor.startTransactionContext( this, transactionInfo, bookmarkManager );
             localTransactionContext = localExecutor.startTransactionContext( this, transactionInfo, bookmarkManager );
 
-            scheduleTimeout( transactionInfo );
             internalLog.debug( "Transaction %d started", id );
         }
         catch ( RuntimeException e )
@@ -146,6 +139,17 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         }
     }
 
+    public boolean isSchemaTransaction()
+    {
+        var type = statementType.get();
+        if ( type != null && type == StatementType.SCHEMA_COMMAND() )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     @Override
     public void commit()
     {
@@ -172,8 +176,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
             try
             {
-                cancelTimeout();
-
                 allFailures.addAll( doOnChildren( readingTransactions, null, SingleDbTransaction::commit ) );
                 allFailures.forEach( err -> internalLog.error( "Failed to commit a child read transaction", err ) );
 
@@ -252,8 +254,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
         try
         {
-            cancelTimeout();
-
             allFailures.addAll( doOnChildren( readingTransactions, writingTransaction, operation ) );
             allFailures.forEach( err -> internalLog.error( "Failed to rollback a child read transaction", err ) );
         }
@@ -535,58 +535,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 Status.Transaction.TransactionRollbackFailed,
                 "Failed to rollback composite transaction %d",
                 id );
-    }
-
-    private void scheduleTimeout( FabricTransactionInfo transactionInfo )
-    {
-        if ( transactionInfo.getTxTimeout() != null )
-        {
-            scheduleTimeout( transactionInfo.getTxTimeout() );
-            return;
-        }
-
-        scheduleTimeout( fabricConfig.getTransactionTimeout() );
-    }
-
-    private void scheduleTimeout( Duration duration )
-    {
-        // 0 means no timeout
-        if ( duration.equals( Duration.ZERO ) )
-        {
-            return;
-        }
-
-        timeoutHandle = jobScheduler.schedule( SERVER_TRANSACTION_TIMEOUT, this::handleTimeout, duration.toSeconds(), TimeUnit.SECONDS );
-    }
-
-    private void handleTimeout()
-    {
-        exclusiveLock.lock();
-        try
-        {
-            // the transaction has already been rolled back as part of the failure clean up
-            if ( state != State.OPEN )
-            {
-                return;
-            }
-
-            internalLog.debug( "Terminating transaction %d because of timeout", id );
-            terminationStatus = Status.Transaction.TransactionTimedOut;
-            state = State.TERMINATED;
-            doRollback( singleDbTransaction -> singleDbTransaction.terminate( terminationStatus ) );
-        }
-        finally
-        {
-            exclusiveLock.unlock();
-        }
-    }
-
-    private void cancelTimeout()
-    {
-        if ( timeoutHandle != null )
-        {
-            timeoutHandle.cancel();
-        }
     }
 
     private static class ReadingTransaction

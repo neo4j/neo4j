@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.scheduler.JobScheduler;
 
 public class TransactionManager extends LifecycleAdapter
 {
@@ -41,22 +40,22 @@ public class TransactionManager extends LifecycleAdapter
     private final FabricRemoteExecutor remoteExecutor;
     private final FabricLocalExecutor localExecutor;
     private final LogService logService;
-    private final JobScheduler jobScheduler;
     private final FabricConfig fabricConfig;
+    private final FabricTransactionMonitor transactionMonitor;
 
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
 
     public TransactionManager( FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
             LogService logService,
-            JobScheduler jobScheduler,
-            FabricConfig fabricConfig )
+            FabricConfig fabricConfig,
+            FabricTransactionMonitor transactionMonitor )
     {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.logService = logService;
-        this.jobScheduler = jobScheduler;
         this.fabricConfig = fabricConfig;
+        this.transactionMonitor = transactionMonitor;
     }
 
     public FabricTransaction begin( FabricTransactionInfo transactionInfo, TransactionBookmarkManager transactionBookmarkManager )
@@ -69,9 +68,10 @@ public class TransactionManager extends LifecycleAdapter
                 localExecutor,
                 logService,
                 this,
-                jobScheduler,
                 fabricConfig );
+
         openTransactions.add( fabricTransaction );
+        transactionMonitor.startMonitoringTransaction( fabricTransaction, transactionInfo );
         return fabricTransaction;
     }
 
@@ -84,6 +84,7 @@ public class TransactionManager extends LifecycleAdapter
     void removeTransaction( FabricTransactionImpl transaction )
     {
         openTransactions.remove( transaction );
+        transactionMonitor.stopMonitoringTransaction( transaction );
     }
 
     public Set<FabricTransaction> getOpenTransactions()

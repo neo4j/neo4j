@@ -85,7 +85,7 @@ import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
-import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -778,8 +778,8 @@ public class Database extends LifecycleAdapter
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, databaseLogService );
         databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
-        KernelTransactionMonitorScheduler transactionMonitorScheduler =
-                new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
+        TransactionMonitorScheduler transactionMonitorScheduler =
+                new TransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
                         config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
         life.add( transactionMonitorScheduler );
     }
