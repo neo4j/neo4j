@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.storable.FloatingPointValue
 
 import scala.collection.Iterator.empty
@@ -54,24 +55,24 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     if (limit == 0 || input.isEmpty) return empty
 
-    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
-    val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, memoryTracker)
+    val scopedMemoryTracker = new ScopedMemoryTracker(state.memoryTracker.memoryTrackerForOperator(id.x))
+    val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
 
     var i = 1L
     while (input.hasNext) {
       val row = input.next()
       val evictedRow = topTable.addAndGetEvicted(row)
       if (row ne evictedRow) {
-        memoryTracker.allocateHeap(row.estimatedHeapUsage())
+        scopedMemoryTracker.allocateHeap(row.estimatedHeapUsage())
         if (evictedRow != null)
-          memoryTracker.releaseHeap(evictedRow.estimatedHeapUsage())
+          scopedMemoryTracker.releaseHeap(evictedRow.estimatedHeapUsage())
       }
       i += 1
     }
 
     topTable.sort()
 
-    topTable.autoClosingIterator().asScala.asInstanceOf[Iterator[CypherRow]]
+    topTable.autoClosingIterator(scopedMemoryTracker).asScala
   }
 }
 

@@ -139,8 +139,9 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
     /**
      * Create an iterator that will automatically call close() when it is exhausted.
      * To be used by sub-classes implementing autoClosingIterator().
+     * The caller can also provide an optional closeable of its own that will also be closed.
      */
-    protected Iterator<T> getAutoClosingIterator()
+    protected Iterator<T> getAutoClosingIterator( AutoCloseable closeable )
     {
         return new Iterator<>()
         {
@@ -152,6 +153,10 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
                 if ( index >= size )
                 {
                     close();
+                    if ( closeable != null )
+                    {
+                        closeTheCloseable();
+                    }
                     return false;
                 }
                 return true;
@@ -165,6 +170,22 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
                     throw new NoSuchElementException();
                 }
                 return heap[index++];
+            }
+
+            /**
+             * This is only used to work around the fact the AutoCloseable::close is
+             * declared to throw an exception. In practice we do not use such closeables.
+             */
+            private void closeTheCloseable()
+            {
+                try
+                {
+                    closeable.close();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         };
     }

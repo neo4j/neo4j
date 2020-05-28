@@ -168,17 +168,19 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
     }
 
     /**
+     * Create an iterator that will automatically call close() when it is exhausted.
+     * The caller can also provide an optional closeable of its own that will also be closed.
      * Must call after calling <code>sort()</code>.
      */
     @Nonnull
-    public Iterator<T> autoClosingIterator()
+    public Iterator<T> autoClosingIterator( AutoCloseable closeable )
     {
         if ( !isSorted )
         {
             // This should never happen in generated code but is here to simplify debugging if used incorrectly
             throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
         }
-        return getAutoClosingIterator();
+        return getAutoClosingIterator( closeable );
     }
 
     @Override
