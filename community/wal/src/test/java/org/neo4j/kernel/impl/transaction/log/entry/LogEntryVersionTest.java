@@ -45,9 +45,15 @@ class LogEntryVersionTest
     }
 
     @Test
-    void shouldWarnAboutNewerLogVersion()
+    void shouldWarnAboutNotUsedNegativeLogVersion()
     {
         assertThrows( UnsupportedLogVersionException.class, () -> INSTANCE.select( (byte) -42 ) ); // unused for now
+    }
+
+    @Test
+    void shouldWarnAboutNotUsedPositiveLogVersion()
+    {
+        assertThrows( UnsupportedLogVersionException.class, () -> INSTANCE.select( (byte) 100 ) ); // unused for now
     }
 
     @Test
