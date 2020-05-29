@@ -91,6 +91,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "transactions";
     public static final String DEFAULT_DUMPS_DIR_NAME = "dumps";
 
+    public static final int DEFAULT_ROUTING_CONNECTOR_PORT = 7688;
+
     @Description( "Root relative to which directory settings are resolved." )
     @DocumentedDefaultValue( "Defaults to current working directory" )
     public static final Setting<Path> neo4j_home = newBuilder( "dbms.directories.neo4j_home", PATH, Path.of( "" ).toAbsolutePath() )
@@ -829,6 +831,23 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.reconciler.max_parallelism", INT, Math.min( Runtime.getRuntime().availableProcessors(), 8 ) )
             .addConstraint( min( 0 ) )
             .build();
+
+    @Description( "Enable intra-cluster routing using an additional bolt connector" )
+    public static final Setting<Boolean> routing_enabled =
+            newBuilder( "dbms.routing.enabled", BOOL, false )
+                    .build();
+
+    @Description( "The address the routing connector should bind to" )
+    public static final Setting<SocketAddress> routing_listen_address =
+            newBuilder( "dbms.routing.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_ROUTING_CONNECTOR_PORT ) )
+                    .setDependency( default_listen_address )
+                    .build();
+
+    @Description( "The advertised address for the intra-cluster routing connector" )
+    public static final Setting<SocketAddress> routing_advertised_address =
+            newBuilder( "dbms.routing.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_ROUTING_CONNECTOR_PORT ) )
+                    .setDependency( default_advertised_address )
+                    .build();
 
     /**
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.

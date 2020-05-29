@@ -57,6 +57,7 @@ org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASE_NAME java.lang.S
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATA_DIR_NAME java.lang.String public static final = data
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DUMPS_DIR_NAME java.lang.String public static final = dumps
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_LABEL_BLOCK_SIZE int public static final = 64
+org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_ROUTING_CONNECTOR_PORT int public static final = 7688
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_TX_LOGS_ROOT_DIR_NAME java.lang.String public static final = transactions
 org.neo4j.configuration.GraphDatabaseSettings::GraphDatabaseSettings() void public
 org.neo4j.configuration.GraphDatabaseSettings::MINIMAL_BLOCK_SIZE int public static final = 16
@@ -144,6 +145,9 @@ org.neo4j.configuration.GraphDatabaseSettings::reconciler_maximum_parallelism or
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_may_retry org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_minimum_backoff org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::record_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
+org.neo4j.configuration.GraphDatabaseSettings::routing_advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
+org.neo4j.configuration.GraphDatabaseSettings::routing_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::routing_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_ttl org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::shutdown_transaction_end_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_level org.neo4j.graphdb.config.Setting<org.neo4j.logging.Level> public static final
@@ -185,14 +189,10 @@ org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::REQUIRED org.n
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::valueOf(java.lang.String) org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel public static
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::values() org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel[] public static
 org.neo4j.configuration.connectors.BoltConnector::BoltConnector() void public
-org.neo4j.configuration.connectors.BoltConnector::DEFAULT_CONNECTOR_PORT int public static final = 7688
 org.neo4j.configuration.connectors.BoltConnector::DEFAULT_PORT int public static final = 7687
 org.neo4j.configuration.connectors.BoltConnector::INTERNAL_NAME java.lang.String public static final = bolt-internal
 org.neo4j.configuration.connectors.BoltConnector::NAME java.lang.String public static final = bolt
 org.neo4j.configuration.connectors.BoltConnector::advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
-org.neo4j.configuration.connectors.BoltConnector::connector_routing_advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
-org.neo4j.configuration.connectors.BoltConnector::connector_routing_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
-org.neo4j.configuration.connectors.BoltConnector::connector_routing_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.connectors.BoltConnector::enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.BoltConnector::encryption_level org.neo4j.graphdb.config.Setting<org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel> public static final
 org.neo4j.configuration.connectors.BoltConnector::listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final

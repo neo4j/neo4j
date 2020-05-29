@@ -39,6 +39,7 @@ import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -84,8 +85,8 @@ class MultipleBoltServerPortsStressTest
             settings.put( BoltConnector.enabled, true );
             settings.put( BoltConnector.listen_address, new SocketAddress( 0 ) );
 
-            settings.put( BoltConnector.connector_routing_enabled, true );
-            settings.put( BoltConnector.connector_routing_listen_address, new SocketAddress( 0 ) );
+            settings.put( GraphDatabaseSettings.routing_enabled, true );
+            settings.put( GraphDatabaseSettings.routing_listen_address, new SocketAddress( 0 ) );
         } );
         server.init( testInfo );
 

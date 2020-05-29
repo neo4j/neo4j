@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
@@ -73,8 +74,8 @@ public class RoutingConnectorCertificatesIT
         settings.put( BoltConnector.encryption_level, OPTIONAL );
         settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
 
-        settings.put( BoltConnector.connector_routing_enabled, true );
-        settings.put( BoltConnector.connector_routing_listen_address, new SocketAddress( "localhost", 0 ) );
+        settings.put( GraphDatabaseSettings.routing_enabled, true );
+        settings.put( GraphDatabaseSettings.routing_listen_address, new SocketAddress( "localhost", 0 ) );
     } );
 
     @Test

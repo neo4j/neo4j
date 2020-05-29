@@ -50,6 +50,7 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -139,7 +140,7 @@ public class BoltServer extends LifecycleAdapter
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer nettyServer;
 
-            if ( config.get( BoltConnector.connector_routing_enabled ) )
+            if ( config.get( GraphDatabaseSettings.routing_enabled ) )
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
@@ -212,15 +213,15 @@ public class BoltServer extends LifecycleAdapter
 
         SocketAddress internalListenAddress;
 
-        if ( config.isExplicitlySet( BoltConnector.connector_routing_listen_address ) )
+        if ( config.isExplicitlySet( GraphDatabaseSettings.routing_listen_address ) )
         {
-            internalListenAddress = config.get( BoltConnector.connector_routing_listen_address );
+            internalListenAddress = config.get( GraphDatabaseSettings.routing_listen_address );
         }
         else
         {
             // otherwise use same host as external connector but with default internal port
             internalListenAddress = new SocketAddress( config.get( BoltConnector.listen_address ).getHostname(),
-                                                       config.get( BoltConnector.connector_routing_listen_address ).getPort() );
+                                                       config.get( GraphDatabaseSettings.routing_listen_address ).getPort() );
         }
 
         Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
