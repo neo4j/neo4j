@@ -42,6 +42,25 @@ object MemoryDeallocationTestBase {
   val maxMemory: Long = ByteUnit.mebiBytes(3)
 }
 
+/**
+ * These tests are designed to comparate two executions of queries with the same input data
+ * and assert that they do not differ significantly in the amount of estimated heap usage.
+ *
+ * Typically for eager operators, executing 3 in a row should not differ significantly from 2 in a row,
+ * since we should be able to release the memory for a previous eager operator.
+ *
+ * E.g.
+ * Query1: Scan -> ... -> Eager1 -> ... -> Eager2 -> ... -> ProduceResult
+ * Query2: Scan -> ... -> Eager1 -> ... -> Eager2 -> ... -> Eager3 -> ... -> ProduceResult
+ *
+ * When we stream rows between Eager2 and Eager3 in Query2, we should have been able to release
+ * the memory used by Eager1.
+ * If the eagers have the same peak memory usage between Query1 and Query2,
+ * the overall peak memory usage should not differ.
+ *
+ * The execution and assertion happens by calling one of the following test helpers:
+ * compareMemoryUsage, compareMemoryUsageWithInputRows or compareMemoryUsageWithInputStreams
+ */
 abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
                                                                     edition: Edition[CONTEXT],
                                                                     runtime: CypherRuntime[CONTEXT],
@@ -51,12 +70,12 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
     GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
 
-  private val sizeHintToUse = sizeHint
+  protected val sizeHintToUse = sizeHint
 
   // TODO: FIXME Pipelined LHSAccumulatingRHSStreamingSource has a reference counting bug with empty continuations that
   //             causes this test to fail for certain morsel sizes.
   //             We work around this by avoiding such cases to get some test coverage anyway.
-  private def sizeHintToUseWithWorkaroundForPipelined: Int = {
+  protected def sizeHintToUseWithWorkaroundForPipelined: Int = {
     if (runtime.name.toLowerCase == "pipelined" && sizeHintToUse % edition.runtimeConfig().pipelinedBatchSizeBig == 0) {
       assume(edition.runtimeConfig().pipelinedBatchSizeBig > 1) // If morsel size is 1 this workaround will not work, so just skip it for this test run
       sizeHintToUse + 1
@@ -85,7 +104,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHintToUse
 
     // then
-    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows)
+    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, toleratedDeviation = 0.05) // Pipelined is not exact
   }
 
   test("should deallocate memory between grouping aggregation - one large group") {
@@ -113,7 +132,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val input2 = finiteInput(nRows, Some(_ => Array(0)))
 
     // then
-    compareMemoryUsageWithInputStreams(logicalQuery1, logicalQuery2, input1, input2)
+    compareMemoryUsageWithInputStreams(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation = 0.05) // Pipelined is not exact
   }
 
   test("should deallocate memory between eager") {
@@ -190,9 +209,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between single node hash joins") {
-    // TODO: FIXME Pipelined LHSAccumulatingRHSStreamingSource has a reference counting bug with empty continuations that
-    //             causes this test to fail for certain morsel sizes.
-    //             We work around this by avoiding such cases to get some test coverage anyway.
     val nNodes = sizeHintToUseWithWorkaroundForPipelined
 
     given {
@@ -226,9 +242,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between multi node hash joins") {
-    // TODO: FIXME Pipelined LHSAccumulatingRHSStreamingSource has a reference counting bug with empty continuations that
-    //             causes this test to fail for certain morsel sizes.
-    //             We work around this by avoiding such cases to get some test coverage anyway.
     val nNodes = sizeHintToUseWithWorkaroundForPipelined
 
     val paths = given { chainGraphs(nNodes, "R") }
@@ -363,9 +376,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between value hash joins") {
-    // TODO: FIXME Pipelined LHSAccumulatingRHSStreamingSource has a reference counting bug with empty continuations that
-    //             causes this test to fail for certain morsel sizes.
-    //             We work around this by avoiding such cases to get some test coverage anyway.
     val nNodes = sizeHintToUseWithWorkaroundForPipelined
 
     given {
@@ -399,17 +409,17 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation = 0.1)
   }
 
-  private def compareMemoryUsage(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsage(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, toleratedDeviation: Double = 0.0d): Unit = {
     compareMemoryUsage(logicalQuery1, logicalQuery2, NoInput, NoInput, toleratedDeviation)
   }
 
-  private def compareMemoryUsageWithInputRows(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, nRows: Int, toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsageWithInputRows(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, nRows: Int, toleratedDeviation: Double = 0.0d): Unit = {
     val input1 = finiteInput(nRows)
     val input2 = finiteInput(nRows)
     compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
   }
 
-  private def compareMemoryUsageWithInputStreams(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, input1: InputDataStream, input2: InputDataStream,
+  protected def compareMemoryUsageWithInputStreams(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, input1: InputDataStream, input2: InputDataStream,
                                                  toleratedDeviation: Double = 0.0d): Unit = {
     compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
   }
@@ -430,8 +440,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val queryProfile2 = runtimeResult2.runtimeResult.queryProfile()
     val maxMem2 = queryProfile2.maxAllocatedMemory()
     val memDiff = Math.abs(maxMem2 - maxMem1)
-
-    //println(s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference)")
 
     maxMem1 shouldNot be(0)
     val deviation = Math.abs(maxMem1 - maxMem2) / maxMem1.toDouble

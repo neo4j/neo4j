@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.IOUtils;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.util.Objects.requireNonNull;
@@ -155,7 +156,7 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
                     close();
                     if ( closeable != null )
                     {
-                        closeTheCloseable();
+                        IOUtils.closeAllUnchecked( closeable );
                     }
                     return false;
                 }
@@ -170,22 +171,6 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
                     throw new NoSuchElementException();
                 }
                 return heap[index++];
-            }
-
-            /**
-             * This is only used to work around the fact the AutoCloseable::close is
-             * declared to throw an exception. In practice we do not use such closeables.
-             */
-            private void closeTheCloseable()
-            {
-                try
-                {
-                    closeable.close();
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
             }
         };
     }
