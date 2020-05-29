@@ -41,7 +41,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 class HeapTrackingUnifiedIdentityHashingSetTest
 {
     private static final long INTEGER_SIZE = shallowSizeOfInstance( Integer.class );
-    private final MemoryMeter meter = new MemoryMeter().enableDebug();
+    private final MemoryMeter meter = new MemoryMeter();
     private MemoryPool memoryPool;
     private MemoryTracker memoryTracker;
 
