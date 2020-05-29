@@ -361,4 +361,19 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "xs").withRows(expected)
   }
 
+  test("should handle conditional apply on top of distinct") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.argument()
+      .distinct("x AS x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val result = execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(1), Array(4)))
+
+    // then
+    result should beColumns("x").withRows(Seq(Array(1), Array(2), Array(4)))
+  }
 }
