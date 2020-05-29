@@ -261,6 +261,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
                 groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
             }
             groupCursor.init( entityReference(), getNextRel(), isDense() );
+            int criteriaMet = 0;
+            boolean typeLimited = selection.isTypeLimited();
+            int numCriteria = selection.numberOfCriteria();
             while ( groupCursor.next() )
             {
                 if ( selection.test( groupCursor.getType() ) )
@@ -277,6 +280,10 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
                         incoming = groupCursor.incomingCount();
                     }
                     mutator.add( groupCursor.getType(), outgoing, incoming, loop );
+                    if ( typeLimited && ++criteriaMet >= numCriteria )
+                    {
+                        break;
+                    }
                 }
             }
         }

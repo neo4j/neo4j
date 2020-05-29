@@ -445,9 +445,27 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         }
 
         @Override
+        public int numberOfCriteria()
+        {
+            return inner.numberOfCriteria();
+        }
+
+        @Override
+        public Criterion criterion( int index )
+        {
+            return inner.criterion( index );
+        }
+
+        @Override
         public boolean test( int type, RelationshipDirection direction )
         {
             return inner.test( type, direction );
+        }
+
+        @Override
+        public boolean isTypeLimited()
+        {
+            return inner.isTypeLimited();
         }
 
         @Override
