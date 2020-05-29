@@ -103,6 +103,8 @@ public abstract class FabricServicesBootstrap
     {
         LogProvider internalLogProvider = logService.getInternalLogProvider();
 
+        @SuppressWarnings( "unchecked" )
+        var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );
         var fabricDatabaseManager = register( createFabricDatabaseManager(), FabricDatabaseManager.class );
 
         var jobScheduler = resolve( JobScheduler.class );
@@ -125,7 +127,7 @@ public abstract class FabricServicesBootstrap
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
-        var statementLifecycles = new FabricStatementLifecycles( monitors, config, systemNanoClock );
+        var statementLifecycles = new FabricStatementLifecycles( databaseManager, monitors, config, systemNanoClock );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 

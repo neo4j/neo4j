@@ -19,12 +19,15 @@
  */
 package org.neo4j.fabric.executor;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.cypher.internal.CypherQueryObfuscator;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -38,12 +41,14 @@ import org.neo4j.values.virtual.MapValue;
 
 public class FabricStatementLifecycles
 {
-    private final Monitors monitors;
+    private final DatabaseManager<DatabaseContext> databaseManager;
+    private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
-    public FabricStatementLifecycles( Monitors monitors, Config config, SystemNanoClock systemNanoClock )
+    public FabricStatementLifecycles( DatabaseManager<DatabaseContext> databaseManager, Monitors dbmsMonitors, Config config, SystemNanoClock systemNanoClock )
     {
-        this.monitors = monitors;
+        this.databaseManager = databaseManager;
+        this.dbmsMonitor = dbmsMonitors.newMonitor( QueryExecutionMonitor.class );
         this.executingQueryFactory = new ExecutingQueryFactory(
                 systemNanoClock,
                 setupCpuClockAtomicReference( config ),
@@ -76,9 +81,8 @@ public class FabricStatementLifecycles
                 transactionInfo.getClientConnectionInfo(),
                 transactionInfo.getLoginContext().subject().username(),
                 transactionInfo.getTxMetadata() );
-        var queryExecutionMonitor = monitors.newMonitor( QueryExecutionMonitor.class );
 
-        return new StatementLifecycle( executingQuery, queryExecutionMonitor );
+        return new StatementLifecycle( executingQuery );
     }
 
     public enum StatementPhase
@@ -86,24 +90,23 @@ public class FabricStatementLifecycles
         FABRIC, CYPHER, ENDED
     }
 
-    public static class StatementLifecycle
+    public class StatementLifecycle
     {
         private final ExecutingQuery executingQuery;
-        private final QueryExecutionMonitor monitor;
 
+        private QueryExecutionMonitor dbMonitor;
         private StatementPhase phase;
         private MonitoringMode monitoringMode;
 
-        private StatementLifecycle( ExecutingQuery executingQuery, QueryExecutionMonitor monitor )
+        private StatementLifecycle( ExecutingQuery executingQuery )
         {
             this.executingQuery = executingQuery;
-            this.monitor = monitor;
             this.phase = StatementPhase.FABRIC;
         }
 
         void startProcessing()
         {
-            monitor.startProcessing( executingQuery );
+            getQueryExecutionMonitor().startProcessing( executingQuery );
         }
 
         void doneFabricProcessing( FabricPlan plan )
@@ -122,7 +125,7 @@ public class FabricStatementLifecycles
 
         void startExecution()
         {
-            monitor.startExecution( executingQuery );
+            getQueryExecutionMonitor().startExecution( executingQuery );
             monitoringMode.startExecution();
         }
 
@@ -134,6 +137,7 @@ public class FabricStatementLifecycles
         void endSuccess()
         {
             phase = StatementPhase.ENDED;
+            QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd( executingQuery, true );
             monitor.endSuccess( executingQuery );
         }
@@ -141,8 +145,28 @@ public class FabricStatementLifecycles
         void endFailure( Throwable failure )
         {
             phase = StatementPhase.ENDED;
+            QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd( executingQuery, false );
             monitor.endFailure( executingQuery, failure.getMessage() );
+        }
+
+        private QueryExecutionMonitor getQueryExecutionMonitor()
+        {
+            return getDbMonitor().orElse( dbmsMonitor );
+        }
+
+        private Optional<QueryExecutionMonitor> getDbMonitor()
+        {
+            if ( dbMonitor == null )
+            {
+                executingQuery.databaseId()
+                              .flatMap( databaseManager::getDatabaseContext )
+                              .map( dbm -> dbm.dependencies().resolveDependency( Monitors.class ) )
+                              .map( monitors -> monitors.newMonitor( QueryExecutionMonitor.class ) )
+                              .ifPresent( monitor -> dbMonitor = monitor );
+            }
+
+            return Optional.ofNullable( dbMonitor );
         }
 
         public boolean inFabricPhase()
@@ -165,7 +189,7 @@ public class FabricStatementLifecycles
             return monitoringMode.isParentChildMonitoringMode();
         }
 
-        private abstract static class MonitoringMode
+        private abstract class MonitoringMode
         {
             abstract boolean isParentChildMonitoringMode();
 
@@ -174,7 +198,7 @@ public class FabricStatementLifecycles
             abstract void startExecution();
         }
 
-        private static class SingleQueryMonitoringMode extends MonitoringMode
+        private class SingleQueryMonitoringMode extends MonitoringMode
         {
             @Override
             boolean isParentChildMonitoringMode()
@@ -214,7 +238,7 @@ public class FabricStatementLifecycles
             @Override
             QueryExecutionMonitor getChildQueryMonitor()
             {
-                return monitor;
+                return getQueryExecutionMonitor();
             }
         }
     }
