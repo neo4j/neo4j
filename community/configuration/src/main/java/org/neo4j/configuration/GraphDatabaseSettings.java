@@ -849,6 +849,56 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .setDependency( default_advertised_address )
                     .build();
 
+    @Description( "Sets level for driver internal logging." )
+    @DocumentedDefaultValue( "Value of dbms.logs.debug.level" )
+    public static final Setting<Level> routing_driver_logging_level =
+            newBuilder( "dbms.routing.driver.logging.level", ofEnum(Level.class), null ).build();
+
+    @Description( "Maximum total number of connections to be managed by a connection pool.\n" +
+            "The limit is enforced for a combination of a host and user. Negative values are allowed and result in unlimited pool. Value of 0" +
+            "is not allowed." )
+    @DocumentedDefaultValue( "Unlimited" )
+    public static final Setting<Integer> routing_driver_max_connection_pool_size =
+            newBuilder( "dbms.routing.driver.connection.pool.max_size", INT, -1 ).build();
+
+    @Description( "Pooled connections that have been idle in the pool for longer than this timeout " +
+            "will be tested before they are used again, to ensure they are still alive.\n" +
+            "If this option is set too low, an additional network call will be incurred when acquiring a connection, which causes a performance hit.\n" +
+            "If this is set high, no longer live connections might be used which might lead to errors.\n" +
+            "Hence, this parameter tunes a balance between the likelihood of experiencing connection problems and performance\n" +
+            "Normally, this parameter should not need tuning.\n" +
+            "Value 0 means connections will always be tested for validity" )
+    @DocumentedDefaultValue(  "No connection liveliness check is done by default." )
+    public static final Setting<Duration> routing_driver_idle_time_before_connection_test =
+            newBuilder( "dbms.routing.driver.connection.pool.idle_test", DURATION, null ).build();
+
+    @Description( "Pooled connections older than this threshold will be closed and removed from the pool.\n" +
+            "Setting this option to a low value will cause a high connection churn and might result in a performance hit.\n" +
+            "It is recommended to set maximum lifetime to a slightly smaller value than the one configured in network\n" +
+            "equipment (load balancer, proxy, firewall, etc. can also limit maximum connection lifetime).\n" +
+            "Zero and negative values result in lifetime not being checked." )
+    public static final Setting<Duration> routing_driver_max_connection_lifetime =
+            newBuilder( "dbms.routing.driver.connection.max_lifetime", DURATION, Duration.ofHours( 1 ) ).build();
+
+    @Description( "Maximum amount of time spent attempting to acquire a connection from the connection pool.\n" +
+            "This timeout only kicks in when all existing connections are being used and no new " +
+            "connections can be created because maximum connection pool size has been reached.\n" +
+            "Error is raised when connection can't be acquired within configured time.\n" +
+            "Negative values are allowed and result in unlimited acquisition timeout. Value of 0 is allowed " +
+            "and results in no timeout and immediate failure when connection is unavailable" )
+    public static final Setting<Duration> routing_driver_connection_acquisition_timeout =
+            newBuilder( "dbms.routing.driver.connection.pool.acquisition_timeout", DURATION, ofSeconds( 60 ) ).build();
+
+    @Description( "Socket connection timeout.\n" +
+            "A timeout of zero is treated as an infinite timeout and will be bound by the timeout configured on the\n" +
+            "operating system level." )
+    public static final Setting<Duration> routing_driver_connect_timeout =
+            newBuilder( "dbms.routing.driver.connection.connect_timeout", DURATION, ofSeconds( 5 ) ).build();
+
+    @Description( "Determines which driver API will be used. ASYNC must be used when the remote instance is 3.5" )
+    public static final Setting<DriverApi> routing_driver_api =
+            newBuilder( "dbms.routing.driver.api", ofEnum( DriverApi.class), DriverApi.RX ).build();
+
     /**
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default connector settings that you can pass to the builders.
@@ -865,5 +915,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         SINGLE,
         CORE,
         READ_REPLICA
+    }
+
+    public enum DriverApi
+    {
+        RX,
+        ASYNC
     }
 }

@@ -461,4 +461,25 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Boolean> consistency_check_on_apply =
             newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
+
+    @Internal
+    @Description( "Time interval of inactivity after which a driver will be closed." )
+    public static final Setting<Duration> routing_driver_idle_timeout =
+            newBuilder( "dbms.routing.driver.timeout", DURATION, ofMinutes( 1 ) ).build();
+
+    @Internal
+    @Description( "Time interval between driver idleness check." )
+    public static final Setting<Duration> routing_driver_idle_check_interval =
+            newBuilder( "dbms.routing.driver.idle_check_interval", DURATION, ofMinutes( 1 ) ).build();
+
+    @Internal
+    @Description( "Number of event loops used by drivers. Event loops are shard between drivers, so this is the total number of event loops created." )
+    @DocumentedDefaultValue( "Number of available processors" )
+    public static final Setting<Integer> routing_driver_event_loop_count =
+            newBuilder( "dbms.routing.driver.event_loop_count", INT, Runtime.getRuntime().availableProcessors() ).build();
+
+    @Internal
+    @Description( "Enables logging of leaked driver session" )
+    public static final Setting<Boolean> routing_driver_log_leaked_sessions =
+            newBuilder( "dbms.routing.driver.logging.leaked_sessions", BOOL, false ).build();
 }
