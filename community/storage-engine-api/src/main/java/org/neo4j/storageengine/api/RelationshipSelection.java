@@ -28,6 +28,9 @@ import java.util.Arrays;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.util.Preconditions;
+
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 /**
  * Used to specify a selection of relationships to get from a node.
@@ -75,6 +78,23 @@ public abstract class RelationshipSelection
      * @return whether or not this relationship type is part of this selection.
      */
     public abstract boolean test( int type, RelationshipDirection direction );
+
+    /**
+     * @return the number of criteria in this selection. One {@link Criterion} is a type and {@link Direction}.
+     */
+    public abstract int numberOfCriteria();
+
+    /**
+     * @param index which {@link Criterion} to access.
+     * @return the {@link Criterion} for the given index, must be between 0 and {@link #numberOfCriteria()}.
+     */
+    public abstract Criterion criterion( int index );
+
+    /**
+     * @return {@code true} if this selection is limited on type, i.e. if number of criteria matches number of selected types,
+     * otherwise {@code false}.
+     */
+    public abstract boolean isTypeLimited();
 
     /**
      * Selects the correct set of added relationships from transaction state, based on the selection criteria.
@@ -133,14 +153,53 @@ public abstract class RelationshipSelection
         }
     }
 
-    private static class DirectionalSingleType extends Directional
+    private abstract static class DirectionalSingleCriterion extends Directional implements Criterion
     {
-        private final int type;
+        protected final int type;
 
-        DirectionalSingleType( int type, Direction direction )
+        DirectionalSingleCriterion( int type, Direction direction )
         {
             super( direction );
             this.type = type;
+        }
+
+        @Override
+        public boolean test( RelationshipDirection direction )
+        {
+            return RelationshipSelection.matchesDirection( direction, this.direction );
+        }
+
+        @Override
+        public int numberOfCriteria()
+        {
+            return 1;
+        }
+
+        @Override
+        public Criterion criterion( int index )
+        {
+            Preconditions.checkArgument( index == 0, "Unknown criterion index %d", index );
+            return this;
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return direction;
+        }
+    }
+
+    private static class DirectionalSingleType extends DirectionalSingleCriterion
+    {
+        DirectionalSingleType( int type, Direction direction )
+        {
+            super( type, direction );
         }
 
         @Override
@@ -153,6 +212,12 @@ public abstract class RelationshipSelection
         public boolean test( int type, RelationshipDirection direction )
         {
             return this.type == type && matchesDirection( direction, this.direction );
+        }
+
+        @Override
+        public boolean isTypeLimited()
+        {
+            return true;
         }
 
         @Override
@@ -188,6 +253,25 @@ public abstract class RelationshipSelection
         public boolean test( int type, RelationshipDirection direction )
         {
             return test( type ) && matchesDirection( direction, this.direction );
+        }
+
+        @Override
+        public int numberOfCriteria()
+        {
+            return types.length;
+        }
+
+        @Override
+        public boolean isTypeLimited()
+        {
+            return true;
+        }
+
+        @Override
+        public Criterion criterion( int index )
+        {
+            Preconditions.checkArgument( index < types.length, "Unknown criterion index %d", index );
+            return new CriterionImpl( types[index], direction );
         }
 
         @Override
@@ -230,11 +314,11 @@ public abstract class RelationshipSelection
         }
     }
 
-    private static class DirectionalAllTypes extends Directional
+    private static class DirectionalAllTypes extends DirectionalSingleCriterion
     {
         DirectionalAllTypes( Direction direction )
         {
-            super( direction );
+            super( ANY_RELATIONSHIP_TYPE, direction );
         }
 
         @Override
@@ -250,6 +334,12 @@ public abstract class RelationshipSelection
         }
 
         @Override
+        public boolean isTypeLimited()
+        {
+            return false;
+        }
+
+        @Override
         public LongIterator addedRelationship( NodeState transactionState )
         {
             return transactionState.getAddedRelationships( direction );
@@ -262,8 +352,41 @@ public abstract class RelationshipSelection
         }
     }
 
+    public interface Criterion
+    {
+        int type();
+
+        Direction direction();
+    }
+
+    public static class CriterionImpl implements Criterion
+    {
+        private final int type;
+        private final Direction direction;
+
+        CriterionImpl( int type, Direction direction )
+        {
+            this.type = type;
+            this.direction = direction;
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public Direction direction()
+        {
+            return direction;
+        }
+    }
+
     public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection()
     {
+        private final Criterion ALL_CRITERIA = new CriterionImpl( ANY_RELATIONSHIP_TYPE, Direction.BOTH );
+
         @Override
         public boolean test( int type )
         {
@@ -286,6 +409,25 @@ public abstract class RelationshipSelection
         public boolean test( int type, RelationshipDirection direction )
         {
             return true;
+        }
+
+        @Override
+        public int numberOfCriteria()
+        {
+            return 1;
+        }
+
+        @Override
+        public Criterion criterion( int index )
+        {
+            Preconditions.checkArgument( index == 0, "Unknown criterion index %d", index );
+            return ALL_CRITERIA;
+        }
+
+        @Override
+        public boolean isTypeLimited()
+        {
+            return false;
         }
 
         @Override
@@ -325,6 +467,24 @@ public abstract class RelationshipSelection
         public boolean test( int type, RelationshipDirection direction )
         {
             return false;
+        }
+
+        @Override
+        public int numberOfCriteria()
+        {
+            return 0;
+        }
+
+        @Override
+        public Criterion criterion( int index )
+        {
+            throw new IllegalArgumentException( "Unknown criterion index " + index );
+        }
+
+        @Override
+        public boolean isTypeLimited()
+        {
+            return true;
         }
 
         @Override
