@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListComprehension
-import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Property
@@ -49,7 +47,6 @@ import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -141,16 +138,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               Projection(
                 Selection(
                   Seq(hasLabels("u2", "User")),
-                  CacheProperties(
-                    Expand(
-                      Argument(Set("u")),
-                      "u",
-                      OUTGOING,
-                      Seq(RelTypeName("FOLLOWS")(pos)),
-                      "u2",
-                      "r"
-                    ),
-                    Set(CachedProperty("u", Variable("u")(pos), PropertyKeyName("id")(pos), NODE_TYPE)(pos))
+                  Expand(
+                    Argument(Set("u")),
+                    "u",
+                    OUTGOING,
+                    Seq(RelTypeName("FOLLOWS")(pos)),
+                    "u2",
+                    "r"
                   )
                 ),
                 Map("  FRESHID41" -> prop("u2", "id"))
@@ -163,7 +157,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           ),
           Seq(Ascending(patternComprehensionExpressionKeyString))
         ),
-        Map("u.id" -> cachedNodeProp("u", "id"))
+        Map("u.id" -> prop("u", "id"))
       )
     )
   }
@@ -728,7 +722,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               ),
       MergeCreateNode(
                       RollUpApply(
-                        CacheProperties(Argument(SetExtractor()), _),
+                        Argument(SetExtractor()),
                       _/* <- This is the subQuery */, _, _, _), _,_ ,_ // Create part
                      ), _
       ) => ()
@@ -745,10 +739,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case AntiConditionalApply(
       Optional(
                Selection(_,
-                    CacheProperties(
-                         RollUpApply(
-                                     Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _) // Match part
-                    , _)
+                       RollUpApply(
+                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _) // Match part
                ), _
               ),
       MergeCreateRelationship(

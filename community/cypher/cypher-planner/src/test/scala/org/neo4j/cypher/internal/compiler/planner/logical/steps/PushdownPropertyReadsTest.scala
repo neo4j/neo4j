@@ -199,6 +199,35 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     rewritten shouldBe plan
   }
 
+  test("should not pushdown through Anti") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withCardinality(10)
+      .apply().withCardinality(10)
+      .|.anti().withCardinality(10)
+      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withCardinality(1)
+      .|.argument().withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown through AntiSemiApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withCardinality(10)
+      .antiSemiApply().withCardinality(10)
+      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withCardinality(1)
+      .|.argument().withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
   test("should pushdown past a cartesian product into LHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")

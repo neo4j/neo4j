@@ -96,10 +96,10 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+        (acc, _, plan) => s"$acc->${id(plan)}",
+        (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
-    foldedString shouldBe "->p0->p1->p2->p3"
+    foldedString shouldBe "->p0->p1->p2=>p3"
   }
 
   test("LogicalPlans.foldPlan: apply plan with selection on rhs") {
@@ -113,10 +113,10 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+        (acc, _, plan) => s"$acc->${id(plan)}",
+        (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
-    foldedString shouldBe "->p0->p1->p2->p3"
+    foldedString shouldBe "->p0->p1->p2=>p3"
   }
 
   test("LogicalPlans.foldPlan: apply plan with selection on top") {
@@ -130,10 +130,10 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+        (acc, _, plan) => s"$acc->${id(plan)}",
+        (_, rhs, plan) => s"$rhs=>${id(plan)}")
 
-    foldedString shouldBe "->p0->p1->p2->p3"
+    foldedString shouldBe "->p0->p1=>p2->p3"
   }
 
   test("LogicalPlans.foldPlan: cartesian product") {
@@ -147,10 +147,46 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p3,
-        (acc, plan) => s"$acc->${id(plan)}",
+        (acc, _, plan) => s"$acc->${id(plan)}",
         (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
 
     foldedString shouldBe "p2(->p0, ->p1)->p3"
+  }
+
+  case class ArgPlan(arg: String, plan: String)
+
+  test("LogicalPlans.foldPlan: argument passed to rhs of apply") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p2", Set.empty)
+    val p2 = Selection(List(True()(pos)), p1)
+    val p3 = Apply(p0, p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan(List.empty[ArgPlan])(p3,
+        (acc, argument, plan) => ArgPlan(argument.headOption.map(_.plan).orNull, id(plan)) :: acc,
+        (_, rhs, _) => rhs)
+
+    foldedString shouldBe List(ArgPlan("p0", "p2"), ArgPlan("p0", "p1"), ArgPlan(null, "p0"))
+  }
+
+  test("LogicalPlans.foldPlan: no argument for cartesian product") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p2", Set.empty)
+    val p2 = Selection(List(True()(pos)), p1)
+    val p3 = CartesianProduct(p0, p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan(List.empty[ArgPlan])(p3,
+        (acc, argument, plan) => ArgPlan(argument.headOption.map(_.plan).orNull, id(plan)) :: acc,
+        (lhs, rhs, _) => rhs ::: lhs)
+
+    foldedString shouldBe List(ArgPlan(null, "p2"), ArgPlan(null, "p1"), ArgPlan(null, "p0"))
   }
 
   test("LogicalPlans.foldPlan: applies and cartesian product") {
@@ -177,10 +213,14 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p7,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+        (acc, _, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) =>
+          plan match {
+            case _: Apply => s"$rhs=>${id(plan)}"
+            case _ => s"${id(plan)}($lhs, $rhs)"
+          })
 
-    foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)->p6->p7"
+    foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)=>p6=>p7"
   }
 
   test("LogicalPlans.foldPlan: cartesian product and applies") {
@@ -207,10 +247,14 @@ class LogicalPlansTest extends CypherFunSuite {
 
     val foldedString =
       LogicalPlans.foldPlan("")(p7,
-        (acc, plan) => s"$acc->${id(plan)}",
-        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+        (acc, _, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) =>
+          plan match {
+            case _: Apply => s"$rhs=>${id(plan)}"
+            case _ => s"${id(plan)}($lhs, $rhs)"
+          })
 
-    foldedString shouldBe "p6(->p0->p1->p2, ->p3->p4->p5)->p7"
+    foldedString shouldBe "p6(->p0->p1=>p2, ->p3->p4=>p5)->p7"
   }
 
   private def id(plan: LogicalPlan) = "p"+plan.id.x
