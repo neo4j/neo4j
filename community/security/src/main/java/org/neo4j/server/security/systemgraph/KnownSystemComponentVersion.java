@@ -81,8 +81,9 @@ public abstract class KnownSystemComponentVersion
 
     public UnsupportedOperationException unsupported()
     {
-        return new UnsupportedOperationException(
-                String.format( "System graph version %d for component '%s' in '%s' is not supported", version, componentVersionProperty, description ) );
+        String message = String.format( "System graph version %d for component '%s' in '%s' is not supported", version, componentVersionProperty, description );
+        log.error( message );
+        return new UnsupportedOperationException( message );
     }
 
     public SystemGraphComponent.Status getStatus()
