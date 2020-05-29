@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Anti
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -670,6 +671,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def conditionalApply(items: String*): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ConditionalApply(lhs, rhs, items)(_)))
+
+  def antiConditionalApply(items: String*): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items)(_)))
 
   def selectOrSemiApply(predicate: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
