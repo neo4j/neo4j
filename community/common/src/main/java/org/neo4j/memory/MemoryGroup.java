@@ -27,6 +27,7 @@ public enum MemoryGroup
     OTHER( "Other" ),
     REPLICATION_BUFFERS( "Replication Buffers" ),
     QUERY_CACHE( "Query Cache" ),
+    RECENT_QUERY_BUFFER( "Recent Query Buffer" ),
     NO_TRACKING( "No Tracking" );
 
     private final String name;
