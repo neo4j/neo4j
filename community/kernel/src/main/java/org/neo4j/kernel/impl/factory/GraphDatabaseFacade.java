@@ -43,6 +43,7 @@ import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -55,6 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.graphdb.ResultTransformer.EMPTY_TRANSFORMER;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.INSTANCE;
 
 /**
  * Default implementation of the GraphDatabaseService interface.
@@ -117,21 +119,21 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), null, null );
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), null, INSTANCE );
     }
 
     @Override
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
             TimeUnit unit )
     {
-        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ), null, null );
+        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ), null, INSTANCE );
     }
 
     public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Consumer<Status> terminationCallback,
-            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
+            TransactionExceptionMapper transactionExceptionMapper )
     {
         return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis(), terminationCallback,
-                customSafeTerminalOperationErrorMapper );
+                transactionExceptionMapper );
     }
 
     @Override
@@ -169,11 +171,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     protected InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long timeoutMillis, Consumer<Status> terminationCallback, Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
+            long timeoutMillis, Consumer<Status> terminationCallback, TransactionExceptionMapper transactionExceptionMapper )
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction,
-                terminationCallback, customSafeTerminalOperationErrorMapper );
+                terminationCallback, transactionExceptionMapper );
     }
 
     @Override

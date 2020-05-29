@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -43,10 +42,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -64,7 +60,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -76,8 +71,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.Status.Classification;
-import org.neo4j.kernel.api.exceptions.Status.Code;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.TokenAccess;
@@ -111,28 +104,27 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public class TransactionImpl implements InternalTransaction
 {
-    private static final String UNABLE_TO_COMPLETE_TRANSACTION = "Unable to complete transaction.";
     private static final EntityLocker locker = new EntityLocker();
     private final TokenHolders tokenHolders;
     private final TransactionalContextFactory contextFactory;
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
-    private final Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper;
+    private final TransactionExceptionMapper exceptionMapper;
     private KernelTransaction transaction;
     private boolean closed;
 
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
             KernelTransaction transaction, Consumer<Status> terminationCallback,
-            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
+            TransactionExceptionMapper exceptionMapper )
     {
         this.tokenHolders = tokenHolders;
         this.contextFactory = contextFactory;
         this.availabilityGuard = availabilityGuard;
         this.executionEngine = executionEngine;
         this.terminationCallback = terminationCallback;
-        this.customSafeTerminalOperationErrorMapper = customSafeTerminalOperationErrorMapper;
+        this.exceptionMapper = exceptionMapper;
         setTransaction( transaction );
     }
 
@@ -488,7 +480,8 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void terminate( Status reason )
     {
-        transaction.markForTermination( reason );
+        var ktx = kernelTransaction();
+        ktx.markForTermination( reason );
         if ( terminationCallback != null )
         {
             terminationCallback.accept( reason );
@@ -503,49 +496,19 @@ public class TransactionImpl implements InternalTransaction
 
     private void safeTerminalOperation( TransactionalOperation operation )
     {
-        if ( customSafeTerminalOperationErrorMapper != null )
+        if ( !isOpen() )
         {
-            try
-            {
-                operation.perform( transaction );
-                closed = true;
-            }
-            catch ( Exception e )
-            {
-                throw customSafeTerminalOperationErrorMapper.apply( e );
-            }
+            return;
         }
-        else
+        try
         {
-            try
-            {
-                operation.perform( transaction );
-                closed = true;
-            }
-            catch ( TransientFailureException e )
-            {
-                // We let transient exceptions pass through unchanged since they aren't really transaction failures
-                // in the same sense as unexpected failures are. Such exception signals that the transaction
-                // can be retried and might be successful the next time.
-                throw e;
-            }
-            catch ( ConstraintViolationTransactionFailureException e )
-            {
-                throw new ConstraintViolationException( e.getMessage(), e );
-            }
-            catch ( KernelException | TransactionTerminatedException e )
-            {
-                Code statusCode = e.status().code();
-                if ( statusCode.classification() == Classification.TransientError )
-                {
-                    throw new TransientTransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
-                }
-                throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
-            }
+            operation.perform( transaction );
+            closed = true;
+            transaction = null;
+        }
+        catch ( Exception e )
+        {
+            throw exceptionMapper.mapException( e );
         }
     }
 
@@ -559,15 +522,13 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Lock acquireWriteLock( Entity entity )
     {
-        checkInTransaction();
-        return locker.exclusiveLock( transaction, entity );
+        return locker.exclusiveLock( kernelTransaction(), entity );
     }
 
     @Override
     public Lock acquireReadLock( Entity entity )
     {
-        checkInTransaction();
-        return locker.sharedLock( transaction, entity );
+        return locker.sharedLock( kernelTransaction(), entity );
     }
 
     @Override
@@ -580,38 +541,37 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public KernelTransaction.Type transactionType()
     {
-        return transaction.transactionType();
+        return kernelTransaction().transactionType();
     }
 
     @Override
     public SecurityContext securityContext()
     {
-        return transaction.securityContext();
+        return kernelTransaction().securityContext();
     }
 
     @Override
     public ClientConnectionInfo clientInfo()
     {
-        return transaction.clientInfo();
+        return kernelTransaction().clientInfo();
     }
 
     @Override
     public KernelTransaction.Revertable overrideWith( SecurityContext context )
     {
-        return transaction.overrideWith( context );
+        return kernelTransaction().overrideWith( context );
     }
 
     @Override
     public Optional<Status> terminationReason()
     {
-        return transaction.getReasonIfTerminated();
+        return kernelTransaction().getReasonIfTerminated();
     }
 
     @Override
     public void setMetaData( Map<String,Object> txMeta )
     {
-        checkInTransaction();
-        transaction.setMetaData( txMeta );
+        kernelTransaction().setMetaData( txMeta );
     }
 
     @Override

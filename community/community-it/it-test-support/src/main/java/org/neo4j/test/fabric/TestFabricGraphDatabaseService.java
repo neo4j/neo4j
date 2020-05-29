@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static java.util.Objects.requireNonNull;
@@ -63,7 +64,7 @@ public class TestFabricGraphDatabaseService extends GraphDatabaseFacade
                                                             ClientConnectionInfo connectionInfo,
                                                             long timeoutMillis,
                                                             Consumer<Status> terminationCallback,
-                                                            Function<Exception, RuntimeException> customSafeTerminalOperationErrorMapper )
+                                                            TransactionExceptionMapper transactionExceptionMapper )
     {
 
         var databaseService = boltFabricDatabaseServiceSupplier.get();
