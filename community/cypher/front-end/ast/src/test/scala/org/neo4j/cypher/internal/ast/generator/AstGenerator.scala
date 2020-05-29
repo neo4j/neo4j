@@ -878,11 +878,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _yieldItem: Gen[ReturnItem] = for {
     var1 <- _variable
-    var2 <- _variable
-    item <- oneOf(
-      UnaliasedReturnItem(var1, "")(pos),
-      AliasedReturnItem(var1, var2)(pos)
-    )
+    item <- UnaliasedReturnItem(var1, "")(pos)
   }  yield item
 
   def _match: Gen[Match] = for {

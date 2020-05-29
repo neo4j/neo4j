@@ -66,7 +66,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
   def yields: Option[Return] = None
   def returns: Option[Return] = None
 
-  private def calculateResultColumns(resultColumns: Return): List[String] = resultColumns.returnItems.items.map(ri => ri.name).toList
+  private def calculateResultColumns(resultColumns: Return): List[String] = resultColumns.returnItems.items.map(ri => ri.alias.get.name).toList
   private def createSymbol(variable: String, offset: Int): semantics.Symbol =
     semantics.Symbol(variable, Set(new InputPosition(offset, 1, 1)), TypeSpec.exact(CTString))
 
@@ -86,12 +86,19 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck
-      .chain(declareVariables(defaultColumnSet.zipWithIndex.map { case (name, index) => createSymbol(name, index) }))
-      .chain(where.semanticCheck)
-      .chain(yields.semanticCheck)
-      .chain(yields.flatMap(_.skip).map(skipCheck).getOrElse(None))
-      .chain(yields.flatMap(_.limit).map(limitCheck).getOrElse(None))
-      .chain(yields.flatMap(_.orderBy).semanticCheck)
+      .chain(withScopedState(
+        // YIELD requires all variables defined by the command in scope
+        declareVariables(defaultColumnSet.zipWithIndex.map { case (name, index) => createSymbol(name, index) })
+        .chain(yields.semanticCheck)
+        .chain(yields.flatMap(_.skip).map(skipCheck).getOrElse(None))
+        .chain(yields.flatMap(_.limit).map(limitCheck).getOrElse(None))
+      )
+      .chain(withScopedState(
+        // WHERE and ORDER BY should operate on the return columns scoped by the YIELD
+        declareVariables(returnColumnNames.zipWithIndex.map { case (name, index) => createSymbol(name, index) })
+          .chain(where.semanticCheck)
+          .chain(yields.flatMap(_.orderBy).semanticCheck))
+      ))
 }
 
 sealed trait WriteAdministrationCommand extends AdministrationCommand {

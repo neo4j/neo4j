@@ -194,8 +194,8 @@ trait Clauses extends Parser
   )
 
   private def YieldItem: Rule1[ast.ReturnItem] = rule(
-    group(Variable ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
-      | group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
+    // Don't allow aliasing for now, it adds complexity to the inner cypher
+     group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
   def Order: Rule1[ast.OrderBy] = rule("ORDER") {

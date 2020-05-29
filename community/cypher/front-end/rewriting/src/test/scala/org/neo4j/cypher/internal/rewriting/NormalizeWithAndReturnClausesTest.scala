@@ -16,11 +16,16 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.Rewriter
@@ -43,27 +48,31 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
+    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
     assertRewrite(
       "SHOW PRIVILEGES YIELD role",
-      "SHOW PRIVILEGES YIELD role AS role")
+      ast.ShowPrivileges(ShowAllPrivileges()(InputPosition.NONE), yields, None, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW USER") {
+    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("user")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
     assertRewrite(
       "SHOW USERS YIELD user",
-      "SHOW USERS YIELD user AS user")
+      ast.ShowUsers(yields, None, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW ROLES") {
+    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
     assertRewrite(
       "SHOW ROLES YIELD role",
-      "SHOW ROLES YIELD role AS role")
+      ast.ShowRoles(false, true, yields, None, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW DATABASES") {
+    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("name")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
     assertRewrite(
       "SHOW DATABASES YIELD name",
-      "SHOW DATABASES YIELD name AS name")
+      ast.ShowDatabases(yields, None, None)(InputPosition.NONE))
   }
 
   test("WITH: attach ORDER BY expressions to existing aliases") {
@@ -804,6 +813,17 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
     assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
+    assert(checkResult.errors === Seq())
+  }
+
+  // SHOW commands don't accept YIELD with aliases but they should be rewritten internally anyway
+  protected def assertRewrite(originalQuery: String, expectedStatement: Statement) {
+    val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
+    val result = endoRewrite(original)
+    assert(result === expectedStatement, s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expectedStatement)}\n" +
+      s"but was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
     val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
     assert(checkResult.errors === Seq())
