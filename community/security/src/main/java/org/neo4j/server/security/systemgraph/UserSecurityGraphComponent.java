@@ -41,10 +41,12 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     public static final String COMPONENT = "security-users";
     private final KnownSystemComponentVersions<KnownCommunitySecurityComponentVersion> knownUserSecurityComponentVersions =
             new KnownSystemComponentVersions<>( new NoUserSecurityGraph() );
+    private final Log log;
 
     public UserSecurityGraphComponent( Log log, UserRepository userRepository, UserRepository initialPasswordRepo, Config config )
     {
         super( config );
+        this.log = log;
         knownUserSecurityComponentVersions.add( new CommunityVersion_0_35( log, userRepository ) );
         knownUserSecurityComponentVersions.add( new CommunityVersion_1_40( log, initialPasswordRepo ) );
         knownUserSecurityComponentVersions.add( new CommunityVersion_2_41( log, initialPasswordRepo ) );
@@ -65,7 +67,13 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     @Override
     public void initializeSystemGraphModel( Transaction tx ) throws Exception
     {
+        KnownCommunitySecurityComponentVersion componentBeforeInit = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+        log.info( "Initializing system graph model for component '%s' with version %d and status %s",
+                COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus() );
         initializeLatestSystemGraph( tx );
+        KnownCommunitySecurityComponentVersion componentAfterInit = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+        log.info( "After initialization of system graph model component '%s' have version %d and status %s",
+                COMPONENT, componentAfterInit.version, componentAfterInit.getStatus() );
     }
 
     @Override
@@ -77,6 +85,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     private void initializeLatestSystemGraph( Transaction tx ) throws Exception
     {
         KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestSecurityGraphVersion();
+        log.info( "Latest version of component '%s' is %s", COMPONENT, latest.version );
         latest.setupUsers( tx );
         latest.setVersionProperty( tx, latest.version );
     }
@@ -84,12 +93,17 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     @Override
     protected void postInitialization( GraphDatabaseService system, boolean wasInitialized ) throws Exception
     {
-        // Do not need to setup initial password when initialized, because that is already done by the initialization code in `setupUsers`
-        if ( !wasInitialized )
+        try ( Transaction tx = system.beginTx() )
         {
-            try ( Transaction tx = system.beginTx() )
+            KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+            log.info( "Performing postInitialization step for component '%s' with version %d and status %s",
+                COMPONENT, component.version, component.getStatus() );
+
+            // Do not need to setup initial password when initialized, because that is already done by the initialization code in `setupUsers`
+            if ( !wasInitialized )
             {
-                KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+
+                 log.info( "Updating the initial password in component '%s'  ", COMPONENT, component.version, component.getStatus() );
                 Optional<Exception> exception = component.updateInitialUserPassword( tx );
                 tx.commit();
                 if ( exception.isPresent() )
@@ -106,14 +120,18 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         return SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+            log.info( "Trying to upgrade component '%s' with version %d and status %s to latest version",
+                    COMPONENT, currentVersion.version, currentVersion.getStatus() );
             if ( currentVersion.version == NoUserSecurityGraph.VERSION )
             {
+                log.info( "The current version did not have any security graph, doing a full initialization" );
                 initializeLatestSystemGraph( tx );
             }
             else
             {
                 if ( currentVersion.migrationSupported() )
                 {
+                    log.info( "Upgrading security graph to latest version" );
                     currentVersion.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestSecurityGraphVersion() );
                 }
                 else
