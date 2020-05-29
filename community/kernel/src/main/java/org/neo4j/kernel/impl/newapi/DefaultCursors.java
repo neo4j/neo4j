@@ -29,10 +29,12 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.toggle;
 
 abstract class DefaultCursors
 {
     private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
+    private static final boolean RECORD_CURSORS_TRACES = flag( DefaultCursors.class, "recordCursorsTraces", true );
     private final Collection<CloseableStacktrace> closeables;
 
     DefaultCursors( Collection<CloseableStacktrace> closeables )
@@ -44,8 +46,14 @@ abstract class DefaultCursors
     {
         if ( DEBUG_CLOSING )
         {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            closeables.add( new CloseableStacktrace( closeable, Arrays.copyOfRange( stackTrace, 2, stackTrace.length ) ) );
+            StackTraceElement[] stackTrace = null;
+            if ( RECORD_CURSORS_TRACES )
+            {
+                stackTrace = Thread.currentThread().getStackTrace();
+                stackTrace = Arrays.copyOfRange( stackTrace, 2, stackTrace.length );
+            }
+
+            closeables.add( new CloseableStacktrace( closeable, stackTrace ) );
         }
         return closeable;
     }
@@ -80,12 +88,22 @@ abstract class DefaultCursors
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 PrintStream printStream = new PrintStream( out, false, StandardCharsets.UTF_8 );
 
-                for ( StackTraceElement traceElement : stackTrace )
+                if ( RECORD_CURSORS_TRACES )
                 {
-                    printStream.println( "\tat " + traceElement );
+                    printStream.println();
+                    for ( StackTraceElement traceElement : stackTrace )
+                    {
+                        printStream.println( "\tat " + traceElement );
+                    }
+                }
+                else
+                {
+                    String msg = format( " To see stack traces please pass '%s' to your JVM or enable corresponding feature toggle.",
+                                         toggle( DefaultCursors.class, "recordCursorsTraces", Boolean.TRUE ) );
+                    printStream.print( msg );
                 }
                 printStream.println();
-                throw new IllegalStateException( format( "Closeable %s was not closed!%n%s", c, out.toString( StandardCharsets.UTF_8) ) );
+                throw new IllegalStateException( format( "Closeable %s was not closed!%s", c, out.toString( StandardCharsets.UTF_8) ) );
             }
         }
     }
