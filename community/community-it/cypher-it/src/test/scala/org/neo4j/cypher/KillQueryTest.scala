@@ -100,6 +100,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
             try {
               transactionalContext.terminate()
             } catch {
+              case _: TransactionTerminatedException =>
               case e: Throwable =>
                 exLogger(e)
                 continue.set(false)

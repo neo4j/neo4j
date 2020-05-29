@@ -481,6 +481,10 @@ public class TransactionImpl implements InternalTransaction
     public void terminate( Status reason )
     {
         var ktx = kernelTransaction();
+        if ( ktx == null )
+        {
+            return;
+        }
         ktx.markForTermination( reason );
         if ( terminationCallback != null )
         {
@@ -565,7 +569,8 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Optional<Status> terminationReason()
     {
-        return kernelTransaction().getReasonIfTerminated();
+        var tx = transaction;
+        return tx != null ? tx.getReasonIfTerminated() : Optional.empty();
     }
 
     @Override

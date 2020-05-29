@@ -432,7 +432,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
             var internalTransaction = this.internalTransaction;
 
-            if ( internalTransaction != null )
+            if ( internalTransaction != null && internalTransaction.terminationReason().isEmpty() )
             {
                 internalTransaction.terminate( reason );
             }
