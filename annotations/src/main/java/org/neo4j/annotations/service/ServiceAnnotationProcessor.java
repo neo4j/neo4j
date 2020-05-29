@@ -62,6 +62,7 @@ import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
  */
 public class ServiceAnnotationProcessor extends AbstractProcessor
 {
+    private static final boolean enableDebug = Boolean.getBoolean( "enableAnnotationLogging" );
     private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();
     private Types typeUtils;
     private Elements elementUtils;
@@ -225,7 +226,10 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
 
     private void info( String msg )
     {
-        processingEnv.getMessager().printMessage( NOTE, msg );
+        if ( enableDebug )
+        {
+            processingEnv.getMessager().printMessage( NOTE, msg );
+        }
     }
 
     private void error( String msg, Exception e )
