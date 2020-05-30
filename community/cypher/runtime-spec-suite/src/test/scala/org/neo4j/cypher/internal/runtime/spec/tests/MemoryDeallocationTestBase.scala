@@ -76,13 +76,31 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   //             causes this test to fail for certain morsel sizes.
   //             We work around this by avoiding such cases to get some test coverage anyway.
   protected def sizeHintToUseWithWorkaroundForPipelined: Int = {
-    if (runtime.name.toLowerCase == "pipelined" && sizeHintToUse % edition.runtimeConfig().pipelinedBatchSizeBig == 0) {
+    if (runtimeUsed == Pipelined && sizeHintToUse % edition.runtimeConfig().pipelinedBatchSizeBig == 0) {
       assume(edition.runtimeConfig().pipelinedBatchSizeBig > 1) // If morsel size is 1 this workaround will not work, so just skip it for this test run
       sizeHintToUse + 1
     } else {
       sizeHintToUse
     }
   }
+
+  //-----------------------------------------------------------------
+  // A little helper to collect dependencies on runtime name in one place
+  sealed trait Runtime
+  case object Interpreted extends Runtime
+  case object Slotted extends Runtime
+  case object Pipelined extends Runtime
+  case object NotSupported extends Runtime
+
+  protected def runtimeUsed: Runtime = {
+    runtime.name.toLowerCase match {
+      case "interpreted" => Interpreted
+      case "slotted" => Slotted
+      case "pipelined" => Pipelined
+      case _ => NotSupported
+    }
+  }
+  //-----------------------------------------------------------------
 
   test("should deallocate memory between grouping aggregation - many groups") {
     // given
@@ -136,7 +154,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between eager") {
-    assume(runtime.name.toLowerCase != "pipelined") // Pipelined does not yet support eager
+    assume(runtimeUsed != Pipelined) // Pipelined does not yet support eager
 
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
@@ -280,11 +298,15 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation = 0.1)
+    val toleratedDeviation = runtimeUsed match {
+      case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
+      case _ => 0.1
+    }
+    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
   }
 
   test("should deallocate memory between left outer hash joins") {
-    assume(runtime.name.toLowerCase != "pipelined") // Pipelined does not yet support outer hash join
+    assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
 
     val nNodes = sizeHintToUse
 
@@ -330,7 +352,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between right outer hash joins") {
-    assume(runtime.name.toLowerCase != "pipelined") // Pipelined does not yet support outer hash join
+    assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
+    assume(runtimeUsed != Interpreted) // TODO: Interpreted tries to pre-populate returned node values from a transaction that is closed because of restarting
 
     val nNodes = sizeHintToUse
 
@@ -404,9 +427,12 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
-
     // then
-    compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation = 0.1)
+    val toleratedDeviation = runtimeUsed match {
+      case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
+      case _ => 0.1
+    }
+    compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation)
   }
 
   protected def compareMemoryUsage(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, toleratedDeviation: Double = 0.0d): Unit = {
