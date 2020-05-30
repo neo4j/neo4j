@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.Measurable
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -76,6 +78,12 @@ trait CypherRow extends ReadWriteRow with Measurable {
   }
 
   override def getLinenumber: Option[ResourceLinenumber] = linenumber
+}
+
+object MapCypherRow {
+  private final val SHALLOW_SIZE_OF_MUTABLE_MAP = shallowSizeOfInstance(classOf[mutable.OpenHashMap[_,_]])
+  private final val SHALLOW_SIZE = shallowSizeOfInstance(classOf[MapCypherRow])
+  private final val INITAL_SIZE_OF_MUTABLE_MAP = SHALLOW_SIZE_OF_MUTABLE_MAP + shallowSizeOfObjectArray(8) // OpenHashMap initial size 8
 }
 
 class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
@@ -209,7 +217,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
   }
 
   override def estimatedHeapUsage: Long = {
-    var total = 0L
+    var total = MapCypherRow.SHALLOW_SIZE + MapCypherRow.INITAL_SIZE_OF_MUTABLE_MAP
     val iterator = m.valuesIterator
     while (iterator.hasNext) {
       val value = iterator.next()
@@ -218,6 +226,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
       }
     }
     if (cachedProperties != null) {
+      total += MapCypherRow.INITAL_SIZE_OF_MUTABLE_MAP
       val iterator = cachedProperties.valuesIterator
       while (iterator.hasNext) {
         val value = iterator.next()
