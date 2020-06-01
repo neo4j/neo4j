@@ -77,7 +77,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   //             We work around this by avoiding such cases to get some test coverage anyway.
   protected def sizeHintToUseWithWorkaroundForPipelined: Int = {
     if (runtimeUsed == Pipelined && sizeHintToUse % edition.runtimeConfig().pipelinedBatchSizeBig == 0) {
-      assume(edition.runtimeConfig().pipelinedBatchSizeBig > 1) // If morsel size is 1 this workaround will not work, so just skip it for this test run
+      // If morsel size is 1 this workaround will not work (and in some case even for morsel size 2), so just skip it for this test run
+      assume(edition.runtimeConfig().pipelinedBatchSizeBig > 2)
       sizeHintToUse + 1
     } else {
       sizeHintToUse
