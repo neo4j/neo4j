@@ -83,17 +83,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
-    /*
-     * The existence of any arguments means that the cardinality is dependent on the inbound cardinality.
-     * Unless the current node pattern is already solved by the arguments, the cost for solving it is 1.0.
-     * The cardinality factor c is the maximum of those two parts.
-     */
     val c = if (qg.argumentIds.nonEmpty) {
-      if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {
-        Cardinality.max(Cardinality(1.0), input.inboundCardinality)
-      } else {
-        input.inboundCardinality
-      }
+      input.inboundCardinality
     } else {
       Cardinality(1.0)
     }

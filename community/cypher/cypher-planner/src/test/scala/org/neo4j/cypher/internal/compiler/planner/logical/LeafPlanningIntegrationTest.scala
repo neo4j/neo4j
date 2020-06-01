@@ -71,9 +71,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -418,15 +416,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       """
         |MATCH (n)-[:REL]->(m)
         |WHERE id(m) = 1
-        |OPTIONAL MATCH (n)-->()-->(:Role)
+        |OPTIONAL MATCH (n)-->(middle)-->(role:Role)
         |RETURN n
         |""".stripMargin
 
       val plan = (new given {
-         statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-           override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality(10.0)
-           override def nodesAllCardinality(): Cardinality = Cardinality(100.0)
-         }
+        cardinality = mapCardinality {
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("role") && queryGraph.selections.nonEmpty => 100.0 // Nodes with label :Role
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("m") && queryGraph.selections.nonEmpty => 1.0 // Nodes with label :Role
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 => 100 // All nodes
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("n", "m") => 10 // (n)-[:REL]->(m)
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("n", "middle") => 100 // (n)-[:REL]->(m)
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("middle", "role") => 100 // (n)-[:REL]->(m)
+          case _ => 100.0
+        }
       } getLogicalPlanFor query)._2
 
       plan should beLike {

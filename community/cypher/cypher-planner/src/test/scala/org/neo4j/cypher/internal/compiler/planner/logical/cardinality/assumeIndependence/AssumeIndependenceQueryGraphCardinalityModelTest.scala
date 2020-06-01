@@ -274,7 +274,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     withQueryGraphArgumentIds("e").
     withInboundCardinality(0.5).
     withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(500)
+    shouldHaveQueryGraphCardinality(250)
   }
 
   test("input cardinality above 1.0 and different argument => input cardinality * scan cardinality") {
