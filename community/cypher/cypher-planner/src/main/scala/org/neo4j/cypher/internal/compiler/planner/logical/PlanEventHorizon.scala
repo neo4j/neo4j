@@ -92,7 +92,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>
-        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, context)
+        val projected = context.logicalPlanProducer.planProcedureCall(plan, call, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>

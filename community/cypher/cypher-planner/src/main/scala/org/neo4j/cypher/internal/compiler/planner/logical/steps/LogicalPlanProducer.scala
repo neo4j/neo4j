@@ -828,7 +828,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(UnwindCollection(rewrittenInner, name, rewrittenExpression), solved, providedOrders.get(rewrittenInner.id).fromLeft, context)
   }
 
-  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
+  def planProcedureCall(inner: LogicalPlan, call: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call)))
     val solver = PatternExpressionSolver.solverFor(inner, context)
     val rewrittenCall = call.mapCallArguments(solver.solve(_))

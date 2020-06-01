@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_CARDINALITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_CARDINALITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_MULTIPLIER
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
@@ -45,10 +48,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
-import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
-import org.neo4j.cypher.internal.expressions.Expression
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 
@@ -119,15 +119,15 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // Unwind
     case _: UnwindProjection =>
-      in * Multiplier(10)
+      in * DEFAULT_MULTIPLIER
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
-      in * Multiplier(10) min 1.0 max 10000.0
+      (in * DEFAULT_MULTIPLIER).atLeast(1.0) // At least 1 row
 
     // Load CSV
     case _: LoadCSVProjection =>
-      in
+      (in * DEFAULT_MULTIPLIER).atLeast(1.0) // At least 1 row
 
     case _: PassthroughAllHorizon =>
       in

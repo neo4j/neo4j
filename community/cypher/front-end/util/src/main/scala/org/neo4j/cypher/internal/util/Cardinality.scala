@@ -32,10 +32,10 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def ^(a: Int): Cardinality = Cardinality.noInf(Math.pow(amount, a))
   def map(f: Double => Double): Cardinality = f(amount)
 
-  def inverse = Multiplier(1.0d / amount)
+  def inverse: Multiplier = Multiplier(1.0d / amount)
 
-  def min(other: Cardinality) = if (amount < other.amount) self else other
-  def max(other: Cardinality) = if (amount > other.amount) self else other
+  def atMost(other: Cardinality): Cardinality = if (amount < other.amount) self else other
+  def atLeast(other: Cardinality): Cardinality = if (amount > other.amount) self else other
 }
 
 object Cardinality {

@@ -173,6 +173,48 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       )
   }
 
+  test("standalone procedure call should have default cardinality") {
+    givenPattern("CALL my.proc.foo(42) YIELD x")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER)
+  }
+
+  test("procedure call with no input should not have 0 cardinality") {
+    givenPattern("MATCH (:Foo) CALL my.proc.foo(42) YIELD x")
+      .withGraphNodes(allNodes)
+      .withLabel('Foo -> 0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(1)
+  }
+
+  test("procedure call with large input should multiply cardinality") {
+    val inputSize = 1000000
+    givenPattern("MATCH (:Foo) CALL my.proc.foo(42) YIELD x")
+      .withGraphNodes(inputSize)
+      .withLabel('Foo -> inputSize)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER * inputSize)
+  }
+
+  test("standalone LOAD CSV should have default cardinality") {
+    givenPattern("LOAD CSV FROM 'foo' AS csv")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER)
+  }
+
+  test("LOAD CSV with no input should not have 0 cardinality") {
+    givenPattern("MATCH (:Foo) LOAD CSV FROM 'foo' AS csv")
+      .withGraphNodes(allNodes)
+      .withLabel('Foo -> 0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(1)
+  }
+
+  test("LOAD CSV with large input should multiply cardinality") {
+    val inputSize = 1000000
+    givenPattern("MATCH (:Foo) LOAD CSV FROM 'foo' AS csv")
+      .withGraphNodes(inputSize)
+      .withLabel('Foo -> inputSize)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER * inputSize)
+  }
+
   def createCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in, newExpressionEvaluator)
 

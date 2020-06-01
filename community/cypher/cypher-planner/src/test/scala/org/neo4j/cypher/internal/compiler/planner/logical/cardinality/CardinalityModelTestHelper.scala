@@ -60,7 +60,8 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val graphCardinalityModel = createQueryGraphCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
-      cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
+      val input = QueryGraphSolverInput(Map.empty, testUnit.inboundCardinality, testUnit.strictness)
+      cardinalityModelUnderTest(plannerQuery, input, semanticTable) should equal(Cardinality(number))
     }
   }
 
@@ -76,4 +77,5 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
   val DEFAULT_LIST_CARDINALITY: Int = PlannerDefaults.DEFAULT_LIST_CARDINALITY.amount.toInt
   val DEFAULT_LIMIT_CARDINALITY: Int = PlannerDefaults.DEFAULT_LIMIT_CARDINALITY.amount.toInt
   val DEFAULT_DISTINCT_SELECTIVITY: Double = PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY.factor
+  val DEFAULT_MULTIPLIER: Double = PlannerDefaults.DEFAULT_MULTIPLIER.coefficient
 }

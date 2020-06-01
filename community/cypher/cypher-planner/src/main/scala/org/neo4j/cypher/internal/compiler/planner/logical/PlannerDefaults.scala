@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
 object PlannerDefaults {
@@ -35,4 +36,5 @@ object PlannerDefaults {
   val DEFAULT_RANGE_SEEK_FACTOR          = 0.03
   val DEFAULT_STRING_LENGTH              = 6
   val DEFAULT_DISTINCT_SELECTIVITY       = Selectivity(0.95)
+  val DEFAULT_MULTIPLIER                 = Multiplier(10)
 }

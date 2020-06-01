@@ -77,7 +77,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
     val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
     copy(
-      input = input.copy(inboundCardinality = input.inboundCardinality.max(Cardinality(1))),
+      input = input.copy(inboundCardinality = input.inboundCardinality.atLeast(Cardinality(1))),
       semanticTable = tableWithRels
     )
   }
