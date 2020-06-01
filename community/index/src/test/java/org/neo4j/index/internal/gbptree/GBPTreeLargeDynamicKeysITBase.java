@@ -50,7 +50,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
-abstract class LargeDynamicKeysIT
+abstract class GBPTreeLargeDynamicKeysITBase
 {
     private static final Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout( false );
 
