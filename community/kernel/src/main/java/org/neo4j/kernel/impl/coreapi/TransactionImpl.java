@@ -137,7 +137,10 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void rollback()
     {
-        safeTerminalOperation( KernelTransaction::rollback );
+        if ( isOpen() )
+        {
+            safeTerminalOperation( KernelTransaction::rollback );
+        }
     }
 
     @Override
@@ -480,7 +483,7 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void terminate( Status reason )
     {
-        var ktx = kernelTransaction();
+        var ktx = transaction;
         if ( ktx == null )
         {
             return;
@@ -495,17 +498,20 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void close()
     {
-        safeTerminalOperation( KernelTransaction::close );
+        if ( isOpen() )
+        {
+            safeTerminalOperation( KernelTransaction::close );
+        }
     }
 
     private void safeTerminalOperation( TransactionalOperation operation )
     {
-        if ( !isOpen() )
-        {
-            return;
-        }
         try
         {
+            if ( closed )
+            {
+                throw new NotInTransactionException( "The transaction has been closed." );
+            }
             operation.perform( transaction );
             closed = true;
             transaction = null;

@@ -46,6 +46,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -143,14 +144,7 @@ public class GraphDatabaseServiceTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.terminate();
-            try
-            {
-                tx.createNode();
-                fail( "Failed to throw TransactionTerminateException" );
-            }
-            catch ( TransactionTerminatedException ignored )
-            {
-            }
+            assertThrows( TransactionTerminatedException.class, tx::createNode );
         }
     }
 
@@ -181,15 +175,7 @@ public class GraphDatabaseServiceTest
         barrier.release(); // <-- this triggers t2 to continue its transaction
         shutdownFuture.get();
 
-        try
-        {
-            db.beginTx();
-            fail( "Should fail" );
-        }
-        catch ( DatabaseShutdownException e )
-        {
-            //THEN good
-        }
+        assertThrows( DatabaseShutdownException.class, db::beginTx );
     }
 
     @Test
