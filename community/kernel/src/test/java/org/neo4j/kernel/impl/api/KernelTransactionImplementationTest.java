@@ -57,7 +57,6 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryLimitExceeded;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
@@ -690,15 +689,14 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         transaction.memoryTracker().allocateHeap( 13 );
         transaction.memoryTracker().allocateNative( 14 );
         KernelTransactionImplementation.Statistics statistics =
-            new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ),
-                new AtomicReference<>( new ThreadBasedAllocation() ) );
+            new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ) );
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
         statistics.init( 2, tracer );
 
         assertEquals( 2, statistics.cpuTimeMillis() );
         assertEquals( 13, statistics.estimatedHeapMemory() );
         assertEquals( 14, statistics.usedNativeMemory() );
-        assertEquals( 2, statistics.heapAllocatedBytes() );
+        assertEquals( 0, statistics.heapAllocatedBytes() );
         assertEquals( 1, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 4, statistics.totalTransactionPageCacheHits() );
         statistics.addWaitingTime( 1 );
@@ -712,7 +710,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         assertEquals( 4, statistics.cpuTimeMillis() );
         assertEquals( 0, statistics.estimatedHeapMemory() );
         assertEquals( 0, statistics.usedNativeMemory() );
-        assertEquals( 4, statistics.heapAllocatedBytes() );
+        assertEquals( 0, statistics.heapAllocatedBytes() );
         assertEquals( 2, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 6, statistics.totalTransactionPageCacheHits() );
         assertEquals( 0, statistics.getWaitingTimeNanos( 0 ) );
@@ -792,18 +790,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         {
             iteration++;
             return MILLISECONDS.toNanos( iteration * threadId );
-        }
-    }
-
-    private static class ThreadBasedAllocation extends HeapAllocation
-    {
-        private long iteration;
-
-        @Override
-        public long allocatedBytes( long threadId )
-        {
-            iteration++;
-            return iteration * threadId;
         }
     }
 

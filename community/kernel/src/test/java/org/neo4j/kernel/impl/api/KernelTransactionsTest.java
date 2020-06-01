@@ -84,7 +84,6 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -687,7 +686,7 @@ class KernelTransactionsTest
         return new KernelTransactions( config, statementLocksFactory, null,
                 commitProcess, mock( DatabaseTransactionEventListeners.class ),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
@@ -747,7 +746,7 @@ class KernelTransactionsTest
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator,
                     transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                    new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
+                    accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
                     mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,

@@ -129,6 +129,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
@@ -217,7 +218,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, DatabaseTracers tracers,
+            AtomicReference<CpuClock> cpuClockRef, DatabaseTracers tracers,
             StorageEngine storageEngine, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
@@ -243,7 +244,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
         this.accessCapability = accessCapability;
-        this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
+        this.statistics = new Statistics( this, cpuClockRef );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
@@ -1165,6 +1166,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public static class Statistics
     {
+        private static final boolean ENABLE_HEAP_ALLOCATION_TRACKING = flag( Statistics.class, "enableHeapAllocationTracking", false );
+
         private volatile long cpuTimeNanosWhenQueryStarted;
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
@@ -1172,22 +1175,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private volatile PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
         private final KernelTransactionImplementation transaction;
         private final AtomicReference<CpuClock> cpuClockRef;
-        private final AtomicReference<HeapAllocation> heapAllocationRef;
         private CpuClock cpuClock;
-        private HeapAllocation heapAllocation;
+        private final HeapAllocation heapAllocation = ENABLE_HEAP_ALLOCATION_TRACKING ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
 
-        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef,
-                AtomicReference<HeapAllocation> heapAllocationRef )
+        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef )
         {
             this.transaction = transaction;
             this.cpuClockRef = cpuClockRef;
-            this.heapAllocationRef = heapAllocationRef;
         }
 
         protected void init( long threadId, PageCursorTracer pageCursorTracer )
         {
             this.cpuClock = cpuClockRef.get();
-            this.heapAllocation = heapAllocationRef.get();
             this.transactionThreadId = threadId;
             this.pageCursorTracer = pageCursorTracer;
             this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( transactionThreadId );

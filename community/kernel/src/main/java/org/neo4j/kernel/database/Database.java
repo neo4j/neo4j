@@ -153,7 +153,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -699,7 +698,6 @@ public class Database extends LifecycleAdapter
             LeaseService leaseService )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
-        AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
 
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, databaseConfig );
 
@@ -718,7 +716,7 @@ public class Database extends LifecycleAdapter
                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
-                        heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
+                        accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
                         relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService, transactionsMemoryPool ) );
 
@@ -753,25 +751,6 @@ public class Database extends LifecycleAdapter
         cpuClockUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_cpu_time ) );
         databaseConfig.addListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
         return cpuClock;
-    }
-
-    private AtomicReference<HeapAllocation> setupHeapAllocationAtomicReference()
-    {
-        AtomicReference<HeapAllocation> heapAllocation = new AtomicReference<>( HeapAllocation.NOT_AVAILABLE );
-        SettingChangeListener<Boolean> heapAllocationUpdater = ( before, after ) ->
-        {
-            if ( after )
-            {
-                heapAllocation.set( HeapAllocation.HEAP_ALLOCATION );
-            }
-            else
-            {
-                heapAllocation.set( HeapAllocation.NOT_AVAILABLE );
-            }
-        };
-        heapAllocationUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_allocation ) );
-        databaseConfig.addListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
-        return heapAllocation;
     }
 
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Config config )

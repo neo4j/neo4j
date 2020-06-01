@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -298,7 +297,7 @@ class KernelTransactionTerminationTest
             super( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
                     mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
                     mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
-                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     mock( DatabaseTracers.class, RETURNS_MOCKS ), mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),

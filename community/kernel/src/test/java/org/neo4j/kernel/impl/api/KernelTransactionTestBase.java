@@ -67,7 +67,6 @@ import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -177,7 +176,7 @@ class KernelTransactionTestBase
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
+                mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ),

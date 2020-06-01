@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -72,7 +71,7 @@ class KernelStatementTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ) );
         when( transaction.getStatistics() ).thenReturn( statistics );
         when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 

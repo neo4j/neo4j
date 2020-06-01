@@ -66,7 +66,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -96,7 +95,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final GlobalProcedures globalProcedures;
     private final TransactionIdStore transactionIdStore;
     private final AtomicReference<CpuClock> cpuClockRef;
-    private final AtomicReference<HeapAllocation> heapAllocationRef;
     private final AccessCapability accessCapability;
     private final SystemNanoClock clock;
     private final VersionContextSupplier versionContextSupplier;
@@ -149,7 +147,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             TransactionCommitProcess transactionCommitProcess,
             DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
+            AtomicReference<CpuClock> cpuClockRef, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
@@ -167,7 +165,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.globalProcedures = globalProcedures;
         this.transactionIdStore = transactionIdStore;
         this.cpuClockRef = cpuClockRef;
-        this.heapAllocationRef = heapAllocationRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders );
@@ -399,7 +396,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, eventListeners,
                             constraintIndexCreator, globalProcedures,
-                            transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
+                            transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef,
                             tracers, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, relationshipTypeScanStore, indexStatisticsStore,
