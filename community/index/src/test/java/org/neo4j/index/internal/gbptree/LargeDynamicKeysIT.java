@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -46,29 +46,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
-import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
-@PageCacheExtension
+@TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
-class LargeDynamicKeysIT
+abstract class LargeDynamicKeysIT
 {
     private static final Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout( false );
 
     @Inject
     private RandomRule random;
     @Inject
-    private PageCache pageCache;
-    @Inject
     private TestDirectory testDirectory;
+    protected abstract PageCache getPageCache();
 
     @Test
     void putSingleKeyLargerThanInlineCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
-            int keySize = tree.inlineKeyValueSizeCap();
-            RawBytes key = key( keySize + 1 );
+            int keySize = Math.min( tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1 );
+            RawBytes key = key( keySize );
             RawBytes value = value( 0 );
             try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
             {
@@ -83,8 +81,8 @@ class LargeDynamicKeysIT
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
-            int keySize = tree.inlineKeyValueSizeCap();
-            RawBytes key = key( keySize + 1 );
+            int keySize = Math.min( tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1 );
+            RawBytes key = key( keySize );
             RawBytes value = value( 0 );
             try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
             {
@@ -184,7 +182,7 @@ class LargeDynamicKeysIT
     @Test
     void shouldWriteAndReadSmallToSemiLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = 4;
@@ -195,7 +193,7 @@ class LargeDynamicKeysIT
     @Test
     void shouldWriteAndReadSmallToLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = 4;
@@ -206,7 +204,7 @@ class LargeDynamicKeysIT
     @Test
     void shouldWriteAndReadSemiLargeToLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( PAGE_SIZE );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = keyValueSizeCap / 5;
@@ -310,7 +308,7 @@ class LargeDynamicKeysIT
     private GBPTree<RawBytes,RawBytes> createIndex()
     {
         // some random padding
-        return new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+        return new GBPTreeBuilder<>( getPageCache(), testDirectory.file( "index" ), layout ).build();
     }
 
     private byte[] asBytes( int value )

@@ -1492,7 +1492,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     void printNode( long id, PageCursorTracer cursorTracer ) throws IOException
     {
-        if ( id < freeList.lastId() )
+        if ( id <= freeList.lastId() )
         {
             // Use write lock to avoid adversary interference
             try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
