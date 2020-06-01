@@ -36,6 +36,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.util.collection.Memory;
 import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
@@ -685,11 +686,21 @@ public class AppendOnlyValuesContainer implements ValuesContainer
             }
             catch ( BufferOverflowException e )
             {
-                final int newSize = buf.capacity() * 2;
+                final int newSize = newSizeGrow();
                 bufMemory.free( memoryTracker );
                 allocateBuf( newSize );
                 return write( value );
             }
+        }
+
+        private int newSizeGrow()
+        {
+            long old = buf.capacity();
+            if ( old == ArrayUtil.MAX_ARRAY_SIZE )
+            {
+                throw new RuntimeException( "Unable to allocate array bigger than " + ArrayUtil.MAX_ARRAY_SIZE );
+            }
+            return Math.toIntExact( Math.min( old * 2, ArrayUtil.MAX_ARRAY_SIZE ) );
         }
 
         private void allocateBuf( int size )
