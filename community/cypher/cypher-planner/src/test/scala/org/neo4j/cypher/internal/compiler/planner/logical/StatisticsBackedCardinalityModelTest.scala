@@ -215,6 +215,84 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER * inputSize)
   }
 
+  test("UNWIND with no information should have default cardinality") {
+    givenPattern("UNWIND $foo AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER)
+  }
+
+  test("UNWIND with empty list literal should have 0 cardinality") {
+    givenPattern("UNWIND [] AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+  }
+
+  test("UNWIND with non-empty list literal should have list size cardinality") {
+    givenPattern("UNWIND [1, 2, 3, 4, 5] AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(5)
+  }
+
+  test("UNWIND with single element range") {
+    givenPattern("UNWIND range(0, 0) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(1)
+  }
+
+  test("UNWIND with empty range 1") {
+    givenPattern("UNWIND range(0, -1) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+  }
+
+  test("UNWIND with empty range 2") {
+    givenPattern("UNWIND range(10, 0, 1) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+  }
+
+  test("UNWIND with empty range 3") {
+    givenPattern("UNWIND range(0, 10, -1) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+  }
+
+  test("UNWIND with non-empty range") {
+    givenPattern("UNWIND range(1, 10) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(10)
+  }
+
+  test("UNWIND with non-empty DESC range") {
+    givenPattern("UNWIND range(10, 1, -1) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(10)
+  }
+
+  test("UNWIND with non-empty range with aligned step") {
+    givenPattern("UNWIND range(1, 9, 2) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(5)
+  }
+
+  test("UNWIND with non-empty DESC range with aligned step") {
+    givenPattern("UNWIND range(9, 1, -2) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(5)
+  }
+
+  test("UNWIND with non-empty range with unaligned step") {
+    givenPattern("UNWIND range(1, 9, 3) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(3)
+  }
+
+  test("UNWIND with non-empty DESC range with unaligned step") {
+    givenPattern("UNWIND range(9, 1, -3) AS i")
+      .withGraphNodes(allNodes)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(3)
+  }
+
   def createCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in, newExpressionEvaluator)
 

@@ -31,7 +31,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
@@ -48,6 +52,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
@@ -118,8 +123,19 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
     // Unwind
-    case _: UnwindProjection =>
-      in * DEFAULT_MULTIPLIER
+    case UnwindProjection(_, expression) =>
+      val multiplier = expression match {
+        case ListLiteral(expressions) => Multiplier(expressions.size)
+        case FunctionInvocation(Namespace(Seq()), FunctionName("range"), _, Seq(from: IntegerLiteral, to: IntegerLiteral)) =>
+          val diff = to.value - from.value + 1
+          Multiplier(Math.max(0, diff))
+        case FunctionInvocation(Namespace(Seq()), FunctionName("range"), _, Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral)) =>
+          val diff = to.value - from.value
+          val steps = diff / step.value + 1
+          Multiplier(Math.max(0, steps))
+        case _ => DEFAULT_MULTIPLIER
+      }
+      in * multiplier
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
