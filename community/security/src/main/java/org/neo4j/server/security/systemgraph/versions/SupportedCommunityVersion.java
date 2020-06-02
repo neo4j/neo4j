@@ -99,7 +99,7 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
             }
             else
             {
-                log.info( "Not updating initial user password: No initial user found in `auth.ini`" );
+                log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
             }
         }
         catch ( Exception e )
@@ -112,10 +112,10 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
     private Optional<User> getInitialUser() throws Exception
     {
         userRepository.start();
-        log.info( "Opened `auth.ini` file to find the initial user" );
+        log.debug( "Opened `auth.ini` file to find the initial user" );
         if ( userRepository.numberOfUsers() == 0 )
         {
-            log.info( "Not updating initial user password: No initial user found in `auth.ini`" );
+            log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
         }
         if ( userRepository.numberOfUsers() == 1 )
         {
@@ -128,7 +128,7 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
                 log.error( errorMessage );
                 throw new IllegalStateException( errorMessage );
             }
-            log.info( "Valid `auth.ini` file: found initial user" );
+            log.debug( "Valid `auth.ini` file: found initial user" );
             return Optional.of( initialUser );
         }
         else if ( userRepository.numberOfUsers() > 1 )

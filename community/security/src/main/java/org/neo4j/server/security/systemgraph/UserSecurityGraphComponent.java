@@ -85,7 +85,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     private void initializeLatestSystemGraph( Transaction tx ) throws Exception
     {
         KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestSecurityGraphVersion();
-        log.info( "Latest version of component '%s' is %s", COMPONENT, latest.version );
+        log.debug( "Latest version of component '%s' is %s", COMPONENT, latest.version );
         latest.setupUsers( tx );
         latest.setVersionProperty( tx, latest.version );
     }
@@ -120,11 +120,11 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         return SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
-            log.info( "Trying to upgrade component '%s' with version %d and status %s to latest version",
+            log.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",
                     COMPONENT, currentVersion.version, currentVersion.getStatus() );
             if ( currentVersion.version == NoUserSecurityGraph.VERSION )
             {
-                log.info( "The current version did not have any security graph, doing a full initialization" );
+                log.debug( "The current version did not have any security graph, doing a full initialization" );
                 initializeLatestSystemGraph( tx );
             }
             else
