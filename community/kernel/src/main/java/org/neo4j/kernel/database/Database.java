@@ -101,6 +101,7 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -305,7 +306,8 @@ public class Database extends LifecycleAdapter
     }
 
     /**
-     * A database that is initialized but not started can be upgraded, but is otherwise unusable.
+     * Initialize the database, and bring it to a state where its version can be examined, and it can be
+     * upgraded if necessary.
      */
     @Override
     public synchronized void init()
@@ -572,8 +574,14 @@ public class Database extends LifecycleAdapter
      */
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(),
-                memoryTracker ).createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
+        createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate( false );
+    }
+
+    private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
+    {
+        var factory = new DatabaseMigratorFactory(
+                fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(), memoryTracker );
+        return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 
     /**
@@ -873,6 +881,25 @@ public class Database extends LifecycleAdapter
         {
             internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", namedDatabaseId.name() ), e );
             throw new UncheckedIOException( e );
+        }
+    }
+
+    public synchronized void upgrade()
+    {
+        boolean upgradingStartedDatabase = started;
+
+        if ( upgradingStartedDatabase )
+        {
+            stop();
+        }
+
+        init();
+        DatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
+        migrator.migrate( true );
+
+        if ( upgradingStartedDatabase )
+        {
+            start();
         }
     }
 

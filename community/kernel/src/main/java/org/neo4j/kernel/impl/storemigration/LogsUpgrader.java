@@ -73,7 +73,8 @@ public class LogsUpgrader
             Config config,
             DependencyResolver dependencyResolver,
             PageCacheTracer pageCacheTracer,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker,
+            boolean forceUpgrade )
     {
         this.fs = fs;
         this.storageEngineFactory = storageEngineFactory;
@@ -84,7 +85,7 @@ public class LogsUpgrader
         this.dependencyResolver = dependencyResolver;
         this.tracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
-        this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade );
+        this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade ) || forceUpgrade;
         tailScanners = new HashMap<>();
         monitors = dependencyResolver.resolveDependency( Monitors.class );
     }

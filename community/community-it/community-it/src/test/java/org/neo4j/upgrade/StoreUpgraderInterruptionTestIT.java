@@ -156,7 +156,7 @@ public class StoreUpgraderInterruptionTestIT
         try
         {
             newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
-                    .migrateIfNeeded( workingDatabaseLayout );
+                    .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -167,7 +167,7 @@ public class StoreUpgraderInterruptionTestIT
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
@@ -196,7 +196,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
@@ -239,7 +239,7 @@ public class StoreUpgraderInterruptionTestIT
         try
         {
             newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator, idMigrator )
-                    .migrateIfNeeded( workingDatabaseLayout );
+                    .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -250,7 +250,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
@@ -269,7 +269,7 @@ public class StoreUpgraderInterruptionTestIT
         dependencies.satisfyDependencies( new Monitors() );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         LogsUpgrader logsUpgrader = new LogsUpgrader(
-                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE );
+                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE, false );
         StoreUpgrader upgrader = new StoreUpgrader(
                 versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
         for ( StoreMigrationParticipant participant : participants )
