@@ -166,7 +166,7 @@ object QueryOptions {
                       interpretedPipesFallbackInfo: String,
                       debugFlags: String) {
     def render: String =
-      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $debugFlags"
+      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $debugFlags"
   }
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
