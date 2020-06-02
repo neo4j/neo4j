@@ -76,6 +76,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
             List<User> readUsers;
             try
             {
+                log.debug( "Reading users from %s", authFile );
                 readTime = fileSystem.lastModifiedTime( authFile );
                 readUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
             }
@@ -88,12 +89,17 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
 
             return new ListSnapshot<>( readTime, readUsers );
         }
+        else
+        {
+            log.debug( "Did not find any file named %s in %s", authFile.getName(), authFile.getParent() );
+        }
         return null;
     }
 
     @Override
     protected void persistUsers() throws IOException
     {
+        log.debug( "Persisting %s users into %s", users.size(), authFile );
         serialization.saveRecordsToFile( fileSystem, authFile, users );
     }
 
