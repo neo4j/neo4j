@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -59,6 +60,12 @@ abstract class GBPTreeLargeDynamicKeysITBase
     @Inject
     private TestDirectory testDirectory;
     protected abstract PageCache getPageCache();
+
+    @Test
+    void printPageSize()
+    {
+        System.out.println( "getPageCache().pageSize() = " + getPageCache().pageSize() );
+    }
 
     @Test
     void putSingleKeyLargerThanInlineCap() throws IOException
@@ -176,6 +183,12 @@ abstract class GBPTreeLargeDynamicKeysITBase
 
             insertAndValidate( index, entries );
             index.consistencyCheck( NULL );
+            GBPTreeInspection<RawBytes,RawBytes> inspection = index.visit( new InspectingVisitor<>(), NULL ).get();
+            List<ImmutableLongList> nodesPerLevel = inspection.getNodesPerLevel();
+            for ( int i = 0; i < nodesPerLevel.size(); i++ )
+            {
+                System.out.println( "level " + i + " : " + nodesPerLevel.get( i ) );
+            }
         }
     }
 

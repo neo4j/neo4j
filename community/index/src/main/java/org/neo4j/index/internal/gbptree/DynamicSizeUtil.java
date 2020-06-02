@@ -22,8 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedShort;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
 
 /**
  * Gather utility methods for reading and writing individual dynamic sized
@@ -99,10 +97,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  */
 public class DynamicSizeUtil
 {
-    static final int SIZE_OFFSET = 2;
-    static final int SIZE_KEY_SIZE = 2;
-    static final int SIZE_VALUE_SIZE = 2;
-    static final int SIZE_TOTAL_OVERHEAD = SIZE_OFFSET + SIZE_KEY_SIZE + SIZE_VALUE_SIZE;
+    private static final int SIZE_KEY_SIZE = 2;
+    private static final int SIZE_VALUE_SIZE = 2;
+    static final int SIZE_KEY_VALUE_SIZE = SIZE_KEY_SIZE + SIZE_VALUE_SIZE;
     static final int SIZE_OFFLOAD_ID = Long.BYTES;
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
@@ -124,16 +121,6 @@ public class DynamicSizeUtil
     private static final int FLAG_ADDITIONAL_VALUE_SIZE = 0x80;
     private static final int SHIFT_LSB_KEY_SIZE = 5;
     private static final int SHIFT_LSB_VALUE_SIZE = 7;
-
-    static void putKeyOffset( PageCursor cursor, int keyOffset )
-    {
-        putUnsignedShort( cursor, keyOffset );
-    }
-
-    static int readKeyOffset( PageCursor cursor )
-    {
-        return getUnsignedShort( cursor );
-    }
 
     static boolean putKeySize( PageCursor cursor, int keySize, boolean offload )
     {

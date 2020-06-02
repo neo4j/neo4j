@@ -26,10 +26,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 
-public class GBPTreeLargeDynamicKeys32kIT extends GBPTreeLargeDynamicKeysITBase
+public class GBPTreeLargeDynamicKeys4MIT extends GBPTreeLargeDynamicKeysITBase
 {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 32768 ) );
+    static PageCacheSupportExtension pageCacheExtension =
+            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 4194304 ).withMemory( "16MiB" ) );
     @Inject
     private PageCache pageCache;
 

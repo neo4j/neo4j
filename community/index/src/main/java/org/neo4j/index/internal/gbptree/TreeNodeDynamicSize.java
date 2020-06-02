@@ -32,23 +32,19 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_SIZE;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_OFFSET;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_TOTAL_OVERHEAD;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_VALUE_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat._2B_OFFSET;
+import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat._3B_OFFSET;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractOffload;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putTombstone;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readOffloadId;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
@@ -66,32 +62,30 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR][ALLOCOFFSET][DEADSPACE]|[C0,K0*,C1,K1*,C2,K2*,C3]->  <-[K2,K0,K1]
  *  0         1     2           6         10            34           58         82           84          86
  *
+ * ---
+ *
+ * Concepts describing the part of a node containing the data
+ * Total space - The space available for data (pageSize - headerSize)
+ * Active space - Space currently occupied by active data (not including dead keys)
+ * Dead space - Space currently occupied by dead data that could be reclaimed by defragment
+ * Alloc offset - Exact offset to leftmost key and thus the end of alloc space
+ * Alloc space - The available space between offset array and data space
+ *
+ * TotalSpace  |----------------------------------------|
+ * ActiveSpace |-----------|   +    |---------|  + |----|
+ * DeadSpace                                  |----|
+ * AllocSpace              |--------|
+ * AllocOffset                      v
+ *     [Header][OffsetArray]........[_________,XXXX,____] (_ = alive key, X = dead key)
+ *
+ * ---
+ *
  * See {@link DynamicSizeUtil} for more detailed layout for individual offset array entries and key / key_value entries.
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
     static final byte FORMAT_IDENTIFIER = 3;
     static final byte FORMAT_VERSION = 0;
-
-    /**
-     * Concepts
-     * Total space - The space available for data (pageSize - headerSize)
-     * Active space - Space currently occupied by active data (not including dead keys)
-     * Dead space - Space currently occupied by dead data that could be reclaimed by defragment
-     * Alloc offset - Exact offset to leftmost key and thus the end of alloc space
-     * Alloc space - The available space between offset array and data space
-     *
-     * TotalSpace  |----------------------------------------|
-     * ActiveSpace |-----------|   +    |---------|  + |----|
-     * DeadSpace                                  |----|
-     * AllocSpace              |--------|
-     * AllocOffset                      v
-     *     [Header][OffsetArray]........[_________,XXXX,____] (_ = alive key, X = dead key)
-     */
-    private static final int BYTE_POS_ALLOCOFFSET = BASE_HEADER_LENGTH;
-    private static final int BYTE_POS_DEADSPACE = BYTE_POS_ALLOCOFFSET + bytesPageOffset();
-    @VisibleForTesting
-    static final int HEADER_LENGTH_DYNAMIC = BYTE_POS_DEADSPACE + bytesPageOffset();
 
     /**
      * This is the fixed key value size cap in 4.0 and it is based on
@@ -101,16 +95,19 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
      */
     private static final int FIXED_MAX_KEY_VALUE_SIZE_CAP = 8175;
     private static final int USE_OFFLOAD_STORE_PAGE_SIZE_LIMIT = 8192;
+    @VisibleForTesting
+    static final int USE_2B_OFFSET_PAGE_SIZE_LIMIT = 65536;
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
+
+    private final DynamicSizeOffsetFormat offsetFormat;
     private final int inlineKeyValueSizeCap;
     private final int keyValueSizeCap;
     private final boolean msbIsOffload;
     private final MutableIntStack deadKeysOffset = new IntArrayStack();
     private final MutableIntStack aliveKeysOffset = new IntArrayStack();
-    private final int maxKeyCount = pageSize / (bytesKeyOffset() + SIZE_KEY_SIZE + SIZE_VALUE_SIZE);
-    private final int[] oldOffset = new int[maxKeyCount];
-    private final int[] newOffset = new int[maxKeyCount];
+    private final int[] oldOffset;
+    private final int[] newOffset;
     private final int totalSpace;
     private final int halfSpace;
     private final KEY tmpKeyLeft;
@@ -120,8 +117,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
     {
         super( pageSize, layout );
+
+        this.offsetFormat = selectOffsetFormat( pageSize );
+        int maxKeyCount = pageSize / (getTotalOverhead( offsetFormat ) + SIZE_KEY_VALUE_SIZE);
+        this.oldOffset = new int[maxKeyCount];
+        this.newOffset = new int[maxKeyCount];
+
         this.offloadStore = offloadStore;
-        totalSpace = pageSize - HEADER_LENGTH_DYNAMIC;
+        totalSpace = pageSize - offsetFormat.getHeaderLength();
         halfSpace = totalSpace / 2;
 
         /*
@@ -198,6 +201,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         tmpKeyRight = layout.newKey();
     }
 
+    private static DynamicSizeOffsetFormat selectOffsetFormat( int pageSize )
+    {
+        return pageSize < USE_2B_OFFSET_PAGE_SIZE_LIMIT ? _2B_OFFSET : _3B_OFFSET;
+    }
+
     private static boolean useOffloadStore( int pageSize )
     {
         return pageSize <= USE_OFFLOAD_STORE_PAGE_SIZE_LIMIT;
@@ -214,8 +222,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @VisibleForTesting
     public static int inlineKeyValueSizeCap( int pageSize )
     {
-        int capToFitNumberOfEntriesPerPage = (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
+        DynamicSizeOffsetFormat offsetFormat = selectOffsetFormat( pageSize );
+        int totalOverhead = getTotalOverhead( offsetFormat );
+        int capToFitNumberOfEntriesPerPage = (pageSize - offsetFormat.getHeaderLength()) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - totalOverhead;
         return Math.min( FIXED_MAX_KEY_VALUE_SIZE_CAP, capToFitNumberOfEntriesPerPage );
+    }
+
+    private static int getTotalOverhead( DynamicSizeOffsetFormat offsetFormat )
+    {
+        return offsetFormat.offsetSize() + SIZE_KEY_VALUE_SIZE;
     }
 
     @Override
@@ -341,7 +356,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Write to offset array
         insertSlotsAt( cursor, pos, 1, keyCount, keyPosOffsetInternal( 0 ), keyChildSize() );
         cursor.setOffset( keyPosOffsetInternal( pos ) );
-        putKeyOffset( cursor, newKeyOffset );
+        offsetFormat.putOffset( cursor, newKeyOffset );
         writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
@@ -381,7 +396,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Write to offset array
         insertSlotsAt( cursor, pos, 1, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
         cursor.setOffset( keyPosOffsetLeaf( pos ) );
-        putKeyOffset( cursor, newKeyValueOffset );
+        offsetFormat.putOffset( cursor, newKeyValueOffset );
     }
 
     @Override
@@ -596,7 +611,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        return keyCount >= 0 && keyCount <= totalSpace / SIZE_TOTAL_OVERHEAD;
+        return keyCount >= 0 && keyCount <= totalSpace / getTotalOverhead( offsetFormat );
     }
 
     @Override
@@ -775,14 +790,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             int keyPosOffset = keyPosOffset( pos, type );
             cursor.setOffset( keyPosOffset );
-            int keyOffset = readKeyOffset( cursor );
+            int keyOffset = offsetFormat.getOffset( cursor );
             for ( int index = 0; index < oldOffsetCursor; index++ )
             {
                 if ( keyOffset == oldOffset[index] )
                 {
                     // Overwrite with new offset
                     cursor.setOffset( keyPosOffset );
-                    putKeyOffset( cursor, newOffset[index] );
+                    offsetFormat.putOffset( cursor, newOffset[index] );
                     continue keyPos;
                 }
             }
@@ -1032,7 +1047,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             toAllocOffset = moveRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
             toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
-            putKeyOffset( toCursor, toAllocOffset );
+            offsetFormat.putOffset( toCursor, toAllocOffset );
         }
         setAllocOffset( toCursor, toAllocOffset );
 
@@ -1093,7 +1108,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             toAllocOffset = copyRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
             toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
-            putKeyOffset( toCursor, toAllocOffset );
+            offsetFormat.putOffset( toCursor, toAllocOffset );
         }
         setAllocOffset( toCursor, toAllocOffset );
     }
@@ -1200,7 +1215,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             // Key
             toAllocOffset = transferRawKey( fromCursor, fromPos + i, toCursor, toAllocOffset );
             toCursor.setOffset( keyPosOffsetInternal( toPos ) );
-            putKeyOffset( toCursor, toAllocOffset );
+            offsetFormat.putOffset( toCursor, toAllocOffset );
         }
         setAllocOffset( toCursor, toAllocOffset );
 
@@ -1426,24 +1441,24 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @VisibleForTesting
     void setAllocOffset( PageCursor cursor, int allocOffset )
     {
-        PageCursorUtil.putUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET, allocOffset );
+        offsetFormat.putOffset( cursor, offsetFormat.getBytePosAllocOffset(), allocOffset );
     }
 
     int getAllocOffset( PageCursor cursor )
     {
-        return PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET );
+        return offsetFormat.getOffset( cursor, offsetFormat.getBytePosAllocOffset() );
     }
 
     @VisibleForTesting
     void setDeadSpace( PageCursor cursor, int deadSpace )
     {
-        putUnsignedShort( cursor, BYTE_POS_DEADSPACE, deadSpace );
+        offsetFormat.putOffset( cursor, offsetFormat.getBytePosDeadspace(), deadSpace );
     }
 
     @VisibleForTesting
     int getDeadSpace( PageCursor cursor )
     {
-        return PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_DEADSPACE );
+        return offsetFormat.getOffset( cursor, offsetFormat.getBytePosDeadspace() );
     }
 
     private void placeCursorAtActualKey( PageCursor cursor, int pos, Type type )
@@ -1453,13 +1468,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         cursor.setOffset( keyPosOffset );
 
         // Read actual offset to key
-        int keyOffset = readKeyOffset( cursor );
+        int keyOffset = offsetFormat.getOffset( cursor );
 
         // Verify offset is reasonable
-        if ( keyOffset >= pageSize || keyOffset < HEADER_LENGTH_DYNAMIC )
+        if ( keyOffset >= pageSize || keyOffset < offsetFormat.getHeaderLength() )
         {
             cursor.setCursorException( format( "Tried to read key on offset=%d, headerLength=%d, pageSize=%d, pos=%d",
-                    keyOffset, HEADER_LENGTH_DYNAMIC, pageSize, pos ) );
+                    keyOffset, offsetFormat.getHeaderLength(), pageSize, pos ) );
             return;
         }
 
@@ -1492,13 +1507,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int keyPosOffsetLeaf( int pos )
     {
-        return HEADER_LENGTH_DYNAMIC + pos * bytesKeyOffset();
+        return offsetFormat.getHeaderLength() + pos * bytesKeyOffset();
     }
 
     private int keyPosOffsetInternal( int pos )
     {
         // header + childPointer + pos * (keyPosOffsetSize + childPointer)
-        return HEADER_LENGTH_DYNAMIC + childSize() + pos * keyChildSize();
+        return offsetFormat.getHeaderLength() + childSize() + pos * keyChildSize();
     }
 
     private int keyChildSize()
@@ -1511,14 +1526,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return SIZE_PAGE_REFERENCE;
     }
 
-    private static int bytesKeyOffset()
+    private int bytesKeyOffset()
     {
-        return SIZE_OFFSET;
-    }
-
-    private static int bytesPageOffset()
-    {
-        return SIZE_OFFSET;
+        return offsetFormat.offsetSize();
     }
 
     @Override
@@ -1701,7 +1711,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             cursor.setOffset( keyPosOffset );
 
             // Read actual offset to key
-            int keyOffset = readKeyOffset( cursor );
+            int keyOffset = offsetFormat.getOffset( cursor );
             lowestOffsetSoFar = Math.min( lowestOffsetSoFar, keyOffset );
         }
         return lowestOffsetSoFar;
@@ -1711,7 +1721,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int totalActiveSpaceRaw( PageCursor cursor, int keyCount, Type type )
     {
         // Offset array
-        int offsetArrayStart = HEADER_LENGTH_DYNAMIC;
+        int offsetArrayStart = offsetFormat.getHeaderLength();
         int offsetArrayEnd = keyPosOffset( keyCount, type );
         int offsetArraySize = offsetArrayEnd - offsetArrayStart;
 
@@ -1762,15 +1772,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             if ( type == INTERNAL )
             {
                 long childPointer = GenerationSafePointerPair.pointer( childAt( cursor, i, stableGeneration, unstableGeneration ) );
-                offsetArray.add( "/" + Long.toString( childPointer ) + "\\" );
+                offsetArray.add( "/" + childPointer + "\\" );
             }
             cursor.setOffset( keyPosOffset( i, type ) );
-            offsetArray.add( Integer.toString( DynamicSizeUtil.readKeyOffset( cursor ) ) );
+            offsetArray.add( Integer.toString( offsetFormat.getOffset( cursor ) ) );
         }
         if ( type == INTERNAL )
         {
             long childPointer = GenerationSafePointerPair.pointer( childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
-            offsetArray.add( "/" + Long.toString( childPointer ) + "\\" );
+            offsetArray.add( "/" + childPointer + "\\" );
         }
         return offsetArray.toString();
     }
@@ -1778,5 +1788,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private boolean canInline( int entrySize )
     {
         return entrySize <= inlineKeyValueSizeCap;
+    }
+
+    @VisibleForTesting
+    public int getHeaderLength()
+    {
+        return offsetFormat.getHeaderLength();
     }
 }

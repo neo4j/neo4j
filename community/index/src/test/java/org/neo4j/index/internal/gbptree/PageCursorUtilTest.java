@@ -31,6 +31,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.PageCursorUtil._3B_MASK;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil._6B_MASK;
 
 @ExtendWith( RandomExtension.class )
@@ -58,6 +59,50 @@ class PageCursorUtilTest
             assertEquals( expected, read );
             assertTrue( read >= 0 );
             assertEquals( 0, read & ~_6B_MASK );
+        }
+    }
+
+    @Test
+    void shouldPutAndGet3BInt()
+    {
+        // GIVEN
+        PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
+
+        // WHEN
+        for ( int i = 0; i < 1_000; i++ )
+        {
+            int expected = random.nextInt() & _3B_MASK;
+            cursor.setOffset( 0 );
+            PageCursorUtil.put3BInt( cursor, expected );
+            cursor.setOffset( 0 );
+            int read = PageCursorUtil.get3BInt( cursor );
+
+            // THEN
+            assertEquals( expected, read );
+            assertTrue( read >= 0 );
+            assertEquals( 0, read & ~_3B_MASK );
+        }
+    }
+
+    @Test
+    void shouldPutAndGet3BIntAtOffset()
+    {
+        // GIVEN
+        PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
+
+        // WHEN
+        for ( int i = 0; i < 1_000; i++ )
+        {
+            int expected = random.nextInt() & _3B_MASK;
+            cursor.setOffset( 0 );
+            PageCursorUtil.put3BInt( cursor, 1, expected );
+            cursor.setOffset( 1 );
+            int read = PageCursorUtil.get3BInt( cursor, 1 );
+
+            // THEN
+            assertEquals( expected, read );
+            assertTrue( read >= 0 );
+            assertEquals( 0, read & ~_3B_MASK );
         }
     }
 

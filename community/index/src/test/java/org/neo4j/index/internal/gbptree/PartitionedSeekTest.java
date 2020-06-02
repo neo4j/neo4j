@@ -24,6 +24,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -60,7 +61,15 @@ class PartitionedSeekTest
     @Inject
     private RandomRule random;
 
-    private SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
+    private SimpleLongLayout layout;
+
+    @BeforeEach
+    void setup()
+    {
+        // Make keys larger with padding so they fill up tree faster, but not beyond entry limit.
+        int keyPadding = Math.min( 8000, pageCache.pageSize() / 100 );
+        layout = SimpleLongLayout.longLayout().withKeyPadding( keyPadding ).build();
+    }
 
     @Test
     void shouldPartitionTreeWithLeafRoot() throws IOException
@@ -237,7 +246,7 @@ class PartitionedSeekTest
         int id = 0;
         while ( numberOfRootChildren( tree ) < numberOfDesiredRootKeys )
         {
-            id = insertEntries( tree, id, 100, stride );
+            id = insertEntries( tree, id, 10, stride );
         }
         return id;
     }

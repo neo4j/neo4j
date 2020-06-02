@@ -253,7 +253,7 @@ public final class GBPTreeCorruption
     {
         return ( cursor, layout, node, treeState ) -> {
             TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
-            dynamicNode.setAllocOffset( cursor, TreeNodeDynamicSize.HEADER_LENGTH_DYNAMIC );
+            dynamicNode.setAllocOffset( cursor, dynamicNode.getHeaderLength() );
         };
     }
 
