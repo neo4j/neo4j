@@ -109,7 +109,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `x` already declared")))
+      .tap(_.errors.head.msg.shouldEqual("Variable `x` already declared in outer scope"))
 
   }
 

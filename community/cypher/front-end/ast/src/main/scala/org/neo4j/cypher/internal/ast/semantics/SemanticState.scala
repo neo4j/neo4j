@@ -99,10 +99,8 @@ final case class Scope(symbolTable: Map[String, Symbol],
 
   def symbolNames: Set[String] = symbolTable.keySet
 
-  def valueSymbolTable: Map[String, Symbol] = symbolTable
-
   def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
-    val otherSymbols = other.valueSymbolTable -- exclude
+    val otherSymbols = other.symbolTable -- exclude
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 

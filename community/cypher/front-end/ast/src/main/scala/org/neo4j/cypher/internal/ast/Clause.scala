@@ -964,21 +964,20 @@ case class SubQuery(part: QueryPart)(val position: InputPosition) extends Horizo
 
     // Check inner query. Allow it to import from outer scope
     val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outerStateWithImports)(empty)
-    val output: Scope = part.finalScope(inner.state.currentScope.scope)
+    val innerCurrentScope = inner.state.currentScope.scope
 
     // Keep working from the latest state
     val after: SemanticState = inner.state
       // but jump back to scope tree of outerStateWithImports
       .copy(currentScope = outerStateWithImports.currentScope)
       // Copy in the scope tree from inner query (needed for Namespacer)
-      .insertSiblingScope(inner.state.currentScope.scope)
+      .insertSiblingScope(innerCurrentScope)
       // Import variables from scope before subquery
       .newSiblingScope
       .importValuesFromScope(outerStateWithImports.currentScope.scope)
 
     // Declare variables that are in output from subquery
-    val merged: SemanticCheckResult =
-      declareVariables(output.valueSymbolTable.values)(after)
+    val merged = mergeOutputVariablesIntoOuterScope(innerCurrentScope)(after)
 
     // Keep errors from inner check and from variable declarations
     SemanticCheckResult(merged.state, importingWithErrors ++ inner.errors ++ merged.errors)
@@ -986,5 +985,24 @@ case class SubQuery(part: QueryPart)(val position: InputPosition) extends Horizo
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = { s =>
     SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
+  }
+
+  private def mergeOutputVariablesIntoOuterScope(rootScope: Scope): SemanticCheck = {
+    val scopeForValidation = part.scopeForReturnVariablesValidation(rootScope)
+    val scopeForDeclaringVariables = part.finalScope(rootScope)
+
+    checkReturnVariablesNotDeclaredInOuterScope(scopeForValidation) ifOkChain
+      declareVariables(scopeForDeclaringVariables.symbolTable.values)
+  }
+
+  private def checkReturnVariablesNotDeclaredInOuterScope(outputScope: Scope): SemanticCheck = { s =>
+    val outerScopeSymbolNames = s.currentScope.symbolNames
+    val outputSymbols = outputScope.symbolTable.values.toSeq
+    val errors = outputSymbols.collect {
+      case symbol if outerScopeSymbolNames.contains(symbol.name) =>
+        val lastUsePosition = symbol.positions.max
+        SemanticError(s"Variable `${symbol.name}` already declared in outer scope", lastUsePosition)
+    }
+    SemanticCheckResult(s, errors)
   }
 }
