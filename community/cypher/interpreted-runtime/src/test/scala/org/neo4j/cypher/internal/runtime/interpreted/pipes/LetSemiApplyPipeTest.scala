@@ -28,25 +28,6 @@ import org.neo4j.values.storable.Values.intValue
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
-  test("should only write let = true for the one that matches") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-
-    val rhs = pipeWithResults((state: QueryState) => {
-      val initialContext = state.initialContext.get
-      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
-    })
-
-    val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
-        createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(List(
-      Map("a" -> intValue(1), "let" -> TRUE),
-      Map("a" -> intValue(2), "let" -> FALSE)
-    ))
-  }
-
   test("should only write let = true for the one that not matches when negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator)
@@ -66,21 +47,6 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     ))
   }
 
-  test("should not write let = true for anything if rhs is empty") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-    val rhs = new FakePipe(Iterator.empty)
-
-    val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
-        createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(List(
-      Map("a" -> intValue(1), "let" -> FALSE),
-      Map("a" -> intValue(2), "let" -> FALSE)
-    ))
-  }
-
   test("should write let = true for everything if rhs is empty and negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator)
@@ -88,21 +54,6 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result =
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-        createResults(QueryStateHelper.empty).toList
-
-    result should beEquivalentTo(List(
-      Map("a" -> intValue(1), "let" -> TRUE),
-      Map("a" -> intValue(2), "let" -> TRUE)
-    ))
-  }
-
-  test("should write let = true for everything if rhs is nonEmpty") {
-    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator)
-    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
-
-    val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
         createResults(QueryStateHelper.empty).toList
 
     result should beEquivalentTo(List(
