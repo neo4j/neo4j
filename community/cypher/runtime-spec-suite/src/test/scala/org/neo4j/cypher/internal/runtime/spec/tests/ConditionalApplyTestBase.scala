@@ -376,4 +376,28 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     result should beColumns("x").withRows(Seq(Array(1), Array(2), Array(4)))
   }
+
+  test("should handle cachedProperties on RHS") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("prop1" -> i)
+        case i => Map("prop1" -> i, "prop2" -> i)
+      })
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop1")
+      .projection("cache[x.prop1] AS prop1")
+      .conditionalApply("prop2")
+      .|.cacheProperties("cache[x.prop1]")
+      .|.argument("x")
+      .projection("x.prop2 AS prop2")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    // then
+   result should beColumns("prop1").withRows((0 until sizeHint).map(Array[Any](_)))
+  }
 }
