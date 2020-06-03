@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Subtract
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
@@ -34,27 +34,27 @@ class SubtractTest extends CypherFunSuite {
 
 
   test("numbers") {
-    val expr = Subtract(Literal(2), Literal(1))
+    val expr = Subtract(literal(2), literal(1))
     expr(m, s) should equal(longValue(1))
   }
 
   test("strings") {
-    val expr = Subtract(Literal("hello"), Literal("world"))
+    val expr = Subtract(literal("hello"), literal("world"))
     intercept[CypherTypeException](expr(m, s))
   }
 
   test("stringPlusNumber") {
-    val expr = Subtract(Literal("hello"), Literal(1))
+    val expr = Subtract(literal("hello"), literal(1))
     intercept[CypherTypeException](expr(m, s))
   }
 
   test("numberPlusString") {
-    val expr = Subtract(Literal(1), Literal("world"))
+    val expr = Subtract(literal(1), literal("world"))
     intercept[CypherTypeException](expr(m, s))
   }
 
   test("numberPlusBool") {
-    val expr = Subtract(Literal("1"), Literal(true))
+    val expr = Subtract(literal("1"), literal(true))
     intercept[CypherTypeException](expr(m, s))
   }
 }

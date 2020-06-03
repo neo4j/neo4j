@@ -35,12 +35,12 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Property
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
@@ -232,8 +232,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   //From the provided data points, estimate slope and intercept in `cost = slope*NROWS + intercept`
   private def calculateSimpleResult(dataPoints: Seq[DataPoint]): Double= {
-    if (dataPoints.isEmpty) throw new IllegalArgumentException("Cannot compute result without any data points")
-    else if (dataPoints.size == 1) {
+    if (dataPoints.isEmpty) {
+      throw new IllegalArgumentException("Cannot compute result without any data points")
+    } else if (dataPoints.size == 1) {
       val dp = dataPoints.head
       dp.elapsed / dp.numberOfRows.toDouble
     } else {
@@ -327,9 +328,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def allNodes = AllNodesScanPipe("x")()
 
-  private def nodeById(id: Long) = NodeByIdSeekPipe("x", SingleSeekArg(Literal(id)))()
+  private def nodeById(id: Long) = NodeByIdSeekPipe("x", SingleSeekArg(literal(id)))()
 
-  private def relById(id: Long) = UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
+  private def relById(id: Long) = UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(literal(id)), "to", "from")()
 
   private def eager(pipe: Pipe) = EagerPipe(pipe)()
 
@@ -337,7 +338,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapper(transactionContext(graph, tx))
       val ctx = TransactionBoundPlanContext(transactionalContext, devNullLogger, null)
-      val literal = Literal(42)
+      val literalValue = literal(42)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
@@ -346,7 +347,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       // We are calculating the cost excluding deserialization of values from the index
       val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue)).toArray
 
-      NodeIndexSeekPipe(LABEL.name(), labelToken, properties, 0, SingleQueryExpression(literal), IndexSeek, IndexOrderNone)()
+      NodeIndexSeekPipe(LABEL.name(), labelToken, properties, 0, SingleQueryExpression(literalValue), IndexSeek, IndexOrderNone)()
     }
   }
 
@@ -366,10 +367,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   private def propertyFilter(input: Pipe, variable: String) = {
-    val literal = Literal(42)
-
     val propertyKey = PropertyKey(PROPERTY)
-    val predicate = Equals(literal, Property(Variable(variable), propertyKey))
+    val predicate = Equals(literal(42), Property(Variable(variable), propertyKey))
 
     FilterPipe(input, predicate)()
   }

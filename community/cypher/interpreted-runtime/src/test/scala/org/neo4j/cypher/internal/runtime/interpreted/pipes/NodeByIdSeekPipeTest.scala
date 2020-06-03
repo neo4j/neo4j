@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.ArgumentMatchers
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
@@ -35,7 +34,7 @@ import org.neo4j.values.virtual.NodeValue
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
-  import Mockito.when
+  import org.mockito.Mockito.when
 
   test("should seek node by id") {
     // given
@@ -51,7 +50,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(id)))().createResults(queryState)
+    val result = NodeByIdSeekPipe("a", SingleSeekArg(literal(id)))().createResults(queryState)
 
     // then
     result.map(_.getByName("a")).toList should equal(List(fromNodeEntity(node)))
@@ -79,7 +78,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // whens
-    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
+    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(literal(42), literal(21), literal(11))))().createResults(queryState)
 
     // then
     result.map(_.getByName("a")).toList should equal(List(fromNodeEntity(node1), fromNodeEntity(node2), fromNodeEntity(node3)))

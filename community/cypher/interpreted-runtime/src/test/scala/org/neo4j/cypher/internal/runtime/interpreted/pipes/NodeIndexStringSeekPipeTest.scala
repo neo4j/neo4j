@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -63,7 +63,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, Literal("hello"), IndexOrderNone)()
+    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, literal("hello"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -83,7 +83,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, Literal("bye"), IndexOrderNone)()
+    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, literal("bye"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Null
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.LiteralRegularExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.RegularExpression
@@ -28,38 +28,38 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RegularExpressionPredicateTest extends CypherFunSuite {
   test("LiteralRegEx: should not match if the lhs expression evaluates to null") {
-    val expression = LiteralRegularExpression(Null(), Literal(".*"))
+    val expression = LiteralRegularExpression(Null(), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
   test("RegEx: should not match if the lhs expression evaluates to null") {
-    val expression = RegularExpression(Null(), Literal(".*"))
+    val expression = RegularExpression(Null(), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
   test("RegEx: should not match if the lhs expression evaluates to something that is not a string"){
-    val expression = RegularExpression(Literal(5), Literal(".*"))
+    val expression = RegularExpression(literal(5), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
   test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string"){
-    val expression = LiteralRegularExpression(Literal(5), Literal(".*"))
+    val expression = LiteralRegularExpression(literal(5), literal(".*"))
     expression.isMatch(null, QueryStateHelper.empty) should equal(None)
   }
 
   test("RegEx: should match pattern to string") {
-    val expression1 = RegularExpression(Literal("value"), Literal("v[a-z]+"))
+    val expression1 = RegularExpression(literal("value"), literal("v[a-z]+"))
     expression1.isMatch(null, QueryStateHelper.empty) should equal(Some(true))
 
-    val expression2 = RegularExpression(Literal("NO-MATCH"), Literal("v[a-z]+"))
+    val expression2 = RegularExpression(literal("NO-MATCH"), literal("v[a-z]+"))
     expression2.isMatch(null, QueryStateHelper.empty) should equal(Some(false))
   }
 
   test("LiteralRegEx: should match pattern to string") {
-    val expression1 = LiteralRegularExpression(Literal("value"), Literal("v[a-z]+"))
+    val expression1 = LiteralRegularExpression(literal("value"), literal("v[a-z]+"))
     expression1.isMatch(null, QueryStateHelper.empty) should equal(Some(true))
 
-    val expression2 = LiteralRegularExpression(Literal("NO-MATCH"), Literal("v[a-z]+"))
+    val expression2 = LiteralRegularExpression(literal("NO-MATCH"), literal("v[a-z]+"))
     expression2.isMatch(null, QueryStateHelper.empty) should equal(Some(false))
   }
 }

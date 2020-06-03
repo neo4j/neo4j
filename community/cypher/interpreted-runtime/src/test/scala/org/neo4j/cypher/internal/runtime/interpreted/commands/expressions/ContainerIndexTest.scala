@@ -23,6 +23,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -42,7 +43,7 @@ class ContainerIndexTest extends CypherFunSuite {
   val expectedNull: AnyValue = Values.NO_VALUE
 
   test("handles collection lookup") {
-    implicit val collection = Literal(Seq(1, 2, 3, 4))
+    implicit val collection = literal(Seq(1, 2, 3, 4))
 
     idx(0) should equal(longValue(1))
     idx(1) should equal(longValue(2))
@@ -61,13 +62,13 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles nulls") {
-    implicit val collection = Literal(null)
+    implicit val collection = Literal(Values.NO_VALUE)
 
     idx(0) should equal(expectedNull)
   }
 
   test("handles scala map lookup") {
-    implicit val expression = Literal(Map("a" -> 1, "b" -> "foo"))
+    implicit val expression = literal(Map("a" -> 1, "b" -> "foo"))
 
     idx("a") should equal(longValue(1))
     idx("b") should equal(Values.stringValue("foo"))
@@ -75,7 +76,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles java map lookup") {
-    implicit val expression = Literal(Map("a" -> 1, "b" -> "foo").asJava)
+    implicit val expression = literal(Map("a" -> 1, "b" -> "foo").asJava)
 
     idx("a") should equal(longValue(1))
     idx("b") should equal(Values.stringValue("foo"))
@@ -85,7 +86,7 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles node lookup") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    implicit val expression = Literal(node)
+    implicit val expression = literal(node)
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
@@ -99,7 +100,7 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles relationship lookup") {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
-    implicit val expression = Literal(rel)
+    implicit val expression = literal(rel)
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
@@ -110,7 +111,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should fail when not integer values are passed") {
-    implicit val collection = Literal(Seq(1, 2, 3, 4))
+    implicit val collection = literal(Seq(1, 2, 3, 4))
 
     a[CypherTypeException] should be thrownBy idx(1.0f)
     a[CypherTypeException] should be thrownBy idx(1.0d)
@@ -118,7 +119,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should fail when too big values are used to access the array") {
-    implicit val collection = Literal(Seq(1, 2, 3, 4))
+    implicit val collection = literal(Seq(1, 2, 3, 4))
 
     val index = Int.MaxValue + 1L
 
@@ -126,5 +127,5 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   private def idx(value: Any)(implicit collection: Expression) =
-    ContainerIndex(collection, Literal(value))(ctx, state)
+    ContainerIndex(collection, literal(value))(ctx, state)
 }

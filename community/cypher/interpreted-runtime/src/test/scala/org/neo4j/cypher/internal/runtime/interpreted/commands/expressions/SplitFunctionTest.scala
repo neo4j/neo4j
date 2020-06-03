@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
@@ -96,22 +97,22 @@ class SplitFunctionTest extends CypherFunSuite {
   private def seq(vals: String*) = list(vals.map(stringValue):_*)
 
   private def split(orig: String, splitPattern: String) = {
-    val expr = SplitFunction(Literal(orig), Literal(splitPattern))
+    val expr = SplitFunction(literal(orig), literal(splitPattern))
     expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: Char, splitPattern: String) = {
-    val expr = SplitFunction(Literal(orig), Literal(splitPattern))
+    val expr = SplitFunction(literal(orig), literal(splitPattern))
     expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: String, splitDelimiters: List[String]) = {
-    val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
+    val expr = SplitFunction(literal(orig), literal(splitDelimiters))
     expr(CypherRow.empty, QueryStateHelper.empty)
   }
 
   private def split(orig: Char, splitDelimiters: List[String]) = {
-    val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
+    val expr = SplitFunction(literal(orig), literal(splitDelimiters))
     expr(CypherRow.empty, QueryStateHelper.empty)
   }
 }

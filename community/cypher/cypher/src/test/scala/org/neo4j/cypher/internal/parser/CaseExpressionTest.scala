@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
-import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal
 import org.parboiled.scala.EOI
 
 class CaseExpressionTest extends ParserTest[internal.expressions.Expression, commands.expressions.Expression] with Expressions {
@@ -35,14 +36,14 @@ class CaseExpressionTest extends ParserTest[internal.expressions.Expression, com
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
-      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE"))), None)
+      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE"))), None)
 
     parsing(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""") shouldGive
-      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), None)
+      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), None)
 
     parsing(
       """CASE 1
@@ -50,15 +51,15 @@ class CaseExpressionTest extends ParserTest[internal.expressions.Expression, com
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""") shouldGive
-      commands.expressions.SimpleCase(commands.expressions.Literal(1), Seq((commands.expressions.Literal(1), commands.expressions.Literal("ONE")), (commands.expressions.Literal(2), commands.expressions.Literal("TWO"))), Some(commands.expressions.Literal("DEFAULT")))
+      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), Some(literal("DEFAULT")))
   }
 
   test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      commands.expressions.GenericCase(IndexedSeq((True(), commands.expressions.Literal("ONE"))), None)
+      commands.expressions.GenericCase(IndexedSeq((True(), literal("ONE"))), None)
 
-    val alt1 = (Equals(commands.expressions.Literal(1), commands.expressions.Literal(2)), commands.expressions.Literal("ONE"))
-    val alt2 = (predicates.Equals(commands.expressions.Literal(2), commands.expressions.Literal("apa")), commands.expressions.Literal("TWO"))
+    val alt1 = (Equals(literal(1), literal(2)), literal("ONE"))
+    val alt2 = (predicates.Equals(literal(2), literal("apa")), literal("TWO"))
 
     parsing(
       """CASE
@@ -73,7 +74,7 @@ class CaseExpressionTest extends ParserTest[internal.expressions.Expression, com
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""") shouldGive
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(commands.expressions.Literal("OTHER")))
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(literal("OTHER")))
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))

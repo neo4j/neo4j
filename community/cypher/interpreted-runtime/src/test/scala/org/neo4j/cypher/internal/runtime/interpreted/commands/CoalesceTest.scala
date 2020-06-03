@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CoalesceFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Null
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -36,7 +36,7 @@ import org.scalatest.Assertions.fail
 class CoalesceTest extends CypherFunSuite {
 
   test("givenANonNullValueThenReturnsTheValue") {
-    val func = CoalesceFunction(Literal("a"))
+    val func = CoalesceFunction(literal("a"))
     calc(func) should equal(stringValue("a"))
   }
 
@@ -46,12 +46,12 @@ class CoalesceTest extends CypherFunSuite {
   }
 
   test("givenOneNullAndOneValueThenReturnsTheValue") {
-    val func = CoalesceFunction(Null(), Literal("Alistair"))
+    val func = CoalesceFunction(Null(), literal("Alistair"))
     calc(func) should equal(stringValue("Alistair"))
   }
 
   test("coalesce_should_be_lazy") {
-    val func = CoalesceFunction(Literal("Hunger"), BreakingExpression())
+    val func = CoalesceFunction(literal("Hunger"), BreakingExpression())
     calc(func) should equal(stringValue("Hunger"))
   }
 

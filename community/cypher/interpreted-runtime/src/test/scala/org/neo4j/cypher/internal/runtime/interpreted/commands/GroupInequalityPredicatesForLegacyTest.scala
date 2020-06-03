@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Property
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.AndedPropertyComparablePredicates
@@ -93,19 +93,19 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
   }
 
   private def equals(lhs: Expression, v: Int) =
-    Equals(lhs, Literal(v))
+    Equals(lhs, literal(v))
 
   private def lessThan(lhs: Expression, v: Int) =
-    LessThan(lhs, Literal(v))
+    LessThan(lhs, literal(v))
 
   private def lessThanOrEqual(lhs: Expression, v: Int) =
-    LessThanOrEqual(lhs, Literal(v))
+    LessThanOrEqual(lhs, literal(v))
 
   private def greaterThan(lhs: Expression, v: Int) =
-    GreaterThan(lhs, Literal(v))
+    GreaterThan(lhs, literal(v))
 
   private def greaterThanOrEqual(lhs: Expression, v: Int) =
-    GreaterThanOrEqual(lhs, Literal(v))
+    GreaterThanOrEqual(lhs, literal(v))
 
   private def anded(property: Property, first: ComparablePredicate, others: ComparablePredicate*) = {
     val variable = property.mapExpr.asInstanceOf[Variable]

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.And
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SplittingPredicateTest extends CypherFunSuite {
 
   test("cantDivideMore") {
-    val x = Equals(Literal("a"), Literal("a"))
+    val x = Equals(literal("a"), literal("a"))
     x.atoms should equal(Seq(x))
   }
 
@@ -47,12 +47,12 @@ class SplittingPredicateTest extends CypherFunSuite {
   test("more_complex_splitting") {
     val x = And(
       Equals(
-        Literal(1), Literal(2)),
+        literal(1), literal(2)),
       Or(
         True(), Not(True())
       )
     )
 
-    x.atoms should equal(Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
+    x.atoms should equal(Seq(Equals(literal(1), literal(2)), Or(True(), Not(True()))))
   }
 }

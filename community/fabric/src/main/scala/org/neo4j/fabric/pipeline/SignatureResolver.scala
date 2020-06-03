@@ -22,7 +22,6 @@ package org.neo4j.fabric.pipeline
 import java.util.Optional
 import java.util.function.Supplier
 
-import org.neo4j.cypher.internal.logical.plans.CypherValue
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
@@ -61,6 +60,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
 import org.neo4j.kernel.api.procedure.GlobalProcedures
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters.asScalaBufferConverter
@@ -130,8 +130,7 @@ object SignatureResolver {
   def asCypherQualifiedName(name: procs.QualifiedName): QualifiedName =
     QualifiedName(name.namespace().toSeq, name.name())
 
-  private def asCypherValue(neo4jValue: DefaultParameterValue) =
-    CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
+  private def asCypherValue(neo4jValue: DefaultParameterValue) = ValueUtils.of(neo4jValue.value())
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
     case Neo4jTypes.NTString        => CTString

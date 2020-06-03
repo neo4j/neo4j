@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -51,7 +52,7 @@ class RangeFunctionTest extends CypherFunSuite {
   private def seq(vals: Long*) = list(vals.map(Values.longValue):_*)
 
   private def range(start: Long, end: Long, step: Long): ListValue = {
-    val expr = RangeFunction(Literal(start), Literal(end), Literal(step))
+    val expr = RangeFunction(literal(start), literal(end), literal(step))
     expr(CypherRow.empty, QueryStateHelper.empty).asInstanceOf[ListValue]
   }
 }

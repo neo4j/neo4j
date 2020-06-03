@@ -326,7 +326,7 @@ case class Contains(lhs: Expression, rhs: Expression) extends Predicate with Str
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
                                    (implicit converter: TextValue => TextValue = identity) extends Predicate {
-  lazy val pattern: Pattern = converter(regexExpr.anyVal.asInstanceOf[TextValue]).stringValue().r.pattern
+  lazy val pattern: Pattern = converter(regexExpr.value.asInstanceOf[TextValue]).stringValue().r.pattern
 
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] =
     lhsExpr(ctx, state) match {

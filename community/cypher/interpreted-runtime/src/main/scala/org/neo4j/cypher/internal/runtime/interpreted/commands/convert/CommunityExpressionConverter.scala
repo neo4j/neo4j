@@ -121,6 +121,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.Values.ZERO_INT
+import org.neo4j.values.storable.Values.intValue
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
 
@@ -144,7 +147,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case _: internal.expressions.Null => commands.expressions.Null()
       case _: internal.expressions.True => predicates.True()
       case _: internal.expressions.False => predicates.Not(predicates.True())
-      case e: internal.expressions.Literal => commands.expressions.Literal(e.value)
+      case e: internal.expressions.Literal => commands.expressions.Literal(ValueUtils.of(e.value))
       case e: internal.expressions.Variable => variable(e)
       case e: ExpressionVariable => commands.expressions.ExpressionVariable.of(e)
       case e: internal.expressions.Or => predicates.Or(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
@@ -170,7 +173,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: internal.expressions.Subtract => commands.expressions
         .Subtract(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.UnarySubtract => commands.expressions
-        .Subtract(commands.expressions.Literal(0), self.toCommandExpression(id, e.rhs))
+        .Subtract(commands.expressions.Literal(ZERO_INT), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.Multiply => commands.expressions
         .Multiply(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.Divide => commands.expressions.Divide(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
@@ -256,7 +259,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         .DesugaredMapProjection(variable(e.variable), e.includeAllProps, mapProjectionItems(id, e.items, self))
       case e: ResolvedFunctionInvocation =>
         val callArgumentCommands = e.callArguments.map(Some(_))
-          .zipAll(e.fcnSignature.get.inputSignature.map(_.default.map(_.value)), None, None).map {
+          .zipAll(e.fcnSignature.get.inputSignature.map(_.default), None, None).map {
           case (given, default) => given.map(self.toCommandExpression(id,_))
             .getOrElse(commands.expressions.Literal(default.get))
         }
@@ -343,7 +346,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Head =>
         commands.expressions.ContainerIndex(
           self.toCommandExpression(id, invocation.arguments.head),
-          commands.expressions.Literal(0)
+          commands.expressions.Literal(intValue(0))
         )
       case functions.Id => commands.expressions.IdFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Keys => commands.expressions.KeysFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -351,7 +354,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Last =>
         commands.expressions.ContainerIndex(
           self.toCommandExpression(id, invocation.arguments.head),
-          commands.expressions.Literal(-1)
+          commands.expressions.Literal(intValue(-1))
         )
       case Left =>
         commands.expressions.LeftFunction(
@@ -408,7 +411,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         commands.expressions.RangeFunction(
           self.toCommandExpression(id, invocation.arguments.head),
           self.toCommandExpression(id, invocation.arguments(1)),
-          toCommandExpression(id, invocation.arguments.lift(2), self).getOrElse(commands.expressions.Literal(1))
+          toCommandExpression(id, invocation.arguments.lift(2), self).getOrElse(commands.expressions.Literal(intValue(1)))
         )
       case Relationships => commands.expressions.RelationshipFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Replace =>
@@ -466,7 +469,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Tail =>
         commands.expressions.ListSlice(
           self.toCommandExpression(id, invocation.arguments.head),
-          Some(commands.expressions.Literal(1)),
+          Some(commands.expressions.Literal(intValue(1))),
           None
         )
       case Tan => commands.expressions.TanFunction(self.toCommandExpression(id, invocation.arguments.head))

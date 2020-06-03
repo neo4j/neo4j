@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -112,6 +112,6 @@ class CheckerTest extends CypherFunSuite {
     newChecker shouldBe a[NullListChecker.type]
   }
 
-  private def iterator(a: Any*) = list(a.map(ValueConversion.asValue):_*)
+  private def iterator(a: Any*) = list(a.map(ValueUtils.of):_*)
 
 }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PartialTopNPipeTest extends CypherFunSuite {
@@ -50,7 +50,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
     )
 
     val source = new FakePipe(input)
-    val sortPipe = PartialTopNPipe(source, Literal(5), compareX, compareY)()
+    val sortPipe = PartialTopNPipe(source, literal(5), compareX, compareY)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 
@@ -85,7 +85,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
     )
 
     val source = new FakePipe(input)
-    val sortPipe = PartialTopNPipe(source, Literal(-1), compareX, compareY)()
+    val sortPipe = PartialTopNPipe(source, literal(-1), compareX, compareY)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 

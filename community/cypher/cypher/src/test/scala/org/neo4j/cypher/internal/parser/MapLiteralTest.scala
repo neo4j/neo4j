@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal
 import org.parboiled.scala.EOI
 
 class MapLiteralTest extends ParserTest[internal.expressions.Expression, commands.expressions.Expression] with Expressions {
@@ -32,10 +33,10 @@ class MapLiteralTest extends ParserTest[internal.expressions.Expression, command
 
   test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive
-      commands.expressions.LiteralMap(Map("name" -> commands.expressions.Literal("Andres")))
+      commands.expressions.LiteralMap(Map("name" -> literal("Andres")))
 
     parsing("{ meta : { name: 'Andres' } }") shouldGive
-      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> commands.expressions.Literal("Andres")))))
+      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> literal("Andres")))))
 
     parsing("{ }") shouldGive
       commands.expressions.LiteralMap(Map())
@@ -43,10 +44,10 @@ class MapLiteralTest extends ParserTest[internal.expressions.Expression, command
 
   test("nested_map_support") {
     parsing("{ key: 'value' }") shouldGive
-      commands.expressions.LiteralMap(Map("key" -> commands.expressions.Literal("value")))
+      commands.expressions.LiteralMap(Map("key" -> literal("value")))
 
     parsing("{ inner1: { inner2: 'Value' } }") shouldGive
-      commands.expressions.LiteralMap(Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> commands.expressions.Literal("Value")))))
+      commands.expressions.LiteralMap(Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value")))))
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))

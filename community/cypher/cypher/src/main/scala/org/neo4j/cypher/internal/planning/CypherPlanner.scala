@@ -86,7 +86,6 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newValidating
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.spi.ExceptionTranslatingPlanContext
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.InputPosition
@@ -99,9 +98,12 @@ import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.Log
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.VirtualValues
 
 object CypherPlanner {
   /**
@@ -296,7 +298,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty) =
       doCreatePlan(preparedQuery, plannerContext, notificationLogger, runtime, planContext, shouldBeCached, missingParameterNames)
 
-    val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
+    val autoExtractParams = asMapValue(preparedQuery.extractedParams()) // only extracted ones
     // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
     // parameters where given in the first place)
     val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter((name, _) => queryParamNames.contains(name))
@@ -331,6 +333,15 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       cacheableLogicalPlan.notifications,
       cacheableLogicalPlan.shouldBeCached,
       obfuscator)
+  }
+
+  private def asMapValue(params: Map[String, Any]): MapValue = {
+    if (params.isEmpty) return VirtualValues.EMPTY_MAP
+    val builder = new MapValueBuilder(params.size)
+    params.foreach {
+      case (key,value) => builder.add(key, ValueUtils.of(value))
+    }
+    builder.build()
   }
 
   private def doCreatePlan(preparedQuery: BaseState,

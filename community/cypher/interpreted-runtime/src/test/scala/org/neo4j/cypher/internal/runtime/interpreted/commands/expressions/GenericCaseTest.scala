@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -87,7 +88,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_a_single_null_value_uses_the_default") {
     //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
+    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->literal(42)), Some(literal("defaults")))
 
     //WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
@@ -98,13 +99,13 @@ class GenericCaseTest extends CypherFunSuite {
 
   private def case_(alternatives: ((Any, Any), Any)*): GenericCase = {
     val mappedAlt: IndexedSeq[(Predicate, Expression)] = alternatives.toIndexedSeq.map {
-      case ((a, b), c) => (Equals(Literal(a), Literal(b)), Literal(c))
+      case ((a, b), c) => (Equals(literal(a), literal(b)), literal(c))
     }
 
     GenericCase(mappedAlt, None)
   }
 
   implicit class SimpleCasePimp(in: GenericCase) {
-    def defaultsTo(a: Any): GenericCase = GenericCase(in.alternatives, Some(Literal(a)))
+    def defaultsTo(a: Any): GenericCase = GenericCase(in.alternatives, Some(literal(a)))
   }
 }

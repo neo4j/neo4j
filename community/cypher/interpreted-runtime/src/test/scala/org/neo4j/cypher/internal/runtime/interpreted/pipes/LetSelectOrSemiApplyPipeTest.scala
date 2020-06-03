@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
@@ -116,7 +116,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = new FakePipe(Iterator.empty)
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)().
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), literal(2)), negated = false)().
         createResults(QueryStateHelper.empty).toList
 
     result.map(_.toMap) should equal(List(
@@ -135,7 +135,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)().
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), literal(2)), negated = false)().
         createResults(QueryStateHelper.empty).toList
 
     result.map(_.toMap) should equal(List(
@@ -155,7 +155,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)().
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), literal(2)), negated = false)().
         createResults(QueryStateHelper.empty).toList
     result.map(_.toMap) should equal(List(
       Map("a" -> intValue(3), "let" -> FALSE),

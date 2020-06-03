@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
@@ -39,11 +40,11 @@ class ExpressionTest extends CypherFunSuite {
     val a = Collect(Property(Variable("r"), PropertyKey("age")))
 
     val b = a.rewrite {
-      case Property(n, p) => Literal(n + "." + p.name)
+      case Property(n, p) => literal(n + "." + p.name)
       case x              => x
     }
 
-    b should equal(Collect(Literal("r.age")))
+    b should equal(Collect(literal("r.age")))
   }
 
   test("merge_two_different_variables") {
@@ -84,12 +85,12 @@ class ExpressionTest extends CypherFunSuite {
 
     // when
     val result = expression.rewrite {
-      case True() => Literal(true)
+      case True() => literal(true)
       case e      => e
     }
 
     // then
-    result should equal(Not(CoercedPredicate(Literal(true))))
+    result should equal(Not(CoercedPredicate(literal(true))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

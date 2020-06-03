@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.ComparablePredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThanOrEqual
@@ -81,25 +81,25 @@ class ComparablePredicateTest extends CypherFunSuite {
   test("should compare values using <") {
     for (left <- allValues)
       for (right <- allValues)
-        LessThan(Literal(left), Literal(right)) should compareUsingLessThan(left, right)
+        LessThan(literal(left), literal(right)) should compareUsingLessThan(left, right)
   }
 
   test("should compare values using <=") {
     for (left <- allValues)
       for (right <- allValues)
-        LessThanOrEqual(Literal(left), Literal(right)) should compareUsingLessThanOrEqual(left, right)
+        LessThanOrEqual(literal(left), literal(right)) should compareUsingLessThanOrEqual(left, right)
   }
 
   test("should compare values using >") {
     for (left <- allValues)
       for (right <- allValues)
-        GreaterThan(Literal(left), Literal(right)) should compareUsingGreaterThan(left, right)
+        GreaterThan(literal(left), literal(right)) should compareUsingGreaterThan(left, right)
   }
 
   test("should compare values using >=") {
     for (left <- allValues)
       for (right <- allValues)
-        GreaterThanOrEqual(Literal(left), Literal(right)) should compareUsingGreaterThanOrEqual(left, right)
+        GreaterThanOrEqual(literal(left), literal(right)) should compareUsingGreaterThanOrEqual(left, right)
   }
 
   private def reverse(s: String) = new StringBuilder(s).reverse.toString()

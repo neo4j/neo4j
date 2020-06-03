@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.ParameterWrongTypeException
@@ -107,6 +108,6 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   private def toInteger(orig: Any) = {
-    ToIntegerFunction(Literal(orig))(CypherRow.empty, QueryStateHelper.empty)
+    ToIntegerFunction(literal(orig))(CypherRow.empty, QueryStateHelper.empty)
   }
 }

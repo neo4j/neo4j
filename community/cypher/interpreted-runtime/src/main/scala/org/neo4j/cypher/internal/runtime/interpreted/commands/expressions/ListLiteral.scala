@@ -23,23 +23,24 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.ListValueBuilder
+import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 
 object ListLiteral {
-  val empty = Literal(Seq())
+  val empty: Literal = Literal(EMPTY_LIST)
 }
 
 case class ListLiteral(override val arguments: Expression*) extends Expression {
-  private val size = arguments.size
+  private val args = arguments.toArray
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    val result = new Array[AnyValue](size)
+    val result = ListValueBuilder.newListBuilder(args.size)
     var i = 0
-    while (i < size) {
-      result(i) = arguments(i).apply(row, state)
+    while (i < args.length) {
+      result.add(args(i).apply(row, state))
       i += 1
     }
-    VirtualValues.list(result:_*)
+    result.build()
   }
 
   def rewrite(f: Expression => Expression): Expression = f(ListLiteral(arguments.map(f): _*))

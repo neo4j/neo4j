@@ -50,7 +50,7 @@ object ResolvedCall {
     val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
-    val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d.value)).getOrElse(Parameter(s.name, s.typ)(position)))
+    val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(Parameter(s.name, s.typ)(position)))
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {

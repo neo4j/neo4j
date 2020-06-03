@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
@@ -97,19 +98,19 @@ class SimpleCaseTest extends CypherFunSuite {
   }
 
   test("arguments should contain all children") {
-    val caseExpr = SimpleCase(Literal(1), Seq((Literal(2), Literal(3))), Some(Literal(4)))
-    caseExpr.arguments should contain allOf(Literal(1), Literal(2), Literal(3), Literal(4))
+    val caseExpr = SimpleCase(literal(1), Seq((literal(2), literal(3))), Some(literal(4)))
+    caseExpr.arguments should contain allOf(literal(1), literal(2), literal(3), literal(4))
   }
 
   private def case_(in: Any, alternatives: (Any, Any)*): SimpleCase = {
     val mappedAlt: Seq[(Expression, Expression)] = alternatives.map {
-      case (a, b) => (Literal(a), Literal(b))
+      case (a, b) => (literal(a), literal(b))
     }
 
-    SimpleCase(Literal(in), mappedAlt, None)
+    SimpleCase(literal(in), mappedAlt, None)
   }
 
   implicit class SimpleCasePimp(in:SimpleCase) {
-    def defaultsTo(a:Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(Literal(a)))
+    def defaultsTo(a:Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(literal(a)))
   }
 }

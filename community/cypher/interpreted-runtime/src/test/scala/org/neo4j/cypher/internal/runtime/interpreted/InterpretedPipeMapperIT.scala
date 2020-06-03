@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshi
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
 
 import scala.collection.mutable
 
@@ -98,7 +99,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       Argument(), Map("42" -> literalInt(42)))
     val pipe = build(logicalPlan)
 
-    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> commands.expressions.Literal(42))))
+    pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> commands.expressions.Literal(intValue(42)))))
   }
 
   test("simple pattern query") {
@@ -120,7 +121,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(commands.expressions.Literal(42)))())
+    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(commands.expressions.Literal(intValue(42))))())
   }
 
   test("simple node by id seek query with multiple values") {
@@ -138,7 +139,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(commands.expressions.Literal(42)), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(commands.expressions.Literal(intValue(42))), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {

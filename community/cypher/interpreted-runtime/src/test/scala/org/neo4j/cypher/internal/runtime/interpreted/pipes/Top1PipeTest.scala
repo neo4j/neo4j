@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 
@@ -105,7 +105,7 @@ class Top1PipeTest extends CypherFunSuite {
   test("top 1 should handle null input") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
 
-    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(10,null))

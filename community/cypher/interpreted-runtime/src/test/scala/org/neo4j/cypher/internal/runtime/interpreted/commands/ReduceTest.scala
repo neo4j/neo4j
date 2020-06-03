@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LengthFunction
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ReduceFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
 
 class ReduceTest extends CypherFunSuite {
@@ -42,19 +42,19 @@ class ReduceTest extends CypherFunSuite {
     val m = CypherRow.from("l" -> l)
     val s = QueryStateHelper.emptyWith(expressionVariables = new Array(2))
 
-    val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, Literal(0))
+    val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, literal(0))
 
     reduce.apply(m, s) should equal(longValue(6))
   }
 
   test("returns_null_from_null_collection") {
     val expression = Add(ExpressionVariable(0, "acc"), LengthFunction(ExpressionVariable(1, "n")))
-    val collection = Literal(null)
+    val collection = literal(NO_VALUE)
     val m = CypherRow.empty
     val s = QueryStateHelper.emptyWith(expressionVariables = new Array(2))
 
-    val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, Literal(0))
+    val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, literal(0))
 
-    reduce(m, s) should equal(Values.NO_VALUE)
+    reduce(m, s) should equal(NO_VALUE)
   }
 }

@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.values.storable.Values.FALSE
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.TRUE
-import org.neo4j.values.storable.Values.FALSE
 
 class ToBooleanFunctionTest extends CypherFunSuite {
 
@@ -60,7 +61,7 @@ class ToBooleanFunctionTest extends CypherFunSuite {
   }
 
   private def toBoolean(orig: Any) = {
-    ToBooleanFunction(Literal(orig))(CypherRow.empty, QueryStateHelper.empty)
+    ToBooleanFunction(literal(orig))(CypherRow.empty, QueryStateHelper.empty)
   }
 
 }

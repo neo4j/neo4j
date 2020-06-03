@@ -19,21 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
-  import Mockito.when
+  import org.mockito.Mockito.when
 
   test("should seek relationship by id") {
     // given
@@ -49,7 +50,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[CypherRow] =
-      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(literal(17)), to, from)().createResults(queryState)
 
     // then
     result.toList should beEquivalentTo(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
@@ -72,7 +73,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(literal(42), literal(21))), to, from)().createResults(queryState)
 
     // then
     result.toList should beEquivalentTo(List(
@@ -92,7 +93,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[CypherRow] =
-      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(NO_VALUE)), to, from)().createResults(queryState)
 
     // then
     result.toList should be(empty)

@@ -23,13 +23,14 @@ import java.nio.charset.StandardCharsets
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Add
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.UTF8StringValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.Values.utf8Value
@@ -40,35 +41,35 @@ class AddTest extends CypherFunSuite {
   val s = QueryStateHelper.empty
 
   test("numbers") {
-    val expr = Add(Literal(1), Literal(1))
+    val expr = Add(literal(1), literal(1))
     expr(m, s) should equal(longValue(2))
   }
 
   test("with_null") {
-    val nullPlusOne = Add(Literal(null), Literal(1))
-    val twoPlusNull = Add(Literal(2), Literal(null))
+    val nullPlusOne = Add(literal(NO_VALUE), literal(1))
+    val twoPlusNull = Add(literal(2), literal(NO_VALUE))
 
-    nullPlusOne(m, s) should equal(Values.NO_VALUE)
-    twoPlusNull(m, s) should equal(Values.NO_VALUE)
+    nullPlusOne(m, s) should equal(NO_VALUE)
+    twoPlusNull(m, s) should equal(NO_VALUE)
   }
 
   test("strings") {
-    val expr = Add(Literal("hello"), Literal("world"))
+    val expr = Add(literal("hello"), literal("world"))
     expr(m, s) should equal(stringValue("helloworld"))
   }
 
   test("stringPlusNumber") {
-    val expr = Add(Literal("hello"), Literal(1))
+    val expr = Add(literal("hello"), literal(1))
     expr(m, s) should equal(stringValue("hello1"))
   }
 
   test("numberPlusString") {
-    val expr = Add(Literal(1), Literal("world"))
+    val expr = Add(literal(1), literal("world"))
     expr(m, s) should equal(stringValue("1world"))
   }
 
   test("numberPlusBool") {
-    val expr = Add(Literal(1), Literal(true))
+    val expr = Add(literal(1), literal(true))
     intercept[CypherTypeException](expr(m, s))
   }
 

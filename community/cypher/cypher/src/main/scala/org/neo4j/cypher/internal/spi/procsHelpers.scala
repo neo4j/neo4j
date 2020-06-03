@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.spi
 
 import java.util.Optional
 
-import org.neo4j.cypher.internal.logical.plans.CypherValue
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
@@ -54,7 +53,9 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
+import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 
@@ -73,7 +74,7 @@ object procsHelpers {
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
   }
 
-  def asCypherValue(neo4jValue: DefaultParameterValue): CypherValue = CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
+  def asCypherValue(neo4jValue: DefaultParameterValue): AnyValue = ValueUtils.of(neo4jValue.value())
 
   def asCypherType(neoType: AnyType): CypherType = neoType match {
     case Neo4jTypes.NTString => CTString

@@ -25,7 +25,7 @@ import org.mockito.Mockito.when
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SkipPipeTest extends CypherFunSuite {
@@ -36,7 +36,7 @@ class SkipPipeTest extends CypherFunSuite {
     when(inputIterator.isEmpty).thenReturn(false)
 
     val src: Pipe = new DummyPipe(inputIterator)
-    val skipPipe = SkipPipe(src, Literal(0))()
+    val skipPipe = SkipPipe(src, literal(0))()
 
     // When
     skipPipe.createResults(QueryStateHelper.empty)

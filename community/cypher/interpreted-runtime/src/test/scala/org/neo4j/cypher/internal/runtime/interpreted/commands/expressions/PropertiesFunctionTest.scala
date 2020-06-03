@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
@@ -100,6 +101,6 @@ class PropertiesFunctionTest extends CypherFunSuite {
   }
 
   private def properties(orig: Any) = {
-    PropertiesFunction(Literal(orig))(CypherRow.empty, QueryStateHelper.empty.withQueryContext(query))
+    PropertiesFunction(literal(orig))(CypherRow.empty, QueryStateHelper.empty.withQueryContext(query))
   }
 }

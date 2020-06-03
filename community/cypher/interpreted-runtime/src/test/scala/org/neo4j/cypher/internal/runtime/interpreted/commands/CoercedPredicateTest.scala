@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
@@ -36,7 +37,7 @@ class CoercedPredicateTest extends CypherFunSuite {
 
   test("should_coerce_non_empty_collection_to_true") {
     // Given
-    val collection = ListLiteral(Literal(1))
+    val collection = ListLiteral(literal(1))
 
     // When
     val result = CoercedPredicate(collection).isTrue(ctx, state)

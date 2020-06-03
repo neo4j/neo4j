@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
@@ -81,7 +82,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = CypherRow.empty
 
-    val function = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))
+    val function = KeysFunction(LiteralMap(Map("foo" -> literal(1), "bar" -> literal(2), "baz" -> literal(3))))
     // WHEN
     val result = function(ctx, state).asInstanceOf[ListValue].asArray().sortWith((a, b) => AnyValues.COMPARATOR.compare(a, b) >= 0)
 

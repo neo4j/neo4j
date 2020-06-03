@@ -26,9 +26,10 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -48,7 +49,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[CypherRow] =
-      UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)()
+      UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(literal(17)), to, from)()
         .createResults(queryState)
 
     // then
@@ -74,7 +75,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().
+      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(literal(42), literal(21))), to, from)().
         createResults(queryState)
 
     // then
@@ -96,7 +97,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val result: Iterator[CypherRow] = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
+    val result: Iterator[CypherRow] = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(literal(NO_VALUE)), to, from)().createResults(queryState)
 
     // then
     result.toList should be(empty)

@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values.FALSE
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.virtual.VirtualValues
 
 class ListLiteralTest extends CypherFunSuite {
 
@@ -101,7 +103,8 @@ class ListLiteralTest extends CypherFunSuite {
 
     private def check(expected: Any,
                       collectionFunction: (Expression, String, Int, Predicate) => InList) {
-      val function = collectionFunction(Literal(values), "x", 0, CoercedPredicate(ExpressionVariable(0, "x")))
+
+      val function = collectionFunction(Literal(VirtualValues.list(values.map(ValueUtils.of):_*)), "x", 0, CoercedPredicate(ExpressionVariable(0, "x")))
       val result = function(CypherRow.empty, QueryStateHelper.emptyWith(expressionVariables = new Array(1)))
       result should equal(expected)
     }

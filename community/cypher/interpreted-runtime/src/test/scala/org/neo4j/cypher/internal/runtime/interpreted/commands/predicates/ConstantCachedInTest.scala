@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ListLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -43,7 +44,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("tests") {
     // given
-    val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(3)))
+    val predicate = createPredicate(Variable("x"), ListLiteral(literal(1), literal(2), literal(3)))
 
     val state = QueryStateHelper.empty
 
@@ -64,7 +65,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("check with a collection containing null") {
     // given
-    val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
+    val predicate = createPredicate(Variable("x"), ListLiteral(literal(1), literal(2), Literal(NO_VALUE)))
 
     val state = QueryStateHelper.empty
     val v1 = CypherRow.empty.copyWith("x", intValue(1))
@@ -84,7 +85,7 @@ abstract class CachedInTest extends CypherFunSuite {
 
   test("check with a collection that is null") {
     // given
-    val predicate = createPredicate(Variable("x"), Literal(null))
+    val predicate = createPredicate(Variable("x"), literal(NO_VALUE))
 
     val state = QueryStateHelper.empty
 
@@ -107,8 +108,8 @@ abstract class CachedInTest extends CypherFunSuite {
   test("check lists") {
     // given
     val listInList = ListLiteral(
-      ListLiteral(Literal(1), Literal(2)),
-      ListLiteral(Literal(3), Literal(4)))
+      ListLiteral(literal(1), literal(2)),
+      ListLiteral(literal(3), literal(4)))
     val predicate = createPredicate(Variable("x"), listInList)
 
     val state = QueryStateHelper.empty

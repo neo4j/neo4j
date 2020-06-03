@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
+package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.AnyValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.VirtualValues
 
-case class Literal(value: AnyValue) extends Expression {
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = value
-
-  override def rewrite(f: Expression => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def children: Seq[AstNode[_]] = Seq.empty
-
-  override def toString: String = "Literal(" + value + ")"
+object LiteralHelper {
+  def literal(any: Any): Literal = Literal(ValueUtils.of(any))
+  def literal(anys: Seq[_]): Literal = Literal(VirtualValues.list(anys.map(ValueUtils.of):_*))
+  def literal(map: Map[String, _]): Literal = {
+    val mapBuilder = new MapValueBuilder()
+    map.foreach{
+      case (k, v) => mapBuilder.add(k, ValueUtils.of(v))
+    }
+    Literal(mapBuilder.build())
+  }
 }

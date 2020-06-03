@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.LongValue
@@ -28,7 +29,7 @@ import org.neo4j.values.storable.LongValue
 class TypeTest extends CypherFunSuite {
 
   test("plus int int") {
-    val op = Add(Literal(1), Literal(2))
+    val op = Add(literal(1), literal(2))
 
     val result = calc(op)
 
@@ -37,7 +38,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("plus double int") {
-    val op = Add(Literal(1.2), Literal(2))
+    val op = Add(literal(1.2), literal(2))
 
     val result = calc(op)
 
@@ -45,7 +46,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("minus int int") {
-    val op = Subtract(Literal(1), Literal(2))
+    val op = Subtract(literal(1), literal(2))
 
     val result = calc(op)
 
@@ -54,7 +55,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("minus double int") {
-    val op = Subtract(Literal(1.2), Literal(2))
+    val op = Subtract(literal(1.2), literal(2))
 
     val result = calc(op)
 
@@ -62,7 +63,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("multiply int int") {
-    val op = Multiply(Literal(1), Literal(2))
+    val op = Multiply(literal(1), literal(2))
 
     val result = calc(op)
 
@@ -71,7 +72,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("multiply double int") {
-    val op = Multiply(Literal(1.2), Literal(2))
+    val op = Multiply(literal(1.2), literal(2))
 
     val result = calc(op)
 
@@ -79,7 +80,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("divide int int") {
-    val op = Divide(Literal(1), Literal(2))
+    val op = Divide(literal(1), literal(2))
 
     val result = calc(op)
 
@@ -87,7 +88,7 @@ class TypeTest extends CypherFunSuite {
   }
 
   test("divide double int") {
-    val op = Divide(Literal(1.2), Literal(2))
+    val op = Divide(literal(1.2), literal(2))
 
     val result = calc(op)
 
