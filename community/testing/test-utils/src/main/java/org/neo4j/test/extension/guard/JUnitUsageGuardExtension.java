@@ -76,7 +76,7 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
     {
         ClassReader classReader = new ClassReader( clazz.getName() );
         DependenciesCollector dependenciesCollector = new DependenciesCollector();
-        classReader.accept( dependenciesCollector, SKIP_DEBUG & SKIP_CODE & SKIP_FRAMES );
+        classReader.accept( dependenciesCollector, SKIP_DEBUG | SKIP_CODE | SKIP_FRAMES );
         return dependenciesCollector.getJunitTestClasses();
     }
 }
