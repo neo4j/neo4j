@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.memory.MemoryGroup.QUERY_CACHE;
+import static org.neo4j.memory.MemoryGroup.OTHER;
 import static org.neo4j.memory.MemoryGroup.TRANSACTION;
 
 class MemoryPoolsTest
@@ -33,7 +33,7 @@ class MemoryPoolsTest
     void createdPoolRegisteredInListOfPools()
     {
         var pools = new MemoryPools();
-        var pool1 = pools.pool( QUERY_CACHE, 2, true, null );
+        var pool1 = pools.pool( OTHER, 2, true, null );
         var pool2 = pools.pool( TRANSACTION, 2, true, null );
         assertThat( pools.getPools() ).contains( pool1, pool2 );
     }

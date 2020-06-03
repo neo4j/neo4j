@@ -22,11 +22,9 @@ package org.neo4j.memory;
 public enum MemoryGroup
 {
     TRANSACTION( "Transaction" ),
-    NETTY( "Netty" ),
+    BOLT( "Bolt" ),
     PAGE_CACHE( "Page Cache" ),
     OTHER( "Other" ),
-    REPLICATION_BUFFERS( "Replication Buffers" ),
-    QUERY_CACHE( "Query Cache" ),
     RECENT_QUERY_BUFFER( "Recent Query Buffer" ),
     NO_TRACKING( "No Tracking" );
 
