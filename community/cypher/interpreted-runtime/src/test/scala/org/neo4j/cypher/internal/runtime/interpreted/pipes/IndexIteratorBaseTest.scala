@@ -19,33 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.Mockito
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
-import scala.collection.Iterator
+class IndexIteratorBaseTest extends CypherFunSuite {
 
-abstract class IndexIteratorBase[T](val cursor: NodeValueIndexCursor) extends Iterator[T] {
-  private var _next: T = fetchNext()
-  if (!hasNext) {
-    close()
-  }
+  test("should close if empty") {
+    val cursor = mock[NodeValueIndexCursor]
 
-  protected def fetchNext(): T
-
-  protected def close(): Unit = cursor.close()
-
-  override final def hasNext: Boolean = _next != null
-
-  override final def next(): T = {
-    if (!hasNext) {
-      close()
-      Iterator.empty.next()
+    new IndexIteratorBase[String](cursor) {
+      override protected def fetchNext(): String = null
     }
 
-    val current = _next
-    _next = fetchNext()
-    if (!hasNext) {
-      close()
-    }
-    current
+    Mockito.verify(cursor).close()
   }
+
+
 }
