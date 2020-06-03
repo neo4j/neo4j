@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -96,9 +95,6 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("let semi apply should not run rhs if lhs is empty") {
-    // given
-    val inputRows = Seq.empty
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -108,7 +104,7 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues())
 
     // then
     // should not throw 1/0 exception
@@ -190,7 +186,7 @@ abstract class LetSemiApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("xs").withSingleRow(aNodes.size)
   }
 
-  test("should aggregate with grouping on top of let semi apply with expand on RHS") {
+  test("should aggregate with grouping on top of let semi apply") {
     // given
     given {
       nodePropertyGraph(sizeHint, {
