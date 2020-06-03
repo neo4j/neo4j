@@ -172,7 +172,7 @@ class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-        var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ) );
+        var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ), null );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),

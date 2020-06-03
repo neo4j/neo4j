@@ -177,7 +177,7 @@ public class DatabaseRule extends ExternalResource
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
                 storageEngineFactory, new GlobalLockerService(), LeaseService.NO_LEASES, NEVER_ABORT, memoryPools,
-                memoryPools.pool( MemoryGroup.TRANSACTION, 0 ), memoryPools.pool( MemoryGroup.OTHER, 0 ) ) );
+                memoryPools.pool( MemoryGroup.TRANSACTION, 0, null ), memoryPools.pool( MemoryGroup.OTHER, 0, null ) ) );
         return database;
     }
 

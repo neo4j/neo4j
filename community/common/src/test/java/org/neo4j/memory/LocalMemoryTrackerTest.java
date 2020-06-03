@@ -21,7 +21,10 @@ package org.neo4j.memory;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
 class LocalMemoryTrackerTest
 {
@@ -71,5 +74,13 @@ class LocalMemoryTrackerTest
 
         memoryTracker.releaseHeap( 40 );
         assertEquals( 40, memoryTracker.estimatedHeapMemory() );
+    }
+
+    @Test
+    void throwsOnLimit()
+    {
+        LocalMemoryTracker memoryTracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "settingName" );
+        MemoryLimitExceeded memoryLimitExceeded = assertThrows( MemoryLimitExceeded.class, () -> memoryTracker.allocateHeap( 100 ) );
+        assertThat( memoryLimitExceeded.getMessage() ).contains( "settingName" );
     }
 }

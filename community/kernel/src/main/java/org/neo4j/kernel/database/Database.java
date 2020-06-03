@@ -351,7 +351,7 @@ public class Database extends LifecycleAdapter
             life.add( watcherService );
             databaseDependencies.satisfyDependency( watcherService );
 
-            otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0 );
+            otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0, null );
             life.add( onShutdown( () -> otherDatabasePool.close() ) );
             var otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
 

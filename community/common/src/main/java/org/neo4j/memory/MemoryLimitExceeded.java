@@ -19,27 +19,41 @@
  */
 package org.neo4j.memory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.exceptions.Status.General.TransactionMemoryLimit;
 
 public class MemoryLimitExceeded extends RuntimeException implements Status.HasStatus
 {
+    private final Status status;
 
-    public MemoryLimitExceeded( long allocation, long limit, long current )
+    public MemoryLimitExceeded( long allocation, long limit, long current, Status status, String settingName )
     {
-        super( format( "The allocation of %s would use more than the limit %s. Currently using %s", humanReadableByteCountBin( allocation ),
-                       humanReadableByteCountBin( limit ), humanReadableByteCountBin( current ) ) );
+        super( getMessage( allocation, limit, current, settingName ) );
+        this.status = status;
     }
 
     @Override
     public Status status()
     {
-        return TransactionMemoryLimit;
+        return status;
+    }
+
+    private static String getMessage( long allocation, long limit, long current, String settingName )
+    {
+        if ( StringUtils.isEmpty( settingName ) )
+        {
+            return format( "The allocation of %s would use more than the limit %s. Currently using %s.",
+                    humanReadableByteCountBin( allocation ), humanReadableByteCountBin( limit ), humanReadableByteCountBin( current ) );
+        }
+
+        return format( "The allocation of %s would use more than the limit %s. Currently using %s. %s threshold reached",
+                humanReadableByteCountBin( allocation ), humanReadableByteCountBin( limit ), humanReadableByteCountBin( current ), settingName );
     }
 
     private static String humanReadableByteCountBin( long bytes )

@@ -32,7 +32,7 @@ public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
 
     public BoltNettyMemoryPool( MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric )
     {
-        super( memoryPools, NETTY, 0, false, true );
+        super( memoryPools, NETTY, 0, false, true, null );
         this.allocatorMetric = allocatorMetric;
         memoryPools.registerPool( this );
     }

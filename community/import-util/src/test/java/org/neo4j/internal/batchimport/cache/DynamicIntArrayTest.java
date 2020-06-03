@@ -47,7 +47,7 @@ class DynamicIntArrayTest
     @Test
     void trackHeapMemoryOnArrayAllocations()
     {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         var longArray = NumberArrayFactory.HEAP.newDynamicLongArray( 10, 1, memoryTracker );
 
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
@@ -62,7 +62,7 @@ class DynamicIntArrayTest
     @Test
     void trackNativeMemoryOnArrayAllocations()
     {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         try ( var longArray = NumberArrayFactory.OFF_HEAP.newDynamicLongArray( 10, 1, memoryTracker ) )
         {
 

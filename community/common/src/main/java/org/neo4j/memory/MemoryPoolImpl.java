@@ -21,6 +21,7 @@ package org.neo4j.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.neo4j.kernel.api.exceptions.Status.General.MemoryPoolOutOfMemoryError;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 /**
@@ -32,13 +33,15 @@ class MemoryPoolImpl implements MemoryPool
     private final AtomicLong usedHeapBytes = new AtomicLong();
     private final AtomicLong usedNativeBytes = new AtomicLong();
     private final boolean strict;
+    private final String limitSettingName;
 
     /**
      * @param limit of the pool, passing 0 will result in an unbounded pool
      * @param strict if true enforce limit by throwing exception
      */
-    MemoryPoolImpl( long limit, boolean strict )
+    MemoryPoolImpl( long limit, boolean strict, String limitSettingName )
     {
+        this.limitSettingName = limitSettingName;
         this.maxMemory.set( validateSize( limit ) );
         this.strict = strict;
     }
@@ -95,7 +98,7 @@ class MemoryPoolImpl implements MemoryPool
             usedMemoryBefore = counter.get();
             if ( strict && totalUsed() + bytes > max )
             {
-                throw new MemoryLimitExceeded( bytes, max, totalUsed() );
+                throw new MemoryLimitExceeded( bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName );
             }
         }
         while ( !counter.weakCompareAndSetVolatile( usedMemoryBefore, usedMemoryBefore + bytes ) );

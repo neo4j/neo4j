@@ -51,17 +51,17 @@ class NumberArrayFactoryTest
     @Test
     void trackHeapMemoryAllocations()
     {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         HEAP.newByteArray( 10, new byte[]{0}, memoryTracker );
         assertEquals( 32, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
 
-        memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         HEAP.newLongArray( 10,1, memoryTracker );
         assertEquals( 96, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
 
-        memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         HEAP.newIntArray( 10,1, memoryTracker );
         assertEquals( 56, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
@@ -70,7 +70,7 @@ class NumberArrayFactoryTest
     @Test
     void trackNativeMemoryAllocations()
     {
-        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0 );
+        var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
         try ( ByteArray byteArray = OFF_HEAP.newByteArray( 10, new byte[]{0}, memoryTracker ) )
         {
             assertEquals( 0, memoryTracker.estimatedHeapMemory() );

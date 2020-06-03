@@ -418,6 +418,10 @@ public interface Status
         InvalidArguments( ClientError, "The request contained fields that were empty or are not allowed." ),
         ForbiddenOnReadOnlyDatabase( ClientError,
                 "This is a read only database, writing or modifying the database is not allowed." ),
+        TransactionOutOfMemoryError( ClientError,
+                "The transaction used more memory than was allowed. The maximum allowed size for a " +
+                "transaction can be configured with 'dbms.memory.transaction.max_size' in the neo4j configuration " +
+                "(normally in 'conf/neo4j.conf' or, if you are using Neo4j Desktop, found through the user interface)." ),
 
         // database errors
         IndexCorruptionDetected( DatabaseError,
@@ -431,13 +435,15 @@ public interface Status
                 "An unknown error occurred." ),
 
         // transient errors
+
+        // Off heap allocation limit exceeded
         TransactionMemoryLimit( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +
-                        "'dbms.memory.off_heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
+                        "'dbms.memory.off_heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if " +
                         "you are using Neo4j Desktop, found through the user interface), and then restart the database." ),
         OutOfMemoryError( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +
-                "'dbms.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
+                "'dbms.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if " +
                 "you are using Neo4j Desktop, found through the user interface) or if you are running an embedded " +
                 "installation increase the heap by using '-Xmx' command line flag, and then restart the database." ),
         StackOverFlowError( TransientError,
@@ -447,12 +453,8 @@ public interface Status
                 "in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you are using " +
                 "Neo4j Desktop, found through the user interface) or if you are running an embedded installation " +
                 "just add -Xss2M as command line flag." ),
-        TransactionOutOfMemoryError( TransientError,
-                                     "There transaction used more memory than was allowed. The maximum allowed size for a " +
-                                             "transaction can be configured with 'unsupported.dbms.transaction.memory.max' in the neo4j configuration " +
-                                             "(normally in 'conf/neo4j.conf' or, if you " +
-                                             "you are using Neo4j Desktop, found through the user interface)." ),
-
+        MemoryPoolOutOfMemoryError( TransientError,
+                "The memory pool limit was exceeded. The corresponding setting can be found in the error message" )
         ;
 
         private final Code code;

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GlobalMemoryGroupTrackerTest
 {
-    private final GlobalMemoryGroupTracker globalPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 100 );
+    private final GlobalMemoryGroupTracker globalPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 100, null );
 
     @Test
     void trackedHeapFromTrackerAndPoolMatch()

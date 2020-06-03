@@ -41,14 +41,14 @@ public final class MemoryPools
         this.trackingEnabled = trackingEnabled;
     }
 
-    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit )
+    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, String limitSettingName )
     {
-        return this.pool( group, limit, true );
+        return this.pool( group, limit, true, limitSettingName );
     }
 
-    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, boolean strict )
+    public GlobalMemoryGroupTracker pool( MemoryGroup group, long limit, boolean strict, String limitSettingName )
     {
-        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict, trackingEnabled );
+        var pool = new GlobalMemoryGroupTracker( this, group, limit, strict, trackingEnabled, limitSettingName );
         pools.add( pool );
         return pool;
     }

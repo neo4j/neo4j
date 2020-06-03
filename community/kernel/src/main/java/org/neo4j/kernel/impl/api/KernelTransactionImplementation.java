@@ -228,7 +228,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.memoryTracker = config.get( memory_tracking ) ?
-                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES ) : EmptyMemoryTracker.INSTANCE;
+                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES,
+                                     memory_transaction_max_size.name() ) : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;

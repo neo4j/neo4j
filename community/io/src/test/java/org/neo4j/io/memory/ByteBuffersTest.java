@@ -34,7 +34,7 @@ class ByteBuffersTest
     @Test
     void trackMemoryAllocationsForNativeByteBuffers()
     {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0 );
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
         var byteBuffer = allocateDirect( 30, memoryTracker );
         try
         {
@@ -53,7 +53,7 @@ class ByteBuffersTest
     @Test
     void trackMemoryAllocationsForHeapByteBuffers()
     {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0 );
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 100, 0, null );
         var byteBuffer = allocate( 30, memoryTracker );
         try
         {
