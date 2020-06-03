@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBufAllocatorMetric;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryPools;
 
-import static org.neo4j.memory.MemoryGroup.NETTY;
+import static org.neo4j.memory.MemoryGroup.BOLT;
 
 public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
 {
@@ -32,7 +32,7 @@ public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
 
     public BoltNettyMemoryPool( MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric )
     {
-        super( memoryPools, NETTY, 0, false, true, null );
+        super( memoryPools, BOLT, 0, false, true, null );
         this.allocatorMetric = allocatorMetric;
         memoryPools.registerPool( this );
     }

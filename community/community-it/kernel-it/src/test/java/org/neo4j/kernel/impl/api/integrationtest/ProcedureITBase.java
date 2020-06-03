@@ -198,7 +198,7 @@ public interface ProcedureITBase
                         "List all locks at this database.",
                 stringArray( "admin" ), "DBMS"),
                 proc( "dbms.listPools",
-                        "() :: (group :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
+                        "() :: (pool :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
                                 "nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, " +
                                 "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
                         "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
