@@ -89,10 +89,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
 
             return new ListSnapshot<>( readTime, readUsers );
         }
-        else
-        {
-            log.debug( "Did not find any file named %s in %s", authFile.getName(), authFile.getParent() );
-        }
+        log.debug( "Did not find any file named %s in %s", authFile.getName(), authFile.getParent() );
         return null;
     }
 

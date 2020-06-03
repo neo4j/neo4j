@@ -124,7 +124,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
                     COMPONENT, currentVersion.version, currentVersion.getStatus() );
             if ( currentVersion.version == NoUserSecurityGraph.VERSION )
             {
-                log.debug( "The current version did not have any security graph, doing a full initialization" );
+                log.debug( "The current version does not have a security graph, doing a full initialization" );
                 initializeLatestSystemGraph( tx );
             }
             else
