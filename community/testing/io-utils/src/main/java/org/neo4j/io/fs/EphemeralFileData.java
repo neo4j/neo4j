@@ -34,14 +34,13 @@ import static java.lang.Math.min;
 
 class EphemeralFileData
 {
-    private static final ThreadLocal<byte[]> SCRATCH_PAD =
-            ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
+    private static final ThreadLocal<byte[]> SCRATCH_PAD = ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
     private final File file;
     private final Clock clock;
     private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
-    private volatile EphemeralDynamicByteBuffer fileAsBuffer;
-    private volatile EphemeralDynamicByteBuffer forcedBuffer;
-    private volatile long lastModified;
+    private EphemeralDynamicByteBuffer fileAsBuffer;
+    private EphemeralDynamicByteBuffer forcedBuffer;
+    private long lastModified;
     private int locked; // Guarded by lock on 'channels'
 
     EphemeralFileData( File file, Clock clock )
@@ -58,11 +57,10 @@ class EphemeralFileData
         this.lastModified = clock.millis();
     }
 
-    int read( EphemeralPositionable fc, ByteBuffer dst )
+    synchronized int read( EphemeralPositionable fc, ByteBuffer dst )
     {
         int wanted = dst.limit() - dst.position();
-        var fileBuffer = fileAsBuffer; // Snapshot buffer instance with volatile read.
-        long size = fileBuffer.getSize();
+        long size = fileAsBuffer.getSize();
         long available = min( wanted, size - fc.pos() );
         if ( available <= 0 )
         {
@@ -75,7 +73,7 @@ class EphemeralFileData
         {
             int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
             long pos = fc.pos();
-            fileBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
+            fileAsBuffer.get( pos, scratchPad, 0, howMuchToReadThisTime );
             fc.pos( pos + howMuchToReadThisTime );
             dst.put( scratchPad, 0, howMuchToReadThisTime );
             pending -= howMuchToReadThisTime;
@@ -83,19 +81,18 @@ class EphemeralFileData
         return Math.toIntExact( available ); // return how much data was read
     }
 
-    int write( EphemeralPositionable fc, ByteBuffer src )
+    synchronized int write( EphemeralPositionable fc, ByteBuffer src )
     {
         int wanted = src.limit() - src.position();
         int pending = wanted;
         byte[] scratchPad = SCRATCH_PAD.get();
-        var fileBuffer = fileAsBuffer; // Snapshot buffer instance with volatile read.
 
         while ( pending > 0 )
         {
             int howMuchToWriteThisTime = min( pending, scratchPad.length );
             src.get( scratchPad, 0, howMuchToWriteThisTime );
             long pos = fc.pos();
-            fileBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
+            fileAsBuffer.put( pos, scratchPad, 0, howMuchToWriteThisTime );
             fc.pos( pos + howMuchToWriteThisTime );
             pending -= howMuchToWriteThisTime;
         }
@@ -104,17 +101,12 @@ class EphemeralFileData
         return wanted;
     }
 
-    Iterable<ByteBuffer> buffers()
-    {
-        return fileAsBuffer;
-    }
-
-    EphemeralFileData copy()
+    synchronized EphemeralFileData copy()
     {
         return new EphemeralFileData( file, fileAsBuffer.copy(), clock );
     }
 
-    void free()
+    synchronized void free()
     {
         fileAsBuffer.free();
     }
@@ -127,12 +119,12 @@ class EphemeralFileData
         }
     }
 
-    void force()
+    synchronized void force()
     {
         forcedBuffer = fileAsBuffer.copy();
     }
 
-    void crash()
+    synchronized void crash()
     {
         fileAsBuffer = forcedBuffer.copy();
     }
@@ -189,12 +181,12 @@ class EphemeralFileData
         };
     }
 
-    long size()
+    synchronized long size()
     {
         return fileAsBuffer.getSize();
     }
 
-    void truncate( long newSize )
+    synchronized void truncate( long newSize )
     {
         this.fileAsBuffer.truncate( newSize );
     }
@@ -229,7 +221,7 @@ class EphemeralFileData
         return "EphemeralFileData[size: " + fileAsBuffer.getSize() + "]";
     }
 
-    long getLastModified()
+    synchronized long getLastModified()
     {
         return lastModified;
     }

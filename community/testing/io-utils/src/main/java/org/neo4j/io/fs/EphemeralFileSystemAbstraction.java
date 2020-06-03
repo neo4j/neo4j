@@ -39,8 +39,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,8 +48,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.CombiningIterator;
@@ -531,33 +527,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     private void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to ) throws IOException
     {
         copyRecursivelyFromOtherFs( from, fromFs, to, newCopyBuffer() );
-    }
-
-    public long checksum()
-    {
-        Checksum checksum = new CRC32();
-        byte[] data = new byte[(int) ByteUnit.kibiBytes( 1 )];
-
-        // Go through file name list in sorted order, so that checksum is consistent
-        List<File> names = new ArrayList<>( files.size() );
-        names.addAll( files.keySet() );
-
-        names.sort( Comparator.comparing( File::getAbsolutePath ) );
-
-        for ( File name : names )
-        {
-            EphemeralFileData file = files.get( name );
-            for ( ByteBuffer buf : file.buffers() )
-            {
-                while ( buf.position() < buf.limit() )
-                {
-                    int len = Math.min( data.length, buf.limit() - buf.position() );
-                    buf.get( data );
-                    checksum.update( data, 0, len );
-                }
-            }
-        }
-        return checksum.getValue();
     }
 
     private static ByteBuffer newCopyBuffer()
