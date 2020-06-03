@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -288,29 +289,28 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   /**
-   * Finds the Seq of IndexCompatiblePredicate that can be solved by the indexDescriptor.
-   * Either each property of the index solves some predicate, in which case this returns Some(...).
-   * Or, if at least one property does not solve a predicate, this returns None.
-   *
-   * Together with the matching IndexCompatiblePredicates it also returns the GetValueFromIndexBehavior for each property. The tuple
-   * contains two lists of the same size, which is indexDescriptor.properties.length
+   * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
    */
   private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrder: InterestingOrder)
-                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder)] = {
-    val maybeMatchingPredicates = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexCompatiblePredicate])) {
-      case (None, _) => None
-      case (Some(acc), propertyKeyId) =>
-        predicates.find(p => semanticTable.id(p.propertyKeyName).contains(propertyKeyId)) match {
-          case Some(found) if !found.isExists ||
-            found.isExists && indexDescriptor.isComposite => Some(acc :+ found)
-          case _ => None
-        }
-    }
+                                (implicit semanticTable: SemanticTable): Seq[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder)] = {
 
-    maybeMatchingPredicates
-      .map { matchingPredicates =>
-        matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrder)
-      }
+    // Group predicates by which property they include
+    val predicatesByProperty = predicates
+      .groupBy(icp => semanticTable.id(icp.propertyKeyName))
+      // Sort out predicates that are not found in semantic table
+      .collect { case (Some(x), v) => (x, v) }
+
+    // For each indexed property, look up the relevant predicates
+    val predicatesByIndexedProperty = indexDescriptor.properties
+      .map(indexedProp => predicatesByProperty.getOrElse(indexedProp, Set.empty))
+
+    // All combinations of predicates where each inner Seq covers the indexed properties in the correct order.
+    // E.g. for an index on foo, bar and the predicates predFoo1, predFoo2, predBar1, this would return
+    // Seq(Seq(predFoo1, predBar1), Seq(predFoo2, predBar1)).
+    val matchingPredicateCombinations = SeqCombiner.combine(predicatesByIndexedProperty)
+
+    matchingPredicateCombinations
+      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrder))
   }
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],

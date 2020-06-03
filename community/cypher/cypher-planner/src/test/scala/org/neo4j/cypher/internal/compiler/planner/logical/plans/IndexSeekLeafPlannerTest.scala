@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeUniqueIndex
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.ir.Predicate
@@ -37,12 +38,19 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.RangeLessThan
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -105,6 +113,150 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), SingleQueryExpression(`lit42`), _, _)) => ()
       }
+    }
+  }
+
+  test("index seeks when there is an index on the property and there are multiple predicates") {
+    val prop1: Property = prop("n", "prop")
+    val prop1Predicate1 = in(prop1, listOf(lit42))
+    val prop1Predicate2 = AndedPropertyInequalities(varFor("n"), prop1, NonEmptyList(lessThan(prop1, lit6)))
+    val prop1Predicate1Expr = SingleQueryExpression(lit42)
+    val prop1Predicate2Expr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos))
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+      qg = queryGraph(prop1Predicate1, prop1Predicate2, hasLabel("Awesome"))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val prop1Token = PropertyKeyToken("prop", PropertyKeyId(0))
+
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue)), prop1Predicate1Expr, Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, DoNotGetValue)), prop1Predicate2Expr, Set(), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
+    }
+  }
+
+  test("index seeks when there is a composite index and there are multiple predicates") {
+
+    val lit43: Expression = literalInt(43)
+    val lit44: Expression = literalInt(44)
+    val prop1: Property = prop("n", "prop")
+    val prop2: Property = prop("n", "prop2")
+    val prop1Predicate1 = in(prop1, listOf(lit42))
+    val prop1Predicate2 = in(prop1, listOf(lit43))
+    val prop1Predicate3 = in(prop1, listOf(lit44))
+    val prop2Predicate1 = in(prop2, listOf(lit6))
+    val prop2Predicate2 = AndedPropertyInequalities(varFor("n"), prop2, NonEmptyList(lessThan(prop2, lit6)))
+    val prop1Predicate1Expr = SingleQueryExpression(lit42)
+    val prop1Predicate2Expr = SingleQueryExpression(lit43)
+    val prop1Predicate3Expr = SingleQueryExpression(lit44)
+    val prop2Predicate1Expr = SingleQueryExpression(lit6)
+    val prop2Predicate2Expr = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos))
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+
+      qg = queryGraph(prop1Predicate1, prop1Predicate2, prop2Predicate1, prop2Predicate2, prop1Predicate3, hasLabel("Awesome"))
+
+      indexOn("Awesome", "prop", "prop2")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val prop1Token = PropertyKeyToken("prop", PropertyKeyId(0))
+      val prop2Token = PropertyKeyToken("prop2", PropertyKeyId(1))
+
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, CanGetValue)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, DoNotGetValue)), CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, CanGetValue)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, DoNotGetValue)), CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, CanGetValue)),   CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, DoNotGetValue)), CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
+    }
+  }
+
+  test("index seeks when there are multiple composite indexes and there are multiple predicates") {
+
+    val lit43: Expression = literalInt(43)
+    val prop1: Property = prop("n", "prop")
+    val prop2: Property = prop("n", "prop2")
+    val prop1Predicate1 = in(prop1, listOf(lit42))
+    val prop1Predicate2 = in(prop1, listOf(lit43))
+    val prop2Predicate1 = in(prop2, listOf(lit6))
+    val prop1Predicate1Expr = SingleQueryExpression(lit42)
+    val prop1Predicate2Expr = SingleQueryExpression(lit43)
+    val prop2Predicate1Expr = SingleQueryExpression(lit6)
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+
+      qg = queryGraph(prop2Predicate1, prop1Predicate1, prop1Predicate2, hasLabel("Awesome"))
+
+      indexOn("Awesome", "prop", "prop2")
+      indexOn("Awesome", "prop2", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val prop1Token = PropertyKeyToken("prop", PropertyKeyId(0))
+      val prop2Token = PropertyKeyToken("prop2", PropertyKeyId(1))
+
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, CanGetValue)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue), IndexedProperty(prop2Token, CanGetValue)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue), IndexedProperty(prop1Token, CanGetValue)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate1Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue), IndexedProperty(prop1Token, CanGetValue)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate2Expr)), Set(), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
+    }
+  }
+
+  test("index seeks when there is a composite index and there are multiple predicates that do not cover all properties") {
+
+    val lit43: Expression = literalInt(43)
+    val prop1: Property = prop("n", "prop")
+    val prop2: Property = prop("n", "prop2")
+    val prop1Predicate1 = in(prop1, listOf(lit42))
+    val prop1Predicate2 = in(prop1, listOf(lit43))
+    val prop2Predicate1 = in(prop2, listOf(lit6))
+    val prop2Predicate2 = AndedPropertyInequalities(varFor("n"), prop2, NonEmptyList(lessThan(prop2, lit6)))
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+
+      qg = queryGraph(prop1Predicate1, prop1Predicate2, prop2Predicate1, prop2Predicate2, hasLabel("Awesome"))
+
+      indexOn("Awesome", "prop", "prop2", "prop3")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val expected = Set()
+
+      resultPlans shouldEqual expected
     }
   }
 

@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -168,7 +169,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan property equality index seek instead of index seek by prefix") {
     (new given {
       indexOn("Person", "name")
-      cost = nodeIndexScanCost
+      cardinality = mapCardinality(promoteOnlyPlansSolving(Set("a"), Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1")))))
+
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a")._2 should equal(
       Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix"))),
         IndexSeek("a:Person(name = 'prefix1')", GetValue)
@@ -178,7 +180,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan property equality index seek using IN instead of index seek by prefix") {
     (new given {
       indexOn("Person", "name")
-      cost = nodeIndexScanCost
+      cardinality = mapCardinality(promoteOnlyPlansSolving(Set("a"), Set(hasLabels("a", "Person"), in(prop("a", "name"), listOfString("prefix1", "prefix2")))))
+
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a")._2 should equal(
       Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix%"))),
         NodeIndexSeek(
@@ -224,18 +227,17 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should not plan apply that will hide a cartesian product") {
+  test("should plan apply over cartesian product for equality predicate") {
     val plan = (new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome), (m:Awesome) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop1 = m.prop2 RETURN n")._2
 
     plan should beLike {
-      case ValueHashJoin(
+      case Selection(_, Apply(
       NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      Equals(_, _)
-      ) => ()
+      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _)
+      )) => ()
     }
   }
 
@@ -329,7 +331,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       val rowCost = 1.0
       val allNodesCardinality = 1000.0
       rowCost * planCardinality / allNodesCardinality
-    case (Selection(_, plan), input, c) => nodeIndexScanCost((plan, input, c))
+    case (Selection(_, plan), input, c) => nodeIndexScanCost((plan, input, c)) + 1.0
     case _ => Double.MaxValue
   }
 
@@ -339,6 +341,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case (Expand(plan, _, _, _, _, _, _, _), input, c) => nodeIndexSeekCost((plan, input, c))
     case (Selection(_, plan), input, c) => nodeIndexSeekCost((plan, input, c))
     case _ => 1000.0
+  }
+
+  private def promoteOnlyPlansSolving(patternNodes: Set[String], expressions: Set[Expression]): PartialFunction[PlannerQueryPart, Double] = {
+    case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == patternNodes =>
+      queryGraph.selections.predicates.map(_.expr) match {
+        case es if es == expressions => 10.0
+        case _                       => Double.MaxValue
+      }
+
+    case _ => Double.MaxValue
   }
 
   test("should plan index scan for exists(n.prop)") {
@@ -835,8 +847,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expandB = Expand(scanA, "a", INCOMING, Seq.empty, "b", "rB", ExpandAll)
     val selectionB = Selection(Seq(hasLabels("b", "B")), expandB)
     val expandC = Expand(selectionB, "a", INCOMING, Seq.empty, "c", "rC", ExpandAll)
-    val selectionC = Selection(Seq(not(equals(varFor("rB"), varFor("rC"))),
-      hasLabels("c", "C")), expandC)
+    val selectionC = Selection(Seq(hasLabels("c", "C"), not(equals(varFor("rB"), varFor("rC")))), expandC)
     val expected = selectionC
 
     plan should equal(expected)
