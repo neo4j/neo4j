@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -79,22 +80,22 @@ object expressionVariableAllocation {
       case x: ScopeExpression =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, x.introducedVariables)
-          (innerVars, Some(_ => outerVars))
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: VarExpand =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
-          (innerVars, Some(_ => outerVars))
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: PruningVarExpand =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
-          (innerVars, Some(_ => outerVars))
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: NestedPlanExpression =>
         outerVars => {
           availableExpressionVars.set(x.plan.id, outerVars)
-          (outerVars, Some(_ => outerVars))
+          TraverseChildrenNewAccForSiblings(outerVars, _ => outerVars)
         }
     }
 

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -164,31 +165,31 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
         val newRenamings = plan.projectExpressions.collect {
           case (key, v: Variable) if key != v.name => (key, v.name)
         }
-        (acc.addPreviousNames(newRenamings), Some(identity))
+        TraverseChildren(acc.addPreviousNames(newRenamings))
 
       // Find properties
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        (acc.addNodeProperty(prop), Some(identity))
+        TraverseChildren(acc.addNodeProperty(prop))
       case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        (acc.addRelProperty(prop), Some(identity))
+        TraverseChildren(acc.addRelProperty(prop))
 
       // Find index plans that can provide cached properties
       case _: MultiNodeIndexSeek => acc =>
-        (acc, Some(identity))
+        TraverseChildren(acc)
 
       case indexPlan: IndexLeafPlan => acc =>
         val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
           acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
         }
-        (newAcc, Some(identity))
+        TraverseChildren(newAcc)
 
       case expand: Expand if readPropertiesFromCursor => acc =>
           val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
-          (newAcc, Some(identity))
+          TraverseChildren(newAcc)
 
       case expand: OptionalExpand if readPropertiesFromCursor => acc =>
         val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
-        (newAcc, Some(identity))
+        TraverseChildren(newAcc)
     }
 
     var currentTypes = from.semanticTable().types

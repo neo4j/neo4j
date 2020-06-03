@@ -48,6 +48,29 @@ object Foldable {
     }
   }
 
+  /**
+   * Define the folding behavior on a node during a tree fold.
+   */
+  sealed trait FoldingBehavior[R]
+
+  /**
+   * Do not traverse into children. Use the given accumulator to continue into the siblings.
+   */
+  case class SkipChildren[R](acc: R) extends FoldingBehavior[R]
+
+  /**
+   * Traverse into children. Use the given accumulator to continue into the children.
+   */
+  case class TraverseChildren[R](acc: R) extends FoldingBehavior[R]
+
+  /**
+   * Traverse into children. Use `accumulatorForChildren` to continue into the children.
+   * After having traversed the children, use `forSiblings` to transform the
+   * output accumulator for this "inner treefold" to create the accumulator
+   * for traversing the siblings of the node.
+   */
+  case class TraverseChildrenNewAccForSiblings[R](accumulatorForChildren: R, forSiblings: R => R) extends FoldingBehavior[R]
+
   implicit class FoldableAny(val that: Any) extends AnyVal {
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
       foldAcc(mutable.ArrayStack(that), init, f.lift)
@@ -62,38 +85,45 @@ object Foldable {
      * function is defined on the node than it will visited in different ways, depending on the output of the function
      * returned, as explained below.
      *
-     * This function will be called with the current accumulator and it is expected to produce a pair compound of the
-     * next accumulator and an optional function that given an accumulator will produce a new accumulator.
-     *
-     * If the optional function is undefined then the children of the current node are skipped and not traversed. Then
-     * the new accumulator is used as initial value for traversing the siblings of the node.
-     *
-     * If the optional function is defined then the children are traversed and the new accumulator is used as initial
-     * accumulator for this "inner treefold". After this computation the function is used for creating the accumulator
-     * for traversing the siblings of the node by applying it to the output accumulator from the traversal of the
-     * children.
+     * This function will be called with the current accumulator and it is expected to produce a FoldingBehavior.
+     * That will contain the next accumulator and specifies if and how to traverse children of the current node.
      *
      * @param init the initial value of the accumulator
      * @param f    partial function that given a node in the tree might return a function that takes the current
-     *             accumulator, and returns a pair compound by the new accumulator for continuing the fold and an
-     *             optional function that takes an accumulator and returns an accumulator
+     *             accumulator, and returns a FoldingBehavior that specifies if and how to traverse children of the current node.
      * @tparam R the type of the accumulator/result
      * @return the accumulated result
      */
-    def treeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
+    def treeFold[R](init: R)(f: PartialFunction[Any, R => FoldingBehavior[R]]): R = {
       treeFoldAcc(
         mutable.ArrayStack(that),
         init,
-        f.lift,
+        f.andThen[R => (R, Option[R => R])](innerF => acc => {
+          innerF(acc) match {
+            case SkipChildren(newAcc) => (newAcc, None)
+            case TraverseChildren(newAcc) => (newAcc, Some(identity))
+            case TraverseChildrenNewAccForSiblings(newAcc, mergeAccumulators) => (newAcc, Some(mergeAccumulators))
+          }
+        }).lift,
         new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
         reverse = false
       )
+    }
 
-    def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
+    /**
+     * Same as [[treeFold]], but traverses the nodes in reverse order.
+     */
+    def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => FoldingBehavior[R]]): R =
       treeFoldAcc(
         mutable.ArrayStack(that),
         init,
-        f.lift,
+        f.andThen[R => (R, Option[R => R])](innerF => acc => {
+          innerF(acc) match {
+            case SkipChildren(newAcc) => (newAcc, None)
+            case TraverseChildren(newAcc) => (newAcc, Some(identity))
+            case TraverseChildrenNewAccForSiblings(newAcc, mergeAccumulators) => (newAcc, Some(mergeAccumulators))
+          }
+        }).lift,
         new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
         reverse = true
       )

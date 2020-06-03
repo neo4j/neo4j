@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -81,8 +83,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
     def findPropertiesAndUpdateMap(map: Map[String, Set[Property]], expression: Expression) = {
       expression.treeFold(map) {
-        case prop@Property(key: Variable, _) => acc => (updateMap(acc, key.name, prop), None)
-        case _: Expression => acc => (acc, Some(identity))
+        case prop@Property(key: Variable, _) => acc => SkipChildren(updateMap(acc, key.name, prop))
+        case _: Expression => acc => TraverseChildren(acc)
       }
     }
 

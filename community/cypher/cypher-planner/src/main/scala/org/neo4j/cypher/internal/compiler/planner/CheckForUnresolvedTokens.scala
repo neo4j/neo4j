@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
@@ -52,13 +53,13 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
 
     val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
       case label@LabelName(name) if isEmptyLabel(name) => acc =>
-        (acc :+ MissingLabelNotification(label.position, name), Some(identity))
+        TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
 
       case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
-        (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
+        TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
       case Property(_, prop@PropertyKeyName(name)) if !specialPropertyKey(name.toLowerCase) && isEmptyPropertyName(name) => acc =>
-        (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
+        TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
     }
 
     notifications foreach context.notificationLogger.log

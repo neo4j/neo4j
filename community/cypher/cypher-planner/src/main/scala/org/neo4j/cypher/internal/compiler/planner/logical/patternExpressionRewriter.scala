@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -81,7 +82,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
                .updated(pattern, ERROR("Should never attempt to rewrite pattern in exists(PatternExpression) on it's own"))
           }
 
-          (newAcc, Some(identity))
+          TraverseChildren(newAcc)
 
       // replace pattern expressions with their plan and also register
       // the contained pattern expression for no further processing
@@ -103,7 +104,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             acc.updated(expr, rewrittenExpression)
           }
 
-          (newAcc, Some(identity))
+          TraverseChildren(newAcc)
 
       // replace pattern comprehension
       case expr@PatternComprehension(namedPath, _, _, projection) =>
@@ -121,11 +122,11 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             acc.updated(expr, rewrittenExpression)
           }
 
-          (newAcc, Some(identity))
+          TraverseChildren(newAcc)
 
       // Never ever replace pattern expressions in nested plan expressions in the original expression
       case NestedPlanCollectExpression(_, pattern, _) =>
-        acc => (acc.updated(pattern, pattern), Some(identity))
+        acc => TraverseChildren(acc.updated(pattern, pattern))
     }
   }
 

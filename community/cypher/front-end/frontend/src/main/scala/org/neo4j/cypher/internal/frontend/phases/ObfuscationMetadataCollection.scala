@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 
 object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseState] {
@@ -45,9 +46,9 @@ object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseS
   private def collectSensitiveLiteralOffsets(statement: Statement, extractedParamNames: Set[String], preParserOffset: Int): Vector[Int] =
     statement.treeFold(Vector.empty[Int]) {
       case literal: SensitiveString =>
-        acc => (acc :+ literal.position.offset, None)
+        acc => SkipChildren(acc :+ literal.position.offset)
       case parameter: SensitiveParameter if extractedParamNames.contains(parameter.name) =>
-        acc => (acc :+ parameter.position.offset, None)
+        acc => SkipChildren(acc :+ parameter.position.offset)
     }.distinct.sorted.map(_ + preParserOffset)
 
   private def collectSensitiveParameterNames(queryParams: Seq[Parameter], extractedParamNames: Set[String]): Set[String] =

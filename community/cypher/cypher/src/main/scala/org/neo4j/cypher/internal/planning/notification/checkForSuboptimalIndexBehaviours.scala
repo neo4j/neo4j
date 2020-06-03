@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 
 case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends NotificationChecker {
@@ -41,13 +42,13 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
           val notifications = getBehaviours(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(label.name, Seq(property.propertyKeyToken.name))
           }
-          (acc ++ notifications, None)
+          SkipChildren(acc ++ notifications)
       case NodeIndexEndsWithScan(_, label, property, _, _, _) =>
         acc =>
           val notifications = getBehaviours(label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(label.name, Seq(property.propertyKeyToken.name))
           }
-          (acc ++ notifications, None)
+          SkipChildren(acc ++ notifications)
     }
   }
 

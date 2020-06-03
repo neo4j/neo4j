@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {
 
@@ -31,30 +33,30 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
       // would change the result of the distinctification
       case withClause: ast.With if !withClause.distinct =>
         context =>
-          (context.enterQueryPart(aliasedReturnItems(withClause.returnItems.items)), Some(identity))
+          TraverseChildren(context.enterQueryPart(aliasedReturnItems(withClause.returnItems.items)))
 
       // When just passing a variable through a WITH, do not count the variable as used. This case shortcuts the
       // tree folding so the variables are not tracked.
       case ast.AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
-        context => (context, None)
+        context => SkipChildren(context)
 
       case variable: Variable =>
         context =>
-          (context.trackUsageOfVariable(variable), Some(identity))
+          TraverseChildren(context.trackUsageOfVariable(variable))
 
       // When a variable is used in ORDER BY, it should never be inlined
       case sortItem: ast.SortItem =>
         context =>
-          (context.spoilVariable(sortItem.expression.asInstanceOf[Variable]), Some(identity))
+          TraverseChildren(context.spoilVariable(sortItem.expression.asInstanceOf[Variable]))
 
       // Do not inline pattern variables, unless they are clean aliases of previous variables
       case NodePattern(Some(variable), _, _, _) =>
         context =>
-          (spoilVariableIfNotAliased(variable, context), Some(identity))
+          TraverseChildren(spoilVariableIfNotAliased(variable, context))
 
       case RelationshipPattern(Some(variable), _, _, _, _, _, _) =>
         context =>
-          (spoilVariableIfNotAliased(variable, context), Some(identity))
+          TraverseChildren(spoilVariableIfNotAliased(variable, context))
     }
   }
 

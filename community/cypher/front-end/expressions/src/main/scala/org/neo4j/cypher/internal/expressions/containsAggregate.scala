@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+
 object containsAggregate extends (Expression => Boolean) {
-  def apply(expr: Expression) = {
+  def apply(expr: Expression): Boolean = {
     expr.treeFold[Boolean](false) {
-      case IsAggregate(_) => acc => (true, None)
+      case IsAggregate(_) => _ => SkipChildren(true)
     }
   }
 }

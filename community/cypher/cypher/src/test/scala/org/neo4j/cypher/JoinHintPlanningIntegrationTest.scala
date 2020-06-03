@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
 
@@ -84,7 +85,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
 
   def joinSymbolsIn(plan: LogicalPlan) = {
     val flattenedPlan = plan.treeFold(Seq.empty[LogicalPlan]) {
-      case plan: LogicalPlan => acc => (acc :+ plan, Some(identity))
+      case plan: LogicalPlan => acc => TraverseChildren(acc :+ plan)
     }
 
     flattenedPlan.collect {

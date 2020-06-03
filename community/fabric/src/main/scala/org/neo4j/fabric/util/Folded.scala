@@ -20,6 +20,9 @@
 package org.neo4j.fabric.util
 
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 
 object Folded {
 
@@ -38,9 +41,9 @@ object Folded {
         case a: Any if instructions.isDefinedAt(a) =>
           (r: R) =>
             instructions(a) match {
-              case i: Stop[R]        => (merge(r, i.r), None)
-              case i: Descend[R]     => (merge(r, i.r), Some(identity))
-              case i: DescendWith[R] => (merge(r, i.r1), Some(rb => merge(rb, i.r2)))
+              case i: Stop[R]        => SkipChildren(merge(r, i.r))
+              case i: Descend[R]     => TraverseChildren(merge(r, i.r))
+              case i: DescendWith[R] => TraverseChildrenNewAccForSiblings(merge(r, i.r1), rb => merge(rb, i.r2))
             }
       }
   }

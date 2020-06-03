@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelNameGenerator
@@ -77,10 +79,10 @@ object PatternExpressionPatternElementNamer {
   private case object findPatternElements {
     def apply(astNode: ASTNode): Seq[PatternElement] = astNode.treeFold(Seq.empty[PatternElement]) {
       case patternElement: PatternElement =>
-        acc => (acc :+ patternElement, Some(identity))
+        acc => TraverseChildren(acc :+ patternElement)
 
       case _: PatternExpression =>
-        acc => (acc, None)
+        acc => SkipChildren(acc)
     }
   }
 

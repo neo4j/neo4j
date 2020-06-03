@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
 trait QueryHorizon {
@@ -36,7 +37,7 @@ trait QueryHorizon {
 
   def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
     case id: Variable =>
-      acc => (acc + id.name, Some(identity))
+      acc => TraverseChildren(acc + id.name)
   }
 
   def readOnly = true

@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -326,7 +327,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
-        case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)
+        case lp if tag.runtimeClass.isInstance(lp) => acc => SkipChildren(true)
       }
       MatchResult(
         matches = matches,

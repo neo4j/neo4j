@@ -72,6 +72,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedStartNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -514,22 +516,22 @@ case class Match(
     val propertiesInPredicates: Seq[String] = (where match {
       case Some(w) => w.treeFold(Seq.empty[String]) {
         case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
           if id == variable && predicate.function == Exists =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
+          acc => SkipChildren(acc :+ name)
         case expr: InequalityExpression =>
           acc =>
             val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
@@ -542,16 +544,16 @@ case class Match(
                   acc
               }
             }
-            (newAcc, None)
+            SkipChildren(newAcc)
         case _: Where | _: And | _: Ands | _: Set[_] | _: Or | _: Ors =>
-          acc => (acc, Some(identity))
+          acc => TraverseChildren(acc)
         case _ =>
-          acc => (acc, None)
+          acc => SkipChildren(acc)
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop)), _) if variable == id =>
-        acc => (acc ++ prop.map(_._1.name), None)
+        acc => SkipChildren(acc ++ prop.map(_._1.name))
     }
 
     propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
@@ -578,11 +580,11 @@ case class Match(
     labels = where match {
       case Some(innerWhere) => innerWhere.treeFold(labels) {
         case HasLabels(Variable(id), predicateLabels) if id == variable =>
-          acc => (acc ++ predicateLabels.map(_.name), None)
+          acc => SkipChildren(acc ++ predicateLabels.map(_.name))
         case _: Where | _: And | _: Ands | _: Set[_] =>
-          acc => (acc, Some(identity))
+          acc => TraverseChildren(acc)
         case _ =>
-          acc => (acc, None)
+          acc => SkipChildren(acc)
       }
       case None => labels
     }

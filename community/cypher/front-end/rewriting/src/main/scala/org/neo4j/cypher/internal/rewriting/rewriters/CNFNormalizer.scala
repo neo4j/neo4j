@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -66,8 +67,8 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
   }
 
   private def dnfCounts(value: Any) = value.treeFold(1) {
-    case Or(lhs, a: And) => acc => (acc + 1, Some(identity))
-    case Or(a: And, rhs) => acc => (acc + 1, Some(identity))
+    case Or(lhs, a: And) => acc => TraverseChildren(acc + 1)
+    case Or(a: And, rhs) => acc => TraverseChildren(acc + 1)
   }
 
   private val step = Rewriter.lift {

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
@@ -87,7 +88,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
   private def withSlottedParams(input: Expression, params: MapValue): (Expression, Array[AnyValue]) = {
     val mapping: ParameterMapping = input.treeFold(ParameterMapping.empty) {
-      case Parameter(name, _) => acc => (acc.updated(name), Some(identity))
+      case Parameter(name, _) => acc => TraverseChildren(acc.updated(name))
     }
 
     val rewritten = input.endoRewrite(bottomUp(Rewriter.lift {

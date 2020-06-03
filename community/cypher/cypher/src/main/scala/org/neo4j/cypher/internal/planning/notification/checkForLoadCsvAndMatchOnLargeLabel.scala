@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LabelId
 
@@ -45,11 +47,11 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
     val resultState = plan.reverseTreeFold[SearchState](NoneFound) {
       case _: LoadCSV => {
-        case LargeLabelFound => (LargeLabelWithLoadCsvFound, Some(identity))
-        case e => (e, None)
+        case LargeLabelFound => TraverseChildren(LargeLabelWithLoadCsvFound)
+        case e => SkipChildren(e)
       }
       case NodeByLabelScan(_, label, _, _) if cardinality(label.name) > threshold =>
-        acc => (LargeLabelFound, Some(identity))
+        _ => TraverseChildren(LargeLabelFound)
     }
 
     resultState match {

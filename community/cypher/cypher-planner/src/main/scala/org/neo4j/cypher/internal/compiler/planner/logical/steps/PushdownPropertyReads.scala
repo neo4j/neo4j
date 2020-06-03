@@ -52,6 +52,8 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -85,9 +87,9 @@ case object PushdownPropertyReads {
       val newPropertyExpressions =
         plan.treeFold(List.empty[Property]) {
           case lp: LogicalPlan if lp.id != plan.id =>
-            acc2 => (acc2, None) // do not traverse further
+            acc2 => SkipChildren(acc2) // do not traverse further
           case p @ Property(v: LogicalVariable, _) if isNodeOrRel(v) =>
-            acc2 => (p :: acc2, Some(acc3 => acc3) )
+            acc2 => TraverseChildren(p :: acc2)
         }
 
       val newPropertyReadOptima =

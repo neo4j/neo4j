@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -68,8 +70,8 @@ case object projectNamedPaths extends Rewriter {
         case ident: Variable =>
           acc =>
             acc.paths.get(ident) match {
-              case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
-              case None => (acc, Some(identity))
+              case Some(pathExpr) => TraverseChildren(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
+              case None => TraverseChildren(acc)
             }
       }
   }
@@ -100,13 +102,13 @@ case object projectNamedPaths extends Rewriter {
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
       acc =>
-        (acc.withProtectedVariable(Ref(aliased.variable)), Some(identity))
+        TraverseChildren(acc.withProtectedVariable(Ref(aliased.variable)))
 
     case ident: Variable =>
       acc =>
         acc.paths.get(ident) match {
-          case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
-          case None => (acc, Some(identity))
+          case Some(pathExpr) => TraverseChildren(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
+          case None => TraverseChildren(acc)
         }
 
     // Optimization 1
@@ -127,15 +129,15 @@ case object projectNamedPaths extends Rewriter {
         val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) {
           (acc, expr) => acc.withVariableRewritesForExpression(expr)
         }
-        (projectedAcc, Some(_.withoutNamedPaths))
+        TraverseChildrenNewAccForSiblings(projectedAcc, _.withoutNamedPaths)
 
-    case NamedPatternPart(_, part: ShortestPaths) =>
-      acc => (acc, Some(identity))
+    case NamedPatternPart(_, _: ShortestPaths) =>
+      acc => TraverseChildren(acc)
 
     case part @ NamedPatternPart(variable, patternPart) =>
       acc =>
         val pathExpr = expressions.PathExpression(patternPartPathExpression(patternPart))(part.position)
-        (acc.withNamedPath(variable -> pathExpr).withProtectedVariable(Ref(variable)), Some(identity))
+        TraverseChildren(acc.withNamedPath(variable -> pathExpr).withProtectedVariable(Ref(variable)))
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {

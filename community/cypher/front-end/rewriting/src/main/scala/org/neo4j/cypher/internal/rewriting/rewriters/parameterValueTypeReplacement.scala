@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -43,9 +44,9 @@ object parameterValueTypeReplacement {
     val replaceableParameters = term.treeFold(IdentityMap.empty: ParameterValueTypeReplacements){
       case p@ExplicitParameter(_, CTAny) =>
         acc =>
-          if (acc.contains(p)) (acc, None) else {
+          if (acc.contains(p)) SkipChildren(acc) else {
             val cypherType = paramTypes.getOrElse(p.name, CTAny)
-            (acc + (p -> ParameterValueTypeReplacement(ExplicitParameter(p.name, cypherType)(p.position), p.name)), None)
+            SkipChildren(acc + (p -> ParameterValueTypeReplacement(ExplicitParameter(p.name, cypherType)(p.position), p.name)))
           }
     }
     ExtractParameterRewriter(replaceableParameters)

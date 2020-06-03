@@ -40,6 +40,9 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -62,7 +65,7 @@ object literalReplacement {
     })
   }
 
-  private val literalMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
+  private val literalMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case _: Match |
          _: Create |
          _: Merge |
@@ -71,41 +74,41 @@ object literalReplacement {
          _: With |
          _: Unwind |
          _: CallClause =>
-      acc => (acc, Some(identity))
+      acc => TraverseChildren(acc)
     case _: Clause |
          _: PeriodicCommitHint |
          _: Limit =>
-      acc => (acc, None)
+      acc => SkipChildren(acc)
     case n: NodePattern =>
-      acc => (n.properties.treeFold(acc)(literalMatcher), None)
+      acc => SkipChildren(n.properties.treeFold(acc)(literalMatcher))
     case r: RelationshipPattern =>
-      acc => (r.properties.treeFold(acc)(literalMatcher), None)
+      acc => SkipChildren(r.properties.treeFold(acc)(literalMatcher))
     case ContainerIndex(_, _: StringLiteral) =>
-      acc => (acc, None)
+      acc => SkipChildren(acc)
     case l: StringLiteral =>
       acc =>
-        if (acc.contains(l)) (acc, None) else {
+        if (acc.contains(l)) SkipChildren(acc) else {
           val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position)
-          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+          SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: IntegerLiteral =>
       acc =>
-        if (acc.contains(l)) (acc, None) else {
+        if (acc.contains(l)) SkipChildren(acc) else {
           val parameter = AutoExtractedParameter(s"  AUTOINT${acc.size}", CTInteger, l)(l.position)
-          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+          SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: DoubleLiteral =>
       acc =>
-        if (acc.contains(l)) (acc, None) else {
+        if (acc.contains(l)) SkipChildren(acc) else {
           val parameter = AutoExtractedParameter(s"  AUTODOUBLE${acc.size}", CTFloat, l)(l.position)
-          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+          SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
       acc =>
-        if (acc.contains(l)) (acc, None) else {
+        if (acc.contains(l)) SkipChildren(acc) else {
           val literals = l.expressions.map(_.asInstanceOf[Literal])
           val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny), ListOfLiteralWriter(literals))(l.position)
-          (acc + (l -> LiteralReplacement(parameter, literals.map(_.value))), None)
+          SkipChildren(acc + (l -> LiteralReplacement(parameter, literals.map(_.value))))
         }
   }
 

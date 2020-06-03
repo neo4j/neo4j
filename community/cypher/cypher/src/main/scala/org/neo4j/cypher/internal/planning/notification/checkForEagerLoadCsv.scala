@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 
 object checkForEagerLoadCsv extends NotificationChecker {
@@ -37,12 +39,12 @@ object checkForEagerLoadCsv extends NotificationChecker {
     // Walk over the pipe tree and check if an Eager is to be executed after a LoadCsv
     val resultState = plan.treeFold[SearchState](NoEagerFound) {
       case _: LoadCSV => {
-        case EagerFound => (EagerWithLoadCsvFound, None)
-        case e => (e, None)
+        case EagerFound => SkipChildren(EagerWithLoadCsvFound)
+        case e => SkipChildren(e)
       }
       case _: Eager =>
-        acc =>
-          (EagerFound, Some(identity))
+        _ =>
+          TraverseChildren(EagerFound)
     }
 
     resultState match {

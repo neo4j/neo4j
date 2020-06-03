@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression.TreeAcc
 import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -70,13 +73,13 @@ abstract class Expression extends ASTNode {
 
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
-      acc => (acc :+ e, None)
+      acc => SkipChildren(acc :+ e)
   }
 
   // Collects all sub-expressions recursively
   def subExpressions: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
-      acc => (acc :+ e, Some(identity))
+      acc => TraverseChildren(acc :+ e)
   }
 
   // All variables referenced from this expression or any of its children
@@ -86,10 +89,10 @@ abstract class Expression extends ASTNode {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
-          (newAcc, Some(x => x.popScope))
+          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
       case id: LogicalVariable => acc => {
         val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
-        (newAcc, Some(identity))
+        TraverseChildren(newAcc)
       }
     }.data
 
@@ -100,10 +103,10 @@ abstract class Expression extends ASTNode {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
-          (newAcc, Some(x => x.popScope))
+          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
       case occurrence: Variable if occurrence.name == variable.name => acc => {
         val newAcc = if (acc.inScope(occurrence)) acc else acc.mapData(_ + Ref(occurrence))
-        (newAcc, Some(identity))
+        TraverseChildren(newAcc)
       }
     }.data
 
@@ -124,12 +127,12 @@ abstract class Expression extends ASTNode {
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
             .mapData(pairs => pairs :+ (scope -> acc.variablesInScope))
-          (newAcc, Some(x => x.popScope))
+          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
 
       case expr: Expression =>
         acc =>
           val newAcc = acc.mapData(pairs => pairs :+ (expr -> acc.variablesInScope))
-          (newAcc, Some(identity))
+          TraverseChildren(newAcc)
     }.data
 
   /**

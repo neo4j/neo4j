@@ -23,20 +23,22 @@ import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.ExtractP
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.LiteralReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.LiteralReplacements
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 object sensitiveLiteralReplacement {
 
-  private val sensitiveliteralMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
+  private val sensitiveliteralMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case l: SensitiveStringLiteral =>
       acc =>
         if (acc.contains(l)) {
-          (acc, None)
+          SkipChildren(acc)
         } else {
           val parameter = new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position) with SensitiveAutoParameter
-          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+          SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
   }
 

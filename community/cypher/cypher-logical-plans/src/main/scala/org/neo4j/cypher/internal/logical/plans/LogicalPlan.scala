@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Strictness
 import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -104,7 +105,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
-      if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
+      if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => TraverseChildren(acc :+ plan)
   }
 
   def leftmostLeaf: LogicalPlan = lhs.map(_.leftmostLeaf).getOrElse(this)

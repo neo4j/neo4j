@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 
@@ -75,7 +76,7 @@ object StatementConverters {
   private def findBlacklistedNodes(node: AnyRef): Seq[ASTNode] = {
     node.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
-        acc => (acc :+ node, Some(identity))
+        acc => TraverseChildren(acc :+ node)
     }
   }
 

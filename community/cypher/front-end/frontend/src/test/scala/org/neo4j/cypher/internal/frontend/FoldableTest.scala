@@ -17,8 +17,12 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.frontend.FoldableTest.Add
+import org.neo4j.cypher.internal.frontend.FoldableTest.Sum
 import org.neo4j.cypher.internal.frontend.FoldableTest.Val
 import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 object FoldableTest {
@@ -54,21 +58,64 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => acc => (acc + x, Some(identity))
+      case Val(x) => acc => TraverseChildren(acc + x)
     }
 
-    assert(result === 200)
+    result should be(50 + 55 + 43 + 52)
   }
 
   test("should be able to stop-recursion in tree fold") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => acc => (acc + x, Some(identity))
-      case Add(Val(43), _) => acc => (acc + 20, None)
+      case Val(x) => acc => TraverseChildren(acc + x)
+      case Add(Val(43), _) => acc => SkipChildren(acc + 20)
     }
 
-    assert(result === 125)
+    result should be(50 + 55 + 20)
+  }
+
+  test("should be able merge accumulators in tree fold") {
+    val ast = Sum(Seq(Val(55), Add(Val(43), Val(52)), Val(10)))
+
+    val result = ast.treeFold(50) {
+      case Val(x) => acc => TraverseChildren(acc + x)
+      case Add(_, _) => acc => TraverseChildrenNewAccForSiblings(acc, acc => acc * 2)
+    }
+
+    result should be((50 + 55 + 43 + 52) * 2 + 10)
+  }
+
+  test("should reverse tree fold over all objects") {
+    val ast = Add(Val(55), Add(Val(43), Val(52)))
+
+    val result = ast.reverseTreeFold("x") {
+      case Val(x) => acc => TraverseChildren(acc + "|" + x)
+    }
+
+    result should be("x|52|43|55")
+  }
+
+  test("should be able to stop-recursion in reverse tree fold") {
+    val ast = Add(Val(55), Add(Val(43), Val(52)))
+
+    val result = ast.reverseTreeFold("x") {
+      case Val(x) => acc => TraverseChildren(acc + "|" + x)
+      case Add(Val(43), _) => acc => SkipChildren(acc + "<>")
+    }
+
+    result should be("x<>|55")
+  }
+
+  test("should be able merge accumulators in reverse tree fold") {
+    val ast = Sum(Seq(Val(55), Add(Val(43), Val(52)), Val(10)))
+
+    val result = ast.reverseTreeFold("x") {
+      case Val(x) => acc => TraverseChildren(acc + "|" + x)
+      case Add(_, _) => acc => TraverseChildrenNewAccForSiblings(acc + ">", acc => acc + "<")
+    }
+
+    result should be("x|10>|52|43<|55")
   }
 
   test("should allow using exist to find patterns deeply nested") {

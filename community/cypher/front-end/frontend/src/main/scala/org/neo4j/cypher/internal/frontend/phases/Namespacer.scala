@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -75,14 +76,14 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) =>
         val renaming = createVariableRenaming(variableDefinitions, i)
-        acc => (acc + renaming, Some(identity))
+        acc => TraverseChildren(acc + renaming)
       case e: ExistsSubClause =>
         val renamings = e.outerScope
           .filter(v => ambiguousNames(v.name))
           .foldLeft(Set[(Ref[Variable], Variable)]()) { (innerAcc, v) =>
             innerAcc + createVariableRenaming(variableDefinitions, v)
           }
-        acc => (acc ++ renamings, Some(identity))
+        acc => TraverseChildren(acc ++ renamings)
     }
 
   private def createVariableRenaming(variableDefinitions: Map[SymbolUse, SymbolUse], v: Variable) = {

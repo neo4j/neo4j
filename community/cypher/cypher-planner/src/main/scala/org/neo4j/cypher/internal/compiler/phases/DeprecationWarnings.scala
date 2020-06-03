@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InternalException
 
@@ -45,7 +46,7 @@ object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState]
   private def findDeprecations(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _, _), _, _, _, _) =>
-        seq => (seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy), None)
+        seq => SkipChildren(seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy))
       case _:UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
@@ -65,9 +66,9 @@ object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
   private def findWarnings(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _), _, _, _, _) =>
-        seq => (seq + ProcedureWarningNotification(f.position, name.toString, warning), None)
+        seq => SkipChildren(seq + ProcedureWarningNotification(f.position, name.toString, warning))
       case ResolvedCall(ProcedureSignature(name, _, Some(output), None, _, _, _, _, _, _), _, results, _, _)
-        if output.exists(_.deprecated) => set => (set ++ usedDeprecatedFields(name.toString, results, output), None)
+        if output.exists(_.deprecated) => set => SkipChildren(set ++ usedDeprecatedFields(name.toString, results, output))
       case _:UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }

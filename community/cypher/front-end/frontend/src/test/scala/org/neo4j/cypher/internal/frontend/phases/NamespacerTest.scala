@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
@@ -183,7 +184,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
     val outerScope = statement.treeFold(Set.empty[Variable]) {
       case expr: ExistsSubClause =>
-        acc => (acc ++ expr.outerScope, Some(identity))
+        acc => TraverseChildren(acc ++ expr.outerScope)
     }
 
     outerScope.map(_.name) should be(Set("  n@7"))

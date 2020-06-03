@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -82,15 +84,15 @@ case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = Same
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.treeFold(Seq.empty[UniqueRel]) {
       case _:ScopeExpression =>
-        acc => (acc, None)
+        acc => SkipChildren(acc)
 
       case _: ShortestPaths =>
-        acc => (acc, None)
+        acc => SkipChildren(acc)
 
       case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
         acc => {
           val ident = optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
-          (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))
+          TraverseChildren(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))
         }
     }
 

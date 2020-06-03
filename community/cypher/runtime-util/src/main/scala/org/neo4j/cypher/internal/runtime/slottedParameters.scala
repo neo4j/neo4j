@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -38,8 +39,8 @@ case object slottedParameters {
     //procedure argument by the same name? This will not happen since implicit parameters is only supported
     //for stand-alone procedures, e.g `CALL my.proc` with `{input1: 'foo', input2: 1337}`
     val mapping: ParameterMapping = input.treeFold(ParameterMapping.empty) {
-      case Parameter(name, _) => acc => (acc.updated(name), Some(identity))
-      case ImplicitProcedureArgument(name, _, defaultValue) => acc => (acc.updated(name, ValueUtils.of(defaultValue)), Some(identity))
+      case Parameter(name, _) => acc => TraverseChildren(acc.updated(name))
+      case ImplicitProcedureArgument(name, _, defaultValue) => acc => TraverseChildren(acc.updated(name, ValueUtils.of(defaultValue)))
     }
 
     val rewriter = bottomUp(Rewriter.lift {

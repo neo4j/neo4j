@@ -41,6 +41,8 @@ import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator.isNamed
@@ -116,12 +118,12 @@ object ExpressionConverters {
           acc => val newAcc = acc ++ labels.map { label =>
                 Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
             }
-            (newAcc, None)
+            SkipChildren(newAcc)
         // and
         case _: Ands =>
-          acc => (acc, Some(identity))
+          acc => TraverseChildren(acc)
         case p: Expression =>
-          acc => (acc + Predicate(p.idNames -- outerScope, p), None)
+          acc => SkipChildren(acc + Predicate(p.idNames -- outerScope, p))
       }.map(filterUnnamed)
     }
 
@@ -151,7 +153,7 @@ object ExpressionConverters {
 
     private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
       val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
-        case p: PatternExpression => acc => (acc :+ p, None)
+        case p: PatternExpression => acc => SkipChildren(acc :+ p)
       }
 
       val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)

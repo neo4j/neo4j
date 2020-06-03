@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -117,7 +118,7 @@ case object mergeInPredicates extends Rewriter {
       case In(a, ListLiteral(exprs)) => map => {
         //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
         val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct
-        (map + (a -> values), None)
+        SkipChildren(map + (a -> values))
       }
     })
     //Take list of maps, [map1,map2,...] and merge the using the provided `merge` to
