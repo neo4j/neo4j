@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
@@ -661,6 +662,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def semiApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SemiApply(lhs, rhs)(_)))
+
+  def letAntiSemiApply(item: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetAntiSemiApply(lhs, rhs, item)(_)))
 
   def letSemiApply(item: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSemiApply(lhs, rhs, item)(_)))
