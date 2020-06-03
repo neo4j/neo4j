@@ -66,7 +66,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @DbmsExtension( configurationCallback = "configure" )
 @ExtendWith( RandomExtension.class )
-public class GenericIndexValidationIT
+public class BTreeIndexKeySizeValidationIT
 {
     private static final String[] PROP_KEYS = new String[]{
             "prop0",
