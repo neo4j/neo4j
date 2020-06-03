@@ -19,13 +19,11 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
@@ -47,25 +45,30 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @RunWith( Parameterized.class )
-public class GBPTreeFormatTest extends FormatCompatibilityVerifier
+public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 {
     private static final String STORE = "store";
     private static final int INITIAL_KEY_COUNT = 10_000;
-    private static final String CURRENT_FIXED_SIZE_FORMAT_ZIP = "current-format.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_ZIP = "current-dynamic-format.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_ZIP = "current-format_8k.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_ZIP = "current-dynamic-format_8k.zip";
 
     @Parameters
     public static List<Object[]> data()
     {
         return asList(
-                new Object[] {longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
-                new Object[] {longLayout().withFixedSize( false ).build(), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP} );
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP}
+        );
     }
 
-    @Parameter
-    public SimpleLongLayout layout;
-    @Parameter( 1 )
-    public String zipName;
+    private final TestLayout<KEY,VALUE> layout;
+    private final String zipName;
+
+    public GBPTreeFormatTest( TestLayout<KEY,VALUE> layout, String zipName )
+    {
+        this.layout = layout;
+        this.zipName = zipName;
+    }
 
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
@@ -102,10 +105,10 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
     {
         List<Long> initialKeys = initialKeys();
         PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
+        try ( GBPTree<KEY,VALUE> tree =
                       new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
                 for ( Long key : initialKeys )
                 {
@@ -124,7 +127,7 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
     protected void verifyFormat( File storeFile ) throws IOException, FormatViolationException
     {
         PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<MutableLong,MutableLong> ignored =
+        try ( GBPTree<KEY,VALUE> ignored =
                       new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
         }
@@ -138,18 +141,18 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
     public void verifyContent( File storeFile ) throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
+        try ( GBPTree<KEY,VALUE> tree =
                       new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             {
                 // WHEN reading from the tree
                 // THEN initial keys should be there
                 tree.consistencyCheck( NULL );
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ), NULL ) )
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ), NULL ) )
                 {
                     for ( Long expectedKey : initialKeys )
                     {
-                        assertHit( cursor, expectedKey );
+                        assertHit( cursor, layout, expectedKey );
                     }
                     assertFalse( cursor.next() );
                 }
@@ -158,12 +161,13 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN writing more to the tree
                 // THEN we should not see any format conflicts
-                try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+                try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
                 {
                     while ( keysToAdd.size() > 0 )
                     {
                         int next = random.nextInt( keysToAdd.size() );
-                        put( writer, keysToAdd.get( next ) );
+                        Long key = keysToAdd.get( next );
+                        put( writer, key );
                         keysToAdd.remove( next );
                     }
                 }
@@ -173,11 +177,11 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
                 // WHEN reading from the tree again
                 // THEN all keys including newly added should be there
                 tree.consistencyCheck( NULL );
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {
-                        assertHit( cursor, expectedKey );
+                        assertHit( cursor, layout, expectedKey );
                     }
                     assertFalse( cursor.next() );
                 }
@@ -186,13 +190,13 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
             {
                 // WHEN randomly removing half of tree content
                 // THEN we should not see any format conflicts
-                try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+                try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
                 {
                     int size = allKeys.size();
                     while ( allKeys.size() > size / 2 )
                     {
                         int next = random.nextInt( allKeys.size() );
-                        MutableLong key = layout.key( allKeys.get( next ) );
+                        KEY key = layout.key( allKeys.get( next ) );
                         writer.remove( key );
                         allKeys.remove( next );
                     }
@@ -203,11 +207,11 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
                 // WHEN reading from the tree after remove
                 // THEN we should see everything that is left in the tree
                 tree.consistencyCheck( NULL );
-                try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {
-                        assertHit( cursor, expectedKey );
+                        assertHit( cursor, layout, expectedKey );
                     }
                     assertFalse( cursor.next() );
                 }
@@ -217,7 +221,7 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
 
     private static long value( long key )
     {
-        return key * 2;
+        return (long) (key * 1.5);
     }
 
     private static List<Long> initialKeys()
@@ -240,17 +244,17 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
         return keysToAdd;
     }
 
-    private static void assertHit( Seeker<MutableLong,MutableLong> cursor, Long expectedKey ) throws IOException
+    private static <KEY,VALUE> void assertHit( Seeker<KEY,VALUE> cursor, TestLayout<KEY,VALUE> layout, Long expectedKey ) throws IOException
     {
         assertTrue( "Had no next when expecting key " + expectedKey, cursor.next() );
-        assertEquals( expectedKey.longValue(), cursor.key().longValue() );
-        assertEquals( value( expectedKey ), cursor.value().longValue() );
+        assertEquals( expectedKey.longValue(), layout.keySeed( cursor.key() ) );
+        assertEquals( value( expectedKey ), layout.valueSeed( cursor.value() ) );
     }
 
-    private void put( Writer<MutableLong,MutableLong> writer, long key )
+    private void put( Writer<KEY,VALUE> writer, long key )
     {
-        MutableLong insertKey = layout.key( key );
-        MutableLong insertValue = layout.value( value( key ) );
+        KEY insertKey = layout.key( key );
+        VALUE insertValue = layout.value( value( key ) );
         writer.put( insertKey, insertValue );
     }
 }
