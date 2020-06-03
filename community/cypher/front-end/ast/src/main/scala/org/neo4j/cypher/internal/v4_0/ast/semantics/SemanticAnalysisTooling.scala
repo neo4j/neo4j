@@ -213,7 +213,7 @@ trait SemanticAnalysisTooling {
       if(!s.features(feature))
         SemanticCheckResult(s,
           List(FeatureError(s"$msg is not available in this implementation of Cypher " +
-                              s"due to lack of support for $feature.", position)))
+                              s"due to lack of support for $feature.", feature, position)))
       else
         SemanticCheckResult.success(s)
   }
@@ -222,7 +222,7 @@ trait SemanticAnalysisTooling {
     s => {
       if(!s.features(SemanticFeature.Cypher10Support))
         SemanticCheckResult(s,
-          List(FeatureError(s"$msg is a Cypher 10 feature and is not available in this implementation of Cypher.", position)))
+          List(FeatureError(s"$msg is a Cypher 10 feature and is not available in this implementation of Cypher.", SemanticFeature.Cypher10Support, position)))
       else
         SemanticCheckResult.success(s)
     }

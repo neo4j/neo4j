@@ -46,8 +46,8 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val innerVariableNamer: InnerVariableNamer,
                      val params: MapValue) extends BaseContext {
 
-  override def errorHandler: Seq[SemanticErrorDef] => Unit =
-    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+  override val errorHandler: Seq[SemanticErrorDef] => Unit =
+    SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
 
 }
 
