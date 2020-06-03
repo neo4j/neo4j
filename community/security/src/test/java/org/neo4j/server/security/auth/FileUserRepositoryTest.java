@@ -104,21 +104,6 @@ class FileUserRepositoryTest
     }
 
     @Test
-    void shouldNotFindUserAfterDelete() throws Throwable
-    {
-        // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        users.create( user );
-
-        // When
-        users.delete( user );
-
-        // Then
-        assertThat( users.getUserByName( user.name() ) ).isNull();
-    }
-
-    @Test
     void shouldNotAllowComplexNames() throws Exception
     {
         // Given
@@ -173,35 +158,6 @@ class FileUserRepositoryTest
         // Then
         assertFalse( crashingFileSystem.fileExists( authFile ) );
         assertThat( crashingFileSystem.listFiles( authFile.getParentFile() ).length ).isEqualTo( 0 );
-    }
-
-    @Test
-    void shouldThrowIfUpdateChangesName() throws Throwable
-    {
-        // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        users.create( user );
-
-        // When
-        User updatedUser = new User.Builder( "john", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true )
-                .build();
-        assertThrows( IllegalArgumentException.class, () -> users.update( user, updatedUser ) );
-        assertThat( users.getUserByName( user.name() ) ).isEqualTo( user );
-    }
-
-    @Test
-    void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
-    {
-        // Given
-        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
-        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        User modifiedUser = user.augment().withCredentials( LegacyCredential.forPassword( "foo" ) ).build();
-
-        // When
-        User updatedUser = user.augment().withCredentials( LegacyCredential.forPassword( "bar" ) ).build();
-        assertThrows( ConcurrentModificationException.class, () -> users.update( modifiedUser, updatedUser ) );
     }
 
     @Test

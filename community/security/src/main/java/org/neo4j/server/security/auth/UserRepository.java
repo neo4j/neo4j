@@ -60,25 +60,6 @@ public interface UserRepository extends Lifecycle
      */
     void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException;
 
-    /**
-     * Update a user, given that the users token is unique.
-     * @param existingUser the existing user object, which must match the current state in this repository
-     * @param updatedUser the updated user object
-     * @throws ConcurrentModificationException if the existingUser does not match the current state in the repository
-     * @throws IOException if the underlying storage for users fails
-     * @throws InvalidArgumentsException if the existing and updated users have different names
-     */
-    void update( User existingUser, User updatedUser )
-            throws ConcurrentModificationException, IOException;
-
-    /**
-     * Deletes a user.
-     * @param user the user to delete
-     * @throws IOException if the underlying storage for users fails
-     * @return true if the user was found and deleted
-     */
-    boolean delete( User user ) throws IOException;
-
     int numberOfUsers();
 
     /**
@@ -97,16 +78,4 @@ public interface UserRepository extends Lifecycle
      * @throws IOException
      */
     ListSnapshot<User> getSnapshot() throws IOException;
-
-    /**
-     * Permanently deletes all data in this repository
-     * @throws IOException
-     */
-    void purge() throws IOException;
-
-    /**
-     * Mark this repository as migrated to prevent accidental use.
-     * @throws IOException
-     */
-    void markAsMigrated() throws IOException;
 }

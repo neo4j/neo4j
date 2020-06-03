@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static org.neo4j.internal.helpers.collection.MapUtil.trimToList;
 
@@ -108,73 +107,6 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void update( User existingUser, User updatedUser )
-            throws ConcurrentModificationException, IOException
-    {
-        // Assert input is ok
-        if ( !existingUser.name().equals( updatedUser.name() ) )
-        {
-            throw new IllegalArgumentException( "The attempt to update the role from '" + existingUser.name() +
-                    "' to '" + updatedUser.name() + "' failed. Changing a roles name is not allowed." );
-        }
-
-        synchronized ( this )
-        {
-            // Copy-on-write for the users list
-            List<User> newUsers = new ArrayList<>();
-            boolean foundUser = false;
-            for ( User other : users )
-            {
-                if ( other.equals( existingUser ) )
-                {
-                    foundUser = true;
-                    newUsers.add( updatedUser );
-                }
-                else
-                {
-                    newUsers.add( other );
-                }
-            }
-
-            if ( !foundUser )
-            {
-                throw new ConcurrentModificationException();
-            }
-
-            users = newUsers;
-            usersByName.put( updatedUser.name(), updatedUser );
-            persistUsers();
-        }
-    }
-
-    @Override
-    public synchronized boolean delete( User user ) throws IOException
-    {
-        boolean foundUser = false;
-        // Copy-on-write for the users list
-        List<User> newUsers = new ArrayList<>();
-        for ( User other : users )
-        {
-            if ( other.name().equals( user.name() ) )
-            {
-                foundUser = true;
-            }
-            else
-            {
-                newUsers.add( other );
-            }
-        }
-
-        if ( foundUser )
-        {
-            users = newUsers;
-            usersByName.remove( user.name() );
-            persistUsers();
-        }
-        return foundUser;
-    }
-
-    @Override
     public synchronized int numberOfUsers()
     {
         return users.size();
@@ -215,16 +147,4 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
      * @throws IOException
      */
     protected abstract ListSnapshot<User> readPersistedUsers() throws IOException;
-
-    @Override
-    public void purge() throws IOException
-    {
-        clear(); // Clear all cached data
-    }
-
-    @Override
-    public void markAsMigrated() throws IOException
-    {
-        clear(); // Clear all cached data
-    }
 }

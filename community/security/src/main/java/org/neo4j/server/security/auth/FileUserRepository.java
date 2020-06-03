@@ -21,7 +21,6 @@ package org.neo4j.server.security.auth;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,27 +110,5 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
         {
             return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( users ) );
         }
-    }
-
-    @Override
-    public void purge() throws IOException
-    {
-        super.purge(); // Clears all cached data
-
-        // Delete the file
-        if ( !fileSystem.deleteFile( authFile ) )
-        {
-            throw new IOException( "Failed to delete file '" + authFile.getAbsolutePath() + "'" );
-        }
-    }
-
-    @Override
-    public void markAsMigrated() throws IOException
-    {
-        super.markAsMigrated(); // Clears all cached data
-
-        // Rename the file
-        File destinationFile = FileRepository.getMigratedFile( authFile );
-        fileSystem.renameFile( authFile, destinationFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
     }
 }
