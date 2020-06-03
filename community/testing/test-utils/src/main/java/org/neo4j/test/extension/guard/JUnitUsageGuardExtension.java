@@ -32,7 +32,6 @@ import java.util.Set;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
-import static org.objectweb.asm.ClassReader.SKIP_CODE;
 import static org.objectweb.asm.ClassReader.SKIP_DEBUG;
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
@@ -76,7 +75,7 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
     {
         ClassReader classReader = new ClassReader( clazz.getName() );
         DependenciesCollector dependenciesCollector = new DependenciesCollector();
-        classReader.accept( dependenciesCollector, SKIP_DEBUG & SKIP_CODE & SKIP_FRAMES );
+        classReader.accept( dependenciesCollector, SKIP_DEBUG | SKIP_FRAMES );
         return dependenciesCollector.getJunitTestClasses();
     }
 }

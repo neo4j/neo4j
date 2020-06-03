@@ -79,10 +79,8 @@ class JUnitUsageGuardExtensionTest
                 event( finishedWithFailure( instanceOf( JUnitException.class ), message( message -> message.contains( expectedMessage ) ) ) ) );
     }
 
-    private static Events executeTest( Class clazz )
+    private static Events executeTest( Class<?> clazz )
     {
-        return EngineTestKit.engine( ENGINE_ID )
-                .selectors( selectClass( clazz ) ).execute()
-                .allEvents();
+        return EngineTestKit.engine( ENGINE_ID ).selectors( selectClass( clazz ) ).execute().allEvents();
     }
 }
