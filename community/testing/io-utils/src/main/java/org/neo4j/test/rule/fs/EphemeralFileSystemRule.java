@@ -58,9 +58,4 @@ public class EphemeralFileSystemRule extends FileSystemRule<EphemeralFileSystemA
     {
         return fs.snapshot();
     }
-
-    public long checksum()
-    {
-        return fs.checksum();
-    }
 }
