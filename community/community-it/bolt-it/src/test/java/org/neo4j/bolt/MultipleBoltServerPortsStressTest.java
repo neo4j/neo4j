@@ -20,7 +20,6 @@
 package org.neo4j.bolt;
 
 import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -91,12 +90,6 @@ class MultipleBoltServerPortsStressTest
         server.init( testInfo );
 
         util = new TransportTestUtil( newMessageEncoder() );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        server.shutdownDatabase();
     }
 
     @Test

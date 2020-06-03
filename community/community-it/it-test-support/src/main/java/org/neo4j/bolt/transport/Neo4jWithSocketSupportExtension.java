@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -30,7 +31,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;
 
-public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4jWithSocket>
+public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4jWithSocket> implements AfterEachCallback
 {
     private static final String FIELD_KEY = "neo4jWithSocket";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( "org", "neo4j", FIELD_KEY );
@@ -70,5 +71,11 @@ public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4
     protected ExtensionContext.Namespace getNameSpace()
     {
         return NAMESPACE;
+    }
+
+    @Override
+    public void afterEach( ExtensionContext context )
+    {
+        getStoredValue( context ).shutdownDatabase();
     }
 }

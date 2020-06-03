@@ -20,7 +20,8 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.Set;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
@@ -51,7 +53,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
@@ -69,9 +71,12 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class BoltV3TransportIT extends BoltV3TransportBase
 {
-    @Test
-    public void shouldNegotiateProtocolV3() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldNegotiateProtocolV3( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         connection.connect( address ).send( util.acceptedVersions( 3, 0, 0, 0 ) ).send(
                 util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
@@ -80,9 +85,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         msgSuccess( message -> assertThat( message ).containsKeys( "server", "connection_id" ) ) ) );
     }
 
-    @Test
-    public void shouldNegotiateProtocolV3WhenClientSupportsBothV1V2AndV3() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldNegotiateProtocolV3WhenClientSupportsBothV1V2AndV3( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) )
                 .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
@@ -90,9 +98,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
     }
 
-    @Test
-    public void shouldRunSimpleStatement() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldRunSimpleStatement( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -111,9 +122,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         .containsEntry( "type", "r" ) ) ) );
     }
 
-    @Test
-    public void shouldRespondWithMetadataToDiscardAll() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldRespondWithMetadataToDiscardAll( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -128,9 +142,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                         .containsKeys( "t_last", "bookmark" ).containsEntry( "type", "r" ) ) ) );
     }
 
-    @Test
-    public void shouldRunSimpleStatementInTx() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldRunSimpleStatementInTx( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -153,9 +170,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgSuccess( message -> assertThat( message ).containsKey("bookmark" ) ) ) );
     }
 
-    @Test
-    public void shouldAllowRollbackSimpleStatementInTx() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldAllowRollbackSimpleStatementInTx( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -178,9 +198,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgSuccess() ) );
     }
 
-    @Test
-    public void shouldBeAbleToRunQueryAfterReset() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldBeAbleToRunQueryAfterReset( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -205,9 +228,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgSuccess() ) );
     }
 
-    @Test
-    public void shouldRunProcedure() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldRunProcedure( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -235,9 +261,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         ) );
     }
 
-    @Test
-    public void shouldHandleDeletedNodes() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldHandleDeletedNodes( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -263,9 +292,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
-    @Test
-    public void shouldHandleDeletedRelationships() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldHandleDeletedRelationships( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -293,9 +325,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
-    @Test
-    public void shouldNotLeakStatsToNextStatement() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldNotLeakStatsToNextStatement( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -330,9 +365,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         return bytes;
     }
 
-    @Test
-    public void shouldFailNicelyOnNullKeysInMap() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailNicelyOnNullKeysInMap( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         //Given
         Map<String,Object> params = new HashMap<>();
         Map<String,Object> inner = new HashMap<>();
@@ -362,9 +400,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgSuccess() ) );
     }
 
-    @Test
-    public void shouldFailNicelyWhenDroppingUnknownIndex() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldFailNicelyWhenDroppingUnknownIndex( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
@@ -378,9 +419,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgIgnored() ) );
     }
 
-    @Test
-    public void shouldSetTxMetadata() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSetTxMetadata( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
         Map<String,Object> txMetadata = map( "who-is-your-boss", "Molly-mostly-white" );
@@ -410,9 +454,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         connection.send( util.chunk( ROLLBACK_MESSAGE ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForBeginWithInvalidBookmark() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForBeginWithInvalidBookmark( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String bookmarkString = "Not a good bookmark for BEGIN";
         Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
@@ -422,9 +469,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForBeginWithInvalidTransactionTimeout() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForBeginWithInvalidTransactionTimeout( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String txTimeout = "Tx timeout can't be a string for BEGIN";
         Map<String,Object> metadata = map( "tx_timeout", txTimeout );
@@ -434,9 +484,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForBeginWithInvalidTransactionMetadata() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForBeginWithInvalidTransactionMetadata( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String txMetadata = "Tx metadata can't be a string for BEGIN";
         Map<String,Object> metadata = map( "tx_metadata", txMetadata );
@@ -446,9 +499,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForRunWithInvalidBookmark() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForRunWithInvalidBookmark( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String bookmarkString = "Not a good bookmark for RUN";
         Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
@@ -458,9 +514,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForRunWithInvalidTransactionTimeout() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForRunWithInvalidTransactionTimeout( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String txTimeout = "Tx timeout can't be a string for RUN";
         Map<String,Object> metadata = map( "tx_timeout", txTimeout );
@@ -470,9 +529,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
 
-    @Test
-    public void shouldSendFailureMessageForRunWithInvalidTransactionMetadata() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendFailureMessageForRunWithInvalidTransactionMetadata( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV3();
         String txMetadata = "Tx metadata can't be a string for RUN";
         Map<String,Object> metadata = map( "tx_metadata", txMetadata );
@@ -482,9 +544,12 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
 
-    @Test
-    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         assumeFalse( FabricDatabaseManager.fabricByDefault() );
 
         negotiateBoltV3();

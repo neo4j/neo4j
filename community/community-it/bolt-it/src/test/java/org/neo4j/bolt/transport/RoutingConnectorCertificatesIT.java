@@ -22,7 +22,11 @@ package org.neo4j.bolt.transport;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +34,9 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
@@ -39,7 +45,10 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.ssl.PkiUtils;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +56,8 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
 public class RoutingConnectorCertificatesIT
 {
     private static File externalKeyFile;
@@ -56,27 +67,39 @@ public class RoutingConnectorCertificatesIT
     private static SelfSignedCertificateFactory certFactory;
     private static TransportTestUtil util;
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
+    @Inject
+    public Neo4jWithSocket server;
+
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws Exception
     {
-        SslPolicyConfig externalPolicy = SslPolicyConfig.forScope( BOLT );
-        settings.put( externalPolicy.enabled, true );
-        settings.put( externalPolicy.public_certificate, externalCertFile.toPath().toAbsolutePath() );
-        settings.put( externalPolicy.private_key, externalKeyFile.toPath().toAbsolutePath() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
+    }
 
-        SslPolicyConfig internalPolicy = SslPolicyConfig.forScope( CLUSTER );
-        settings.put( internalPolicy.enabled, true );
-        settings.put( internalPolicy.client_auth, ClientAuth.NONE );
-        settings.put( internalPolicy.public_certificate, internalCertFile.toPath().toAbsolutePath() );
-        settings.put( internalPolicy.private_key, internalKeyFile.toPath().toAbsolutePath() );
+    private static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    {
+        return settings ->
+        {
+            SslPolicyConfig externalPolicy = SslPolicyConfig.forScope( BOLT );
+            settings.put( externalPolicy.enabled, true );
+            settings.put( externalPolicy.public_certificate, externalCertFile.toPath().toAbsolutePath() );
+            settings.put( externalPolicy.private_key, externalKeyFile.toPath().toAbsolutePath() );
 
-        settings.put( BoltConnector.enabled, true );
-        settings.put( BoltConnector.encryption_level, OPTIONAL );
-        settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+            SslPolicyConfig internalPolicy = SslPolicyConfig.forScope( CLUSTER );
+            settings.put( internalPolicy.enabled, true );
+            settings.put( internalPolicy.client_auth, ClientAuth.NONE );
+            settings.put( internalPolicy.public_certificate, internalCertFile.toPath().toAbsolutePath() );
+            settings.put( internalPolicy.private_key, internalKeyFile.toPath().toAbsolutePath() );
 
-        settings.put( GraphDatabaseSettings.routing_enabled, true );
-        settings.put( GraphDatabaseSettings.routing_listen_address, new SocketAddress( "localhost", 0 ) );
-    } );
+            settings.put( BoltConnector.enabled, true );
+            settings.put( BoltConnector.encryption_level, OPTIONAL );
+            settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+
+            settings.put( GraphDatabaseSettings.routing_enabled, true );
+            settings.put( GraphDatabaseSettings.routing_listen_address, new SocketAddress( "localhost", 0 ) );
+        };
+    }
 
     @Test
     public void shouldUseConfiguredCertificate() throws Exception
@@ -116,7 +139,7 @@ public class RoutingConnectorCertificatesIT
         return (X509Certificate) certificates[0];
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
     {
         certFactory = new SelfSignedCertificateFactory();

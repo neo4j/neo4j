@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,12 +74,6 @@ public class CertificatesIT
         } );
 
         server.init( testInfo );
-    }
-
-    @AfterEach
-    public void cleanup()
-    {
-        server.shutdownDatabase();
     }
 
     @Test

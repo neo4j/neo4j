@@ -19,13 +19,16 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
@@ -34,9 +37,12 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,37 +51,41 @@ import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newMessageEncoder;
 
-@RunWith( Parameterized.class )
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
 public abstract class BoltV3TransportBase
 {
     protected static final String USER_AGENT = "TestClient/3.0";
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
-
-    @Parameterized.Parameter
-    public Class<? extends TransportConnection> connectionClass;
+    @Inject
+    public Neo4jWithSocket server;
 
     protected HostnamePort address;
     protected TransportConnection connection;
     protected TransportTestUtil util;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Class<? extends TransportConnection>> transports()
+    private static Stream<Arguments> argumentsProvider()
     {
-        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
+        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
+                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
     }
 
-    @Before
-    public void setUp() throws Exception
+    protected void init( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
-        address = server.lookupDefaultConnector();
         connection = connectionClass.getDeclaredConstructor().newInstance();
+    }
+
+    @BeforeEach
+    public void setUp( TestInfo testInfo ) throws IOException
+    {
+        server.setConfigure( withOptionalBoltEncryption() );
+        server.init( testInfo );
+        address = server.lookupDefaultConnector();
         util = new TransportTestUtil( newMessageEncoder() );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown() throws IOException
     {
         if ( connection != null )
         {

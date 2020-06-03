@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,12 +60,6 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
     {
         server.setConfigure( getSettingsFunction() );
         server.init( testInfo );
-    }
-
-    @AfterEach
-    public void cleanup()
-    {
-        server.shutdownDatabase();
     }
 
     @ParameterizedTest( name = "{displayName} {2}" )

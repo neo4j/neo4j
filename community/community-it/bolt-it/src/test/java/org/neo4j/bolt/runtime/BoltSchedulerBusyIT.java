@@ -101,7 +101,6 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         close( connection2 );
         close( connection3 );
         close( connection4 );
-        server.shutdownDatabase();
     }
 
     @ParameterizedTest( name = "{displayName} {2}" )

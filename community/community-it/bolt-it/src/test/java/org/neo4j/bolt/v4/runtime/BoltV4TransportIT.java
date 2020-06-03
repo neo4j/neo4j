@@ -20,14 +20,18 @@
 package org.neo4j.bolt.v4.runtime;
 
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
@@ -36,6 +40,8 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
@@ -49,12 +55,14 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
@@ -65,36 +73,40 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 
-@RunWith( Parameterized.class )
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
 public class BoltV4TransportIT
 {
     private static final String USER_AGENT = "TestClient/4.0";
 
-    @Rule
-    public final Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
+    @Inject
+    public Neo4jWithSocket server;
 
     private HostnamePort address;
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    @Parameterized.Parameter
-    public Class<? extends TransportConnection> connectionClass;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Class<? extends TransportConnection>> transports()
+    private static Stream<Arguments> argumentsProvider()
     {
-        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
+        return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
+                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
     }
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp( TestInfo testInfo ) throws IOException
     {
+        server.setConfigure( withOptionalBoltEncryption() );
+        server.init( testInfo );
         address = server.lookupDefaultConnector();
-        connection = connectionClass.newInstance();
         util = new TransportTestUtil( newMessageEncoder() );
     }
 
-    @After
+    protected void init( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        connection = connectionClass.getDeclaredConstructor().newInstance();
+    }
+
+    @AfterEach
     public void tearDown() throws Exception
     {
         if ( connection != null )
@@ -103,9 +115,12 @@ public class BoltV4TransportIT
         }
     }
 
-    @Test
-    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         assumeFalse( FabricDatabaseManager.fabricByDefault() );
 
         negotiateBoltV4();
@@ -122,9 +137,12 @@ public class BoltV4TransportIT
                         .containsEntry( "bookmark", expectedBookmark ) ) ) );
     }
 
-    @Test
-    public void shouldReturnUpdatedBookmarkAfterExplicitTransaction() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnUpdatedBookmarkAfterExplicitTransaction( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         assumeFalse( FabricDatabaseManager.fabricByDefault() );
 
         negotiateBoltV4();
@@ -146,9 +164,12 @@ public class BoltV4TransportIT
                 msgSuccess( message -> assertThat( message ).containsEntry( "bookmark", expectedBookmark ) ) ) );
     }
 
-    @Test
-    public void shouldStreamWhenStatementIdNotProvided() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldStreamWhenStatementIdNotProvided( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV4();
 
         // begin a transaction
@@ -199,9 +220,12 @@ public class BoltV4TransportIT
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
-    @Test
-    public void shouldSendAndReceiveStatementIds() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldSendAndReceiveStatementIds( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         negotiateBoltV4();
 
         // begin a transaction
