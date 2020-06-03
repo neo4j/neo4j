@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -835,7 +837,9 @@ public abstract class PageSwapperTest
         int[] pageSizes = {4, 4, 4, 4};
         write( swapper, 0, new long[]{page, page, page, page}, pageSizes, 4 );
 
-        assertThrows( NullPointerException.class, () -> read( swapper, 0, null, pageSizes, 4 ), "vectored read with null array should have thrown" );
+        assertThatThrownBy( () -> read( swapper, 0, null, pageSizes, 4 ),
+                "vectored read with null array should have thrown" )
+                .extracting( ExceptionUtils::getRootCause ).isInstanceOf( NullPointerException.class );
     }
 
     @Test
@@ -845,7 +849,9 @@ public abstract class PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
-        assertThrows( NullPointerException.class, () -> write( swapper, 0, null, null, 4 ), "vectored write with null array should have thrown" );
+        assertThatThrownBy( () -> write( swapper, 0, null, null, 4 ),
+                "vectored write with null array should have thrown" )
+                .extracting( ExceptionUtils::getRootCause ).isInstanceOf( NullPointerException.class );
     }
 
     @Test
