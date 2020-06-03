@@ -824,82 +824,6 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    void positionedVectoredReadMustWorkOnSubsequenceOfGivenArray() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long pageA = createPage( 4 );
-        long pageB = createPage( 4 );
-        long pageC = createPage( 4 );
-        long pageD = createPage( 4 );
-
-        putInt( pageA, 0, 1 );
-        putInt( pageB, 0, 2 );
-        putInt( pageC, 0, 3 );
-        putInt( pageD, 0, 4 );
-
-        long[] pages = {pageA, pageB, pageC, pageD};
-        int[] pageSizes = {4, 4, 4, 4};
-        long bytesWritten = write( swapper, 0, pages, pageSizes, 4 );
-        assertThat( bytesWritten ).isEqualTo( 16L );
-
-        putInt( pageA, 0, 5 );
-        putInt( pageB, 0, 6 );
-        putInt( pageC, 0, 7 );
-        putInt( pageD, 0, 8 );
-
-        long bytesRead = read( swapper, 1, pages, pageSizes, 2 );
-        assertThat( bytesRead ).isEqualTo( 8L );
-
-        int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 ), getInt( pageC, 0 ), getInt( pageD, 0 )};
-        int[] expectedValues = {5, 2, 3, 8};
-        assertThat( actualValues ).isEqualTo( expectedValues );
-    }
-
-    @Test
-    void positionedVectoredWriteMustWorkOnSubsequenceOfGivenArray() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long pageA = createPage( 4 );
-        long pageB = createPage( 4 );
-        long pageC = createPage( 4 );
-        long pageD = createPage( 4 );
-
-        putInt( pageA, 0, 1 );
-        putInt( pageB, 0, 2 );
-        putInt( pageC, 0, 3 );
-        putInt( pageD, 0, 4 );
-
-        long[] pages = {pageA, pageB, pageC, pageD};
-        int[] pageSizes = {4, 4, 4, 4};
-        long bytesWritten = write( swapper, 0, pages, pageSizes, 4 );
-        assertThat( bytesWritten ).isEqualTo( 16L );
-
-        putInt( pageB, 0, 6 );
-        putInt( pageC, 0, 7 );
-
-        bytesWritten = write( swapper, 1, pages, pageSizes, 2 );
-        assertThat( bytesWritten ).isEqualTo( 8L );
-
-        putInt( pageA, 0, 0 );
-        putInt( pageB, 0, 0 );
-        putInt( pageC, 0, 0 );
-        putInt( pageD, 0, 0 );
-
-        long bytesRead = read( swapper, 0, pages, pageSizes, 4 );
-        assertThat( bytesRead ).isEqualTo( 16L );
-
-        int[] actualValues = {getInt( pageA, 0 ), getInt( pageB, 0 ), getInt( pageC, 0 ), getInt( pageD, 0 )};
-        int[] expectedValues = {1, 6, 7, 4};
-        assertThat( actualValues ).isEqualTo( expectedValues );
-    }
-
-    @Test
     void mustThrowNullPointerExceptionFromReadWhenPageArrayIsNull() throws Exception
     {
         File file = file( "file" );
@@ -993,102 +917,6 @@ public abstract class PageSwapperTest
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
         assertThrows( IOException.class, () -> write( swapper, -1, new long[]{createPage( 4 ), createPage( 4 )}, new int[]{4, 4}, 2 ) );
-    }
-
-    @Test
-    void vectoredReadMustThrowForNegativeArrayOffsets() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        int[] pageSizes = {4, 4};
-        write( swapper, 0, pages, pageSizes, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, pageSizes, 2 ) );
-    }
-
-    @Test
-    void vectoredWriteMustThrowForNegativeArrayOffsets() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> write( swapper, 0, pages, new int[]{4, 4}, 2 ) );
-    }
-
-    @Test
-    void vectoredReadMustThrowWhenLengthGoesBeyondArraySize() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        int[] pageSizes = {4, 4};
-        write( swapper, 0, pages, pageSizes, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, pageSizes, 2 ) );
-    }
-
-    @Test
-    void vectoredWriteMustThrowWhenLengthGoesBeyondArraySize() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> write( swapper, 0, pages, new int[]{4, 4}, 2 ) );
-    }
-
-    @Test
-    void vectoredReadMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        int[] pageSizes = {4, 4};
-        write( swapper, 0, pages, pageSizes, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, pageSizes, 1 ) );
-    }
-
-    @Test
-    void vectoredWriteMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> write( swapper, 0, pages, new int[]{4, 4}, 1 ) );
-    }
-
-    @Test
-    void vectoredReadMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        int[] pageSizes = {4, 4};
-        write( swapper, 0, pages, pageSizes, 2 );
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> read( swapper, 0, pages, pageSizes, 1 ) );
-    }
-
-    @Test
-    void vectoredWriteMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
-    {
-        File file = file( "file" );
-        PageSwapperFactory factory = createSwapperFactory( getFs() );
-        PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
-
-        long[] pages = {createPage( 4 ), createPage( 4 )};
-        assertThrows( ArrayIndexOutOfBoundsException.class, () -> write( swapper, 0, pages, new int[]{4, 4}, 1 ) );
     }
 
     @Test
@@ -1239,7 +1067,7 @@ public abstract class PageSwapperTest
     private long read( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length )
             throws IOException
     {
-        if ( pages.length == 0 )
+        if ( length == 0 )
         {
             return 0;
         }
@@ -1249,11 +1077,11 @@ public abstract class PageSwapperTest
     private long write( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length )
             throws IOException
     {
-        if ( pages.length == 0 )
+        if ( length == 0 )
         {
             return 0;
         }
-        return swapper.write( startFilePageId, pages, pageSizes, length, pageSizes.length );
+        return swapper.write( startFilePageId, pages, pageSizes, length, length );
     }
 
     private int cachePageSize()
