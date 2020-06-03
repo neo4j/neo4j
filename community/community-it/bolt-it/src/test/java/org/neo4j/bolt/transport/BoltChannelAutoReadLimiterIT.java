@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -81,12 +80,6 @@ class BoltChannelAutoReadLimiterIT
         util = new TransportTestUtil();
 
         installSleepProcedure( server.graphDatabaseService() );
-    }
-
-    @AfterEach
-    public void cleanup()
-    {
-        server.shutdownDatabase();
     }
 
     protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()

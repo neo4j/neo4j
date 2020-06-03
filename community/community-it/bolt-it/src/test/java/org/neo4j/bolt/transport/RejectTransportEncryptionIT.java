@@ -58,12 +58,6 @@ public class RejectTransportEncryptionIT
         server.init( testInfo );
     }
 
-    @AfterEach
-    public void cleanup()
-    {
-        server.shutdownDatabase();
-    }
-
     private TransportConnection client;
     private TransportTestUtil util;
 

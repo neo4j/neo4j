@@ -75,7 +75,6 @@ public class RequiredTransportEncryptionIT
         {
             client.disconnect();
         }
-        server.shutdownDatabase();
     }
 
     @ParameterizedTest( name = "{displayName} {index}" )

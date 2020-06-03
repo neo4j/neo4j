@@ -20,11 +20,11 @@
 package org.neo4j.bolt;
 
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
 import java.util.Map;
@@ -37,6 +37,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -52,17 +53,17 @@ import org.neo4j.logging.SpiedAssertableLogProvider;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.neo4j.bolt.testing.MessageConditions.either;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
@@ -76,6 +77,9 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
+@ExtendWith( {SuppressOutputExtension.class, OtherThreadExtension.class} )
 public class ShutdownSequenceIT
 {
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds( 10 );
@@ -83,23 +87,19 @@ public class ShutdownSequenceIT
     private final AssertableLogProvider internalLogProvider =
             new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Neo4jWithSocket server =
-            new Neo4jWithSocket( getTestGraphDatabaseFactory(), () -> TestDirectory.testDirectory( getClass(), fsRule.get() ), getSettingsFunction() );
+    @Inject
+    private Neo4jWithSocket server;
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
     private CountDownLatch txStarted;
     private CountDownLatch boltWorkerThreadPoolShuttingDown;
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
-
-    @Rule
-    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
-
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws Exception
     {
+        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
         address = server.lookupDefaultConnector();
         txStarted = new CountDownLatch( 1 );
         boltWorkerThreadPoolShuttingDown = new CountDownLatch( 1 );
@@ -109,7 +109,7 @@ public class ShutdownSequenceIT
         procedures.registerProcedure( TestProcedures.class );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         userLogProvider.print( System.out );

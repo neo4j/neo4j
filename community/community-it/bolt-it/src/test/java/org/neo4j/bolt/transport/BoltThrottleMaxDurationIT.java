@@ -105,7 +105,6 @@ public class BoltThrottleMaxDurationIT
         {
             client.disconnect();
         }
-        server.shutdownDatabase();
     }
 
     protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()

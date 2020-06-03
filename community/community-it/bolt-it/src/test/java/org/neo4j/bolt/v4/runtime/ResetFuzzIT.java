@@ -19,11 +19,11 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,6 +36,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
+import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -46,16 +47,19 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.SpiedAssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
+@EphemeralTestDirectoryExtension
+@Neo4jWithSocketExtension
+@ExtendWith( SuppressOutputExtension.class )
 public class ResetFuzzIT
 {
     private static final int TEST_EXECUTION_TIME = 2000;
@@ -65,9 +69,9 @@ public class ResetFuzzIT
 
     private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider( ExecutorBoltScheduler.class );
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Neo4jWithSocket server =
-            new Neo4jWithSocket( getTestGraphDatabaseFactory(), () -> testDirectory( getClass(), fsRule.get() ), getSettingsFunction() );
+
+    @Inject
+    private Neo4jWithSocket server;
     private final TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
 
@@ -76,16 +80,16 @@ public class ResetFuzzIT
     private static final String SHORT_QUERY_3 = "RETURN 1";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
-
-    @Before
-    public void setup()
+    @BeforeEach
+    public void setup( TestInfo testInfo ) throws IOException
     {
+        server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
+        server.setConfigure( getSettingsFunction() );
+        server.init( testInfo );
         address = server.lookupDefaultConnector();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         userLogProvider.print( System.out );

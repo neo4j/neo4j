@@ -67,7 +67,6 @@ public class ConnectionIT
         {
             connection.disconnect();
         }
-        server.shutdownDatabase();
     }
 
     public static Stream<Arguments> transportFactory()

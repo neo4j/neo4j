@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,12 +55,6 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         server.init( testInfo );
 
         address = server.lookupDefaultConnector();
-    }
-
-    @AfterEach
-    public void cleanup()
-    {
-        server.shutdownDatabase();
     }
 
     @ParameterizedTest( name = "{displayName} {2}" )

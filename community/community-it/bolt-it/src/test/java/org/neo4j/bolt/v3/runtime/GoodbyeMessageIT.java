@@ -20,12 +20,14 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
@@ -46,9 +48,12 @@ import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE
 
 public class GoodbyeMessageIT extends BoltV3TransportBase
 {
-    @Test
-    public void shouldCloseConnectionInConnected() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInConnected( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         connection.connect( address )
                 .send( util.acceptedVersions( 3, 2, 1, 0 ) );
@@ -61,9 +66,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
-    @Test
-    public void shouldCloseConnectionInReady() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInReady( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 
@@ -74,9 +82,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
-    @Test
-    public void shouldCloseConnectionInStreaming() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInStreaming( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 
@@ -94,9 +105,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
-    @Test
-    public void shouldCloseConnectionInFailed() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInFailed( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 
@@ -114,9 +128,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( connection ).satisfies( serverImmediatelyDisconnects() );
     }
 
-    @Test
-    public void shouldCloseConnectionInTxReady() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInTxReady( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 
@@ -131,9 +148,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
-    @Test
-    public void shouldCloseConnectionInTxStreaming() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldCloseConnectionInTxStreaming( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 
@@ -149,9 +169,12 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
         assertThat( server ).satisfies( eventuallyClosesTransaction() );
     }
 
-    @Test
-    public void shouldDropConnectionImmediatelyAfterGoodbye() throws Throwable
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldDropConnectionImmediatelyAfterGoodbye( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
+        init( connectionClass );
+
         // Given
         negotiateBoltV3();
 

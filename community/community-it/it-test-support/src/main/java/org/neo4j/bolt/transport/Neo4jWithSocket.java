@@ -20,9 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import org.junit.jupiter.api.TestInfo;
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +38,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -51,9 +47,8 @@ import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
-public class Neo4jWithSocket extends ExternalResource
+public class Neo4jWithSocket
 {
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private Consumer<Map<Setting<?>,Object>> configure;
@@ -63,16 +58,6 @@ public class Neo4jWithSocket extends ExternalResource
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
     private DatabaseManagementService managementService;
-
-    public Neo4jWithSocket( Class<?> testClass )
-    {
-        this( testClass, settings -> { } );
-    }
-
-    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,Object>> configure )
-    {
-        this( new TestDatabaseManagementServiceBuilder(), () -> testDirectory( testClass, new EphemeralFileSystemAbstraction() ), configure );
-    }
 
     public Neo4jWithSocket( TestDatabaseManagementServiceBuilder graphDatabaseFactory,
                             Supplier<TestDirectory> testDirectorySupplier, Consumer<Map<Setting<?>,Object>> configure )
@@ -110,36 +95,6 @@ public class Neo4jWithSocket extends ExternalResource
         workingDirectory = testDirectory.directory( testName );
 
         ensureDatabase( settings -> {} );
-    }
-
-    @Override
-    public Statement apply( final Statement statement, final Description description )
-    {
-        Statement testMethod = new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                // If this is used as class rule then getMethodName() returns null, so use
-                // getClassName() instead.
-                String name =
-                        description.getMethodName() != null ? description.getMethodName() : description.getClassName();
-                workingDirectory = testDirectory.directory( name );
-                ensureDatabase( settings -> {} );
-                try
-                {
-                    statement.evaluate();
-                }
-                finally
-                {
-                    shutdownDatabase();
-                }
-            }
-        };
-
-        Statement testMethodWithBeforeAndAfter = super.apply( testMethod, description );
-
-        return testDirectory.apply( testMethodWithBeforeAndAfter, description );
     }
 
     public HostnamePort lookupConnector( String connectorKey )

@@ -81,7 +81,6 @@ public class UnsupportedStructTypesV2IT
         {
             connection.disconnect();
         }
-        server.shutdownDatabase();
     }
 
     public static Stream<Arguments> classProvider()
