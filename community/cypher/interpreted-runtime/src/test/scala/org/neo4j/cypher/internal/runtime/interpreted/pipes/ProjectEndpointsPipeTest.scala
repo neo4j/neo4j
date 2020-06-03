@@ -25,10 +25,10 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toIntValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
@@ -379,7 +379,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel3 = newMockedRelationship(34, node3, node4)
 
     val rels = Seq(rel1, rel2, rel3)
-    val reversedRels = Seq(rel3, rel2, rel1)
 
     val left = newMockedPipe("r",
       row("r" -> rels, "b" -> node3)

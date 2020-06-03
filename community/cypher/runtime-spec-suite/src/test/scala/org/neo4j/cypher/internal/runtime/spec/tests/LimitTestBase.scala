@@ -322,7 +322,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     // then
     runtimeResult should beColumns("x", "y").withRows(matching {
-      case rows:Seq[Array[_]] if rows.forall {
+      case rows:Seq[_] if rows.forall {
         case Array(x, y) =>
           val xid = x.asInstanceOf[VirtualNodeValue].id()
           val connections = nodeConnections(xid)
@@ -336,7 +336,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
           }
 
       } && { // Assertion on the whole result
-        val xs = rows.map(_(0))
+        val xs = rows.map(_.asInstanceOf[Array[_]](0))
         xs.distinct.size == xs.size // Check that there is at most one row per x
       } =>
     })
@@ -905,7 +905,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
       val a2 = tx.createNode(label("A"))
       a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
-      val a3 = tx.createNode(label("A"))
+      tx.createNode(label("A"))
       Seq(a1, a2)
     }
 
@@ -937,7 +937,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
       val a2 = tx.createNode(label("A"))
       a2.createRelationshipTo(tx.createNode(label("B")), withName("R"))
-      val a3 = tx.createNode(label("A"))
+      tx.createNode(label("A"))
       Seq(a1, a2)
     }
 
@@ -1023,7 +1023,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support two limits at different different nesting levels - when RHS limit is lower than top limit") {
     val nodeCount = 10
-    val nodes = given {
+    given {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }
@@ -1054,7 +1054,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support two limits at  different nesting levels - when RHS limit is higher than top limit") {
     val nodeCount = 10
-    val nodes = given {
+    given {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }

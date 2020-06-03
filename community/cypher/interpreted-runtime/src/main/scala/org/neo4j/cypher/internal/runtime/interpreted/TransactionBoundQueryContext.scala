@@ -938,12 +938,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-  private def allocateAndTraceRelationshipTraversalCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.pageCursorTracer)
-    resources.trace(cursor)
-    cursor
-  }
-
   private def allocateAndTraceRelationshipScanCursor() = {
     val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)

@@ -80,7 +80,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
 
-  private var mappings = mutable.Map.empty[Expression, TypeSpec]
+  private val mappings = mutable.Map.empty[Expression, TypeSpec]
 
   def addTypeToSemanticTable(expr: Expression, typ: TypeSpec): Unit = {
     mappings += ((expr, typ))

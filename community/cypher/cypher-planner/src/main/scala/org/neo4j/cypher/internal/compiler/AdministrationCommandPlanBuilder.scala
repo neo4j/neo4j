@@ -158,6 +158,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case (true, Some(_)) => plans.AssertDbmsAdmin(Seq(SetPasswordsAction, SetUserStatusAction))
           case (true, None) => plans.AssertDbmsAdmin(SetPasswordsAction)
           case (false, Some(_)) => plans.AssertDbmsAdmin(SetUserStatusAction)
+          case (false, None) => throw new IllegalStateException("A password that is not set cannot also be not suspended")
         }
         val assertionSubPlan =
           if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")

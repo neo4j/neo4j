@@ -107,33 +107,31 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
   // ITERATE
 
   test("should not materialize iterable result when javaIterator") {
-    assertMaterializationOfMethod(false, false, TestRuntimeResult(List(1)), _.hasNext)
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.hasNext)
   }
 
   test("should not materialize iterable result when javaColumnAs") {
-    assertMaterializationOfMethod(false, false, TestRuntimeResult(List(1)), _.columnAs[Int]("x").hasNext)
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.columnAs[Int]("x").hasNext)
   }
 
   // DUMP TO STRING
 
   test("should not materialize when dumpToString I") {
-    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1)), _.resultAsString())
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.resultAsString())
   }
 
   test("should not materialize when dumpToString II") {
-    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1)), _.writeAsStringTo(mock[PrintWriter]))
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.writeAsStringTo(mock[PrintWriter]))
   }
 
   // ACCEPT
 
   test("should not materialize when accept I") {
-    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1)), _.accept(mock[ResultVisitor[Exception]]))
-    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1)), _.accept(mock[ResultVisitor[Exception]]))
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.accept(mock[ResultVisitor[Exception]]))
+    assertMaterializationOfMethod(TestRuntimeResult(List(1)), _.accept(mock[ResultVisitor[Exception]]))
   }
 
-  private def assertMaterializationOfMethod(shouldMaterialize: Boolean,
-                                            shouldExhaust: Boolean,
-                                            inner: TestRuntimeResult = TestRuntimeResult(List(1)),
+  private def assertMaterializationOfMethod(inner: TestRuntimeResult,
                                             f: Result => Unit): Unit = {
     // given
     val result = inner.subscriber
@@ -145,7 +143,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     f(result)
 
     // then
-    result.isMaterialized should be(shouldMaterialize)
+    result.isMaterialized should be(false)
   }
 
   private def standardInternalExecutionResult(inner: RuntimeResult, queryType: InternalQueryType,

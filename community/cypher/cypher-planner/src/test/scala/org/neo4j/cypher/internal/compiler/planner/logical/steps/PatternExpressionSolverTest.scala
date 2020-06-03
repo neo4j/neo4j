@@ -60,7 +60,6 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // then
     resultPlan should beLike {
-      case _ =>()
       case RollUpApply(`source`,
       Projection(`otherSide`, MapKeys("  FRESHID0")),
       "x", "  FRESHID0", SetExtractor("a")) => ()
@@ -161,8 +160,6 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
   private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
-  private val namedPatExpr1 = newPatExpr("a", 0, Right("  NODE2"), Right("  REL3"), SemanticDirection.OUTGOING)
-  private val namedPatExpr2 = newPatExpr("a", 3, Right("  NODE5"), Right("  REL6"), SemanticDirection.INCOMING)
 
   private def newPatExpr(left: String, position: Int, rightOffset: Int, relOffset: Int, dir: SemanticDirection): PatternExpression =
     newPatExpr(left, position, Left(rightOffset), Left(relOffset), dir)

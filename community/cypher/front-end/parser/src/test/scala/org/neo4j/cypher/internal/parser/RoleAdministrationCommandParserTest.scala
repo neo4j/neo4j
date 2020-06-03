@@ -34,7 +34,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ALL ROLES YIELD role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(ast.Return(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_), None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_), None, None))
   }
 
   test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {

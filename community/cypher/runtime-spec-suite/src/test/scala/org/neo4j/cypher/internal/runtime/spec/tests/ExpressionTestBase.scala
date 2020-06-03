@@ -499,7 +499,7 @@ trait ThreadUnsafeExpressionTests[CONTEXT <: RuntimeContext] {
   test("should get type of relationship") {
     // given
     val size = 11
-    val paths = given { chainGraphs(size, "TO") }
+    given { chainGraphs(size, "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

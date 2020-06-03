@@ -224,10 +224,6 @@ class ProfilerTest extends CypherFunSuite {
     val profiler = new Profiler(DbmsInfo.COMMUNITY, new InterpretedProfileInformation)
 
     val pipe1 = ArgumentPipe()(idGen.id())
-    val ctx1: QueryContext = prepareQueryContext()
-    val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
-
-    val profiled_1 = profiler.decorate(pipe1.id, state1)
     val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
 
     val profiled1 = profiler.decorate(pipe1.id, iter1)
@@ -235,11 +231,8 @@ class ProfilerTest extends CypherFunSuite {
     profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
     val pipe2 = ArgumentPipe()(idGen.id())
-    val ctx2: QueryContext = prepareQueryContext()
-    val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
     val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
 
-    val profiled_2 = profiler.decorate(pipe2.id, state2)
     val profiled2 = profiler.decorate(pipe2.id, iter2)
     profiled2.toList // consume it
     profiled2.asInstanceOf[ProfilingIterator].count should equal(2)

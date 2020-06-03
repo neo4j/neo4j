@@ -104,6 +104,8 @@ case object PushdownPropertyReads {
               // this happens for variables introduced in expressions, we ignore those for now
               case None => None
             }
+
+          case e => throw new IllegalStateException(s"$e is not a valid property expression")
         }
 
       val outgoingCardinality = cardinalities(plan.id)

@@ -255,7 +255,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on cached property") {
-    val nodes = given {
+    given {
       index("A", "prop")
       nodePropertyGraph(sizeHint, {
         case i => Map("prop" -> i)

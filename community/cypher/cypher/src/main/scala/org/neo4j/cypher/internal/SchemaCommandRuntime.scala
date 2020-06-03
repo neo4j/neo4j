@@ -161,9 +161,6 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
     PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))
 
-  implicit private def propertiesToIds(ctx: QueryContext)(properties: List[PropertyKeyName]): List[PropertyKeyId] =
-    properties.map(property => PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name)))
-
   private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
     (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name))
 

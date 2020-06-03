@@ -336,7 +336,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   private def makeShowDatabasesQuery(symbols: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return],
                                      isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, (Transaction, MapValue) => MapValue) = {
-    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, isDefault)
+    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
     val (extraFilter, params, paramConverter) = (isDefault, dbName) match {
       // show default database
       case (true, _) => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
@@ -366,8 +366,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     (query, params, paramGenerator, paramConverter)
   }
 
-  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext, isDefault: Boolean = false): MapValue = {
-    // TODO isDefault is not used, should it be?
+  private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext): MapValue = {
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty

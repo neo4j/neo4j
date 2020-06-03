@@ -93,10 +93,9 @@ object StatementConverters {
         val builder = toPlannerQueryBuilder(singleQuery, semanticTable)
         builder.build()
 
-      case unionQuery: ast.Union =>
+      case unionQuery: ast.ProjectingUnion =>
         val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable)
         val query: SinglePlannerQuery = toPlannerQueryBuilder(unionQuery.query, semanticTable).build()
-
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll => false

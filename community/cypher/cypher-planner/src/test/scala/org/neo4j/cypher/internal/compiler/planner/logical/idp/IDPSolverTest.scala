@@ -36,7 +36,7 @@ class IDPSolverTest extends CypherFunSuite {
 
     override def forResult(plan: String): Null = null
 
-    override def is(requirement: Null): Boolean = requirement == null
+    override def is(requirement: Null): Boolean = true
   }
 
   test("Solves a small toy problem") {

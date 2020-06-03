@@ -69,7 +69,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
     QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
-    resolved.callResultIndices should equal(Seq(0 -> ("x","x"), 1 -> ("y", "y")))
+    resolved.callResultIndices should equal(Seq(0 -> (("x","x")), 1 -> (("y", "y"))))
   }
 
   test("should resolve void CALL my.proc.foo") {
@@ -121,7 +121,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
     QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
-    resolved.callResultIndices should equal(Seq(0 -> ("x", "x"), 1 -> ("y", "y")))
+    resolved.callResultIndices should equal(Seq(0 -> (("x", "x")), 1 -> (("y", "y"))))
   }
 
   test("should resolve CALL my.proc.foo(a)") {
@@ -147,7 +147,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
     QualifiedName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
-    resolved.callResultIndices should equal(Seq(0 -> ("x", "x"), 1 -> ("y", "y")))
+    resolved.callResultIndices should equal(Seq(0 -> (("x", "x")), 1 -> (("y", "y"))))
   }
 
   test("should resolve void CALL my.proc.foo(a)") {
@@ -200,7 +200,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "z" -> CTList(CTNode)))
-    resolved.callResultIndices should equal(Seq(0 -> ("x", "x"), 1 -> ("z", "y")))
+    resolved.callResultIndices should equal(Seq(0 -> (("x", "x")), 1 -> (("z", "y"))))
   }
 
   test("pretends to be based on user-declared arguments and results upon request") {
@@ -237,7 +237,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
     coerced.callResultTypes should equal(Seq("x" -> CTInteger, "z" -> CTList(CTNode)))
-    coerced.callResultIndices should equal(Seq(0 -> ("x", "x"), 1 -> ("z", "y")))
+    coerced.callResultIndices should equal(Seq(0 -> (("x", "x")), 1 -> (("z", "y"))))
   }
 
   test("should verify number of arguments during semantic checking of resolved calls") {

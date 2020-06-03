@@ -76,8 +76,6 @@ object LogicalPlanToPlanBuilderString {
       case _:AllNodesScan => "allNodeScan"
       case e:Expand if e.mode == ExpandAll && e.expandProperties.nonEmpty => "expand"
       case e:Expand => if(e.mode == ExpandAll) "expandAll" else "expandInto"
-      case e:Expand => if(e.mode == ExpandAll) "expandAll" else "expandInto"
-      case e:Expand if e.mode == ExpandAll && e.expandProperties.nonEmpty => "expand"
       case _:VarExpand => "expand"
       case e:OptionalExpand => if(e.mode == ExpandAll) "optionalExpandAll" else "optionalExpandInto"
       case _:Selection => "filter"

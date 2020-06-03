@@ -76,7 +76,7 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> ("r", "r"))
+      resultIndices = Seq(0 -> (("r", "r")))
     )()
 
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
@@ -99,7 +99,7 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> ("r", "r"))
+      resultIndices = Seq(0 -> (("r", "r")))
     )()
 
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))

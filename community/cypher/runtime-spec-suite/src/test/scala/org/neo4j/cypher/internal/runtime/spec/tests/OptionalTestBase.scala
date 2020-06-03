@@ -225,7 +225,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y").withRows(matching {
-      case rows:Seq[Array[_]] if rows.forall {
+      case rows:Seq[_] if rows.forall {
         case Array(x, y) =>
           val xid = x.asInstanceOf[VirtualNodeValue].id()
           val connections = nodeConnections(xid)
@@ -241,7 +241,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
             }
           }
       } && {
-        val xs = rows.map(_(0))
+        val xs = rows.map(_.asInstanceOf[Array[_]](0))
         xs.distinct.size == xs.size // Check that there is at most one row per x
       } =>
     })

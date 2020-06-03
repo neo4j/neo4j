@@ -338,8 +338,8 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   def nestedStarGraph(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship], Node) = {
     val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
 
-    var nodes = new ArrayBuffer[Node]
-    var rels = new ArrayBuffer[Relationship]
+    val nodes = new ArrayBuffer[Node]
+    val rels = new ArrayBuffer[Relationship]
 
     def recurse(depth: Int, localCenter: Node): Unit = {
       def star(center: Node): Seq[Node] = {

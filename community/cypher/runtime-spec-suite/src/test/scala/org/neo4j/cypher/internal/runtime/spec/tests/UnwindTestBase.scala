@@ -158,9 +158,9 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = for {
-      Array(xs: util.List[Int]) <- input.flatten
+      Array(xs: util.List[_]) <- input.flatten
       i <- xs.asScala
-    } yield Array(i)
+    } yield Array[Any](i)
     runtimeResult should beColumns("i").withRows(expected)
   }
 

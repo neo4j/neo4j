@@ -295,7 +295,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with aggregation") {
     // given
-    val nodes = given {
+   given {
       nodePropertyGraph(sizeHint, properties = {
         case i: Int => Map("foo" -> s"bar${i % 10}")
       })
@@ -320,7 +320,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work after multiple streaming operators") {
     // given
     val nodeCount = 100
-    val nodes = given {
+    given {
       bipartiteGraph(nodeCount, "A", "B", "R",
         aProperties = {
           case i: Int => Map("foo" -> s"bar${i % 10}")
@@ -345,9 +345,8 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work between streaming operators with aggregation") {
-    // given
     val nodeCount = 100
-    val nodes = given {
+    given {
       bipartiteGraph(nodeCount, "A", "B", "R",
         aProperties = {
           case i: Int => Map("foo" -> s"bar${i % 10}")
@@ -376,8 +375,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with chained distincts") {
-    // given
-    val nodes = given {
+    given {
       nodePropertyGraph(sizeHint,
         properties = {
           case i: Int => Map("foo" -> s"bar${i % 10}")

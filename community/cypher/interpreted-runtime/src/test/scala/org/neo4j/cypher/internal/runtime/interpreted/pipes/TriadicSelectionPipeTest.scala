@@ -86,6 +86,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -102,6 +103,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 1), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -118,6 +120,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
     ids should equal(Set((0, 2)))
   }
@@ -134,6 +137,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id)
+      case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -150,6 +154,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id())
+      case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }

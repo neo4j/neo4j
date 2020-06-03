@@ -221,7 +221,7 @@ class QueryCache[QUERY_REP <: AnyRef,
   /**
    * Check if certain warnings are not valid anymore.
    */
-  def invalidNotificationExisting(cachedValue: CachedValue, tc: TransactionalContext): Boolean = {
+  private def invalidNotificationExisting(cachedValue: CachedValue, tc: TransactionalContext): Boolean = {
     val notifications = cachedValue.value.notifications
     var i = 0
     while (i < notifications.length) {
@@ -247,7 +247,7 @@ class QueryCache[QUERY_REP <: AnyRef,
   /**
    * Recompile a query with expression code generation if needed. Otherwise return the cached value.
    */
-  def recompileOrGet(cachedValue: CachedValue,
+  private def recompileOrGet(cachedValue: CachedValue,
                      compiler: CompilerWithExpressionCodeGenOption[EXECUTABLE_QUERY],
                      queryKey: QUERY_KEY,
                      metaData: String
@@ -298,7 +298,7 @@ class QueryCache[QUERY_REP <: AnyRef,
   private def compileOrcompileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
                                                             compile: () => EXECUTABLE_QUERY,
                                                             metaData: String,
-                                                            hitCache: Boolean = false
+                                                            hitCache: Boolean
                                                            ): EXECUTABLE_QUERY = {
     val newExecutableQuery = compile()
     if (newExecutableQuery.shouldBeCached) {

@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.values.storable.FloatingPointValue
 
 import scala.collection.Iterator.empty

@@ -256,7 +256,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should profile memory of var-length-expand") {
     // given
-    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -266,7 +266,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+    execute(logicalQuery, runtime)
 
     // then
     assertOnMemory(logicalQuery, NO_INPUT, 4, 1, 2)

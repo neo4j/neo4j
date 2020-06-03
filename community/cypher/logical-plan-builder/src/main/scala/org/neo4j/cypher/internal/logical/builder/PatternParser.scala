@@ -46,6 +46,7 @@ class PatternParser
           case ("<", "") => SemanticDirection.INCOMING
           case ("", ">") => SemanticDirection.OUTGOING
           case ("", "") => SemanticDirection.BOTH
+          case _ => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
         }
         val relTypes =
           if (relTypesStr.isEmpty) Seq.empty
@@ -57,6 +58,7 @@ class PatternParser
             case ("*", x, "")  => VarPatternLength(x.toInt, Some(x.toInt))
             case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
             case ("*", _, _)   => VarPatternLength(min.toInt, Some(max.toInt))
+            case _ => throw new UnsupportedOperationException(s"$star, $min, $max is not a supported variable length identifier")
           }
         val relNameOrUnnamed =
           if (relName.isEmpty) {

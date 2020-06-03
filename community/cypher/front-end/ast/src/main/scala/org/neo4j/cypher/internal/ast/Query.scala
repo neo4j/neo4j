@@ -436,7 +436,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
  * b) We need to disable `checkColumnNamesAgree` for ProjectingUnion, because the names will actually not agree any more after the namespacing.
  *    This is not a problem though, since we would have failed earlier if the names did not agree originally.
  */
-trait UnmappedUnion extends Union {
+sealed trait UnmappedUnion extends Union {
 
   override def unionMappings: List[UnionMapping] = {
     for {
@@ -462,7 +462,7 @@ trait UnmappedUnion extends Union {
   }
 }
 
-trait ProjectingUnion extends Union {
+sealed trait ProjectingUnion extends Union {
   // If we have a ProjectingUnion we have already checked this before and now they have been rewritten to actually not match.
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheckResult.success
 }

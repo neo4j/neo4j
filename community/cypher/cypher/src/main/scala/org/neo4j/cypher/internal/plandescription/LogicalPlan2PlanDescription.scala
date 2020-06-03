@@ -1215,14 +1215,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val resourceText = resource match {
       case PropertyResource(name) => pretty"PROPERTY ${asPrettyString(name)}"
       case AllPropertyResource() => pretty"ALL PROPERTIES"
+      case _ => throw new IllegalStateException(s"Can't handle resource: $resource")
     }
     (dbName, qualifierText, resourceText)
   }
 
   private def extractGraphScope(dbScope: GraphScope): PrettyString = {
-   dbScope match {
+
+    dbScope match {
       case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
       case AllGraphsScope() => pretty"ALL GRAPHS"
+      case DefaultDatabaseScope() => pretty""
     }
   }
 

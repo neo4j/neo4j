@@ -62,6 +62,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
     replacements.foreach {
       case (k, v: Array[Byte]) =>
         replacedLiterals(k) should equal(v)
+      case (k, v) => throw new IllegalStateException(s"Unknown value: $v for key: $k")
     }
   }
 }

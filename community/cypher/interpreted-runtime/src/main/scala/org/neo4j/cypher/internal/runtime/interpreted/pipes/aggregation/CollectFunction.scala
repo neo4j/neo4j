@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.mutable.ArrayBuffer
 
 class CollectFunction(value:Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
-  private var collection = new ArrayBuffer[AnyValue]()
+  private val collection = new ArrayBuffer[AnyValue]()
 
   override def apply(data: ReadableRow, state:QueryState): Unit = {
     value(data, state) match {

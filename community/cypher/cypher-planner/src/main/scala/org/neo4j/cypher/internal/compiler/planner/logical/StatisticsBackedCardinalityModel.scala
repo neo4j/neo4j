@@ -69,6 +69,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
             val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon, semanticTable)
             QueryGraphSolverInput(newLabels, horizonCardinality, laziness)
+          case (input, v) => throw new IllegalStateException(s"cannot handle $input and $v")
         }
         output.inboundCardinality
       case UnionQuery(part, query, distinct, _) =>

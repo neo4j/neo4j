@@ -119,7 +119,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   private def costFor(plan: LogicalPlan,
-                      input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
+                      input: QueryGraphSolverInput,
                       cardinalities: Cardinalities) = {
     CardinalityCostModel(plan, input, cardinalities)
   }

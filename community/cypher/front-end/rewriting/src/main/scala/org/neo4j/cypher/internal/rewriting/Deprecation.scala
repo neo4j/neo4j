@@ -122,12 +122,6 @@ object Deprecations {
   }
 
   case object V2 extends Deprecations {
-    private val functionRenames: Map[String, String] =
-      TreeMap(
-        // put any V2 deprecation here as
-        // "old name" -> "new name"
-      )(CaseInsensitiveOrdered)
-
     override val find: PartialFunction[Any, Deprecation] = V1.find
   }
 

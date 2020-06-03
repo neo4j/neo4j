@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CandidateSelectorFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.Selector
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
@@ -71,7 +70,7 @@ object QueryPlannerConfiguration {
 
 
   val default: QueryPlannerConfiguration = {
-    val predicateSelector = Selector(pickBestPlanUsingHintsAndCost,
+    val predicateSelector = steps.Selector(pickBestPlanUsingHintsAndCost,
       selectPatternPredicates,
       triadicSelectionFinder,
       selectCovered,

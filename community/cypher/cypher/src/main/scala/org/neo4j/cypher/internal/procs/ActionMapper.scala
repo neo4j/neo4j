@@ -131,5 +131,7 @@ object ActionMapper {
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
     case AllAdminAction => security.PrivilegeAction.ADMIN
+
+    case _ => throw new IllegalStateException(s"Cannot handle action: $action")
   }
 }

@@ -55,8 +55,6 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
                                cartesianProductsOrValueJoins: JoinDisconnectedQueryGraphComponents,
                                monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
 
-  private implicit val x: SingleComponentPlannerTrait = singleComponentSolver
-
   override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrder, context), context)
     val components = queryGraph.connectedComponents

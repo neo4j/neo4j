@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
-import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -854,10 +853,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     SignedDecimalIntegerLiteral(value.toString)(pos)
   private def literalFloat(value: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(value.toString)(pos)
-  private def literalMap(map: Map[String, Expression]) =
-    MapExpression(map.map {
-      case (key, value) => PropertyKeyName(key)(pos) -> value
-    }.toSeq)(pos)
   def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)

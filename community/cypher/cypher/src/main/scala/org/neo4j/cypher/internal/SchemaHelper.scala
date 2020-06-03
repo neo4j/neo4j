@@ -22,11 +22,8 @@ package org.neo4j.cypher.internal
 import java.util.concurrent.atomic.AtomicLong
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
-
-import scala.collection.JavaConverters.asScalaBufferConverter
 
 case class SchemaToken(x: Long) extends AnyVal
 

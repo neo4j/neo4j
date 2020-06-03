@@ -187,8 +187,6 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected =
-      (0 until size).flatMap(_ => (0 until size)).toList.asJava
     runtimeResult should beColumns("x").withSingleRow(true)
   }
 

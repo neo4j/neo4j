@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.AutoClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.memory.ScopedMemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
