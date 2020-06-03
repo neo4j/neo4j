@@ -420,7 +420,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         try
         {
-            index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), 0, monitor, readRebuilding,
+            index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), monitor, readRebuilding,
                     needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty() );
             return isRebuilding.getValue();
         }

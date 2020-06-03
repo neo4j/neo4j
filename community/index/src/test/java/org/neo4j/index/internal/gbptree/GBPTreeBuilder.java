@@ -47,7 +47,6 @@ public class GBPTreeBuilder<KEY,VALUE>
 {
     private PageCache pageCache;
     private File file;
-    private int tentativeIndexPageSize;
     private Monitor monitor = NO_MONITOR;
     private Header.Reader headerReader = NO_HEADER_READER;
     private Layout<KEY,VALUE> layout;
@@ -79,12 +78,6 @@ public class GBPTreeBuilder<KEY,VALUE>
     public GBPTreeBuilder<KEY,VALUE> with( PageCache pageCache )
     {
         this.pageCache = pageCache;
-        return this;
-    }
-
-    public GBPTreeBuilder<KEY,VALUE> withIndexPageSize( int tentativeIndexPageSize )
-    {
-        this.tentativeIndexPageSize = tentativeIndexPageSize;
         return this;
     }
 
@@ -132,7 +125,7 @@ public class GBPTreeBuilder<KEY,VALUE>
 
     public GBPTree<KEY,VALUE> build()
     {
-        return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter,
-                recoveryCleanupWorkCollector, readOnly, pageCacheTracer, openOptions );
+        return new GBPTree<>( pageCache, file, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
+                openOptions );
     }
 }

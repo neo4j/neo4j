@@ -69,7 +69,7 @@ public class GBPTreeBootstrapper
 
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
-            GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
+            GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
                     pageCacheTracer, Sets.immutable.empty() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }

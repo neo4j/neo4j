@@ -77,7 +77,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
@@ -89,6 +88,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -236,115 +236,46 @@ class GBPTreeTest
     }
 
     @Test
-    void shouldFailOnOpenWithDifferentPageSize() throws Exception
+    void shouldFailOnOpenWithSmallerPageSize() throws Exception
     {
         // GIVEN
         int pageSize = 2 * defaultPageSize;
         index( pageSize ).build().close();
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageSize / 2 ).build() )
+        int smallerPageSize = pageSize / 2;
+        try ( GBPTree<MutableLong,MutableLong> ignored = index( smallerPageSize ).build() )
         {
             fail( "Should not load" );
         }
         catch ( MetadataMismatchException e )
         {
             // THEN good
-            assertThat( e.getMessage() ).contains( "page size" );
+            assertThat( e.getMessage() ).contains(
+                    format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                            smallerPageSize, pageSize ) );
         }
     }
 
     @Test
-    void shouldFailOnStartingWithPageSizeLargerThanThatOfPageCache() throws Exception
+    void shouldFailOnOpenWithLargerPageSize() throws Exception
     {
+        // GIVEN
+        int pageSize = 2 * defaultPageSize;
+        index( pageSize ).build().close();
+
         // WHEN
-        int pageCachePageSize = defaultPageSize * 4;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCachePageSize )
-                .withIndexPageSize( 2 * pageCachePageSize )
-                .build() )
+        int largerPageSize = 2 * pageSize;
+        try ( GBPTree<MutableLong,MutableLong> ignored = index( largerPageSize ).build() )
         {
-            fail( "Shouldn't have been created" );
+            fail( "Should not load" );
         }
         catch ( MetadataMismatchException e )
         {
             // THEN good
-            assertThat( e.getMessage() ).contains( "page size" );
-        }
-    }
-
-    @Test
-    void shouldMapIndexFileWithProvidedPageSizeIfLessThanOrEqualToCachePageSize() throws Exception
-    {
-        // WHEN
-        int pageCachePageSize = defaultPageSize * 4;
-        index( pageCachePageSize ).withIndexPageSize( pageCachePageSize / 2 ).build().close();
-    }
-
-    @Test
-    void shouldFailWhenTryingToRemapWithPageSizeLargerThanCachePageSize() throws Exception
-    {
-        // WHEN
-        int pageCachePageSize = defaultPageSize * 4;
-        index( pageCachePageSize ).build().close();
-
-        try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCachePageSize / 2 )
-                .withIndexPageSize( pageCachePageSize )
-                .build() )
-        {
-            fail( "Expected to fail" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN Good
-            assertThat( e.getMessage() ).contains( "page size" );
-        }
-    }
-
-    @Test
-    void shouldRemapFileIfMappedWithPageSizeLargerThanCreationSize() throws Exception
-    {
-        // WHEN
-        int pageSize = defaultPageSize * 4;
-        List<Long> expectedData = new ArrayList<>();
-        for ( long i = 0; i < 100; i++ )
-        {
-            expectedData.add( i );
-        }
-        try ( GBPTree<MutableLong,MutableLong> index = index( pageSize )
-                .withIndexPageSize( pageSize / 2 )
-                .build() )
-        {
-            // Insert some data
-            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
-            {
-                MutableLong key = new MutableLong();
-                MutableLong value = new MutableLong();
-
-                for ( Long insert : expectedData )
-                {
-                    key.setValue( insert );
-                    value.setValue( insert );
-                    writer.put( key, value );
-                }
-            }
-            index.checkpoint( UNLIMITED, NULL );
-        }
-
-        // THEN
-        try ( GBPTree<MutableLong,MutableLong> index = index( pageSize ).build() )
-        {
-            MutableLong fromInclusive = new MutableLong( 0L );
-            MutableLong toExclusive = new MutableLong( 200L );
-            try ( Seeker<MutableLong,MutableLong> seek = index.seek( fromInclusive, toExclusive, NULL ) )
-            {
-                int i = 0;
-                while ( seek.next() )
-                {
-                    assertEquals( seek.key().getValue(), expectedData.get( i ) );
-                    assertEquals( seek.value().getValue(), expectedData.get( i ) );
-                    i++;
-                }
-            }
+            assertThat( e.getMessage() ).contains(
+                    format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                            largerPageSize, pageSize ) );
         }
     }
 

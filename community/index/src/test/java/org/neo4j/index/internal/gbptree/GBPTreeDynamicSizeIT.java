@@ -23,7 +23,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 
-public class GBPTreeDynamixSizeIT extends GBPTreeITBase<RawBytes,RawBytes>
+public class GBPTreeDynamicSizeIT extends GBPTreeITBase<RawBytes,RawBytes>
 {
     @Override
     TestLayout<RawBytes,RawBytes> getLayout( RandomRule random, int pageSize )

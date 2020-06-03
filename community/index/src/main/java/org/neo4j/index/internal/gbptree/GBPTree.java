@@ -557,8 +557,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param indexFile {@link File} containing the actual index
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
-     * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
-     * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer, PageCursorTracer)}
      * or {@link #close()}
@@ -568,10 +566,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
-    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions )
-            throws MetadataMismatchException
+    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
+            Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer,
+            ImmutableSet<OpenOption> openOptions ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -587,7 +584,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             try
             {
-                this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, cursorTracer, openOptions );
+                this.pagedFile = openOrCreate( pageCache, indexFile, cursorTracer, openOptions );
                 this.pageSize = pagedFile.pageSize();
                 closed = false;
                 TreeNodeSelector.Factory format;
@@ -685,7 +682,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, File indexFile, int pageSizeForCreation, PageCursorTracer cursorTracer,
+    private PagedFile openOrCreate( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer,
             ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         try
@@ -696,7 +693,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             if ( !readOnly )
             {
-                return createNewIndexFile( pageCache, indexFile, pageSizeForCreation );
+                return createNewIndexFile( pageCache, indexFile );
             }
             throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", e );
         }
@@ -714,7 +711,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             // We're only interested in the page size really, so don't involve layout at this point
             Meta meta = readMeta( null, pagedFile, cursorTracer );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize(), pagedFileOpen, openOptions );
+            if ( meta.getPageSize() != pageCache.pageSize() )
+            {
+                throw new MetadataMismatchException( format(
+                        "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                        pageCache.pageSize(), meta.getPageSize() ) );
+            }
             success = true;
             return pagedFile;
         }
@@ -731,21 +733,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private PagedFile createNewIndexFile( PageCache pageCache, File indexFile, int pageSizeForCreation ) throws IOException
+    private PagedFile createNewIndexFile( PageCache pageCache, File indexFile ) throws IOException
     {
         // First time
         monitor.noStoreFile();
-        int pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
-        if ( pageSize > pageCache.pageSize() )
-        {
-            throw new MetadataMismatchException( format(
-                    "Tried to create tree with page size %d" +
-                    ", but page cache used to create it has a smaller page size %d" +
-                    " so cannot be created", pageSize, pageCache.pageSize() ) );
-        }
-
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageSize, openOptions.newWith( CREATE ) );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions.newWith( CREATE ) );
         created = true;
         return pagedFile;
     }
@@ -987,28 +980,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             meta.write( metaCursor, layout );
         }
-    }
-
-    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize, MutableBoolean pagedFileOpen,
-            ImmutableSet<OpenOption> openOptions ) throws IOException
-    {
-        // This index was created with another page size, re-open with that actual page size
-        if ( pageSize != pageCache.pageSize() )
-        {
-            if ( pageSize > pageCache.pageSize() || pageSize < 0 )
-            {
-                throw new MetadataMismatchException( format(
-                        "Tried to create tree with page size %d, but page cache used to open it this time " +
-                        "has a smaller page size %d so cannot be opened",
-                        pageSize, pageCache.pageSize() ) );
-            }
-            pagedFile.close();
-            pagedFileOpen.setFalse();
-            PagedFile remappedFile = pageCache.map( indexFile, pageSize, openOptions );
-            pagedFileOpen.setTrue();
-            return remappedFile;
-        }
-        return pagedFile;
     }
 
     /**
