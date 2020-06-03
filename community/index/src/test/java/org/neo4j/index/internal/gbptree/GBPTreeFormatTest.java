@@ -34,6 +34,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 
@@ -49,25 +50,53 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 {
     private static final String STORE = "store";
     private static final int INITIAL_KEY_COUNT = 10_000;
-    private static final String CURRENT_FIXED_SIZE_FORMAT_ZIP = "current-format_8k.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_ZIP = "current-dynamic-format_8k.zip";
+    private static final int PAGE_SIZE_8k = 8192;
+    private static final int PAGE_SIZE_16k = 16384;
+    private static final int PAGE_SIZE_32k = 32768;
+    private static final int PAGE_SIZE_64k = 65536;
+    private static final int PAGE_SIZE_4M = 4194304;
+    private static final String CURRENT_FIXED_SIZE_FORMAT_8k_ZIP = "current-format_8k.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP = "current-dynamic-format_8k.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_16k_ZIP = "current-format_16k.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP = "current-dynamic-format_16k.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_32k_ZIP = "current-format_32k.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP = "current-dynamic-format_32k.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_64k_ZIP = "current-format_64k.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP = "current-dynamic-format_64k.zip";
+    private static final String CURRENT_FIXED_SIZE_FORMAT_4M_ZIP = "current-format_4M.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP = "current-dynamic-format_4M.zip";
 
-    @Parameters
+    @Parameters( name = "{1}" )
     public static List<Object[]> data()
     {
         return asList(
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP}
+                // 8k
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8k},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8k},
+                // 16k
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16k},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16k},
+                // 32k
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32k},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32k},
+                // 64k
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64k},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64k},
+                // 4M
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M}
         );
     }
 
     private final TestLayout<KEY,VALUE> layout;
     private final String zipName;
+    private final int pageSize;
 
-    public GBPTreeFormatTest( TestLayout<KEY,VALUE> layout, String zipName )
+    public GBPTreeFormatTest( TestLayout<KEY,VALUE> layout, String zipName, int pageSize )
     {
         this.layout = layout;
         this.zipName = zipName;
+        this.pageSize = pageSize;
     }
 
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -75,6 +104,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     private final List<Long> initialKeys = initialKeys();
     private final List<Long> keysToAdd = keysToAdd();
     private List<Long> allKeys;
+    private PageCache pageCache;
 
     @Before
     public void setup()
@@ -83,6 +113,12 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
         allKeys.addAll( initialKeys );
         allKeys.addAll( keysToAdd );
         allKeys.sort( Long::compare );
+        PageCacheConfig overriddenConfig = PageCacheConfig.config().withPageSize( pageSize );
+        if ( pageSize == PAGE_SIZE_4M )
+        {
+            overriddenConfig.withMemory( "16MiB" );
+        }
+        pageCache = pageCacheRule.getPageCache( globalFs, overriddenConfig );
     }
 
     @Rule
@@ -104,9 +140,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     protected void createStoreFile( File storeFile ) throws IOException
     {
         List<Long> initialKeys = initialKeys();
-        PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<KEY,VALUE> tree =
-                      new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
@@ -126,9 +160,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     protected void verifyFormat( File storeFile ) throws IOException, FormatViolationException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<KEY,VALUE> ignored =
-                      new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
         }
         catch ( MetadataMismatchException e )
@@ -140,9 +172,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     public void verifyContent( File storeFile ) throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-        try ( GBPTree<KEY,VALUE> tree =
-                      new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             {
                 // WHEN reading from the tree

@@ -120,7 +120,9 @@ public abstract class FormatCompatibilityVerifier
     {
         fail( String.format( "This is merely a notification to developer. Format has changed and its version has also " +
                         "been properly incremented. A store file with this new format has been generated and should be committed. " +
-                        "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
+                        "Please move the newly created file to correct resources location using command:%n" +
+                        "mv \"%s\" \"%s\"%n" +
+                        "replacing the existing file there",
                 globalDir.file( zipName ),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) +
                         pathify( getClass().getPackage().getName() + "." ) + zipName ) );

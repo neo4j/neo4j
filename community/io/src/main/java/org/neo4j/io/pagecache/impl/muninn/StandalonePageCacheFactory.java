@@ -49,17 +49,26 @@ public final class StandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
-        return createPageCache( factory, jobScheduler, cacheTracer );
+        int pageSize = PageCache.PAGE_SIZE;
+        return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        return createPageCache( factory, jobScheduler, cacheTracer );
+        int pageSize = PageCache.PAGE_SIZE;
+        return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
-    private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, int pageSize )
+    {
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
+    }
+
+    private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer, int pageSize )
     {
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( MebiByte.toBytes( 8 ), EmptyMemoryTracker.INSTANCE );
