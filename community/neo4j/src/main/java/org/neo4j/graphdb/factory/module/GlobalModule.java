@@ -182,13 +182,14 @@ public class GlobalModule
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         memoryPools = new MemoryPools( globalConfig.get( memory_tracking ) );
-        otherMemoryPool = memoryPools.pool( MemoryGroup.OTHER, 0 );
-        transactionsMemoryPool = memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ) );
+        otherMemoryPool = memoryPools.pool( MemoryGroup.OTHER, 0, null );
+        transactionsMemoryPool =
+                memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ), memory_transaction_global_max_size.name() );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
 
         recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
-                                                   memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, Long.MAX_VALUE ).getPoolMemoryTracker() );
+                                                   memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
         globalDependencies.satisfyDependency( recentQueryBuffer );
 
         systemGraphComponents = tryResolveOrCreate( SystemGraphComponents.class, SystemGraphComponents::new );

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DatabaseMemoryGroupTrackerTest
 {
     private final MemoryPools memoryPools = new MemoryPools();
-    private final GlobalMemoryGroupTracker globalPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100 );
+    private final GlobalMemoryGroupTracker globalPool = memoryPools.pool( MemoryGroup.TRANSACTION, 100, null );
 
     @AfterEach
     void tearDown()
@@ -59,7 +59,7 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void allocateOnParent( AllocationFacade methods )
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10, null );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
         assertEquals( 2, methods.used( globalPool ) );
@@ -73,7 +73,7 @@ class DatabaseMemoryGroupTrackerTest
     void ownPoolFromTracking( AllocationFacade methods )
     {
         methods.reserve( globalPool, 2 );
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10, null );
         methods.reserve( subPool, 2 );
         assertEquals( 2, methods.used( subPool) );
         assertEquals( 4, methods.used( globalPool ) );
@@ -87,7 +87,7 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void trackMemoryWithDefaultTracker( AllocationFacade methods )
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 12 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 12, null );
         methods.reserve( subPool, 3 );
 
         assertEquals( 3, methods.used( subPool ) );
@@ -101,7 +101,7 @@ class DatabaseMemoryGroupTrackerTest
     @Test
     void trackedHeapFromPoolAndTrackerMatch()
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120, null );
 
         var memoryTracker = subPool.getPoolMemoryTracker();
 
@@ -116,7 +116,7 @@ class DatabaseMemoryGroupTrackerTest
     @Test
     void trackedNativeFromPoolAndTrackerMatch()
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 120, null );
 
         var memoryTracker = subPool.getPoolMemoryTracker();
 
@@ -132,7 +132,7 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void respectLocalLimit( AllocationFacade methods )
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10, null );
         assertThrows( MemoryLimitExceeded.class, () -> methods.reserve( subPool, 11 ) );
         subPool.close();
     }
@@ -141,7 +141,7 @@ class DatabaseMemoryGroupTrackerTest
     @MethodSource( "arguments" )
     void respectParentLimit( AllocationFacade methods )
     {
-        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 102 );
+        ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 102, null );
         assertThrows( MemoryLimitExceeded.class, () -> methods.reserve( subPool, 101 ) );
         subPool.close();
     }

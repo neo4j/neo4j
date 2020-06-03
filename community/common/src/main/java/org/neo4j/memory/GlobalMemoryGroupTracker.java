@@ -34,9 +34,9 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
     private final MemoryTracker memoryTracker;
     private final boolean trackingEnabled;
 
-    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict, boolean trackingEnabled )
+    public GlobalMemoryGroupTracker( MemoryPools pools, MemoryGroup group, long limit, boolean strict, boolean trackingEnabled, String limitSettingName )
     {
-        super( new MemoryPoolImpl( limit, strict ) );
+        super( new MemoryPoolImpl( limit, strict, limitSettingName ) );
         this.pools = pools;
         this.group = group;
         this.trackingEnabled = trackingEnabled;
@@ -62,9 +62,9 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
         memoryTracker.close();
     }
 
-    public ScopedMemoryPool newDatabasePool( String name, long limit )
+    public ScopedMemoryPool newDatabasePool( String name, long limit, String limitSettingName )
     {
-        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true, trackingEnabled );
+        DatabaseMemoryGroupTracker subTracker = new DatabaseMemoryGroupTracker( this, name, limit, true, trackingEnabled, limitSettingName );
         databasePools.add( subTracker );
         return subTracker;
     }

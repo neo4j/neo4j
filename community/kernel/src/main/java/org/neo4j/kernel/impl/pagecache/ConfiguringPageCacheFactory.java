@@ -90,7 +90,7 @@ public class ConfiguringPageCacheFactory
     protected PageCache createPageCache()
     {
         long pageCacheMaxMemory = getPageCacheMaxMemory( config );
-        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false );
+        var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false, null );
         var memoryTracker = memoryPool.getPoolMemoryTracker();
         MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
         return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock, memoryTracker );

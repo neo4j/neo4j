@@ -184,7 +184,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
         this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
-                config.get( memory_transaction_database_max_size ) );
+                config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
         config.addListener( memory_transaction_database_max_size, ( before, after ) -> transactionMemoryPool.setSize( after ) );
         doBlockNewTransactions();
     }

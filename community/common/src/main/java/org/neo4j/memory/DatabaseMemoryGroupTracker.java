@@ -25,9 +25,10 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
     private final String name;
     private final MemoryTracker memoryTracker;
 
-    DatabaseMemoryGroupTracker( GlobalMemoryGroupTracker parent, String name, long limit, boolean strict, boolean trackingEnabled )
+    DatabaseMemoryGroupTracker( GlobalMemoryGroupTracker parent, String name, long limit, boolean strict, boolean trackingEnabled,
+            String limitSettingName )
     {
-        super( new MemoryPoolImpl( limit, strict ) );
+        super( new MemoryPoolImpl( limit, strict, limitSettingName ) );
         this.parent = parent;
         this.name = name;
         this.memoryTracker = trackingEnabled ? new MemoryPoolTracker( this ) : EmptyMemoryTracker.INSTANCE;

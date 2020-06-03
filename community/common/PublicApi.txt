@@ -43,6 +43,7 @@ org.neo4j.kernel.api.exceptions.Status.General public static final enum extends 
 org.neo4j.kernel.api.exceptions.Status.General::ForbiddenOnReadOnlyDatabase org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::IndexCorruptionDetected org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::InvalidArguments org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::MemoryPoolOutOfMemoryError org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::OutOfMemoryError org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::SchemaCorruptionDetected org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::StackOverFlowError org.neo4j.kernel.api.exceptions.Status.General public static final

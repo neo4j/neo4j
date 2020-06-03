@@ -31,7 +31,7 @@ class NativeScopedBufferTest
     @Test
     void trackBufferScopeMemoryAllocation()
     {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0, null );
         try ( NativeScopedBuffer bufferScope = new NativeScopedBuffer( 100, memoryTracker ) )
         {
             assertEquals( 0, memoryTracker.estimatedHeapMemory() );
@@ -45,7 +45,7 @@ class NativeScopedBufferTest
     @Test
     void closeBufferMultipleTimesIsSafe()
     {
-        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0 );
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 400, 0, null );
         NativeScopedBuffer bufferScope = new NativeScopedBuffer( 100, memoryTracker );
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
         assertEquals( 100, memoryTracker.usedNativeMemory() );

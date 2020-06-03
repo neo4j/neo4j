@@ -32,7 +32,7 @@ class BoundedMemoryTrackerTest extends CypherFunSuite {
     override def estimatedHeapUsage: Long = i
   }
 
-  case class TestMemoryTracker(maxBytes: Long = Long.MaxValue) extends LocalMemoryTracker(MemoryPools.NO_TRACKING, maxBytes, 0)
+  case class TestMemoryTracker(maxBytes: Long = Long.MaxValue) extends LocalMemoryTracker(MemoryPools.NO_TRACKING, maxBytes, 0, null)
 
   test("Tracks overall memory high water mark with bytes") {
     // Given

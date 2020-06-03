@@ -21,6 +21,7 @@ package org.neo4j.memory;
 
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.api.exceptions.Status.General.TransactionOutOfMemoryError;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requireNonNegative;
@@ -51,6 +52,11 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     private final long grabSize;
 
     /**
+     * Name of the setting that imposes the limit.
+     */
+    private final String limitSettingName;
+
+    /**
      * A per tracker limit.
      */
     private long localBytesLimit;
@@ -77,19 +83,20 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
 
     public LocalMemoryTracker()
     {
-        this( NO_TRACKING, INFINITY, DEFAULT_GRAB_SIZE );
+        this( NO_TRACKING, INFINITY, DEFAULT_GRAB_SIZE, null );
     }
 
     public LocalMemoryTracker( MemoryPool memoryPool )
     {
-        this( memoryPool, INFINITY, DEFAULT_GRAB_SIZE );
+        this( memoryPool, INFINITY, DEFAULT_GRAB_SIZE, null );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize )
+    public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName )
     {
         this.memoryPool = requireNonNull( memoryPool );
         this.localBytesLimit = validateLimit( localBytesLimit );
         this.grabSize = requireNonNegative( grabSize );
+        this.limitSettingName = limitSettingName;
     }
 
     @Override
@@ -106,7 +113,8 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         if ( allocatedBytesHeap + allocatedBytesNative > localBytesLimit )
         {
             allocatedBytesNative -= bytes;
-            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative );
+            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
+                    limitSettingName );
         }
 
         this.memoryPool.reserveNative( bytes );
@@ -133,7 +141,8 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         if ( allocatedBytesHeap + allocatedBytesNative > localBytesLimit )
         {
             allocatedBytesHeap -= bytes;
-            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative );
+            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
+                    limitSettingName );
         }
 
         if ( allocatedBytesHeap > heapHighWaterMark )

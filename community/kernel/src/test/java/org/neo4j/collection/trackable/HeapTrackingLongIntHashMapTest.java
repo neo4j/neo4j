@@ -42,7 +42,7 @@ class HeapTrackingLongIntHashMapTest
     @BeforeEach
     void setUp()
     {
-        memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 0L );
+        memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 0L, null );
         memoryTracker = new LocalMemoryTracker( memoryPool );
     }
 

@@ -38,8 +38,8 @@ class LocalMemoryTrackerWithPoolTest
     @BeforeEach
     void setUp()
     {
-        memoryPool = new MemoryPoolImpl( 0, true );
-        memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, GRAB_SIZE );
+        memoryPool = new MemoryPoolImpl( 0, true, null );
+        memoryTracker = new LocalMemoryTracker( memoryPool, LOCAL_LIMIT, GRAB_SIZE, null );
     }
 
     @AfterEach

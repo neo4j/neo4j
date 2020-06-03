@@ -33,8 +33,8 @@ class MemoryPoolsTest
     void createdPoolRegisteredInListOfPools()
     {
         var pools = new MemoryPools();
-        var pool1 = pools.pool( QUERY_CACHE, 2, true );
-        var pool2 = pools.pool( TRANSACTION, 2, true );
+        var pool1 = pools.pool( QUERY_CACHE, 2, true, null );
+        var pool2 = pools.pool( TRANSACTION, 2, true, null );
         assertThat( pools.getPools() ).contains( pool1, pool2 );
     }
 
@@ -42,7 +42,7 @@ class MemoryPoolsTest
     void poolsWithDisabledMemoryTracking()
     {
         var pools = new MemoryPools( false );
-        var pool = pools.pool( TRANSACTION, 2, true );
+        var pool = pools.pool( TRANSACTION, 2, true, null );
 
         assertEquals( 0, pool.usedNative() );
         assertEquals( 0, pool.usedHeap() );
@@ -61,7 +61,7 @@ class MemoryPoolsTest
     void subpoolWithDisabledMemoryTracking()
     {
         var pools = new MemoryPools( false );
-        var pool = pools.pool( TRANSACTION, 2, true ).newDatabasePool( "test", 1 );
+        var pool = pools.pool( TRANSACTION, 2, true, null ).newDatabasePool( "test", 1, null );
 
         assertEquals( 0, pool.usedNative() );
         assertEquals( 0, pool.usedHeap() );
@@ -80,7 +80,7 @@ class MemoryPoolsTest
     void poolIsDeregisteredOnClose()
     {
         var pools = new MemoryPools();
-        var pool = pools.pool( TRANSACTION, 2, true );
+        var pool = pools.pool( TRANSACTION, 2, true, null );
 
         assertThat( pools.getPools() ).contains( pool );
         pool.close();
@@ -93,7 +93,7 @@ class MemoryPoolsTest
         var pools = new MemoryPools();
         assertThat( pools.getPools() ).isEmpty();
 
-        var externalPool = new GlobalMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true, true );
+        var externalPool = new GlobalMemoryGroupTracker( pools, MemoryGroup.NO_TRACKING, 0, true, true, null );
         pools.registerPool( externalPool );
 
         assertThat( pools.getPools() ).hasSize( 1 );
