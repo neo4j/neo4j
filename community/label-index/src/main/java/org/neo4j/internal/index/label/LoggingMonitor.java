@@ -27,7 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.internal.helpers.Format.duration;
-import static org.neo4j.internal.index.label.LabelScanStore.Monitor;
+import static org.neo4j.internal.index.label.TokenScanStore.Monitor;
 
 /**
  * Logs about important events about {@link LabelScanStore} and {@link RelationshipTypeScanStore}.
