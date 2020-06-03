@@ -204,21 +204,21 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int swapIn( long bufferAddress, long fileOffset ) throws IOException
+    private int swapIn( long bufferAddress, long fileOffset, int bufferSize ) throws IOException
     {
         int readTotal = 0;
         try
         {
-            ByteBuffer bufferProxy = proxy( bufferAddress, filePageSize );
+            ByteBuffer bufferProxy = proxy( bufferAddress, bufferSize );
             int read;
             do
             {
                 read = channel.read( bufferProxy, fileOffset + readTotal );
             }
-            while ( read != -1 && (readTotal += read) < filePageSize );
+            while ( read != -1 && (readTotal += read) < bufferSize );
 
             // Zero-fill the rest.
-            int rest = filePageSize - readTotal;
+            int rest = bufferSize - readTotal;
             if ( rest > 0 )
             {
                 UnsafeUtil.setMemory( bufferAddress + readTotal, rest, MuninnPageCache.ZERO_BYTE );
@@ -231,13 +231,13 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( Throwable e )
         {
-            throw new IOException( formatSwapInErrorMessage( fileOffset, filePageSize, readTotal ), e );
+            throw new IOException( formatSwapInErrorMessage( fileOffset, bufferSize, readTotal ), e );
         }
     }
 
-    private static String formatSwapInErrorMessage( long fileOffset, int filePageSize, int readTotal )
+    private static String formatSwapInErrorMessage( long fileOffset, int size, int readTotal )
     {
-        return "Read failed after " + readTotal + " of " + filePageSize + " bytes from fileOffset " + fileOffset + ".";
+        return "Read failed after " + readTotal + " of " + size + " bytes from fileOffset " + fileOffset + ".";
     }
 
     private int swapOut( long bufferAddress, long fileOffset, int bufferLength ) throws IOException
@@ -275,7 +275,7 @@ public class SingleFilePageSwapper implements PageSwapper
                     long fileOffset = pageIdToPosition( filePageId );
                     if ( fileOffset < getCurrentFileSize() )
                     {
-                        return swapIn( bufferAddress, fileOffset );
+                        return swapIn( bufferAddress, fileOffset, filePageSize );
                     }
 
                     clear( bufferAddress, filePageSize );
@@ -324,39 +324,48 @@ public class SingleFilePageSwapper implements PageSwapper
     private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
+        long bytesToRead = countBytesToRead( bufferLengths, length );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, bufferLengths, length );
-        long bytesRead = lockPositionReadVector( fileOffset, srcs );
+        long bytesRead = lockPositionReadVector( fileOffset, srcs, bytesToRead );
         if ( bytesRead == -1 )
         {
-            for ( long address : bufferAddresses )
+            for ( int i = 0; i < length; i++ )
             {
-                UnsafeUtil.setMemory( address, filePageSize, MuninnPageCache.ZERO_BYTE );
+                UnsafeUtil.setMemory( bufferAddresses[i], bufferLengths[i], MuninnPageCache.ZERO_BYTE );
             }
             return 0;
         }
-        else if ( bytesRead < ((long) filePageSize) * length )
+        else if ( bytesRead < bytesToRead )
         {
-            int pagesRead = (int) (bytesRead / filePageSize);
-            int bytesReadIntoLastReadPage = (int) (bytesRead % filePageSize);
-            int pagesNeedingZeroing = length - pagesRead;
-            for ( int i = 0; i < pagesNeedingZeroing; i++ )
+            long bytesToKeep = bytesRead;
+            for ( int bufferIndex = 0; bufferIndex < length; bufferIndex++ )
             {
-                long address = bufferAddresses[pagesRead + i];
-                long bytesToZero = filePageSize;
-                if ( i == 0 )
+                if ( bytesToKeep > bufferLengths[bufferIndex] )
                 {
-                    address += bytesReadIntoLastReadPage;
-                    bytesToZero -= bytesReadIntoLastReadPage;
+                    bytesToKeep = Math.subtractExact( bytesToKeep, bufferLengths[bufferIndex] );
                 }
-                UnsafeUtil.setMemory( address, bytesToZero, MuninnPageCache.ZERO_BYTE );
+                else
+                {
+                    UnsafeUtil.setMemory( bufferAddresses[bufferIndex] + bytesToKeep, bufferLengths[bufferIndex] - bytesToKeep, MuninnPageCache.ZERO_BYTE );
+                    bytesToKeep = 0;
+                }
             }
         }
         return bytesRead;
     }
 
-    private long lockPositionReadVector( long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long countBytesToRead( int[] bufferLengths, int length )
     {
-        long toRead = filePageSize * (long) srcs.length;
+        long bytesToRead = 0;
+        for ( int i = 0; i < length; i++ )
+        {
+            bytesToRead = Math.addExact( bytesToRead, bufferLengths[i] );
+        }
+        return bytesToRead;
+    }
+
+    private long lockPositionReadVector( long fileOffset, ByteBuffer[] srcs, long bytesToRead ) throws IOException
+    {
         long read;
         long readTotal = 0;
         synchronized ( channel.getPositionLock() )
@@ -366,7 +375,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 read = channel.read( srcs );
             }
-            while ( read != -1 && (readTotal += read) < toRead );
+            while ( read != -1 && (readTotal += read) < bytesToRead );
             return readTotal;
         }
     }
@@ -458,10 +467,9 @@ public class SingleFilePageSwapper implements PageSwapper
         ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
         {
-            long address = bufferAddresses[i];
             try
             {
-                buffers[i] = UnsafeUtil.newDirectByteBuffer( address, bufferLengths[i] );
+                buffers[i] = UnsafeUtil.newDirectByteBuffer( bufferAddresses[i], bufferLengths[i] );
             }
             catch ( Exception e )
             {
