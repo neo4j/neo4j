@@ -19,20 +19,24 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,32 +45,43 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
-@PageCacheExtension
+@TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
 abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 {
+    private static final int PAGE_SIZE_8k = 8192;
+    private static final int PAGE_SIZE_16k = 16384;
+    private static final int PAGE_SIZE_32k = 32768;
+    private static final int PAGE_SIZE_64k = 65536;
+    private static final int PAGE_SIZE_4M = 4194304;
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private RandomRule random;
+    private DefaultFileSystemAbstraction fs;
     @Inject
-    private PageCache pageCache;
+    private RandomRule random;
 
+    private PageCache pageCache;
     private TestLayout<KEY,VALUE> layout;
     private File indexFile;
 
-    @BeforeEach
-    void setUp()
+    @AfterEach
+    private void tearDown()
     {
-        indexFile = testDirectory.file( "index" );
-        layout = getLayout( random, pageCache.pageSize() );
+        if ( pageCache != null )
+        {
+            pageCache.close();
+            pageCache = null;
+        }
     }
 
     abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
-    @Test
-    void shouldSeeSimpleInsertions() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    void shouldSeeSimpleInsertions( int pageSize ) throws Exception
     {
+        setupTest( pageSize );
         try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
@@ -90,9 +105,11 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
         }
     }
 
-    @Test
-    void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    void shouldSeeSimpleInsertionsWithExactMatch( int pageSize ) throws Exception
     {
+        setupTest( pageSize );
         try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
@@ -118,9 +135,11 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
     /* Randomized tests */
 
-    @Test
-    void shouldSplitCorrectly() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    void shouldSplitCorrectly( int pageSize ) throws Exception
     {
+        setupTest( pageSize );
         // GIVEN
         try ( GBPTree<KEY,VALUE> index = index() )
         {
@@ -165,6 +184,13 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 }
             }
         }
+    }
+
+    private void setupTest( int pageSize )
+    {
+        indexFile = testDirectory.file( "index" );
+        pageCache = StandalonePageCacheFactory.createPageCache( fs, new ThreadPoolJobScheduler(), pageSize );
+        layout = getLayout( random, pageCache.pageSize() );
     }
 
     private GBPTree<KEY,VALUE> index()

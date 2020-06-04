@@ -71,7 +71,7 @@ public final class StandalonePageCacheFactory
     private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer, int pageSize )
     {
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
-        long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 3 * pageSize );
+        long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10 * pageSize );
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, memoryAllocator, pageSize, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock(),
                 EmptyMemoryTracker.INSTANCE );
