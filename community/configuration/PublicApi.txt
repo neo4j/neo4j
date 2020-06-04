@@ -173,7 +173,6 @@ org.neo4j.configuration.GraphDatabaseSettings::store_user_log_rotation_delay org
 org.neo4j.configuration.GraphDatabaseSettings::store_user_log_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::store_user_log_to_stdout org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::strict_config_validation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
-org.neo4j.configuration.GraphDatabaseSettings::system_init_file org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_allocation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_cpu_time org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::transaction_logs_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final

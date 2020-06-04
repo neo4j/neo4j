@@ -278,6 +278,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             .build();
 
     @Internal
+    @Description( "Name of file containing commands to be run during initialization of the system database. " +
+                  "The file should exists in the scripts directory in neo4j home directory." )
+    public static final Setting<Path> system_init_file =
+            newBuilder( "dbms.init_file", PATH, null ).immutable().setDependency( scripts_dir ).build();
+
+    @Internal
     @Description( "Debug log contexts that should output debug level logging" )
     public static final Setting<List<String>> store_internal_debug_contexts =
             newBuilder( "unsupported.dbms.logs.debug.debug_loggers", listOf( STRING ), List.of( "org.neo4j.diagnostics" ) ).dynamic().build();
