@@ -62,7 +62,7 @@ class LifeExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( LifeExtensionComponentShutdownCase.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( RuntimeException.class ),
@@ -74,7 +74,7 @@ class LifeExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( LifeExtensionIncorrectUsage.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),

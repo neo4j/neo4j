@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.testing.client;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -36,10 +37,11 @@ public class SecureWebSocketConnection extends WebSocketConnection
     {
         return () ->
         {
-            SslContextFactory sslContextFactory = new SslContextFactory( /* trustall= */ true );
+            var sslContextFactory = new SslContextFactory.Client( /* trustAll= */ true );
             /* remove extra filters added by jetty on cipher suites */
             sslContextFactory.setExcludeCipherSuites();
-            return new WebSocketClient( sslContextFactory );
+            var httpClient = new HttpClient( sslContextFactory );
+            return new WebSocketClient( httpClient );
         };
     }
 }

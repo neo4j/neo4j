@@ -41,7 +41,7 @@ class ThreadLeakageGuardExtensionTest
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( IncorrectThreadLeakage.class ) )
                 .execute()
-                .all();
+                .allEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( ExtensionContextException.class ),

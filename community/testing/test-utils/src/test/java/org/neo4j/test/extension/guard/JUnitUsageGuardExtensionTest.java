@@ -83,6 +83,6 @@ class JUnitUsageGuardExtensionTest
     {
         return EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( clazz ) ).execute()
-                .all();
+                .allEvents();
     }
 }

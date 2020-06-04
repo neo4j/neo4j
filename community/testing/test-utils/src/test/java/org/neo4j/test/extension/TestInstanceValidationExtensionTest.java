@@ -39,7 +39,7 @@ class TestInstanceValidationExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( InjectionIncorrectUsage.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),

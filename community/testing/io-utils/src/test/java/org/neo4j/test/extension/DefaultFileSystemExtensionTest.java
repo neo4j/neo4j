@@ -54,7 +54,7 @@ class DefaultFileSystemExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( IncorrectFileSystemUsage.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),
