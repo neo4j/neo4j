@@ -19,6 +19,12 @@
  */
 package org.neo4j.fabric.executor;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.IntStream;
+
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class Exceptions
@@ -26,6 +32,8 @@ public class Exceptions
     public static RuntimeException transform( Status defaultStatus, Throwable t )
     {
         var unwrapped = reactor.core.Exceptions.unwrap( t );
+        unwrapped = transformComposite( unwrapped );
+
         String message = unwrapped.getMessage();
 
         // preserve the original exception if possible
@@ -41,5 +49,46 @@ public class Exceptions
         }
 
         return new FabricException( defaultStatus, message, unwrapped );
+    }
+
+    private static Throwable transformComposite( Throwable potentialComposite )
+    {
+        List<Throwable> unwrappedExceptions = reactor.core.Exceptions.unwrapMultiple( potentialComposite );
+        List<Throwable> primaryExceptions = new ArrayList<>();
+        List<FabricSecondaryException> secondaryExceptions = new ArrayList<>();
+
+        unwrappedExceptions.forEach( exception ->
+        {
+            if ( exception instanceof FabricSecondaryException )
+            {
+                secondaryExceptions.add( (FabricSecondaryException) exception );
+            }
+            else
+            {
+                primaryExceptions.add( exception );
+            }
+        } );
+
+        if ( !primaryExceptions.isEmpty() )
+        {
+            Throwable result = primaryExceptions.get( 0 );
+            IntStream.range( 1, primaryExceptions.size() ).forEach( i -> result.addSuppressed( primaryExceptions.get( i ) ) );
+            return result;
+        }
+
+        Set<Throwable> uniqueExceptions = new HashSet<>();
+        Throwable result = secondaryExceptions.get( 0 ).getPrimaryException();
+        uniqueExceptions.add( result );
+        IntStream.range( 1, secondaryExceptions.size() )
+                 .mapToObj( secondaryExceptions::get )
+                 .map( FabricSecondaryException::getPrimaryException )
+                 // multiple secondary exceptions can point to the same primary one
+                 .filter( exception -> !uniqueExceptions.contains( exception ) )
+                 .forEach( exception ->
+                 {
+                     result.addSuppressed( exception );
+                     uniqueExceptions.add( exception );
+                 } );
+        return result;
     }
 }
