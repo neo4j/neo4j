@@ -41,11 +41,13 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
+import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 {
     static final int UNMAPPED_TTE = -1;
+    private static final boolean mergePagesOnFlush = flag( MuninnPagedFile.class, "mergePagesOnFlush", true );
     private static final int maxChunkGrowth = getInteger( MuninnPagedFile.class, "maxChunkGrowth", 16 ); // One chunk is 32 MiB, by default.
     private static final int translationTableChunkSizePower = getInteger( MuninnPagedFile.class, "translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
@@ -433,7 +435,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 flushStamps[pagesGrabbed] = flushStamp;
                             }
                             long address = getAddress( pageRef );
-                            if ( nextSequentialAddress == address )
+                            if ( mergePagesOnFlush && nextSequentialAddress == address )
                             {
                                 // do not add new address, only bump length of previous buffer
                                 bufferLengths[lastBufferIndex] += filePageSize;
