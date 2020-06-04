@@ -394,7 +394,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             int pagesGrabbed = 0;
             long nextSequentialAddress = -1;
             int numberOfBuffers = 0;
-            int continuousBufferIndex = -1;
+            int lastBufferIndex = -1;
             int mergedPages = 0;
 
             chunkLoop:
@@ -436,14 +436,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                             if ( nextSequentialAddress == address )
                             {
                                 // do not add new address, only bump length of previous buffer
-                                bufferLengths[continuousBufferIndex] += filePageSize;
+                                bufferLengths[lastBufferIndex] += filePageSize;
                                 mergedPages++;
                             }
                             else
                             {
                                 // add new address
                                 bufferAddresses[numberOfBuffers] = address;
-                                continuousBufferIndex = numberOfBuffers;
+                                lastBufferIndex = numberOfBuffers;
                                 bufferLengths[numberOfBuffers++] = filePageSize;
                             }
                             nextSequentialAddress = address + filePageSize;
@@ -468,7 +468,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                     pagesGrabbed = 0;
                     nextSequentialAddress = -1;
                     numberOfBuffers = 0;
-                    continuousBufferIndex = -1;
+                    lastBufferIndex = -1;
                     mergedPages = 0;
                 }
             }

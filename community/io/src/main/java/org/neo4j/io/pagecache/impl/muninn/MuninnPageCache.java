@@ -628,7 +628,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private void flushFile( MuninnPagedFile muninnPagedFile,  IOLimiter limiter ) throws IOException
+    private void flushFile( MuninnPagedFile muninnPagedFile, IOLimiter limiter ) throws IOException
     {
         try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
         {
