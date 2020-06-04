@@ -89,9 +89,11 @@ object MapCypherRow {
 class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
   extends CypherRow {
 
-  override def copyTo(target: WritableRow, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit = fail()
+  override def copyAllFrom(input: ReadableRow): Unit = fail()
 
   override def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit = fail()
+
+  override def copyFromOffset(input: ReadableRow, sourceLongOffset: Int, sourceRefOffset: Int, targetLongOffset: Int, targetRefOffset: Int): Unit = fail()
 
   def remove(name: String): Option[AnyValue] = m.remove(name)
   //used for testing

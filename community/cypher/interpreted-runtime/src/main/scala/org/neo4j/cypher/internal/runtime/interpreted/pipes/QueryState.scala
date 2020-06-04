@@ -133,7 +133,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       context.createClone()
     case _ =>
       val x = newExecutionContext()
-      init.copyTo(x)
+      x.copyAllFrom(init)
       x
   }
 
@@ -143,7 +143,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       context.copyWith(newEntries)
     case _ =>
       val x = newExecutionContext()
-      row.copyTo(x)
+      x.copyAllFrom(row)
       x.set(newEntries)
       x
   }
@@ -154,7 +154,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       context.copyWith(key, value)
     case _ =>
       val x = newExecutionContext()
-      row.copyTo(x)
+      x.copyAllFrom(row)
       x.set(key, value)
       x
   }
@@ -165,7 +165,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       context.copyWith(key1, value1, key2, value2)
     case _ =>
       val x = newExecutionContext()
-      row.copyTo(x)
+      x.copyAllFrom(row)
       x.set(key1, value1, key2, value2)
   x
     }
@@ -176,7 +176,7 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
       context.copyWith(key1, value1, key2, value2, key3, value3)
     case _ =>
       val x = newExecutionContext()
-      row.copyTo(x)
+      x.copyAllFrom(row)
       x.set(key1, value1, key2, value2, key3, value3)
       x
   }

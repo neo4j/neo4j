@@ -35,7 +35,13 @@ trait WritableRow extends CachedPropertiesRow {
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit
 
   def mergeWith(other: ReadableRow, entityById: EntityById): Unit
+  def copyAllFrom(input: ReadableRow): Unit
   def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit
+  def copyFromOffset(input: ReadableRow,
+                     sourceLongOffset: Int,
+                     sourceRefOffset: Int,
+                     targetLongOffset: Int,
+                     targetRefOffset: Int): Unit
 
   /**
    * Invalidate all cached node properties for the given node id

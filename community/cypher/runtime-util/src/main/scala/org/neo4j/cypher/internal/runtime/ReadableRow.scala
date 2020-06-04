@@ -29,7 +29,6 @@ trait ReadableRow extends CachedPropertiesRow {
   def getLongAt(offset: Int): Long
   def getRefAt(offset: Int): AnyValue
   def getByName(name: String): AnyValue
-  def copyTo(target: WritableRow, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit
 
   def getLinenumber: Option[ResourceLinenumber]
 }
