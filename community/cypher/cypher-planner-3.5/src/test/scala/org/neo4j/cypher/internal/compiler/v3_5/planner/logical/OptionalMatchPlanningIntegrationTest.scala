@@ -228,8 +228,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         |WHERE m.prop = 42
         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
     val allNodesN: LogicalPlan = NodeByLabelScan("n", LabelName("X") _, Set.empty)
-    val propEquality: Expression =
-      In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
+    val propEquality: Expression = Equals(Property(varFor("m"), PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("42") _) _
 
     val labelCheck: Expression =
       HasLabels(varFor("m"), List(LabelName("Y") _)) _

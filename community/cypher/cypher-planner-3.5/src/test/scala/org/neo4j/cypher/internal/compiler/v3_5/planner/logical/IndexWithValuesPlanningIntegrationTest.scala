@@ -216,7 +216,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Expand(
-        Selection(Ands(Set(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(LessThan(prop("m", "prop"), SignedDecimalIntegerLiteral("50")(pos))(pos)))))(pos),
+        Selection(Ands(Set(LessThan(cachedNodeProperty("n", "prop"), SignedDecimalIntegerLiteral("50")(pos))(pos)))(pos),
           Projection(
             IndexSeek("n:Awesome(prop > 42)", GetValue),
             Map("m" -> varFor("n")))),
