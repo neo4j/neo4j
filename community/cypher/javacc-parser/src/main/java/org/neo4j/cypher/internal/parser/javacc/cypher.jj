@@ -12,7 +12,7 @@ options {
   UNICODE_INPUT = true;
   IGNORE_CASE = false;
   USER_TOKEN_MANAGER = false;
-  USER_CHAR_STREAM = false;
+  USER_CHAR_STREAM = true;
   BUILD_PARSER = true;
   BUILD_TOKEN_MANAGER = true;
   SANITY_CHECK = true;
@@ -114,7 +114,7 @@ public class Cypher<STATEMENT,
                              MAP_PROJECTION_ITEM,
                              POS> astFactory,
                   ASTExceptionFactory exceptionFactory,
-                  java.io.Reader stream) {
+                  CharStream stream) {
         this(stream);
         this.astFactory = astFactory;
         this.exceptionFactory = exceptionFactory;
@@ -131,10 +131,8 @@ TOKEN_MGR_DECLS :
 {
 	public void CommonTokenAction(Token t)
 	{
-		/*  TODO: support position
-		t.beginOffset = input_stream.getBeginOffset();
+		t.beginOffset = ((CypherCharStream)input_stream).getBeginOffset();
 		t.endOffset = t.beginOffset + t.image.length();
-		 */
 	}
 }
 
@@ -211,7 +209,7 @@ MORE : { < STRING1_OPEN: "'" > : STRING1 }
 <STRING1> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
 <STRING1> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
 <STRING1> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
-<STRING1> MORE: { "\\u[0-7][0-7][0-7][0-7]" }
+<STRING1> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
 <STRING1> MORE: { < ~["'","\\","\n","\r"] > }
 <STRING1> TOKEN: { <STRING_LITERAL1: "'"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
@@ -224,7 +222,7 @@ MORE : { < STRING2_OPEN: "\"" > : STRING2 }
 <STRING2> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
 <STRING2> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
 <STRING2> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
-<STRING2> MORE: { "\\u[0-7][0-7][0-7][0-7]" }
+<STRING2> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
 <STRING2> MORE: { < ~["\"","\\","\n","\r"] > }
 <STRING2> TOKEN: { <STRING_LITERAL2: "\""> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
@@ -1000,9 +998,10 @@ List<STATEMENT> Statements() throws Exception :
     ( LOOKAHEAD(2) ";" x=Statement() { stmts.add(x); } )* ( LOOKAHEAD(2) ";" )? <EOF>
     { return stmts; }
   } catch (ParseException e) {
-    throw exceptionFactory.syntaxException(e);
+    Token t = e.currentToken.next;
+    throw exceptionFactory.syntaxException(e, t.beginOffset, t.beginLine, t.beginColumn);
   } catch (InvalidUnicodeLiteral e) {
-    throw exceptionFactory.invalidUnicodeLiteral(e.getMessage());
+    throw exceptionFactory.syntaxException(e, e.offset, e.line, e.column);
   }
 }
 
@@ -1341,8 +1340,7 @@ CLAUSE CallClause() :
     <RPAREN>
   )?
   ( <YIELD> {items = new ArrayList(); } (
-      <MINUS>
-    | x=ProcedureResultItem() {items.add(x);} ( "," x=ProcedureResultItem() {items.add(x);} )* ( where=Where() )?
+      x=ProcedureResultItem() {items.add(x);} ( "," x=ProcedureResultItem() {items.add(x);} )* ( where=Where() )?
     )
   )?
   { return astFactory.callClause(pos(t), (List<String>)namespace, name, (List<EXPRESSION>)arguments, (List<CALL_RESULT_ITEM>)items, where); }
@@ -1540,14 +1538,18 @@ REL_PATTERN RelationshipPattern() :
   boolean right = false;
   VARIABLE v = null;
   List relTypes = java.util.Collections.emptyList();
+  boolean legacyTypeSeparator = false;
   PATH_LENGTH pathLength = null;
   EXPRESSION properties = null;
 }
 {
   ( LeftArrow() { left = true; })? ArrowLine()
-  ( <LBRACKET> ( v=Variable() )? ( relTypes=RelationshipType() )? ( pathLength=PathLength() )? ( properties=Properties() )? <RBRACKET> )?
+  ( <LBRACKET> ( v=Variable() )? (
+    ":" t=SymbolicNameString() {relTypes = new ArrayList(); relTypes.add(t.image);}
+        ( <BAR> ( ":" {legacyTypeSeparator = true; } )? t=SymbolicNameString() {relTypes.add(t.image);} )*
+    )? ( pathLength=PathLength() )? ( properties=Properties() )? <RBRACKET> )?
   ArrowLine() ( RightArrow() { right = true; } )?
-  { return astFactory.relationshipPattern(pos(t.next), left, right, v, (List<String>)relTypes, pathLength, properties); }
+  { return astFactory.relationshipPattern(pos(t.next), left, right, v, (List<String>)relTypes, pathLength, properties, legacyTypeSeparator); }
 }
 
 void LeftArrow() :
@@ -1566,16 +1568,6 @@ void RightArrow() :
 {}
 {
   <GT> | <ARROW_RIGHT_HEAD>
-}
-
-List<String> RelationshipType() :
-{
-  Token t;
-  List relTypes = new ArrayList();
-}
-{
-  ":" t=SymbolicNameString() {relTypes.add(t.image);} ( <BAR> ( ":" )? t=SymbolicNameString() {relTypes.add(t.image);} )*
-  { return (List<String>)relTypes; }
 }
 
 PATH_LENGTH PathLength() :

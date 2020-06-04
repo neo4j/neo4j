@@ -147,7 +147,8 @@ public interface ASTFactory<STATEMENT,
                                      VARIABLE v,
                                      List<String> relTypes,
                                      PATH_LENGTH pathLength,
-                                     EXPRESSION properties );
+                                     EXPRESSION properties,
+                                     boolean legacyTypeSeparator );
 
     /**
      * Create a path-length object used to specify path lengths for variable length patterns.

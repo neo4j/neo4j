@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExceptionFactory {
 
-  override def syntaxException(source: Exception): Exception = inner.syntaxException(source.getMessage, InputPosition.NONE)
+  override def syntaxException(source: Exception, offset: Int, line: Int, column: Int): Exception =
+    inner.syntaxException(source.getMessage, new InputPosition(offset, line, column))
 
   override def invalidUnicodeLiteral(msg: String): Exception = inner.syntaxException(msg, InputPosition.NONE)
 }

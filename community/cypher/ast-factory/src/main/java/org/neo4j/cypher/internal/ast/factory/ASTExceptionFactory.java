@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory;
 
 public interface ASTExceptionFactory
 {
-    Exception syntaxException( Exception source );
+    Exception syntaxException( Exception source, int offset, int line, int column );
 
     Exception invalidUnicodeLiteral( String msg );
 }

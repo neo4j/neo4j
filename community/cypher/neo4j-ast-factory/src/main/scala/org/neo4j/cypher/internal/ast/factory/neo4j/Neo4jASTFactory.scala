@@ -344,7 +344,7 @@ class Neo4jASTFactory(query: String)
                            onMatch: util.List[SetClause],
                            onCreate: util.List[SetClause]): Clause =
     Merge(Pattern(Seq(pattern))(p),
-      onMatch.asScala.toList.map(OnMatch(_)(p)) ++ onCreate.asScala.toList.map(OnCreate(_)(p)))(p)
+      onCreate.asScala.toList.map(OnCreate(_)(p)) ++ onMatch.asScala.toList.map(OnMatch(_)(p)))(p)
 
   override def callClause(p: InputPosition,
                           namespace: util.List[String],
@@ -417,7 +417,8 @@ class Neo4jASTFactory(query: String)
                                    v: Variable,
                                    relTypes: util.List[String],
                                    pathLength: Option[Range],
-                                   properties: Expression): RelationshipPattern = {
+                                   properties: Expression,
+                                   legacyTypeSeparator: Boolean): RelationshipPattern = {
     val direction =
       if (left && !right) SemanticDirection.INCOMING
       else if (!left && right) SemanticDirection.OUTGOING
@@ -430,7 +431,7 @@ class Neo4jASTFactory(query: String)
         case Some(r) => Some(Some(r))
       }
 
-    RelationshipPattern(Option(v), relTypes.asScala.toList.map(RelTypeName(_)(p)), range, Option(properties), direction)(p)
+    RelationshipPattern(Option(v), relTypes.asScala.toList.map(RelTypeName(_)(p)), range, Option(properties), direction, legacyTypeSeparator)(p)
   }
 
   override def pathLength(p: InputPosition, minLength: String, maxLength: String): Option[Range] = {

@@ -35,24 +35,18 @@ class Neo4jASTFactoryTCKTest extends ParsingTestBase with FunSpecLike {
   var x = 0
 
   val BLACKLIST = Set(
-      "Fail when asterisk operator is missing",
-      "Fail on negative bound",
-      "In-query call to procedure that takes no arguments and yields no results",
-      "In-query call to procedure with explicit arguments that drops all result fields",
-      "Failing on incorrect unicode literal",
-      "Fail for invalid Unicode hyphen in subtraction",
-      "Failing when creating relationship with more than one type",
-      "Failing when merging relationship with more than one type",
+      // JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
       "Supplying invalid hexadecimal literal 1",
       "Supplying invalid hexadecimal literal 2",
       "Using ON CREATE and ON MATCH",
-      "Matching using relationship predicate with multiples of the same type")
+//      "Matching using relationship predicate with multiples of the same type"
+    )
 
   scenariosPerFeature foreach {
     case (featureName, scenarios) =>
       describe(featureName) {
         scenarios
-          .filter(scenarioObj => !BLACKLIST(scenarioObj.name))
+          .filter(scenarioObj => BLACKLIST(scenarioObj.name))
           .foreach {
             scenarioObj =>
               describe(scenarioObj.name) {

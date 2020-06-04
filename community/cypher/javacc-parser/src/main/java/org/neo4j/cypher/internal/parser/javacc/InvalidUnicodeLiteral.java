@@ -21,7 +21,14 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 public class InvalidUnicodeLiteral extends RuntimeException
 {
-    public InvalidUnicodeLiteral( String msg) {
-        super(msg);
+    public final int offset;
+    public final int line;
+    public final int column;
+
+    public InvalidUnicodeLiteral( Exception e, int offset, int line, int column ) {
+        super(e);
+        this.offset = offset;
+        this.line = line;
+        this.column = column;
     }
 }

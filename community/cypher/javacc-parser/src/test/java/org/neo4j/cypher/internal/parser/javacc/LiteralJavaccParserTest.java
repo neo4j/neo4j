@@ -154,6 +154,6 @@ public class LiteralJavaccParserTest
 
     private Object parseLiteral( String str ) throws ParseException
     {
-        return new Cypher<>( interpreter, new TestExceptionFactory(), new StringReader( str ) ).Literal();
+        return new Cypher<>( interpreter, new TestExceptionFactory(), new CypherCharStream( str ) ).Literal();
     }
 }

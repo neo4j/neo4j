@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import java.io.StringReader
-
 import org.neo4j.cypher.internal.parser.javacc.Cypher
+import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.scalatest.Assertions
 import org.scalatest.Matchers
 
+import scala.util.Failure
 import scala.util.Try
 
 abstract class ParsingTestBase() extends Assertions with Matchers {
@@ -36,10 +37,15 @@ abstract class ParsingTestBase() extends Assertions with Matchers {
       val exceptionFactory = new OpenCypherExceptionFactory(None)
       val parboiledAST = Try(parboiledParser.parse(query, exceptionFactory, None))
 
-      val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new StringReader(query))
+      val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new CypherCharStream(query))
       val javaccAST = Try(parser.Statements().get(0))
 
-      javaccAST shouldBe parboiledAST
+      (javaccAST, parboiledAST) match {
+        case (Failure(javaccEx: SyntaxException), Failure(parboiledEx: SyntaxException)) =>
+          javaccEx.pos shouldBe parboiledEx.pos
+        case _ =>
+          javaccAST shouldBe parboiledAST
+      }
     }
   }
 }

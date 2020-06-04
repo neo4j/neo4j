@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 public class TestExceptionFactory implements ASTExceptionFactory
 {
     @Override
-    public Exception syntaxException( Exception source )
+    public Exception syntaxException( Exception source, int offset, int line, int column )
     {
         return new Exception("SyntaxException!", source);
     }
