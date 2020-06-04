@@ -337,10 +337,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 switch ( state )
                 {
                 case ONLINE:
-                    // Don't do anything, index is ok.
+                    proxy.start();
                     break;
                 case POPULATING:
-                    // Remember for rebuilding
+                    // Remember for rebuilding right below in this method
                     rebuildingDescriptors.put( indexId, descriptor );
                     break;
                 case FAILED:

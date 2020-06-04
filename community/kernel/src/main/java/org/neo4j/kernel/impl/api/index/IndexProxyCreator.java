@@ -89,13 +89,13 @@ class IndexProxyCreator
             return onlineProxy;
         } );
 
-        return new ContractCheckingIndexProxy( flipper, false );
+        return new ContractCheckingIndexProxy( flipper );
     }
 
     IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor )
     {
         IndexProxy proxy = new RecoveringIndexProxy( descriptor );
-        return new ContractCheckingIndexProxy( proxy, true );
+        return new ContractCheckingIndexProxy( proxy );
     }
 
     IndexProxy createOnlineIndexProxy( IndexDescriptor descriptor )
@@ -105,7 +105,8 @@ class IndexProxyCreator
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( descriptor, onlineAccessor, indexStatisticsStore, false );
-            proxy = new ContractCheckingIndexProxy( proxy, true );
+            proxy = new ContractCheckingIndexProxy( proxy );
+            // it will be started later, when recovery is completed
             return proxy;
         }
         catch ( IOException e )
@@ -130,7 +131,7 @@ class IndexProxyCreator
                 populationFailure,
                 indexStatisticsStore,
                 logProvider );
-        proxy = new ContractCheckingIndexProxy( proxy, true );
+        proxy = new ContractCheckingIndexProxy( proxy );
         return proxy;
     }
 
