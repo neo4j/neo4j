@@ -105,6 +105,10 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
+import scala.collection.JavaConverters.asJavaIterableConverter
+import scala.collection.JavaConverters.asJavaIteratorConverter
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
 object CypherPlanner {
   /**
    * This back-door is intended for quick handling of bugs and support cases
@@ -339,9 +343,25 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     if (params.isEmpty) return VirtualValues.EMPTY_MAP
     val builder = new MapValueBuilder(params.size)
     params.foreach {
-      case (key,value) => builder.add(key, ValueUtils.of(value))
+      case (key,value) => builder.add(key, ValueUtils.of(recursiveAsJava(value)))
     }
     builder.build()
+  }
+
+  /**
+   * Since the front-end is responsible for auto-paramaterization
+   * of queries and it will generate scala collection we need
+   * to turn them back into java in order for `ValueUtils.of` to
+   * do its thing.
+   *
+   * TODO: We should fix the front-end so that we can hook into
+   *       the auto parameterization.
+   */
+  private def recursiveAsJava(any: Any): Any = any match {
+    case e: Iterator[_] => e.map(recursiveAsJava).asJava
+    case e: Iterable[_] => e.map(recursiveAsJava).asJava
+    case e: Map[_, _] => e.mapValues(recursiveAsJava).asJava
+    case e => e
   }
 
   private def doCreatePlan(preparedQuery: BaseState,
