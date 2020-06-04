@@ -25,9 +25,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import org.neo4j.fabric.transaction.ErrorReporter;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 class FabricReactorHooksService extends LifecycleAdapter
 {
@@ -54,10 +54,9 @@ class FabricReactorHooksService extends LifecycleAdapter
 
     private final Consumer<? super Throwable> errorConsumer;
 
-    FabricReactorHooksService( LogProvider internalLogProvider )
+    FabricReactorHooksService( ErrorReporter errorReporter )
     {
-        Log log = internalLogProvider.getLog( FabricReactorHooksService.class );
-        errorConsumer = throwable -> log.error( "Dropped error in stream", throwable );
+        errorConsumer = throwable -> errorReporter.report( "Unhandled error", throwable, Status.General.UnknownError );
         ERROR_CONSUMERS.add( errorConsumer );
     }
 

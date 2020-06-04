@@ -32,14 +32,13 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.internal.LogService;
 
 public class TransactionManager extends LifecycleAdapter
 {
 
     private final FabricRemoteExecutor remoteExecutor;
     private final FabricLocalExecutor localExecutor;
-    private final LogService logService;
+    private final ErrorReporter errorReporter;
     private final FabricConfig fabricConfig;
     private final FabricTransactionMonitor transactionMonitor;
 
@@ -47,13 +46,13 @@ public class TransactionManager extends LifecycleAdapter
 
     public TransactionManager( FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
-            LogService logService,
+            ErrorReporter errorReporter,
             FabricConfig fabricConfig,
             FabricTransactionMonitor transactionMonitor )
     {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
-        this.logService = logService;
+        this.errorReporter = errorReporter;
         this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
     }
@@ -66,7 +65,7 @@ public class TransactionManager extends LifecycleAdapter
                 transactionBookmarkManager,
                 remoteExecutor,
                 localExecutor,
-                logService,
+                errorReporter,
                 this,
                 fabricConfig );
 

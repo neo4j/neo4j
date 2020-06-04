@@ -53,6 +53,7 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
+import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.FabricTransactionMonitor;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -120,7 +121,8 @@ public abstract class FabricServicesBootstrap
         var transactionCheckInterval = config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis();
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval ), TransactionMonitorScheduler.class );
 
-        register( new TransactionManager( remoteExecutor, localExecutor, logService, fabricConfig, transactionMonitor ), TransactionManager.class );
+        var errorReporter = new ErrorReporter( logService );
+        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor ), TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
@@ -131,7 +133,7 @@ public abstract class FabricServicesBootstrap
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 
-        register( new FabricReactorHooksService( internalLogProvider ), FabricReactorHooksService.class );
+        register( new FabricReactorHooksService( errorReporter ), FabricReactorHooksService.class );
 
         Executor fabricWorkerExecutor = jobScheduler.executor( FABRIC_WORKER );
         var fabricExecutor = new FabricExecutor(
