@@ -162,6 +162,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.uniqueForSchema;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class IndexingServiceTest
 {
@@ -1384,6 +1385,26 @@ public class IndexingServiceTest
         verify( indexProxyCreator, times( 1 ) ).createPopulatingIndexProxy( any(), anyBoolean(), any(), any() );
         verify( indexProxy, never() ).awaitStoreScanCompleted( anyLong(), any() );
         verify( monitor, never() ).awaitingPopulationOfRecoveredIndex( any() );
+    }
+
+    @Test
+    public void shouldIncrementIndexUpdatesAfterStartingExistingOnlineIndexProxy() throws Exception
+    {
+        // given
+        long indexId = 10;
+        CapableIndexDescriptor indexDescriptor = uniqueIndex.withId( indexId ).withoutCapabilities();
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), indexDescriptor );
+        life.start();
+
+        // when
+        IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor.schema() );
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        {
+            updater.process( IndexEntryUpdate.add( 123, indexDescriptor, stringValue( "some value" ) ) );
+        }
+
+        // then
+        verify( storeView ).incrementIndexUpdates( indexId, 1L );
     }
 
     private static IndexProxy createIndexProxyMock( long indexId )

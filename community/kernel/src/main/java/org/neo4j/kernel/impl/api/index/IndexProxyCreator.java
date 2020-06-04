@@ -92,14 +92,14 @@ class IndexProxyCreator
             return onlineProxy;
         } );
 
-        return new ContractCheckingIndexProxy( flipper, false );
+        return new ContractCheckingIndexProxy( flipper );
     }
 
     IndexProxy createRecoveringIndexProxy( StoreIndexDescriptor descriptor )
     {
         CapableIndexDescriptor capableIndexDescriptor = providerMap.withCapabilities( descriptor );
         IndexProxy proxy = new RecoveringIndexProxy( capableIndexDescriptor );
-        return new ContractCheckingIndexProxy( proxy, true );
+        return new ContractCheckingIndexProxy( proxy );
     }
 
     IndexProxy createOnlineIndexProxy( StoreIndexDescriptor descriptor )
@@ -110,7 +110,8 @@ class IndexProxyCreator
             CapableIndexDescriptor capableIndexDescriptor = providerMap.withCapabilities( descriptor );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, storeView, false );
-            proxy = new ContractCheckingIndexProxy( proxy, true );
+            proxy = new ContractCheckingIndexProxy( proxy );
+            // it will be started later, when recovery is completed
             return proxy;
         }
         catch ( IOException e )
@@ -136,7 +137,7 @@ class IndexProxyCreator
                 populationFailure,
                 new IndexCountsRemover( storeView, descriptor.getId() ),
                 logProvider );
-        proxy = new ContractCheckingIndexProxy( proxy, true );
+        proxy = new ContractCheckingIndexProxy( proxy );
         return proxy;
     }
 
