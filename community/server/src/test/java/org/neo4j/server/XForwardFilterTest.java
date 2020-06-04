@@ -51,7 +51,7 @@ class XForwardFilterTest
 
         var request = new ContainerRequest(
                 URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
+                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
 
         request.headers( headers );
 
@@ -74,7 +74,7 @@ class XForwardFilterTest
 
         var request = new ContainerRequest(
                 URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
+                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
 
         request.headers( headers );
 
@@ -97,7 +97,7 @@ class XForwardFilterTest
 
         var request = new ContainerRequest(
                 URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
+                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
 
         request.headers( headers );
 
@@ -120,7 +120,7 @@ class XForwardFilterTest
 
         var request = new ContainerRequest(
                 URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
-                mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
+                mock( SecurityContext.class ), mock( PropertiesDelegate.class ), null );
 
         request.headers( headers );
 

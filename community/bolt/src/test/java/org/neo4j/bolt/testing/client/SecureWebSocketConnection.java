@@ -37,10 +37,10 @@ public class SecureWebSocketConnection extends WebSocketConnection
     {
         return () ->
         {
-            SslContextFactory sslContextFactory = new SslContextFactory.Client( /* trustall= */ true );
+            var sslContextFactory = new SslContextFactory.Client( /* trustAll= */ true );
             /* remove extra filters added by jetty on cipher suites */
             sslContextFactory.setExcludeCipherSuites();
-            HttpClient httpClient = new HttpClient( sslContextFactory );
+            var httpClient = new HttpClient( sslContextFactory );
             return new WebSocketClient( httpClient );
         };
     }

@@ -42,7 +42,7 @@ class DbmsExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( DbmsExtensionEnforceAnnotations.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
@@ -54,7 +54,7 @@ class DbmsExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( DbmsExtensionCheckCallbackSignature.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( IllegalArgumentException.class ),
@@ -72,7 +72,7 @@ class DbmsExtensionTest
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( DbmsExtensionMixImpermanent.class ) ).execute()
-                .tests();
+                .testEvents();
 
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( ExtensionContextException.class ) ) ) );

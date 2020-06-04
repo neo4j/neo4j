@@ -1075,15 +1075,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         AnyValue year;
         AnyValue date;
 
-        ConstructDate()
-        {
-        }
-
-        ConstructDate( AnyValue date )
-        {
-            this.date = date;
-        }
-
         @Override
         ConstructDate assign( TemporalFields field, AnyValue value )
         {
