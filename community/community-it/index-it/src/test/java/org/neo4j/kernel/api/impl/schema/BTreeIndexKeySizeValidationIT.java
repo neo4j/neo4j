@@ -19,32 +19,44 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.Dependencies;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_BOOLEAN;
@@ -64,7 +76,7 @@ import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ZONED_DATE_TIME
 import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ZONED_TIME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
-@DbmsExtension( configurationCallback = "configure" )
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 public class BTreeIndexKeySizeValidationIT
 {
@@ -75,20 +87,31 @@ public class BTreeIndexKeySizeValidationIT
             "prop3",
             "prop4"
     };
-    private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+    private static final int PAGE_SIZE_8k = 8192;
+    private static final int PAGE_SIZE_16k = 16384;
     private static final int ESTIMATED_OVERHEAD_PER_SLOT = 2;
     private static final int WIGGLE_ROOM = 50;
 
     @Inject
-    public GraphDatabaseAPI db;
-
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
     @Inject
     private RandomRule random;
+    private DatabaseManagementService dbms;
+    private GraphDatabaseAPI db;
 
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
+    @AfterEach
+    private void cleanup()
     {
-        builder.setConfig( default_schema_provider, NATIVE_BTREE10.providerName() );
+        if ( dbms != null )
+        {
+            dbms.shutdown();
+            dbms = null;
+            db = null;
+        }
     }
 
     /**
@@ -102,12 +125,16 @@ public class BTreeIndexKeySizeValidationIT
      * We also verify that the largest successful array length for each type is as expected because this value
      * is documented and if it changes, documentation also needs to change.
      */
-    @Test
-    void shouldEnforceSizeCapSingleValueSingleType()
+    @ParameterizedTest
+    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k} )
+    void shouldEnforceSizeCapSingleValueSingleType( int pageSize )
     {
+        startDb( pageSize );
+        List<String> failureMessages = new ArrayList<>();
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
         {
+            int expectedMax = pageSize == PAGE_SIZE_16k ? generator.expectedMax_16k : generator.expectedMax;
             String propKey = PROP_KEYS[0] + generator.name();
             createIndex( propKey );
 
@@ -139,10 +166,20 @@ public class BTreeIndexKeySizeValidationIT
                 // Progress binary search
                 binarySearch.progress( wasAbleToWrite );
             }
-            assertEquals( generator.expectedMax, binarySearch.longestSuccessful,
-                    format( "expected longest successful array length for type %s, to be %d but was %d. " +
-                                    "This is a strong indication that documentation of max limit needs to be updated.", generator.name(), generator.expectedMax,
-                            binarySearch.longestSuccessful ) );
+            if ( expectedMax != binarySearch.longestSuccessful )
+            {
+                failureMessages.add( generator.name() + ": expected=" + expectedMax + ", actual=" + binarySearch.longestSuccessful );
+            }
+        }
+        if ( failureMessages.size() > 0 )
+        {
+            StringJoiner joiner = new StringJoiner( System.lineSeparator(), "Some value types did not have expected longest successful array. " +
+                    "This is a strong indicator that documentation of max limit needs to be updated." + System.lineSeparator(), "" );
+            for ( String failureMessage : failureMessages )
+            {
+                joiner.add( failureMessage );
+            }
+            fail( joiner.toString() );
         }
     }
 
@@ -209,15 +246,18 @@ public class BTreeIndexKeySizeValidationIT
      * is, for single property boolean array which is the most likely,
      * (1/2)^3995. As a reference (1/2)^100 = 7.8886091e-31.
      */
-    @Test
-    void shouldEnforceSizeCapMixedTypes()
+    @ParameterizedTest
+    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k} )
+    void shouldEnforceSizeCapMixedTypes( int pageSize )
     {
+        startDb( pageSize );
         for ( int numberOfSlots = 1; numberOfSlots < 5; numberOfSlots++ )
         {
             String[] propKeys = generatePropertyKeys( numberOfSlots );
 
             createIndex( propKeys );
-            int keySizeLimitPerSlot = KEY_SIZE_LIMIT / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
+            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageSize );
+            int keySizeLimitPerSlot = keySizeLimit / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
             int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
             SuccessAndFail successAndFail = new SuccessAndFail();
             for ( int i = 0; i < 1_000; i++ )
@@ -326,6 +366,19 @@ public class BTreeIndexKeySizeValidationIT
         }
     }
 
+    private void startDb( int pageSize )
+    {
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jLayout );
+        builder.setConfig( default_schema_provider, NATIVE_BTREE10.providerName() );
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, JobSchedulerFactory.createInitialisedScheduler(), pageSize );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( pageCache );
+        builder.setExternalDependencies( dependencies );
+
+        dbms = builder.build();
+        db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+    }
+
     private static class SuccessAndFail
     {
         boolean atLeastOneSuccess;
@@ -352,39 +405,42 @@ public class BTreeIndexKeySizeValidationIT
 
     private enum NamedDynamicValueGenerator
     {
-        string( Byte.BYTES, 8164, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-        byteArray( SIZE_NUMBER_BYTE, 8163, ( random, i ) -> random.randomValues().nextByteArrayRaw( i, i ) ),
-        shortArray( SIZE_NUMBER_SHORT, 4081, ( random, i ) -> random.randomValues().nextShortArrayRaw( i, i ) ),
-        intArray( SIZE_NUMBER_INT, 2040, ( random, i ) -> random.randomValues().nextIntArrayRaw( i, i ) ),
-        longArray( SIZE_NUMBER_LONG, 1020, ( random, i ) -> random.randomValues().nextLongArrayRaw( i, i ) ),
-        floatArray( SIZE_NUMBER_FLOAT, 2040, ( random, i ) -> random.randomValues().nextFloatArrayRaw( i, i ) ),
-        doubleArray( SIZE_NUMBER_DOUBLE, 1020, ( random, i ) -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-        booleanArray( SIZE_BOOLEAN, 8164, ( random, i ) -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-        charArray( Byte.BYTES, 2721, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue().toCharArray() ),
-        stringArray1( SIZE_STRING_LENGTH + 1, 2721, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
-        stringArray10( SIZE_STRING_LENGTH + 10, 680, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
-        stringArray100( SIZE_STRING_LENGTH + 100, 80, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
-        stringArray1000( SIZE_STRING_LENGTH + 1000, 8, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
-        dateArray( SIZE_DATE, 1020, ( random, i ) -> random.randomValues().nextDateArrayRaw( i, i ) ),
-        timeArray( SIZE_ZONED_TIME, 680, ( random, i ) -> random.randomValues().nextTimeArrayRaw( i, i ) ),
-        localTimeArray( SIZE_LOCAL_TIME, 1020, ( random, i ) -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
-        dateTimeArray( SIZE_ZONED_DATE_TIME, 510, ( random, i ) -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
-        localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, ( random, i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
-        durationArray( SIZE_DURATION, 291, ( random, i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
-        periodArray( SIZE_DURATION, 291, ( random, i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
-        cartesianPointArray( SIZE_GEOMETRY, 340, ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY, 255, ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
-        geographicPointArray( SIZE_GEOMETRY, 340, ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographic3DPointArray( SIZE_GEOMETRY, 255, ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
+        string( Byte.BYTES, 8164, 8132, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
+        byteArray( SIZE_NUMBER_BYTE, 8163, 8131, ( random, i ) -> random.randomValues().nextByteArrayRaw( i, i ) ),
+        shortArray( SIZE_NUMBER_SHORT, 4081, 4065, ( random, i ) -> random.randomValues().nextShortArrayRaw( i, i ) ),
+        intArray( SIZE_NUMBER_INT, 2040, 2032, ( random, i ) -> random.randomValues().nextIntArrayRaw( i, i ) ),
+        longArray( SIZE_NUMBER_LONG, 1020, 1016, ( random, i ) -> random.randomValues().nextLongArrayRaw( i, i ) ),
+        floatArray( SIZE_NUMBER_FLOAT, 2040, 2032, ( random, i ) -> random.randomValues().nextFloatArrayRaw( i, i ) ),
+        doubleArray( SIZE_NUMBER_DOUBLE, 1020, 1016, ( random, i ) -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
+        booleanArray( SIZE_BOOLEAN, 8164, 8132, ( random, i ) -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+        charArray( Byte.BYTES, 2721, 2710, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue().toCharArray() ),
+        stringArray1( SIZE_STRING_LENGTH + 1, 2721, 2710, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
+        stringArray10( SIZE_STRING_LENGTH + 10, 680, 677, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
+        stringArray100( SIZE_STRING_LENGTH + 100, 80, 79, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
+        stringArray1000( SIZE_STRING_LENGTH + 1000, 8, 8, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
+        dateArray( SIZE_DATE, 1020, 1016, ( random, i ) -> random.randomValues().nextDateArrayRaw( i, i ) ),
+        timeArray( SIZE_ZONED_TIME, 680, 677, ( random, i ) -> random.randomValues().nextTimeArrayRaw( i, i ) ),
+        localTimeArray( SIZE_LOCAL_TIME, 1020, 1016, ( random, i ) -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
+        dateTimeArray( SIZE_ZONED_DATE_TIME, 510, 508, ( random, i ) -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
+        localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, 677, ( random, i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
+        durationArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
+        periodArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
+        cartesianPointArray( SIZE_GEOMETRY, 340, 338, ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY, 255, 254, ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
+        geographicPointArray( SIZE_GEOMETRY, 340, 338, ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
+        geographic3DPointArray( SIZE_GEOMETRY, 255, 254, ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;
         private final int expectedMax;
+        private final int expectedMax_16k;
 
-        NamedDynamicValueGenerator( int singleArrayEntrySize, int expectedLongestArrayLength, DynamicValueGenerator generator )
+        NamedDynamicValueGenerator( int singleArrayEntrySize, int expectedLongestArrayLength, int expectedLongestArrayLength_16k,
+                DynamicValueGenerator generator )
         {
             this.singleArrayEntrySize = singleArrayEntrySize;
             this.expectedMax = expectedLongestArrayLength;
+            this.expectedMax_16k = expectedLongestArrayLength_16k;
             this.generator = generator;
         }
 
