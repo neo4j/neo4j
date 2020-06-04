@@ -38,7 +38,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     private int pins;
     private int faults;
-    private PageCacheTracer tracer;
+    private final PageCacheTracer tracer;
     private final String tag;
 
     public RecordingPageCursorTracer( PageCacheTracer tracer, String tag )
@@ -106,6 +106,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     @Override
     public long flushes()
+    {
+        return 0;
+    }
+
+    @Override
+    public long merges()
     {
         return 0;
     }

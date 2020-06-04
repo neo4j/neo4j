@@ -510,6 +510,12 @@ class ExecutingQueryTest
             return flushes;
         }
 
+        @Override
+        public long merges()
+        {
+            return 0;
+        }
+
         public void flushes( long increment )
         {
             flushes += increment;

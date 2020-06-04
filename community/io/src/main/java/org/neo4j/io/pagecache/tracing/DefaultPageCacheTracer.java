@@ -40,6 +40,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder unpins = new LongAdder();
     protected final LongAdder hits = new LongAdder();
     protected final LongAdder flushes = new LongAdder();
+    protected final LongAdder merges = new LongAdder();
     protected final LongAdder bytesRead = new LongAdder();
     protected final LongAdder bytesWritten = new LongAdder();
     protected final LongAdder filesMapped = new LongAdder();
@@ -70,6 +71,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void addPagesFlushed( int pageCount )
         {
             flushes.add( pageCount );
+        }
+
+        @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+            merges.add( pagesMerged );
         }
     };
 
@@ -212,6 +219,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long merges()
+    {
+        return merges.sum();
+    }
+
+    @Override
     public long bytesRead()
     {
         return bytesRead.sum();
@@ -310,6 +323,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void flushes( long flushes )
     {
         this.flushes.add( flushes );
+    }
+
+    @Override
+    public void merges( long merges )
+    {
+        this.merges.add( merges );
     }
 
     @Override

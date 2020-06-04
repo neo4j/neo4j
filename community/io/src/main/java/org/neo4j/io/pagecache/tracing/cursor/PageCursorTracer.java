@@ -94,6 +94,12 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
 
         @Override
+        public long merges()
+        {
+            return 0;
+        }
+
+        @Override
         public double hitRatio()
         {
             return 0d;

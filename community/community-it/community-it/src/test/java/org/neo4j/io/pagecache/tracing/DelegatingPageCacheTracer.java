@@ -183,6 +183,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void merges( long merges )
+    {
+        delegate.merges( merges );
+    }
+
+    @Override
     public void maxPages( long maxPages )
     {
         delegate.maxPages( maxPages );
@@ -198,6 +204,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public long flushes()
     {
         return delegate.flushes();
+    }
+
+    @Override
+    public long merges()
+    {
+        return delegate.merges();
     }
 
     @Override

@@ -151,10 +151,12 @@ class DefaultPageCursorTracerTest
                     {
                         FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper, 0, 0 );
                         flushEvent.addBytesWritten( 27 );
+                        flushEvent.addPagesMerged( 10 );
                         flushEvent.done();
                         FlushEvent flushEvent1 = flushEventOpportunity.beginFlush( 0, 1, swapper, 0, 0 );
                         flushEvent1.addBytesWritten( 13 );
                         flushEvent1.addPagesFlushed( 2 );
+                        flushEvent1.addPagesMerged( 2 );
                         flushEvent1.done();
                     }
                 }
@@ -169,6 +171,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, pageCursorTracer.faults() );
         assertEquals( 1, pageCursorTracer.evictions() );
         assertEquals( 2, pageCursorTracer.flushes() );
+        assertEquals( 12, pageCursorTracer.merges() );
         assertEquals( 40, pageCursorTracer.bytesWritten() );
     }
 
@@ -184,6 +187,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.evictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
         assertEquals( 1, cacheTracer.flushes() );
+        assertEquals( 1, cacheTracer.merges() );
         assertEquals( 10, cacheTracer.bytesWritten() );
         assertEquals( 150, cacheTracer.bytesRead() );
 
@@ -197,6 +201,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.evictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
         assertEquals( 3, cacheTracer.flushes() );
+        assertEquals( 3, cacheTracer.merges() );
         assertEquals( 30, cacheTracer.bytesWritten() );
         assertEquals( 450, cacheTracer.bytesRead() );
     }
@@ -213,6 +218,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.evictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
         assertEquals( 1, cacheTracer.flushes() );
+        assertEquals( 1, cacheTracer.merges() );
         assertEquals( 10, cacheTracer.bytesWritten() );
         assertEquals( 150, cacheTracer.bytesRead() );
 
@@ -226,6 +232,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.evictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
         assertEquals( 3, cacheTracer.flushes() );
+        assertEquals( 3, cacheTracer.merges() );
         assertEquals( 30, cacheTracer.bytesWritten() );
         assertEquals( 450, cacheTracer.bytesRead() );
     }
@@ -272,9 +279,10 @@ class DefaultPageCursorTracerTest
                 EvictionEvent evictionEvent = pageFaultEvent.beginEviction();
                 {
                     FlushEventOpportunity flushEventOpportunity = evictionEvent.flushEventOpportunity();
-                    FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper, 0, 0 );
+                    FlushEvent flushEvent = flushEventOpportunity.beginFlush( 0, 0, swapper, 0, 1 );
                     flushEvent.addBytesWritten( 10 );
                     flushEvent.addPagesFlushed( 1 );
+                    flushEvent.addPagesMerged( 1 );
                     flushEvent.done();
                 }
                 evictionEvent.threwException( new IOException( "eviction exception" ) );

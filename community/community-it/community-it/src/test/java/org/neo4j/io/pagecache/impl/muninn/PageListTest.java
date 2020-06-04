@@ -2282,6 +2282,7 @@ public class PageListTest
         private boolean flushDone;
         private IOException flushException;
         private int pagesFlushed;
+        private int pagesMerged;
 
         // --- EvictionEvent:
 
@@ -2355,6 +2356,12 @@ public class PageListTest
         public void addPagesFlushed( int pageCount )
         {
             this.pagesFlushed += pageCount;
+        }
+
+        @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+            this.pagesMerged += pagesMerged;
         }
     }
 

@@ -50,6 +50,11 @@ public interface FlushEvent
         public void addPagesFlushed( int pageCount )
         {
         }
+
+        @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+        }
     };
 
     /**
@@ -68,4 +73,10 @@ public interface FlushEvent
     void done( IOException exception );
 
     void addPagesFlushed( int pageCount );
+
+    /**
+     * Record number of pages that were merged together into single flushed buffer.
+     * @param pagesMerged number of merged pages
+     */
+    void addPagesMerged( int pagesMerged );
 }

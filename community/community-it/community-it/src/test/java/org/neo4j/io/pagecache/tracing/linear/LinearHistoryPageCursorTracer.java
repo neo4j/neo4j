@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  */
 public class LinearHistoryPageCursorTracer implements PageCursorTracer
 {
-    private LinearHistoryTracer tracer;
+    private final LinearHistoryTracer tracer;
     private final String tag;
 
     LinearHistoryPageCursorTracer( LinearHistoryTracer tracer, String tag )
@@ -92,6 +92,12 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
 
     @Override
     public long flushes()
+    {
+        return 0;
+    }
+
+    @Override
+    public long merges()
     {
         return 0;
     }

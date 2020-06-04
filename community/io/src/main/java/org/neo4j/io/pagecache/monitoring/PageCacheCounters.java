@@ -56,6 +56,11 @@ public interface PageCacheCounters
     long flushes();
 
     /**
+     * @return The number of page merges observed so far
+     */
+    long merges();
+
+    /**
      * @return The sum total of bytes read in through page faults thus far.
      */
     long bytesRead();

@@ -499,6 +499,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             // Update the flush event
             flush.addBytesWritten( bytesWritten );
             flush.addPagesFlushed( pagesGrabbed );
+            flush.addPagesMerged( pagesMerged );
             flush.done();
             successful = true;
 

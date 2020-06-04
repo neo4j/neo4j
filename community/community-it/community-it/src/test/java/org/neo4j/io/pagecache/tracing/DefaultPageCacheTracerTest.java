@@ -108,7 +108,7 @@ public class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction().close();
         }
 
-        assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 36, 0, 0,  0d);
+        assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0,  0d);
     }
 
     @Test
@@ -116,11 +116,11 @@ public class DefaultPageCacheTracerTest
     {
         tracer.mappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
 
         tracer.unmappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
     }
 
     @Test
@@ -133,7 +133,7 @@ public class DefaultPageCacheTracerTest
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -150,7 +150,35 @@ public class DefaultPageCacheTracerTest
             flushEvent3.done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d );
+    }
+
+    @Test
+    void countPageMerges()
+    {
+        try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
+        {
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+        }
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
+
+        try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
+        {
+            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 1 );
+            flushEvent1.addPagesMerged( 1 );
+            flushEvent1.done();
+
+            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 2 );
+            flushEvent2.addPagesMerged( 2 );
+            flushEvent2.done();
+
+            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 3 );
+            flushEvent3.addPagesMerged( 3 );
+            flushEvent3.done();
+        }
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d );
     }
 
     @Test
@@ -180,13 +208,14 @@ public class DefaultPageCacheTracerTest
         assertThat( tracer.usageRatio() ).isCloseTo( 0, within( 0.0001 ) );
     }
 
-    private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
-            long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
+    private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions, long flushes, long merges,
+            long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
     {
         assertThat( tracer.pins() ).as( "pins" ).isEqualTo( pins );
         assertThat( tracer.unpins() ).as( "unpins" ).isEqualTo( unpins );
         assertThat( tracer.hits() ).as( "hits" ).isEqualTo( hits );
         assertThat( tracer.faults() ).as( "faults" ).isEqualTo( faults );
+        assertThat( tracer.merges() ).as( "merges" ).isEqualTo( merges );
         assertThat( tracer.evictions() ).as( "evictions" ).isEqualTo( evictions );
         assertThat( tracer.evictionExceptions() ).as( "evictionExceptions" ).isEqualTo( evictionExceptions );
         assertThat( tracer.flushes() ).as( "flushes" ).isEqualTo( flushes );

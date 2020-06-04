@@ -33,9 +33,9 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class RecordingPageCacheTracer extends RecordingTracer implements PageCacheTracer
 {
-    private AtomicLong pins = new AtomicLong();
-    private AtomicLong faults = new AtomicLong();
-    private AtomicLong evictions = new AtomicLong();
+    private final AtomicLong pins = new AtomicLong();
+    private final AtomicLong faults = new AtomicLong();
+    private final AtomicLong evictions = new AtomicLong();
 
     public RecordingPageCacheTracer()
     {
@@ -127,6 +127,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long merges()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesRead()
     {
         return 0;
@@ -213,6 +219,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void flushes( long flushes )
+    {
+    }
+
+    @Override
+    public void merges( long merges )
     {
     }
 

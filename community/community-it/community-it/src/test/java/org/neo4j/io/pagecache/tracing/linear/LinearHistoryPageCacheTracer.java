@@ -42,7 +42,7 @@ import static org.neo4j.io.pagecache.tracing.linear.HEvents.UnmappedFileHEvent;
 public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 {
 
-    private LinearHistoryTracer tracer;
+    private final LinearHistoryTracer tracer;
 
     LinearHistoryPageCacheTracer( LinearHistoryTracer tracer )
     {
@@ -117,6 +117,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public long flushes()
+    {
+        return 0;
+    }
+
+    @Override
+    public long merges()
     {
         return 0;
     }
@@ -205,6 +211,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void flushes( long flushes )
+    {
+    }
+
+    @Override
+    public void merges( long merges )
     {
     }
 

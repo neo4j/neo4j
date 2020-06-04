@@ -142,19 +142,19 @@ class HEvents
         private final long filePageId;
         private final long cachePageId;
         private final int pagesToFlush;
-        private final int mergedPages;
+        private int pageMerged;
         private int pageCount;
         private final File file;
         private int bytesWritten;
         private IOException exception;
 
-        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int pageMerged )
         {
             super( tracer );
             this.filePageId = filePageId;
             this.cachePageId = cachePageId;
             this.pagesToFlush = pagesToFlush;
-            this.mergedPages = mergedPages;
+            this.pageMerged = pageMerged;
             this.pageCount = 1;
             this.file = swapper.file();
         }
@@ -185,6 +185,12 @@ class HEvents
         }
 
         @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+            this.pageMerged = pagesMerged;
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             out.print( ", filePageId:" );
@@ -198,8 +204,8 @@ class HEvents
             out.print( bytesWritten );
             out.print( ", pagesToFlush:" );
             out.print( pagesToFlush );
-            out.print( ", mergedPages:" );
-            out.print( mergedPages );
+            out.print( ", PagesMerged:" );
+            out.print( pageMerged );
             print( out, exception, exceptionLinePrefix );
         }
     }

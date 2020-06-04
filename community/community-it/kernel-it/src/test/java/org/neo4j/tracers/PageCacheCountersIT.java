@@ -99,6 +99,7 @@ class PageCacheCountersIT
         long initialEvictions = pageCacheTracer.evictions();
         long initialFaults = pageCacheTracer.faults();
         long initialFlushes = pageCacheTracer.flushes();
+        long initialMerges = pageCacheTracer.merges();
 
         startNodeCreators( nodeCreators, nodeCreatorFutures );
         while ( pageCacheTracer.pins() == 0 || pageCacheTracer.faults() == 0 || pageCacheTracer.unpins() == 0 )
@@ -128,6 +129,9 @@ class PageCacheCountersIT
         assertThat( pageCacheTracer.flushes() ).as(
                 "Number of flushes in page cache tracer should equal to the sum of flushes in page cursor tracers." ).isGreaterThanOrEqualTo(
                 sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) );
+        assertThat( pageCacheTracer.merges() ).as(
+                "Number of merges in page cache tracer should equal to the sum of merges in page cursor tracers." ).isGreaterThanOrEqualTo(
+                sumCounters( nodeCreators, NodeCreator::getMerges, initialMerges ) );
         assertThat( pageCacheTracer.hits() ).as(
                 "Number of hits in page cache tracer should equal to the sum of hits in page cursor tracers." ).isGreaterThanOrEqualTo(
                 sumCounters( nodeCreators, NodeCreator::getHits, initialHits ) );
@@ -174,6 +178,7 @@ class PageCacheCountersIT
         private long evictions;
         private long faults;
         private long flushes;
+        private long merges;
         NodeCreator( GraphDatabaseService db )
         {
             this.db = db;
@@ -208,6 +213,7 @@ class PageCacheCountersIT
             evictions += pageCursorCounters.evictions();
             faults += pageCursorCounters.faults();
             flushes += pageCursorCounters.flushes();
+            merges += pageCursorCounters.merges();
         }
 
         @Override
@@ -254,6 +260,11 @@ class PageCacheCountersIT
         long getFlushes()
         {
             return flushes;
+        }
+
+        public long getMerges()
+        {
+            return merges;
         }
     }
 }

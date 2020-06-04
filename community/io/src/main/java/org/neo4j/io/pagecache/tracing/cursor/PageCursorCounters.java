@@ -75,6 +75,11 @@ public interface PageCursorCounters
     long flushes();
 
     /**
+     * @return The number of page merges observed thus far.
+     */
+    long merges();
+
+    /**
      * @return The hit ratio observed thus far.
      */
     double hitRatio();

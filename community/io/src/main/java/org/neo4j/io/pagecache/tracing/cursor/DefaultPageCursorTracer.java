@@ -41,6 +41,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long evictions;
     private long evictionExceptions;
     private long flushes;
+    private long merges;
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
     private final PageCacheTracer pageCacheTracer;
@@ -97,6 +98,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
             pageCacheTracer.flushes( flushes );
         }
+        if ( merges > 0 )
+        {
+            pageCacheTracer.merges( merges );
+        }
         reset();
     }
 
@@ -111,6 +116,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         evictions = 0;
         evictionExceptions = 0;
         flushes = 0;
+        merges = 0;
     }
 
     @Override
@@ -165,6 +171,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long flushes()
     {
         return flushes;
+    }
+
+    @Override
+    public long merges()
+    {
+        return merges;
     }
 
     @Override
@@ -281,6 +293,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         public void addPagesFlushed( int pageCount )
         {
             flushes += pageCount;
+        }
+
+        @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+            merges += pagesMerged;
         }
     };
 

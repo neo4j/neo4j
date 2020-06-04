@@ -108,6 +108,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long merges()
+        {
+            return 0;
+        }
+
+        @Override
         public long bytesRead()
         {
             return 0;
@@ -191,6 +197,11 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void flushes( long flushes )
+        {
+        }
+
+        @Override
+        public void merges( long merges )
         {
         }
 
@@ -295,6 +306,12 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param flushes number of flushes
      */
     void flushes( long flushes );
+
+    /**
+     * Report number of merges
+     * @param merges number of merges
+     */
+    void merges( long merges );
 
     /**
      * Sets the number of available pages.
