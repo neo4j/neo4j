@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -70,6 +72,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
@@ -106,13 +109,12 @@ public class IndexStatisticsTest
     public boolean multiThreadedPopulationEnabled;
 
     @Rule
-    public final DbmsRule dbRule = new EmbeddedDbmsRule()
+    public final DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
             .startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
 
-    private GraphDatabaseAPI db;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
     @Parameters( name = "multiThreadedIndexPopulationEnabled = {0}" )
@@ -124,17 +126,14 @@ public class IndexStatisticsTest
     @Before
     public void before()
     {
-        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled );
+        db.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled );
 
         int batchSize = random.nextInt( 1, 5 );
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
         FeatureToggles.set( MultipleIndexPopulator.class, "print_debug", true );
 
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        this.db = graphDatabaseAPI;
-        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
-        graphDatabaseAPI.getDependencyResolver()
+        db.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( Monitors.class )
                 .addMonitorListener( indexOnlineMonitor );
     }
@@ -162,6 +161,24 @@ public class IndexStatisticsTest
         assertEquals( 0.75d, indexSelectivity( index ), 0d );
         assertEquals( 4L, indexSize( index ) );
         assertEquals( 0L, indexUpdates( index ) );
+    }
+
+    @Test
+    public void shouldUpdateIndexStatisticsForDataCreatedAfterCleanRestart() throws KernelException, IOException
+    {
+        // given
+        indexOnlineMonitor.initialize( 0 );
+        createSomePersons();
+        IndexDescriptor index = createPersonNameIndex();
+        awaitIndexesOnline();
+        long indexUpdatesBeforeRestart = indexUpdates( index );
+
+        // when
+        db.restartDatabase();
+        createSomePersons();
+
+        // then
+        assertThat( indexUpdates( index ), Matchers.greaterThan( indexUpdatesBeforeRestart ) );
     }
 
     @Test

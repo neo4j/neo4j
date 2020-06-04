@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
  *
  * @see org.neo4j.kernel.impl.api.index.IndexProxy
  */
-public class ContractCheckingIndexProxy extends DelegatingIndexProxy
+class ContractCheckingIndexProxy extends DelegatingIndexProxy
 {
     /**
      * State machine for {@link IndexProxy proxies}
@@ -63,10 +63,10 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     private final AtomicReference<State> state;
     private final AtomicInteger openCalls;
 
-    public ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
+    ContractCheckingIndexProxy( IndexProxy delegate )
     {
         super( delegate );
-        this.state = new AtomicReference<>( started ? State.STARTED : State.INIT );
+        this.state = new AtomicReference<>( State.INIT );
         this.openCalls = new AtomicInteger( 0 );
     }
 

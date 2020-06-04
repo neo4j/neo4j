@@ -350,6 +350,6 @@ class ContractCheckingIndexProxyTest
 
     private static ContractCheckingIndexProxy newContractCheckingIndexProxy( IndexProxy inner )
     {
-        return new ContractCheckingIndexProxy( inner, false );
+        return new ContractCheckingIndexProxy( inner );
     }
 }
