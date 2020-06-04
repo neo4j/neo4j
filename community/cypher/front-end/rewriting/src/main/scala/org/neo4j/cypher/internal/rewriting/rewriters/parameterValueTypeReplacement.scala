@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object parameterValueTypeReplacement {
 

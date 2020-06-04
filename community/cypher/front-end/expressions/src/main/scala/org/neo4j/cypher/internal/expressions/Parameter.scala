@@ -19,22 +19,23 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-sealed trait Param {
-
-  self: Expression =>
-
-  def parameterName: String
-
-  override def asCanonicalStringVal: String
+sealed trait Parameter extends Expression {
+  def name: String
+  def parameterType: CypherType
+  override def asCanonicalStringVal: String = "$" + name
 }
 
-case class Parameter(name: String,
-                     parameterType: CypherType)(val position: InputPosition)
-  extends Expression with Param {
+object Parameter {
+  def unapply(p: Parameter): Option[(String, CypherType)] = Some(p.name, p.parameterType)
+  def apply(name: String,
+            parameterType: CypherType)(position: InputPosition): Parameter = ExplicitParameter(name, parameterType)(position)
+}
 
-  override def asCanonicalStringVal: String = "$" + name
+case class ExplicitParameter(name: String,
+                             parameterType: CypherType)(val position: InputPosition) extends Parameter
 
-  override def parameterName: String = name
+case class AutoExtractedParameter(name: String, parameterType: CypherType)(val position: InputPosition) extends Parameter {
+
 }
 
 trait SensitiveParameter {
@@ -46,9 +47,4 @@ trait SensitiveAutoParameter extends SensitiveParameter
 
 case class ParameterWithOldSyntax(name: String,
                                   parameterType: CypherType)(val position: InputPosition)
-  extends Expression with Param {
-
-  override def asCanonicalStringVal: String = "$" + name
-
-  override def parameterName: String = name
-}
+  extends Parameter

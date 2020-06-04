@@ -220,6 +220,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Equivalent
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.False
@@ -457,10 +458,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _stringParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTString)(pos))
 
   def _sensitiveStringParameter: Gen[Parameter with SensitiveParameter] =
-    _identifier.map(new Parameter(_, CTString)(pos) with SensitiveParameter)
+    _identifier.map(new ExplicitParameter(_, CTString)(pos) with SensitiveParameter)
 
   def _sensitiveAutoStringParameter: Gen[Parameter with SensitiveAutoParameter] =
-    _identifier.map(new Parameter(_, CTString)(pos) with SensitiveAutoParameter)
+    _identifier.map(new ExplicitParameter(_, CTString)(pos) with SensitiveAutoParameter)
 
   def _variable: Gen[Variable] = {
     val nameGen = allowedVarNames match {

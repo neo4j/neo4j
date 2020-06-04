@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.ExtractParameterRewriter
@@ -35,7 +35,7 @@ object sensitiveLiteralReplacement {
         if (acc.contains(l)) {
           (acc, None)
         } else {
-          val parameter = new Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position) with SensitiveAutoParameter
+          val parameter = new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString)(l.position) with SensitiveAutoParameter
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
   }
