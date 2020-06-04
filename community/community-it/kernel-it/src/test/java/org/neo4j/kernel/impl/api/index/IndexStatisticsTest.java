@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -67,6 +69,7 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
@@ -98,13 +101,12 @@ public class IndexStatisticsTest
     private static final String NAME_PROPERTY = "name";
 
     @Rule
-    public final DbmsRule dbRule = new EmbeddedDbmsRule()
+    public final DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
             .startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
 
-    private GraphDatabaseAPI db;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
     @Before
@@ -114,9 +116,7 @@ public class IndexStatisticsTest
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
         FeatureToggles.set( MultipleIndexPopulator.class, "print_debug", true );
 
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        this.db = graphDatabaseAPI;
-        graphDatabaseAPI.getDependencyResolver()
+        db.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( Monitors.class )
                 .addMonitorListener( indexOnlineMonitor );
     }
@@ -143,6 +143,24 @@ public class IndexStatisticsTest
         assertEquals( 0.75d, indexSelectivity( index ), 0d );
         assertEquals( 4L, indexSize( index ) );
         assertEquals( 0L, indexUpdates( index ) );
+    }
+
+    @Test
+    public void shouldUpdateIndexStatisticsForDataCreatedAfterCleanRestart() throws KernelException, IOException
+    {
+        // given
+        indexOnlineMonitor.initialize( 0 );
+        createSomePersons();
+        IndexDescriptor index = createPersonNameIndex();
+        awaitIndexesOnline();
+        long indexUpdatesBeforeRestart = indexUpdates( index );
+
+        // when
+        db.restartDatabase();
+        createSomePersons();
+
+        // then
+        assertThat( indexUpdates( index ), Matchers.greaterThan( indexUpdatesBeforeRestart ) );
     }
 
     @Test

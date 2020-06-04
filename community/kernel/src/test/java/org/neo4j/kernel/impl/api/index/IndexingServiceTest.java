@@ -150,6 +150,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -1332,6 +1333,26 @@ class IndexingServiceTest
         // then it should be able to start without awaiting the completion of the population of the index
         verify( indexProxy, never() ).awaitStoreScanCompleted( anyLong(), any() );
         verify( monitor, never() ).awaitingPopulationOfRecoveredIndex( any() );
+    }
+
+    @Test
+    public void shouldIncrementIndexUpdatesAfterStartingExistingOnlineIndexProxy() throws Exception
+    {
+        // given
+        long indexId = 10;
+        IndexDescriptor indexDescriptor = uniqueIndex.materialise( indexId );
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), indexDescriptor );
+        life.start();
+
+        // when
+        IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        {
+            updater.process( IndexEntryUpdate.add( 123, indexDescriptor, stringValue( "some value" ) ) );
+        }
+
+        // then
+        verify( indexStatisticsStore ).incrementIndexUpdates( indexId, 1L );
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation()
