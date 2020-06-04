@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.ast.semantics.FeatureError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.ArithmeticException
@@ -38,5 +40,18 @@ case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Optio
 
 object SyntaxExceptionCreator {
   def throwOnError(exceptionFactory: CypherExceptionFactory): Seq[SemanticErrorDef] => Unit =
-    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionFactory.syntaxException(e.msg, e.position))
+    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw createException(exceptionFactory, e))
+
+  private def createException(exceptionFactory: CypherExceptionFactory, error: SemanticErrorDef): Exception = {
+    val message = error match {
+
+      // In neo4j, disabled SemanticFeature.UseGraphSelector indicates that you are trying to run a Fabric query
+      case FeatureError(_, SemanticFeature.UseGraphSelector, _) =>
+        "The USE clause is not available in embedded or http sessions. Try running the query using a Neo4j driver."
+
+      case e =>
+        e.msg
+    }
+    exceptionFactory.syntaxException(message, error.position)
+  }
 }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -58,8 +59,8 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val innerVariableNamer: InnerVariableNamer,
                      val params: MapValue) extends BaseContext {
 
-  override def errorHandler: Seq[SemanticErrorDef] => Unit =
-    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+  override val errorHandler: Seq[SemanticErrorDef] => Unit =
+    SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
 
   def getParameterValueTypeMapping: Map[String, CypherType] = {
     ParameterValueTypeHelper.asCypherTypeMap(params)
