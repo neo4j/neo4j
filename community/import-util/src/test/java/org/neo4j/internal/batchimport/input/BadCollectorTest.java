@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -157,6 +158,7 @@ class BadCollectorTest
     }
 
     @Test
+    @Disabled
     void shouldApplyBackPressure() throws Exception
     {
         // given
