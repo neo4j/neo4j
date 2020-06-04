@@ -32,7 +32,7 @@ public interface PageSwapper
 {
     /**
      * Read the page with the given filePageId, from the concrete file on the
-     * file system, into the page given by the bufferAddress and the bufferSize.
+     * file system, into the page given by the bufferAddress and default bufferSize.
      * <p>
      * Returns the number of bytes read in from the file. May be zero if the
      * requested page was beyond the end of the file. If less than the file
@@ -44,6 +44,21 @@ public interface PageSwapper
      * channel and the operation must be retried.
      */
     long read( long filePageId, long bufferAddress ) throws IOException;
+
+    /**
+     * Read the page with the given filePageId, from the concrete file on the
+     * file system, into the page given by the bufferAddress and the bufferSize.
+     * <p>
+     * Returns the number of bytes read in from the file. May be zero if the
+     * requested page was beyond the end of the file. If less than the file
+     * page size, then the rest of the page will contain zeros.
+     * <p>
+     * Note: It is possible for the channel to be asynchronously closed while
+     * this operation is taking place. For instance, if the current thread is
+     * interrupted. If this happens, then the implementation must reopen the
+     * channel and the operation must be retried.
+     */
+    long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException;
 
     /**
      * Read pages from the file into the pages given by the bufferAddresses, starting from the given startFilePageId.

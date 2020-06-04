@@ -43,6 +43,12 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
+    public long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    {
+        return delegate.read( filePageId, bufferAddress, bufferLength );
+    }
+
+    @Override
     public void close() throws IOException
     {
         delegate.close();

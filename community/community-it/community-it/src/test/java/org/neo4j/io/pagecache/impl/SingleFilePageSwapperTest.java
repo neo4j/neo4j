@@ -65,6 +65,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -151,7 +152,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
         long target = createPage( 4 );
-        swapper.read( 0, target );
+        assertEquals( 4, swapper.read( 0, target ) );
 
         assertThat( array( target ) ).containsExactly( bytes );
     }
@@ -172,7 +173,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
         long target = createPage( 4 );
-        swapper.read( 1, target );
+        assertEquals( 2, swapper.read( 1, target ) );
 
         assertThat( array( target ) ).containsExactly( 5, 6, 0, 0 );
     }
@@ -271,7 +272,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
-        swapper.write( 0, page );
+        assertEquals( 4, swapper.write( 0, page ) );
 
         try ( InputStream stream = getFs().openAsInputStream( getFile() ) )
         {

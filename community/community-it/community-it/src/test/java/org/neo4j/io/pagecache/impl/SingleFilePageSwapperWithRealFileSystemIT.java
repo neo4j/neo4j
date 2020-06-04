@@ -34,6 +34,6 @@ public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwa
     @Override
     protected FileSystemAbstraction getFs()
     {
-        return  getRealFileSystem();
+        return getRealFileSystem();
     }
 }

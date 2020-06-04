@@ -266,6 +266,12 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long filePageId, long bufferAddress ) throws IOException
     {
+        return read( filePageId, bufferAddress, filePageSize );
+    }
+
+    @Override
+    public long read( long filePageId, long bufferAddress, int bufferLength ) throws IOException
+    {
         try ( Retry retry = new Retry() )
         {
             do
@@ -275,10 +281,10 @@ public class SingleFilePageSwapper implements PageSwapper
                     long fileOffset = pageIdToPosition( filePageId );
                     if ( fileOffset < getCurrentFileSize() )
                     {
-                        return swapIn( bufferAddress, fileOffset, filePageSize );
+                        return swapIn( bufferAddress, fileOffset, bufferLength );
                     }
 
-                    clear( bufferAddress, filePageSize );
+                    clear( bufferAddress, bufferLength );
                     return 0;
                 }
                 catch ( ClosedChannelException e )
@@ -309,7 +315,7 @@ public class SingleFilePageSwapper implements PageSwapper
                     {
                         return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, bufferLengths, length );
                     }
-                    return readPositionedVectoredFallback( startFilePageId, bufferAddresses, length );
+                    return readPositionedVectoredFallback( startFilePageId, bufferAddresses, bufferLengths, length );
                 }
                 catch ( ClosedChannelException e )
                 {
@@ -340,13 +346,14 @@ public class SingleFilePageSwapper implements PageSwapper
             long bytesToKeep = bytesRead;
             for ( int bufferIndex = 0; bufferIndex < length; bufferIndex++ )
             {
-                if ( bytesToKeep > bufferLengths[bufferIndex] )
+                int bufferLength = bufferLengths[bufferIndex];
+                if ( bytesToKeep > bufferLength )
                 {
-                    bytesToKeep = Math.subtractExact( bytesToKeep, bufferLengths[bufferIndex] );
+                    bytesToKeep = Math.subtractExact( bytesToKeep, bufferLength );
                 }
                 else
                 {
-                    UnsafeUtil.setMemory( bufferAddresses[bufferIndex] + bytesToKeep, bufferLengths[bufferIndex] - bytesToKeep, MuninnPageCache.ZERO_BYTE );
+                    UnsafeUtil.setMemory( bufferAddresses[bufferIndex] + bytesToKeep, bufferLength - bytesToKeep, MuninnPageCache.ZERO_BYTE );
                     bytesToKeep = 0;
                 }
             }
@@ -380,13 +387,16 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int readPositionedVectoredFallback( long startFilePageId, long[] bufferAddresses, int length ) throws IOException
+    private int readPositionedVectoredFallback( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length ) throws IOException
     {
         int bytes = 0;
+        long filePageId = startFilePageId;
         for ( int i = 0; i < length; i++ )
         {
             long address = bufferAddresses[i];
-            bytes += read( startFilePageId + i, address );
+            int bufferLength = bufferLengths[i];
+            bytes += read( filePageId, address, bufferLength );
+            filePageId += bufferLength / filePageSize;
         }
         return bytes;
     }

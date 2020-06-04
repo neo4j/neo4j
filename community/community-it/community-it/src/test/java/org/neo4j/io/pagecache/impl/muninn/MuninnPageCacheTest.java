@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
@@ -292,6 +293,54 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 assertEquals( 7, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
                 assertEquals( 1, cursor.getLong() );
             }
+        }
+    }
+
+    @Test
+    void flushSequentialPagesOnPageFileFlush() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            assertEquals( 2, pageCacheTracer.flushes() );
+            assertEquals( 1, pageCacheTracer.merges() );
+        }
+    }
+
+    @Test
+    void doNotMergeNonSequentialPageBuffersOnPageFileFlush() throws IOException
+    {
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 6, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 3, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            assertEquals( 2, pageCacheTracer.flushes() );
+            assertEquals( 0, pageCacheTracer.merges() );
         }
     }
 
