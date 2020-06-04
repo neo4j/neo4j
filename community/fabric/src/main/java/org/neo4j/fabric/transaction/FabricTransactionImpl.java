@@ -22,14 +22,12 @@ package org.neo4j.fabric.transaction;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -52,9 +50,8 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.scheduler.JobHandle;
+
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 
 public class FabricTransactionImpl implements FabricTransaction, CompositeTransaction, FabricTransaction.FabricExecutionContext
 {
@@ -66,7 +63,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private final Lock exclusiveLock = transactionLock.writeLock();
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
-    private final Log internalLog;
+    private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
     private final long id;
@@ -80,29 +77,24 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private SingleDbTransaction writingTransaction;
 
     FabricTransactionImpl( FabricTransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager, FabricRemoteExecutor remoteExecutor,
-                           FabricLocalExecutor localExecutor, LogService logService, TransactionManager transactionManager,
+                           FabricLocalExecutor localExecutor, ErrorReporter errorReporter, TransactionManager transactionManager,
                            FabricConfig fabricConfig )
     {
         this.transactionInfo = transactionInfo;
-        this.internalLog = logService.getInternalLog( FabricTransactionImpl.class );
+        this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.id = ID_GENERATOR.incrementAndGet();
 
-        internalLog.debug( "Starting transaction %d", id );
-
         try
         {
             remoteTransactionContext = remoteExecutor.startTransactionContext( this, transactionInfo, bookmarkManager );
             localTransactionContext = localExecutor.startTransactionContext( this, transactionInfo, bookmarkManager );
-
-            internalLog.debug( "Transaction %d started", id );
         }
         catch ( RuntimeException e )
         {
             // the exception with stack trace will be logged by Bolt's ErrorReporter
-            internalLog.error( "Transaction {} start failed", id );
             throw Exceptions.transform( Status.Transaction.TransactionStartFailed, e );
         }
     }
@@ -165,36 +157,32 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
             if ( state == State.CLOSED )
             {
-                throw new FabricException( Status.Transaction.TransactionCommitFailed, "Trying to commit closed transaction" );
+                throw new FabricException( TransactionCommitFailed, "Trying to commit closed transaction" );
             }
 
             state = State.CLOSED;
 
-            internalLog.debug( "Committing transaction %d", id );
-
-            var allFailures = new ArrayList<Throwable>();
+            var allFailures = new ArrayList<ErrorRecord>();
 
             try
             {
-                allFailures.addAll( doOnChildren( readingTransactions, null, SingleDbTransaction::commit ) );
-                allFailures.forEach( err -> internalLog.error( "Failed to commit a child read transaction", err ) );
+                doOnChildren( readingTransactions, null, SingleDbTransaction::commit )
+                        .forEach( error -> allFailures.add( new ErrorRecord( "Failed to commit a child read transaction", error ) ) );
 
-                List<Throwable> errors;
                 if ( !allFailures.isEmpty() )
                 {
-                    errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::rollback );
-                    errors.forEach( err -> internalLog.error( "Failed to rollback a child write transaction", err ) );
+                    doOnChildren( List.of(), writingTransaction, SingleDbTransaction::rollback )
+                            .forEach( error -> allFailures.add( new ErrorRecord( "Failed to rollback a child write transaction", error ) ) );
                 }
                 else
                 {
-                    errors = doOnChildren( List.of(), writingTransaction, SingleDbTransaction::commit );
-                    errors.forEach( err -> internalLog.error( "Failed to commit a child write transaction", err ) );
+                    doOnChildren( List.of(), writingTransaction, SingleDbTransaction::commit )
+                            .forEach( error -> allFailures.add( new ErrorRecord( "Failed to commit a child write transaction", error ) ) );
                 }
-                allFailures.addAll( errors );
             }
             catch ( Exception e )
             {
-                allFailures.add( commitFailedError() );
+                allFailures.add( new ErrorRecord( "Failed to commit composite transaction", commitFailedError() ) );
             }
             finally
             {
@@ -204,8 +192,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             }
 
             throwIfNonEmpty( allFailures, this::commitFailedError );
-
-            internalLog.debug( "Transaction %d committed", id );
         }
         finally
         {
@@ -248,18 +234,16 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
     private void doRollback( Function<SingleDbTransaction,Mono<Void>> operation )
     {
-        internalLog.debug( "Rolling back transaction %d", id );
-
-        var allFailures = new ArrayList<Throwable>();
+        var allFailures = new ArrayList<ErrorRecord>();
 
         try
         {
-            allFailures.addAll( doOnChildren( readingTransactions, writingTransaction, operation ) );
-            allFailures.forEach( err -> internalLog.error( "Failed to rollback a child read transaction", err ) );
+            doOnChildren( readingTransactions, writingTransaction, operation )
+                    .forEach( error -> allFailures.add( new ErrorRecord( "Failed to rollback a child transaction", error  ) ) );
         }
         catch ( Exception e )
         {
-            allFailures.add( rollbackFailedError() );
+            allFailures.add( new ErrorRecord( "Failed to rollback composite transaction", rollbackFailedError() ) );
         }
         finally
         {
@@ -269,8 +253,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         }
 
         throwIfNonEmpty( allFailures, this::rollbackFailedError );
-
-        internalLog.debug( "Transaction %d rolled back", id );
     }
 
     private List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
@@ -295,18 +277,21 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 .onErrorResume( Mono::just );
     }
 
-    private void throwIfNonEmpty( List<Throwable> failures, Supplier<FabricException> genericException )
+    private void throwIfNonEmpty( List<ErrorRecord> failures, Supplier<FabricException> genericException )
     {
         if ( !failures.isEmpty() )
         {
             var exception = genericException.get();
             if ( failures.size() == 1 )
             {
-                throw Exceptions.transform( exception.status(), failures.get( 0 ) );
+                // Nothing is logged if there is just one error, because it will be logged by Bolt
+                // and the log would contain two lines reporting the same thing without any additional info.
+                throw Exceptions.transform( exception.status(), failures.get( 0 ).error );
             }
             else
             {
-                failures.forEach( exception::addSuppressed );
+                failures.forEach( failure -> exception.addSuppressed( failure.error ) );
+                failures.forEach( failure -> errorReporter.report( failure.message, failure.error, exception.status() ) );
                 throw exception;
             }
         }
@@ -324,7 +309,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         catch ( RuntimeException e )
         {
             // the exception with stack trace will be logged by Bolt's ErrorReporter
-            internalLog.error( "Query execution in transaction %d failed", id );
             rollback();
             throw Exceptions.transform( Status.Statement.ExecutionFailed, e );
         }
@@ -334,7 +318,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     {
         if ( state == State.TERMINATED )
         {
-            internalLog.error( "Trying to execute query in a terminated transaction %d", id );
             throw new TransactionTerminatedException( terminationStatus );
         }
 
@@ -367,7 +350,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 return;
             }
 
-            internalLog.debug( "Terminating transaction %d", id );
             terminationStatus = reason;
             state = State.TERMINATED;
 
@@ -509,7 +491,6 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             return;
         }
 
-        internalLog.debug( "Child transaction belonging to composite transaction %d terminated", id );
         markForTermination( reason );
     }
 
@@ -524,7 +505,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private FabricException commitFailedError()
     {
         return new FabricException(
-                Status.Transaction.TransactionCommitFailed,
+                TransactionCommitFailed,
                 "Failed to commit composite transaction %d",
                 id );
     }
@@ -559,5 +540,17 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         OPEN,
         CLOSED,
         TERMINATED
+    }
+
+    private static class ErrorRecord
+    {
+        private final String message;
+        private final Throwable error;
+
+        ErrorRecord( String message, Throwable error )
+        {
+            this.message = message;
+            this.error = error;
+        }
     }
 }
