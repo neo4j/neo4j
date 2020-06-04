@@ -22,14 +22,19 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.impl.factory.Sets;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -37,17 +42,22 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.time.Clocks.nanoClock;
 
-public class GBPTreeBootstrapper
+public class GBPTreeBootstrapper implements Closeable
 {
-    private final PageCache pageCache;
+    private final FileSystemAbstraction fs;
+    private final JobScheduler jobScheduler;
     private final LayoutBootstrapper layoutBootstrapper;
     private final boolean readOnly;
     private final PageCacheTracer pageCacheTracer;
+    private PageCache pageCache;
 
-    public GBPTreeBootstrapper( PageCache pageCache, LayoutBootstrapper layoutBootstrapper, boolean readOnly, PageCacheTracer pageCacheTracer )
+    public GBPTreeBootstrapper( FileSystemAbstraction fs, JobScheduler jobScheduler, LayoutBootstrapper layoutBootstrapper, boolean readOnly,
+            PageCacheTracer pageCacheTracer )
     {
-        this.pageCache = pageCache;
+        this.fs = fs;
+        this.jobScheduler = jobScheduler;
         this.layoutBootstrapper = layoutBootstrapper;
         this.readOnly = readOnly;
         this.pageCacheTracer = pageCacheTracer;
@@ -57,14 +67,23 @@ public class GBPTreeBootstrapper
     {
         try
         {
+            instantiatePageCache( fs, jobScheduler, PageCache.PAGE_SIZE );
             // Get meta information about the tree
-            MetaVisitor<?,?> metaVisitor = new MetaVisitor();
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
-            {
-                GBPTreeStructure.visitHeader( pageCache, file, metaVisitor, cursorTracer );
-            }
+            MetaVisitor<?,?> metaVisitor = visitMeta( file );
             Meta meta = metaVisitor.meta;
-            Pair<TreeState,TreeState> statePair = metaVisitor.statePair;
+            if ( !isReasonablePageSize( meta.getPageSize() ) )
+            {
+                throw new MetadataMismatchException( "Unexpected page size " + meta.getPageSize() );
+            }
+            if ( meta.getPageSize() != pageCache.pageSize() )
+            {
+                // GBPTree was created with a different page size, re-instantiate page cache and re-read meta.
+                instantiatePageCache( fs, jobScheduler, meta.getPageSize() );
+                metaVisitor = visitMeta( file );
+                meta = metaVisitor.meta;
+            }
+            StateVisitor<?,?> stateVisitor = visitState( file );
+            Pair<TreeState,TreeState> statePair = stateVisitor.statePair;
             TreeState state = TreeStatePair.selectNewestValidState( statePair );
 
             // Create layout and treeNode from meta
@@ -79,11 +98,69 @@ public class GBPTreeBootstrapper
         }
     }
 
-    public static PageCache pageCache( JobScheduler jobScheduler )
+    @Override
+    public void close() throws IOException
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        closePageCache();
+    }
+
+    private MetaVisitor<?,?> visitMeta( File file ) throws IOException
+    {
+        MetaVisitor<?,?> metaVisitor = new MetaVisitor();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
+        {
+            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, cursorTracer );
+        }
+        return metaVisitor;
+    }
+
+    private StateVisitor<?,?> visitState( File file ) throws IOException
+    {
+        StateVisitor<?,?> stateVisitor = new StateVisitor();
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
+        {
+            GBPTreeStructure.visitState( pageCache, file, stateVisitor, cursorTracer );
+        }
+        return stateVisitor;
+    }
+
+    private void instantiatePageCache( FileSystemAbstraction fs, JobScheduler jobScheduler, int pageSize )
+    {
+        if ( pageCache != null && pageCache.pageSize() == pageSize )
+        {
+            return;
+        }
+        closePageCache();
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
-        return new MuninnPageCache( swapper, 100, NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        EmptyMemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
+        long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3 * pageSize );
+        MemoryAllocator allocator = MemoryAllocator.createAllocator( expectedMemory, memoryTracker );
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
+        pageCache = new MuninnPageCache( swapper, allocator, pageSize, NULL, contextSupplier, jobScheduler, nanoClock(), memoryTracker );
+    }
+
+    private void closePageCache()
+    {
+        if ( pageCache != null )
+        {
+            pageCache.close();
+            pageCache = null;
+        }
+    }
+
+    private static boolean isReasonablePageSize( int number )
+    {
+        return isPowerOfTwo( number ) && isReasonableSize( number );
+    }
+
+    private static boolean isReasonableSize( int pageSize )
+    {
+        return pageSize <= 4194304;
+    }
+
+    private static boolean isPowerOfTwo( int pageSize )
+    {
+        return pageSize > 0 && ((pageSize & (pageSize - 1)) == 0);
     }
 
     public interface Bootstrap
@@ -184,13 +261,16 @@ public class GBPTreeBootstrapper
     private static class MetaVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
     {
         private Meta meta;
-        private Pair<TreeState,TreeState> statePair;
-
         @Override
         public void meta( Meta meta )
         {
             this.meta = meta;
         }
+    }
+
+    private static class StateVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
+    {
+        private Pair<TreeState,TreeState> statePair;
 
         @Override
         public void treeState( Pair<TreeState,TreeState> statePair )

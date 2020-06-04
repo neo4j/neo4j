@@ -26,18 +26,12 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.util.Enumeration;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -76,7 +70,7 @@ public abstract class FormatCompatibilityVerifier
     {
         try
         {
-            unzip( zipName, storeFile );
+            UnzipUtil.unzipResource( getClass(), zipName, storeFile );
         }
         catch ( FileNotFoundException e )
         {
@@ -126,24 +120,6 @@ public abstract class FormatCompatibilityVerifier
                 globalDir.file( zipName ),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) +
                         pathify( getClass().getPackage().getName() + "." ) + zipName ) );
-    }
-
-    private void unzip( String zipName, File storeFile ) throws IOException
-    {
-        URL resource = getClass().getResource( zipName );
-        if ( resource == null )
-        {
-            throw new FileNotFoundException();
-        }
-
-        try ( ZipFile zipFile = new ZipFile( resource.getFile() ) )
-        {
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            assertTrue( entries.hasMoreElements() );
-            ZipEntry entry = entries.nextElement();
-            assertEquals( storeFile.getName(), entry.getName() );
-            Files.copy( zipFile.getInputStream( entry ), storeFile.toPath() );
-        }
     }
 
     private static String pathify( String name )

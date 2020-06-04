@@ -57,20 +57,38 @@ public class GBPTreeStructure<KEY, VALUE>
     }
 
     /**
-     * Visit the header, that is tree state and meta information, about the tree present in the given {@code file}.
+     * Visit the meta page of the tree present in the given {@code file}.
      *
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
-     * @param file {@link File} containing the tree to print header for.
-     * @param visitor {@link GBPTreeVisitor} that shall visit header.
+     * @param file {@link File} containing the tree to visit meta page for.
+     * @param visitor {@link GBPTreeVisitor} that shall visit meta.
      * @throws IOException on I/O error.
      */
-    public static void visitHeader( PageCache pageCache, File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    public static void visitMeta( PageCache pageCache,File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    {
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
+            {
+                visitMeta( cursor, visitor );
+            }
+        }
+    }
+
+    /**
+     * Visit the state of the tree present in the given {@code file}.
+     *
+     * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
+     * @param file {@link File} containing the tree to visit state for.
+     * @param visitor {@link GBPTreeVisitor} that shall visit state.
+     * @throws IOException on I/O error.
+     */
+    public static void visitState( PageCache pageCache, File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
-                visitMeta( cursor, visitor );
                 visitTreeState( cursor, visitor );
             }
         }

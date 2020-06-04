@@ -1,0 +1,154 @@
+/*
+ * Copyright (c) 2002-2020 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.index.internal.gbptree;
+
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.stream.Stream;
+
+import org.neo4j.io.compress.ZipUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.UnzipUtil;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+
+@TestDirectoryExtension
+class GBPTreeBootstrapperTest
+{
+    private static final String STORE = "GBPTreeBootstrapperTest_store";
+    private static final int PAGE_SIZE_1k = 1024;
+    private static final int PAGE_SIZE_8k = 8192;
+    private static final int PAGE_SIZE_16k = 16384;
+    private static final int PAGE_SIZE_32k = 32768;
+    private static final int PAGE_SIZE_64k = 65536;
+    private static final int PAGE_SIZE_4M = 4194304;
+    private static final String ZIP_NAME_1k = "GBPTreeBootstrapperTest_store_1k.zip";
+    private static final String ZIP_NAME_8k = "GBPTreeBootstrapperTest_store_8k.zip";
+    private static final String ZIP_NAME_16k = "GBPTreeBootstrapperTest_store_16k.zip";
+    private static final String ZIP_NAME_32k = "GBPTreeBootstrapperTest_store_32k.zip";
+    private static final String ZIP_NAME_64k = "GBPTreeBootstrapperTest_store_64k.zip";
+    private static final String ZIP_NAME_4M = "GBPTreeBootstrapperTest_store_4M.zip";
+
+    @Inject
+    TestDirectory dir;
+    @Inject
+    FileSystemAbstraction fs;
+
+    private SimpleLongLayout layout;
+    private PageCache pageCache;
+    private String zipName;
+    private File storeFile;
+    private File zipFile;
+
+    @Disabled( "Example showing how test files where created" )
+    @ParameterizedTest
+    @MethodSource( "testSetupStream" )
+    void createTreeFilesWithDifferentPageSizes( TestSetup testSetup ) throws IOException
+    {
+        setupTest( testSetup );
+
+        try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        {
+            tree.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+        }
+        ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
+        fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",
+                zipFile.getAbsolutePath(),
+                "<corresponding-module>" + pathify( ".src.test.resources." ) + pathify( getClass().getPackage().getName() + "." ) + zipName ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "testSetupStream" )
+    void shouldBootstrapTreeOfDifferentPageSizes( TestSetup testSetup ) throws Exception
+    {
+        setupTest( testSetup );
+
+        UnzipUtil.unzipResource( getClass(), zipName, storeFile );
+
+        LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
+        try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
+              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, true, PageCacheTracer.NULL ) )
+        {
+            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile );
+            assertTrue( bootstrap.isTree() );
+            try ( GBPTree<?,?> tree = bootstrap.getTree() )
+            {
+                assertTrue( tree.consistencyCheck( PageCursorTracer.NULL ) );
+            }
+        }
+    }
+
+    private void setupTest( TestSetup testSetup )
+    {
+        this.layout = testSetup.layout;
+        this.pageCache = StandalonePageCacheFactory.createPageCache( fs, new ThreadPoolJobScheduler(), testSetup.pageSize );
+        this.zipName = testSetup.zipName;
+        this.storeFile = dir.file( STORE );
+        this.zipFile = dir.file( zipName );
+    }
+
+    private static String pathify( String name )
+    {
+        return name.replace( '.', File.separatorChar );
+    }
+
+    public static Stream<TestSetup> testSetupStream()
+    {
+        return Stream.of(
+                new TestSetup( PAGE_SIZE_1k, ZIP_NAME_1k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_8k, ZIP_NAME_8k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_16k, ZIP_NAME_16k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_32k, ZIP_NAME_32k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_64k, ZIP_NAME_64k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_4M, ZIP_NAME_4M, longLayout().build() )
+        );
+    }
+
+    private static class TestSetup
+    {
+        private final int pageSize;
+        private final String zipName;
+        private final SimpleLongLayout layout;
+
+        TestSetup( int pageSize, String zipName, SimpleLongLayout layout )
+        {
+            this.pageSize = pageSize;
+            this.zipName = zipName;
+            this.layout = layout;
+        }
+    }
+}
