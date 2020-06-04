@@ -89,6 +89,8 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -671,6 +673,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def selectOrAntiSemiApply(predicate: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+
+  def letSelectOrSemiApply(idName: String, predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
 
   def rollUpApply(collectionName: String,
                   variableToCollect: String,

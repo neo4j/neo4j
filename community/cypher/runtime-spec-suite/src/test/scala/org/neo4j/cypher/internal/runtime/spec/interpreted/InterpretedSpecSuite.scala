@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSemiApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
@@ -193,5 +194,6 @@ class InterpretedConditionalApplyTest extends ConditionalApplyTestBase(COMMUNITY
 class InterpretedLetSemiApplyTest extends LetSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedSelectOrSemiApplyTest extends SelectOrSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedLetSelectOrSemiApplyTest extends LetSelectOrSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNestedPlanExpressionTest extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
