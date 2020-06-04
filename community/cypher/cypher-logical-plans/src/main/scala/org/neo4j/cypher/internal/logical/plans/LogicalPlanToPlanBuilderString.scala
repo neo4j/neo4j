@@ -268,6 +268,7 @@ object LogicalPlanToPlanBuilderString {
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}, Set(${wrapInQuotationsAndMkString(nullableVariables)})"""
       case ConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case LetSemiApply(_, _, idName) => wrapInQuotations(idName)
+      case LetAntiSemiApply(_, _, idName) => wrapInQuotations(idName)
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>
