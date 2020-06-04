@@ -96,7 +96,7 @@ object Errors {
   def ddlNotSupported(ddl: CatalogDDL) = throw new DatabaseAdministrationException(
     s"This is an administration command and it should be executed against the system database: ${ddl.name}")
 
-  def notSupported(feature:String) = semantic(s"$feature is not supported in Fabric")
+  def notSupported(feature:String): Nothing = semantic(s"$feature is not supported in Fabric")
 
   def entityNotFound(kind: String, needle: String): Nothing = throw new EntityNotFoundException(s"$kind not found: $needle")
 
@@ -106,8 +106,8 @@ object Errors {
       case e: HasErrors => throw e.update {
         case SemanticError(msg, InputPosition.NONE) => syntax(msg, query, node.position)
         case SemanticError(msg, pos) => syntax(msg, query, pos)
-        case FeatureError(msg, InputPosition.NONE) => syntax(msg, query, node.position)
-        case FeatureError(msg, pos) => syntax(msg, query, pos)
+        case FeatureError(msg, _, InputPosition.NONE) => syntax(msg, query, node.position)
+        case FeatureError(msg, _, pos) => syntax(msg, query, pos)
         case o => o
       }
     }
