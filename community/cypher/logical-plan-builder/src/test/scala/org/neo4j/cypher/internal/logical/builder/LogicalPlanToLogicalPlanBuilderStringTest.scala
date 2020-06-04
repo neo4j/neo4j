@@ -48,6 +48,14 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
 
   private val testedOperators = mutable.Set[String]()
 
+  testPlan("letSelectOrSemiApply",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .letSelectOrSemiApply("idName", "false")
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build())
+
   testPlan("produceResults",
     new TestPlanBuilder()
       .produceResults("x")

@@ -234,6 +234,7 @@ object LogicalPlanToPlanBuilderString {
       case Selection(ands, _) =>
         wrapInQuotationsAndMkString(ands.exprs.map(expressionStringifier(_)))
       case SelectOrSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
+      case LetSelectOrSemiApply(_, _, idName, predicate) => wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
       case SelectOrAntiSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
