@@ -2329,6 +2329,18 @@ public class PageListTest
             return this;
         }
 
+        @Override
+        public void startFlush( int[][] translationTable )
+        {
+
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
+        }
+
         // --- FlushEvent:
 
         @Override

@@ -388,8 +388,16 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         long limiterStamp = IOLimiter.INITIAL_STAMP;
         int[][] tt = this.translationTable;
+
+        flushes.startFlush( tt );
+
         for ( int[] chunk : tt )
         {
+            var chunkEvent = flushes.startChunk( chunk );
+            long notModifiedPages = 0;
+            long flushPerChunk = 0;
+            long buffersPerChunk = 0;
+            long mergesPerChunk = 0;
             // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
             // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
             // TODO garbage to the file.
@@ -416,6 +424,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                         long stamp = tryOptimisticReadLock( pageRef );
                         if ( (!isModified( pageRef )) && validateReadLock( pageRef, stamp ) )
                         {
+                            notModifiedPages++;
                             break;
                         }
 
@@ -440,6 +449,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 // do not add new address, only bump length of previous buffer
                                 bufferLengths[lastBufferIndex] += filePageSize;
                                 mergedPages++;
+                                mergesPerChunk++;
                             }
                             else
                             {
@@ -448,6 +458,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 lastBufferIndex = numberOfBuffers;
                                 bufferLengths[numberOfBuffers] = filePageSize;
                                 numberOfBuffers++;
+                                buffersPerChunk++;
                             }
                             nextSequentialAddress = address + filePageSize;
                             pagesGrabbed++;
@@ -473,13 +484,16 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                     numberOfBuffers = 0;
                     lastBufferIndex = -1;
                     mergedPages = 0;
+                    flushPerChunk++;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
                 vectoredFlush( pages, bufferAddresses, flushStamps, bufferLengths, numberOfBuffers, pagesGrabbed, mergedPages, flushes, forClosing );
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, numberOfBuffers, this );
+                flushPerChunk++;
             }
+            chunkEvent.chunkFlushed( notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk );
         }
 
         swapper.force();

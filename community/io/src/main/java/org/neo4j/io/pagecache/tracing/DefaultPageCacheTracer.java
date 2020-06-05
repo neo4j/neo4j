@@ -80,7 +80,26 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private final FlushEventOpportunity flushEventOpportunity = ( filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) -> flushEvent;
+    private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
+    {
+        @Override
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+        {
+            return flushEvent;
+        }
+
+        @Override
+        public void startFlush( int[][] translationTable )
+        {
+
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
+        }
+    };
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {

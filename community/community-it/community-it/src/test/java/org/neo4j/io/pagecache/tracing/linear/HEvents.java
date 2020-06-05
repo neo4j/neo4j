@@ -233,6 +233,18 @@ class HEvents
         }
 
         @Override
+        public void startFlush( int[][] translationTable )
+        {
+
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             print( out, file );
@@ -398,6 +410,18 @@ class HEvents
         public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
         {
             return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) );
+        }
+
+        @Override
+        public void startFlush( int[][] translationTable )
+        {
+
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
         }
 
         @Override
