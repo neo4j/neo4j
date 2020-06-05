@@ -55,7 +55,7 @@ class StdevFunction(val value: Expression, val population:Boolean, memoryTracker
     }
   }
 
-  override def apply(data: ReadableRow, state: QueryState) {
+  override def apply(data: ReadableRow, state: QueryState): Unit = {
     actOnNumber(value(data, state), number => {
       count += 1
       total += number.doubleValue()
