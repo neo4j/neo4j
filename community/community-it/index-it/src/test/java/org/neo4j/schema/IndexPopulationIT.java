@@ -122,7 +122,7 @@ class IndexPopulationIT
             }
 
             @Override
-            public void indexPopulationScanComplete()
+            public void populationJobCompleted( long peakDirectMemoryUsage )
             {
                 populationJobCompleted.countDown();
             }
