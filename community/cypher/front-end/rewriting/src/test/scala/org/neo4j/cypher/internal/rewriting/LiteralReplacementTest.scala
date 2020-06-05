@@ -27,10 +27,6 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTFloat
-import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LiteralReplacementTest extends CypherFunSuite  {
@@ -141,19 +137,16 @@ class LiteralReplacementTest extends CypherFunSuite  {
   private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtraction = IfNoParameter) {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original = parser.parse(originalQuery, exceptionFactory)
-    val expected = parser.parse(expectedQuery, exceptionFactory).endoRewrite(toAutoExtracted)
+    val expected = parser.parse(expectedQuery, exceptionFactory)
 
     val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals)
 
-    val result = original.rewrite(rewriter)
+    val result = original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())
     assert(result === expected)
     assert(replacements === replacedLiterals)
   }
 
-  private def toAutoExtracted = bottomUp(Rewriter.lift {
-    case p@ExplicitParameter(name, _) if name.startsWith("  AUTOSTRING") => AutoExtractedParameter(name, CTString)(p.position)
-    case p@ExplicitParameter(name, _) if name.startsWith("  AUTOINT") => AutoExtractedParameter(name, CTInteger)(p.position)
-    case p@ExplicitParameter(name, _) if name.startsWith("  AUTODOUBLE") => AutoExtractedParameter(name, CTFloat)(p.position)
-    case p@ExplicitParameter(name, _) if name.startsWith("  AUTOLIST") => AutoExtractedParameter(name, CTList(CTAny))(p.position)
+  private def removeAutoExtracted() = bottomUp(Rewriter.lift {
+    case p@AutoExtractedParameter(name, _, _)  => ExplicitParameter(name, CTAny)(p.position)
   })
 }

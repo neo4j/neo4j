@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveString
@@ -98,16 +99,13 @@ import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.Log
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.asJavaIterableConverter
-import scala.collection.JavaConverters.asJavaIteratorConverter
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object CypherPlanner {
   /**
@@ -290,7 +288,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     // Prepare query for caching
     val preparedQuery = planner.normalizeQuery(syntacticQuery, plannerContext)
-    val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(_.name).distinct
+
+
+    val (queryParamNames, autoExtractParams) = parameterNamesAndValues(preparedQuery.statement())
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
@@ -302,7 +302,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty) =
       doCreatePlan(preparedQuery, plannerContext, notificationLogger, runtime, planContext, shouldBeCached, missingParameterNames)
 
-    val autoExtractParams = asMapValue(preparedQuery.extractedParams()) // only extracted ones
     // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
     // parameters where given in the first place)
     val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter((name, _) => queryParamNames.contains(name))
@@ -339,30 +338,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       obfuscator)
   }
 
-  private def asMapValue(params: Map[String, Any]): MapValue = {
-    if (params.isEmpty) return VirtualValues.EMPTY_MAP
-    val builder = new MapValueBuilder(params.size)
-    params.foreach {
-      case (key,value) => builder.add(key, ValueUtils.of(recursiveAsJava(value)))
-    }
-    builder.build()
-  }
-
-  /**
-   * Since the front-end is responsible for auto-paramaterization
-   * of queries and it will generate scala collection we need
-   * to turn them back into java in order for `ValueUtils.of` to
-   * do its thing.
-   *
-   * TODO: We should fix the front-end so that we can hook into
-   *       the auto parameterization.
-   */
-  private def recursiveAsJava(any: Any): Any = any match {
-    case e: Iterator[_] => e.map(recursiveAsJava).asJava
-    case e: Iterable[_] => e.map(recursiveAsJava).asJava
-    case e: Map[_, _] => e.mapValues(recursiveAsJava).asJava
-    case e => e
-  }
 
   private def doCreatePlan(preparedQuery: BaseState,
                            context: PlannerContext,
@@ -427,6 +402,21 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
         IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
     }
+
+  private def parameterNamesAndValues(statement: Statement): (ArrayBuffer[String], MapValue) = {
+    val names = mutable.ArrayBuffer.empty[String]
+    val mapBuilder = new MapValueBuilder()
+    val extractor = new ParameterLiteralExtractor
+    statement.findByAllClass[Parameter].foreach {
+      case AutoExtractedParameter(name, _, writer) =>
+        names += name
+        writer.writeTo(extractor)
+        mapBuilder.add(name, extractor.value)
+      case Parameter(name, _) =>
+        names += name
+    }
+    (names.distinct, mapBuilder.build())
+  }
 }
 
 object ContainsSensitiveFields {

@@ -20,7 +20,22 @@ import java.util
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-sealed trait Literal extends Expression {
+trait LiteralExtractor {
+  def writeBoolean(value: Boolean): Unit
+  def writeNull(): Unit
+  def writeString(value: String): Unit
+  def writeDouble(value: Double): Unit
+  def writeLong(value: Long): Unit
+  def writeByteArray(value: Array[Byte]): Unit
+  def beginList(size: Int): Unit
+  def endList(): Unit
+}
+
+trait LiteralWriter {
+  def writeTo(extractor: LiteralExtractor)
+}
+
+sealed trait Literal extends Expression with LiteralWriter {
   def value: AnyRef
   def asCanonicalStringVal: String
 }
@@ -32,6 +47,7 @@ sealed trait NumberLiteral extends Literal {
 
 sealed trait IntegerLiteral extends NumberLiteral {
   def value: java.lang.Long
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeLong(value)
 }
 
 sealed trait SignedIntegerLiteral extends IntegerLiteral
@@ -59,6 +75,7 @@ case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPositio
 
 sealed trait DoubleLiteral extends NumberLiteral {
   def value: java.lang.Double
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
 }
 
 case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral {
@@ -67,15 +84,19 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = value
+
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeString(value)
 }
 
-final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression with SensitiveString {
+final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression with SensitiveString with LiteralWriter {
   override def equals(obj: Any): Boolean = obj match {
     case o: SensitiveStringLiteral => util.Arrays.equals(o.value, value)
     case _ => false
   }
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
+
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeByteArray(value)
 }
 
 trait SensitiveString {
@@ -85,6 +106,7 @@ trait SensitiveString {
 case class Null()(val position: InputPosition) extends Literal {
   val value = null
 
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeNull()
   override def asCanonicalStringVal = "NULL"
 }
 
@@ -97,11 +119,12 @@ sealed trait BooleanLiteral extends Literal
 case class True()(val position: InputPosition) extends BooleanLiteral {
   val value: java.lang.Boolean = true
 
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeBoolean(true)
   override def asCanonicalStringVal = "true"
 }
 
 case class False()(val position: InputPosition) extends BooleanLiteral {
   val value: java.lang.Boolean = false
-
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeBoolean(false)
   override def asCanonicalStringVal = "false"
 }

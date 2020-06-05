@@ -35,7 +35,7 @@ object sensitiveLiteralReplacement {
         if (acc.contains(l)) {
           (acc, None)
         } else {
-          val parameter = new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString)(l.position) with SensitiveAutoParameter
+          val parameter = new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position) with SensitiveAutoParameter
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
   }

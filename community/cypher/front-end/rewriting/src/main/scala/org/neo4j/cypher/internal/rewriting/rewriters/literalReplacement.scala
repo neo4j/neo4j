@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -84,27 +85,27 @@ object literalReplacement {
     case l: StringLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
+          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
     case l: IntegerLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = AutoExtractedParameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
+          val parameter = AutoExtractedParameter(s"  AUTOINT${acc.size}", CTInteger, l)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
     case l: DoubleLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = AutoExtractedParameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
+          val parameter = AutoExtractedParameter(s"  AUTODOUBLE${acc.size}", CTFloat, l)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
     case l: ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val values = l.expressions.map(_.asInstanceOf[Literal].value)
-          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
-          (acc + (l -> LiteralReplacement(parameter, values)), None)
+          val literals = l.expressions.map(_.asInstanceOf[Literal])
+          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny), ListOfLiteralWriter(literals))(l.position)
+          (acc + (l -> LiteralReplacement(parameter, literals.map(_.value))), None)
         }
   }
 
