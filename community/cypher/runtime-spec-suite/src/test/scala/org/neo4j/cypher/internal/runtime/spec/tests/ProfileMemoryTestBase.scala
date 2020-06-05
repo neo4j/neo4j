@@ -313,23 +313,6 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
-  test("should profile memory of stdDev aggregation") {
-    given {
-      nodePropertyGraph(SIZE, { case i => Map("p" -> i)})
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("stdev(x.p) AS c"))
-      .allNodeScan("x")
-      .build()
-
-
-    // then
-    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
-  }
-
   test("should profile memory of percentileDisc aggregation") {
     given {
       nodePropertyGraph(SIZE, { case i => Map("p" -> i)})

@@ -22,35 +22,31 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class StdevFunction(val value: Expression, val population:Boolean, memoryTracker: MemoryTracker)
+/**
+ * Taking inspiration from:
+ *
+ * http://www.alias-i.com/lingpipe/src/com/aliasi/stats/OnlineNormalEstimator.java
+ * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+ */
+class StdevFunction(val value: Expression, val population: Boolean)
   extends AggregationFunction
   with NumericExpressionOnly {
 
   def name: String = if (population) "STDEVP" else "STDEV"
 
-  // would be cool to not have to keep a temporary list to do multiple passes
-  // this will blow up RAM over a big data set (not lazy!)
-  // but I don't think it's currently possible with the way aggregation works
-  private var temp = Vector[Double]() // TODO: Use heap tracking collection
-  private var count:Int = 0
-  private var total:Double = 0
+  var count: Int = 0
+  var movingAvg: Double = 0.0
+  // sum of squares of differences from the current mean
+  var m2: Double = 0.0
 
   override def result(state: QueryState): AnyValue = {
     if(count < 2) {
       Values.ZERO_FLOAT
     } else {
-      val avg = total/count
-      val variance = if(population) {
-        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => {val delta = e - avg; acc + (delta * delta) })
-        sumOfDeltas / count
-      } else {
-        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => {val delta = e - avg; acc + (delta * delta) })
-        sumOfDeltas / (count - 1)
-      }
+      val variance = if (population) m2/count else m2/(count - 1)
       Values.doubleValue(math.sqrt(variance))
     }
   }
@@ -58,9 +54,10 @@ class StdevFunction(val value: Expression, val population:Boolean, memoryTracker
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     actOnNumber(value(data, state), number => {
       count += 1
-      total += number.doubleValue()
-      temp = temp :+ number.doubleValue()
-      memoryTracker.allocateHeap(java.lang.Double.BYTES)
+      val x = number.doubleValue()
+      val nextM = movingAvg + (x - movingAvg) / count
+      m2 += (x - movingAvg) * (x - nextM)
+      movingAvg = nextM
     })
   }
 }

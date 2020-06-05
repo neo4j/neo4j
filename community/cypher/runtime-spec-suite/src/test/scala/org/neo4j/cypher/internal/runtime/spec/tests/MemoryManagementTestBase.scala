@@ -271,6 +271,21 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, input))
   }
 
+  test("should not kill stdDev aggregation query") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("stdev(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val input = finiteInput(100000)
+
+    // then
+    consume(execute(logicalQuery, runtime, input))
+  }
+
   test("should kill collect aggregation query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -735,22 +750,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     }
   }
 
-  test("should kill stdDev aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("stdev(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = infiniteInput(java.lang.Double.BYTES, Some(_ => Array(5))) // StdDev stores primitive doubles
-
-    // then
-    a[MemoryLimitExceeded] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
 
   test("should kill percentileDisc aggregation query before it runs out of memory") {
     // given
