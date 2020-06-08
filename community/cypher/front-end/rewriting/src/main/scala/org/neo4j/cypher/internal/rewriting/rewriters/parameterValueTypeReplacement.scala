@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.ASTNode
@@ -40,11 +41,11 @@ object parameterValueTypeReplacement {
 
   private def rewriteParameterValueTypes(term: ASTNode, paramTypes: Map[String, CypherType]) = {
     val replaceableParameters = term.treeFold(IdentityMap.empty: ParameterValueTypeReplacements){
-      case p@Parameter(_, CTAny) =>
+      case p@ExplicitParameter(_, CTAny) =>
         acc =>
           if (acc.contains(p)) (acc, None) else {
             val cypherType = paramTypes.getOrElse(p.name, CTAny)
-            (acc + (p -> ParameterValueTypeReplacement(Parameter(p.name, cypherType)(p.position), p.name)), None)
+            (acc + (p -> ParameterValueTypeReplacement(ExplicitParameter(p.name, cypherType)(p.position), p.name)), None)
           }
     }
     ExtractParameterRewriter(replaceableParameters)
