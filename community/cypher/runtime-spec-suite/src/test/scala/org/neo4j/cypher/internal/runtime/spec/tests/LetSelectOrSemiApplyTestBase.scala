@@ -112,6 +112,26 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x", "idName").withNoRows()
   }
 
+  test("rhs should not be touched if the predicate in letSelectOrSemiApply always is true") {
+    //given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .letSelectOrSemiApply("idName", "true")
+      .|.filter("1/0 > 1")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    //then should not throw "/ by zero"
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
   test("idName should be true for the row which are satisfying the expression even if the rhs is empty") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
