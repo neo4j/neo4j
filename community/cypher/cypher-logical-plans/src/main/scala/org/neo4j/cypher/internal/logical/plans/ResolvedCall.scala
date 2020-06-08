@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -55,7 +57,8 @@ object ResolvedCall {
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
-      case (p: Parameter, true) => new ExplicitParameter(p.name, p.parameterType)(p.position) with SensitiveParameter
+      case (p: ExplicitParameter, true) => new ExplicitParameter(p.name, p.parameterType)(p.position) with SensitiveParameter
+      case (p: AutoExtractedParameter, true) => new AutoExtractedParameter(p.name, p.parameterType, p.writer)(p.position) with SensitiveAutoParameter
       case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveString
       case (p, _) => p
     }
