@@ -33,6 +33,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.index.label.NativeTokenScanWriter.rangeOf;
 import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
@@ -144,6 +145,12 @@ class NativeTokenScanReader implements TokenScanReader
         return index.seek( fromKey, toKey, cursorTracer );
     }
 
+    @VisibleForTesting
+    static long roundUp( long sizeHint )
+    {
+        return ((sizeHint + RANGE_SIZE - 1) / RANGE_SIZE) * RANGE_SIZE;
+    }
+
     private class NativeTokenScan implements TokenScan
     {
         private final AtomicLong nextStart;
@@ -193,11 +200,6 @@ class NativeTokenScanReader implements TokenScanReader
             }
 
             return new TokenScanValueIndexProgressor( cursor, client, indexOrder );
-        }
-
-        private long roundUp( long sizeHint )
-        {
-            return (sizeHint / RANGE_SIZE + 1) * RANGE_SIZE;
         }
     }
 }

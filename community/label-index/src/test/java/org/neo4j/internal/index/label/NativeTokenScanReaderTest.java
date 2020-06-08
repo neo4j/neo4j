@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,6 +45,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.internal.index.label.NativeTokenScanReader.roundUp;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @SuppressWarnings( "StatementWithEmptyBody" )
@@ -87,6 +90,19 @@ class NativeTokenScanReaderTest
         when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
                 .thenAnswer( ignored -> cursor( ascending ) );
         return index;
+    }
+
+    @Test
+    void roundUpMustRoundCorrectly()
+    {
+        assertEquals( 0, roundUp( 0 ) );
+        for ( int multiplier = 1; multiplier < 10; multiplier++ )
+        {
+            long expected = multiplier * RANGE_SIZE;
+            assertEquals( expected, roundUp( expected ) );
+            assertEquals( expected, roundUp( expected - 1 ) );
+            assertEquals( expected + RANGE_SIZE, roundUp( expected + 1 ) );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -228,7 +244,7 @@ class NativeTokenScanReaderTest
                 .thenReturn( cursor );
 
         // when
-        long fromId = TokenScanValue.RANGE_SIZE + 3;
+        long fromId = RANGE_SIZE + 3;
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
         try ( PrimitiveLongResourceIterator iterator = reader.entitiesWithAnyOfTokens( fromId, new int[]{LABEL_ID}, NULL ) )
         {
