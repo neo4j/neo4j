@@ -59,7 +59,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -99,7 +98,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -168,14 +166,7 @@ class GBPTreeTest
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
 
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
+        assertThrows( MetadataMismatchException.class, () -> index().with( otherLayout ).build(), "Should not load" );
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
@@ -189,14 +180,7 @@ class GBPTreeTest
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withIdentifier( 123456 ).build();
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
+        assertThrows( MetadataMismatchException.class, () -> index().with( otherLayout ).build(), "Should not load" );
     }
 
     @Test
@@ -207,14 +191,7 @@ class GBPTreeTest
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
+        assertThrows( MetadataMismatchException.class, () -> index().with( otherLayout ).build(), "Should not load" );
     }
 
     @Test
@@ -225,14 +202,7 @@ class GBPTreeTest
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withMinorVersion( 123 ).build();
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
+        assertThrows( MetadataMismatchException.class, () -> index().with( otherLayout ).build(), "Should not load" );
     }
 
     @Test
@@ -244,17 +214,10 @@ class GBPTreeTest
 
         // WHEN
         int smallerPageSize = pageSize / 2;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( smallerPageSize ).build() )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-            assertThat( e.getMessage() ).contains(
-                    format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
-                            smallerPageSize, pageSize ) );
-        }
+        MetadataMismatchException e = assertThrows( MetadataMismatchException.class, () -> index( smallerPageSize ).build(), "Should not load" );
+        assertThat( e.getMessage() ).contains(
+                format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                        smallerPageSize, pageSize ) );
     }
 
     @Test
@@ -266,17 +229,39 @@ class GBPTreeTest
 
         // WHEN
         int largerPageSize = 2 * pageSize;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( largerPageSize ).build() )
+        MetadataMismatchException e = assertThrows( MetadataMismatchException.class, () -> index( largerPageSize ).build(), "Should not load" );
+        assertThat( e.getMessage() ).contains(
+                format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                        largerPageSize, pageSize ) );
+    }
+
+    @Test
+    void shouldFailOnOpenWithUnreasonablePageSize() throws IOException
+    {
+        int pageSize = 2 * defaultPageSize;
+        int unreasonablePageSize = pageSize + 1;
+        PageCache pageCache = createPageCache( pageSize );
+        index( pageCache ).build().close();
+
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
+              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, NULL ) )
         {
-            fail( "Should not load" );
+            assertTrue( cursor.next() );
+
+            Meta meta = Meta.read( cursor, layout );
+            Meta newMeta = new Meta( meta.getFormatIdentifier(), meta.getFormatVersion(), unreasonablePageSize, layout );
+
+            cursor.setOffset( 0 );
+            newMeta.write( cursor, layout );
         }
-        catch ( MetadataMismatchException e )
+
+        MetadataMismatchException e = assertThrows( MetadataMismatchException.class, () ->
         {
-            // THEN good
-            assertThat( e.getMessage() ).contains(
-                    format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
-                            largerPageSize, pageSize ) );
-        }
+            index( pageCache ).build();
+        } );
+        assertThat( e.getMessage() ).contains(
+                format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
+                        pageSize, unreasonablePageSize ) );
     }
 
     @Test
@@ -287,16 +272,7 @@ class GBPTreeTest
         GBPTreeBuilder<MutableLong,MutableLong> builder = index( pageCache );
         builder.build().close();
 
-        try
-        {
-            // WHEN
-            builder.with( longLayout().withFixedSize( false ).build() ).build();
-            fail( "Should have failed" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
+        assertThrows( MetadataMismatchException.class, () -> builder.with( longLayout().withFixedSize( false ).build() ).build() );
     }
 
     @Test
@@ -338,15 +314,7 @@ class GBPTreeTest
             Writer<MutableLong,MutableLong> writer = index.writer( NULL );
 
             // WHEN
-            try
-            {
-                index.writer( NULL );
-                fail( "Should have failed" );
-            }
-            catch ( IllegalStateException e )
-            {
-                // THEN good
-            }
+            assertThrows( IllegalStateException.class, () -> index.writer( NULL ) );
 
             // Should be able to close old writer
             writer.close();
@@ -365,17 +333,8 @@ class GBPTreeTest
             writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             writer.close();
 
-            try
-            {
-                // WHEN
-                writer.close();
-                fail( "Should have failed" );
-            }
-            catch ( IllegalStateException e )
-            {
-                // THEN
-                assertThat( e.getMessage() ).contains( "already closed" );
-            }
+            IllegalStateException e = assertThrows( IllegalStateException.class, () -> writer.close() );
+            assertThat( e.getMessage() ).contains( "already closed" );
         }
     }
 
@@ -386,18 +345,12 @@ class GBPTreeTest
         IOException no = new IOException( "No" );
         AtomicBoolean throwOnNextIO = new AtomicBoolean();
         PageCache controlledPageCache = pageCacheThatThrowExceptionWhenToldTo( no, throwOnNextIO );
-        try ( GBPTree<MutableLong, MutableLong> index = index( controlledPageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> index = index( controlledPageCache ).build() )
         {
             // WHEN
             assertTrue( throwOnNextIO.compareAndSet( false, true ) );
-            try ( Writer<MutableLong,MutableLong> ignored = index.writer( NULL ) )
-            {
-                fail( "Expected to throw" );
-            }
-            catch ( IOException e )
-            {
-                assertSame( no, e );
-            }
+            IOException e = assertThrows( IOException.class, () -> index.writer( NULL ) );
+            assertSame( no, e );
 
             // THEN
             try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
@@ -659,15 +612,7 @@ class GBPTreeTest
     {
         // given
         File doesNotExist = new File( "Does not exist" );
-        try
-        {
-            GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, NULL );
-            fail( "Should have failed" );
-        }
-        catch ( NoSuchFileException e )
-        {
-            // good
-        }
+        assertThrows( NoSuchFileException.class, () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -688,16 +633,7 @@ class GBPTreeTest
         PageCache pageCache = createPageCache( defaultPageSize );
         pageCache.map( indexFile, pageCache.pageSize(), immutable.of( CREATE ) ).close();
 
-        // when
-        try
-        {
-            opener.accept( pageCache );
-            fail( "Should've thrown IOException" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // then good
-        }
+        assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
 
     @Test
@@ -720,16 +656,7 @@ class GBPTreeTest
         index( pageCache ).build().close();
         fileSystem.truncate( indexFile, defaultPageSize /*truncate right after the first page*/ );
 
-        // when
-        try
-        {
-            opener.accept( pageCache );
-            fail( "Should've thrown IOException" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // then good
-        }
+        assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
 
     @Test
@@ -758,16 +685,7 @@ class GBPTreeTest
             out.write( allZeroPage ); // page B
         }
 
-        // when
-        try
-        {
-            opener.accept( pageCache );
-            fail( "Should've thrown IOException" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // then good
-        }
+        assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
 
     @Test
@@ -1168,16 +1086,8 @@ class GBPTreeTest
             cleanupMonitor.barrier.release();
             cleanup.get();
 
-            // then
-            try
-            {
-                checkpoint.get();
-                fail( "Expected checkpoint to fail because of failed cleaning job" );
-            }
-            catch ( ExecutionException e )
-            {
-                assertThat( e.getMessage() ).contains( "cleaning" ).contains( "failed" );
-            }
+            ExecutionException e = assertThrows( ExecutionException.class, checkpoint::get, "Expected checkpoint to fail because of failed cleaning job" );
+            assertThat( e.getMessage() ).contains( "cleaning" ).contains( "failed" );
         }
     }
 
@@ -1473,13 +1383,8 @@ class GBPTreeTest
             // WHEN
             try ( GBPTree<MutableLong,MutableLong> index = index( specificPageCache ).build() )
             {
-                try ( Writer<MutableLong, MutableLong> ignored = index.writer( NULL ) )
-                {
-                    fail( "Expected to throw because root pointed to by tree state should have a valid successor." );
-                }
-            }
-            catch ( TreeInconsistencyException e )
-            {
+                TreeInconsistencyException e = assertThrows( TreeInconsistencyException.class, () -> index.writer( NULL ),
+                        "Expected to throw because root pointed to by tree state should have a valid successor." );
                 assertThat( e.getMessage() ).contains( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE );
             }
         }
@@ -1811,11 +1716,7 @@ class GBPTreeTest
     private void assertFutureFailsWithTreeInconsistencyException( Future<Object> future )
     {
         ExecutionException e = assertThrows( ExecutionException.class, future::get );
-        Throwable cause = e.getCause();
-        if ( !(cause instanceof TreeInconsistencyException) )
-        {
-            fail( "Expected cause to be " + TreeInconsistencyException.class + " but was " + Exceptions.stringify( cause ) );
-        }
+        assertThat( e ).hasCauseInstanceOf( TreeInconsistencyException.class );
     }
 
     private void corruptTheChild( PageCache pageCache, long corruptChild ) throws IOException
@@ -1992,15 +1893,7 @@ class GBPTreeTest
 
     private void shouldWait( Future<?> future ) throws InterruptedException, ExecutionException
     {
-        try
-        {
-            future.get( 200, TimeUnit.MILLISECONDS );
-            fail( "Expected timeout" );
-        }
-        catch ( TimeoutException e )
-        {
-            // good
-        }
+        assertThrows( TimeoutException.class, () -> future.get( 200, TimeUnit.MILLISECONDS ), "Expected timeout" );
     }
 
     private PageCache createPageCache( int pageSize )
