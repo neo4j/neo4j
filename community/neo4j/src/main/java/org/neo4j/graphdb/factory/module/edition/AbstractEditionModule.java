@@ -27,7 +27,6 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -89,7 +88,7 @@ public abstract class AbstractEditionModule
             Predicate<String> fileNameFilter )
     {
         DefaultFileDeletionListenerFactory listenerFactory =
-                new DefaultFileDeletionListenerFactory( new NormalizedDatabaseName( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
+                new DefaultFileDeletionListenerFactory( databaseLayout, logging, fileNameFilter );
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 

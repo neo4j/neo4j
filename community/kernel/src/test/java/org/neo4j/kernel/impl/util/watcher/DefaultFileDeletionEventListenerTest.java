@@ -19,38 +19,167 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.WatchKey;
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.fs.watcher.resource.WatchedFile;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+@Neo4jLayoutExtension
 class DefaultFileDeletionEventListenerTest
 {
-    private final WatchKey key = mock( WatchKey.class );
-    private final WatchedResource watchedResource = new WatchedFile( key );
+    @Inject
+    private DatabaseLayout databaseLayout;
+    @Inject
+    private TestDirectory testDirectory;
+    private final WatchKey databaseDirKey = mock( WatchKey.class );
+    private final WatchKey databaseLogsDirKey = mock( WatchKey.class );
+    private final WatchKey databaseRootKey = mock( WatchKey.class );
+    private final WatchKey databaseLogsRootKey = mock( WatchKey.class );
+
+    private final WatchKey anotherDatabaseDirKey = mock( WatchKey.class );
+    private final WatchKey anotherDatabaseLogsDirKey = mock( WatchKey.class );
+
+    private WatchedResource watchedDatabaseDirectory;
+    private WatchedResource watchedLogsDirectory;
+    private WatchedResource watchedDatabaseRootDirectory;
+    private WatchedResource watchedLogsRootDirectory;
+
+    @BeforeEach
+    void setUp()
+    {
+        watchedDatabaseDirectory = new WatchedFile( databaseDirKey, databaseLayout.databaseDirectory() );
+        watchedLogsDirectory = new WatchedFile( databaseLogsDirKey, databaseLayout.getTransactionLogsDirectory() );
+        watchedDatabaseRootDirectory = new WatchedFile( databaseRootKey, databaseLayout.getNeo4jLayout().databasesDirectory() );
+        watchedLogsRootDirectory = new WatchedFile( databaseLogsRootKey, databaseLayout.getNeo4jLayout().transactionLogsRootDirectory() );
+    }
 
     @Test
     void notificationInLogAboutFileDeletion()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
-        listener.fileDeleted( key, "testFile" );
-        listener.fileDeleted( key, "anotherDirectory" );
+        listener.fileDeleted( databaseDirKey, "testFile" );
+        listener.fileDeleted( databaseDirKey, "anotherDirectory" );
+
+        var databaseName = databaseLayout.getDatabaseName();
+        assertThat( internalLogProvider ).containsMessages(
+                "'testFile' which belongs to the '" + databaseName + "' database was deleted while it was running.",
+                "'anotherDirectory' which belongs to the '" + databaseName + "' database was deleted while it was running." );
+    }
+
+    @Test
+    void notificationAboutDeletionInDatabaseDirectory()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        var databaseFile = "neostore.db";
+        listener.fileDeleted( databaseDirKey, databaseFile );
+
+        var databaseName = databaseLayout.getDatabaseName();
+        assertThat( internalLogProvider ).containsMessages(
+                "'" + databaseFile + "' which belongs to the '" + databaseName + "' database was deleted while it was running." );
+    }
+
+    @Test
+    void noNotificationAboutDeletionInAnotherDatabaseDirectory()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        var databaseFile = "neostore.db";
+        listener.fileDeleted( anotherDatabaseDirKey, databaseFile );
+
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
+    }
+
+    @Test
+    void notificationAboutDeletionInTransactionLogsDirectory()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        var someFile = "someFile";
+        listener.fileDeleted( databaseLogsDirKey, someFile );
+
+        var databaseName = databaseLayout.getDatabaseName();
+        assertThat( internalLogProvider ).containsMessages(
+                "'" + someFile + "' which belongs to the '" + databaseName + "' database was deleted while it was running." );
+    }
+
+    @Test
+    void noNotificationAboutDeletionInAnotherTransactionLogsDirectory()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        var someFile = "someFile";
+        listener.fileDeleted( anotherDatabaseLogsDirKey, someFile );
+
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
+    }
+
+    @Test
+    void notificationAboutDatabaseDirectoryRemoval()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        String databaseName = databaseLayout.getDatabaseName();
+        listener.fileDeleted( databaseRootKey, databaseName );
 
         assertThat( internalLogProvider ).containsMessages(
-                "'testFile' which belongs to the 'testdatabase' database was deleted while it was running.",
-                "'anotherDirectory' which belongs to the 'testdatabase' database was deleted while it was running." );
+                "'" + databaseName + "' which belongs to the '" + databaseName + "' database was deleted while it was running." );
+    }
+
+    @Test
+    void noNotificationAboutAnotherDatabaseDirectoryRemoval()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        listener.fileDeleted( databaseRootKey, "foo" );
+
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
+    }
+
+    @Test
+    void notificationAboutLogsDirectoryRemoval()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        String databaseName = databaseLayout.getDatabaseName();
+        listener.fileDeleted( databaseLogsRootKey, databaseName );
+
+        assertThat( internalLogProvider ).containsMessages(
+                "'" + databaseName + "' which belongs to the '" + databaseName + "' database was deleted while it was running." );
+    }
+
+    @Test
+    void notificationAboutAnotherDatabaseLogsDirectoryRemoval()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+
+        listener.fileDeleted( databaseLogsRootKey, "bar" );
+
+        assertThat( internalLogProvider ).doesNotHaveAnyLogs();
     }
 
     @Test
@@ -58,17 +187,17 @@ class DefaultFileDeletionEventListenerTest
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
-        listener.fileDeleted( key, TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
-        listener.fileDeleted( key, TransactionLogFilesHelper.DEFAULT_NAME + ".1" );
+        listener.fileDeleted( databaseLogsDirKey, TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
+        listener.fileDeleted( databaseLogsDirKey, TransactionLogFilesHelper.DEFAULT_NAME + ".1" );
 
         assertThat( internalLogProvider ).doesNotHaveAnyLogs();
     }
 
     private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )
     {
-        var databaseName = new NormalizedDatabaseName( "testDatabase" );
         var logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
-        return new DefaultFileDeletionEventListener( databaseName, asSet( watchedResource ), logService,
+        var watchedResources = asSet( watchedDatabaseDirectory, watchedLogsDirectory, watchedDatabaseRootDirectory, watchedLogsRootDirectory );
+        return new DefaultFileDeletionEventListener( databaseLayout, watchedResources, logService,
                 filename -> filename.startsWith( TransactionLogFilesHelper.DEFAULT_NAME ) );
     }
 }

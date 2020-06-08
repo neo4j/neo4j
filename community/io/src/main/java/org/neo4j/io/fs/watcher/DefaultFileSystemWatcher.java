@@ -64,7 +64,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
                     "registered to be monitored.", file.getCanonicalPath() ) );
         }
         WatchKey watchKey = file.toPath().register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
-        return new WatchedFile( watchKey );
+        return new WatchedFile( watchKey, file );
     }
 
     @Override

@@ -100,6 +100,12 @@ class DatabaseLayoutWatcherTest
         }
 
         @Override
+        public File getWatchedFile()
+        {
+            return file;
+        }
+
+        @Override
         public WatchKey getWatchKey()
         {
             return null;

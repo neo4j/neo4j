@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
+import java.io.File;
 import java.nio.file.WatchKey;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
@@ -34,15 +37,15 @@ import org.neo4j.logging.internal.LogService;
  */
 public class DefaultFileDeletionEventListener implements FileWatchEventListener
 {
-    private final NormalizedDatabaseName databaseName;
+    private final DatabaseLayout databaseLayout;
     private final Set<WatchedResource> watchedResources;
     private final Log internalLog;
     private final Predicate<String> fileNameFilter;
 
-    DefaultFileDeletionEventListener( NormalizedDatabaseName databaseName, Set<WatchedResource> watchedResources, LogService logService,
+    DefaultFileDeletionEventListener( DatabaseLayout databaseLayout, Set<WatchedResource> watchedResources, LogService logService,
             Predicate<String> fileNameFilter )
     {
-        this.databaseName = databaseName;
+        this.databaseLayout = databaseLayout;
         this.watchedResources = watchedResources;
         this.internalLog = logService.getInternalLog( getClass() );
         this.fileNameFilter = fileNameFilter;
@@ -51,14 +54,45 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
     @Override
     public void fileDeleted( WatchKey key, String fileName )
     {
-        if ( isListenedResource( key ) && !fileNameFilter.test( fileName ) )
+        if ( !fileNameFilter.test( fileName ) )
         {
-            internalLog.error( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseName.name() );
+            var watchedResource = getListenedResource( key );
+            if ( watchedResource.isPresent() )
+            {
+                File watchedFile = watchedResource.get().getWatchedFile();
+                if ( isDatabaseDirectory( fileName, watchedFile ) )
+                {
+                    printWarning( fileName );
+                }
+                else if ( isFileInDatabaseDirectories( watchedFile ) )
+                {
+                    printWarning( fileName );
+                }
+            }
         }
     }
 
-    private boolean isListenedResource( WatchKey watchKey )
+    private boolean isDatabaseDirectory( String fileName, File watchedFile )
     {
-        return watchedResources.stream().map( WatchedResource::getWatchKey ).anyMatch( watchKey::equals );
+        Neo4jLayout neo4jLayout = databaseLayout.getNeo4jLayout();
+        return fileName.equals( databaseLayout.getDatabaseName() ) &&
+                (neo4jLayout.databasesDirectory().equals( watchedFile ) ||
+                 neo4jLayout.transactionLogsRootDirectory().equals( watchedFile ));
+    }
+
+    private boolean isFileInDatabaseDirectories( File watchedFile )
+    {
+        return databaseLayout.databaseDirectory().equals( watchedFile ) ||
+               databaseLayout.getTransactionLogsDirectory().equals( watchedFile );
+    }
+
+    private void printWarning( String fileName )
+    {
+        internalLog.error( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseLayout.getDatabaseName() );
+    }
+
+    private Optional<WatchedResource> getListenedResource( WatchKey watchKey )
+    {
+        return watchedResources.stream().filter( resource -> watchKey.equals( resource.getWatchKey() ) ).findAny();
     }
 }
