@@ -446,7 +446,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 // add new address
                                 bufferAddresses[numberOfBuffers] = address;
                                 lastBufferIndex = numberOfBuffers;
-                                bufferLengths[numberOfBuffers++] = filePageSize;
+                                bufferLengths[numberOfBuffers] = filePageSize;
+                                numberOfBuffers++;
                             }
                             nextSequentialAddress = address + filePageSize;
                             pagesGrabbed++;

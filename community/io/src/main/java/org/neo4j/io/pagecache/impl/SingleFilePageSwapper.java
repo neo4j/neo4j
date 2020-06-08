@@ -330,7 +330,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private long readPositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length ) throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        long bytesToRead = countBytesToRead( bufferLengths, length );
+        long bytesToRead = countBuffersLengths( bufferLengths, length );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, bufferLengths, length );
         long bytesRead = lockPositionReadVector( fileOffset, srcs, bytesToRead );
         if ( bytesRead == -1 )
@@ -361,12 +361,12 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long countBytesToRead( int[] bufferLengths, int length )
+    private long countBuffersLengths( int[] bufferLengths, int length )
     {
         long bytesToRead = 0;
         for ( int i = 0; i < length; i++ )
         {
-            bytesToRead = Math.addExact( bytesToRead, bufferLengths[i] );
+            bytesToRead += bufferLengths[i];
         }
         return bytesToRead;
     }
@@ -448,7 +448,7 @@ public class SingleFilePageSwapper implements PageSwapper
                 {
                     if ( hasPositionLock )
                     {
-                        return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, bufferLengths, length, totalAffectedPages );
+                        return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, bufferLengths, length );
                     }
                     return writePositionVectoredFallback( startFilePageId, bufferAddresses, bufferLengths, length );
                 }
@@ -462,11 +462,11 @@ public class SingleFilePageSwapper implements PageSwapper
         return -1;
     }
 
-    private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages )
+    private long writePositionedVectoredToFileChannel( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length )
             throws IOException
     {
         long fileOffset = pageIdToPosition( startFilePageId );
-        long bytesToWrite = ((long) filePageSize) * totalAffectedPages;
+        long bytesToWrite = countBuffersLengths(bufferLengths, length );
         increaseFileSizeTo( fileOffset + bytesToWrite );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, bufferLengths, length );
         return lockPositionWriteVector( fileOffset, srcs, bytesToWrite );
