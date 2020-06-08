@@ -31,8 +31,11 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTGraphRef
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
@@ -59,16 +62,25 @@ sealed trait AdministrationCommand extends CatalogDDL {
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = true
 
-  val defaultColumnSet: List[String]
-  def returnColumnNames: List[String] = yields.map(calculateResultColumns).getOrElse(defaultColumnSet)
+  private[ast] val defaultColumnSet: List[(String, CypherType)]
+  def returnColumnNames: List[String] = calculateResultColumns(yields).map(_._1)
 
   def where: Option[Where] = None
   def yields: Option[Return] = None
   def returns: Option[Return] = None
 
-  private def calculateResultColumns(resultColumns: Return): List[String] = resultColumns.returnItems.items.map(ri => ri.alias.get.name).toList
-  private def createSymbol(variable: String, offset: Int): semantics.Symbol =
-    semantics.Symbol(variable, Set(new InputPosition(offset, 1, 1)), TypeSpec.exact(CTString))
+  private def calculateResultColumns(yields: Option[Return]): List[(String, CypherType)] = yields match {
+    case Some(resultColumns) =>
+      resultColumns.returnItems.items.map(ri => {
+        val columnType = defaultColumnSet.find(c => c._1 == ri.name).map(_._2).getOrElse(CTString)
+        val aliasName = ri.alias.get.name
+        (aliasName, columnType)
+      }).toList
+    case None => defaultColumnSet
+  }
+
+  private def createSymbol(variable: (String, CypherType), offset: Int): semantics.Symbol =
+    semantics.Symbol(variable._1, Set(new InputPosition(offset, 1, 1)), TypeSpec.exact(variable._2))
 
   override def returnColumns: List[LogicalVariable] = returnColumnNames.map(name => Variable(name)(position))
 
@@ -95,7 +107,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
       )
       .chain(withScopedState(
         // WHERE and ORDER BY should operate on the return columns scoped by the YIELD
-        declareVariables(returnColumnNames.zipWithIndex.map { case (name, index) => createSymbol(name, index) })
+        declareVariables(calculateResultColumns(yields).zipWithIndex.map { case (name, index) => createSymbol(name, index) })
           .chain(where.semanticCheck)
           .chain(yields.flatMap(_.orderBy).semanticCheck))
       ))
@@ -129,7 +141,8 @@ final case class ShowUsers(override  val yields: Option[Return], override val wh
 
   override def name: String = "SHOW USERS"
 
-  override val defaultColumnSet: List[String] = List("user", "roles", "passwordChangeRequired", "suspended")
+  override val defaultColumnSet: List[(String, CypherType)] = List(("user", CTString), ("roles", CTList(CTString)),
+    ("passwordChangeRequired", CTBoolean), ("suspended", CTBoolean))
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -200,7 +213,7 @@ final case class ShowRoles(withUsers: Boolean, showAll: Boolean, override val yi
 
   override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"
 
-  override val defaultColumnSet: List[String] = if (withUsers) List("role", "member") else List("role")
+  override val defaultColumnSet: List[(String, CypherType)] = if (withUsers) List(("role", CTString), ("member", CTString)) else List(("role", CTString))
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -723,8 +736,9 @@ final case class RevokePrivilege(privilege: PrivilegeType,
 final case class ShowPrivileges(scope: ShowPrivilegeScope, override  val yields: Option[Return], override val where: Option[Where], override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
   override def name = "SHOW PRIVILEGE"
 
-  override val defaultColumnSet: List[String] = List("access", "action", "resource", "graph", "segment", "role") ++ (scope match {
-    case _: ShowUserPrivileges => List("user")
+  override val defaultColumnSet: List[(String, CypherType)] = List(("access", CTString), ("action", CTString),
+    ("resource", CTString), ("graph", CTString), ("segment", CTString), ("role", CTString)) ++ (scope match {
+    case _: ShowUserPrivileges => List(("user", CTString))
     case _ => List.empty
   })
 
@@ -738,7 +752,8 @@ final case class ShowDatabases(override  val yields: Option[Return], override va
 
   override def name = "SHOW DATABASES"
 
-  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
+  override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
+    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString), ("default", CTBoolean))
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -750,7 +765,8 @@ final case class ShowDefaultDatabase(override  val yields: Option[Return], overr
 
   override def name = "SHOW DEFAULT DATABASE"
 
-  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error")
+  override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
+    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString))
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -762,7 +778,8 @@ final case class ShowDatabase(dbName: Either[String, Parameter], override val yi
 
   override def name = "SHOW DATABASE"
 
-  override val defaultColumnSet: List[String] = List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default")
+  override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
+    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString), ("default", CTBoolean))
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
