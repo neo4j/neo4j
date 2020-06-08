@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -50,12 +52,12 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 class GBPTreeBootstrapperTest
 {
     private static final String STORE = "GBPTreeBootstrapperTest_store";
-    private static final int PAGE_SIZE_1k = 1024;
-    private static final int PAGE_SIZE_8k = 8192;
-    private static final int PAGE_SIZE_16k = 16384;
-    private static final int PAGE_SIZE_32k = 32768;
-    private static final int PAGE_SIZE_64k = 65536;
-    private static final int PAGE_SIZE_4M = 4194304;
+    private static final int PAGE_SIZE_1K = (int) ByteUnit.kibiBytes( 1 );
+    private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
+    private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes( 16 );
+    private static final int PAGE_SIZE_32K = (int) ByteUnit.kibiBytes( 32 );
+    private static final int PAGE_SIZE_64K = (int) ByteUnit.kibiBytes( 64 );
+    private static final int PAGE_SIZE_4M = (int) ByteUnit.mebiBytes( 4 );
     private static final String ZIP_NAME_1k = "GBPTreeBootstrapperTest_store_1k.zip";
     private static final String ZIP_NAME_8k = "GBPTreeBootstrapperTest_store_8k.zip";
     private static final String ZIP_NAME_16k = "GBPTreeBootstrapperTest_store_16k.zip";
@@ -69,10 +71,26 @@ class GBPTreeBootstrapperTest
     FileSystemAbstraction fs;
 
     private SimpleLongLayout layout;
+    private JobScheduler scheduler;
     private PageCache pageCache;
     private String zipName;
     private File storeFile;
     private File zipFile;
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        if ( pageCache != null )
+        {
+            pageCache.close();
+            pageCache = null;
+        }
+        if ( scheduler != null )
+        {
+            scheduler.close();
+            scheduler = null;
+        }
+    }
 
     @Disabled( "Example showing how test files where created" )
     @ParameterizedTest
@@ -115,7 +133,8 @@ class GBPTreeBootstrapperTest
     private void setupTest( TestSetup testSetup )
     {
         this.layout = testSetup.layout;
-        this.pageCache = StandalonePageCacheFactory.createPageCache( fs, new ThreadPoolJobScheduler(), testSetup.pageSize );
+        this.scheduler = new ThreadPoolJobScheduler();
+        this.pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, testSetup.pageSize );
         this.zipName = testSetup.zipName;
         this.storeFile = dir.file( STORE );
         this.zipFile = dir.file( zipName );
@@ -129,11 +148,11 @@ class GBPTreeBootstrapperTest
     public static Stream<TestSetup> testSetupStream()
     {
         return Stream.of(
-                new TestSetup( PAGE_SIZE_1k, ZIP_NAME_1k, longLayout().build() ),
-                new TestSetup( PAGE_SIZE_8k, ZIP_NAME_8k, longLayout().build() ),
-                new TestSetup( PAGE_SIZE_16k, ZIP_NAME_16k, longLayout().build() ),
-                new TestSetup( PAGE_SIZE_32k, ZIP_NAME_32k, longLayout().build() ),
-                new TestSetup( PAGE_SIZE_64k, ZIP_NAME_64k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_1K, ZIP_NAME_1k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_8K, ZIP_NAME_8k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_16K, ZIP_NAME_16k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_32K, ZIP_NAME_32k, longLayout().build() ),
+                new TestSetup( PAGE_SIZE_64K, ZIP_NAME_64k, longLayout().build() ),
                 new TestSetup( PAGE_SIZE_4M, ZIP_NAME_4M, longLayout().build() )
         );
     }

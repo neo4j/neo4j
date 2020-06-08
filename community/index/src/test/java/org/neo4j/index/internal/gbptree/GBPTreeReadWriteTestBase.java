@@ -22,12 +22,14 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
@@ -49,11 +51,11 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 @ExtendWith( RandomExtension.class )
 abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 {
-    private static final int PAGE_SIZE_8k = 8192;
-    private static final int PAGE_SIZE_16k = 16384;
-    private static final int PAGE_SIZE_32k = 32768;
-    private static final int PAGE_SIZE_64k = 65536;
-    private static final int PAGE_SIZE_4M = 4194304;
+    private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
+    private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes( 16 );
+    private static final int PAGE_SIZE_32K = (int) ByteUnit.kibiBytes( 32 );
+    private static final int PAGE_SIZE_64K = (int) ByteUnit.kibiBytes( 64 );
+    private static final int PAGE_SIZE_4M = (int) ByteUnit.mebiBytes( 4 );
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -78,7 +80,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     @ParameterizedTest
-    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    @MethodSource( "pageSizes" )
     void shouldSeeSimpleInsertions( int pageSize ) throws Exception
     {
         setupTest( pageSize );
@@ -106,7 +108,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     }
 
     @ParameterizedTest
-    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    @MethodSource( "pageSizes" )
     void shouldSeeSimpleInsertionsWithExactMatch( int pageSize ) throws Exception
     {
         setupTest( pageSize );
@@ -136,7 +138,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     /* Randomized tests */
 
     @ParameterizedTest
-    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k, PAGE_SIZE_32k, PAGE_SIZE_64k, PAGE_SIZE_4M} )
+    @MethodSource( "pageSizes" )
     void shouldSplitCorrectly( int pageSize ) throws Exception
     {
         setupTest( pageSize );
@@ -184,6 +186,11 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 }
             }
         }
+    }
+
+    private static Stream<Integer> pageSizes()
+    {
+        return Stream.of( PAGE_SIZE_8K, PAGE_SIZE_16K, PAGE_SIZE_32K, PAGE_SIZE_64K, PAGE_SIZE_4M );
     }
 
     private void setupTest( int pageSize )

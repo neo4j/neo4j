@@ -32,8 +32,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat._2B_OFFSET;
-import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat._3B_OFFSET;
+import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat.OFFSET_2B;
+import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat.OFFSET_3B;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractOffload;
@@ -47,6 +47,7 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readOffloadId;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 /**
  * # = empty space
@@ -94,9 +95,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
      * but we still want to keep the same key value size cap for simplicity.
      */
     private static final int FIXED_MAX_KEY_VALUE_SIZE_CAP = 8175;
-    private static final int USE_OFFLOAD_STORE_PAGE_SIZE_LIMIT = 8192;
+    private static final int USE_OFFLOAD_STORE_PAGE_SIZE_LIMIT = (int) kibiBytes( 8 );
     @VisibleForTesting
-    static final int USE_2B_OFFSET_PAGE_SIZE_LIMIT = 65536;
+    static final int USE_2B_OFFSET_PAGE_SIZE_LIMIT = (int) kibiBytes( 64 );
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
 
@@ -125,13 +126,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         this.offloadStore = offloadStore;
         totalSpace = pageSize - offsetFormat.getHeaderLength();
-        halfSpace = totalSpace / 2;
+        halfSpace = totalSpace >> 1;
 
         /*
         The page size will affect how large entries (key-value pairs) we can fit.
         Even if large page sizes gives us the option to allow larger entries
         we've decided to cap the entry size at 8k which is the max limit from 4.0.
-        However, there is a problem with this if pageSize=16KiB. Let's explain investigate:
+        However, there is a problem with this if pageSize=16KiB. Let's investigate:
 
         A keyValue entry can either be inlined in tree node or stored in offload store.
         Depending on page size and if inlined or not, different size caps will apply to the entry.
@@ -203,7 +204,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private static DynamicSizeOffsetFormat selectOffsetFormat( int pageSize )
     {
-        return pageSize < USE_2B_OFFSET_PAGE_SIZE_LIMIT ? _2B_OFFSET : _3B_OFFSET;
+        return pageSize < USE_2B_OFFSET_PAGE_SIZE_LIMIT ? OFFSET_2B : OFFSET_3B;
     }
 
     private static boolean useOffloadStore( int pageSize )
@@ -1051,7 +1052,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         setAllocOffset( toCursor, toAllocOffset );
 
-        // Update deadspace
+        // Update deadSpace
         int deadSpace = getDeadSpace( fromCursor );
         int totalMovedBytes = firstAllocOffset - toAllocOffset;
         setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
@@ -1219,7 +1220,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         setAllocOffset( toCursor, toAllocOffset );
 
-        // Update deadspace
+        // Update deadSpace
         int deadSpace = getDeadSpace( fromCursor );
         int totalMovedBytes = firstAllocOffset - toAllocOffset;
         setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
@@ -1452,13 +1453,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @VisibleForTesting
     void setDeadSpace( PageCursor cursor, int deadSpace )
     {
-        offsetFormat.putOffset( cursor, offsetFormat.getBytePosDeadspace(), deadSpace );
+        offsetFormat.putOffset( cursor, offsetFormat.getBytePosDeadSpace(), deadSpace );
     }
 
     @VisibleForTesting
     int getDeadSpace( PageCursor cursor )
     {
-        return offsetFormat.getOffset( cursor, offsetFormat.getBytePosDeadspace() );
+        return offsetFormat.getOffset( cursor, offsetFormat.getBytePosDeadSpace() );
     }
 
     private void placeCursorAtActualKey( PageCursor cursor, int pos, Type type )

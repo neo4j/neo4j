@@ -26,6 +26,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,11 +42,13 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.time.Clocks.nanoClock;
 
 public class GBPTreeBootstrapper implements Closeable
 {
+    private static final int MAX_PAGE_SIZE = (int) ByteUnit.mebiBytes( 4 );
     private final FileSystemAbstraction fs;
     private final JobScheduler jobScheduler;
     private final LayoutBootstrapper layoutBootstrapper;
@@ -155,12 +158,7 @@ public class GBPTreeBootstrapper implements Closeable
 
     private static boolean isReasonableSize( int pageSize )
     {
-        return pageSize <= 4194304;
-    }
-
-    private static boolean isPowerOfTwo( int pageSize )
-    {
-        return pageSize > 0 && ((pageSize & (pageSize - 1)) == 0);
+        return pageSize <= MAX_PAGE_SIZE;
     }
 
     public interface Bootstrap

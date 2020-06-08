@@ -26,10 +26,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 
+import static org.neo4j.io.ByteUnit.kibiBytes;
+
 public class GBPTreeLargeDynamicKeys8kIT extends GBPTreeLargeDynamicKeysITBase
 {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 8192 ) );
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) kibiBytes( 8 ) ) );
     @Inject
     private PageCache pageCache;
 

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
@@ -50,11 +51,11 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 {
     private static final String STORE = "store";
     private static final int INITIAL_KEY_COUNT = 10_000;
-    private static final int PAGE_SIZE_8k = 8192;
-    private static final int PAGE_SIZE_16k = 16384;
-    private static final int PAGE_SIZE_32k = 32768;
-    private static final int PAGE_SIZE_64k = 65536;
-    private static final int PAGE_SIZE_4M = 4194304;
+    private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
+    private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes( 16 );
+    private static final int PAGE_SIZE_32K = (int) ByteUnit.kibiBytes( 32 );
+    private static final int PAGE_SIZE_64K = (int) ByteUnit.kibiBytes( 64 );
+    private static final int PAGE_SIZE_4M = (int) ByteUnit.mebiBytes( 4 );
     private static final String CURRENT_FIXED_SIZE_FORMAT_8k_ZIP = "current-format_8k.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP = "current-dynamic-format_8k.zip";
     private static final String CURRENT_FIXED_SIZE_FORMAT_16k_ZIP = "current-format_16k.zip";
@@ -71,17 +72,17 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     {
         return asList(
                 // 8k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8k},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8k},
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K},
                 // 16k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16k},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16k},
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K},
                 // 32k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32k},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32k},
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K},
                 // 64k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64k},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64k},
+                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K},
+                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K},
                 // 4M
                 new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M},
                 new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M}

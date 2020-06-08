@@ -33,7 +33,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  */
 enum DynamicSizeOffsetFormat
 {
-    _2B_OFFSET( 2 )
+    OFFSET_2B( 2 )
             {
                 @Override
                 void putOffset( PageCursor cursor, int offsetValue )
@@ -59,7 +59,7 @@ enum DynamicSizeOffsetFormat
                     return getUnsignedShort( cursor, atOffset );
                 }
             },
-    _3B_OFFSET( 3 )
+    OFFSET_3B( 3 )
             {
                 @Override
                 void putOffset( PageCursor cursor, int offsetValue )
@@ -88,15 +88,15 @@ enum DynamicSizeOffsetFormat
 
     private final int offsetSize;
     private final int bytePosAllocOffset;
-    private final int bytePosDeadspace;
+    private final int bytePosDeadSpace;
     private final int headerLengthDynamic;
 
     DynamicSizeOffsetFormat( int offsetSize )
     {
         this.offsetSize = offsetSize;
         this.bytePosAllocOffset = TreeNode.BASE_HEADER_LENGTH;
-        this.bytePosDeadspace = bytePosAllocOffset + offsetSize;
-        this.headerLengthDynamic = bytePosDeadspace + offsetSize;
+        this.bytePosDeadSpace = bytePosAllocOffset + offsetSize;
+        this.headerLengthDynamic = bytePosDeadSpace + offsetSize;
     }
 
     /**
@@ -136,11 +136,11 @@ enum DynamicSizeOffsetFormat
     }
 
     /**
-     * Byte position for the deadspace header field.
+     * Byte position for the deadSpace header field.
      */
-    int getBytePosDeadspace()
+    int getBytePosDeadSpace()
     {
-        return bytePosDeadspace;
+        return bytePosDeadSpace;
     }
 
     /**

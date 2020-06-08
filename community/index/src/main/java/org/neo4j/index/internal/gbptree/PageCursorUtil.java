@@ -74,15 +74,9 @@ class PageCursorUtil
 
     static void put3BInt( PageCursor cursor, int value )
     {
-        if ( (value & ~_3B_MASK) != 0 )
-        {
-            throw new IllegalArgumentException( "Illegal 3B value " + value );
-        }
-
-        short lsb = (short) value;
-        byte msb = (byte) (value >>> Short.SIZE);
-        cursor.putShort( lsb );
-        cursor.putByte( msb );
+        int offset = cursor.getOffset();
+        put3BInt( cursor, offset, value );
+        cursor.setOffset( offset + 3 );
     }
 
     static void put3BInt( PageCursor cursor, int offset, int value )
@@ -100,9 +94,10 @@ class PageCursorUtil
 
     static int get3BInt( PageCursor cursor )
     {
-        int lsb = getUnsignedShort( cursor );
-        int msb = getUnsignedByte( cursor );
-        return lsb | (msb << Short.SIZE);
+        int offset = cursor.getOffset();
+        int result = get3BInt( cursor, offset );
+        cursor.setOffset( offset + 3 );
+        return result;
     }
 
     public static int get3BInt( PageCursor cursor, int offset )
@@ -121,12 +116,9 @@ class PageCursorUtil
      */
     static void putUnsignedShort( PageCursor cursor, int value )
     {
-        if ( (value & ~_2B_MASK) != 0 )
-        {
-            throw new IllegalArgumentException( "Illegal 2B value " + value );
-        }
-
-        cursor.putShort( (short) value );
+        int offset = cursor.getOffset();
+        putUnsignedShort( cursor, offset, value );
+        cursor.setOffset( offset + 2 );
     }
 
     /**
@@ -179,17 +171,6 @@ class PageCursorUtil
     static long getUnsignedInt( PageCursor cursor )
     {
         return cursor.getInt() & _4B_MASK;
-    }
-
-    /**
-     * Gets 1 byte and returns that value as an {@code int}, ignoring its sign.
-     *
-     * @param cursor {@link PageCursor} to get from, at the current offset.
-     * @return {@code int} containing the value of the unsigned {@code byte}.
-     */
-    static int getUnsignedByte( PageCursor cursor )
-    {
-        return cursor.getByte() & _1B_MASK;
     }
 
     /**

@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -38,12 +39,14 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -87,8 +90,8 @@ public class BTreeIndexKeySizeValidationIT
             "prop3",
             "prop4"
     };
-    private static final int PAGE_SIZE_8k = 8192;
-    private static final int PAGE_SIZE_16k = 16384;
+    private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
+    private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes( 16 );
     private static final int ESTIMATED_OVERHEAD_PER_SLOT = 2;
     private static final int WIGGLE_ROOM = 50;
 
@@ -102,15 +105,21 @@ public class BTreeIndexKeySizeValidationIT
     private RandomRule random;
     private DatabaseManagementService dbms;
     private GraphDatabaseAPI db;
+    private JobScheduler scheduler;
 
     @AfterEach
-    private void cleanup()
+    private void cleanup() throws Exception
     {
         if ( dbms != null )
         {
             dbms.shutdown();
             dbms = null;
             db = null;
+        }
+        if ( scheduler != null )
+        {
+            scheduler.shutdown();
+            scheduler = null;
         }
     }
 
@@ -126,7 +135,7 @@ public class BTreeIndexKeySizeValidationIT
      * is documented and if it changes, documentation also needs to change.
      */
     @ParameterizedTest
-    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k} )
+    @MethodSource( "pageSizes" )
     void shouldEnforceSizeCapSingleValueSingleType( int pageSize )
     {
         startDb( pageSize );
@@ -134,7 +143,7 @@ public class BTreeIndexKeySizeValidationIT
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
         {
-            int expectedMax = pageSize == PAGE_SIZE_16k ? generator.expectedMax_16k : generator.expectedMax;
+            int expectedMax = pageSize == PAGE_SIZE_16K ? generator.expectedMax16k : generator.expectedMax;
             String propKey = PROP_KEYS[0] + generator.name();
             createIndex( propKey );
 
@@ -247,7 +256,7 @@ public class BTreeIndexKeySizeValidationIT
      * (1/2)^3995. As a reference (1/2)^100 = 7.8886091e-31.
      */
     @ParameterizedTest
-    @ValueSource( ints = {PAGE_SIZE_8k, PAGE_SIZE_16k} )
+    @MethodSource( "pageSizes" )
     void shouldEnforceSizeCapMixedTypes( int pageSize )
     {
         startDb( pageSize );
@@ -285,6 +294,11 @@ public class BTreeIndexKeySizeValidationIT
             }
             successAndFail.verifyBothSuccessAndFail();
         }
+    }
+
+    private static Stream<Integer> pageSizes()
+    {
+        return Stream.of( PAGE_SIZE_8K, PAGE_SIZE_16K );
     }
 
     private void setProperties( String[] propKeys, Object[] propValues, Node node )
@@ -370,7 +384,8 @@ public class BTreeIndexKeySizeValidationIT
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jLayout );
         builder.setConfig( default_schema_provider, NATIVE_BTREE10.providerName() );
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, JobSchedulerFactory.createInitialisedScheduler(), pageSize );
+        scheduler = JobSchedulerFactory.createInitialisedScheduler();
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, pageSize );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( pageCache );
         builder.setExternalDependencies( dependencies );
@@ -433,14 +448,14 @@ public class BTreeIndexKeySizeValidationIT
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;
         private final int expectedMax;
-        private final int expectedMax_16k;
+        private final int expectedMax16k;
 
         NamedDynamicValueGenerator( int singleArrayEntrySize, int expectedLongestArrayLength, int expectedLongestArrayLength_16k,
                 DynamicValueGenerator generator )
         {
             this.singleArrayEntrySize = singleArrayEntrySize;
             this.expectedMax = expectedLongestArrayLength;
-            this.expectedMax_16k = expectedLongestArrayLength_16k;
+            this.expectedMax16k = expectedLongestArrayLength_16k;
             this.generator = generator;
         }
 
