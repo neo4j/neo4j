@@ -20,14 +20,19 @@
 package org.neo4j.io.compress;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,6 +78,51 @@ public class ZipUtils
                 }
                 Files.copy( sourcePath, zipFsPath );
             }
+        }
+    }
+
+    /**
+     * Unzip a zip file located in the resource directly of provided class.
+     * The zip file is expected to contain a single file with the same name as target.
+     * The content is unpacked into target location.
+     *
+     * @param klass The class from which to get the zip file resource.
+     * @param zipName Name of zip file.
+     * @param targetFile Target file to which content will be unzipped, must align with content of zip file.
+     * @throws IOException if something goes wrong.
+     */
+    public static void unzipResource( Class<?> klass, String zipName, File targetFile ) throws IOException
+    {
+        URL resource = klass.getResource( zipName );
+        if ( resource == null )
+        {
+            throw new FileNotFoundException();
+        }
+        unzip( resource.getFile(), targetFile );
+    }
+
+    /**
+     * Unzip the source file to targetFile.
+     *
+     * @param sourceZip {@link String} with path pointing at the source zip file.
+     * @param targetFile {@link File} defining the target file to extract.
+     * @throws IOException if something goes wrong.
+     */
+    public static void unzip( String sourceZip, File targetFile ) throws IOException
+    {
+        try ( ZipFile zipFile = new ZipFile( sourceZip ) )
+        {
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            if ( !entries.hasMoreElements() )
+            {
+                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain any elements." );
+            }
+            ZipEntry entry = entries.nextElement();
+            if ( !targetFile.getName().equals( entry.getName() ) )
+            {
+                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain target file '" + targetFile.getName() + "'." );
+            }
+            Files.copy( zipFile.getInputStream( entry ), targetFile.toPath() );
         }
     }
 

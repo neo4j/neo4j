@@ -70,7 +70,7 @@ public abstract class FormatCompatibilityVerifier
     {
         try
         {
-            UnzipUtil.unzipResource( getClass(), zipName, storeFile );
+            ZipUtils.unzipResource( getClass(), zipName, storeFile );
         }
         catch ( FileNotFoundException e )
         {

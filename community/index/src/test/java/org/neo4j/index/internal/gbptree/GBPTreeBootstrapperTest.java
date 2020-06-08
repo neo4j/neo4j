@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.UnzipUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -115,7 +114,7 @@ class GBPTreeBootstrapperTest
     {
         setupTest( testSetup );
 
-        UnzipUtil.unzipResource( getClass(), zipName, storeFile );
+        ZipUtils.unzipResource( getClass(), zipName, storeFile );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
