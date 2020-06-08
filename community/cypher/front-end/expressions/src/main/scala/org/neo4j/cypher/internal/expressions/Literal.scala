@@ -20,6 +20,16 @@ import java.util
 
 import org.neo4j.cypher.internal.util.InputPosition
 
+/**
+ * Used for extracting the value from a Literal.
+ *
+ * Instead of using extensive instanceOf or match on every single literal
+ * you can just do
+ * {{{
+ *   literal.writeTo(extractor)
+ * }}}
+ * and the method corresponding to the literal will be called on the provided extractor.
+ */
 trait LiteralExtractor {
   def writeBoolean(value: Boolean): Unit
   def writeNull(): Unit
@@ -27,7 +37,19 @@ trait LiteralExtractor {
   def writeDouble(value: Double): Unit
   def writeLong(value: Long): Unit
   def writeByteArray(value: Array[Byte]): Unit
+
+  /**
+   * Beginning of a list of size `size`
+   *
+   * It is guaranteed that the following `size` calls will be for the items
+   * of the list in the order that they appear in the list.
+   * @param size the size of the list
+   */
   def beginList(size: Int): Unit
+
+  /**
+   * Called `size` calls after `beginList`
+   */
   def endList(): Unit
 }
 
