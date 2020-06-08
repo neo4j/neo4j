@@ -121,8 +121,24 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
 
       def addPreviousNames(mappings: Map[String, String]): Acc = {
         val newRenamings = previousNames ++ mappings
+
+        // Find the original name of all variables so far, and fail if we have a cycle
+        val normalizedRenamings = newRenamings.map {
+          case (currentName, prevName) =>
+            var name = prevName
+            val seenNames = mutable.Set(currentName, prevName)
+            while (previousNames.contains(name)) {
+              name = previousNames(name)
+              if (!seenNames.add(name)) {
+                // We have a cycle
+                throw new IllegalStateException(s"There was a cycle in names: $seenNames. This is likely a namespacing bug.")
+              }
+            }
+            (currentName, name)
+        }
+
         // Rename all properties that we found so far and that are affected by this
-        val withPreviousNames = copy(previousNames = newRenamings)
+        val withPreviousNames = copy(previousNames = normalizedRenamings)
         val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
         withPreviousNames.copy(properties = renamedProperties)
       }

@@ -353,6 +353,38 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNProp1) should be(initialType)
   }
 
+  // The Namespacer should guarantee that this cannot happen
+  test("should throw if there is a short cycle in name definitions") {
+    val initialTable = semanticTable(n -> CTNode, m -> CTNode, nProp1 -> CTInteger)
+    val plan =
+      Projection(
+        Projection(
+          Argument(Set("n")),
+          Map("m" -> n)),
+        Map("n" -> m, "p" -> nProp1)
+      )
+
+    an[IllegalStateException] should be thrownBy {
+      replace(plan, initialTable)
+    }
+  }
+
+  test("should throw if there is a longer cycle in name definitions") {
+    val initialTable = semanticTable(n -> CTNode, m -> CTNode, x -> CTNode, nProp1 -> CTInteger)
+    val plan = Projection(
+      Projection(
+        Projection(
+          Argument(Set("n")),
+          Map("m" -> n)),
+        Map("x" -> m)),
+        Map("n" -> x, "p" -> nProp1)
+      )
+
+    an[IllegalStateException] should be thrownBy {
+      replace(plan, initialTable)
+    }
+  }
+
   // More complex renamings are affected by the Namespacer
   // A test for that can be found in CachedPropertyAcceptanceTest and CachedPropertiesPlanningIntegrationTest
 

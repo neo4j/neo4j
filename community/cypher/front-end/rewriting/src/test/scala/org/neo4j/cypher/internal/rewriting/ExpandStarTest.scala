@@ -16,11 +16,16 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -98,6 +103,24 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       "MATCH (n) WITH *, 1 AS b RETURN *",
       "MATCH (n) WITH n, 1 AS b RETURN b, n"
     )
+  }
+
+  test("uses the position of the clause for variables in new return items") {
+    // This is quite important. If the position of a variable in new return item is a previous declaration,
+    // that can destroy scoping. In a query like
+    // MATCH (owner)
+    // WITH HEAD(COLLECT(42)) AS sortValue, owner
+    // RETURN *
+    // owner would not be scoped/namespaced correctly after having done `isolateAggregation`.
+    val wizz = "WITH 1 AS foo "
+    val pos = InputPosition(wizz.length, 1, wizz.length + 1)
+
+    val original = prepRewrite(s"${wizz}RETURN *")
+    val checkResult = original.semanticCheck(SemanticState.clean)
+    val after = original.rewrite(expandStar(checkResult.state))
+    val returnItem = after.asInstanceOf[Query].part.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[Return].returnItems.items.head.asInstanceOf[AliasedReturnItem]
+    returnItem.expression.position should equal(pos)
+    returnItem.variable.position should equal(pos)
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
