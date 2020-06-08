@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -158,7 +159,6 @@ class BadCollectorTest
     }
 
     @Test
-    @Disabled
     void shouldApplyBackPressure() throws Exception
     {
         // given
@@ -167,18 +167,21 @@ class BadCollectorTest
         try ( OtherThreadExecutor<Void> t2 = new OtherThreadExecutor<>( "T2", null );
               BadCollector badCollector = new BadCollector( NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL, backPressureThreshold, false, monitor ) )
         {
-            for ( int i = 0; i < backPressureThreshold; i++ )
+            try ( monitor )
             {
-                badCollector.collectDuplicateNode( i, i, "group" );
+                for ( int i = 0; i < backPressureThreshold; i++ )
+                {
+                    badCollector.collectDuplicateNode( i, i, "group" );
+                }
+
+                // when
+                Future<Object> enqueue = t2.executeDontWait( command( () -> badCollector.collectDuplicateNode( 999, 999, "group" ) ) );
+                t2.waitUntilWaiting( waitDetails -> waitDetails.isAt( BadCollector.class, "collect" ) );
+                monitor.unblock();
+
+                // then
+                enqueue.get();
             }
-
-            // when
-            Future<Object> enqueue = t2.executeDontWait( command( () -> badCollector.collectDuplicateNode( 999, 999, "group" ) ) );
-            t2.waitUntilWaiting( waitDetails -> waitDetails.isAt( BadCollector.class, "collect" ) );
-            monitor.unblock();
-
-            // then
-            enqueue.get();
         }
     }
 
@@ -201,7 +204,7 @@ class BadCollectorTest
         return badDataPath;
     }
 
-    private static class BlockableMonitor implements BadCollector.Monitor
+    private static class BlockableMonitor implements BadCollector.Monitor, AutoCloseable
     {
         private final CountDownLatch latch = new CountDownLatch( 1 );
 
@@ -222,6 +225,12 @@ class BadCollectorTest
         void unblock()
         {
             latch.countDown();
+        }
+
+        @Override
+        public void close()
+        {
+            unblock();
         }
     }
 }
