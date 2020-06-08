@@ -139,11 +139,11 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
-      (in * DEFAULT_MULTIPLIER).atLeast(1.0) // At least 1 row
+      Cardinality.max(in * DEFAULT_MULTIPLIER, 1.0) // At least 1 row
 
     // Load CSV
     case _: LoadCSVProjection =>
-      (in * DEFAULT_MULTIPLIER).atLeast(1.0) // At least 1 row
+      Cardinality.max(in * DEFAULT_MULTIPLIER, 1.0) // At least 1 row
 
     case _: PassthroughAllHorizon =>
       in
