@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabe
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.NO_VALUE
 
 class HasLabelTests extends CypherFunSuite {
   test("should_handle_null_values") {
     //given match n-[?]-m
-    val predicate = HasLabel(Literal(null), KeyToken.Unresolved("Person", TokenType.Label))
+    val predicate = HasLabel(Literal(NO_VALUE), KeyToken.Unresolved("Person", TokenType.Label))
 
     //when
     val ctx = CypherRow.empty

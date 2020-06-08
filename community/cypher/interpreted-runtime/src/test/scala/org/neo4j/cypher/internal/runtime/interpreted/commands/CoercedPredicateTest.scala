@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.NO_VALUE
 
 class CoercedPredicateTest extends CypherFunSuite {
 
@@ -81,7 +82,7 @@ class CoercedPredicateTest extends CypherFunSuite {
 
   test("should_treat_null_as_false") {
     // Given
-    val inner = Literal(null)
+    val inner = Literal(NO_VALUE)
 
     // When
     val result = CoercedPredicate(inner).isTrue(ctx, state)

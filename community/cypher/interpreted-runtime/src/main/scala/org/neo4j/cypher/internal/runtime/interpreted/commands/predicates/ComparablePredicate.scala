@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.IsFalseValue
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.IsTrueValue
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -32,6 +32,7 @@ import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
 import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values.NO_VALUE
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -85,7 +86,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
   override def toString = s"$a == $b"
 
   override def containsIsNull: Boolean = (a, b) match {
-    case (Variable(_), Literal(null)) => true
+    case (Variable(_), Literal(NO_VALUE)) => true
     case _ => false
   }
 

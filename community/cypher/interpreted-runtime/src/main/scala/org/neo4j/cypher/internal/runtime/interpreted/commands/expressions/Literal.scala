@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class Literal(value: AnyValue) extends Expression {
+  require(value != null)
   override def apply(row: ReadableRow, state: QueryState): AnyValue = value
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
