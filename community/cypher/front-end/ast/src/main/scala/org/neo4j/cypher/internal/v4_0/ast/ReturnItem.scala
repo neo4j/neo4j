@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.success
-import org.neo4j.cypher.internal.v4_0.ast.semantics._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.Scope
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.ast.semantics._
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
 import org.neo4j.cypher.internal.v4_0.expressions.MapProjection
@@ -41,8 +41,6 @@ sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with Semantic
   def containsAggregate: Boolean
   def withExisting(includeExisting: Boolean): ReturnItemsDef
   def items: Seq[ReturnItem]
-
-  def isStarOnly: Boolean = includeExisting && items.isEmpty
 }
 
 final case class DiscardCardinality()(val position: InputPosition) extends ReturnItemsDef {

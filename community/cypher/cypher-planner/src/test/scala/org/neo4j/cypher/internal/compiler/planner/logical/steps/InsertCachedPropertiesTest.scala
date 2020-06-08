@@ -19,18 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexSeek, LogicalPlan, NodeHashJoin, Projection, Selection, SingleSeekableArg}
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InitialState
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
@@ -318,6 +333,38 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     )
     val initialType = initialTable.types(nProp1)
     newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  // The Namespacer should guarantee that this cannot happen
+  test("should throw if there is a short cycle in name definitions") {
+    val initialTable = semanticTable(n -> CTNode, m -> CTNode, nProp1 -> CTInteger)
+    val plan =
+      Projection(
+        Projection(
+          Argument(Set("n")),
+          Map("m" -> n)),
+        Map("n" -> m, "p" -> nProp1)
+      )
+
+    an[IllegalStateException] should be thrownBy {
+      replace(plan, initialTable)
+    }
+  }
+
+  test("should throw if there is a longer cycle in name definitions") {
+    val initialTable = semanticTable(n -> CTNode, m -> CTNode, x -> CTNode, nProp1 -> CTInteger)
+    val plan = Projection(
+      Projection(
+        Projection(
+          Argument(Set("n")),
+          Map("m" -> n)),
+        Map("x" -> m)),
+        Map("n" -> x, "p" -> nProp1)
+      )
+
+    an[IllegalStateException] should be thrownBy {
+      replace(plan, initialTable)
+    }
   }
 
   // More complex renamings are affected by the Namespacer

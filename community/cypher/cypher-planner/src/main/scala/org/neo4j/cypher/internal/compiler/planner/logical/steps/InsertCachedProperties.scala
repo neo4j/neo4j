@@ -19,12 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.v4_0.expressions.CachedProperty
+import org.neo4j.cypher.internal.v4_0.expressions.EntityType
+import org.neo4j.cypher.internal.v4_0.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.v4_0.expressions.Property
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.Rewriter
+import org.neo4j.cypher.internal.v4_0.util.bottomUp
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTNode
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTRelationship
+
+import scala.collection.mutable
 
 /**
   * A logical plan rewriter that also changes the semantic table (thus a Transformer).
@@ -78,8 +95,24 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
 
       def addPreviousNames(mappings: Map[String, String]): Acc = {
         val newRenamings = previousNames ++ mappings
+
+        // Find the original name of all variables so far, and fail if we have a cycle
+        val normalizedRenamings = newRenamings.map {
+          case (currentName, prevName) =>
+            var name = prevName
+            val seenNames = mutable.Set(currentName, prevName)
+            while (previousNames.contains(name)) {
+              name = previousNames(name)
+              if (!seenNames.add(name)) {
+                // We have a cycle
+                throw new IllegalStateException(s"There was a cycle in names: $seenNames. This is likely a namespacing bug.")
+              }
+            }
+            (currentName, name)
+        }
+
         // Rename all properties that we found so far and that are affected by this
-        val withPreviousNames = copy(previousNames = newRenamings)
+        val withPreviousNames = copy(previousNames = normalizedRenamings)
         val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
         withPreviousNames.copy(properties = renamedProperties)
       }
