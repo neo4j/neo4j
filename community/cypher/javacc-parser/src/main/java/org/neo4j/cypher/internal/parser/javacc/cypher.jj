@@ -1299,16 +1299,16 @@ CLAUSE MergeClause() :
   Token t;
   PATTERN p;
   SET_CLAUSE c;
-  List onMatch = new ArrayList();
-  List onCreate = new ArrayList();
+  ArrayList<SET_CLAUSE> clauses = new ArrayList<>();
+  ArrayList<ASTFactory.MergeActionType> actionTypes = new ArrayList<>();
 }
 {
   t=<MERGE> p=Pattern()
   (
-    <ON_MATCH> c=SetClause() {onMatch.add(c);}
-  | <ON_CREATE> c=SetClause() {onCreate.add(c);}
+    <ON_MATCH> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnMatch);}
+  | <ON_CREATE> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnCreate);}
   )*
-  { return astFactory.mergeClause(pos(t), p, (List<SET_CLAUSE>)onMatch, (List<SET_CLAUSE>)onCreate); }
+  { return astFactory.mergeClause(pos(t), p, clauses, actionTypes); }
 }
 
 // UNWIND

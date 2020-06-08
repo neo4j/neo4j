@@ -120,7 +120,13 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE unwindClause( POS p, EXPRESSION e, VARIABLE v );
 
-    CLAUSE mergeClause( POS p, PATTERN pattern, List<SET_CLAUSE> onMatch, List<SET_CLAUSE> onCreate );
+    enum MergeActionType
+    {
+        OnCreate,
+        OnMatch
+    }
+
+    CLAUSE  mergeClause( POS p, PATTERN pattern, List<SET_CLAUSE> setClauses, List<MergeActionType> actionTypes );
 
     CLAUSE callClause( POS p,
                        List<String> namespace,

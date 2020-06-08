@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
+import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -341,10 +342,16 @@ class Neo4jASTFactory(query: String)
 
   override def mergeClause(p: InputPosition,
                            pattern: PatternPart,
-                           onMatch: util.List[SetClause],
-                           onCreate: util.List[SetClause]): Clause =
-    Merge(Pattern(Seq(pattern))(p),
-      onCreate.asScala.toList.map(OnCreate(_)(p)) ++ onMatch.asScala.toList.map(OnMatch(_)(p)))(p)
+                           setClauses: util.List[SetClause],
+                           actionTypes: util.List[MergeActionType]): Clause = {
+    val clausesIter = setClauses.iterator()
+    val actions = actionTypes.asScala.toList.map {
+      case MergeActionType.OnMatch => OnMatch(clausesIter.next())(p)
+      case MergeActionType.OnCreate => OnCreate(clausesIter.next())(p)
+    }
+
+    Merge(Pattern(Seq(pattern))(p), actions)(p)
+  }
 
   override def callClause(p: InputPosition,
                           namespace: util.List[String],

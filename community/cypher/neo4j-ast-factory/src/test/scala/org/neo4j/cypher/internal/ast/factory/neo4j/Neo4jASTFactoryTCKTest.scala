@@ -38,7 +38,7 @@ class Neo4jASTFactoryTCKTest extends ParsingTestBase with FunSpecLike {
       // JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
       "Supplying invalid hexadecimal literal 1",
       "Supplying invalid hexadecimal literal 2",
-      "Using ON CREATE and ON MATCH",
+//      "Using ON CREATE and ON MATCH",
 //      "Matching using relationship predicate with multiples of the same type"
     )
 
@@ -46,7 +46,7 @@ class Neo4jASTFactoryTCKTest extends ParsingTestBase with FunSpecLike {
     case (featureName, scenarios) =>
       describe(featureName) {
         scenarios
-          .filter(scenarioObj => BLACKLIST(scenarioObj.name))
+          .filterNot(scenarioObj => BLACKLIST(scenarioObj.name))
           .foreach {
             scenarioObj =>
               describe(scenarioObj.name) {

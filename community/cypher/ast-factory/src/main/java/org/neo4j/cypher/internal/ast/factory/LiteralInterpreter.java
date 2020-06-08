@@ -180,7 +180,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL mergeClause( NULL p, NULL aNull, List<NULL> onMatch, List<NULL> onCreate )
+    public NULL mergeClause( NULL p, NULL aNull, List<NULL> setClauses, List<MergeActionType> actionTypes )
     {
         throw new UnsupportedOperationException( "mergeClause is not a literal" );
     }
