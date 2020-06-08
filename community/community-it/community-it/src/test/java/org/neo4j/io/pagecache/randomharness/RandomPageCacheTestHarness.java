@@ -82,7 +82,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageSize;
     private PageCacheTracer tracer;
     private int commandCount;
-    private double[] commandProbabilityFactors;
+    private final double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
     private FileSystemAbstraction fs;
@@ -479,10 +479,18 @@ public class RandomPageCacheTestHarness implements Closeable
 
     private void runVerificationPhase( MuninnPageCache cache ) throws Exception
     {
-        if ( verification != null )
+        try
         {
-            cache.flushAndForce(); // Clears any stray evictor exceptions
-            verification.run( cache, this.fs, plan.getFilesTouched() );
+            if ( verification != null )
+            {
+                cache.flushAndForce(); // Clears any stray evictor exceptions
+                verification.run( cache, this.fs, plan.getFilesTouched() );
+            }
+        }
+        catch ( Throwable t )
+        {
+            plan.print( System.err );
+            throw t;
         }
     }
 
