@@ -316,11 +316,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTMap.covariant | CTAny.invariant, x.node) chain
           specifyType(CTAny.covariant, x)
 
-      case x:Parameter =>
-        specifyType(x.parameterType.covariant, x)
-
       case x:ParameterWithOldSyntax =>
         SemanticError("The old parameter syntax `{param}` is no longer supported. Please use `$param` instead", x.position)
+
+      case x:Parameter =>
+        specifyType(x.parameterType.covariant, x)
 
       case x:ImplicitProcedureArgument =>
         specifyType(x.parameterType.covariant, x)
