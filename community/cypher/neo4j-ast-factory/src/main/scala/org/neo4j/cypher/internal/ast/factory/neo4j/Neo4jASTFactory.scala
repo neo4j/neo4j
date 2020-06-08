@@ -215,12 +215,10 @@ class Neo4jASTFactory(query: String)
   override def periodicCommitQuery(p: InputPosition,
                                    batchSize: String,
                                    loadCsv: Clause,
-                                   query: Query): Query =
+                                   queryBody: util.List[Clause]): Query =
     Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(p)))(p)),
-      query.part match {
-        case SingleQuery(clauses) => SingleQuery(loadCsv +: clauses)(p)
-        case q => throw new UnsupportedOperationException("Cannot model periodic commit of query: "+q)
-      })(p)
+      SingleQuery(loadCsv +: queryBody.asScala)(p)
+    )(p)
 
   override def newReturnClause(p: InputPosition,
                                distinct: Boolean,

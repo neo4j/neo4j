@@ -27,6 +27,7 @@ import org.scalatest.Assertions
 import org.scalatest.Matchers
 
 import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 
 abstract class ParsingTestBase() extends Assertions with Matchers {
@@ -42,7 +43,11 @@ abstract class ParsingTestBase() extends Assertions with Matchers {
 
       (javaccAST, parboiledAST) match {
         case (Failure(javaccEx: SyntaxException), Failure(parboiledEx: SyntaxException)) =>
-          javaccEx.pos shouldBe parboiledEx.pos
+          withClue(Seq(javaccEx, parboiledEx).mkString("", "\n\n", "\n\n")) {
+            javaccEx.pos shouldBe parboiledEx.pos
+          }
+        case (Failure(javaccEx), Success(_)) =>
+          throw javaccEx
         case _ =>
           javaccAST shouldBe parboiledAST
       }

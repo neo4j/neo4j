@@ -71,7 +71,7 @@ public interface ASTFactory<STATEMENT,
 
     QUERY newUnion( POS p, QUERY lhs, QUERY rhs, boolean all );
 
-    QUERY periodicCommitQuery( POS p, String batchSize, CLAUSE loadCsv, QUERY query );
+    QUERY periodicCommitQuery( POS p, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,
                                    boolean returnAll,

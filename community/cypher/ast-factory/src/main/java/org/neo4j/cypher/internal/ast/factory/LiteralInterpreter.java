@@ -48,7 +48,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL periodicCommitQuery( NULL p, String batchSize, NULL loadCsv, NULL aNull )
+    public NULL periodicCommitQuery( NULL p, String batchSize, NULL loadCsv, List<NULL> aNull )
     {
         throw new UnsupportedOperationException( "periodicCommitQuery is not a literal" );
     }

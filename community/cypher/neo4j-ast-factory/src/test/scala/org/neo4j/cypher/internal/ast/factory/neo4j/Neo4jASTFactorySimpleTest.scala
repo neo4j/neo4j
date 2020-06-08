@@ -55,4 +55,69 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
   test("RETURN filter (x IN [1,2,3] WHERE x = 2) AS k") {
     assertSameAST(testName)
   }
+
+  // extra spaces tests
+
+  private def assertSameASTWithExtraSpaces(query: String) = {
+    assertSameAST(query.replaceAll(" ", " "*2))
+    assertSameAST(query.replaceAll(" ", "\n"))
+  }
+
+  test("MERGE (n) ON CREATE SET n.x = 123") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MERGE (n) ON MATCH SET n.x = 123") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("LOAD CSV FROM 'url' AS line") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("RETURN 1 AS x ORDER BY x") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("RETURN 1 AS x UNION ALL RETURN 2 AS x") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MATCH (a)--(b)--(c) USING JOIN ON b RETURN a,b,c") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  // schema commands are not supported
+  ignore("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  // schema commands are not supported
+  ignore("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MATCH (n) WHERE n.name STARTS WITH 'hello'") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MATCH (n) WHERE n.name ENDS WITH 'hello'") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MATCH (n) WHERE n.name IS NULL") {
+    assertSameASTWithExtraSpaces(testName)
+  }
+
+  test("MATCH (n) WHERE n.name IS NOT NULL") {
+    assertSameASTWithExtraSpaces(testName)
+  }
 }

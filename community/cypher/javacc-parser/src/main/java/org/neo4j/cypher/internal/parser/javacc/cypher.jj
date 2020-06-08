@@ -247,8 +247,10 @@ TOKEN [IGNORE_CASE] :
 | < UNWIND: "UNWIND" >
 | < CALL: "CALL" >
 | < YIELD: "YIELD" >
-| < LOAD_CSV: "LOAD CSV" >
-| < PERIODIC_COMMIT: "PERIODIC COMMIT" >
+| < LOAD: "LOAD" >
+| < CSV: "CSV" >
+| < PERIODIC: "PERIODIC" >
+| < COMMIT: "COMMIT" >
 | < HEADERS: "HEADERS" >
 | < FROM: "FROM" >
 | < FIELDTERMINATOR: "FIELDTERMINATOR" >
@@ -256,26 +258,26 @@ TOKEN [IGNORE_CASE] :
 | < WHERE: "WHERE" >
 | < DISTINCT: "DISTINCT" >
 | < MERGE: "MERGE" >
-| < ON_MATCH: "ON MATCH" >
-| < ON_CREATE: "ON CREATE" >
 | < OPTIONAL: "OPTIONAL" >
 | < USING: "USING" >
-| < ORDERBY: "ORDER BY" >
+| < ORDER: "ORDER" >
+| < BY: "BY" >
 | < DESC: "DESC" ("ENDING")? >
 | < ASC: "ASC" ("ENDING")? >
 | < SKIPROWS: "SKIP" >
 | < LIMITROWS: "LIMIT" >
 | < UNION: "UNION" >
-| < UNION_ALL: "UNION ALL" >
 | < DROP: "DROP" >
 | < INDEX: "INDEX" >
 | < SEEK: "SEEK" >
 | < SCAN: "SCAN" >
-| < JOIN_ON: "JOIN ON" >
+| < JOIN: "JOIN" >
 | < CONSTRAINT: "CONSTRAINT" >
 | < ASSERT: "ASSERT" >
-| < IS_NODE_KEY: "IS NODE KEY" >
-| < IS_UNIQUE: "IS UNIQUE" >
+| < IS: "IS" >
+| < NODE: "NODE" >
+| < KEY: "KEY" >
+| < UNIQUE: "UNIQUE" >
 | < ON: "ON" >
 | < FOR: "FOR" >
 | < AS: "AS" >
@@ -291,8 +293,8 @@ TOKEN [IGNORE_CASE] :
 | < LT: "<" >
 | < GT: ">" >
 | < REGEQ: "=~" >
-| < STARTSWITH: "STARTS WITH" >
-| < ENDSWITH: "ENDS WITH" >
+| < STARTS: "STARTS" >
+| < ENDS: "ENDS" >
 | < CONTAINS: "CONTAINS" >
 | < IN: "IN" >
 | < COUNT: "count" >
@@ -317,8 +319,6 @@ TOKEN [IGNORE_CASE] :
 | < DIVIDE: "/" >
 | < MODULO: "%" >
 | < POW: "^" >
-| < ISNULL: "IS NULL" >
-| < ISNOTNULL: "IS NOT NULL" >
 | < DOT: "." >
 | < DOTDOT: ".." >
 | < LPAREN: "(" >
@@ -1029,13 +1029,23 @@ QUERY PeriodicCommitQuery() :
   Token t;
   Token batchSize = null;
   CLAUSE loadCsv;
-  QUERY query;
+  List<CLAUSE> queryBody;
 }
 {
-  <USING> t=<PERIODIC_COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
+  <USING> t=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
   loadCsv=LoadCSVClause()
-  query=RegularQuery()
-  { return astFactory.periodicCommitQuery(pos(t), batchSize == null ? null : batchSize.image, loadCsv, query); }
+  queryBody=PeriodicCommitQueryBody()
+  { return astFactory.periodicCommitQuery(pos(t), batchSize == null ? null : batchSize.image, loadCsv, queryBody); }
+}
+
+List<CLAUSE> PeriodicCommitQueryBody() :
+{
+  CLAUSE x;
+  List<CLAUSE> clauses = new ArrayList();
+}
+{
+  ( x=Clause() { clauses.add(x); } )?
+  { return (List<CLAUSE>)clauses; }
 }
 
 QUERY RegularQuery() :
@@ -1059,7 +1069,7 @@ QUERY Union(QUERY lhs) :
   boolean all = false;
 }
 {
-  ( t=<UNION> | t=<UNION_ALL> { all = true; } ) rhs=SingleQuery()
+  t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery()
   { return astFactory.newUnion(pos(t), lhs, rhs, all); }
 }
 
@@ -1147,7 +1157,7 @@ List<ORDER_ITEM> Order() :
   List items = new ArrayList();
 }
 {
-  <ORDERBY> o=OrderItem() {items.add(o);} ( "," o=OrderItem() {items.add(o);} )*
+  <ORDER> <BY> o=OrderItem() {items.add(o);} ( "," o=OrderItem() {items.add(o);} )*
   { return (List<ORDER_ITEM>)items; }
 }
 
@@ -1284,7 +1294,7 @@ List<HINT> Hints() :
       <INDEX> {seek=false;} ( LOOKAHEAD(2) <SEEK> {seek=true;} )? v=Variable() label=NodeLabel()
         <LPAREN> propNames=SymbolicNameList1() <RPAREN>
         { h=astFactory.usingIndexHint(pos(t), v, label.image, (List<String>)propNames, seek); }
-    | <JOIN_ON> joinVariables=VariableList1() { h=astFactory.usingJoin(pos(t), (List<VARIABLE>)joinVariables); }
+    | <JOIN> <ON> joinVariables=VariableList1() { h=astFactory.usingJoin(pos(t), (List<VARIABLE>)joinVariables); }
     | <SCAN> v=Variable() label=NodeLabel() { h=astFactory.usingScan(pos(t), v, label.image); }
     )
     {if (hints == null) { hints = new ArrayList(); } hints.add(h);}
@@ -1305,8 +1315,10 @@ CLAUSE MergeClause() :
 {
   t=<MERGE> p=Pattern()
   (
-    <ON_MATCH> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnMatch);}
-  | <ON_CREATE> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnCreate);}
+    <ON> (
+     <MATCH> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnMatch);}
+    | <CREATE> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnCreate);}
+    )
   )*
   { return astFactory.mergeClause(pos(t), p, clauses, actionTypes); }
 }
@@ -1375,7 +1387,7 @@ CLAUSE LoadCSVClause() :
 }
 {
   (
-      t=<LOAD_CSV>
+      t=<LOAD> <CSV>
       ( <WITH> <HEADERS> {headers=true;} )?
       <FROM> source=Expression() <AS> v=Variable()
       ( <FIELDTERMINATOR> ( sep=<STRING_LITERAL1> | sep=<STRING_LITERAL2> ) )?
@@ -1682,12 +1694,14 @@ EXPRESSION ComparisonExpression6(EXPRESSION lhs) :
 {
   LOOKAHEAD(2)
   <REGEQ> rhs=Expression6() { return astFactory.regeq(lhs, rhs); }
-| <STARTSWITH> rhs=Expression6() { return astFactory.startsWith(lhs, rhs); }
-| <ENDSWITH> rhs=Expression6() { return astFactory.endsWith(lhs, rhs); }
+| <STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith(lhs, rhs); }
+| <ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith(lhs, rhs); }
 | <CONTAINS> rhs=Expression6() { return astFactory.contains(lhs, rhs); }
 | <IN> rhs=Expression6() { return astFactory.in(lhs, rhs); }
-| <ISNULL> { return astFactory.isNull(lhs); }
-| <ISNOTNULL> { return astFactory.not(astFactory.isNull(lhs)); }
+| <IS> (
+    <NULL> { return astFactory.isNull(lhs); }
+  | <NOT> <NULL> { return astFactory.not(astFactory.isNull(lhs)); }
+  )
 }
 
 EXPRESSION Expression6() :
@@ -2213,8 +2227,10 @@ Token SymbolicNameString() :
   | t=<INDEX>
   | t=<CONSTRAINT>
   | t=<ASSERT>
-  | t=<IS_NODE_KEY>
-  | t=<IS_UNIQUE>
+  | t=<IS>
+  | t=<NODE>
+  | t=<KEY>
+  | t=<UNIQUE>
   | t=<ON>
   | t=<HEADERS>
   | t=<FROM>
