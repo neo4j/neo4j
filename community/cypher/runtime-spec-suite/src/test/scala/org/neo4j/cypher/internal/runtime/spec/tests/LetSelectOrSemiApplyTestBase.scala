@@ -37,13 +37,13 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       Array[Any](i.toLong)
     }
 
-    val expectedValues = (0 until sizeHint).map(i => if (i == 1L) Array(i, true) else Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => if (i % 3 == 1) Array(i, true) else Array(i, false))
 
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
       .letSelectOrSemiApply("idName", "false")
-      .|.filter("x = 1")
+      .|.filter("x % 3 = 1")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -75,7 +75,7 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
-  test("idName shouls always be true if rhs is nonEmpty and the expression is false") {
+  test("idName should always be true if rhs is nonEmpty and the expression is false") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -118,12 +118,12 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       Array[Any](i.toLong)
     }
 
-    val expectedValues = (0 until sizeHint).map(i => if (i == 1L) Array(i, true) else Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => if (i < 11L) Array(i, true) else Array(i, false))
 
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
-      .letSelectOrSemiApply("idName", "x = 1")
+      .letSelectOrSemiApply("idName", "x < 11")
       .|.filter("false")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -140,13 +140,13 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       Array[Any](i.toLong)
     }
 
-    val expectedValues = (0 until sizeHint).map(i => if (i == 1L || i == 2L) Array(i, true) else Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => if (i < 20L || i == 22L) Array(i, true) else Array(i, false))
 
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
-      .letSelectOrSemiApply("idName", "x = 2")
-      .|.filter("x = 1")
+      .letSelectOrSemiApply("idName", "x = 22")
+      .|.filter("x < 20")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
