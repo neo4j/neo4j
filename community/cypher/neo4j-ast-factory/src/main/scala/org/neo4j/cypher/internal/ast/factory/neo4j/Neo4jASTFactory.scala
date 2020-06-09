@@ -142,6 +142,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
@@ -674,7 +675,12 @@ class Neo4jASTFactory(query: String)
     SingleIterablePredicate(v, list, Option(where))(p)
 
   override def patternExpression(pattern: PatternPart): Expression =
-    PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(pattern.position))
+    pattern match {
+      case paths: ShortestPaths =>
+        ShortestPathExpression(paths)
+      case _ =>
+        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(pattern.position))
+    }
 
   override def existsSubQuery(p: InputPosition,
                               patterns: util.List[PatternPart],

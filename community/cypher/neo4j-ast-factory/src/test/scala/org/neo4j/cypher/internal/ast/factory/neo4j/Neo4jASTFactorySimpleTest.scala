@@ -56,6 +56,14 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST(testName)
   }
 
+  test("RETURN 1 AS x //l33t comment") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (a),(b) RETURN shortestPath((a)-[*]->(b)) as path") {
+    assertSameAST(testName)
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
