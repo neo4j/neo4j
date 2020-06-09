@@ -83,7 +83,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/</directory>
-      <outputDirectory>plugins</outputDirectory>
+      <outputDirectory>labs</outputDirectory>
       <includes>
         <include>apoc*.jar</include>
       </includes>
