@@ -27,6 +27,4 @@ class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExcepti
 
   override def syntaxException(source: Exception, offset: Int, line: Int, column: Int): Exception =
     inner.syntaxException(source.getMessage, new InputPosition(offset, line, column))
-
-  override def invalidUnicodeLiteral(msg: String): Exception = inner.syntaxException(msg, InputPosition.NONE)
 }

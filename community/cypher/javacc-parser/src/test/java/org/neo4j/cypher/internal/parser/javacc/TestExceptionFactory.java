@@ -28,10 +28,4 @@ public class TestExceptionFactory implements ASTExceptionFactory
     {
         return new Exception("SyntaxException!", source);
     }
-
-    @Override
-    public Exception invalidUnicodeLiteral( String msg )
-    {
-        return new Exception(msg);
-    }
 }
