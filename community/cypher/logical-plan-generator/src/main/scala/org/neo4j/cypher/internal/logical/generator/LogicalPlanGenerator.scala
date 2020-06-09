@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -204,6 +205,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(projection(state)),
     Gen.lzy(aggregation(state)),
     Gen.lzy(distinct(state)),
+    Gen.lzy(distinct(state)),
+    Gen.lzy(optional(state)),
 
     Gen.lzy(cartesianProduct(state)),
     Gen.lzy(apply(state))
@@ -316,6 +319,13 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     WithState(groupingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, minSize = 1)
   } yield {
     val plan = Distinct(source, groupingExpressions)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def optional(state: State): Gen[WithState[Optional]] = for {
+    WithState(source, state) <- innerLogicalPlan(state)
+  } yield {
+    val plan = Optional(source, state.arguments)(state.idGen)
     annotate(plan, state)
   }
 

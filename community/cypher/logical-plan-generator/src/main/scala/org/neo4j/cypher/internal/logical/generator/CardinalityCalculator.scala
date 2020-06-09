@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -120,4 +121,7 @@ object CardinalityCalculator {
 
   implicit val distinctCardinality: CardinalityCalculator[Distinct] =
     (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
+
+  implicit val optionalCardinality: CardinalityCalculator[Optional] =
+    (plan, state, _, _) => Cardinality.max(state.leafCardinalityMultipliers.head, state.cardinalities.get(plan.source.id))
 }
