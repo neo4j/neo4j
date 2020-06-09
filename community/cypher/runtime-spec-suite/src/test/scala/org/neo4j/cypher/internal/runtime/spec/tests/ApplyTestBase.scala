@@ -281,4 +281,56 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("n", "m").withRows(Array(Array(1, 2), Array(2, 1)))
   }
+
+  test("nested apply with identical branches ending in optional multiple identifiers") {
+    val numberOfNodes = 3
+    val (nodes, _) = given {
+      bipartiteGraph(numberOfNodes, "A", "B", "R")
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.apply()
+      .|.|.optional()
+      .|.|.expand("(x)-->(y)")
+      .|.|.argument("x")
+      .|.optional()
+      .|.expand("(x)-->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(n => Seq.fill(numberOfNodes * numberOfNodes)(Array[Any](n)))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("nested apply with identical branches ending in optional single identifier") {
+    val numberOfNodes = 3
+    val nodes = given {
+      nodeGraph(numberOfNodes)
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.apply()
+      .|.|.optional()
+      .|.|.filter("true")
+      .|.|.allNodeScan("y", "x")
+      .|.optional()
+      .|.filter("true")
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(n => Seq.fill(numberOfNodes * numberOfNodes)(Array[Any](n)))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
 }
