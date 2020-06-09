@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Limit
@@ -115,4 +117,7 @@ object CardinalityCalculator {
 
   implicit val cartesianProductCardinality: CardinalityCalculator[CartesianProduct] =
     (plan, state, _, _) => state.cardinalities.get(plan.left.id) * state.cardinalities.get(plan.right.id)
+
+  implicit val distinctCardinality: CardinalityCalculator[Distinct] =
+    (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
 }

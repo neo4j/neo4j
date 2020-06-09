@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -307,6 +308,21 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     val c = CardinalityCalculator.cartesianProductCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality * defaultSourceCardinality)
+  }
+
+  test("Distinct non-empty source") {
+    val plan = Distinct(Argument(), Map.empty)
+
+    val c = CardinalityCalculator.distinctCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should be < defaultSourceCardinality
+  }
+
+  test("Distinct empty source") {
+    val plan = Distinct(Argument(), Map.empty)
+
+    defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
+    val c = CardinalityCalculator.distinctCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c shouldBe Cardinality.EMPTY
   }
 
   private class TestGraphStatistics extends GraphStatistics {

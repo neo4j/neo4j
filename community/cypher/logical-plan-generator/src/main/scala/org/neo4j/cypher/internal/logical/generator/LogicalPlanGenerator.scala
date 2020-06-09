@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -195,12 +196,15 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     argument(state),
     allNodesScan(state),
     nodeByLabelScan(state),
+
     Gen.lzy(eager(state)),
     Gen.lzy(expand(state)),
     Gen.lzy(skip(state)),
     Gen.lzy(limit(state)),
     Gen.lzy(projection(state)),
     Gen.lzy(aggregation(state)),
+    Gen.lzy(distinct(state)),
+
     Gen.lzy(cartesianProduct(state)),
     Gen.lzy(apply(state))
   ).suchThat {
@@ -281,7 +285,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     annotate(plan, state)
   }
 
-  private def projectionList(state: State, availableSymbols: Seq[String], expressionGen: SemanticAwareAstGenerator => Gen[Expression], minSize: Int = 0): Gen[WithState[Map[String, Expression]]] =
+  private def projectionList(state: State,
+                             availableSymbols: Seq[String],
+                             expressionGen: SemanticAwareAstGenerator => Gen[Expression],
+                             minSize: Int = 0): Gen[WithState[Map[String, Expression]]] =
     Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
       (0 until n).foldLeft(Gen.const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
         for {
@@ -301,6 +308,14 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     WithState(aggregatingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.aggregatingExpression, minSize = 1)
   } yield {
     val plan = Aggregation(source, groupingExpressions, aggregatingExpressions)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def distinct(state: State): Gen[WithState[Distinct]] = for {
+    WithState(source, state) <- innerLogicalPlan(state)
+    WithState(groupingExpressions, state) <- projectionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, minSize = 1)
+  } yield {
+    val plan = Distinct(source, groupingExpressions)(state.idGen)
     annotate(plan, state)
   }
 
