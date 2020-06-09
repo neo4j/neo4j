@@ -76,7 +76,7 @@ object Neo4jValueToString extends (Any => String) {
         }
         s"<$string>"
 
-      case s: String => s"'$s'"
+      case s: String => s"'${s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("'", "\\'")}'"
       case l: Long => l.toString
       case i: Integer => i.toString
       case d: Double => d.toString

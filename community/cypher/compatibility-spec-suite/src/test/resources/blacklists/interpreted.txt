@@ -6,8 +6,5 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with exp
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
 
-// Bug in TCK parser
-Feature "LargeCreateQuery": Scenario "Generate the movie graph correctly"
-
 // TCK expects error but query is valid
 Feature "SemanticErrorAcceptance": Scenario "Failing when using MATCH after OPTIONAL MATCH"
