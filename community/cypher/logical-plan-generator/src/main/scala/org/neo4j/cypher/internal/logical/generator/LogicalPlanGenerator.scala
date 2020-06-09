@@ -197,10 +197,20 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
 
   def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
+    leafPlan(state),
+    oneChildPlan(state),
+    twoChildPlan(state),
+  ).suchThat {
+    case WithState(plan, state) => CardinalityCostModel(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
+  }
+
+  def leafPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     argument(state),
     allNodesScan(state),
     nodeByLabelScan(state),
+  )
 
+  def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     Gen.lzy(eager(state)),
     Gen.lzy(expand(state)),
     Gen.lzy(skip(state)),
@@ -209,12 +219,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(aggregation(state)),
     Gen.lzy(distinct(state)),
     Gen.lzy(optional(state)),
+  )
 
+  def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     Gen.lzy(cartesianProduct(state)),
     Gen.lzy(apply(state))
-  ).suchThat {
-    case WithState(plan, state) => CardinalityCostModel(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
-  }
+  )
 
   // Leaf Plans
 
