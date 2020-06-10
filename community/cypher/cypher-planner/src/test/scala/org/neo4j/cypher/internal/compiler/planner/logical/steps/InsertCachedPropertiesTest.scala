@@ -351,6 +351,19 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     }
   }
 
+  test("should throw if there is a short cycle in name definitions in one projection") {
+    val initialTable = semanticTable(n -> CTNode, m -> CTNode, nProp1 -> CTInteger)
+    val plan =
+      Projection(
+        Argument(Set("n")),
+        Map("m" -> n, "n" -> m, "p" -> nProp1)
+      )
+
+    an[IllegalStateException] should be thrownBy {
+      replace(plan, initialTable)
+    }
+  }
+
   test("should throw if there is a longer cycle in name definitions") {
     val initialTable = semanticTable(n -> CTNode, m -> CTNode, x -> CTNode, nProp1 -> CTInteger)
     val plan = Projection(
