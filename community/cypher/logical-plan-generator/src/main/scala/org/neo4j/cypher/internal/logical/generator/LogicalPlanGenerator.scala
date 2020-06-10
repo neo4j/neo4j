@@ -83,12 +83,15 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.cypher.internal.util.topDown
 import org.scalacheck.Gen
 
 import scala.collection.mutable
@@ -519,9 +522,9 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def union(state: State): Gen[WithState[Union]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
-    WithState(right, state) <- innerLogicalPlan(state)
   } yield {
-    val plan = Union(left, right)(state.idGen)
+    // use a copy of left plan as right hand side in order to have the same available symbols
+    val plan = Union(left, copyPlanTreeAndUpdateCardinalities(left, state))(state.idGen)
     annotate(plan, state)
   }
 
@@ -585,6 +588,21 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
         }
       }
     }
+
+  private def copyPlanTreeAndUpdateCardinalities(plan: LogicalPlan, state: State): LogicalPlan = {
+    val ids = new mutable.ArrayBuffer[(Id, Id)]()
+    val rewriter = topDown(Rewriter.lift {
+      case l: LogicalPlan if state.cardinalities.isDefinedAt(l.id) =>
+        val right = l.copyPlanWithIdGen(state.idGen)
+        ids += ((l.id, right.id))
+
+        right
+    })
+    val copy = rewriter.apply(plan).asInstanceOf[LogicalPlan]
+    ids.foreach { case (oldId, newId) => state.cardinalities.copy(oldId, newId) }
+
+    copy
+  }
 
   /**
    * This generates random expressions and then uses SematicChecking to see if they are valid. This works,
