@@ -1,5 +1,5 @@
 <project default="build">
-  <target name="build" depends="extract-shell-zip,extract-apoc-zip" />
+  <target name="build" depends="extract-shell-zip,extract-apoc-zip,flatten-browser" />
 
   <property name="shell.dir" location="../../../../cypher-shell"/>
   <property name="shell.zip" location="${shell.dir}/cypher-shell.zip"/>
