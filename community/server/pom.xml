@@ -21,7 +21,6 @@
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <neo4j.version>${project.version}</neo4j.version>
-        <neo4j-browser.version>3.2.26</neo4j-browser.version>
         <moduleName>org.neo4j.server</moduleName>
     </properties>
 
@@ -84,12 +83,6 @@
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-exceptions</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j.client</groupId>
-            <artifactId>neo4j-browser</artifactId>
-            <version>${neo4j-browser.version}</version>
         </dependency>
 
         <dependency>
