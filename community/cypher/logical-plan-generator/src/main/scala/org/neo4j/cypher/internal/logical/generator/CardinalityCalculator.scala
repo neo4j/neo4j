@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
@@ -199,4 +200,7 @@ object CardinalityCalculator {
       state.cardinalities.get(plan.left.id) *
         state.cardinalities.get(plan.right.id) *
         PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
+
+  implicit val unionCardinality: CardinalityCalculator[Union] =
+    (plan, state, _, _) => state.cardinalities.get(plan.left.id) + state.cardinalities.get(plan.right.id)
 }

@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -455,12 +456,11 @@ class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstruct
     c should equal(Cardinality(topAmount))
   }
 
-  test("Top amount > node count") {
-    val topAmount = 1000
-    val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
+  test("Union") {
+    val plan = Union(Argument(), Argument())
 
-    val c = CardinalityCalculator.topCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
-    c should equal(defaultSourceCardinality)
+    val c = CardinalityCalculator.unionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality + defaultSourceCardinality)
   }
 
   test("Top amount * cardinality from LHS of apply > node count") {

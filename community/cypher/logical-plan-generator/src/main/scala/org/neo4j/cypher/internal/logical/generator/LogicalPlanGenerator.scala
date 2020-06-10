@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -259,6 +260,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     Gen.lzy(cartesianProduct(state)),
+    Gen.lzy(union(state)),
     Gen.lzy(apply(state)),
     Gen.lzy(semiApply(state)),
     Gen.lzy(antiSemiApply(state)),
@@ -512,6 +514,14 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     WithState(right, state) <- innerLogicalPlan(state)
   } yield {
     val plan = CartesianProduct(left, right)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def union(state: State): Gen[WithState[Union]] = for {
+    WithState(left, state) <- innerLogicalPlan(state)
+    WithState(right, state) <- innerLogicalPlan(state)
+  } yield {
+    val plan = Union(left, right)(state.idGen)
     annotate(plan, state)
   }
 
