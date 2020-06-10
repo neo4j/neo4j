@@ -664,7 +664,7 @@ class FabricPlannerTest
     "passes options on in remote and local parts" in {
 
       val inst = instance(
-        """CYPHER 4.0
+        """CYPHER 4.1
           |  planner=cost
           |  runtime=parallel
           |  updateStrategy=eager
@@ -691,7 +691,7 @@ class FabricPlannerTest
         offset = InputPosition.NONE,
         isPeriodicCommit = false,
         executionMode = CypherExecutionMode.normal,
-        version = CypherVersion.v4_0,
+        version = CypherVersion.v4_1,
         planner = CypherPlannerOption.cost,
         runtime = CypherRuntimeOption.parallel,
         updateStrategy = CypherUpdateStrategy.eager,

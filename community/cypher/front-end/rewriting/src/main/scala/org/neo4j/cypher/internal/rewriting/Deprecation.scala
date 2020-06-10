@@ -125,8 +125,8 @@ object Deprecations {
     override val find: PartialFunction[Any, Deprecation] = V1.find
   }
 
-  // This is functionality that has been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
-  case object removedFeaturesIn4_0 extends Deprecations {
+  // This is functionality that has been removed in 4.0 or 4.1 but still should work (but be deprecated) when using CYPHER 3.5
+  case object removedFeaturesIn4_x extends Deprecations {
     val removedFunctionsRenames: Map[String, String] =
       TreeMap(
         "toInt" -> "toInteger",
@@ -182,8 +182,8 @@ object Deprecations {
     }
   }
 
-  // This is functionality that has been removed in 4.1 but still should work (but be deprecated) when using CYPHER 3.5 or CYPHER 4.0
-  case object removedFeaturesIn4_1 extends Deprecations {
+  // This is functionality that has been removed in 4.2 but still should work (but be deprecated) when using CYPHER 3.5 or CYPHER 4.1
+  case object removedFeaturesIn4_2 extends Deprecations {
     val removedFunctionsRenames: Map[String, String] =
       TreeMap()(CaseInsensitiveOrdered)
 

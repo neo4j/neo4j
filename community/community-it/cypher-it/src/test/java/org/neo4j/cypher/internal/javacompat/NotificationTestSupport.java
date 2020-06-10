@@ -54,7 +54,7 @@ public class NotificationTestSupport
 
     void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        assertNotifications( List.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.2" ), query, matchesExpectation );
+        assertNotifications( List.of( "CYPHER 3.5", "CYPHER 4.1", "CYPHER 4.2" ), query, matchesExpectation );
     }
 
     void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
@@ -144,7 +144,7 @@ public class NotificationTestSupport
 
     void shouldNotifyInStream( String query, InputPosition pos, NotificationCode code )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.2" ).forEach( version ->
+        Stream.of( "CYPHER 3.5", "CYPHER 4.1", "CYPHER 4.2" ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {
@@ -165,7 +165,7 @@ public class NotificationTestSupport
     void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code,
                                          NotificationDetail detail )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.2" ).forEach( version ->
+        Stream.of( "CYPHER 3.5", "CYPHER 4.1", "CYPHER 4.2" ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {
@@ -186,7 +186,7 @@ public class NotificationTestSupport
 
     void shouldNotNotifyInStream( String query )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0", "CYPHER 4.2" ).forEach( version ->
+        Stream.of( "CYPHER 3.5", "CYPHER 4.1", "CYPHER 4.2" ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {

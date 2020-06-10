@@ -85,17 +85,17 @@ object CompilationPhases {
       config.compatibilityMode match {
         case Compatibility3_5 =>
           parse andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_0) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
-        case Compatibility4_0 =>
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_x) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_x) andThen
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_2) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_2) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_2)
+        case Compatibility4_1 =>
           parse andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_2) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_2) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_2)
         case Compatibility4_2 =>
           parse
       }
@@ -176,6 +176,6 @@ object CompilationPhases {
 
 sealed trait CypherCompatibilityVersion
 case object Compatibility3_5 extends CypherCompatibilityVersion
-case object Compatibility4_0 extends CypherCompatibilityVersion
+case object Compatibility4_1 extends CypherCompatibilityVersion
 case object Compatibility4_2 extends CypherCompatibilityVersion
 
