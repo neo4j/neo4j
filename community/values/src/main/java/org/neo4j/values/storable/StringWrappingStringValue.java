@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
 
+import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
+
 /**
  * Implementation of StringValue that wraps a `java.lang.String` and
  * delegates methods to that instance.
@@ -62,7 +64,7 @@ final class StringWrappingStringValue extends StringValue
         for ( int offset = 0, codePoint; offset < length; offset += Character.charCount( codePoint ) )
         {
             codePoint = value.codePointAt( offset );
-            h = 31 * h + codePoint;
+            h = HASH_CONSTANT * h + codePoint;
         }
         return h;
     }
