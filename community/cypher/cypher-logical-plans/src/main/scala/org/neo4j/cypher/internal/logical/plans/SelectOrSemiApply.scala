@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   }
  * }
  */
-case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(implicit idGen: IdGen)
-  extends AbstractSelectOrSemiApply(left, right, expr)(idGen)
+case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
+  extends AbstractSelectOrSemiApply(left, right)(idGen)
 
 /**
  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
@@ -55,13 +55,15 @@ case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expres
  *   }
  * }
  */
-case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(implicit idGen: IdGen)
-  extends AbstractSelectOrSemiApply(left, right, expr)(idGen)
+case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
+  extends AbstractSelectOrSemiApply(left, right)(idGen)
 
-abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(idGen: IdGen)
+abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan)(idGen: IdGen)
   extends LogicalPlan(idGen) with ApplyPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
   val availableSymbols: Set[String] = left.availableSymbols
+
+  def expression: Expression
 }
