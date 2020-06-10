@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
-abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                    runtime: CypherRuntime[CONTEXT],
-                                                                    val sizeHint: Int
+abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+                                                                        runtime: CypherRuntime[CONTEXT],
+                                                                        val sizeHint: Int
                                                                    ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should only let through the one that matches when the expression is false") {
@@ -40,8 +40,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
-      .|.filter("x = 1")
+      .selectOrAntiSemiApply("false")
+      .|.filter("x <> 1")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -51,7 +51,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("x").withSingleRow(1)
   }
 
-  test("should not let anything through if rhs is empty and expression is false") {
+  test("should not let anything through if rhs is non-empty and expression is false") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -60,8 +60,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
-      .|.filter("false")
+      .selectOrAntiSemiApply("false")
+      .|.filter("true")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -71,7 +71,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("x").withNoRows()
   }
 
-  test("should let everything through if rhs is nonEmpty and the expression is false") {
+  test("should let everything through if rhs is empty and the expression is false") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -80,8 +80,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
-      .|.filter("true")
+      .selectOrAntiSemiApply("false")
+      .|.filter("false")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -95,7 +95,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.filter("1/0 > 1")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -115,8 +115,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("x = 1")
-      .|.filter("false")
+      .selectOrAntiSemiApply("x = 1")
+      .|.filter("true")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -135,8 +135,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("x = 2")
-      .|.filter("x = 1")
+      .selectOrAntiSemiApply("x = 2")
+      .|.filter("x <> 1")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()
@@ -150,24 +150,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.filter("c % 2 = 0")
-      .|.argument("c")
-      .aggregation(Seq.empty, Seq("count(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("c").withRows(Seq(Array[Any](0)))
-  }
-
-  test("aggregation on lhs, empty rhs") {
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .selectOrSemiApply("false")
-      .|.filter("c % 2 = 1")
       .|.argument("c")
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .input(variables = Seq("x"))
@@ -178,6 +162,22 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("c").withNoRows()
   }
 
+  test("aggregation on lhs, empty rhs") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrAntiSemiApply("false")
+      .|.filter("c % 2 = 1")
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withRows(Seq(Array[Any](0)))
+  }
+
   test("empty cartesian on rhs") {
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -186,7 +186,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.cartesianProduct()
       .|.|.allNodeScan("a", "x")
       .|.allNodeScan("b", "x")
@@ -195,7 +195,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withNoRows()
+    runtimeResult should beColumns("x").withRows(inputRows)
   }
 
   test("non-empty cartesian on rhs") {
@@ -206,7 +206,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.cartesianProduct()
       .|.|.argument("x")
       .|.argument("x")
@@ -215,7 +215,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(inputRows)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("empty optional on rhs") {
@@ -226,7 +226,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.optional("x")
       .|.allNodeScan("a", "x")
       .input(variables = Seq("x"))
@@ -234,7 +234,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(inputRows)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("non-empty optional on rhs") {
@@ -246,7 +246,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.optional("x")
       .|.allNodeScan("a", "x")
       .input(variables = Seq("x"))
@@ -254,18 +254,18 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(inputRows)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("empty expand on rhs") {
-    given {
+    val nodes = given {
       nodeGraph(sizeHint)
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.expandAll("(x)-[r]->(y)")
       .|.argument("x")
       .allNodeScan("x")
@@ -273,7 +273,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x").withNoRows()
+    runtimeResult should beColumns("x").withRows(nodes.map(Array[Any](_)))
   }
 
   test("non-empty expand on rhs") {
@@ -284,7 +284,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.expandAll("(x)-[r]->(y)")
       .|.argument("x")
       .allNodeScan("x")
@@ -292,7 +292,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("limit 0 on rhs") {
@@ -303,7 +303,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.limit(0)
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -311,7 +311,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withNoRows()
+    runtimeResult should beColumns("x").withRows(inputRows)
   }
 
   test("limit 1 on rhs") {
@@ -322,7 +322,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.limit(1)
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -330,7 +330,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(inputRows)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("semi-apply under apply") {
@@ -342,7 +342,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.selectOrSemiApply("false")
+      .|.selectOrAntiSemiApply("false")
+      .|.|.filter("false")
       .|.|.argument("x")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -361,8 +362,10 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
-      .|.selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
+      .|.filter("false")
+      .|.selectOrAntiSemiApply("false")
+      .|.|.filter("false")
       .|.|.argument("x")
       .|.argument("x")
       .input(variables = Seq("x"))
@@ -381,7 +384,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
+      .|.filter("false")
       .|.sort(Seq(Ascending("y")))
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
@@ -400,7 +404,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
+      .|.filter("false")
       .|.top(Seq(Ascending("x")), 10)
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
@@ -416,12 +421,12 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
       i <- 0 until sizeHint
     } yield Array[Any](i.toLong)
 
-    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
+    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 != 0)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.filter("s % 2 = 0")
       .|.aggregation(Seq.empty, Seq("sum(x) AS s"))
       .|.argument("x")
@@ -438,12 +443,12 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
       i <- 0 until sizeHint
     } yield Array[Any](i.toLong)
 
-    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 == 0)
+    val expectedValues = inputRows.filter(_ (0).asInstanceOf[Long] % 2 != 0)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
+      .selectOrAntiSemiApply("false")
       .|.filter("s % 2 = 0")
       .|.aggregation(Seq("x AS x"), Seq("sum(x) AS s"))
       .|.argument("x")
@@ -463,8 +468,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .selectOrSemiApply("false")
-      .|.filter("s % 2 = 0")
+      .selectOrAntiSemiApply("false")
+      .|.filter("s % 2 <> 0")
       .|.aggregation(Seq.empty, Seq("sum(c) AS s"))
       .|.argument("c")
       .aggregation(Seq.empty, Seq("count(x) AS c"))
@@ -486,8 +491,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("false")
-      .|.filter("x % 2 = 0")
+      .selectOrAntiSemiApply("false")
+      .|.filter("x % 2 <> 0")
       .|.sort(Seq(Ascending("x")))
       .|.argument("x")
       .input(variables = Seq("x"))

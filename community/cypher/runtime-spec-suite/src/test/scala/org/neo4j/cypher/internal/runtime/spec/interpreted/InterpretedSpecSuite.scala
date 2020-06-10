@@ -50,8 +50,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetAntiSemiApplyTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.LetSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LetSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
@@ -198,6 +199,7 @@ class InterpretedConditionalApplyTest extends ConditionalApplyTestBase(COMMUNITY
 class InterpretedAntiConditionalApplyTest extends AntiConditionalApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedSelectOrSemiApplyTest extends SelectOrSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedSelectOrAntiSemiApplyTest extends SelectOrAntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLetSelectOrSemiApplyTest extends LetSelectOrSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNestedPlanExpressionTest extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
