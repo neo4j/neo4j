@@ -127,8 +127,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
           case (currentName, prevName) =>
             var name = prevName
             val seenNames = mutable.Set(currentName, prevName)
-            while (previousNames.contains(name)) {
-              name = previousNames(name)
+            while (newRenamings.contains(name)) {
+              name = newRenamings(name)
               if (!seenNames.add(name)) {
                 // We have a cycle
                 throw new IllegalStateException(s"There was a cycle in names: $seenNames. This is likely a namespacing bug.")
