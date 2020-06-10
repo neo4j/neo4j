@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.Multiplier
 
 trait CardinalityCalculator[-T <: LogicalPlan] {
   def apply(plan: T, state: LogicalPlanGenerator.State, stats: GraphStatistics, labelsWithIds: Map[String, Int]): Cardinality
@@ -134,6 +135,8 @@ object CardinalityCalculator {
     (plan, state, _, _) =>
       val Top(source, _, count: IntegerLiteral) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
-      Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
+      val applyLHSCardinality = state.leafCardinalityMultiplier
+      val limit = Multiplier(count.value.toDouble)
+      Cardinality.min(sourceCardinality, applyLHSCardinality * limit)
   }
 }

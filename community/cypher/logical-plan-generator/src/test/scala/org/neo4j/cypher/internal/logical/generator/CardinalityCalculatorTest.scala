@@ -345,8 +345,9 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
   test("Top amount < node count") {
     val topAmount = 100
     val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
+    val state = defaultState.copy(leafCardinalityMultipliersStack = List.empty)
 
-    val c = CardinalityCalculator.topCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    val c = CardinalityCalculator.topCardinality(plan, state, new TestGraphStatistics, Map.empty)
     c should equal(Cardinality(topAmount))
   }
 
@@ -355,6 +356,15 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
 
     val c = CardinalityCalculator.topCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality)
+  }
+
+  test("Top amount * cardinality from LHS of apply > node count") {
+    val topAmount = 100
+    val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
+    val state = defaultState.pushLeafCardinalityMultiplier(Cardinality(10))
+
+    val c = CardinalityCalculator.topCardinality(plan, state, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality)
   }
 
