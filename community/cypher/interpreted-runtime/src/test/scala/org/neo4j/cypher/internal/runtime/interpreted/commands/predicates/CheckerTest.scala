@@ -53,7 +53,7 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("checking for lists in lists") {
-    val input = iterator(Array(1, 2, 3), List(1, 2))
+    val input = iterator(Array(1, 2, 3), java.util.List.of(1, 2))
     val buildUp = new BuildUp(input)
     buildUp.contains(list(intValue(1), intValue(2), intValue(3))) should equal((Some(true), buildUp))
   }
@@ -99,7 +99,7 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("buildUp can handle maps on the rhs") {
-    val buildUp = new BuildUp(iterator(1, 2, 3, Map("a" -> 42)))
+    val buildUp = new BuildUp(iterator(1, 2, 3, java.util.Map.of("a", 42)))
     val (result, newChecker) = buildUp.contains(stringValue("apa"))
     result should equal(Some(false))
     newChecker shouldBe a[SetChecker]
