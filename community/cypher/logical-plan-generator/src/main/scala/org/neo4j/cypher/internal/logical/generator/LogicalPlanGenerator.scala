@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
@@ -222,6 +223,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(distinct(state)),
     Gen.lzy(optional(state)),
     Gen.lzy(sort(state)),
+    Gen.lzy(top(state)),
   )
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -351,6 +353,17 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
     val plan = Sort(source, orderedColumns)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def top(state: State): Gen[WithState[Top]] = for {
+    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
+    columns <- Gen.atLeastOne(source.availableSymbols)
+    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
+    count <- Gen.chooseNum(0, Long.MaxValue, 1)
+  } yield {
+    val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
+    val plan = Top(source, orderedColumns, literalInt(count))(state.idGen)
     annotate(plan, state)
   }
 

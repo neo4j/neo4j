@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -339,6 +340,22 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
     val c = CardinalityCalculator.optionalCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c shouldBe Cardinality.SINGLE
+  }
+
+  test("Top amount < node count") {
+    val topAmount = 100
+    val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
+
+    val c = CardinalityCalculator.topCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality(topAmount))
+  }
+
+  test("Top amount > node count") {
+    val topAmount = 1000
+    val plan = Top(Argument(), Seq.empty, SignedDecimalIntegerLiteral(topAmount.toString)(pos))
+
+    val c = CardinalityCalculator.topCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality)
   }
 
   private class TestGraphStatistics extends GraphStatistics {

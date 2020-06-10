@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -128,4 +129,11 @@ object CardinalityCalculator {
 
   implicit val sortCardinality: CardinalityCalculator[Sort] =
     SAME_AS_LEFT
+
+  implicit val topCardinality: CardinalityCalculator[Top] = {
+    (plan, state, _, _) =>
+      val Top(source, _, count: IntegerLiteral) = plan
+      val sourceCardinality = state.cardinalities.get(source.id)
+      Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
+  }
 }
