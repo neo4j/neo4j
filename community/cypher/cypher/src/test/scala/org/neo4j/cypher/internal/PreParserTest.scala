@@ -97,7 +97,7 @@ class PreParserTest extends CypherFunSuite {
            COMMIT""",
         "CYPHER 3.5 planner=cost debug=ofCourse USING PERIODIC COMMIT",
         "CYPHER 4.0 planner=cost debug=ofCourse USING PERIODIC COMMIT",
-        "CYPHER 4.1 planner=cost debug=ofCourse USING PERIODIC COMMIT",
+        "CYPHER 4.2 planner=cost debug=ofCourse USING PERIODIC COMMIT",
         "using periodic commit",
         "UsING pERIOdIC COMmIT"
       )
@@ -117,7 +117,7 @@ class PreParserTest extends CypherFunSuite {
         "CREATE (:`USING PERIODIC COMMIT`)",
         "CYPHER 3.5 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
         "CYPHER 4.0 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.1 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CYPHER 4.2 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
         """CREATE ({name: '
           |USING PERIODIC COMMIT')""".stripMargin
       )

@@ -721,7 +721,7 @@ class FabricPlannerTest
     "default query options are not rendered" in {
 
       val inst = instance(
-        """CYPHER 4.1
+        """CYPHER 4.2
           |  interpretedPipesFallback=default
           |WITH 1 AS a
           |CALL {
@@ -740,7 +740,7 @@ class FabricPlannerTest
         offset = InputPosition.NONE,
         isPeriodicCommit = false,
         executionMode = CypherExecutionMode.default,
-        version = CypherVersion.v4_1,
+        version = CypherVersion.v4_2,
         planner = CypherPlannerOption.default,
         runtime = CypherRuntimeOption.default,
         updateStrategy = CypherUpdateStrategy.default,

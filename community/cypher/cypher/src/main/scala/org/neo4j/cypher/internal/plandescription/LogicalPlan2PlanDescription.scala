@@ -257,10 +257,10 @@ object LogicalPlan2PlanDescription {
             executionPlan: ExecutionPlan): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders, executionPlan).create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
-      .addArgument(RuntimeVersion("4.1"))
+      .addArgument(RuntimeVersion("4.2"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
-      .addArgument(PlannerVersion("4.1"))
+      .addArgument(PlannerVersion("4.2"))
   }
 }
 

@@ -73,7 +73,7 @@ object CompilationPhases {
   case class ParsingConfig(
     sequencer: String => RewriterStepSequencer,
     innerVariableNamer: InnerVariableNamer,
-    compatibilityMode: CypherCompatibilityVersion = Compatibility4_1,
+    compatibilityMode: CypherCompatibilityVersion = Compatibility4_2,
     literalExtraction: LiteralExtraction = IfNoParameter,
     parameterTypeMapping: Map[String, CypherType] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
@@ -96,7 +96,7 @@ object CompilationPhases {
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_1) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_1) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_1)
-        case Compatibility4_1 =>
+        case Compatibility4_2 =>
           parse
       }
 
@@ -177,5 +177,5 @@ object CompilationPhases {
 sealed trait CypherCompatibilityVersion
 case object Compatibility3_5 extends CypherCompatibilityVersion
 case object Compatibility4_0 extends CypherCompatibilityVersion
-case object Compatibility4_1 extends CypherCompatibilityVersion
+case object Compatibility4_2 extends CypherCompatibilityVersion
 

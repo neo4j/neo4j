@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_0
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_1
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -123,7 +123,7 @@ case class FabricFrontEnd(
       query.options.version match {
         case CypherVersion.v3_5 => Compatibility3_5
         case CypherVersion.v4_0 => Compatibility4_0
-        case CypherVersion.v4_1 => Compatibility4_1
+        case CypherVersion.v4_2 => Compatibility4_2
       }
 
     private val semanticFeatures =
