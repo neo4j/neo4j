@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -59,7 +59,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   test("Does not rewrite pattern expressions on nested plans") {
     // given
-    val expr = or(and(patExpr1, NestedPlanCollectExpression(dummyPlan, patExpr2)_), patExpr3)
+    val expr = or(and(patExpr1, NestedPlanExpression.collect(dummyPlan, patExpr2, patExpr2)_), patExpr3)
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext(), strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, context)
@@ -76,7 +76,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   test("Does rewrite pattern expressions inside nested plans") {
     // given
     val plan = Selection(Seq(patExpr3), dummyPlan)
-    val expr = or(and(patExpr1, NestedPlanCollectExpression(plan, patExpr2)_), patExpr4)
+    val expr = or(and(patExpr1, NestedPlanExpression.collect(plan, patExpr2, patExpr2)_), patExpr4)
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext(), strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, context)

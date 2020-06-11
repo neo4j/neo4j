@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PARAMS_PATTERN
+import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PATTERN
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
-import renderAsTreeTable.UNNAMED_PATTERN
-import renderAsTreeTable.UNNAMED_PARAMS_PATTERN
 
 /**
  * This should be the only place creating [[PrettyString]]s directly.
  * Given that they live in different modules, we cannot make this the companion object.
  */
 object asPrettyString {
-  private val stringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
+  private val stringifier: ExpressionStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
   private val DEDUP_PATTERN =   """  ([^\s]+)@\d+""".r
   private val removeGeneratedNamesRewriter = topDown(Rewriter.lift {
     case s: String => removeGeneratedNamesAndParams(s)

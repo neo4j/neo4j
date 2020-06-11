@@ -782,11 +782,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nestedPlanCollectExpressionProjection(resultList: String, resultPart: String): IMPL = {
     val inner = Parser.parseExpression(resultPart)
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner)(NONE)))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)))
   }
 
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs)(NONE)))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)))
   }
 
   // SHIP IP

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
@@ -28,24 +29,42 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class NestedPlanCollectExpression(
                                         override val plan: LogicalPlan,
-                                        projection: Expression
+                                        projection: Expression,
+                                        // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
+                                        // while trying to rewrite such pattern expressions away.
+                                        override val solvedExpressionAsString: String
                                       )(val position: InputPosition) extends NestedPlanExpression
 
 case class NestedPlanExistsExpression(
-                                       override val plan: LogicalPlan
+                                       override val plan: LogicalPlan,
+                                       // We cannot put the actual exists pattern expression in the case class, that would lead to endless recursion
+                                       // while trying to rewrite such exists expressions away.
+                                       override val solvedExpressionAsString: String
                                      )(val position: InputPosition) extends NestedPlanExpression
 
 abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
 
   def plan: LogicalPlan
 
+  /**
+   * Used for rendering nicer plan descriptions.
+   * @return
+   */
+  def solvedExpressionAsString: String
+
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
-  override def asCanonicalStringVal: String = {
-    val name = getClass.getSimpleName
-    val planDescription = plan.flatten.map(_.getClass.getSimpleName).mkString("-")
-    s"$name($planDescription)"
-  }
+  override def asCanonicalStringVal: String = solvedExpressionAsString
+}
+
+object NestedPlanExpression {
+  private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
+
+  def exists(plan: LogicalPlan, solvedExpression: Expression)(position: InputPosition): NestedPlanExistsExpression =
+    NestedPlanExistsExpression(plan, stringifier(solvedExpression))(position)
+
+  def collect(plan: LogicalPlan, projection: Expression, solvedExpression: Expression)(position: InputPosition): NestedPlanCollectExpression =
+    NestedPlanCollectExpression(plan, projection, stringifier(solvedExpression))(position)
 }
 
 

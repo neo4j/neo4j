@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -77,7 +76,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             val arguments = planArguments ++ scopeMap(pattern)
             val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, pattern, context)
             val uniqueNamedExpr = namedExpr.copy()
-            val rewrittenExpression = NestedPlanExistsExpression(plan)(uniqueNamedExpr.position)
+            val rewrittenExpression = NestedPlanExpression.exists(plan, expr)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
                .updated(pattern, ERROR("Should never attempt to rewrite pattern in exists(PatternExpression) on it's own"))
           }
@@ -100,7 +99,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
             val pathExpression: PathExpression = PathExpression(step)(expr.position)
 
-            val rewrittenExpression = NestedPlanCollectExpression(plan, pathExpression)(uniqueNamedExpr.position)
+            val rewrittenExpression = NestedPlanExpression.collect(plan, pathExpression, expr)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
           }
 
@@ -118,14 +117,14 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
             val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, context)
             val uniqueNamedExpr = namedExpr.copy()(expr.position, expr.outerScope)
 
-            val rewrittenExpression = NestedPlanCollectExpression(plan, projection)(uniqueNamedExpr.position)
+            val rewrittenExpression = NestedPlanExpression.collect(plan, projection, expr)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
           }
 
           (newAcc, Some(identity))
 
       // Never ever replace pattern expressions in nested plan expressions in the original expression
-      case NestedPlanCollectExpression(_, pattern) =>
+      case NestedPlanCollectExpression(_, pattern, _) =>
         acc => (acc.updated(pattern, pattern), Some(identity))
     }
   }

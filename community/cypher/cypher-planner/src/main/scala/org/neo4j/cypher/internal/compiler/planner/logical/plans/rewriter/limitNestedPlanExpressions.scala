@@ -35,24 +35,24 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
- * Places a Limit inside of NestenPlanExpressions, if the NestenPlanExpressions is inside an expression that does not need the whole list as a result.
+ * Places a Limit inside of NestedPlanExpressions, if the NestedPlanExpressions is inside an expression that does not need the whole list as a result.
  * These expressions are `head`, `ContainerIndex`, and `ListSlice`.
  */
 case class limitNestedPlanExpressions(logicalPlanIdGen: IdGen) extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case fi@FunctionInvocation(Namespace(List()), FunctionName(Head.name), _, IndexedSeq(npe@NestedPlanCollectExpression(plan, _))) if !plan.isInstanceOf[Limit] =>
+    case fi@FunctionInvocation(Namespace(List()), FunctionName(Head.name), _, IndexedSeq(npe@NestedPlanCollectExpression(plan, _, _))) if !plan.isInstanceOf[Limit] =>
       fi.copy(args = IndexedSeq(npe.copy(
         Limit(plan, SignedDecimalIntegerLiteral("1")(npe.position), DoNotIncludeTies)(logicalPlanIdGen)
       )(npe.position)))(fi.position)
 
-    case ci@ContainerIndex(npe@NestedPlanCollectExpression(plan, _), index) if !plan.isInstanceOf[Limit] =>
+    case ci@ContainerIndex(npe@NestedPlanCollectExpression(plan, _, _), index) if !plan.isInstanceOf[Limit] =>
       ci.copy(expr = npe.copy(
         Limit(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position), DoNotIncludeTies)(logicalPlanIdGen)
       )(npe.position))(ci.position)
 
-    case ls@ListSlice(npe@NestedPlanCollectExpression(plan, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
+    case ls@ListSlice(npe@NestedPlanCollectExpression(plan, _, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
       ls.copy(list = npe.copy(
         Limit(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position), DoNotIncludeTies)(logicalPlanIdGen)
       )(npe.position))(ls.position)

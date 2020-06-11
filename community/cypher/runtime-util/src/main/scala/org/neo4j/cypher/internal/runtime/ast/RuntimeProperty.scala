@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
-abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
+abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def position: InputPosition = InputPosition.NONE
