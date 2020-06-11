@@ -214,4 +214,10 @@ public class OnlineIndexUpdates implements IndexUpdates
         relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL );
         return relationshipRecord;
     }
+
+    @Override
+    public String toString()
+    {
+        return "OnlineIndexUpdates[" + updates + "]";
+    }
 }

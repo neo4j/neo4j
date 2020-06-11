@@ -61,6 +61,7 @@ class RelationshipDeleter
         disconnectRelationship( record, recordChanges, locks );
         updateNodesForDeletedRelationship( record, recordChanges, locks );
         record.setInUse( false );
+        record.setType( -1 );
     }
 
     private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet, ResourceLocker locks )
