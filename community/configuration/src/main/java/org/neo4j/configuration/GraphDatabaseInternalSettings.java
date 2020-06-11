@@ -266,6 +266,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.datacollector.max_query_text_size", INT, 10000 ).addConstraint( min( 0 ) ).build();
 
     @Internal
+    @Description( "Enable or disable the ability to create and drop databases." )
+    public static final Setting<Boolean> block_create_drop_database =
+            newBuilder( "unsupported.dbms.block_create_drop_database", BOOL, false ).build();
+
+    @Internal
     @Description( "The maximum amount of time to wait for the database to become available, when starting a new transaction." )
     public static final Setting<Duration> transaction_start_timeout =
             newBuilder( "unsupported.dbms.transaction_start_timeout", DURATION, ofSeconds( 1 ) ).build();
