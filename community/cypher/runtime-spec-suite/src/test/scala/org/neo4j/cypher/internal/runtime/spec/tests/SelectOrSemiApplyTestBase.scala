@@ -497,4 +497,24 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(expectedValues)
   }
+
+  test("should handle cached properties in selectOrSemiApply") {
+   given {
+     nodePropertyGraph(sizeHint, {case i => Map("prop" -> i)})
+   }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("cache[n.prop] AS prop")
+      .selectOrSemiApply("cache[n.prop] < 20")
+      .|.expand("(n)-[r*1..]->(m)")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("prop").withRows((0 until 20).map(Array[Any](_)))
+  }
 }
