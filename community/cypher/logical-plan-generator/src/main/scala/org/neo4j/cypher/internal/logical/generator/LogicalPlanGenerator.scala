@@ -66,6 +66,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -256,7 +257,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     Gen.lzy(cartesianProduct(state)),
-    Gen.lzy(apply(state))
+    Gen.lzy(apply(state)),
+    Gen.lzy(semiApply(state))
   )
 
   // Leaf Plans
@@ -470,7 +472,21 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   // Two child plans
 
+  def semiApply(state: State): Gen[WithState[SemiApply]] = for {
+    WithState((left, right), state) <- getApplyInnerPlans(state)
+  } yield {
+    val plan = SemiApply(left, right)(state.idGen)
+    annotate(plan, state)
+  }
+
   def apply(state: State): Gen[WithState[Apply]] = for {
+    WithState((left, right), state) <- getApplyInnerPlans(state)
+  } yield {
+    val plan = Apply(left, right)(state.idGen)
+    annotate(plan, state)
+  }
+
+  private def getApplyInnerPlans(state: State): Gen[WithState[(LogicalPlan, LogicalPlan)]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
     newArguments = left.availableSymbols -- state.arguments
     state <- state.addArguments(newArguments)
@@ -478,10 +494,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     WithState(right, state) <- innerLogicalPlan(state)
     state <- state.removeArguments(newArguments)
     state <- state.popLeafCardinalityMultiplier()
-  } yield {
-    val plan = Apply(left, right)(state.idGen)
-    annotate(plan, state)
-  }
+  } yield WithState((left, right), state)
 
   def cartesianProduct(state: State): Gen[WithState[CartesianProduct]] = for {
     WithState(left, state) <- innerLogicalPlan(state)

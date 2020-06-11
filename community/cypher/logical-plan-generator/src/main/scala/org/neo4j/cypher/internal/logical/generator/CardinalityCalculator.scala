@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -143,6 +144,10 @@ object CardinalityCalculator {
 
   implicit val applyCardinality: CardinalityCalculator[Apply] =
     (plan, state, _, _) => state.cardinalities.get(plan.right.id)
+
+  implicit val semiApplyCardinality: CardinalityCalculator[SemiApply] =
+    (plan, state, _, _) =>
+      Cardinality.min(state.cardinalities.get(plan.left.id), state.cardinalities.get(plan.right.id))
 
   implicit val cartesianProductCardinality: CardinalityCalculator[CartesianProduct] =
     (plan, state, _, _) => state.cardinalities.get(plan.left.id) * state.cardinalities.get(plan.right.id)

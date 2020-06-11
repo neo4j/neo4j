@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -373,6 +374,22 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val plan = Apply(Argument(), Argument())
 
     val c = CardinalityCalculator.applyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality)
+  }
+
+  test("SemiApply rhs empty") {
+    val plan = SemiApply(Argument(), Argument())
+    defaultState.cardinalities.set(plan.rhs.get.id, Cardinality.EMPTY)
+
+    val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality.EMPTY)
+  }
+
+  test("SemiApply") {
+    val plan = SemiApply(Argument(), Argument())
+    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * Cardinality(2))
+
+    val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality)
   }
 
