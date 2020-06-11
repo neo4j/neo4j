@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ class KeyPartitioning<KEY>
         this.layout = layout;
     }
 
-    public List<Pair<KEY,KEY>> partition( List<KEY> keyCandidates, KEY fromInclusive, KEY toExclusive, int numberOfPartitions )
+    public List<Pair<KEY,KEY>> partition( Collection<KEY> keyCandidates, KEY fromInclusive, KEY toExclusive, int numberOfPartitions )
     {
         List<KEY> keys = keyCandidates.stream()
                 .filter( key -> layout.compare( key, fromInclusive ) > 0 && layout.compare( key, toExclusive ) < 0 )

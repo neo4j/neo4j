@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
+import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -1303,7 +1304,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator, 1, SeekCursor.NO_MONITOR, NULL ) )
+                unstableGeneration, exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1949,7 +1950,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator, 1, SeekCursor.NO_MONITOR, NULL ) )
+                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
         {
             // do nothing
         }
@@ -2000,7 +2001,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1, SeekCursor.NO_MONITOR, NULL ) )
+                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
         {
             // do nothing
         }
@@ -2049,7 +2050,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1, SeekCursor.NO_MONITOR, NULL ) )
+                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
         {
             while ( seek.next() )
             {
@@ -2117,6 +2118,148 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             assertThat( e.getMessage() ).contains( "keyCount:" + keyCount );
         }
+    }
+
+    /* READ LEVEL */
+
+    @Test
+    void shouldReadWholeRangeOnLevel() throws IOException
+    {
+        // GIVEN
+        long i = 0L;
+        while ( numberOfRootSplits < 2 )
+        {
+            insert( i );
+            i++;
+        }
+
+        for ( int level = 0; level <= 2; level++ )
+        {
+            // WHEN
+            List<Long> readBySeeker = new ArrayList<>();
+            goTo( cursor, rootId );
+            try ( SeekCursor<KEY, VALUE> seek = seekCursorOnLevel( level, 0, i ) )
+            {
+                while ( seek.next() )
+                {
+                    readBySeeker.add( layout.keySeed( seek.key() ) );
+                }
+            }
+
+            // THEN
+            List<Long> expected = allKeysOnLevel( level,0, i );
+            assertThat( readBySeeker ).isEqualTo( expected );
+        }
+    }
+
+    @Test
+    void shouldReadSubRangeOnLevel() throws IOException
+    {
+        // GIVEN
+        long i = 0L;
+        int nbrOfLevels = random.nextInt( 2,4 );
+        while ( numberOfRootSplits < nbrOfLevels - 1 )
+        {
+            insert( i );
+            i++;
+        }
+
+        for ( int level = 0; level < nbrOfLevels; level++ )
+        {
+            // WHEN
+            long fromInclusive = random.nextLong( i - 1 );
+            long toExclusive = random.nextLong( fromInclusive, i );
+            List<Long> readBySeeker = new ArrayList<>();
+            goTo( cursor, rootId );
+
+            try ( SeekCursor<KEY, VALUE> seek = seekCursorOnLevel( level, fromInclusive, toExclusive ) )
+            {
+                while ( seek.next() )
+                {
+                    readBySeeker.add( layout.keySeed( seek.key() ) );
+                }
+            }
+
+            // THEN
+            List<Long> expected = allKeysOnLevel( level, fromInclusive, toExclusive );
+            assertThat( readBySeeker ).isEqualTo( expected );
+        }
+    }
+
+    private List<Long> allKeysOnLevel( int level, long fromInclusive, long toExclusive ) throws IOException
+    {
+        List<Long> allKeysOnLevel = new ArrayList<>();
+        long prevPageId = cursor.getCurrentPageId();
+        try
+        {
+            goToLeftmostOnLevel( cursor, level );
+            boolean hasRightSibling;
+            do
+            {
+                List<Long> allKeysInNode = allKeysInNode( cursor, fromInclusive, toExclusive );
+                allKeysOnLevel.addAll( allKeysInNode );
+                hasRightSibling = goToRightSibling( cursor );
+            }
+            while ( hasRightSibling );
+            return allKeysOnLevel;
+        }
+        finally
+        {
+            goTo( cursor, prevPageId );
+        }
+    }
+
+    private void goToLeftmostOnLevel( PageCursor cursor, int level ) throws IOException
+    {
+        goTo( cursor, rootId );
+        int currentLevel = 0;
+        while ( currentLevel < level && TreeNode.isInternal( cursor ) )
+        {
+            long child = childAt( cursor, 0, stableGeneration, unstableGeneration );
+            goTo( cursor, child );
+            currentLevel++;
+        }
+        if ( currentLevel < level )
+        {
+            throw new RuntimeException( "Could not traverse down to level " + level + " because last level is " + currentLevel );
+        }
+    }
+
+    private List<Long> allKeysInNode( PageCursor cursor, long fromInclusive, long toExclusive )
+    {
+        // If we are currently in an internal node it's not enough to compare the seed for
+        // the keys that we find here. We need to compare the actual keys with the keys that
+        // fromInclusive and toExclusive would generate if used as seeds. This is because
+        // the keys in the internal nodes might have been stripped down due to 'minimalSplitter'
+        // and will this not match the deterministic key generation from seeds.
+        KEY fromInclusiveKey = layout.key( fromInclusive );
+        KEY toExclusiveKey = layout.key( toExclusive );
+        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
+        List<Long> allKeysOnNode = new ArrayList<>();
+        int keyCount = TreeNode.keyCount( cursor );
+        boolean exactMatch = fromInclusive == toExclusive;
+        for ( int pos = 0; pos < keyCount; pos++ )
+        {
+            KEY key = layout.newKey();
+            node.keyAt( cursor, key, pos, type, NULL );
+            if ( layout.compare( fromInclusiveKey, key ) <= 0 && layout.compare( key, toExclusiveKey ) < 0 ||
+                    exactMatch && layout.compare( key, fromInclusiveKey ) == 0 )
+            {
+                allKeysOnNode.add( layout.keySeed( key ) );
+            }
+        }
+        return allKeysOnNode;
+    }
+
+    private boolean goToRightSibling( PageCursor cursor ) throws IOException
+    {
+        long rightSibling = pointer( TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
+        boolean hasRightSibling = rightSibling != TreeNode.NO_NODE_FLAG;
+        if ( hasRightSibling )
+        {
+            goTo( cursor, rightSibling );
+        }
+        return hasRightSibling;
     }
 
     private void triggerUnderflowAndSeekRange( SeekCursor<KEY,VALUE> seeker,
@@ -2256,6 +2399,13 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
     }
 
+    private SeekCursor<KEY,VALUE> seekCursorOnLevel( int level, long fromInclusive, long toExclusive ) throws IOException
+    {
+        return new SeekCursor<>( cursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
+                generationSupplier, failingRootCatchup, unstableGeneration, exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), level,
+                SeekCursor.NO_MONITOR, NULL );
+    }
+
     private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive ) throws IOException
     {
         return seekCursor( fromInclusive, toExclusive, cursor );
@@ -2278,7 +2428,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
                 generationSupplier, rootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ),
-                SeekCursor.NO_MONITOR, NULL );
+                LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL );
     }
 
     /**

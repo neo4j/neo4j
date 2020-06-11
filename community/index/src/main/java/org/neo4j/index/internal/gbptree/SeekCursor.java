@@ -156,7 +156,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         void leafNode( int depth, int keyCount );
     }
 
-    static final Monitor NO_MONITOR = new Monitor()
+    static class MonitorAdaptor implements Monitor
     {
         @Override
         public void internalNode( int depth, int keyCount )
@@ -167,9 +167,12 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         public void leafNode( int depth, int keyCount )
         {   // no-op
         }
-    };
+    }
+
+    static final Monitor NO_MONITOR = new MonitorAdaptor();
 
     static final int DEFAULT_MAX_READ_AHEAD = 20;
+    static final int LEAF_LEVEL = Integer.MAX_VALUE;
 
     /**
      * Cursor for reading from tree nodes and also will be moved around when following pointers.
@@ -251,6 +254,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      * on a reused tree node and not knowing how to proceed from there.
      */
     private final RootCatchup rootCatchup;
+
+    /**
+     * What level of the tree to search, {@link #LEAF_LEVEL} indicate always seek the leaves.
+     */
+    private final int searchLevel;
 
     /**
      * Whether or not some result has been found, i.e. if {@code true} if there have been no call to
@@ -434,8 +442,8 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     @SuppressWarnings( "unchecked" )
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, Monitor monitor,
-            PageCursorTracer cursorTracer ) throws IOException
+            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, int searchLevel,
+            Monitor monitor, PageCursorTracer cursorTracer ) throws IOException
     {
         this.cursor = cursor;
         this.cursorTracer = cursorTracer;
@@ -461,10 +469,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
+        this.searchLevel = searchLevel;
 
         try
         {
-            traverseDownToFirstLeaf();
+            traverseDownToCorrectLevel();
         }
         catch ( Throwable e )
         {
@@ -474,22 +483,24 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     }
 
     /**
-     * Traverses from the root down to the leaf containing the next key that we're looking for, or the first
-     * one provided in the constructor if this no result have yet been returned.
+     * Traverses from the root down to the node on target level (usually leaf) containing the next key that we're looking for,
+     * or the first one provided in the constructor if no result have yet been returned.
      * <p>
-     * This method is called when constructing the cursor, but also if this traversal itself or leaf scan
+     * This method is called when constructing the cursor, but also if leaf scan
      * later on ends up on an unexpected tree node (typically due to concurrent changes,
      * checkpoint and tree node reuse).
      * <p>
      * Before calling this method the caller is expected to place the {@link PageCursor} at the root, by using
-     * {@link #rootCatchup}. After this method returns the {@link PageCursor} is placed on the leaf containing
-     * the next result and {@link #pos} is also initialized correctly.
+     * {@link #rootCatchup}. After this method returns, the {@link PageCursor} is placed on the node on target level
+     * (usually leaf) containing the next result and {@link #pos} is also initialized correctly.
      *
      * @throws IOException on {@link PageCursor} error.
      */
-    private void traverseDownToFirstLeaf() throws IOException
+    private void traverseDownToCorrectLevel() throws IOException
     {
-        int depth = 0;
+        int currentReadLevel = 0;
+        int completedReadLevel = -1;
+        boolean lookingForChild = true;
         do
         {
             // Read
@@ -506,9 +517,10 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 {
                     continue;
                 }
-                pos = positionOf( searchResult );
+                lookingForChild = isInternal && currentReadLevel < searchLevel;
+                pos = positionOf( searchResult, lookingForChild );
 
-                if ( isInternal )
+                if ( lookingForChild )
                 {
                     pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration, generationKeeper );
                     pointerGeneration = generationKeeper.generation;
@@ -522,8 +534,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( !endedUpOnExpectedNode() )
             {
                 prepareToStartFromRoot();
+                // Set isInternal to true and reset read levels to make sure we loop back up
                 isInternal = true;
-                depth = 0;
+                currentReadLevel = 0;
+                completedReadLevel = -1;
+                lookingForChild = true;
                 continue;
             }
             else if ( !saneRead() )
@@ -541,15 +556,24 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 continue;
             }
 
-            if ( isInternal )
+            completedReadLevel = currentReadLevel;
+            if ( lookingForChild )
             {
-                monitor.internalNode( depth, keyCount );
+                monitor.internalNode( completedReadLevel, keyCount );
                 goTo( pointerId, pointerGeneration, "child", false );
-                depth++;
+                currentReadLevel++;
             }
         }
-        while ( isInternal );
-        monitor.leafNode( depth, keyCount );
+        while ( completedReadLevel < currentReadLevel /* There is still another level to read */ &&
+                completedReadLevel < searchLevel /* The last completed read was not yet at our target level */ );
+        if ( isInternal )
+        {
+            monitor.internalNode( completedReadLevel, keyCount );
+        }
+        else
+        {
+            monitor.leafNode( completedReadLevel, keyCount );
+        }
 
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         pos -= stride;
@@ -654,7 +678,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             // Where we are
             if ( concurrentWriteHappened || forceReadHeader || !seekForward )
             {
-                if ( !readHeader() || isInternal )
+                if ( !readHeader() || (isInternal && searchLevel == LEAF_LEVEL) )
                 {
                     continue;
                 }
@@ -663,19 +687,19 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( verifyExpectedFirstAfterGoToNext )
             {
                 pos = seekForward ? 0 : keyCount - 1;
-                bTreeNode.keyAt( cursor, firstKeyInNode, pos, LEAF, cursorTracer );
+                bTreeNode.keyAt( cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorTracer );
             }
 
             if ( concurrentWriteHappened )
             {
                 // Keys could have been moved so we need to make sure we are not missing any keys by
                 // moving position back until we find previously returned key
-                searchResult = searchKey( first ? fromInclusive : prevKey, LEAF );
+                searchResult = searchKey( first ? fromInclusive : prevKey, isInternal ? INTERNAL : LEAF );
                 if ( !KeySearch.isSuccess( searchResult ) )
                 {
                     continue;
                 }
-                pos = positionOf( searchResult );
+                pos = positionOf( searchResult, false );
 
                 if ( !seekForward && pos >= keyCount )
                 {
@@ -701,7 +725,14 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                     mutableKeys[cachedLength] = layout.newKey();
                     mutableValues[cachedLength] = layout.newValue();
                 }
-                bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorTracer );
+                if ( !isInternal )
+                {
+                    bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorTracer );
+                }
+                else
+                {
+                    bTreeNode.keyAt( cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorTracer );
+                }
 
                 if ( insideEndRange( exactMatch, cachedLength ) )
                 {
@@ -723,11 +754,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         cursor.checkAndClearCursorException();
 
         // Act
-        if ( !endedUpOnExpectedNode() || isInternal )
+        if ( !endedUpOnExpectedNode() || (isInternal && searchLevel == LEAF_LEVEL) )
         {
             // This node has been reused for something else than a tree node. Restart seek from root.
             prepareToStartFromRoot();
-            traverseDownToFirstLeaf();
+            traverseDownToCorrectLevel();
             return false;
         }
         else if ( !saneRead() )
@@ -903,16 +934,13 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorTracer );
     }
 
-    private int positionOf( int searchResult )
+    private int positionOf( int searchResult, boolean lookingForChildPosition )
     {
-        int pos = KeySearch.positionOf( searchResult );
-
-        // Assuming unique keys
-        if ( isInternal && KeySearch.isHit( searchResult ) )
+        if ( lookingForChildPosition )
         {
-            pos++;
+            return KeySearch.childPositionOf( searchResult );
         }
-        return pos;
+        return KeySearch.positionOf( searchResult );
     }
 
     /**
@@ -1112,7 +1140,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
 
     /**
      * Perform a generation catchup, updates current root and update range to start from
-     * previously returned key. Should be followed by a call to {@link #traverseDownToFirstLeaf()}
+     * previously returned key. Should be followed by a call to {@link #traverseDownToCorrectLevel()}
      * or if already in that method just loop again.
      * <p>
      * Caller should retry most recent read after calling this method.

@@ -34,12 +34,13 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Type;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.CursorException;
@@ -63,6 +64,8 @@ import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
+import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
+import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
@@ -1001,11 +1004,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     @Override
     public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer ) throws IOException
     {
-        return seekInternal( fromInclusive, toExclusive, cursorTracer, SeekCursor.DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR );
+        return seekInternal( fromInclusive, toExclusive, cursorTracer, DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR, LEAF_LEVEL );
     }
 
-    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer, int readAheadLength, SeekCursor.Monitor monitor )
-            throws IOException
+    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer, int readAheadLength, SeekCursor.Monitor monitor,
+            int searchLevel ) throws IOException
     {
         long generation = this.generation;
         long stableGeneration = stableGeneration( generation );
@@ -1017,18 +1020,17 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchupSupplier.get(), rootGeneration,
-                exceptionDecorator, readAheadLength, monitor, cursorTracer );
+                exceptionDecorator, readAheadLength, searchLevel, monitor, cursorTracer );
     }
 
     /**
      * Partitions the provided key range into {@code numberOfPartitions} partitions and instantiates a {@link Seeker} for each.
      * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
      *
-     * To keep implementation (much) simpler the partitioning is done on the root only, which means that the partitioning will be less granular
-     * the bigger keys there are in the root. There can only be returned max numberOfRootKeys+1 partitions from this method.
+     * See {@link #partitionedSeekInternal(Object, Object, int, Seeker.Factory, PageCursorTracer)} for details on implementation.
      *
-     * @param fromInclusive lower bound of the range to seek (inclusive).
-     * @param toExclusive higher bound of the range to seek (exclusive).
+     * @param fromInclusive lower bound of the target range to seek (inclusive).
+     * @param toExclusive higher bound of the target range to seek (exclusive).
      * @param numberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
      * The number of partitions will never be higher than the provided {@code numberOfPartitions}.
      * @return a {@link Collection} of {@link Seeker seekers}, each having their own distinct partition to seek. Collectively they
@@ -1041,61 +1043,89 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return partitionedSeekInternal( fromInclusive, toExclusive, numberOfPartitions, this, cursorTracer );
     }
 
+    /**
+     * We want to create a given number of partitions of the range given by <code>fromInclusive</code> and <code>toExclusive</code>.
+     * We want the number of entries in each partition to be as equal as possible. We let the number of subtrees in each partition
+     * be an estimate for the number of entries, assuming that one subtree will contain a comparable number of entries as another.
+     * Each subtree on level X is divided by splitter keys on the same level or on any of the levels above. Example:
+     * <pre>
+     * Level 0:                  [10,                           50]
+     * Level 1:     [3,    7]     ^          [13,      25]                [70,      90]
+     * Level 2: [1,2] [3,6]^[8,9]   [10,11,12]  [14,20]  [25,43]   [50, 55]  [71,85]  [109,200]
+     *                ===== =====   ==========
+     * </pre>
+     * All keys on level 0 and 1 are called splitter keys (or internal keys) because they split subtrees from each other.
+     * In this tree [3,6] and [8,9] on level 2 is separated by splitter key 7 on level 1. But looking at [8,9] and [10,11,12]
+     * on level 2 we see that they are separated by splitter key 10 from level 0. Similarly, each subtree on level 2 (where each
+     * subtree is a single leaf node) is separated from the others by a splitter key in one of the levels above. Noting that,
+     * we can begin to form a strategy for how to create our partitions.
+     * <p>
+     * We want to create our partitions as high up in the tree as possible, simply to terminate the partioning step as soon as possible.
+     * If we want to create three partitions in the tree above for the range [0,300) we can use the tree subtrees seen from the root
+     * and me done, but if we want a more fine grained partitioning we need to the lower parts of the tree.
+     * <p>
+     * This is what we do: We start at level 0 and collect all keys within our target range, let's say we find N keys [K1, K2,... KN].
+     * In between each key and on both sides of the range is a subtree which means we now have a way to create N+1 partitions of
+     * estimated equal size. The outer boundaries will be given by fromInclusive and toExclusive. If <code>N+1 < numberOfPartitions</code>
+     * we need to go one level further down and include all of the keys within our range from that level as well. If we still don't
+     * have enough splitter keys in our range we continue down the tree until we either have enough keys or we reach the leaf level.
+     * If we reach the leaf level it means that each partition will be only a single leaf node and we do not partition any further.
+     * <p>
+     * If concurrent updates causes changes higher up in the tree while searching in lower levels, some splitter keys can be missed or
+     * extra splitter keys may be included. This can lead to partitions being more unevenly sized but it will not affect correctness.
+     *
+     * @param fromInclusive lower bound of the target range to seek (inclusive).
+     * @param toExclusive higher bound of the target range to seek (exclusive).
+     * @param numberOfPartitions number of partitions desired by the caller. If the tree is small or the target range is narrow a lower
+     *                           number of partitions may be returned. The number of partitions will never be higher than the provided
+     *                           {@code numberOfPartitions}.
+     * @param seekerFactory {@link Seeker.Factory} factory method that create the seekers for each partition.
+     * @param cursorTracer underlying page cursor tracer
+     * @return {@link Collection} of {@link Seeker seekers} placed on each partition. The number of partitions is given by the size of
+     *         the collection.
+     * @throws IOException on error accessing the index.
+     */
     private Collection<Seeker<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
             Seeker.Factory<KEY,VALUE> seekerFactory, PageCursorTracer cursorTracer )
             throws IOException
     {
         Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
 
-        // Read the root w/ all its keys
-        List<KEY> rootKeys;
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorTracer ) )
+        // Read enough splitter keys from root and downwards to create enough partitions.
+        Set<KEY> splitterKeysInRange = new TreeSet<>( layout );
+        int numberOfSubtrees;
+        int searchLevel = 0;
+        do
         {
-            boolean goodRead;
-            RootCatchup rootCatchup = rootCatchupSupplier.get();
-            Root root = this.root;
-            boolean didRetry = true;
-            do
+            SeekDepthMonitor depthMonitor = new SeekDepthMonitor();
+            try ( Seeker<KEY,VALUE> seek = seekInternal( fromInclusive, toExclusive, cursorTracer, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
             {
-                goodRead = false;
-                if ( !didRetry )
+                if ( depthMonitor.reachedLeafLevel )
                 {
-                    // Only do a new root catchup if we made a clean and uninterrupted read from the page cursor
-                    root = rootCatchup.catchupFrom( root.id() );
-                }
-                rootKeys = new ArrayList<>();
-                root.goTo( cursor );
-                byte nodeType = TreeNode.nodeType( cursor );
-                boolean isLeaf = TreeNode.isLeaf( cursor );
-                boolean isInternal = TreeNode.isInternal( cursor );
-                int keyCount = TreeNode.keyCount( cursor );
-                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || (!isLeaf && !isInternal) || !bTreeNode.reasonableKeyCount( keyCount ) )
-                {
-                    // We've read something in the midst of changing, most likely... just retry the whole read
-                    continue;
-                }
-                if ( isLeaf )
-                {
-                    // The root is a leaf, not much to split on... so just exit the read w/o rootKeys, i.e. this will result in only one seeker for all keys
+                    // Don't partition any further if we've reached leaf level.
                     break;
                 }
-
-                // Read the internal keys from the root into rootKeys list
-                for ( int pos = 0; pos < keyCount; pos++ )
+                while ( seek.next() )
                 {
-                    rootKeys.add( bTreeNode.keyAt( cursor, layout.newKey(), pos, Type.INTERNAL, cursorTracer ) );
+                    KEY key = seek.key();
+                    if ( layout.compare( key, fromInclusive ) > 0 && layout.compare( key, toExclusive ) < 0 )
+                    {
+                        splitterKeysInRange.add( layout.copyKey( key, layout.newKey() ) );
+                    }
                 }
-                goodRead = true;
             }
-            while ( (didRetry = cursor.shouldRetry()) || !goodRead );
+            searchLevel++;
+            numberOfSubtrees = splitterKeysInRange.size() + 1;
         }
+        while ( numberOfSubtrees < numberOfPartitions );
 
+        // From the set of splitter keys, create partitions
         KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );
         List<Seeker<KEY,VALUE>> seekers = new ArrayList<>();
         boolean success = false;
         try
         {
-            for ( Pair<KEY,KEY> partition : partitioning.partition( rootKeys, fromInclusive, toExclusive, numberOfPartitions ) )
+            for ( Pair<KEY,KEY> partition : partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, numberOfPartitions ) )
             {
                 seekers.add( seekerFactory.seek( partition.getLeft(), partition.getRight(), cursorTracer ) );
             }
@@ -1130,11 +1160,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         do
         {
             monitor.clear();
-            Seeker.Factory<KEY,VALUE> monitoredSeeks = ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor );
-            for ( Seeker<KEY,VALUE> partition : partitionedSeekInternal( low, high, sampleSize, monitoredSeeks, cursorTracer ) )
+            Seeker.Factory<KEY,VALUE> monitoredSeeks =
+                    ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor, LEAF_LEVEL );
+            Collection<Seeker<KEY,VALUE>> seekers = partitionedSeekInternal( low, high, sampleSize, monitoredSeeks, cursorTracer );
+            try
             {
-                // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
-                partition.next();
+                for ( Seeker<KEY,VALUE> partition : seekers )
+                {
+                    // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
+                    partition.next();
+                }
+            }
+            finally
+            {
+                IOUtils.closeAll( seekers );
             }
         }
         while ( !monitor.isConsistent() );
@@ -1542,6 +1581,17 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private <E extends Throwable> void appendTreeInformation( E e )
     {
         Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+    }
+
+    private static class SeekDepthMonitor extends SeekCursor.MonitorAdaptor
+    {
+        private boolean reachedLeafLevel;
+
+        @Override
+        public void leafNode( int depth, int keyCount )
+        {
+            reachedLeafLevel = true;
+        }
     }
 
     private class SingleWriter implements Writer<KEY,VALUE>

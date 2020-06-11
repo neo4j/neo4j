@@ -27,6 +27,7 @@ import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
+import static org.neo4j.index.internal.gbptree.KeySearch.childPositionOf;
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
@@ -279,11 +280,7 @@ class InternalTreeLogic<KEY,VALUE>
             // We still need to go down further, but we're on the right path
             int keyCount = TreeNode.keyCount( cursor );
             int searchResult = search( cursor, INTERNAL, key, readKey, keyCount, cursorTracer );
-            int childPos = positionOf( searchResult );
-            if ( isHit( searchResult ) )
-            {
-                childPos++;
-            }
+            int childPos = childPositionOf( searchResult );
 
             Level<KEY> parentLevel = levels[currentLevel];
             currentLevel++;

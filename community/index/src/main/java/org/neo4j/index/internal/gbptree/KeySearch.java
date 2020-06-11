@@ -133,12 +133,34 @@ class KeySearch
     /**
      * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      *
+     * Note! If position will be used as position for child pointer, use {@link #childPositionOf(int)} instead.
+     *
      * @param searchResult search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
      * @return position of the search result.
      */
     static int positionOf( int searchResult )
     {
         return searchResult & POSITION_MASK;
+    }
+
+    /**
+     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
+     *
+     * Because the extracted position will be used as position for child pointer we need
+     * to take care of the special case where we had an exact match on the key. This is why:
+     * - KeySearch find the left most pos such that keyAtPos obeys key <= keyAtPos.
+     * - We want to follow the child pointer to the left of keyAtPos unless key == keyAtPos,
+     *   in which case we want to follow the pointer to the right. This is of course because everything
+     *   larger than _or equal_ to key belongs to right subtree.
+     */
+    static int childPositionOf( int searchResult )
+    {
+        int pos = positionOf( searchResult );
+        if ( isHit( searchResult ) )
+        {
+            return pos + 1;
+        }
+        return pos;
     }
 
     /**

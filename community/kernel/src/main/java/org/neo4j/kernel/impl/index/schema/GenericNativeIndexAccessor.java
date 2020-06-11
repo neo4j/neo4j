@@ -147,7 +147,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
                     }
                 } );
             }
-            return readers.toArray( new IndexEntriesReader[0] );
+            return readers.toArray( IndexEntriesReader[]::new );
         }
         catch ( IOException e )
         {
