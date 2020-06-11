@@ -467,7 +467,7 @@ trait Statement extends Parser
       ~~>> ((scope, yld, where, rtn) => ast.ShowPrivileges(scope, yld, where, rtn)))
   }
 
-  private def ShowCommandClauses: Rule3[Option[Return], Option[Where], Option[Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
+  private def ShowCommandClauses: Rule3[Option[Return], Option[Where], Option[Return]] = rule("YIELD ... WHERE .. for SHOW commands") {
     optional(group(keyword("YIELD") ~~ YieldBody) ~~>> (ast.Return(distinct = false, _, _, _, _))) ~~
       optional(Where) ~> (_ => None)
   }
