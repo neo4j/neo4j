@@ -59,16 +59,16 @@ object CardinalityCalculator {
     SAME_AS_LEFT
 
   implicit val allNodesScanCardinality: CardinalityCalculator[AllNodesScan] =
-    (_, state, stats, _) => state.leafCardinalityMultipliers.head * stats.nodesAllCardinality()
+    (_, state, stats, _) => state.leafCardinalityMultiplier * stats.nodesAllCardinality()
 
   implicit val nodeByLabelScanCardinality: CardinalityCalculator[NodeByLabelScan] = {
     (plan, state, stats, labelsWithIds) =>
       val labelId = Some(LabelId(labelsWithIds(plan.label.name)))
-      state.leafCardinalityMultipliers.head * stats.nodesWithLabelCardinality(labelId)
+      state.leafCardinalityMultiplier * stats.nodesWithLabelCardinality(labelId)
   }
 
   implicit val argumentCardinality: CardinalityCalculator[Argument] =
-    (_, state, _, _) => state.leafCardinalityMultipliers.head
+    (_, state, _, _) => state.leafCardinalityMultiplier
 
   implicit val eagerCardinality: CardinalityCalculator[Eager] =
     SAME_AS_LEFT
@@ -123,5 +123,5 @@ object CardinalityCalculator {
     (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
 
   implicit val optionalCardinality: CardinalityCalculator[Optional] =
-    (plan, state, _, _) => Cardinality.max(state.leafCardinalityMultipliers.head, state.cardinalities.get(plan.source.id))
+    (plan, state, _, _) => Cardinality.max(state.leafCardinalityMultiplier, state.cardinalities.get(plan.source.id))
 }

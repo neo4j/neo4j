@@ -102,7 +102,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
    * @param arguments arguments, which are valid at this point of generation.
    * @param varCount the amount of generated distinct variables
    * @param parameters the generated parameter names
-   * @param leafCardinalityMultipliers a stack of cardinalities from LHS of enclosing `Apply`s
+   * @param leafCardinalityMultipliersStack a stack of cardinalities from LHS of enclosing `Apply`s
    * @param labelInfo generated node variables with labels
    * @param cardinalities cardinalities of generated plans
    * @param idGen id generator for plans
@@ -111,7 +111,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
                    arguments: Set[String],
                    varCount: Int,
                    parameters: Set[String],
-                   leafCardinalityMultipliers: List[Cardinality],
+                   private val leafCardinalityMultipliersStack: List[Cardinality],
                    labelInfo: LabelInfo,
                    cardinalities: Cardinalities,
                    idGen: IdGen) {
@@ -138,10 +138,13 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
       copy(parameters = parameters ++ ps)
 
     def pushLeafCardinalityMultiplier(c: Cardinality): State =
-      copy(leafCardinalityMultipliers = c +: leafCardinalityMultipliers)
+      copy(leafCardinalityMultipliersStack = c +: leafCardinalityMultipliersStack)
 
     def popLeafCardinalityMultiplier(): State =
-      copy(leafCardinalityMultipliers = leafCardinalityMultipliers.tail)
+      copy(leafCardinalityMultipliersStack = leafCardinalityMultipliersStack.tail)
+
+    def leafCardinalityMultiplier: Cardinality =
+      leafCardinalityMultipliersStack.headOption.getOrElse(Cardinality.SINGLE)
 
     def recordLabel(variable: String, label: String): State = {
       val newLabels = labelInfo(label) + LabelName(label)(pos)
@@ -204,7 +207,6 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(limit(state)),
     Gen.lzy(projection(state)),
     Gen.lzy(aggregation(state)),
-    Gen.lzy(distinct(state)),
     Gen.lzy(distinct(state)),
     Gen.lzy(optional(state)),
 
