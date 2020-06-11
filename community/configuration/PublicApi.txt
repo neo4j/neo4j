@@ -8,8 +8,8 @@ org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::values() org.neo
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion>
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::DEFAULT org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_35 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
-org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_40 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_41 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
+org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::V_42 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::toString() java.lang.String public
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion public static
 org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion::values() org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion[] public static
