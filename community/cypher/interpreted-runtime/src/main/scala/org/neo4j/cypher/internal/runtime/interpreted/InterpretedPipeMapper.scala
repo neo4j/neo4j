@@ -702,11 +702,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         LetSelectOrSemiApplyPipe(lhs, rhs, idName, buildPredicate(id, predicate), negated = true)(id = id)
 
-      case ConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids, negated = false)(id = id)
+      case ConditionalApply(lhsPlan, rhsPlan, ids) =>
+        ConditionalApplyPipe(lhs, rhs, ids, negated = false, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id = id)
 
-      case AntiConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids, negated = true)(id = id)
+      case AntiConditionalApply(lhsPlan, rhsPlan, ids) =>
+        ConditionalApplyPipe(lhs, rhs, ids, negated = true, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id = id)
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)

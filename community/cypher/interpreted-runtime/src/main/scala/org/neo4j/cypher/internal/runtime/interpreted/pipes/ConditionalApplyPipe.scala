@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean, rhsOnlySymbols: Set[String])
                                (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
@@ -33,8 +34,10 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
         if (condition(outerContext)) {
           val innerState = state.withInitialContext(outerContext)
           inner.createResults(innerState)
-        } else
+        } else {
+          rhsOnlySymbols.foreach(v => outerContext.set(v, Values.NO_VALUE))
           Iterator.single(outerContext)
+        }
     }
 
   private def condition(context: CypherRow): Boolean = {
