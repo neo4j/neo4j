@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 
 /**
  * This annotation marks a {@link Procedure} as only being executable by a user with admin permissions.
+ * The required privilege is 'ALL ON DBMS'
  */
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
