@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -146,8 +147,24 @@ object CardinalityCalculator {
     (plan, state, _, _) => state.cardinalities.get(plan.right.id)
 
   implicit val semiApplyCardinality: CardinalityCalculator[SemiApply] =
-    (plan, state, _, _) =>
-      Cardinality.min(state.cardinalities.get(plan.left.id), state.cardinalities.get(plan.right.id))
+    (plan, state, _, _) => {
+      val lhsCardinality = state.cardinalities.get(plan.left.id)
+      val rhsCardinality = state.cardinalities.get(plan.right.id)
+      val selectivity = (rhsCardinality / lhsCardinality).getOrElse(PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
+
+      lhsCardinality * selectivity
+    }
+
+  implicit val antiSemiApplyCardinality: CardinalityCalculator[AntiSemiApply] =
+    (plan, state, _, _) => {
+      val lhsCardinality = state.cardinalities.get(plan.left.id)
+      val rhsCardinality = state.cardinalities.get(plan.right.id)
+      val selectivity = (rhsCardinality / lhsCardinality)
+        .map(_.negate)
+        .getOrElse(PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
+
+      lhsCardinality * selectivity
+    }
 
   implicit val cartesianProductCardinality: CardinalityCalculator[CartesianProduct] =
     (plan, state, _, _) => state.cardinalities.get(plan.left.id) * state.cardinalities.get(plan.right.id)

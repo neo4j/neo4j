@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.generator
 
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -56,6 +58,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Default
@@ -385,12 +388,46 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     c should equal(Cardinality.EMPTY)
   }
 
-  test("SemiApply") {
+  test("SemiApply cardinality of lhs < cardinality of rhs") {
     val plan = SemiApply(Argument(), Argument())
-    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * Cardinality(2))
+    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * Multiplier(2))
 
     val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
+  }
+
+  test("SemiApply cardinality of lhs > cardinality of rhs") {
+    val plan = SemiApply(Argument(), Argument())
+    val rhsRowsPerLhsRows = Multiplier(0.5)
+    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * rhsRowsPerLhsRows)
+
+    val c = CardinalityCalculator.semiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality * rhsRowsPerLhsRows)
+  }
+
+  test("AntiSemiApply rhs empty") {
+    val plan = AntiSemiApply(Argument(), Argument())
+    defaultState.cardinalities.set(plan.rhs.get.id, Cardinality.EMPTY)
+
+    val c = CardinalityCalculator.antiSemiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality)
+  }
+
+  test("AntiSemiApply cardinality of lhs < cardinality of rhs") {
+    val plan = AntiSemiApply(Argument(), Argument())
+    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * Multiplier(2))
+
+    val c = CardinalityCalculator.antiSemiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
+  }
+
+  test("AntiSemiApply cardinality of lhs > cardinality of rhs") {
+    val plan = AntiSemiApply(Argument(), Argument())
+    val rhsRowsPerLhsRows = Multiplier(0.5)
+    defaultState.cardinalities.set(plan.rhs.get.id, defaultSourceCardinality * rhsRowsPerLhsRows)
+
+    val c = CardinalityCalculator.antiSemiApplyCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(defaultSourceCardinality * rhsRowsPerLhsRows)
   }
 
   test("CartesianProduct") {

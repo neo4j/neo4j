@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -258,7 +259,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     Gen.lzy(cartesianProduct(state)),
     Gen.lzy(apply(state)),
-    Gen.lzy(semiApply(state))
+    Gen.lzy(semiApply(state)),
+    Gen.lzy(antiSemiApply(state)),
   )
 
   // Leaf Plans
@@ -471,6 +473,13 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   }
 
   // Two child plans
+
+  def antiSemiApply(state: State): Gen[WithState[AntiSemiApply]] = for {
+    WithState((left, right), state) <- getApplyInnerPlans(state)
+  } yield {
+    val plan = AntiSemiApply(left, right)(state.idGen)
+    annotate(plan, state)
+  }
 
   def semiApply(state: State): Gen[WithState[SemiApply]] = for {
     WithState((left, right), state) <- getApplyInnerPlans(state)
