@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -132,7 +133,9 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
         {
             try
             {
-                writer.updateDocument( newTermForChangeOrRemove( entityId ), documentRepresentingProperties( entityId, propertyNames, values ) );
+                Term term = newTermForChangeOrRemove( entityId );
+                Document document = documentRepresentingProperties( entityId, propertyNames, values );
+                writer.updateDocument( term, document );
             }
             catch ( IOException e )
             {
@@ -145,7 +148,8 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
         {
             try
             {
-                writer.deleteDocuments( newTermForChangeOrRemove( entityId ) );
+                Term term = newTermForChangeOrRemove( entityId );
+                writer.deleteDocuments( term );
             }
             catch ( IOException e )
             {
