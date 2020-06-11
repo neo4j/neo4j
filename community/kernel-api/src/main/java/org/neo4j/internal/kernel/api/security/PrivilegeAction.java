@@ -82,6 +82,8 @@ public enum PrivilegeAction
     ASSIGN_PRIVILEGE,
     REMOVE_PRIVILEGE,
 
+    ADMIN_PROCEDURE,
+
     // Some grouping actions that represent super-sets of other actions
 
     ADMIN
@@ -344,6 +346,7 @@ public enum PrivilegeAction
                            USER_MANAGEMENT.satisfies( action ) ||
                            DATABASE_MANAGEMENT.satisfies( action ) ||
                            PRIVILEGE_MANAGEMENT.satisfies( action ) ||
+                           ADMIN_PROCEDURE == action ||
                            this == action;
                 }
             };

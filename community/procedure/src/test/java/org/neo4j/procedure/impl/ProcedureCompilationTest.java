@@ -454,7 +454,7 @@ public class ProcedureCompilationTest
                 .admin( true )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
         SecurityContext securityContext = mock( SecurityContext.class );
-        when( securityContext.isAdmin() ).thenReturn( false );
+        when( securityContext.allowExecuteAdminProcedure() ).thenReturn( false );
         when( ctx.securityContext() ).thenReturn( securityContext );
 
         // When

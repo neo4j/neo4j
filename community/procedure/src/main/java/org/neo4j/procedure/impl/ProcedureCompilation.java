@@ -588,7 +588,7 @@ public final class ProcedureCompilation
     {
         SecurityContext securityContext = ctx.securityContext();
         securityContext.assertCredentialsNotExpired();
-        if ( !securityContext.isAdmin() )
+        if ( !securityContext.allowExecuteAdminProcedure() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
