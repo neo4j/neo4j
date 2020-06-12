@@ -32,6 +32,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       ("CREATE USER", ast.CreateUserAction),
       ("DROP USER", ast.DropUserAction),
       ("SHOW USER", ast.ShowUserAction),
+      ("SET PASSWORD", ast.SetPasswordsAction),
       ("SET PASSWORDS", ast.SetPasswordsAction),
       ("SET USER STATUS", ast.SetUserStatusAction),
       ("ALTER USER", ast.AlterUserAction),
