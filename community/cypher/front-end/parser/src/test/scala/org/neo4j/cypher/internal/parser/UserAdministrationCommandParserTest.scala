@@ -178,6 +178,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password SET STATUS SUSPENDED") {
+    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
+  }
+
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
     yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
   }
@@ -192,6 +196,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED") {
     yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD $password SET STATUS SUSPENDED") {
+    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
@@ -262,6 +270,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+
+  test( "CREATE USER foo IF EXISTS SET PASSWORD 'bar'") {
+    failsToParse
+  }
+
   test("CREATE USER foo IF NOT EXISTS") {
     failsToParse
   }
@@ -270,11 +283,35 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED") {
+    failsToParse
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE") {
+    failsToParse
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    failsToParse
+  }
+
   test("CREATE OR REPLACE USER foo") {
     failsToParse
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE USER foo SET STATUS SUSPENDED") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
     failsToParse
   }
 
@@ -332,6 +369,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("DROP USER  IF EXISTS") {
+    failsToParse
+  }
+
+  test("DROP USER foo IF NOT EXISTS") {
     failsToParse
   }
 

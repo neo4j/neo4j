@@ -191,6 +191,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE ROLE foo IF EXISTS") {
+    failsToParse
+  }
+
   test("CREATE OR REPLACE ROLE ") {
     failsToParse
   }
@@ -234,6 +238,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("DROP ROLE  IF EXISTS") {
+    failsToParse
+  }
+
+  test("DROP ROLE foo IF NOT EXISTS") {
     failsToParse
   }
 
@@ -322,6 +330,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       }
 
       test(s"REVOKE $roleKeyword foo TO abc") {
+        failsToParse
+      }
+
+      // ROLES TO USER only have GRANT and REVOKE and not DENY
+      test( s"DENY $roleKeyword foo TO abc") {
         failsToParse
       }
   }
