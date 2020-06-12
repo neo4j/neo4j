@@ -33,8 +33,7 @@ public class DumpLocksVisitor implements Locks.Visitor
     }
 
     @Override
-    public void visit( ResourceType resourceType, long resourceId, LockType lockType, String description, long estimatedWaitTime,
-            long lockIdentityHashCode )
+    public void visit( LockType lockType, ResourceType resourceType, long resourceId, String description, long estimatedWaitTime, long lockIdentityHashCode )
     {
         log.info( "%s{id=%d, waitTime=%d, description=%s, lockHash=%d}", resourceType, resourceId, estimatedWaitTime,
                 description, lockIdentityHashCode );

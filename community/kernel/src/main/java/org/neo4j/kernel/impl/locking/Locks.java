@@ -54,8 +54,7 @@ public interface Locks
     interface Visitor
     {
         /** Visit the description of a lock held by at least one client. */
-        void visit( ResourceType resourceType, long resourceId, LockType lockType, String description, long estimatedWaitTime,
-                long lockIdentityHashCode );
+        void visit( LockType lockType, ResourceType resourceType, long resourceId, String description, long estimatedWaitTime, long lockIdentityHashCode );
     }
 
     interface Client extends ResourceLocker, AutoCloseable

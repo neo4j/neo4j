@@ -27,8 +27,7 @@ public class LockCountVisitor implements Locks.Visitor
     private int lockCount;
 
     @Override
-    public void visit( ResourceType resourceType, long resourceId, LockType lockType, String description, long estimatedWaitTime,
-            long lockIdentityHashCode )
+    public void visit( LockType lockType, ResourceType resourceType, long resourceId, String description, long estimatedWaitTime, long lockIdentityHashCode )
     {
         lockCount++;
     }

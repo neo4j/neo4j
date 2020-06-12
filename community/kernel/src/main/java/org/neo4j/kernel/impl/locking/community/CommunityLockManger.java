@@ -56,8 +56,8 @@ public class CommunityLockManger implements Locks
             if ( resource instanceof LockResource )
             {
                 LockResource lockResource = (LockResource) resource;
-                visitor.visit( lockResource.resourceType(), lockResource.resourceId(), lockResource.getLockType(),
-                        element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
+                visitor.visit( lockResource.getLockType(), lockResource.resourceType(), lockResource.resourceId(), element.describe(),
+                        element.maxWaitTime(), System.identityHashCode( lockResource ) );
             }
             return false;
         } );
