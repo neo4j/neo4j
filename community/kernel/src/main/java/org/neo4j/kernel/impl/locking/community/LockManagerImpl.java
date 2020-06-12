@@ -41,7 +41,7 @@ public class LockManagerImpl
      * Time within which any particular lock should be acquired.
      * @see GraphDatabaseSettings#lock_acquisition_timeout
      */
-    private long lockAcquisitionTimeoutMillis;
+    private final long lockAcquisitionTimeoutMillis;
 
     LockManagerImpl( RagManager ragManager, Config config, Clock clock )
     {

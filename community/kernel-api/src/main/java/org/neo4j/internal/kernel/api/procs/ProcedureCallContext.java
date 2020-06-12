@@ -30,8 +30,8 @@ public class ProcedureCallContext
 {
     private final String[] outputFieldNames;
     private final boolean calledFromCypher;
-    private String database;
-    private boolean isSystemDatabase;
+    private final String database;
+    private final boolean isSystemDatabase;
 
     public ProcedureCallContext( String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase )
     {
