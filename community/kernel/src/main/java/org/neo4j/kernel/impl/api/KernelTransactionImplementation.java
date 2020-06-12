@@ -920,7 +920,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         AccessMode accessMode = securityContext().mode();
         if ( !accessMode.allowsTokenCreates( action ) )
         {
-            throw accessMode.onViolation( format( "'%s' operations are not allowed for %s.", action.toString(), securityContext().description() ) );
+            switch ( action )
+            {
+            case CREATE_LABEL:
+                throw accessMode
+                        .onViolation( format( "Creating new node label is not allowed for %s. See GRANT CREATE NEW NODE LABEL ON DATABASE...",
+                                              securityContext().description() ) );
+            case CREATE_PROPERTYKEY:
+                throw accessMode.onViolation(
+                        format( "Creating new property name is not allowed for %s. See GRANT CREATE NEW PROPERTY NAME ON DATABASE...",
+                                securityContext().description() ) );
+            case CREATE_RELTYPE:
+                throw accessMode.onViolation(
+                        format( "Creating new relationship type is not allowed for %s. See GRANT CREATE NEW RELATIONSHIP TYPE ON DATABASE...",
+                                securityContext().description() ) );
+            default:
+                throw accessMode.onViolation(
+                        format( "'%s' operations are not allowed for %s.", action, securityContext().description() ) );
+            }
         }
     }
 
