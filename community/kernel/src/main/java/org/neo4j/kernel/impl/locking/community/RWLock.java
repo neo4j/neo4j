@@ -30,16 +30,16 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
-import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.logging.Logger;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
-import static org.neo4j.kernel.impl.locking.LockType.READ;
-import static org.neo4j.kernel.impl.locking.LockType.WRITE;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
+import static org.neo4j.lock.LockType.SHARED;
 
 /**
  * A read/write lock is a lock that will allow many transactions to acquire read
@@ -213,7 +213,7 @@ public class RWLock
 
                 if ( addLockRequest )
                 {
-                    lockRequest = new LockRequest( tle, READ, currentThread );
+                    lockRequest = new LockRequest( tle, SHARED, currentThread );
                     waitingThreadList.addFirst( lockRequest );
                 }
 
@@ -311,7 +311,7 @@ public class RWLock
         {
             LockRequest lockRequest = waitingThreadList.getLast();
 
-            if ( lockRequest.lockType == LockType.WRITE )
+            if ( lockRequest.lockType == EXCLUSIVE )
             {
                 // this one is tricky...
                 // if readCount > 0 lockRequest either have to find a waiting read lock
@@ -334,14 +334,14 @@ public class RWLock
                     while ( listItr.hasPrevious() )
                     {
                         lockRequest = listItr.previous();
-                        if ( lockRequest.lockType == LockType.WRITE && totalReadCount == lockRequest.element.readCount )
+                        if ( lockRequest.lockType == EXCLUSIVE && totalReadCount == lockRequest.element.readCount )
                         {
                             // found a write lock with all read locks
                             listItr.remove();
                             lockRequest.waitingThread.interrupt();
                             break;
                         }
-                        else if ( lockRequest.lockType == LockType.READ )
+                        else if ( lockRequest.lockType == SHARED )
                         {
                             // found a read lock, let it do the job...
                             listItr.remove();
@@ -401,7 +401,7 @@ public class RWLock
 
                 if ( addLockRequest )
                 {
-                    lockRequest = new LockRequest( tle, WRITE, currentThread );
+                    lockRequest = new LockRequest( tle, EXCLUSIVE, currentThread );
                     waitingThreadList.addFirst( lockRequest );
                 }
 
@@ -544,7 +544,7 @@ public class RWLock
             {
                 LockRequest lockRequest = waitingThreadList.removeLast();
                 lockRequest.waitingThread.interrupt();
-                if ( lockRequest.lockType == LockType.WRITE )
+                if ( lockRequest.lockType == EXCLUSIVE )
                 {
                     break;
                 }
