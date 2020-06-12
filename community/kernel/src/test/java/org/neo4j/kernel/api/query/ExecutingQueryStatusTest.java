@@ -26,13 +26,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 class ExecutingQueryStatusTest
 {
@@ -85,7 +85,7 @@ class ExecutingQueryStatusTest
         long[] resourceIds = {17};
         WaitingOnLock status =
                 new WaitingOnLock(
-                        ActiveLock.EXCLUSIVE_MODE,
+                        EXCLUSIVE,
                         resourceType( "NODE" ),
                         resourceIds,
                         clock.nanos() );

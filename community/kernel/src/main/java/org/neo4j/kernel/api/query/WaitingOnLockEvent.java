@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.query;
 
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 
@@ -36,14 +37,14 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     private final ExecutingQuery executingQuery;
 
     WaitingOnLockEvent(
-            String mode,
+            LockType lockType,
             ResourceType resourceType,
             long[] resourceIds,
             ExecutingQuery executingQuery,
             long currentTimeNanos,
             ExecutingQueryStatus previous )
     {
-        super( mode, resourceType, resourceIds, currentTimeNanos );
+        super( lockType, resourceType, resourceIds, currentTimeNanos );
         this.executingQuery = executingQuery;
         this.previous = previous;
     }

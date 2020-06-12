@@ -21,95 +21,55 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.Objects;
 
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
-public interface ActiveLock
+public class ActiveLock
 {
-    String SHARED_MODE = "SHARED";
-    String EXCLUSIVE_MODE = "EXCLUSIVE";
+    private final ResourceType resourceType;
+    private final LockType lockType;
+    private final long resourceId;
 
-    String mode();
-
-    ResourceType resourceType();
-
-    long resourceId();
-
-    static ActiveLock exclusiveLock( ResourceType resourceType, long resourceId )
+    public ActiveLock( ResourceType resourceType, LockType lockType, long resourceId )
     {
-        return new Implementation( resourceType, resourceId )
-        {
-            @Override
-            public String mode()
-            {
-                return EXCLUSIVE_MODE;
-            }
-        };
+        this.resourceType = resourceType;
+        this.lockType = lockType;
+        this.resourceId = resourceId;
     }
 
-    static ActiveLock sharedLock( ResourceType resourceType, long resourceId )
+    public ResourceType resourceType()
     {
-        return new Implementation( resourceType, resourceId )
-        {
-            @Override
-            public String mode()
-            {
-                return SHARED_MODE;
-            }
-        };
+        return resourceType;
     }
 
-    interface Factory
+    public long resourceId()
     {
-        Factory SHARED_LOCK = ActiveLock::sharedLock;
-        Factory EXCLUSIVE_LOCK = ActiveLock::exclusiveLock;
-
-        ActiveLock create( ResourceType resourceType, long resourceId );
+        return resourceId;
     }
 
-    abstract class Implementation implements ActiveLock
+    public LockType lockType()
     {
-        private final ResourceType resourceType;
-        private final long resourceId;
+        return lockType;
+    }
 
-        private Implementation( ResourceType resourceType, long resourceId )
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
         {
-            this.resourceType = resourceType;
-            this.resourceId = resourceId;
+            return true;
         }
+        if ( !(o instanceof ActiveLock) )
+        {
+            return false;
+        }
+        ActiveLock that = (ActiveLock) o;
+        return resourceId == that.resourceId() && Objects.equals( lockType(), that.lockType() ) && Objects.equals( resourceType, that.resourceType() );
+    }
 
-        @Override
-        public ResourceType resourceType()
-        {
-            return resourceType;
-        }
-
-        @Override
-        public long resourceId()
-        {
-            return resourceId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( !(o instanceof ActiveLock) )
-            {
-                return false;
-            }
-            ActiveLock that = (ActiveLock) o;
-            return resourceId == that.resourceId() &&
-                    Objects.equals( mode(), that.mode() ) &&
-                    Objects.equals( resourceType, that.resourceType() );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( resourceType, resourceId, mode() );
-        }
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( resourceType, resourceId, lockType );
     }
 }

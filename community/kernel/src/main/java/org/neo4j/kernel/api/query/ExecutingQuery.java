@@ -378,7 +378,7 @@ public class ExecutingQuery
     private LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long[] resourceIds )
     {
         WaitingOnLockEvent event = new WaitingOnLockEvent(
-                lockType.getDescription(),
+                lockType,
                 resourceType,
                 resourceIds,
                 this,

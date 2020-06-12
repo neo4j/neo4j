@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 
@@ -373,8 +374,8 @@ public class CommunityLockClient implements Locks.Client
     public Stream<ActiveLock> activeLocks()
     {
         List<ActiveLock> locks = new ArrayList<>();
-        exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, ActiveLock.Factory.EXCLUSIVE_LOCK ) );
-        sharedLocks.forEachKeyValue( collectActiveLocks( locks, ActiveLock.Factory.SHARED_LOCK ) );
+        exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, EXCLUSIVE ) );
+        sharedLocks.forEachKeyValue( collectActiveLocks( locks, SHARED ) );
         return locks.stream();
     }
 
@@ -398,13 +399,12 @@ public class CommunityLockClient implements Locks.Client
         }
     }
 
-    private static IntObjectProcedure<LongObjectMap<LockResource>> collectActiveLocks(
-            List<ActiveLock> locks, ActiveLock.Factory activeLock )
+    private static IntObjectProcedure<LongObjectMap<LockResource>> collectActiveLocks( List<ActiveLock> locks, LockType lockType )
     {
         return ( typeId, exclusive ) ->
         {
             ResourceType resourceType = ResourceTypes.fromId( typeId );
-            exclusive.forEachKeyValue( ( resourceId, lock ) -> locks.add( activeLock.create( resourceType, resourceId ) ) );
+            exclusive.forEachKeyValue( ( resourceId, lock ) -> locks.add( new ActiveLock( resourceType, lockType, resourceId ) ) );
         };
     }
 

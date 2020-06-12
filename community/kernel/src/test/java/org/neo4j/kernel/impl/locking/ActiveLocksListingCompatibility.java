@@ -25,12 +25,11 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.locking.ActiveLock.exclusiveLock;
-import static org.neo4j.kernel.impl.locking.ActiveLock.sharedLock;
 import static org.neo4j.lock.ResourceTypes.LABEL;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
@@ -55,12 +54,12 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         // then
         assertEquals(
                 new HashSet<>( asList(
-                        exclusiveLock( NODE, 1 ),
-                        exclusiveLock( NODE, 2 ),
-                        exclusiveLock( NODE, 3 ),
-                        sharedLock( NODE, 3 ),
-                        sharedLock( NODE, 4 ),
-                        sharedLock( NODE, 5 ) ) ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 1 ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 2 ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 3 ),
+                        new ActiveLock( NODE, LockType.SHARED, 3 ),
+                        new ActiveLock( NODE, LockType.SHARED, 4 ),
+                        new ActiveLock( NODE, LockType.SHARED, 5 ) ) ),
                 locks.collect( toSet() ) );
     }
 
