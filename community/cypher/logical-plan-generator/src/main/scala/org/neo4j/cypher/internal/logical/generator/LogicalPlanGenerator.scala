@@ -45,7 +45,9 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -219,6 +221,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(aggregation(state)),
     Gen.lzy(distinct(state)),
     Gen.lzy(optional(state)),
+    Gen.lzy(sort(state)),
   )
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -338,6 +341,16 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     WithState(source, state) <- innerLogicalPlan(state)
   } yield {
     val plan = Optional(source, state.arguments)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def sort(state: State): Gen[WithState[Sort]] = for {
+    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
+    columns <- Gen.atLeastOne(source.availableSymbols)
+    orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
+  } yield {
+    val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
+    val plan = Sort(source, orderedColumns)(state.idGen)
     annotate(plan, state)
   }
 
