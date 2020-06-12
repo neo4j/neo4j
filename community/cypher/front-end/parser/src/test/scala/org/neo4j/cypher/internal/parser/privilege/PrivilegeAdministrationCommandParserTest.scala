@@ -78,6 +78,14 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
         Some(ast.Skip(literalInt(-1)) _), None) _
       yields(ast.ShowPrivileges(privilege, Some(columns), None, None))
     }
+
+    test(s"SHOW $privType PRIVILEGES YIELD access, action SKIP 1 RETURN access, action") {
+      failsToParse
+    }
+
+    test(s"SHOW $privType PRIVILEGES YIELD access, action WHERE access = 'none' RETURN action") {
+      failsToParse
+    }
   }}
 
   test("SHOW USER user PRIVILEGES") {

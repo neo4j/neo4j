@@ -73,6 +73,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
         Some(ast.Skip(literalInt(-1)) _), None) _
       yields(privilege(Some(columns), None, None))
     }
+
+    test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
+      failsToParse
+    }
+
+    test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
+      failsToParse
+    }
   }
 
   test("SHOW DATABASE `foo.bar`") {

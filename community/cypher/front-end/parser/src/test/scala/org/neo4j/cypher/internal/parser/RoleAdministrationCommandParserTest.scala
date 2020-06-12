@@ -41,6 +41,14 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowRoles(withUsers = false, showAll = true, None, Some(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_), None))
   }
 
+  test("SHOW ALL ROLES YIELD role RETURN role") {
+    failsToParse
+  }
+
+  test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
+    failsToParse
+  }
+
   test("CATALOG SHOW POPULATED ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = false, None, None, None))
   }
