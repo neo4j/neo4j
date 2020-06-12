@@ -43,12 +43,6 @@ package org.neo4j.lock;
  */
 public interface LockService
 {
-    enum LockType
-    {
-        READ_LOCK,
-        WRITE_LOCK
-    }
-
     Lock acquireNodeLock( long nodeId, LockType type );
 
     Lock acquireRelationshipLock( long relationshipId, LockType type );

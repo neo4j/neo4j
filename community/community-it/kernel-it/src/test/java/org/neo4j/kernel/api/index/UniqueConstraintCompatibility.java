@@ -26,8 +26,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +42,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -52,12 +49,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.lock.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -648,13 +645,13 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // read lock on the node we just created, and then initiate our commit.
         Lock lockBlockingDataChangeTransaction = getLockService().acquireNodeLock(
                 blockDataChangeTransactionOnLockOnId,
-                LockType.WRITE_LOCK );
+                LockType.EXCLUSIVE );
 
         // Before we begin creating the constraint, we take a write lock on an
         // "earlier" node, to hold up the populator for the constraint index.
         Lock lockBlockingIndexPopulator = getLockService().acquireNodeLock(
                 blockPopulatorOnLockOnId,
-                LockType.WRITE_LOCK );
+                LockType.EXCLUSIVE );
 
         // This thread tries to create a constraint. It should block, waiting for it's
         // population job to finish, and it's population job should in turn be blocked
@@ -939,10 +936,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         return node == a ? "a" : node == b ? "b" : node == c ? "c" : node == d ? "d" : "n";
     }
-
-    // -- Set Up: Advanced transaction handling
-
-    private final Map<Transaction,KernelTransaction> txMap = new IdentityHashMap<>();
 
     // -- Set Up: Misc. sharp tools
 

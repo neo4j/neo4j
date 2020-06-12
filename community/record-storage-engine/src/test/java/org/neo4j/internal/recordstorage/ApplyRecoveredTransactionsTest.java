@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -120,8 +121,8 @@ class ApplyRecoveredTransactionsTest
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
         LockService lockService = mock( LockService.class );
-        when( lockService.acquireNodeLock( anyLong(), any( LockService.LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
-        when( lockService.acquireRelationshipLock( anyLong(), any( LockService.LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
+        when( lockService.acquireNodeLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
+        when( lockService.acquireRelationshipLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
         Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
         for ( IdType idType : IdType.values() )
         {

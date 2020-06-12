@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.lock.LockService.LockType.READ_LOCK;
+import static org.neo4j.lock.LockType.SHARED;
 
 /**
  * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for label index}
@@ -50,7 +50,7 @@ public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntit
             int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,
-                id -> locks.acquireNodeLock( id, READ_LOCK ), cursorTracer, memoryTracker );
+                id -> locks.acquireNodeLock( id, SHARED ), cursorTracer, memoryTracker );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;

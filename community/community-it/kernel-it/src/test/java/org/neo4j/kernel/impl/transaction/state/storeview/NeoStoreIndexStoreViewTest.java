@@ -83,6 +83,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -238,9 +239,9 @@ class NeoStoreIndexStoreViewTest
         assertNotNull( lock0, "Lock[node=0] never acquired" );
         assertNotNull( lock1, "Lock[node=1] never acquired" );
         InOrder order = inOrder( locks, lock0, lock1 );
-        order.verify( locks ).acquireNodeLock( 0, LockService.LockType.READ_LOCK );
+        order.verify( locks ).acquireNodeLock( 0, SHARED );
         order.verify( lock0 ).release();
-        order.verify( locks ).acquireNodeLock( 1, LockService.LockType.READ_LOCK );
+        order.verify( locks ).acquireNodeLock( 1, SHARED );
         order.verify( lock1 ).release();
     }
 
@@ -263,9 +264,9 @@ class NeoStoreIndexStoreViewTest
         assertNotNull( lock0, "Lock[relationship=0] never acquired" );
         assertNotNull( lock1, "Lock[relationship=1] never acquired" );
         InOrder order = inOrder( locks, lock0, lock1 );
-        order.verify( locks ).acquireRelationshipLock( 0, LockService.LockType.READ_LOCK );
+        order.verify( locks ).acquireRelationshipLock( 0, SHARED );
         order.verify( lock0 ).release();
-        order.verify( locks ).acquireRelationshipLock( 1, LockService.LockType.READ_LOCK );
+        order.verify( locks ).acquireRelationshipLock( 1, SHARED );
         order.verify( lock1 ).release();
     }
 

@@ -32,6 +32,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.lock.LockType.SHARED;
 
 /**
  * Scan the relationship store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for relationship type index}
@@ -49,7 +50,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
-                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ), cursorTracer, memoryTracker );
+                id -> locks.acquireRelationshipLock( id, SHARED ), cursorTracer, memoryTracker );
         this.relationshipTypeUpdateVisitor = relationshipTypeUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.relationshipTypeIds = relationshipTypeIds;

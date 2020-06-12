@@ -33,7 +33,7 @@ import static java.util.concurrent.locks.LockSupport.getBlocker;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.lock.LockService.LockType.WRITE_LOCK;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 class ReentrantLockServiceTest
 {
@@ -70,9 +70,9 @@ class ReentrantLockServiceTest
     @Test
     void shouldAllowReEntrance()
     {
-        var lock = locks.acquireNodeLock( 11, WRITE_LOCK );
-        var lock2 = locks.acquireNodeLock( 11, WRITE_LOCK );
-        var lock3 = locks.acquireNodeLock( 11, WRITE_LOCK );
+        var lock = locks.acquireNodeLock( 11, EXCLUSIVE );
+        var lock2 = locks.acquireNodeLock( 11, EXCLUSIVE );
+        var lock3 = locks.acquireNodeLock( 11, EXCLUSIVE );
     }
 
     @Test
@@ -85,11 +85,11 @@ class ReentrantLockServiceTest
         try
         {
             var threadHolder = new AtomicReference<Thread>();
-            try ( var lock = locks.acquireNodeLock( 17, WRITE_LOCK ) )
+            try ( var lock = locks.acquireNodeLock( 17, EXCLUSIVE ) )
             {
                 executor.execute( () -> {
                     threadHolder.set( currentThread() );
-                    locks.acquireNodeLock( 17, WRITE_LOCK );
+                    locks.acquireNodeLock( 17, EXCLUSIVE );
                 } );
 
                 while ( true )
@@ -116,7 +116,7 @@ class ReentrantLockServiceTest
     void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased()
     {
         // when
-        locks.acquireNodeLock( 42, WRITE_LOCK ).release();
+        locks.acquireNodeLock( 42, EXCLUSIVE ).release();
 
         // then
         assertEquals( 0, locks.lockCount() );
@@ -131,13 +131,13 @@ class ReentrantLockServiceTest
 
         // when
         var currentThread = currentThread();
-        try ( Lock lock = first = locks.acquireNodeLock( 666, WRITE_LOCK ) )
+        try ( Lock lock = first = locks.acquireNodeLock( 666, EXCLUSIVE ) )
         {
             // then
             assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
 
             // when
-            try ( Lock inner = second = locks.acquireNodeLock( 666, WRITE_LOCK ) )
+            try ( Lock inner = second = locks.acquireNodeLock( 666, EXCLUSIVE ) )
             {
                 assertEquals( "LockedNode[id=666; HELD_BY=2*" + currentThread + "]", lock.toString() );
                 assertEquals( lock.toString(), inner.toString() );

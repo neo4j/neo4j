@@ -122,6 +122,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -855,19 +856,19 @@ class TransactionRecordStateTest
 
         // then
         // create node, NodeCommand == 1 update
-        verify( locks ).acquireNodeLock( nodes[0], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[0], EXCLUSIVE );
         // add label, NodeCommand == 1 update
-        verify( locks ).acquireNodeLock( nodes[1], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[1], EXCLUSIVE );
         // add property, NodeCommand and PropertyCommand == 2 updates
-        verify( locks, times( 2 ) ).acquireNodeLock( nodes[2], LockService.LockType.WRITE_LOCK );
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[2], EXCLUSIVE );
         // update property, in place, PropertyCommand == 1 update
-        verify( locks ).acquireNodeLock( nodes[3], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[3], EXCLUSIVE );
         // remove property, updates the Node and the Property == 2 updates
-        verify( locks, times( 2 ) ).acquireNodeLock( nodes[4], LockService.LockType.WRITE_LOCK );
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[4], EXCLUSIVE );
         // delete node, single NodeCommand == 1 update
-        verify( locks ).acquireNodeLock( nodes[5], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[5], EXCLUSIVE );
         // create and add-label goes into the NodeCommand, add property is a PropertyCommand == 2 updates
-        verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], LockService.LockType.WRITE_LOCK );
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], EXCLUSIVE );
     }
 
     @Test

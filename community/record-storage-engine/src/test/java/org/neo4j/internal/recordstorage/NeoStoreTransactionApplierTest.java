@@ -85,6 +85,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -168,7 +169,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( command.getKey(), EXCLUSIVE );
         verify( nodeStore ).updateRecord( eq( after ), any(), any() );
     }
 
@@ -190,7 +191,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( command.getKey(), EXCLUSIVE );
         verify( nodeStore ).updateRecord( eq( after ), any(), any() );
     }
 
@@ -212,7 +213,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( command.getKey(), EXCLUSIVE );
         verify( nodeStore ).setHighestPossibleIdInUse( after.getId() );
         verify( nodeStore ).updateRecord( eq( after ), any(), any() );
         verify( dynamicLabelStore ).setHighestPossibleIdInUse( three.getId() );
@@ -239,7 +240,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( command.getKey(), EXCLUSIVE );
         verify( nodeStore ).updateRecord( eq( after ), any(), any() );
     }
 
@@ -325,7 +326,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( 42, EXCLUSIVE );
         verify( propertyStore ).updateRecord( eq( after ), any(), any() );
     }
 
@@ -345,7 +346,7 @@ class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
+        verify( lockService ).acquireNodeLock( 42, EXCLUSIVE );
         verify( propertyStore ).setHighestPossibleIdInUse( after.getId() );
         verify( propertyStore ).updateRecord( eq( after ), any(), any() );
     }
@@ -668,7 +669,7 @@ class NeoStoreTransactionApplierTest
     }
 
     @Test
-    void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem() throws Exception
+    void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
     {
         // given
         var batchContext = mock( BatchContext.class );

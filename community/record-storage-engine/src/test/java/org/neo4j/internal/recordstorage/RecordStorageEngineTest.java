@@ -73,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -192,7 +193,7 @@ class RecordStorageEngineTest
         long nodeId = 5;
         LockService lockService = mock( LockService.class );
         Lock nodeLock = mock( Lock.class );
-        when( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) ).thenReturn( nodeLock );
+        when( lockService.acquireNodeLock( nodeId, EXCLUSIVE ) ).thenReturn( nodeLock );
         Consumer<Boolean> applierCloseCall = mock( Consumer.class ); // <-- simply so that we can use InOrder mockito construct
         CapturingTransactionApplierFactoryChain applier = new CapturingTransactionApplierFactoryChain( applierCloseCall );
         RecordStorageEngine engine = recordStorageEngineBuilder()
@@ -216,7 +217,7 @@ class RecordStorageEngineTest
 
         // then
         InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
-        inOrder.verify( lockService ).acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
+        inOrder.verify( lockService ).acquireNodeLock( nodeId, EXCLUSIVE );
         inOrder.verify( applierCloseCall ).accept( true );
         inOrder.verify( nodeLock ).release();
         inOrder.verifyNoMoreInteractions();
