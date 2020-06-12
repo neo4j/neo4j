@@ -111,7 +111,7 @@ class NodeCheckerIT
         nodeChecker.check( LongRange.range( 0, nodeId + 1 ), true, false );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 10 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 8 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 10 );
         assertThat( pageCacheTracer.hits() ).isEqualTo( 10 );
     }
 
