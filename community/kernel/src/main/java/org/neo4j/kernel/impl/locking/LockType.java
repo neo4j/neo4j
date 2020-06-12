@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.locking;
 /**
  * Enum defining the <CODE>READ</CODE> lock and the <CODE>WRITE</CODE> lock.
  */
+// TODO:remove
 public enum LockType
 {
     READ, WRITE

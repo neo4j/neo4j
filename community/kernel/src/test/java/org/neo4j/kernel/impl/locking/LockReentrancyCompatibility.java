@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.Future;
 
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -247,9 +248,8 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         }
 
         @Override
-        public void visit( ResourceType resourceType, long resourceId, String description,
-                long estimatedWaitTime,
-                long lockIdentityHashCode )
+        public void visit( ResourceType resourceType, long resourceId, LockType lockType, String description,
+                long estimatedWaitTime, long lockIdentityHashCode )
         {
             if ( this.resourceType.equals( resourceType ) && this.resourceId == resourceId )
             {

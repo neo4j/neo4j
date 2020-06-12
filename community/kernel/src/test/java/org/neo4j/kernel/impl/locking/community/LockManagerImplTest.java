@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
+import static org.neo4j.lock.LockType.SHARED;
 
 class LockManagerImplTest
 {
@@ -38,8 +40,8 @@ class LockManagerImplTest
     void shouldAllowGetReadWriteLocks()
     {
         // given
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
-        LockResource node2 = new LockResource( ResourceTypes.NODE, 2L );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, SHARED, 1L );
+        LockResource node2 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 2L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
 
@@ -60,7 +62,7 @@ class LockManagerImplTest
     void shouldNotBePossibleReleaseNotExistingLock()
     {
         // given
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, SHARED, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
 
@@ -72,7 +74,7 @@ class LockManagerImplTest
     void shouldCleanupNotUsedLocks()
     {
         // given
-        LockResource node = new LockResource( ResourceTypes.NODE, 1L );
+        LockResource node = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
         lockManager.getWriteLock( LockTracer.NONE, node, lockTransaction );
@@ -99,7 +101,7 @@ class LockManagerImplTest
     {
 
         // given
-        LockResource node = new LockResource( ResourceTypes.NODE, 1L );
+        LockResource node = new LockResource( ResourceTypes.NODE, SHARED, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         RWLock rwLock = Mockito.mock( RWLock.class );
         LockManagerImpl lockManager = new MockedLockLockManager( new RagManager(), rwLock );

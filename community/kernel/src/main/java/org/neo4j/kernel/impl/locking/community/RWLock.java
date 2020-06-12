@@ -219,7 +219,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( false, resource.type(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( false, resource.resourceType(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
@@ -407,7 +407,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( true, resource.type(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( true, resource.resourceType(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
@@ -717,7 +717,7 @@ public class RWLock
         {
             if ( timeBoundary < clock.millis() )
             {
-                throw new LockAcquisitionTimeoutException( resource.type(), resource.resourceId(),
+                throw new LockAcquisitionTimeoutException( resource.resourceType(), resource.resourceId(),
                         lockAcquisitionTimeoutMillis );
             }
         }

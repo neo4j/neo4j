@@ -19,21 +19,26 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.util.Objects;
+
 import org.neo4j.internal.helpers.MathUtil;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
 public class LockResource
 {
     private final ResourceType resourceType;
+    private final LockType lockType;
     private final long resourceId;
 
     /** Local reference count, used for each client to count references to a lock. */
     private int refCount = 1;
 
-    public LockResource( ResourceType resourceType, long resourceId )
+    public LockResource( ResourceType resourceType, LockType lockType, long resourceId )
     {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
+        this.lockType = lockType;
     }
 
     @Override
@@ -47,24 +52,20 @@ public class LockResource
         {
             return false;
         }
-
         LockResource that = (LockResource) o;
-        return resourceId == that.resourceId && resourceType.equals( that.resourceType );
-
+        return resourceId == that.resourceId && refCount == that.refCount && resourceType.equals( that.resourceType ) && lockType == that.lockType;
     }
 
     @Override
     public int hashCode()
     {
-        int result = resourceType.hashCode();
-        result = 31 * result + (int) (resourceId ^ (resourceId >>> 32));
-        return result;
+        return Objects.hash( resourceType, resourceId, lockType, refCount );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "%s(%d)", resourceType, resourceId );
+        return String.format( "%s %s(%d)", resourceType, lockType, resourceId );
     }
 
     public void acquireReference()
@@ -82,8 +83,13 @@ public class LockResource
         return resourceId;
     }
 
-    public ResourceType type()
+    public ResourceType resourceType()
     {
         return resourceType;
+    }
+
+    public LockType getLockType()
+    {
+        return lockType;
     }
 }

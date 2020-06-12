@@ -44,7 +44,8 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 
 import static java.lang.String.format;
-
+import static org.neo4j.lock.LockType.EXCLUSIVE;
+import static org.neo4j.lock.LockType.SHARED;
 
 // Please note. Except separate test cases for particular classes related to community locking
 // see also org.neo4j.kernel.impl.locking.community.CommunityLocksCompatibility test suite
@@ -101,7 +102,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, resourceId );
+                    resource = new LockResource( resourceType, SHARED, resourceId );
                     if ( manager.getReadLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -135,7 +136,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, resourceId );
+                    resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
                     if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -168,7 +169,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, resourceId );
+                resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
                 if ( manager.tryWriteLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -201,7 +202,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, resourceId );
+                resource = new LockResource( resourceType, SHARED, resourceId );
                 if ( manager.tryReadLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -274,7 +275,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                    manager.releaseReadLock( new LockResource( resourceType, SHARED, resourceId ), lockTransaction );
                 }
             }
         }
@@ -297,7 +298,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                    manager.releaseWriteLock( new LockResource( resourceType, EXCLUSIVE, resourceId ), lockTransaction );
                 }
             }
         }

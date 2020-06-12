@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.lock;
 
-import org.neo4j.lock.LockType;
-import org.neo4j.lock.ResourceType;
-
-public class LockCountVisitor implements Locks.Visitor
+public enum LockType
 {
-    private int lockCount;
+    SHARED( "Shared" ),
+    EXCLUSIVE( "Exclusive" );
 
-    @Override
-    public void visit( ResourceType resourceType, long resourceId, LockType lockType, String description, long estimatedWaitTime,
-            long lockIdentityHashCode )
+    private final String description;
+
+    LockType( String description )
     {
-        lockCount++;
+        this.description = description;
     }
 
-    public int getLockCount()
+    public String getDescription()
     {
-        return lockCount;
+        return description;
     }
 }
