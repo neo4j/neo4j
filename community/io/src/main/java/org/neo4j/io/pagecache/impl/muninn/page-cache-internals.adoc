@@ -1,0 +1,628 @@
+:toc:
+:sectanchors:
+= Muninn Page Cache Architecture and Internals
+
+A page cache buffers store file data in memory for fast access.
+It provides a single-level view of data, so data that is in or out of memory is accessed in the same way.
+The Muninn page cache is an implementation of this concept.
+The name "Muninn" derives from the old-norse word for memory, and is also the name of one of Odins ravens.
+
+This document outlines the architecture of the Muninn page cache, and describes each of its constituent components.
+
+== Overview
+
+A single page cache instance manage the memory we use for caching store file contents.
+The cache organises the memory into pages.
+All pages have the same size (see `PageCache.PAGE_SIZE`) and each page has a _page frame_ in the _page list_.
+The page frame has a lock word, a pointer to the page buffer, a page usage counter, and meta-data about the _page binding_.
+The page binding says what part of what file (if any) the buffer is bound to.
+
+Multiple files can be mapped by the cache, and there is a paged file object for each such mapping.
+The mapped file is itself split into equal-sized pages, starting with page 0 and file byte offset 0.
+A _file page size_ setting determines the size of the file pages for each file.
+The file page size is always less than or equal to the _cache page size_.
+The configurable file page size means we can map record-based files with buffers that are sized as whole multiples of the record size.
+
+To read from or write to the paged file, you open a page cursor.
+A page cursor has methods for navigating to pages by their id, and methods for reading from and writing to pages.
+The cursor takes care to bounds check all accesses to the page buffer.
+The cursor also takes care of locking the pages.
+If a file page is not present in the cache, the cursor will automatically fault that page in, when the cursor navigates to that page.
+The swapper in a paged file is used for doing the actual IO, when reading or writing pages.
+
+The cache distributes the memory across the mapped files based on demand.
+This is called demand-paging, and it means there's no correlation between where a page is in a file, and where it's placed in memory.
+To deal with this, a paged file contain a translation table, which maps a file page id to its index in the page list.
+
+[ditaa]
+----
++---------------------+       +---------------------+          +---------------------+
+|     PageCursor      |       |      PagedFile      |          |      PageCache      |
+|     (multiple)      |       |     (multiple)      |          |     (singleton)     |
+|                     |       |                     |          |                     |
+|                     |       |  +---------------+  |          |                     |
+|   page navigation   |       |  |    swapper    |  |          |                     |
+|                     |       |  +---------------+  |          |  +---------------+  |
+|   page read/write   |       |                     |          |  |   PageList    |  |
+|                     |       |  +---------------+  |          |  |               |  |
+|                     |       |  |  Translation  |  |          |  |     frame     |  |
+|                     +------>|  |     Table     |  |          |  |     frame     |  |
+|                     |       |  |               |  |          |  |       :       |  |
+|                     |       |  |     entry     |  |          |  |       :       |  |
+|                     |       |  |     entry     +--------------->|       :       |  |
+|                     |       |  |       :       |  |          |  |       :       |  |
+|                     |       |  |       :       |  |          |  |       :       |  |
+|                     |       |  |       :       |  |          |  |       :       |  |
+|                     |       |  |     entry     |  |          |  |     frame     |  |
+|                     |       |  +---------------+  |          |  +---------------+  |
+|                     |       |                     |          |                     |
++---------------------+       +---------------------+          +---------------------+
+----
+
+== CLOCK Page Replacement Algorithm
+
+When the store, and the working set, is greater than the memory available to the page cache, pages will have to be swapped to service the demand.
+The page replacement algorithm we use in Muninn is called CLOCK.
+Imagine the page list is wound along the circumference of a clock face.
+A clock arm moves around the list in a circular fashion, jumping back to the start when it gets to the end.
+The clock arm decrements the usage counter of the page frames it lands on, as it moves around the page list.
+When the usage counter reaches zero, the page is evicted.
+Conversely, every time a page cursor _pins_ a page, the usage counter is incremented, up to a maximum value of 4.
+This algorithm approximates _Least Recently Used (LRU)_, but has very low overhead in both memory and CPU usage.
+
+[qanda]
+Why does the usage counter only go up to 4?::
+    This is a trade-off between how quickly we can pick a page to evict, and thus respond to a request for a free page, and how accurately we wish to approximate LRU.
+    Since graph traversal often exhibits fairly random and unpredictable access patterns, we've opted for a small value.
+    See `PageList.MAX_USAGE_COUNT`.
+
+What moves the clock arm?::
+    In our implementation the clock arm is moved by the demand for free pages, that is, demand for eviction.
+    We have a background eviction thread which maintains a free-list of available pages.
+    The thread monitors the length of this list, and will evict pages (and add them to the free-list) if there are less than 30 free pages available.
+
+What drives demand for eviction?::
+    When a thread wishes to access a page that is not in memory, it will have to do a _page fault_.
+    A page fault involves reading the relevant data from the file into a page buffer in memory.
+    To do this, a free page (not used for anything else; not bound to anything else) is required.
+
+What if the background eviction thread cannot keep up?::
+    If this background thread cannot keep up, then the page faulting threads will see this as an empty free-list.
+    To avoid waiting, the page faulting thread will then do a _cooperative eviction_.
+    In a cooperative eviction, a clock arm is placed at a _random_ index into the page list.
+    This clock arm is then advanced until the usage counter of a page reaches 0, and a page is evicted.
+    See `MuninnPageCache.grabFreeAndExclusivelyLockedPage`.
+
+[NOTE]
+====
+The CLOCK algorithm was primarily chosen for how efficiently it could be implemented.
+There are other page replacement algorithms that make better replacement decisions, but it's hard to do so while keep the overhead low.
+One algorithm that may be worth considering in the future, is the one described in the LeanStore paper.
+In LeanStore, cold pages, or eviction candidates, are tracked instead of tracking the hotness of every page.
+====
+
+== PageList
+
+The _page list_ is an array of page frames that exists entirely off-heap.
+There is only one page list per page cache, since it represents the pages and their memory, which is managed by the page cache.
+
+The PageList object itself only contains a pointer to this off-heap array.
+This makes simple copy-constructors of the PageList object (not the list itself) possible.
+The MuninnPagedFile objects extend the PageList, so they can directly access the shared list, instead of going through further memory indirections.
+
+The page frames are allocated as soon as the page cache is created, but the page buffers they reference are not allocated until the page is used in a page fault for the first time.
+This means most of our page cache memory is lazily allocated, and we avoid wasting memory when a larger than strictly necessary page cache is configured.
+
+The PageList class acts as a facade to accessing and manipulating the page list and the page frames it contains.
+See the javadocs on the PageList class for more information about the information stored in each page frame.
+
+== PagedFiles
+
+The PagedFile object is a handle to a file managed by the page cache.
+When a file is mapped by the page cache, care must be taken to not access the file directly, because the page cache may flush dirty pages at any time.
+
+The PagedFile offers the ability to create page cursors for interacting with the file contents.
+To do this, the paged file manages a translation table, and holds on to a page swapper which implements the logic for doing file IO.
+The paged file also has a LatchMap, which is used to coordinate page faults.
+
+=== TranslationTable
+
+Files that are managed by the page cache are represented as a sequential list of file pages, starting from page 0, until the end of the file.
+These pages are faulted into memory in an arbitrary order, and so the order of the pages in the file has no correlation with the order of pages in memory.
+Therefor, each file needs a table that can translate the sequantial file page ids into the page list index where the given page is placed in memory, or otherwise indicate if the page is not in memory.
+
+This is what the translation table in the paged file does:
+Translate file page ids, into page list indexes.
+And based on page list indexes, we can get page references (often `pageRef` in the code), which are direct pointers to the page frames in the page list.
+
+[NOTE]
+====
+In principle, the translation table _could_ translate directly into page references, aka. pointers to page frames.
+However, such pointers would require 64-bits to store, while an index into the page list only require 32-bits.
+Thus, by adding the step of dereferencing the page list indexes to page references, the amount of memory used by the translation table is cut in half.
+====
+
+The translation table is implemented as a concurrent 2-trie.
+It is a trie because the key (the file page id) describe the path from the root to the relevant leaf.
+The 2-trie is so-called because it only has 2 levels: a root-array that points to arrays of leaf entries.
+Each entry is an int, with a special value for unmapped pages.
+Thus the trie is an array of int arrays.
+The second level arrays, called chunks, are always the same size.
+The capacity of the trie is increased by increasing the branching factor of the root node.
+Expanding the capacity of the root node happens under a lock.
+It works by creating a new, larger array for the root node, and then copying all of its references to the new root, and allocating new arrays at the end.
+Then finally publishing the new root node with a volatile write to the translation table field.
+
+[ditaa]
+----
+      +------+                  +------+
+----->|      +----------------->|      |
+      |      +-----------+      | Leaf |
+      |      +-------+   |      |      |
+      |      +---+   |   |   +--+---+--+
+      |      |   |   |   +-->|      |
+      | Root |   |   |       | Leaf |
+      |      |   |   |       |      |
+      |      |   |   |   +---+--+---+
+      |      |   |   +-->|      |
+      |      |   |       | Leaf |
+      |      |   |       |      |
+      +------+   |   +---+--+---+
+                 +-->|      |
+                     | Leaf |
+                     |      |
+                     +------+
+----
+
+Because the inner arrays are the same instances and in the previous root node, capacity expansions only need to coordinate with other expansions.
+There is no need for capacity expansion to coordinate with the threads that seek to read or modify the entries in the trie.
+This is because the root node is read-only once published, and all concurrent modifications happens in the second level arrays, which are shared between the old and the new root.
+
+We used to use striped, primitive hashmaps for this purpose.
+Striped, to spread the locking contention.
+The 2-trie turned out to be significantly faster, because it avoids locking in all cases except when expanding the capacity, and it has fewer memory indirections.
+
+Minimising the number of memory indirections, also known as dependent loads, is a design consideration in many places throughout the page cache code.
+These dependent loads happen when a load from memory cannot be started by the CPU, before another load has finished.
+For instance, to get an item from an ArrayList by index, we first have to read the array list object before we know where the internal array itself is placed in memory, and we cannot load from an index into the array before we know this.
+We care about these indirections because the page cache is some of the hottest code we have, and Neo4j is already often memory latency bound.
+
+=== PageSwapper
+
+The page swapper implements the logic for doing IO on the mapped file.
+When we do IO, we usually desire read or write a single buffer, or an array of buffers, to or from a particular offset into the file.
+On POSIX systems, this translates into either `pread(2)`, `pwrite(2)`, `readv(2)`, or `writev(2)` system calls.
+Linux also have `preadv(2)` and `pwritev(2)` system calls available, but these are not easily accessible from Java.
+Windows doesn't make any positioned system calls available.
+When we can't use a positioned system call for doing our IO, we have to `lseek(2)` to position the IO offset first, and then do non-positioned IO.
+This is problematic when we wish to read and write to the channel concurrently, from multiple threads.
+The Java FileChannel objects contain a positionLock object to deal with this.
+The trouble is, that this position lock is not exposed, so we have to use hacks to bring it out, so we can simulate the positioned IO calls on the platforms that don't have them.
+
+Another problem that can occur is that the file channels can be asynchronously closed by thread interrupts.
+An interrupt in Java is a signal to the thread to stop what it's doing.
+If the thread is stuck in some blocking operation, it will unblock and typically throw an exception.
+It turns out that the only portable way to get threads to return early from IO system calls, is to close the relevant file descriptor.
+This is why interrupting a thread that is doing IO will cause the file channel to be closed.
+We don't want our file channels to be closed, so our StoreChannel has a `tryMakeUninterruptible` method which will attempt to disable the close-file-on-interrupt mechanism via hacks.
+If the hacks don't work, for instance if the JDK has changed in unexpected ways, then we instead have to reopen the file channel when it is closed by an interrupt.
+The Retry class in the page swapper implements this logic in an abstract way, because it has to be applied to all methods that interact with the file channel.
+
+The page swapper is also in charge of receiving a callback from the page cache, when a page from its file is evicted.
+This callback is used for clearing the relevant translation table entry in the paged file.
+
+=== LatchMap
+
+The LatchMap is a component used by the paged files.
+Each MuninnPagedFile object has their own instance.
+The LatchMap coordinates page faults, such that only a single thread will fault in any specific page at a time.
+
+When a thread wishes to access a page, but finds that the page is not yet in memory, it will have to do a page fault.
+There might be other threads interested in the same page, and coming to the same conclusion, so the page faults needs to be coordinated.
+The LatchMap provides this coordination, via its `takeOrAwaitLatch` method.
+This method will atomically either install and return a latch for a given page id.
+Or wait for any exisitng latch to be released.
+If the method returns a latch, then the calling thread knows that it now holds the lock and is the only one allowed to proceed with faulting in the page in question.
+Once the page fault completes, the latch is released, allowing other threads to proceed.
+Their calls will then return null, and this signals that someone did a page fault for them, and they need to loop back and check the translation table for the page they're interested in.
+
+The LatchMap is implemented as an array of BinaryLatches.
+The latch instances are atomically installed into this array via a compare-and-set operation, and it is the success or failure of this operation that determines if a thread gets to go ahead with its page fault, or if it gets to wait for an existing on-going page fault to complete.
+The latch array has a fixed size of 128 entries by default.
+This is small enough to not consume much memory, yet large enough to have a low probability of collisions.
+Collisions can occur because the page id is hashed and truncated, in order to pick an index in the array for a given page id.
+The fixed size also means the LatchMap does not need any resize or rehash logic, which is complicated to get right in a concurrent hash map.
+If collisions do occur, then a waiting thread will just end up waiting for a page fault it isn't interested in.
+This will correct itself when the thread loops around and finds that the page it wants is still not present in the translation table.
+It can also occur that the page somehow gets evicted in between the page fault and the loop-around.
+It is not possible for a thread to tell which one these two scenarios have occurred, and it doesn't matter.
+If the translation table still doesn't have relevant entry, the thread will just try to grab the relevant latch again, and hope to start another page fault.
+This continues until the page fault succeeds one way or the other, or the paged file is closed.
+
+=== SwapperSet
+
+The SwapperSet maps swapper ids, which are ints, to page swappers, the component of the paged files that is in charge of doing IO when pages are flushed or faulted in.
+
+Every page frame in the page list needs to know what swapper to use in case the page needs to be evicted.
+However, since the page list is entirely off heap, it cannot refer to any objects.
+The swapper set maintains this mapping, between swapper ids and swapper objects.
+
+The swapper set is only modified when we map or unmap files, so it uses synchronisation (monitor locks) to coordinate changes.
+We need to resolve ids into swapper objects whenever we need to evict a page, however, so this operation is lock-free because it may happen very often.
+The lock-freedom of the `getAllocation` method is obtained from the volatile-load of the `swapperMappings` field.
+This field gets a volatile-store (usually with the same value) whenever an entry is changed in the array.
+This volatile-store synchronises-with the volatile-load in the `getAllocation` method.
+The SwapperMapping objects are also themselves immutable (all fields final), and this ensures that we have safe publication of `swapperMappings` changes even in the case where `getAllocation` races with the `allocate` method.
+
+The page frames in the page list only have 21 bits available for the swapper id.
+This limits the number of swapper ids to 2.097.151.
+We are likely to run out of available file descriptors due to operating system limits, before we run out of available swapper ids.
+However, it is a limit that may become relevant in the future, as people deploy multiple databases within a DBMS, and create ever larger number of native indexes.
+More importantly, though, is that files are mapped and unmapped at runtime.
+This mapping and unmappign churn swapper ids; each new mapping requires a new swapper id, and each unmapping frees up a swapper id.
+However, a swapper id cannot be reused until all pages bound to that file have been evicted.
+We don't immediately evict all pages for a given file when we unmap that file.
+These pages cannot be reused, should the same file be mapped again, because the file might have changed in the meantime, so every time we map a file we give the file a new swapper id.
+
+This churn is what might cause us to run out of swapper ids.
+To deal with this, we need to periodically vacuum the page list, and evict pages that are bound to swapper ids that have been freed.
+Only after we've vacuumed the page list, can we allow the freed swapper ids to be reused by future mappings.
+
+This process is implemented by the `free` and `vacuum` methods on the SwapperSet, and the `vacuum` method in the MuninnPageCache.
+The `free` method will mark the swapper id with a tombstone, and increment a call counter.
+Once `free` has been called 20 times, it will return `true` to indicate that the caller should consider calling the `vacuum` method on the SwapperSet.
+This decision is ultimately delegated to the MuninnPageCache in its `vacuum` method.
+If there are both lots of free pages and lots of free swapper ids, then we will not vacuum.
+
+== Free List
+
+The free list is a field in the MuninnPageCache object, and a data structure that keeps track of what pages are currently free.
+A page being free means that it is 1) exclusively locked, 2) contains _no_ dirty data that needs to be flushed, and 3) is immediately available for a page fault.
+
+The free list initially starts out as an AtomicInteger.
+This integer is used in `MuninnPageCache.grabFreeAndExclusivelyLockedPage` to atomically increment through the available indexes of the page list, effectively iterating the array.
+Every page fault will increment the atomic integer, and use the claimed index for their page fault, until all pages in the page list have been claimed this way.
+
+Once the page list has been exhausted (the atomic integer has been incremented to be the same as the size of the page list) then a state transition happens in the page cache.
+The atomic integer in the free list field gets replaced with `null`, and the free list field is now the head of a singly-linked list of FreePage objects.
+This transition is asynchronously noticed by the eviction thread, which then starts running and from then on continuously tries to keep 30 free pages in the free list.
+
+See the <<Background Eviction Process>> section for more details.
+
+== OffHeapPageLock
+
+The OffHeapPageLock class contain static methods that implements the locking we use on pages in the page cache.
+These locks are all non-blocking, which means there is no need for maintaining wait-lists for the locks, and the locks only need a 64-bit lock word for their internal state.
+This lock word is placed off-heap in the page frame objects in the page list, and the methods in the OffHeapPageLock class operate on these lock words by taking a pointer to the lock word as an argument.
+
+The OffHeapPageLock is a type of _sequence lock_, but with more lock modes, and non-exclusive writers.
+Sequence locks permit a locking mode called _optimistic read_, which doesn't block write locks.
+This is the only read lock mode available.
+The full list of lock modes supported by the page lock are as follows:
+
+- Optimistic read lock.
+  Invalidated by write and exclusive locks.
+- Shared write lock.
+  Invalidates read locks.
+  Raises dirty bit.
+  Excluded by the exclusive lock.
+- Flush lock.
+  Exclusive with other flush locks, and the exclusive lock.
+  Lowers dirty bit if there were no overlapping write locks.
+- Exclusive lock.
+  Excludes all other locks.
+
+The optimistic read lock works by capturing a "stamp" value of the lock word when the read lock is taken, and then comparing the state of the lock with the stamp when the lock is released.
+The stamp comparison will indicate whether the read-lock critical section overlapped with any write-lock critical section.
+If it did, then the read-lock is considered invalid, and the reads performed in the critical section were potentially inconsistent.
+If a reader got an inconsistent read-locked critical section, then they will have to try again in a loop until they are able to perform a valid read.
+This is what the `shouldRetry` method on the PageCursor does, along with resetting the state of the page cursor to what it was right after the last call to `next`.
+
+[CAUTION]
+====
+Because the read lock does not block writers, but only permits the detection of overlapping write locks, it is important that readers do not "interpret" the data they read more than what is strictly necessary.
+It is quite possible for inconsistent read locks to observe torn writes, or even access the page while it is being evicted or faulted into a different page.
+The onus is on the reader code to be robust in the face of reading arbitrary garbage from a read page cursor, until `shouldRetry` returns `false`.
+See the <<Victim Page>> section for how this interacts with bounds checking.
+====
+
+[ditaa]
+----
+             64-bit Lock Word
++-----------------------------------------+
+|FEM| write counter |      sequence       |
++-----------------------------------------+
+   ^      ^      ^                      ^
+   |   inc|      |dec                   |inc
+   +------+      +----------------+-----+
+   1      |                       |
+          +-----------------------+
+          | > write crit. sect. > |
+          +-----------------------+
+
+------------------------------------------>
+                     Time
+----
+
+In the picture above, the lock word is illustrated, along with the operations performed by a write-locking critical section.
+Beside the sequence and the write counter, the lock word also contain a flush-lock bit (F), an exclusive-lock bit (E), and a dirty aka. _modified_ bit (M).
+
+Whenever a write lock is taken or released, a write lock counter is incremented or decremented respectively, and a write lock sequence is incremented.
+The modified bit is also raised when a write lock is taken.
+More on that later.
+The write lock counter is embedded in the stamp, and if it is non-zero, then the stamp is invalid.
+The sequence is also embedded in the stamp, and if the sequence has changed between obtaining the stamp and its validation, then the stamp is invalid.
+This means that any write-locking critical section that in any way overlaps in time with a read-locking critical section, will invalidate that read-locking critical section.
+
+[ditaa]
+----
+         +-----------------------+
+         |         read          |
+         +-----------------------+
+          ^       ^             ^
+   invalid|       |invalid      |invalid
+          |       |             |
+   +------++     ++------+     ++------+
+   | write |     | write |     | write |
+   +-------+     +-------+     +-------+
+
+------------------------------------------>
+                     Time
+----
+
+The page lock differ from other types of locking, in that writers do not exclude each other.
+This means multiple writers can access a page at the same time, and potentially perform conflicting modifications.
+The page cache _assumes_ that integrating/calling code take their own measures to ensure that no such conflicts occur.
+For a record store file, this is ensured through the lock manager, and the transactional entity locks.
+The GBPTree, this is ensured by making the tree single-writer, so there is never more than a single thread modifying the tree at any one time.
+
+The page lock also coordinates writers, flushers, and the page dirty bit.
+There is a special flush-lock mode, which is exclusive with other flush locks, and the exclusive lock, but not with write or read locks.
+When the flush-lock is taken, it raises the flush-lock bit to exclude other flush-locks, and captures a stamp similar to what a read-lock would do.
+Flushing a page is effectively the storage sub-system performing a read of the in-memory state of the page buffer.
+When the flush-lock is released, it lowers the dirty bit _iff_ the stamp is valid.
+In other words, if there were any write-lock critical sections overlapping in time with the flush-lock, then the dirty bit is _not_ lowered.
+This ensures that any writes performed to a page concurrently with the flushing of that page, will leave the page dirty, in case they were not (or only partially) captured by the flush.
+
+The last locking mode is the exclusive lock mode.
+It is exclusive with all other lock modes.
+
+=== Optimistic Read-Locks and the Roach Motel Mental Model
+
+A _roach motel_ is a sticky trap for cockroaches.
+The trap contains an odorous lure, surrounded by sticky surfaces.
+The roaches are attracted to the smell of the lure, and enter the trap, where they are caught by the sticky glue.
+The roaches can enter the trap, but they cannot leave.
+
+This can be used as a metaphor, or mental model, for critical sections.
+
+I will skip the details of the Java Memory Model, and simply say that the compiler is allowed to reorder operations _into_ a critical section, but not out of it.
+Similar to how the roaches can enter the trap, but not leave.
+Effectively, the compiler is allowed to grow the `synchronized` block in the following code, to include the `x` and `y` operations:
+
+[source]
+----
+    x;
+    synchronized (this) {
+      a;
+      b;
+    }
+    y;
+----
+
+The Java Memory Model defines a volatile load to have the same memory effects as the start of a synchronized block, and a volatile write to have the same memory effects as the end of a synchronized block.
+
+In our optimistic read locks, the `tryOptimisticReadLock` method is implemented effectively as a volatile load.
+This automatically gives us the memory semantics we need for the start of a critical section.
+However, the `validateReadLock` method is _also_ implemented as a volatile load, because this mode of locking does not require any shared state mutation.
+This volatile load on its own is not sufficient for obtaining the memory effects we want for the end of a critical section.
+Therefor, the volatile load in the validation method is preceded by an `UnsafeUtil.loadFence()` call.
+The load fence prevents loads prior to the call from being reordered with loads and stores after the call.
+This means load operations can no longer leave the critical section of the optimistic read lock through reordering with the stamp validation.
+
+For more details, please see this concurrency-interest thread on the memory effects of the StampedLock optimistic read locks, which is implemented in a similar way as our optimistic read page locks:
+http://cs.oswego.edu/pipermail/concurrency-interest/2014-April/012599.html
+
+=== Locking Protocol for Eviction, Faulting and Flushing
+
+The page cache starts its life with all of its pages free, and exclusively locked.
+Free pages are always in an exclusively locked state, so any read locks that accidentally interact with them will be invalidated.
+Likewise, the exclusive lock prevents other exclusive locks (double-free bugs), and write- and flush-locks (effectively use-after-free bugs).
+
+Page *eviction* works through the following protocol:
+
+. First, it is checked that the page is _loaded_, and that the usage counter decrements to zero.
+  A page that isn't bound or loaded is free, and there is no point in evicting a free page.
+. Then the exclusive lock on a page is taken.
+. Then we check again that the page is still loaded.
+  This is a double-checked locking pattern, and ensures that we don't proceed with eviction on a page that got evicted in-between our first `isLoaded` check, and our taking the exclusive lock on the page.
+.. If the page is not loaded anymore, then we abort the eviction operation, and release the exclusive lock that we took.
+. If the page is dirty, it is flushed, and the dirty bit is explicitly lowered.
+  The flushing happens under the exclusive lock, so the dirty bit is not lowered automatically.
+  It is, on the other hand, safe to explicitly lower the dirty bit after this flush, because the exclusive lock prevents any overlapping writes.
+. Then the swapper is notified of the eviction.
+  This invokes a call-back in the associated paged file (the paged file that created the swapper) which clears the translation table entry by the file page id the page is currently bound to.
+.. From this point on, if a thread wishes to access the page, they will notice that the translation table has no entry for it, and they will start a page fault.
+.. If the paged file has been unmapped prior to our evicting this page, then we will find no relevant swapper instance in the swapper set, and we will instead skip the flushing and eviction call-back steps.
+. Then we clear the page binding.
+  This means the page is no longer loaded.
+. Finally, the page is either added to the free list (in case of background eviction), or returned to a page faulting thread (in case of cooperative eviction).
+
+See the `cooperativelyEvict` and `evictPages` methods in MuninnPageCache, and the `evict` method in PageList, for the code that implements the eviction protocol.
+
+[plantuml]
+----
+@startuml
+pc as "PageCache" -> pg as "Page": loaded?
+pc -> pg: lock exclusive
+pc -> pg: loaded?
+pc -> pg: dirty?
+    group if dirty
+    pc -> sw as "Swapper": flush(page buffer)
+    pc -> sw: evicted(file page id)
+    sw -> tt as "translation table": store UNMAPPED_TTE
+    end
+pc -> pg: clear binding
+pc -> "free list": add page
+@enduml
+----
+
+Page *faulting* works through the following protocol:
+
+. A thread wishes to access a page in a paged file, and has noticed that the translation table is either missing an entry for that page, or the referenced page is not bound to the expected file page.
+. The thread then tries to grab a latch in the <<LatchMap>> for the relevant file page id.
+.. The thread will then either wait for any on-going and potentially relevant page fault to complete, and then try again from the top, or...
+.. The thread got the latch and can proceed to do the page fault, because no other thread can at this point fault in this particular page.
+. We check again, under the latch, that the translation table entry is missing.
+  It could be that another thread completed a page fault in-between our first noticing the missing translation table entry, and our getting the latch.
+.. If the translation table entry is not the special `UNMAPPED_TTE` value, then we release the latch we got, and start over from the beginning.
+. The page fault is ready to start, and the first step is to get a free page to fault into.
+  The free page is obtained either from the free list, or, if the free list is empty, via cooperative eviction.
+  See the above bit about the eviction protocol for how that plays out.
+. The free page is obtained with an exclusive lock already being held on it.
+  The page faulting thread adopts ownership of this exclusive page lock, and is responsible for eventually releasing it.
+. The page fault then performs the necessary IO to read data into the page.
+.. If this step fails, then the page has its exclusive lock released before the page fault is aborted.
+   This ensures that eviction will eventually collect the page and free it again, returning it to an exclusively locked state.
+. The translation table is then updated with an entry for the page.
+. Then the exclusive lock is converted to either an optimistic read lock, or a write lock, depending on the type of page cursor performing the page fault.
+. Then finally the page fault latch is released, and the page fault is done.
+
+[plantuml]
+----
+@startuml
+cu as "PageCursor" -> tt as "translation table": lookup
+tt -> cu: UNMAPPED_TTE
+cu -> LatchMap: takeOrAwaitLatch
+cu -> tt: lookup
+tt -> cu: UNMAPPED_TTE
+cu -> cu: pageFault
+cu -> pf as "PagedFile": grab free page
+pf -> PageCache: grab/evict page
+pf -> cu: free page (exclusively locked)
+cu -> pf: fault into free page
+pf -> Swapper: read
+cu -> tt: update entry
+cu -> cu: convert exclusive lock
+cu -> LatchMap: release latch
+@enduml
+----
+
+Page *flushing* (outside of eviction) works through the following protocol:
+
+. The translation table is iterated, and entries that are mapped have their dirty/modified bit inspected.
+.. The inspection of the dirty bit happens under and optimistic read lock, in order to guard for any overlapping write locks.
+. If the page is dirty, its flush lock is obtained.
+  Alternatively, if the flushing is happening as part of unmapping the file, the exclusive lock is taken.
+. Then the page binding is checked (is this page bound to the expected file page in the current file?).
+. The dirty bit is also checked a second time, following a double-checked locking pattern.
+. This sequence may be repeated until a batch of dirty pages have been collected.
+. Then the page, or pages, are flushed.
+. After the IO completes, the flush locks, or exclusive locks, are released.
+.. The unlocking step also lowers the dirty bit on all involved pages.
+   In the case of flush locks, this happens automatically, while for exclusive locks this is done explicitly.
+. At the end, when all pages in a file have been flushed, the swapper is forced.
+  This translates into an `fsync(2)` system call on the file.
+
+[NOTE]
+====
+There's a special case for write page cursors opened with the `PF_EAGER_FLUSH` flag.
+When such a cursor unpins a page, the write lock is converted to a flush lock.
+If this conversion succeeds, then the page is immediately flushed, and then the flush lock is released.
+Otherwise there was a conflict with another overlapping flush, and the write lock is just released.
+The eager flushing does not involve any implied `fsync(2)` call.
+====
+
+== IOLimiter
+
+The `flushAndForce` methods on the PagedFile and PageCache take an IOLimiter argument.
+The purpose of this is literally to slow down the rate IO being performed when flushing dirty pages.
+The reason we do this is because until very recently, Linux could exhibit poor system-wide IO performance when the percentage of dirty pages in the OS page cache got too high, and the write-back kernel process started to assume priority.
+In a cloud setting this can also be relevant because IO can be rate limited, and we don't want IO heavy background process, like check-pointing, to monopolise the IO sub-system and its quotas.
+
+== Background Eviction Process
+
+The background eviction process is a thread that runs in the background, and ensures that the <<Free List>> has at least 30 free pages available at any time.
+This thread is started when the first file is mapped in the cache.
+The thread will then monitor the free list, and if the size of the free list gets below 30 pages, then the thread will evict enough pages to bring the free list back up to 30 pages.
+The free list initially starts out as an AtomicInteger.
+The background eviction thread just ignores this atomic integer, and keeps parking until the free list transitions into its linked-list form.
+Once the state transition happens, the free list will initially be `null`, signalling an empty free list, until the background eviction thread evicts some pages and add them to the free list.
+From then on, the background eviction thread will monitor the free list and evict pages every time the free list end up with fewer than 30 free pages.
+The FreePage object have a `count` field for this purpose, so the background eviction thread don't have to traverse the entire list every time it wishes to know how many free pages there are.
+
+The background eviction thread will continue to monitor the free list until it is either interrupted, or it notices that the `closed` field of the page cache has been set to true.
+This ensures the background eviction thread terminates when the page cache is closed.
+
+The background eviction thread follows the <<CLOCK Page Replacement Algorithm>> with its own clock-arm.
+It iterates the page list and decrements the usage counters, evicting the pages where the count goes to zero.
+However, the eviction thread does not progress unless there's a demand for free pages.
+This creates windows of time where page cache accesses can accumulate and increment the usage counters of a lot of pages.
+Thus it's possible that the eviction thread will have to go through the page list a couple of times before it evicts its first page.
+This is not a problem in practice, however, because it is quite unlikely that _all_ pages in the cache will have high usage counters.
+And even if they did, iterating even millions of pages in the cache is quite fast.
+Since the usages counters max out at 4, there is also an upper limit to how many full page list iterations the eviction thread can conceivably do before it finds a candidate page to evict.
+
+Whenever IO is performed, there is always the possibility that an exception might be thrown.
+As the background eviction thread picks pages to evict, it will sometimes come across a page that is dirty.
+Dirty pages have to be flushed as part of their eviction, so it is possible that the background eviction thread will get an exception as it tries to flush dirty pages.
+When this happens, the page remains dirty, and the `evictorException` field of the page cache is assigned to the caught exception.
+This field is checked in the `assertHealthy` method of the page cache, which is called whenever files are mapped, or a free page is requested by a page fault.
+The reason we handle evictor exceptions in this way, is that the eviction thread have no other means of handling or communicating the exception to the outside world.
+The field is cleared whenever a flush operation, such as a call to `flushAndForce`, succeeds.
+
+== Victim Page
+
+The victim page is a buffer of memory allocated for the purpose of receiving loads and stores from page cursors that go out of bounds of the page the cursor is bound to.
+The victim page is allocated once by the page cache, is the size of one page, and shared across all page cursors.
+We also never deallocate the victim page, because we don't track accesses to it.
+The victim page, once allocated, lives until the end of the JVM process.
+
+All out-of-bounds memory accesses on a page cursor lands on the victim page.
+The reason is that our optimistic read locks allow readers to read arbitrary garbage from the page cursor, as long as the `shouldRetry` method returns `true`.
+This means that the reading code can conceivably be tricked into performing non-sensical accesses on the page.
+For instance, a string value might be encoded on a page as a 16-bit short, indicating the length of the string, followed by that many bytes.
+The short, however, is capable of indicating lengths that go far beyond the page size.
+If the reading of the string overlaps with a write, an eviction, or a page fault, in the right way, the reading code could be tricked into attempting to read more bytes than what is available on the page.
+The reads that lie beyond the end of the page (or before the start, for that matter) will be serviced by the victim page, and an out-of-bounds flag will be raised on the page cursor.
+Had these accesses been directed toward a ByteBuffer, then an exception would be thrown to indicate the out-of-bounds condition.
+However, the optimistic read lock makes it common and normal for these out-of-bounds conditions to occur, due to inconsistent reads.
+It is unreasonable to ask the reading code to either sanity-check or validate their reads, or to include exception handling in their `shouldRetry` loop control flow.
+
+== Prefetcher
+
+It is possible to enable seamless page prefetching when scanning through a file.
+This is done by specifying the `PagedFile.PF_READ_AHEAD` flag to the `io` method when opening the page cursor.
+This will start a background thread, which will monitor the cursors current position in the file.
+
+The background will wait to observe the direction of the scan, and try to predict how fast the scan is progressing through the file.
+It uses this information to determine how far ahead it should prefetch pages.
+This is based on heuristics, and it is possible that the algorithm can be improved.
+
+The prefetcher monitors the current page id of the cursor by doing volatile reads of the `currentPageId` field.
+This field is normally subject to non-volatile (plain) accesses in the cursor itself.
+This means that this monitoring is on uncertain ground with respect to the Java Memory Model.
+To strengthen the memory effects connection between the read in the prefetcher, and the write in the page cursor, the page cursor performs store-ordered writes to the field.
+This is what the `putOrderedLong` call in the `storeCurrentPageId` method in the MuninnPageCursor is about.
+
+== Version Context
+
+The version context is part of the _snapshot query execution_ feature, that enables Snapshot Isolation for Cypher statements.
+Neo4j currently has Read Committed transactions and statements.
+Most databases that implement Read Committed transactions do so with either Cursor Stability or Repeatable Read isolation for their statements, but in Neo4j statements are also Read Committed.
+This is usually fine, because most anomalies that can show up, can also be mitigated locally.
+For the rare cases where this is not fine, we can enable Snapshot Isolation for statements.
+
+When the snapshot query execution feature is enabled, Snapshot Isolation is implemented by keeping track of the last modifying transaction id per page.
+When a write transaction is applied, its transaction id is stored in the page frames of all the pages it touches.
+A read transaction can then compare these transaction ids with the id of the transaction that was the last closed transaction at the moment the read transaction was started.
+If the transaction id from the page is newer than the last closed transaction id at the start of the read transaction, then the read transaction has potentially observed data more recent than its version.
+This will cause its version context to be marked as dirty, and the snapshot execution engine will then restart the query on a newer version.
+
+When a page is evicted from the page cache, we need to ensure that its version information is not lost.
+The page may be faulted back in, in the near future, and if its version is newer than that of any snapshot read transaction, then the faulted-in page must still invalidate those transactions if they visit the page.
+The paged file has a field for keeping track of the greatest transaction id of any evicted page from that file.
+When a page is evicted, this field in the paged file will be updated, if the transaction id of the page is greater than that of the paged file.
+When a page is faulted back in, it adopts the transaction id of the paged file.
+
+The _Version Context_ the component that communicates this transaction id, and the dirty state, between the page cache, the snapshot execution engine, and the transaction system.
