@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
+import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class ExecutingQueryTest
@@ -351,7 +352,7 @@ class ExecutingQueryTest
 
     private LockWaitEvent lock( String resourceType, long resourceId )
     {
-        return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
+        return query.lockTracer().waitForLock( SHARED, resourceType( resourceType ), resourceId );
     }
 
     static ResourceType resourceType( String name )

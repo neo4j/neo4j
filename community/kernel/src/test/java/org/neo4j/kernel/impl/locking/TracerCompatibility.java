@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 
@@ -99,7 +100,7 @@ abstract class TracerCompatibility extends LockCompatibilityTestSupport
         final List<StackTraceElement[]> waitCalls = new ArrayList<>();
 
         @Override
-        public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
+        public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long... resourceIds )
         {
             waitCalls.add( Thread.currentThread().getStackTrace() );
             return this;

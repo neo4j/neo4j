@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.OptionalMemoryTracker;
@@ -374,10 +375,10 @@ public class ExecutingQuery
         return clientConnection;
     }
 
-    private LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long[] resourceIds )
+    private LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long[] resourceIds )
     {
         WaitingOnLockEvent event = new WaitingOnLockEvent(
-                exclusive ? ActiveLock.EXCLUSIVE_MODE : ActiveLock.SHARED_MODE,
+                lockType.getDescription(),
                 resourceType,
                 resourceIds,
                 this,
