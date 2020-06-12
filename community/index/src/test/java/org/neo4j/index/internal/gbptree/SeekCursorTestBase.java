@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -1960,7 +1959,6 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     }
 
     @Test
-    @Disabled
     void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingDownTree() throws Exception
     {
         // given
