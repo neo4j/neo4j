@@ -21,8 +21,8 @@ package org.neo4j.lock;
 
 public enum LockType
 {
-    SHARED( "Shared" ),
-    EXCLUSIVE( "Exclusive" );
+    SHARED( "SHARED" ),
+    EXCLUSIVE( "EXCLUSIVE" );
 
     private final String description;
 
