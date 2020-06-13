@@ -53,13 +53,13 @@ public class LockResource
             return false;
         }
         LockResource that = (LockResource) o;
-        return resourceId == that.resourceId && resourceType.equals( that.resourceType ) && lockType == that.lockType;
+        return resourceId == that.resourceId && resourceType.equals( that.resourceType );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( resourceType, resourceId, lockType );
+        return Objects.hash( resourceType, resourceId );
     }
 
     @Override
