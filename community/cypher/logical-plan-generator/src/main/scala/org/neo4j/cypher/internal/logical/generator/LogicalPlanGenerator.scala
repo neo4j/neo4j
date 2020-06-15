@@ -371,10 +371,11 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
 
   def apply(state: State): Gen[WithState[Apply]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
-    state <- state.addArguments(left.availableSymbols)
+    newArguments = left.availableSymbols -- state.arguments
+    state <- state.addArguments(newArguments)
     state <- state.pushLeafCardinalityMultiplier(state.cardinalities.get(left.id))
     WithState(right, state) <- innerLogicalPlan(state)
-    state <- state.removeArguments(left.availableSymbols)
+    state <- state.removeArguments(newArguments)
     state <- state.popLeafCardinalityMultiplier()
   } yield {
     val plan = Apply(left, right)(state.idGen)
