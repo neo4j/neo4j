@@ -29,12 +29,14 @@ public class ActiveLock
     private final ResourceType resourceType;
     private final LockType lockType;
     private final long resourceId;
+    private final long transactionId;
 
-    public ActiveLock( ResourceType resourceType, LockType lockType, long resourceId )
+    public ActiveLock( ResourceType resourceType, LockType lockType, long transactionId, long resourceId )
     {
         this.resourceType = resourceType;
         this.lockType = lockType;
         this.resourceId = resourceId;
+        this.transactionId = transactionId;
     }
 
     public ResourceType resourceType()
@@ -52,6 +54,11 @@ public class ActiveLock
         return lockType;
     }
 
+    public long transactionId()
+    {
+        return transactionId;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -64,12 +71,13 @@ public class ActiveLock
             return false;
         }
         ActiveLock that = (ActiveLock) o;
-        return resourceId == that.resourceId() && Objects.equals( lockType(), that.lockType() ) && Objects.equals( resourceType, that.resourceType() );
+        return resourceId == that.resourceId() && Objects.equals( lockType(), that.lockType() ) && Objects.equals( resourceType, that.resourceType() ) &&
+                Objects.equals( transactionId, that.transactionId() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( resourceType, resourceId, lockType );
+        return Objects.hash( resourceType, resourceId, lockType, transactionId );
     }
 }

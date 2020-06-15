@@ -83,10 +83,12 @@ class ExecutingQueryStatusTest
     {
         // given
         long[] resourceIds = {17};
+        long userTransactionId = 7;
         WaitingOnLock status =
                 new WaitingOnLock(
                         EXCLUSIVE,
                         resourceType( "NODE" ),
+                        userTransactionId,
                         resourceIds,
                         clock.nanos() );
         clock.forward( 17, TimeUnit.MILLISECONDS );
@@ -101,6 +103,7 @@ class ExecutingQueryStatusTest
         expected.put( "lockMode", "EXCLUSIVE" );
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
+        expected.put( "transactionId", userTransactionId );
         assertEquals( expected, statusMap );
     }
 

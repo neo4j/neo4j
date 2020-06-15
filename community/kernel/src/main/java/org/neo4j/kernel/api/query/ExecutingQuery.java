@@ -375,11 +375,12 @@ public class ExecutingQuery
         return clientConnection;
     }
 
-    private LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long[] resourceIds )
+    private LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long userTransactionId, long[] resourceIds )
     {
         WaitingOnLockEvent event = new WaitingOnLockEvent(
                 lockType,
                 resourceType,
+                userTransactionId,
                 resourceIds,
                 this,
                 clock.nanos(),

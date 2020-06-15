@@ -21,7 +21,7 @@ package org.neo4j.lock;
 
 public interface LockTracer
 {
-    LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long... resourceIds );
+    LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long userTransactionId, long... resourceIds );
 
     default LockTracer combine( LockTracer tracer )
     {
@@ -35,7 +35,7 @@ public interface LockTracer
     LockTracer NONE = new LockTracer()
     {
         @Override
-        public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long... resourceIds )
+        public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long userTransactionId, long... resourceIds )
         {
             return LockWaitEvent.NONE;
         }

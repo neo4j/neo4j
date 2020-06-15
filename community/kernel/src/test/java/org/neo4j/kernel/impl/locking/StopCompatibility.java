@@ -577,7 +577,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
         final List<Long> expectedLockedIds = Arrays.asList( expectedResourceIds );
         final List<Long> seenLockedIds = new ArrayList<>();
 
-        locks.accept( ( lockType, resourceType, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+        locks.accept( ( lockType, resourceType, transactionId, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
                 seenLockedIds.add( resourceId ) );
 
         Collections.sort( expectedLockedIds );
@@ -587,8 +587,8 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
 
     private void assertNoLocksHeld()
     {
-        locks.accept( ( lockType, resourceType, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
-                fail( "Unexpected lock on " + resourceType + " " + resourceId + " " + lockType ) );
+        locks.accept( ( lockType, resourceType, transactionId, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+                fail( "Unexpected lock on " + resourceType + " " + resourceId + " " + lockType + " from " + transactionId ) );
     }
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception

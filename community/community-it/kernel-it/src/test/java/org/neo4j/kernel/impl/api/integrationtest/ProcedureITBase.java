@@ -194,7 +194,7 @@ public interface ProcedureITBase
         result.addAll( List.of(
                 // enterprise only functions
                 proc( "dbms.listLocks",
-                        "() :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
+                        "() :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?, transactionId :: INTEGER?)",
                         "List all locks at this instance.",
                 stringArray( "admin" ), "DBMS"),
                 proc( "dbms.listPools",

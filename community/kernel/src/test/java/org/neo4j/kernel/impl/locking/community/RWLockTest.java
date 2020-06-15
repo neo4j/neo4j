@@ -64,7 +64,7 @@ class RWLockTest
     void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 0 );
+        final LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 0 );
         final RWLock lock = createRWLock( ragManager, resource );
         final Transaction tx1 = mock( Transaction.class );
 
@@ -81,7 +81,7 @@ class RWLockTest
     void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 0 );
+        final LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10, 0 );
         final RWLock lock = createRWLock( ragManager, resource );
         final Transaction tx1 = mock( Transaction.class );
 
@@ -102,7 +102,7 @@ class RWLockTest
     void testWaitingWriterLock() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 1L );
+        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10, 1L );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction lockTransaction = new LockTransaction();
         final LockTransaction anotherTransaction = new LockTransaction();
@@ -147,7 +147,7 @@ class RWLockTest
     void testWaitingReaderLock() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 1L );
+        LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 1L );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction transaction = new LockTransaction();
         final LockTransaction readerTransaction = new LockTransaction();
@@ -186,7 +186,7 @@ class RWLockTest
     void testThreadRemovedFromWaitingListOnDeadlock() throws Exception
     {
         RagManager ragManager = mock( RagManager.class );
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 1L );
+        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10, 1L );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction lockTransaction = new LockTransaction();
         final LockTransaction anotherTransaction = new LockTransaction();
@@ -247,7 +247,7 @@ class RWLockTest
     void testLockCounters() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 1L );
+        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10, 1L );
         final RWLock lock = createRWLock( ragManager, resource );
         LockTransaction lockTransaction = new LockTransaction();
         LockTransaction anotherTransaction = new LockTransaction();
@@ -299,9 +299,9 @@ class RWLockTest
     void testDeadlockDetection() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 1L );
-        LockResource node2 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 2L );
-        LockResource node3 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 3L );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 1L );
+        LockResource node2 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 2L );
+        LockResource node3 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 3L );
 
         final RWLock lockNode1 = createRWLock( ragManager, node1 );
         final RWLock lockNode2 = createRWLock( ragManager, node2 );
@@ -340,7 +340,7 @@ class RWLockTest
     {
         // given
         RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 1L );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10, 1L );
         final RWLock lock = createRWLock( ragManager, node1 );
         final LockTransaction mainTransaction = new LockTransaction();
 

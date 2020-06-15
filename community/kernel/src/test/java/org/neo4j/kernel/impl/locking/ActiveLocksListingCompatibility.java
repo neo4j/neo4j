@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 
@@ -45,6 +46,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     void shouldListLocksHeldByTheCurrentClient()
     {
         // given
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), 1 );
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1, 2, 3 );
         clientA.acquireShared( LockTracer.NONE, NODE, 3, 4, 5 );
 
@@ -54,12 +56,12 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         // then
         assertEquals(
                 new HashSet<>( asList(
-                        new ActiveLock( NODE, LockType.EXCLUSIVE, 1 ),
-                        new ActiveLock( NODE, LockType.EXCLUSIVE, 2 ),
-                        new ActiveLock( NODE, LockType.EXCLUSIVE, 3 ),
-                        new ActiveLock( NODE, LockType.SHARED, 3 ),
-                        new ActiveLock( NODE, LockType.SHARED, 4 ),
-                        new ActiveLock( NODE, LockType.SHARED, 5 ) ) ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 1,1 ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 1, 2 ),
+                        new ActiveLock( NODE, LockType.EXCLUSIVE, 1, 3 ),
+                        new ActiveLock( NODE, LockType.SHARED, 1, 3 ),
+                        new ActiveLock( NODE, LockType.SHARED, 1, 4 ),
+                        new ActiveLock( NODE, LockType.SHARED, 1, 5 ) ) ),
                 locks.collect( toSet() ) );
     }
 

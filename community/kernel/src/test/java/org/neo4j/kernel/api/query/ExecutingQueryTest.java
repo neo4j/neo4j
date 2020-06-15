@@ -57,7 +57,6 @@ class ExecutingQueryTest
     private final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
     private final PageCursorCountersStub page = new PageCursorCountersStub();
     private final ExecutingQuery query = createExecutingQuery( 1, "hello world", page, clock, cpuClock );
-    private final ExecutingQuery subQuery = createExecutingQuery( 2, "goodbye world", page, clock, cpuClock );
     private long lockCount;
 
     @Test
@@ -149,6 +148,7 @@ class ExecutingQueryTest
             assertEquals( "waiting", snapshot.status() );
             assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 5_000L ).
                     containsEntry( "resourceType", "NODE" ).
+                    containsEntry( "transactionId", 10L ).
                     containsEntry( "resourceIds", new long[]{ 17 } );
             assertEquals( 5_000_000, snapshot.waitTimeMicros() );
         }
@@ -169,6 +169,7 @@ class ExecutingQueryTest
             assertEquals( "waiting", snapshot.status() );
             assertThat( snapshot.resourceInformation() ).containsEntry( "waitTimeMillis", 1_000L ).
                     containsEntry( "resourceType", "RELATIONSHIP" ).
+                    containsEntry( "transactionId", 10L ).
                     containsEntry( "resourceIds", new long[]{612} );
             assertEquals( 6_000_000, snapshot.waitTimeMicros() );
         }
@@ -352,7 +353,7 @@ class ExecutingQueryTest
 
     private LockWaitEvent lock( String resourceType, long resourceId )
     {
-        return query.lockTracer().waitForLock( SHARED, resourceType( resourceType ), resourceId );
+        return query.lockTracer().waitForLock( SHARED, resourceType( resourceType ), 10, resourceId );
     }
 
     static ResourceType resourceType( String name )

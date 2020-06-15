@@ -28,7 +28,7 @@ import org.neo4j.lock.ResourceType;
  * This is both a status state in the state machine of {@link ExecutingQuery}, and a {@link LockWaitEvent}.
  * The reason for this is to avoid unnecessary object allocation and indirection, since there is always a one-to-one
  * mapping between the status corresponding to the lock we are waiting on (caused by
- * {@linkplain LockTracer#waitForLock(org.neo4j.lock.LockType, ResourceType, long...) the event of waiting
+ * {@linkplain LockTracer#waitForLock(LockType, ResourceType, long, long...)} the event of waiting
  * on a lock}) and the event object used to {@linkplain LockWaitEvent#close() signal the end of the wait}.
  */
 class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
@@ -39,12 +39,13 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     WaitingOnLockEvent(
             LockType lockType,
             ResourceType resourceType,
+            long userTransactionId,
             long[] resourceIds,
             ExecutingQuery executingQuery,
             long currentTimeNanos,
             ExecutingQueryStatus previous )
     {
-        super( lockType, resourceType, resourceIds, currentTimeNanos );
+        super( lockType, resourceType, userTransactionId, resourceIds, currentTimeNanos );
         this.executingQuery = executingQuery;
         this.previous = previous;
     }

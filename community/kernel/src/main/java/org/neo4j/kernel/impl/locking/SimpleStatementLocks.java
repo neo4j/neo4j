@@ -38,9 +38,9 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient )
+    public void initialize( LeaseClient leaseClient, long userTransactionId )
     {
-        client.initialize( leaseClient );
+        client.initialize( leaseClient, userTransactionId );
     }
 
     @Override

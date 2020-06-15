@@ -248,7 +248,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         }
 
         @Override
-        public void visit( LockType lockType, ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,
+        public void visit( LockType lockType, ResourceType resourceType, long transactionId, long resourceId, String description, long estimatedWaitTime,
                 long lockIdentityHashCode )
         {
             if ( this.resourceType.equals( resourceType ) && this.resourceId == resourceId )

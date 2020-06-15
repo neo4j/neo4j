@@ -54,7 +54,8 @@ public interface Locks
     interface Visitor
     {
         /** Visit the description of a lock held by at least one client. */
-        void visit( LockType lockType, ResourceType resourceType, long resourceId, String description, long estimatedWaitTime, long lockIdentityHashCode );
+        void visit( LockType lockType, ResourceType resourceType, long transactionId, long resourceId,
+                String description, long estimatedWaitTime, long lockIdentityHashCode );
     }
 
     interface Client extends ResourceLocker, AutoCloseable
@@ -68,8 +69,9 @@ public interface Locks
          * Initializes this locks client with a {@link LeaseClient} for the owning transaction. Must be called before any lock can be acquired.
          * An lease that has become invalid can abort a transaction midway.
          * @param leaseClient {@link LeaseClient} of the owning transaction.
+         * @param userTransactionId lock client owning transaction id
          */
-        void initialize( LeaseClient leaseClient );
+        void initialize( LeaseClient leaseClient, long userTransactionId );
 
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,

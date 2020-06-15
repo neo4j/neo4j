@@ -33,13 +33,15 @@ class WaitingOnLock extends ExecutingQueryStatus
 {
     private final LockType lockType;
     private final ResourceType resourceType;
+    private final long userTransactionId;
     private final long[] resourceIds;
     private final long startTimeNanos;
 
-    WaitingOnLock( LockType lockType, ResourceType resourceType, long[] resourceIds, long startTimeNanos )
+    WaitingOnLock( LockType lockType, ResourceType resourceType, long userTransactionId, long[] resourceIds, long startTimeNanos )
     {
         this.lockType = lockType;
         this.resourceType = resourceType;
+        this.userTransactionId = userTransactionId;
         this.resourceIds = resourceIds;
         this.startTimeNanos = startTimeNanos;
     }
@@ -58,6 +60,7 @@ class WaitingOnLock extends ExecutingQueryStatus
         map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( currentTimeNanos ) ) );
         map.put( "resourceType", resourceType.toString() );
         map.put( "resourceIds", resourceIds );
+        map.put( "transactionId", userTransactionId );
         return map;
     }
 
@@ -79,7 +82,7 @@ class WaitingOnLock extends ExecutingQueryStatus
         List<ActiveLock> locks = new ArrayList<>( resourceIds.length );
         for ( long resourceId : resourceIds )
         {
-            locks.add( new ActiveLock( resourceType, lockType, resourceId ) );
+            locks.add( new ActiveLock( resourceType, lockType, userTransactionId, resourceId ) );
         }
         return locks;
     }
