@@ -37,6 +37,10 @@ public interface NodeCursor extends EntityCursor
 
     void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
 
+    boolean supportsFastRelationshipsTo();
+
+    void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference );
+
     long relationshipsReference();
 
     /**

@@ -206,6 +206,18 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     @Override
+    public boolean supportsFastRelationshipsTo()
+    {
+        return currentAddedInTx == NO_ID && storeCursor.supportsFastRelationshipsTo();
+    }
+
+    @Override
+    public void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference )
+    {
+        ((DefaultRelationshipTraversalCursor) relationships).init( this, selection, neighbourNodeReference, read );
+    }
+
+    @Override
     public void properties( PropertyCursor cursor, PropertySelection selection )
     {
         ((DefaultPropertyCursor) cursor).initNode( this, selection, read, read );

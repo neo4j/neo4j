@@ -199,6 +199,18 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
+    public boolean supportsFastRelationshipsTo()
+    {
+        return false;
+    }
+
+    @Override
+    public void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int[] relationshipTypes()
     {
         MutableIntSet types = IntSets.mutable.empty();

@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.neo4j.storageengine.api.RelationshipDirection;
 
+import static java.lang.String.format;
+
 public class TestRelationshipChain
 {
     private List<Data> data;
@@ -100,6 +102,12 @@ public class TestRelationshipChain
                 return RelationshipDirection.LOOP;
             }
             return nodeReference == source ? RelationshipDirection.OUTGOING : RelationshipDirection.INCOMING;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "(%d)-[%d,type:%d]->(%d)", source, id, type, target );
         }
     }
 }

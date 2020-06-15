@@ -122,8 +122,18 @@ public class CachingExpandInto extends DefaultCloseListenable
             int[] types,
             long secondNode )
     {
-        Iterator<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
+        // First of all check if the cursor can do this efficiently itself and if so make use of that faster path
+        if ( nodeCursor.supportsFastRelationshipsTo() )
+        {
+            if ( singleNode( read, nodeCursor, firstNode ) )
+            {
+                nodeCursor.relationshipsTo( traversalCursor, selection( types, direction ), secondNode );
+            }
+            return traversalCursor;
+        }
 
+        //Check if we've already done this before for these two nodes in this query
+        Iterator<Relationship> connections = relationshipCache.get( firstNode, secondNode, direction );
         if ( connections != null )
         {
             return new FromCachedSelectionCursor( connections, read, firstNode, secondNode );

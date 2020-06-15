@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.kernel.api.helpers;
 
+import org.assertj.core.api.Assertions;
 import org.github.jamm.MemoryMeter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -27,10 +28,15 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubRead;
+import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
+import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,7 +45,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
@@ -55,7 +61,7 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNode() throws Exception
+    void shouldComputeDegreeOfStartAndEndNode()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
@@ -74,7 +80,7 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame() throws Exception
+    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
@@ -90,7 +96,7 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNodeOnlyOnce() throws Exception
+    void shouldComputeDegreeOfStartAndEndNodeOnlyOnce()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
@@ -108,7 +114,7 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull() throws Exception
+    void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
@@ -128,7 +134,7 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldNotRecomputeAnythingIfSameNodesAndTypes() throws Exception
+    void shouldNotRecomputeAnythingIfSameNodesAndTypes()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker );
@@ -139,13 +145,14 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 43, 100, 101 );
 
         // Then
-        verifyNoInteractions( cursor );
+        verify( cursor ).supportsFastRelationshipsTo();
+        verifyNoMoreInteractions( cursor );
 
         assertReleasesHeap( expandInto );
     }
 
     @Test
-    void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull() throws Exception
+    void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
@@ -159,6 +166,45 @@ class CachingExpandIntoTest
         verify( cursor, atLeastOnce() ).next();
 
         assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldUseFastPathOnCursorIfAvailable()
+    {
+        // Given
+        long fromNodeId = 3;
+        long toNodeId = 6;
+        int type = 8;
+        TestRelationshipChain fromNodeRelationships = new TestRelationshipChain( fromNodeId )
+                .outgoing( 0, 99, type )
+                .outgoing( 1, 999, type )
+                .outgoing( 2, toNodeId, type )  // <-- this is the relationship we're looking for
+                .outgoing( 3, 9999, type )
+                .outgoing( 4, toNodeId, type ); // <-- and also this one
+        TestRelationshipChain toNodeRelationships = new TestRelationshipChain( toNodeId )
+                .incoming( 2, fromNodeId, type )  // <-- this is the relationship we're looking for
+                .incoming( 4, fromNodeId, type ); // <-- and also this one
+        StubRelationshipCursor relationshipCursor = new StubRelationshipCursor( asList( fromNodeRelationships, toNodeRelationships ) );
+        StubNodeCursor nodeCursor = new StubNodeCursor( false, true )
+                .withNode( fromNodeId )
+                .withNode( toNodeId );
+        StubRead read = new StubRead();
+
+        // When
+        CachingExpandInto expandInto = new CachingExpandInto( read, OUTGOING, memoryTracker, 100 );
+        long nativeMemoryBefore = memoryTracker.usedNativeMemory();
+        long heapMemoryBefore = memoryTracker.estimatedHeapMemory();
+        expandInto.connectingRelationships( nodeCursor, relationshipCursor, fromNodeId, new int[]{type}, toNodeId );
+
+        // Then
+        // no connections should have been cached, since the fast path should have been used
+        Assertions.assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( nativeMemoryBefore );
+        Assertions.assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( heapMemoryBefore );
+        Assertions.assertThat( relationshipCursor.next() ).isTrue();
+        Assertions.assertThat( relationshipCursor.relationshipReference() ).isEqualTo( 2 );
+        Assertions.assertThat( relationshipCursor.next() ).isTrue();
+        Assertions.assertThat( relationshipCursor.relationshipReference() ).isEqualTo( 4 );
+        Assertions.assertThat( relationshipCursor.next() ).isFalse();
     }
 
     private void findConnections( CachingExpandInto expandInto, NodeCursor cursor, long from, long to, int... types )

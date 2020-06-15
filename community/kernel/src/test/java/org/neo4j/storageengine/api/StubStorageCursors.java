@@ -522,6 +522,18 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public boolean supportsFastRelationshipsTo()
+        {
+            return false;
+        }
+
+        @Override
+        public void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection )
         {
             throw new UnsupportedOperationException( "Not implemented yet" );

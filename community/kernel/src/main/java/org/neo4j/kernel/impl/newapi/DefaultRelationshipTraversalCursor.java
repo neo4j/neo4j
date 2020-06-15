@@ -41,6 +41,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private long originNodeReference;
     private RelationshipSelection selection;
     private AccessMode mode;
+    private long neighbourNodeReference;
 
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
             DefaultNodeCursor nodeCursor )
@@ -60,6 +61,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     {
         this.originNodeReference = nodeReference;
         this.selection = selection;
+        this.neighbourNodeReference = -1;
         this.storeCursor.init( nodeReference, reference, selection );
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
@@ -75,6 +77,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     {
         this.originNodeReference = nodeCursor.nodeReference();
         this.selection = selection;
+        this.neighbourNodeReference = -1;
         if ( !nodeCursor.currentNodeIsAddedInTx() )
         {
             nodeCursor.storeCursor.relationships( storeCursor, selection );
@@ -82,6 +85,19 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         else
         {
             storeCursor.reset();
+        }
+        init( read );
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    void init( DefaultNodeCursor nodeCursor, RelationshipSelection selection, long neighbourNodeReference, Read read )
+    {
+        this.originNodeReference = nodeCursor.nodeReference();
+        this.selection = selection;
+        this.neighbourNodeReference = neighbourNodeReference;
+        if ( !nodeCursor.currentNodeIsAddedInTx() )
+        {
+            nodeCursor.storeCursor.relationshipsTo( storeCursor, selection, neighbourNodeReference );
         }
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
@@ -132,19 +148,20 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         // tx-state relationships
         if ( hasChanges )
         {
-            if ( addedRelationships.hasNext() )
+            while ( addedRelationships.hasNext() )
             {
                 read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
+                if ( neighbourNodeReference != NO_ID && otherNodeReference() != neighbourNodeReference )
+                {
+                    continue;
+                }
                 if ( tracer != null )
                 {
                     tracer.onRelationship( relationshipReference() );
                 }
                 return true;
             }
-            else
-            {
-                currentAddedInTx = NO_ID;
-            }
+            currentAddedInTx = NO_ID;
         }
 
         while ( storeCursor.next() )

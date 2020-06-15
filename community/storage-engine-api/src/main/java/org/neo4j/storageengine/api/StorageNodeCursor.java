@@ -39,8 +39,37 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      */
     long relationshipsReference();
 
+    /**
+     * Initializes the provided {@code traversalCursor} with selected relationships connected to the node this cursor is currently at.
+     * After this call the relationships can be accessed using {@link StorageRelationshipTraversalCursor#next()}.
+     *
+     * @param traversalCursor the {@link StorageRelationshipTraversalCursor} to initialize with relationships for this current node.
+     * @param selection {@link RelationshipSelection} of relationships to select.
+     */
     void relationships( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection );
 
+    /**
+     * @return {@code true} if a call to {@link #relationshipsTo(StorageRelationshipTraversalCursor, RelationshipSelection, long)} is allowed,
+     * i.e. that this cursor implementation supports fast relationships to query, otherwise {@code false}.
+     */
+    boolean supportsFastRelationshipsTo();
+
+    /**
+     * Initializes the provided {@code traversalCursor} with selected relationships connecting the node this cursor is currently at
+     * with the provided {@code neighbourNodeReference}.
+     * After this call the relationships can be accessed using {@link StorageRelationshipTraversalCursor#next()}.
+     *
+     * @param traversalCursor the {@link StorageRelationshipTraversalCursor} to initialize with relationships for this current node.
+     * @param selection {@link RelationshipSelection} of relationships to select.
+     * @param neighbourNodeReference the neighbour {@link StorageNodeCursor#entityReference() node reference} to look for.
+     * @throws UnsupportedOperationException if not supported, i.e. if {@link #supportsFastRelationshipsTo()} returns {@code false}.
+     */
+    void relationshipsTo( StorageRelationshipTraversalCursor traversalCursor, RelationshipSelection selection, long neighbourNodeReference );
+
+    /**
+     * @return all relationship types that this node has, i.e. all relationship types in the returned array there are at one such
+     * relationship of on this node.
+     */
     int[] relationshipTypes();
 
     /**

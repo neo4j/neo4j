@@ -32,6 +32,8 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+
 public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
 {
     private final List<TestRelationshipChain> store;
@@ -41,6 +43,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     private boolean isClosed;
     private long nodeReference;
     private RelationshipSelection selection;
+    private long neighbourNodeReference;
 
     public StubRelationshipCursor( TestRelationshipChain chain )
     {
@@ -55,12 +58,26 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
         this.isClosed = true;
     }
 
-    void rewind( long nodeReference, RelationshipSelection selection )
+    void initialize( long nodeReference, RelationshipSelection selection, long neighbourNodeReference )
     {
         this.nodeReference = nodeReference;
         this.selection = selection;
+        this.neighbourNodeReference = neighbourNodeReference;
         this.offset = -1;
         this.isClosed = true;
+        this.chainId = findChain( nodeReference );
+    }
+
+    private int findChain( long nodeReference )
+    {
+        for ( int i = 0; i < store.size(); i++ )
+        {
+            if ( store.get( i ).originNodeId() == nodeReference )
+            {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException( "No chain for " + nodeReference + " found" );
     }
 
     @Override
@@ -120,7 +137,9 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     @Override
     public long otherNodeReference()
     {
-        return targetNodeReference();
+        TestRelationshipChain chain = store.get( chainId );
+        TestRelationshipChain.Data relationship = chain.get( offset );
+        return relationship.source == chain.originNodeId() ? relationship.target : relationship.source;
     }
 
     @Override
@@ -141,7 +160,8 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
                 return false;
             }
             TestRelationshipChain.Data data = chain.get( offset );
-            if ( selection.test( data.type, data.relationshipDirection( nodeReference ) ) )
+            if ( selection.test( data.type, data.relationshipDirection( nodeReference ) ) &&
+                    (neighbourNodeReference == NO_ID || neighbourNodeReference == otherNodeReference()) )
             {
                 return true;
             }

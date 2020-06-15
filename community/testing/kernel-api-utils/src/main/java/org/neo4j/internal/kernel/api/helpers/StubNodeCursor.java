@@ -42,8 +42,9 @@ import static org.neo4j.storageengine.api.LongReference.longReference;
 public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
 {
     private int offset = -1;
-    private boolean dense;
-    private List<NodeData> nodes = new ArrayList<>();
+    private final boolean dense;
+    private final boolean supportsFastRelationshipsTo;
+    private final List<NodeData> nodes = new ArrayList<>();
     private int degree;
 
     public StubNodeCursor()
@@ -53,7 +54,13 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
 
     public StubNodeCursor( boolean dense )
     {
+        this( dense, true );
+    }
+
+    public StubNodeCursor( boolean dense, boolean supportsFastRelationshipsTo )
+    {
         this.dense = dense;
+        this.supportsFastRelationshipsTo = supportsFastRelationshipsTo;
     }
 
     void single( long reference )
@@ -122,9 +129,26 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public boolean supportsFastRelationshipsTo()
+    {
+        return supportsFastRelationshipsTo;
+    }
+
+    @Override
+    public void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference )
+    {
+        if ( !supportsFastRelationshipsTo )
+        {
+            throw new UnsupportedOperationException( "Not supported by this instance" );
+        }
+
+        ((StubRelationshipCursor) relationships).initialize( nodeReference(), selection, neighbourNodeReference );
+    }
+
+    @Override
     public void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection )
     {
-        ((StubRelationshipCursor) relationships).rewind( nodeReference(), selection );
+        ((StubRelationshipCursor) relationships).initialize( nodeReference(), selection, -1 );
     }
 
     @Override

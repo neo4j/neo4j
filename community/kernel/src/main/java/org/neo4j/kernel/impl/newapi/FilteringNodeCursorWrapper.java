@@ -147,6 +147,18 @@ public class FilteringNodeCursorWrapper implements NodeCursor
     }
 
     @Override
+    public boolean supportsFastRelationshipsTo()
+    {
+        return delegate.supportsFastRelationshipsTo();
+    }
+
+    @Override
+    public void relationshipsTo( RelationshipTraversalCursor relationships, RelationshipSelection selection, long neighbourNodeReference )
+    {
+        delegate.relationshipsTo( relationships, selection, neighbourNodeReference );
+    }
+
+    @Override
     public void relationships( RelationshipTraversalCursor relationships,
             RelationshipSelection selection )
     {
