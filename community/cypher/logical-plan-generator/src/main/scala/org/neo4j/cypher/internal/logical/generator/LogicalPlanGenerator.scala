@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -370,10 +371,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   def selection(state: State): Gen[WithState[Selection]] = for {
-    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
-    WithState(xpr, state) <- validExpression(source.availableSymbols.toSeq, state, _.nonAggregatingExpression)
+    WithState(source, state) <- innerLogicalPlan(state)
+    WithState(xpr, state) <- expressionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, 1)
   } yield {
-    val plan = Selection(Seq(xpr), source)(state.idGen)
+    val plan = Selection(PredicateHelper.coercePredicatesWithAnds(xpr), source)(state.idGen)
     annotate(plan, state)
   }
 
@@ -432,6 +433,21 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     val name = s"var${state.varCount}"
     Gen.const(WithState(name, state.incVarCount()))
   }
+
+  private def expressionList(state: State,
+                             availableSymbols: Seq[String],
+                             expressionGen: SemanticAwareAstGenerator => Gen[Expression],
+                             minSize: Int = 0): Gen[WithState[Seq[Expression]]] =
+    Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
+      (0 until n).foldLeft(Gen.const(WithState(Seq.empty[Expression], state))) { (prevGen, _) =>
+        for {
+          WithState(xprs, state) <- prevGen
+          WithState(xpr, state) <- validExpression(availableSymbols, state, expressionGen)
+        } yield {
+          WithState(xprs :+ xpr, state)
+        }
+      }
+    }
 
   /**
    * This generates random expressions and then uses SematicChecking to see if they are valid. This works,

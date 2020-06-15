@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 object LogicalPlanToPlanBuilderString {
-  private val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
+  private val expressionStringifier = ExpressionStringifier(_.asCanonicalStringVal, preferSingleQuotes = true)
 
   private case class LevelPlanItem(level: Int, plan: LogicalPlan)
 
