@@ -31,9 +31,9 @@ public interface StoragePropertyCursor extends StorageCursor
      * Initializes this cursor to that reading node properties at the given {@code reference}.
      * @param reference reference to start reading node properties at.
      */
-    void initNodeProperties( long reference, long ownerReference );
+    void initNodeProperties( Reference reference, long ownerReference );
 
-    default void initNodeProperties( long reference )
+    default void initNodeProperties( Reference reference )
     {
         initNodeProperties( reference, -1 );
     }
@@ -51,9 +51,9 @@ public interface StoragePropertyCursor extends StorageCursor
      * Initializes this cursor to that reading relationship properties at the given {@code reference}.
      * @param reference reference to start reading relationship properties at.
      */
-    void initRelationshipProperties( long reference, long ownerReference );
+    void initRelationshipProperties( Reference reference, long ownerReference );
 
-    default void initRelationshipProperties( long reference )
+    default void initRelationshipProperties( Reference reference )
     {
         initRelationshipProperties( reference, -1 );
     }

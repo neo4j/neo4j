@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
@@ -101,9 +103,9 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     }
 
     @Override
-    public long propertiesReference()
+    public Reference propertiesReference()
     {
-        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.propertiesReference();
+        return currentAddedInTx != NO_ID ? LongReference.NULL_REFERENCE : storeCursor.propertiesReference();
     }
 
     protected abstract void collectAddedTxStateSnapshot();

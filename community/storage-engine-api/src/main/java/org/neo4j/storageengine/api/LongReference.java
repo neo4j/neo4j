@@ -17,29 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.storageengine.api.Reference;
-
-/**
- * Surface for accessing relationship data.
- */
-public interface RelationshipDataAccessor
+public class LongReference implements Reference
 {
-    long relationshipReference(); // not sure relationships will have independent references,
-    // so exposing this might be leakage.
+    public static final long NULL = -1;
 
-    int type();
+    public final long id;
 
-    void source( NodeCursor cursor );
+    public LongReference( long id )
+    {
+        this.id = id;
+    }
 
-    void target( NodeCursor cursor );
+    public static Reference longReference( long id )
+    {
+        return id == NULL ? NULL_REFERENCE : new LongReference( id );
+    }
 
-    void properties( PropertyCursor cursor );
-
-    long sourceNodeReference();
-
-    long targetNodeReference();
-
-    Reference propertiesReference();
+    public static Reference NULL_REFERENCE = new LongReference( NULL );
 }

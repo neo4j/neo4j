@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
@@ -93,13 +95,13 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public void initNodeProperties( long reference, long ownerReference )
+    public void initNodeProperties( Reference reference, long ownerReference )
     {
         init( reference, ownerReference, EntityType.NODE );
     }
 
     @Override
-    public void initRelationshipProperties( long reference, long ownerReference )
+    public void initRelationshipProperties( Reference reference, long ownerReference )
     {
         init( reference, ownerReference, EntityType.RELATIONSHIP );
     }
@@ -108,7 +110,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
      * In this implementation property ids are unique among nodes AND relationships so they all init the same way
      * @param reference properties reference, actual property record id.
      */
-    private void init( long reference, long ownerReference, EntityType ownerEntityType )
+    private void init( Reference reference, long ownerReference, EntityType ownerEntityType )
     {
         if ( getId() != NO_ID )
         {
@@ -116,20 +118,21 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         }
 
         //Set to high value to force a read
+        long referenceId = ((LongReference) reference).id;
         this.block = Integer.MAX_VALUE;
         this.ownerReference = ownerReference;
         this.ownerEntityType = ownerEntityType;
-        if ( reference != NO_ID )
+        if ( referenceId != NO_ID )
         {
             if ( page == null )
             {
-                page = propertyPage( reference );
+                page = propertyPage( referenceId );
             }
         }
 
         // Store state
-        this.next = reference;
-        this.first = reference;
+        this.next = referenceId;
+        this.first = ((LongReference) reference).id;
         this.numSeenPropertyRecords = 0;
         this.cycleDetection = null;
         this.open = true;

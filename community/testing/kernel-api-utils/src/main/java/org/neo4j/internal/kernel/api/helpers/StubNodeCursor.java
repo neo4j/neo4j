@@ -31,8 +31,12 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.storageengine.api.LongReference.longReference;
 
 public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
 {
@@ -135,17 +139,17 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public long propertiesReference()
+    public Reference propertiesReference()
     {
         if ( offset >= 0 && offset < nodes.size() )
         {
             NodeData node = nodes.get( offset );
             if ( !node.properties.isEmpty() )
             {
-                return node.id;
+                return longReference( node.id );
             }
         }
-        return -1;
+        return LongReference.NULL_REFERENCE;
     }
 
     @Override

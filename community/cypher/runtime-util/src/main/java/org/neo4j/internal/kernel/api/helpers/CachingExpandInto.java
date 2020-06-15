@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.storageengine.api.Reference;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
@@ -367,7 +368,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
 
         @Override
-        public long propertiesReference()
+        public Reference propertiesReference()
         {
             return currentRelationship.properties;
         }
@@ -507,7 +508,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
 
         @Override
-        public long propertiesReference()
+        public Reference propertiesReference()
         {
             return allRelationships.propertiesReference();
         }
@@ -705,10 +706,11 @@ public class CachingExpandInto extends DefaultCloseListenable
     {
         static final long RELATIONSHIP_SHALLOW_SIZE = shallowSizeOfInstance( Relationship.class );
 
-        private final long id, from, to, properties;
+        private final long id, from, to;
         private final int type;
+        private final Reference properties;
 
-        private Relationship( long id, long from, long to, long properties, int type )
+        private Relationship( long id, long from, long to, Reference properties, int type )
         {
             this.id = id;
             this.from = from;

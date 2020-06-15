@@ -70,6 +70,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.LongReference.longReference;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -174,7 +175,7 @@ public class RecordPropertyCursorTest
 
         // when
         RecordPropertyCursor cursor = createCursor();
-        cursor.initNodeProperties( firstProp, owner.getId() );
+        cursor.initNodeProperties( longReference( firstProp ), owner.getId() );
         InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
         {
             while ( cursor.next() )
@@ -212,7 +213,7 @@ public class RecordPropertyCursorTest
 
         // when
         RecordPropertyCursor cursor = createCursor();
-        cursor.initNodeProperties( firstProp, owner.getId() );
+        cursor.initNodeProperties( longReference( firstProp ), owner.getId() );
         InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
         {
             while ( cursor.next() )
@@ -236,7 +237,7 @@ public class RecordPropertyCursorTest
     {
         Map<Integer, Value> expectedValues = asMap( values );
         // This is a specific test for RecordPropertyCursor and we know that node/relationships init methods are the same
-        cursor.initNodeProperties( firstPropertyId, owner.getId() );
+        cursor.initNodeProperties( longReference( firstPropertyId ), owner.getId() );
         while ( cursor.next() )
         {
             // then

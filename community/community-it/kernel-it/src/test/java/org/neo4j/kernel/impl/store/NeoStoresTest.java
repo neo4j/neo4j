@@ -77,6 +77,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertyKeyValue;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -250,11 +251,11 @@ public class NeoStoresTest
         return property;
     }
 
-    private StorageProperty getProperty( int key, long propertyId )
+    private StorageProperty getProperty( int key, Reference propertyReference )
     {
         try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
         {
-            propertyCursor.initNodeProperties( propertyId );
+            propertyCursor.initNodeProperties( propertyReference );
             if ( propertyCursor.next() )
             {
                 Value oldValue = propertyCursor.propertyValue();

@@ -38,4 +38,12 @@ public interface StorageRelationshipCursor extends StorageEntityCursor
      * @return target node of the relationship this cursor is placed at.
      */
     long targetNodeReference();
+
+    /**
+     * @return a relationship ID similar to {@link #entityReference()}, but can contain more information about how to identify and find a relationship.
+     */
+    default Reference relationshipReference()
+    {
+        return new LongReference( entityReference() );
+    }
 }

@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.EntityState;
@@ -63,7 +64,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         this.securityRelCursor = securityRelCursor;
     }
 
-    void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
+    void initNode( long nodeReference, Reference reference, Read read, AssertOpen assertOpen )
     {
         assert nodeReference != NO_ID;
 
@@ -108,7 +109,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         }
     }
 
-    void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
+    void initRelationship( long relationshipReference, Reference reference, Read read, AssertOpen assertOpen )
     {
         assert relationshipReference != NO_ID;
 

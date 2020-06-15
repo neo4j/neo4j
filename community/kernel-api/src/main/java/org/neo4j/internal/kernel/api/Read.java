@@ -20,11 +20,11 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -409,7 +409,7 @@ public interface Read
      *         the cursor to use for consuming the results.
      */
     // Used by APOC and GDS.
-    void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
+    void nodeProperties( long nodeReference, Reference reference, PropertyCursor cursor );
 
     /**
      * @param relationshipReference
@@ -419,7 +419,7 @@ public interface Read
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor );
+    void relationshipProperties( long relationshipReference, Reference reference, PropertyCursor cursor );
 
     /**
      * Checks if a node was deleted in the current transaction

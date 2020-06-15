@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
@@ -241,13 +242,13 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
+    public void nodeProperties( long nodeReference, Reference reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipProperties( long nodeReference, long reference, PropertyCursor cursor )
+    public void relationshipProperties( long nodeReference, Reference reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }

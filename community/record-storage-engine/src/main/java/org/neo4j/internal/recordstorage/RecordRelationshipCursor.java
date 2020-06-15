@@ -24,12 +24,14 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.storageengine.api.LongReference.longReference;
 
 abstract class RecordRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>, StorageRelationshipCursor
 {
@@ -76,15 +78,15 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     }
 
     @Override
-    public long propertiesReference()
+    public Reference propertiesReference()
     {
-        return getNextProp();
+        return longReference( getNextProp() );
     }
 
     @Override
     public void properties( StoragePropertyCursor propertyCursor )
     {
-        propertyCursor.initRelationshipProperties( getNextProp() );
+        propertyCursor.initRelationshipProperties( longReference( getNextProp() ) );
     }
 
     // used to visit transaction state

@@ -27,6 +27,8 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
@@ -103,9 +105,9 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     }
 
     @Override
-    public long propertiesReference()
+    public Reference propertiesReference()
     {
-        return -1;
+        return LongReference.NULL_REFERENCE;
     }
 
     @Override

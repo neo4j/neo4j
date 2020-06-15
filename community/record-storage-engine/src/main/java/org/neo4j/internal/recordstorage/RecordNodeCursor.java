@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -43,6 +44,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
+import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
@@ -345,15 +347,16 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public long propertiesReference()
+    public Reference propertiesReference()
     {
-        return getNextProp();
+        return longReference( getNextProp() );
     }
 
     @Override
     public void properties( StoragePropertyCursor propertyCursor )
     {
-        propertyCursor.initNodeProperties( getNextProp() );
+        propertyCursor.initNodeProperties( longReference( getNextProp() ) );
+
     }
 
     @Override
