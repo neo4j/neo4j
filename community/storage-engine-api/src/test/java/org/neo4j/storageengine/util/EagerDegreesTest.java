@@ -22,11 +22,12 @@ package org.neo4j.storageengine.util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -44,9 +45,9 @@ class EagerDegreesTest
         EagerDegrees degrees = new EagerDegrees();
 
         // when/then
-        assertEquals( 0, degrees.degree( 0, OUTGOING ) );
-        assertEquals( 0, degrees.degree( OUTGOING ) );
-        assertEquals( 0, degrees.totalDegree() );
+        assertThat( degrees.degree( 0, OUTGOING ) ).isZero();
+        assertThat( degrees.degree( OUTGOING ) ).isZero();
+        assertThat( degrees.totalDegree() ).isZero();
     }
 
     @Test
@@ -58,12 +59,14 @@ class EagerDegreesTest
         degrees.add( type, 20, 21, 22 );
 
         // when/then
-        assertEquals( 0, degrees.degree( 5, OUTGOING ) );
-        assertEquals( 0, degrees.degree( 3, INCOMING ) );
-        assertEquals( 0, degrees.degree( 2, BOTH ) );
-        assertEquals( 0, degrees.outgoingDegree( 2 ) );
-        assertEquals( 0, degrees.incomingDegree( 1 ) );
-        assertEquals( 0, degrees.totalDegree( 0 ) );
+        assertThat( degrees.degree( 5, OUTGOING ) ).isZero();
+        assertThat( degrees.degree( 3, INCOMING ) ).isZero();
+        assertThat( degrees.degree( 2, BOTH ) ).isZero();
+        assertThat( degrees.outgoingDegree( 2 ) ).isZero();
+        assertThat( degrees.incomingDegree( 1 ) ).isZero();
+        assertThat( degrees.totalDegree( 0 ) ).isZero();
+        assertThat( degrees.hasType( type ) ).isTrue();
+        assertThat( degrees.hasType( type + 1 ) ).isFalse();
     }
 
     @Test
@@ -75,10 +78,33 @@ class EagerDegreesTest
         degrees.add( type, 20, 21, 22 );
 
         // when/then
-        assertEquals( 42, degrees.outgoingDegree( type ) );
-        assertEquals( 43, degrees.incomingDegree( type ) );
-        assertEquals( 63, degrees.totalDegree( type ) );
-        assertEquals( 63, degrees.totalDegree() );
+        assertThat( degrees.outgoingDegree( type ) ).isEqualTo( 42 );
+        assertThat( degrees.incomingDegree( type ) ).isEqualTo( 43 );
+        assertThat( degrees.totalDegree( type ) ).isEqualTo( 63 );
+        assertThat( degrees.totalDegree() ).isEqualTo( 63 );
+    }
+
+    @Test
+    void shouldAddWithDirectionMethod()
+    {
+        // given
+        int type = 99;
+        int outgoing = 5;
+        int incoming = 6;
+        int loop = 7;
+        EagerDegrees degrees = new EagerDegrees();
+
+        // when
+        degrees.add( type, RelationshipDirection.OUTGOING, outgoing );
+        degrees.add( type, RelationshipDirection.INCOMING, incoming );
+        degrees.add( type, RelationshipDirection.LOOP, loop );
+
+        // then
+        assertThat( degrees.rawOutgoingDegree( type ) ).isEqualTo( outgoing );
+        assertThat( degrees.rawIncomingDegree( type ) ).isEqualTo( incoming );
+        assertThat( degrees.rawLoopDegree( type ) ).isEqualTo( loop );
+        assertThat( degrees.outgoingDegree() ).isEqualTo( outgoing + loop );
+        assertThat( degrees.incomingDegree() ).isEqualTo( incoming + loop );
     }
 
     @Test
@@ -131,9 +157,9 @@ class EagerDegreesTest
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             int type = types[i];
-            assertEquals( expectedDegrees[i][0] + expectedDegrees[i][2], degrees.outgoingDegree( type ) );
-            assertEquals( expectedDegrees[i][1] + expectedDegrees[i][2], degrees.incomingDegree( type ) );
-            assertEquals( expectedDegrees[i][0] + expectedDegrees[i][1] + expectedDegrees[i][2], degrees.totalDegree( type ) );
+            assertThat( degrees.outgoingDegree( type ) ).isEqualTo( expectedDegrees[i][0] + expectedDegrees[i][2] );
+            assertThat( degrees.incomingDegree( type ) ).isEqualTo( expectedDegrees[i][1] + expectedDegrees[i][2] );
+            assertThat( degrees.totalDegree( type ) ).isEqualTo( expectedDegrees[i][0] + expectedDegrees[i][1] + expectedDegrees[i][2] );
         }
     }
 }
