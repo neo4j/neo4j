@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -366,6 +368,21 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     val c = CardinalityCalculator.topCardinality(plan, state, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality)
+  }
+
+  test("Selection non-empty source") {
+    val plan = Selection(Seq(Variable("x")(InputPosition.NONE)), Argument())
+
+    val c = CardinalityCalculator.selectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should be < defaultSourceCardinality
+  }
+
+  test("Selection empty source") {
+    val plan = Selection(Seq(Variable("x")(InputPosition.NONE)), Argument())
+
+    defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
+    val c = CardinalityCalculator.selectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c shouldBe Cardinality.EMPTY
   }
 
   private class TestGraphStatistics extends GraphStatistics {

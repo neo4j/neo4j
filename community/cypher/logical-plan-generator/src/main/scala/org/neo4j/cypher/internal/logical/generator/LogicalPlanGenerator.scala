@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -224,6 +225,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(optional(state)),
     Gen.lzy(sort(state)),
     Gen.lzy(top(state)),
+    Gen.lzy(selection(state)),
   )
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -364,6 +366,14 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
     val plan = Top(source, orderedColumns, literalInt(count))(state.idGen)
+    annotate(plan, state)
+  }
+
+  def selection(state: State): Gen[WithState[Selection]] = for {
+    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
+    WithState(xpr, state) <- validExpression(source.availableSymbols.toSeq, state, _.nonAggregatingExpression)
+  } yield {
+    val plan = Selection(Seq(xpr), source)(state.idGen)
     annotate(plan, state)
   }
 

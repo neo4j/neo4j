@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -139,4 +140,7 @@ object CardinalityCalculator {
       val limit = Multiplier(count.value.toDouble)
       Cardinality.min(sourceCardinality, applyLHSCardinality * limit)
   }
+
+  implicit val selectionCardinality: CardinalityCalculator[Selection] =
+    (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
 }
