@@ -333,4 +333,35 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes.flatMap(n => Seq.fill(numberOfNodes * numberOfNodes)(Array[Any](n)))
     runtimeResult should beColumns("x").withRows(expected)
   }
+
+  test("cartesian product nested under apply") {
+    // given
+    val nodes = given {
+      val (aNodes, bNodes, _, _) = bidirectionalBipartiteGraph(2, "A", "B", "AB", "BA")
+      aNodes ++ bNodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.expandAll("(x)-[r]->(y)")
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val expected = for {
+      x <- nodes
+      r <- x.getRelationships().asScala if r.getStartNodeId == x.getId
+    } yield {
+      val y = r.getEndNode
+      Array[Any](x, r, y)
+    }
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
 }
