@@ -205,6 +205,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean relationshipExists( long reference )
     {
         throw new UnsupportedOperationException();

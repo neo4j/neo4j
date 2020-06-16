@@ -78,6 +78,12 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     }
 
     @Override
+    public void single( long reference, long sourceNodeReference, int type, long targetNodeReference )
+    {
+        single( reference );
+    }
+
+    @Override
     public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
     {
         if ( getId() != NO_ID )

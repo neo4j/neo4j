@@ -24,4 +24,12 @@ package org.neo4j.storageengine.api;
  */
 public interface StorageRelationshipScanCursor extends StorageRelationshipCursor, StorageEntityScanCursor<AllRelationshipsScan>
 {
+    /**
+     * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that entity.
+     * @param reference entity to place this cursor at the next call to {@link #next()}.
+     * @param sourceNodeReference source node reference of this relationship.
+     * @param type type of this relationship.
+     * @param targetNodeReference target node reference of this relationship.
+     */
+    void single( long reference, long sourceNodeReference, int type, long targetNodeReference );
 }

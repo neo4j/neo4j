@@ -363,6 +363,13 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor )
+    {
+        ktx.assertOpen();
+        ((DefaultRelationshipScanCursor) cursor).single( reference, sourceNodeReference, type, targetNodeReference, this );
+    }
+
+    @Override
     public final void allRelationshipsScan( RelationshipScanCursor cursor )
     {
         ktx.assertOpen();

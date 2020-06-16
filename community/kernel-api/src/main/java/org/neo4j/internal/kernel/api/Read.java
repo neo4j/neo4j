@@ -352,6 +352,17 @@ public interface Read
     void singleRelationship( long reference, RelationshipScanCursor cursor );
 
     /**
+     * Looks up a single relationship by its reference together with its meta data.
+     *
+     * @param reference the relationship reference, e.g. {@link RelationshipScanCursor#relationshipReference()}.
+     * @param sourceNodeReference the source node reference of the relationship.
+     * @param type the type of relationship.
+     * @param targetNodeReference the target node reference of the relationship.
+     * @param cursor the cursor to use for consuming the results.
+     */
+    void singleRelationship( long reference, long sourceNodeReference, int type, long targetNodeReference, RelationshipScanCursor cursor );
+
+    /**
      * Checks if a relationship exists in the database
      *
      * @param reference The reference of the relationship to check
