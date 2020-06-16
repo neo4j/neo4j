@@ -636,4 +636,35 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                   } yield Array(node, node, otherNode)
     runtimeResult should beColumns("x", "x2", "y").withRows(expectedResultRows)
   }
+
+  test("should join after expand and apply on both sides") {
+    // given
+    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .nodeHashJoin("x", "y")
+      .|.expand("(x)--(y)")
+      .|.apply()
+      .|.|.argument("x")
+      .|.allNodeScan("x")
+      .expand("(y)--(x)")
+      .apply()
+      .|.argument("y")
+      .input(nodes = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(otherNode, node)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
+  }
 }
