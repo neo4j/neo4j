@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,9 +41,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
-import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -57,14 +53,11 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -2731,192 +2724,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.execute( format( QUERY_RELS, "rels", "*" ) ).close();
             tx.commit();
         }
-    }
-
-    @Test
-    void relationshipIndexAndDetachDelete() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
-        long nodeId;
-        long relId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode();
-            nodeId = node.getId();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            relId = rel.getId();
-            rel.setProperty( PROP, "blabla" );
-            tx.commit();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
-            tx.execute( "match (n) where id(n) = " + nodeId + " detach delete n" ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
-            tx.commit();
-        }
-
-        checkDatabaseConsistency();
-    }
-
-    private void checkDatabaseConsistency()
-    {
-        DatabaseLayout layout = db.databaseLayout();
-        controller.restartDbms( b ->
-        {
-            try
-            {
-                ConsistencyCheckService cc = new ConsistencyCheckService();
-                ConsistencyCheckService.Result result = cc.runFullConsistencyCheck(
-                        layout, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.nullLogProvider(), false, ConsistencyFlags.DEFAULT );
-                if ( !result.isSuccessful() )
-                {
-                    Files.lines( result.reportFile().toPath() ).forEach( System.out::println );
-                }
-                assertTrue( result.isSuccessful() );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            return b;
-        } );
-    }
-
-    @Test
-    public void relationshipIndexAndDetachDeleteWithRestart() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
-        long nodeId;
-        long relId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode();
-            nodeId = node.getId();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            relId = rel.getId();
-            rel.setProperty( PROP, "blabla" );
-            tx.commit();
-        }
-
-        restartDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
-            tx.execute( "match (n) where id(n) = " + nodeId + " detach delete n" ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
-            tx.commit();
-        }
-
-        checkDatabaseConsistency();
-    }
-
-    @Test
-    public void relationshipIndexAndPropertyRemove() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
-        long relId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            relId = rel.getId();
-            rel.setProperty( PROP, "blabla" );
-            tx.commit();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
-            Relationship rel = tx.getRelationshipById( relId );
-            rel.removeProperty( PROP );
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
-            tx.commit();
-        }
-
-        checkDatabaseConsistency();
-    }
-
-    @Test
-    public void relationshipIndexAndPropertyRemoveWithRestart() throws Exception
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
-        long relId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode();
-            Relationship rel = node.createRelationshipTo( node, REL );
-            relId = rel.getId();
-            rel.setProperty( PROP, "blabla" );
-            tx.commit();
-        }
-
-        restartDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
-            Relationship rel = tx.getRelationshipById( relId );
-            rel.removeProperty( PROP );
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
-            tx.commit();
-        }
-
-        checkDatabaseConsistency();
     }
 
     @Nested

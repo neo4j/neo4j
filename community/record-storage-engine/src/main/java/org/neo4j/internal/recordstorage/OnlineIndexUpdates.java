@@ -229,10 +229,4 @@ public class OnlineIndexUpdates implements IndexUpdates
     {
         closeAllUnchecked( nodeCursor, relationshipCursor, reader );
     }
-
-    @Override
-    public String toString()
-    {
-        return "OnlineIndexUpdates[" + updates + "]";
-    }
 }
