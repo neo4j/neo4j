@@ -295,9 +295,14 @@ public final class ValueUtils
         return new NodeEntityWrappingNodeValue( node );
     }
 
+    public static RelationshipValue fromRelationshipEntityLazyLoad( Relationship relationship )
+    {
+        return RelationshipEntityWrappingValue.wrapLazy( relationship );
+    }
+
     public static RelationshipValue fromRelationshipEntity( Relationship relationship )
     {
-        return new RelationshipEntityWrappingValue( relationship );
+        return RelationshipEntityWrappingValue.wrapEager( relationship );
     }
 
     public static PathValue fromPath( Path path )

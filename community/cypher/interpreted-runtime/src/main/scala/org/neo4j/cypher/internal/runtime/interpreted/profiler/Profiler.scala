@@ -201,6 +201,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
     }
 
     override def hasNext: Boolean = inner.hasNext
+
+    override def startNodeId(): Long = inner.startNodeId()
+
+    override def endNodeId(): Long = inner.endNodeId()
+
+    override def typeId(): Int = inner.typeId()
   }
 
   override protected def manyDbHits(nodeCursor: NodeCursor): NodeCursor = {

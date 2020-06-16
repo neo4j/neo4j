@@ -34,6 +34,7 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
@@ -47,9 +48,25 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     private volatile NodeValue startNode;
     private volatile NodeValue endNode;
 
-    RelationshipEntityWrappingValue( Relationship relationship )
+    /**
+     * Wraps a {@link Relationship}, reading out its meta data eagerly.
+     */
+    static RelationshipEntityWrappingValue wrapEager( Relationship relationship )
     {
-        super( relationship.getId() );
+        return new RelationshipEntityWrappingValue( relationship, relationship.getStartNodeId(), relationship.getEndNodeId() );
+    }
+
+    /**
+     * Wraps a {@link Relationship}, reading out its meta data lazily, i.e. on first access of e.g. {@link #startNodeId()}.
+     */
+    static RelationshipEntityWrappingValue wrapLazy( Relationship relationship )
+    {
+        return new RelationshipEntityWrappingValue( relationship, NO_ID, NO_ID );
+    }
+
+    private RelationshipEntityWrappingValue( Relationship relationship, long startNodeId, long endNodeId )
+    {
+        super( relationship.getId(), startNodeId, endNodeId );
         this.relationship = relationship;
     }
 
@@ -99,7 +116,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
                 writer.writeVirtualRelationshipHack( relationship );
             }
 
-            writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
+            writer.writeRelationship( id(), startNodeId(), endNodeId(), type(), p );
         }
     }
 
@@ -180,6 +197,24 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     public boolean isPopulated()
     {
         return type != null && properties != null && startNode != null && endNode != null;
+    }
+
+    @Override
+    public long startNodeId()
+    {
+        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not the case
+        // Then use the other route of looking up the start node the slow way and getting its ID.
+        long startNodeId = super.startNodeId();
+        return startNodeId != NO_ID ? startNodeId : startNode().id();
+    }
+
+    @Override
+    public long endNodeId()
+    {
+        // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not the case
+        // Then use the other route of looking up the end node the slow way and getting its ID.
+        long endNodeId = super.endNodeId();
+        return endNodeId != NO_ID ? endNodeId : endNode().id();
     }
 
     @Override

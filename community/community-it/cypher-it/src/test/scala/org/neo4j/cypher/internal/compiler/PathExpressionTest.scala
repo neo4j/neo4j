@@ -61,6 +61,5 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     result.startNode() should equal(fromNodeEntity(a))
     result.endNode() should equal(fromNodeEntity(c))
-    result should have size 2
   }
 }

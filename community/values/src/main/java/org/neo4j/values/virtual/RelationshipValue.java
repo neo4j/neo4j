@@ -29,10 +29,14 @@ import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 public abstract class RelationshipValue extends VirtualRelationshipValue
 {
     private final long id;
+    private final long startNodeId;
+    private final long endNodeId;
 
-    protected RelationshipValue( long id )
+    protected RelationshipValue( long id, long startNodeId, long endNodeId )
     {
         this.id = id;
+        this.startNodeId = startNodeId;
+        this.endNodeId = endNodeId;
     }
 
     @Override
@@ -44,7 +48,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
         }
         else
         {
-            writer.writeRelationship( id, startNode().id(), endNode().id(), type(), properties() );
+            writer.writeRelationship( id, startNodeId(), endNodeId(), type(), properties() );
         }
     }
 
@@ -52,6 +56,16 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
     public String toString()
     {
         return format( "-[%d]-", id );
+    }
+
+    public long startNodeId()
+    {
+        return startNodeId;
+    }
+
+    public long endNodeId()
+    {
+        return endNodeId;
     }
 
     public abstract NodeValue startNode();
@@ -75,7 +89,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
 
     public long otherNodeId( long node )
     {
-        return node == startNode().id() ? endNode().id() : startNode().id();
+        return node == startNodeId() ? endNodeId() : startNodeId();
     }
 
     @Override
@@ -94,7 +108,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
 
         DirectRelationshipValue( long id, NodeValue startNode, NodeValue endNode, TextValue type, MapValue properties )
         {
-            super( id );
+            super( id, startNode.id(), endNode.id() );
             assert properties != null;
 
             this.startNode = startNode;

@@ -106,6 +106,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
+import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntityLazyLoad
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -812,7 +813,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getById(id: Long): RelationshipValue = try {
-      fromRelationshipEntity(entityAccessor.newRelationshipEntity(id))
+      fromRelationshipEntityLazyLoad(entityAccessor.newRelationshipEntity(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
@@ -1268,13 +1269,13 @@ object TransactionBoundQueryContext {
     import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID
 
     private var _next = NOT_INITIALIZED
-    private var typeId: Int = NO_ID
+    private var relTypeId: Int = NO_ID
     private var source: Long = NO_ID
     private var target: Long = NO_ID
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
-      visitor.visit(relationshipId, typeId, source, target)
+      visitor.visit(relationshipId, relTypeId, source, target)
       true
     }
 
@@ -1293,10 +1294,16 @@ object TransactionBoundQueryContext {
       _next >= 0
     }
 
+    override def startNodeId(): Long = source
+
+    override def endNodeId(): Long = target
+
+    override def typeId(): Int = relTypeId
+
     //We store the current state in case the underlying cursor is
     //closed when calling next.
     private def storeState(): Unit = {
-      typeId = selectionCursor.`type`()
+      relTypeId = selectionCursor.`type`()
       source = selectionCursor.sourceNodeReference()
       target = selectionCursor.targetNodeReference()
     }

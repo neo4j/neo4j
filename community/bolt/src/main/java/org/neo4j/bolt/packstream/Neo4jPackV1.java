@@ -232,7 +232,7 @@ public class Neo4jPackV1 implements Neo4jPack
                     RelationshipValue r = relationships[i / 2];
                     int index = relationshipIndexes.getOrDefault( r.id(), NO_SUCH_ID );
 
-                    if ( node.id() == r.startNode().id() )
+                    if ( node.id() == r.startNodeId() )
                     {
                         pack( index );
                     }

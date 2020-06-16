@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.values.storable.Values.stringValue
 
@@ -43,14 +44,14 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should give the type of a relationship") {
     result(false).when(operations).isDeletedInThisTx(any())
 
-    val rel = new FakeRel(null, null, RelationshipType.withName("T"))
+    val rel = new FakeRel(mock[Node], mock[Node], RelationshipType.withName("T"))
     function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
   test("should handle deleted relationships since types are inlined") {
     result(true).when(operations).isDeletedInThisTx(any())
 
-    val rel = new FakeRel(null, null, RelationshipType.withName("T"))
+    val rel = new FakeRel(mock[Node], mock[Node], RelationshipType.withName("T"))
     function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
