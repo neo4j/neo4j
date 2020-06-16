@@ -365,4 +365,30 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     runtimeResult should beColumns("a").withRows(nodes.map(Array[Any](_)))
   }
+
+  test("should support simple hash join with apply on lhs and rhs") {
+    // given
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .valueHashJoin("a.prop=b.prop")
+      .|.apply()
+      .|.|.argument("b")
+      .|.allNodeScan("b")
+      .apply()
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n))
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
 }
