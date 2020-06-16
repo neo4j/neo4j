@@ -21,13 +21,16 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -50,6 +53,10 @@ import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
+
 /**
  * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
  * Also migration logic is provided by this factory.
@@ -57,6 +64,11 @@ import org.neo4j.token.TokenHolders;
 @Service
 public interface StorageEngineFactory
 {
+    /**
+     * @return the name of this storage engine, which will be used in e.g. storage engine selection and settings.
+     */
+    String name();
+
     /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
      * and means of checking upgradability between them.
@@ -178,6 +190,63 @@ public interface StorageEngineFactory
      */
     static StorageEngineFactory selectStorageEngine()
     {
-        return Iterables.single( Services.loadAll( StorageEngineFactory.class ) );
+        return selectStorageEngine( "record" );
+    }
+
+    static Collection<StorageEngineFactory> allAvailableStorageEngines()
+    {
+        return Services.loadAll( StorageEngineFactory.class );
+    }
+
+    /**
+     * @return the first {@link StorageEngineFactory} that says yes when asked about
+     * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout, PageCache)} for the given {@code databaseLayout}.
+     * If there's no store there or none of the factories can see or load it then the {@code defaultFactory} will be returned.
+     */
+    static Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    {
+        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
+        return storageEngineFactories.stream().filter( engine -> engine.storageExists( fs, databaseLayout, pageCache ) ).findFirst();
+    }
+
+    static StorageEngineFactory selectStorageEngine( String name )
+    {
+        Collection<StorageEngineFactory> storageEnginesWithThisName =
+                allAvailableStorageEngines().stream().filter( e -> e.name().equals( name ) ).collect( Collectors.toList() );
+        if ( storageEnginesWithThisName.isEmpty() )
+        {
+            throw new IllegalArgumentException( "No storage engine matching name '" + name + "'. Available storage engines are: " +
+                    allAvailableStorageEngines().stream().map( e -> "'" + e.name() + "'" ).collect( Collectors.joining( ", " ) ) );
+        }
+        return single( storageEnginesWithThisName );
+    }
+
+    static StorageEngineFactory selectStorageEngine( Configuration configuration )
+    {
+        return selectStorageEngine( configuration.get( storage_engine ) );
+    }
+
+    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration )
+    {
+        return selectStorageEngine( fs, databaseLayout, pageCache, configuration != null ? configuration.get( storage_engine ) : null );
+    }
+
+    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull )
+    {
+        // - Does a store exist at this location? -> get the one able to open it
+        // - Is there a specific name of a storage engine to look for? -> get that one
+        // - Use the default one
+        Optional<StorageEngineFactory> forExistingStore = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pageCache );
+        if ( forExistingStore.isPresent() )
+        {
+            return forExistingStore.get();
+        }
+
+        if ( isNotEmpty( specificNameOrNull ) )
+        {
+            return StorageEngineFactory.selectStorageEngine( specificNameOrNull );
+        }
+
+        return selectStorageEngine();
     }
 }

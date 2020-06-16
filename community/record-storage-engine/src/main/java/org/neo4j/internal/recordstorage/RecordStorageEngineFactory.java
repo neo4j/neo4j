@@ -105,6 +105,12 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForV
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
     @Override
+    public String name()
+    {
+        return "record";
+    }
+
+    @Override
     public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             LogService logService, PageCacheTracer pageCacheTracer )
     {

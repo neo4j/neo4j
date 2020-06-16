@@ -693,4 +693,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Whether or not to use multiple threads whilst performing recovery. Provides performance improvement for some workloads." )
     public static final Setting<Boolean> do_parallel_recovery =
             newBuilder( "unsupported.dbms.recovery.enable_parallelism", BOOL, false ).build();
+
+    @Description( "Name of storage engine to use when creating new databases (except system database). If null or empty string then a default will be used." +
+            "This setting will not be used for loading existing databases, where instead the appropriate storage engine for the specific database " +
+            "will be used" )
+    @Internal
+    public static final Setting<String> storage_engine = newBuilder( "unsupported.dbms.storage_engine", STRING, "record" ).build();
 }

@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -142,4 +143,10 @@ public interface DatabaseCreationContext
     GlobalMemoryGroupTracker getOtherMemoryPool();
 
     DbmsReadOnlyChecker getDbmsReadOnlyChecker();
+
+    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration config,
+            NamedDatabaseId namedDatabaseId )
+    {
+        return StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pageCache, namedDatabaseId.isSystemDatabase() ? null : config );
+    }
 }
