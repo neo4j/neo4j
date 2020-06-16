@@ -500,5 +500,12 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         {
             return inner.addedRelationship( transactionState );
         }
+
+        @Override
+        public RelationshipSelection reverse()
+        {
+            RelationshipSelection reverse = inner.reverse();
+            return reverse == inner ? this : new SecureRelationshipSelection( reverse ); //Reference check
+        }
     }
 }

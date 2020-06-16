@@ -112,6 +112,8 @@ public abstract class RelationshipSelection
      */
     public abstract LongIterator addedRelationship( NodeState transactionState );
 
+    public abstract RelationshipSelection reverse();
+
     public static RelationshipSelection selection( int[] types, Direction direction )
     {
         if ( types == null )
@@ -235,6 +237,12 @@ public abstract class RelationshipSelection
         }
 
         @Override
+        public RelationshipSelection reverse()
+        {
+            return Direction.BOTH.equals( direction ) ? this : new DirectionalSingleType( type, direction.reverse() );
+        }
+
+        @Override
         public String toString()
         {
             return "RelationshipSelection[" + "type=" + type + ", " + direction + "]";
@@ -303,6 +311,12 @@ public abstract class RelationshipSelection
         }
 
         @Override
+        public RelationshipSelection reverse()
+        {
+            return Direction.BOTH.equals( direction ) ? this : new DirectionalMultipleTypes( types, direction.reverse() );
+        }
+
+        @Override
         public String toString()
         {
             return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + "]";
@@ -351,6 +365,12 @@ public abstract class RelationshipSelection
         public LongIterator addedRelationship( NodeState transactionState )
         {
             return transactionState.getAddedRelationships( direction );
+        }
+
+        @Override
+        public RelationshipSelection reverse()
+        {
+            return Direction.BOTH.equals( direction ) ? this : new DirectionalAllTypes( direction.reverse() );
         }
 
         @Override
@@ -417,6 +437,12 @@ public abstract class RelationshipSelection
         public boolean test( int type, RelationshipDirection direction )
         {
             return true;
+        }
+
+        @Override
+        public RelationshipSelection reverse()
+        {
+            return this;
         }
 
         @Override
@@ -505,6 +531,12 @@ public abstract class RelationshipSelection
         public LongIterator addedRelationship( NodeState transactionState )
         {
             return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        @Override
+        public RelationshipSelection reverse()
+        {
+            return this;
         }
 
         @Override
