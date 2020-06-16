@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -143,4 +144,7 @@ object CardinalityCalculator {
 
   implicit val selectionCardinality: CardinalityCalculator[Selection] =
     (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
+
+  implicit val unwindCollectionCardinality: CardinalityCalculator[UnwindCollection] =
+    (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_LIST_CARDINALITY
 }

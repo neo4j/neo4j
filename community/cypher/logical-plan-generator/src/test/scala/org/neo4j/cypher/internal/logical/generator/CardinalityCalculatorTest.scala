@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -382,6 +383,21 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
     val c = CardinalityCalculator.selectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c shouldBe Cardinality.EMPTY
+  }
+
+  test("UnwindCollection non-empty source") {
+    val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
+
+    val c = CardinalityCalculator.unwindCollectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should be > defaultSourceCardinality
+  }
+
+  test("UnwindCollection empty source") {
+    val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
+
+    defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
+    val c = CardinalityCalculator.unwindCollectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c shouldBe Cardinality.EMPTY
   }
 

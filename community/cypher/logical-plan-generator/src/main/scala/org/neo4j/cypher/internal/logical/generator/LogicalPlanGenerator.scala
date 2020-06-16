@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
@@ -227,6 +228,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     Gen.lzy(sort(state)),
     Gen.lzy(top(state)),
     Gen.lzy(selection(state)),
+    Gen.lzy(unwindCollection(state)),
   )
 
   def twoChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -375,6 +377,18 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     WithState(xpr, state) <- expressionList(state, source.availableSymbols.toSeq, _.nonAggregatingExpression, 1)
   } yield {
     val plan = Selection(PredicateHelper.coercePredicatesWithAnds(xpr), source)(state.idGen)
+    annotate(plan, state)
+  }
+
+  def unwindCollection(state: State): Gen[WithState[UnwindCollection]] = for {
+    WithState(source, state) <- innerLogicalPlan(state).suchThat {
+      case WithState(plan, _) => plan.availableSymbols.nonEmpty
+    }
+    WithState(xpr, state) <- validExpression(source.availableSymbols.toSeq, state, _._list)
+    WithState(name, state) <- newVariable(state)
+    state <- state.declareTypeAny(name)
+  } yield {
+    val plan = UnwindCollection(source, name, xpr)(state.idGen)
     annotate(plan, state)
   }
 
