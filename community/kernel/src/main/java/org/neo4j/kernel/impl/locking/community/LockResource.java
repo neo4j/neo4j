@@ -29,18 +29,16 @@ public class LockResource
 {
     private final ResourceType resourceType;
     private final LockType lockType;
-    private final long transactionId;
     private final long resourceId;
 
     /** Local reference count, used for each client to count references to a lock. */
     private int refCount = 1;
 
-    public LockResource( ResourceType resourceType, LockType lockType, long resourceId, long transactionId )
+    public LockResource( ResourceType resourceType, LockType lockType, long resourceId )
     {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
         this.lockType = lockType;
-        this.transactionId = transactionId;
     }
 
     @Override
@@ -67,7 +65,7 @@ public class LockResource
     @Override
     public String toString()
     {
-        return String.format( "%s %s(%d %d)", resourceType, lockType, resourceId, transactionId );
+        return String.format( "%s %s(%d)", resourceType, lockType, resourceId );
     }
 
     public void acquireReference()
@@ -95,8 +93,4 @@ public class LockResource
         return lockType;
     }
 
-    public long transactionId()
-    {
-        return transactionId;
-    }
 }

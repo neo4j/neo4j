@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,7 +36,6 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
-import org.neo4j.logging.Logger;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Thread.currentThread;
@@ -72,7 +74,7 @@ public class RWLock
 {
     private final LockResource resource; // the resource this RWLock locks
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
-    private final Map<Object, TxLockElement> txLockElementMap = new HashMap<>();
+    private final Map<LockTransaction, TxLockElement> txLockElementMap = new HashMap<>();
     private final RagManager ragManager;
     private final Clock clock;
     private final long lockAcquisitionTimeoutMillis;
@@ -93,7 +95,7 @@ public class RWLock
     // keeps track of a transactions read and write lock count on this RWLock
     private static class TxLockElement
     {
-        private final Object tx;
+        private final LockTransaction tx;
 
         // access to these is guarded by synchronized blocks
         private int readCount;
@@ -104,7 +106,7 @@ public class RWLock
         // flag indicate that current TxLockElement is terminated because owning client closed
         private boolean terminated;
 
-        TxLockElement( Object tx )
+        TxLockElement( LockTransaction tx )
         {
             this.tx = tx;
         }
@@ -138,6 +140,11 @@ public class RWLock
         {
             this.terminated = terminated;
         }
+
+        public long owningTransactionId()
+        {
+            return tx.getTransactionId();
+        }
     }
 
     // keeps track of what type of lock a thread is waiting for
@@ -156,7 +163,7 @@ public class RWLock
         }
     }
 
-    public Object resource()
+    public LockResource resource()
     {
         return resource;
     }
@@ -192,7 +199,7 @@ public class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireReadLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireReadLock( LockTracer tracer, LockTransaction tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -219,7 +226,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), resource.transactionId(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
@@ -258,7 +265,7 @@ public class RWLock
         }
     }
 
-    synchronized boolean tryAcquireReadLock( Object tx )
+    synchronized boolean tryAcquireReadLock( LockTransaction tx )
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -288,7 +295,7 @@ public class RWLock
      * transactions in the queue they will be interrupted if they can acquire
      * the lock.
      */
-    synchronized void releaseReadLock( Object tx ) throws LockNotFoundException
+    synchronized void releaseReadLock( LockTransaction tx ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -380,7 +387,7 @@ public class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireWriteLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireWriteLock( LockTracer tracer, LockTransaction tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -407,7 +414,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), resource.transactionId(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
@@ -481,7 +488,7 @@ public class RWLock
         }
     }
 
-    synchronized boolean tryAcquireWriteLock( Object tx )
+    synchronized boolean tryAcquireWriteLock( LockTransaction tx )
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -511,7 +518,7 @@ public class RWLock
      * transactions in the queue they will be interrupted if they can acquire
      * the lock.
      */
-    synchronized void releaseWriteLock( Object tx ) throws LockNotFoundException
+    synchronized void releaseWriteLock( LockTransaction tx ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -568,38 +575,6 @@ public class RWLock
         return waitingThreadList.size();
     }
 
-    public synchronized boolean logTo( Logger logger )
-    {
-        logger.log( "Total lock count: readCount=" + totalReadCount
-                    + " writeCount=" + totalWriteCount + " for " + resource );
-
-        logger.log( "Waiting list:" );
-        Iterator<LockRequest> wElements = waitingThreadList.iterator();
-        while ( wElements.hasNext() )
-        {
-            LockRequest lockRequest = wElements.next();
-            logger.log( "[" + lockRequest.waitingThread + "("
-                        + lockRequest.element.readCount + "r," + lockRequest.element.writeCount + "w),"
-                        + lockRequest.lockType + "]" );
-            if ( wElements.hasNext() )
-            {
-                logger.log( "," );
-            }
-            else
-            {
-                logger.log( "" );
-            }
-        }
-
-        logger.log( "Locking transactions:" );
-        for ( TxLockElement tle : txLockElementMap.values() )
-        {
-            logger.log( "" + tle.tx + "(" + tle.readCount + "r,"
-                        + tle.writeCount + "w)" );
-        }
-        return true;
-    }
-
     public synchronized String describe()
     {
         StringBuilder sb = new StringBuilder( this.toString() );
@@ -643,7 +618,7 @@ public class RWLock
 
     // for specified transaction object mark all lock elements as terminated
     // and interrupt all waiters
-    synchronized void terminateLockRequestsForLockTransaction( Object lockTransaction )
+    synchronized void terminateLockRequestsForLockTransaction( LockTransaction lockTransaction )
     {
         TxLockElement lockElement = txLockElementMap.get( lockTransaction );
         if ( lockElement != null && !lockElement.isTerminated() )
@@ -665,21 +640,21 @@ public class RWLock
         return "RWLock[" + resource + ", hash=" + hashCode() + "]";
     }
 
-    private void registerReadLockAcquired( Object tx, TxLockElement tle )
+    private void registerReadLockAcquired( LockTransaction tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
         totalReadCount = Math.incrementExact( totalReadCount );
         tle.readCount = Math.incrementExact( tle.readCount );
     }
 
-    private void registerWriteLockAcquired( Object tx, TxLockElement tle )
+    private void registerWriteLockAcquired( LockTransaction tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
         totalWriteCount = Math.incrementExact( totalWriteCount );
         tle.writeCount = Math.incrementExact( tle.writeCount );
     }
 
-    private void registerLockAcquired( Object tx, TxLockElement tle )
+    private void registerLockAcquired( LockTransaction tx, TxLockElement tle )
     {
         if ( tle.isFree() )
         {
@@ -687,7 +662,7 @@ public class RWLock
         }
     }
 
-    private TxLockElement getLockElement( Object tx )
+    private TxLockElement getLockElement( LockTransaction tx )
     {
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
@@ -697,7 +672,7 @@ public class RWLock
         return tle;
     }
 
-    private void assertTransaction( Object tx )
+    private void assertTransaction( LockTransaction tx )
     {
         if ( tx == null )
         {
@@ -705,7 +680,7 @@ public class RWLock
         }
     }
 
-    private TxLockElement getOrCreateLockElement( Object tx )
+    private TxLockElement getOrCreateLockElement( LockTransaction tx )
     {
         assertTransaction( tx );
         return txLockElementMap.computeIfAbsent( tx, TxLockElement::new );
@@ -717,14 +692,18 @@ public class RWLock
         {
             if ( timeBoundary < clock.millis() )
             {
-                throw new LockAcquisitionTimeoutException( resource.resourceType(), resource.resourceId(),
-                        lockAcquisitionTimeoutMillis );
+                throw new LockAcquisitionTimeoutException( resource.resourceType(), resource.resourceId(), lockAcquisitionTimeoutMillis );
             }
         }
     }
 
-    synchronized Object getTxLockElementCount()
+    synchronized int getTxLockElementCount()
     {
         return txLockElementMap.size();
+    }
+
+    synchronized LongSet transactionIds()
+    {
+        return LongSets.mutable.ofAll( txLockElementMap.values().stream().mapToLong( TxLockElement::owningTransactionId ) );
     }
 }

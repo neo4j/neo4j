@@ -32,6 +32,7 @@ public class LockTransaction
     private static final AtomicInteger IDS = new AtomicInteger( 0 );
 
     private final int id = IDS.getAndIncrement();
+    private volatile long transactionId;
 
     public int getId()
     {
@@ -41,6 +42,16 @@ public class LockTransaction
     @Override
     public String toString()
     {
-        return String.format( "LockClient[%d]", id );
+        return String.format( "LockClient[%d for transaction: %d]", id, transactionId );
+    }
+
+    public void setTransactionId( long transactionId )
+    {
+        this.transactionId = transactionId;
+    }
+
+    public long getTransactionId()
+    {
+        return transactionId;
     }
 }

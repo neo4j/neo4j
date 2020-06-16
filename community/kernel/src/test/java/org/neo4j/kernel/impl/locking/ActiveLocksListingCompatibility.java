@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -31,6 +33,8 @@ import org.neo4j.lock.LockType;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.lock.ResourceTypes.LABEL;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
@@ -40,6 +44,76 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     ActiveLocksListingCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
+    }
+
+    @Test
+    void activeLockShouldContainUserTransactionFromClient()
+    {
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), 15 );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1 );
+
+        assertEquals( 1, clientA.activeLockCount() );
+        var lock = clientA.activeLocks().findFirst().get();
+        assertEquals( 15, lock.transactionId() );
+    }
+
+    @Test
+    void visitedExclusiveLockPreserveOwningTransaction()
+    {
+        int userTransactionId = 15;
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1 );
+
+        MutableInt observedLocks = new MutableInt();
+        locks.accept( ( lockType, resourceType, transactionId, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+        {
+            assertEquals( userTransactionId, transactionId );
+            assertSame( NODE, resourceType );
+            observedLocks.increment();
+        } );
+        assertEquals( 1, observedLocks.intValue() );
+    }
+
+    @Test
+    void visitedSharedLockPreserveOwningTransaction()
+    {
+        int userTransactionId = 15;
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1 );
+
+        MutableInt observedLocks = new MutableInt();
+        locks.accept( ( lockType, resourceType, transactionId, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+        {
+            assertEquals( userTransactionId, transactionId );
+            assertSame( NODE, resourceType );
+            observedLocks.increment();
+        } );
+        assertEquals( 1, observedLocks.intValue() );
+    }
+
+    @Test
+    void visitedSharedLockLockOwningByMultipleClients()
+    {
+        int userTransactionIdA = 15;
+        int userTransactionIdB = 16;
+
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdA );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1 );
+
+        clientB.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdB );
+        clientB.acquireShared( LockTracer.NONE, NODE, 1 );
+
+        MutableInt observedLocks = new MutableInt();
+        var observedTransactions = LongSets.mutable.empty();
+        locks.accept( ( lockType, resourceType, transactionId, resourceId, description, estimatedWaitTime, lockIdentityHashCode ) ->
+        {
+            observedTransactions.add( transactionId );
+            assertSame( NODE, resourceType );
+            observedLocks.increment();
+        } );
+
+        assertEquals( 2, observedLocks.intValue() );
+        assertTrue( observedTransactions.containsAll( userTransactionIdA, userTransactionIdB ), "Observer set: " + observedTransactions );
     }
 
     @Test

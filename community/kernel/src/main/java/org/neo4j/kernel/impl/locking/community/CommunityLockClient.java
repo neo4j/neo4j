@@ -71,7 +71,6 @@ public class CommunityLockClient implements Locks.Client
     // We need to do all of that to prevent a situation when a closing client will get a lock that will never be
     // closed and eventually will block other clients.
     private final LockClientStateHolder stateHolder = new LockClientStateHolder();
-    private volatile long userTransactionId;
 
     public CommunityLockClient( LockManagerImpl manager )
     {
@@ -86,7 +85,7 @@ public class CommunityLockClient implements Locks.Client
     @Override
     public void initialize( LeaseClient leaseClient, long userTransactionId )
     {
-        this.userTransactionId = userTransactionId;
+        this.lockTransaction.setTransactionId( userTransactionId );
     }
 
     @Override
@@ -105,7 +104,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, SHARED, resourceId, userTransactionId );
+                    resource = new LockResource( resourceType, SHARED, resourceId );
                     if ( manager.getReadLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -139,7 +138,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, EXCLUSIVE, resourceId, userTransactionId );
+                    resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
                     if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -172,7 +171,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, EXCLUSIVE, resourceId, userTransactionId );
+                resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
                 if ( manager.tryWriteLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -205,7 +204,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, SHARED, resourceId, userTransactionId );
+                resource = new LockResource( resourceType, SHARED, resourceId );
                 if ( manager.tryReadLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -278,7 +277,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseReadLock( new LockResource( resourceType, SHARED, resourceId, userTransactionId ), lockTransaction );
+                    manager.releaseReadLock( new LockResource( resourceType, SHARED, resourceId ), lockTransaction );
                 }
             }
         }
@@ -301,7 +300,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseWriteLock( new LockResource( resourceType, EXCLUSIVE, resourceId, userTransactionId ), lockTransaction );
+                    manager.releaseWriteLock( new LockResource( resourceType, EXCLUSIVE, resourceId ), lockTransaction );
                 }
             }
         }
@@ -346,7 +345,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.closeClient();
         terminateAllWaitersAndWaitForClientsToLeave();
         releaseLocks();
-        userTransactionId = INVALID_TRANSACTION_ID;
+        lockTransaction.setTransactionId( INVALID_TRANSACTION_ID );
     }
 
     private synchronized void releaseLocks()
@@ -377,8 +376,8 @@ public class CommunityLockClient implements Locks.Client
     public Stream<ActiveLock> activeLocks()
     {
         List<ActiveLock> locks = new ArrayList<>();
-        exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, EXCLUSIVE, userTransactionId ) );
-        sharedLocks.forEachKeyValue( collectActiveLocks( locks, SHARED, userTransactionId ) );
+        exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, EXCLUSIVE, lockTransaction.getTransactionId() ) );
+        sharedLocks.forEachKeyValue( collectActiveLocks( locks, SHARED, lockTransaction.getTransactionId() ) );
         return locks.stream();
     }
 

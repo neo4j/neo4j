@@ -50,15 +50,13 @@ public class CommunityLockManger implements Locks
     @Override
     public void accept( final Visitor visitor )
     {
-        manager.accept( element ->
+        manager.accept( rwLock ->
         {
-            Object resource = element.resource();
-            if ( resource instanceof LockResource )
-            {
-                LockResource lockResource = (LockResource) resource;
-                visitor.visit( lockResource.getLockType(), lockResource.resourceType(), lockResource.transactionId(), lockResource.resourceId(),
-                        element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
-            }
+            var transactionIds = rwLock.transactionIds();
+            LockResource lockResource = rwLock.resource();
+            transactionIds.forEach(
+                    txId -> visitor.visit( lockResource.getLockType(), lockResource.resourceType(), txId, lockResource.resourceId(), rwLock.describe(),
+                            rwLock.maxWaitTime(), System.identityHashCode( lockResource ) ) );
             return false;
         } );
     }

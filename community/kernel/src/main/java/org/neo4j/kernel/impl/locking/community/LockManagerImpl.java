@@ -50,34 +50,34 @@ public class LockManagerImpl
         this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toMillis();
     }
 
-    boolean getReadLock( LockTracer tracer, LockResource resource, Object tx )
+    boolean getReadLock( LockTracer tracer, LockResource resource, LockTransaction tx )
             throws DeadlockDetectedException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tracer, tx ) );
     }
 
-    boolean tryReadLock( LockResource resource, Object tx )
+    boolean tryReadLock( LockResource resource, LockTransaction tx )
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
-    boolean getWriteLock( LockTracer tracer, LockResource resource, Object tx )
+    boolean getWriteLock( LockTracer tracer, LockResource resource, LockTransaction tx )
             throws DeadlockDetectedException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tracer, tx ) );
     }
 
-    boolean tryWriteLock( LockResource resource, Object tx )
+    boolean tryWriteLock( LockResource resource, LockTransaction tx )
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
     }
 
-    void releaseReadLock( Object resource, Object tx )
+    void releaseReadLock( Object resource, LockTransaction tx )
     {
         getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
     }
 
-    void releaseWriteLock( Object resource, Object tx )
+    void releaseWriteLock( Object resource, LockTransaction tx )
     {
         getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
     }
@@ -88,7 +88,7 @@ public class LockManagerImpl
      *
      * @return {@code lockObtained }
      **/
-    private boolean unusedResourceGuard( Object resource, Object tx, boolean lockObtained )
+    private boolean unusedResourceGuard( Object resource, LockTransaction tx, boolean lockObtained )
     {
         if ( !lockObtained )
         {
