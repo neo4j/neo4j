@@ -210,6 +210,11 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     case WithState(plan, state) => CardinalityCostModel(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
   }
 
+  def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =
+    innerLogicalPlan(state).suchThat {
+      case WithState(plan, _) => plan.availableSymbols.nonEmpty
+    }
+
   def leafPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     argument(state),
     allNodesScan(state),
@@ -352,7 +357,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   def sort(state: State): Gen[WithState[Sort]] = for {
-    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
+    WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     columns <- Gen.atLeastOne(source.availableSymbols)
     orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
   } yield {
@@ -362,7 +367,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   def top(state: State): Gen[WithState[Top]] = for {
-    WithState(source, state) <- innerLogicalPlan(state).suchThat { case WithState(plan, _) => plan.availableSymbols.nonEmpty }
+    WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     columns <- Gen.atLeastOne(source.availableSymbols)
     orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
@@ -381,9 +386,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   }
 
   def unwindCollection(state: State): Gen[WithState[UnwindCollection]] = for {
-    WithState(source, state) <- innerLogicalPlan(state).suchThat {
-      case WithState(plan, _) => plan.availableSymbols.nonEmpty
-    }
+    WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     WithState(xpr, state) <- validExpression(source.availableSymbols.toSeq, state, _._list)
     WithState(name, state) <- newVariable(state)
     state <- state.declareTypeAny(name)
