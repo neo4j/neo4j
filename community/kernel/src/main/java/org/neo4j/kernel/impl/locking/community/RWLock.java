@@ -704,6 +704,6 @@ public class RWLock
 
     synchronized LongSet transactionIds()
     {
-        return LongSets.mutable.ofAll( txLockElementMap.values().stream().mapToLong( TxLockElement::owningTransactionId ) );
+        return LongSets.immutable.ofAll( txLockElementMap.values().stream().mapToLong( TxLockElement::owningTransactionId ) );
     }
 }

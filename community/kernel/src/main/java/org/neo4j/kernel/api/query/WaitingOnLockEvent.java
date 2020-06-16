@@ -39,13 +39,13 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     WaitingOnLockEvent(
             LockType lockType,
             ResourceType resourceType,
-            long userTransactionId,
+            long transactionId,
             long[] resourceIds,
             ExecutingQuery executingQuery,
             long currentTimeNanos,
             ExecutingQueryStatus previous )
     {
-        super( lockType, resourceType, userTransactionId, resourceIds, currentTimeNanos );
+        super( lockType, resourceType, transactionId, resourceIds, currentTimeNanos );
         this.executingQuery = executingQuery;
         this.previous = previous;
     }

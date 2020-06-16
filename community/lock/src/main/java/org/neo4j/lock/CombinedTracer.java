@@ -38,12 +38,12 @@ final class CombinedTracer implements LockTracer
     }
 
     @Override
-    public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long userTransactionId, long... resourceIds )
+    public LockWaitEvent waitForLock( LockType lockType, ResourceType resourceType, long transactionId, long... resourceIds )
     {
         LockWaitEvent[] events = new LockWaitEvent[tracers.length];
         for ( int i = 0; i < events.length; i++ )
         {
-            events[i] = tracers[i].waitForLock( lockType, resourceType, userTransactionId, resourceIds );
+            events[i] = tracers[i].waitForLock( lockType, resourceType, transactionId, resourceIds );
         }
         return new CombinedEvent( events );
     }

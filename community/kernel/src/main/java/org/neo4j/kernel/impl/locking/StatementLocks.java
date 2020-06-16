@@ -34,9 +34,9 @@ public interface StatementLocks extends AutoCloseable
     /**
      * Initializes this locks instance with a {@link LeaseClient}. Must be called before the first call to {@link #pessimistic()} or {@link #optimistic()}.
      * @param leaseClient {@link LeaseClient} of the transaction owning this locks instance.
-     * @param userTransactionId
+     * @param transactionId owning transaction id
      */
-    void initialize( LeaseClient leaseClient, long userTransactionId );
+    void initialize( LeaseClient leaseClient, long transactionId );
 
     /**
      * Get {@link Locks.Client} responsible for pessimistic locks. Such locks will be grabbed right away.

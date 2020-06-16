@@ -83,9 +83,9 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long userTransactionId )
+    public void initialize( LeaseClient leaseClient, long transactionId )
     {
-        this.lockTransaction.setTransactionId( userTransactionId );
+        this.lockTransaction.setTransactionId( transactionId );
     }
 
     @Override

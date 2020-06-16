@@ -29,7 +29,7 @@ import org.neo4j.lock.ResourceType;
 public class NoOpClient implements Locks.Client
 {
     @Override
-    public void initialize( LeaseClient leaseClient, long userTransactionId )
+    public void initialize( LeaseClient leaseClient, long transactionId )
     {
     }
 

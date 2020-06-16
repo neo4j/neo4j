@@ -69,9 +69,9 @@ public interface Locks
          * Initializes this locks client with a {@link LeaseClient} for the owning transaction. Must be called before any lock can be acquired.
          * An lease that has become invalid can abort a transaction midway.
          * @param leaseClient {@link LeaseClient} of the owning transaction.
-         * @param userTransactionId lock client owning transaction id
+         * @param transactionId lock client owning transaction id
          */
-        void initialize( LeaseClient leaseClient, long userTransactionId );
+        void initialize( LeaseClient leaseClient, long transactionId );
 
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,

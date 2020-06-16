@@ -50,9 +50,9 @@ public class FrozenStatementLocks implements StatementLocks
     // StatementLocks
 
     @Override
-    public void initialize( LeaseClient leaseClient, long userTransactionId )
+    public void initialize( LeaseClient leaseClient, long transactionId )
     {
-        realStatementLocks.initialize( leaseClient, userTransactionId );
+        realStatementLocks.initialize( leaseClient, transactionId );
     }
 
     @Override
