@@ -649,7 +649,7 @@ abstract class TxStateTest
             }
 
             @Override
-            public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed, IntIterable removed )
+            public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed )
             {
                 fail( "Properties were not changed." );
             }
@@ -671,13 +671,13 @@ abstract class TxStateTest
             }
 
             @Override
-            public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed, IntIterable removed )
+            public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed )
             {
                 propertiesChecked.setTrue();
                 assertEquals( 1, id );
-                assertFalse( changed.hasNext() );
+                assertFalse( changed.iterator().hasNext() );
                 assertTrue( removed.isEmpty() );
-                assertEquals( 1, Iterators.count( added, Predicates.alwaysTrue() ) );
+                assertEquals( 1, Iterators.count( added.iterator(), Predicates.alwaysTrue() ) );
             }
         } );
         assertTrue( propertiesChecked.booleanValue() );

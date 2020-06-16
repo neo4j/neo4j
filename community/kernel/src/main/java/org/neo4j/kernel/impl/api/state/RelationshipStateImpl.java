@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -32,7 +30,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 
 class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
 {
@@ -53,15 +51,15 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
 
         @Override
-        public Iterator<StorageProperty> addedProperties()
+        public Iterable<StorageProperty> addedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override
-        public Iterator<StorageProperty> changedProperties()
+        public Iterable<StorageProperty> changedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override
@@ -71,9 +69,9 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
 
         @Override
-        public Iterator<StorageProperty> addedAndChangedProperties()
+        public Iterable<StorageProperty> addedAndChangedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override

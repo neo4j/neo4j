@@ -22,12 +22,10 @@ package org.neo4j.storageengine.api.txstate;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 
-import java.util.Iterator;
-
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 
 /**
  * Represents the property changes to a {@link NodeState node} or {@link RelationshipState relationship}:
@@ -39,13 +37,13 @@ import static java.util.Collections.emptyIterator;
  */
 public interface EntityState
 {
-    Iterator<StorageProperty> addedProperties();
+    Iterable<StorageProperty> addedProperties();
 
-    Iterator<StorageProperty> changedProperties();
+    Iterable<StorageProperty> changedProperties();
 
     IntIterable removedProperties();
 
-    Iterator<StorageProperty> addedAndChangedProperties();
+    Iterable<StorageProperty> addedAndChangedProperties();
 
     boolean hasPropertyChanges();
 
@@ -58,15 +56,15 @@ public interface EntityState
     class EmptyEntityState implements EntityState
     {
         @Override
-        public Iterator<StorageProperty> addedProperties()
+        public Iterable<StorageProperty> addedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override
-        public Iterator<StorageProperty> changedProperties()
+        public Iterable<StorageProperty> changedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override
@@ -76,9 +74,9 @@ public interface EntityState
         }
 
         @Override
-        public Iterator<StorageProperty> addedAndChangedProperties()
+        public Iterable<StorageProperty> addedAndChangedProperties()
         {
-            return emptyIterator();
+            return emptyList();
         }
 
         @Override

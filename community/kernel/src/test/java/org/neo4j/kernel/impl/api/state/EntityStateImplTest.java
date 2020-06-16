@@ -47,7 +47,7 @@ class EntityStateImplTest
         state.removeProperty( 1 );
 
         // When
-        Iterator<StorageProperty> added = state.addedProperties();
+        Iterator<StorageProperty> added = state.addedProperties().iterator();
 
         // Then
         assertThat( Iterators.asList( added ) ).isEqualTo( asList( new PropertyKeyValue( 2, Values.of( "Hello" ) ) ) );
@@ -63,7 +63,7 @@ class EntityStateImplTest
         state.addProperty( 2, Values.of( "Hello" ) );
 
         // When
-        Iterator<StorageProperty> added = state.addedProperties();
+        Iterator<StorageProperty> added = state.addedProperties().iterator();
 
         // Then
         assertThat( Iterators.asList( added ) ).isEqualTo(
@@ -81,8 +81,8 @@ class EntityStateImplTest
         state.addProperty( 4, Values.of( "another value" ) );
 
         // Then
-        assertThat( Iterators.asList( state.changedProperties() ) ).isEqualTo( asList( new PropertyKeyValue( 4, Values.of( "another value" ) ) ) );
-        assertFalse( state.addedProperties().hasNext() );
+        assertThat( Iterators.asList( state.changedProperties().iterator() ) ).isEqualTo( asList( new PropertyKeyValue( 4, Values.of( "another value" ) ) ) );
+        assertFalse( state.addedProperties().iterator().hasNext() );
         assertTrue( state.removedProperties().isEmpty() );
     }
 }

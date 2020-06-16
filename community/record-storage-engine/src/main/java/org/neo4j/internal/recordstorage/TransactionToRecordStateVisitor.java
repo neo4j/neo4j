@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
-import java.util.Iterator;
 import java.util.OptionalLong;
 
 import org.neo4j.exceptions.KernelException;
@@ -98,36 +97,32 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, IntIterable removed )
+    public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added,
+            Iterable<StorageProperty> changed, IntIterable removed )
     {
         removed.each( propId -> recordState.nodeRemoveProperty( id, propId ) );
-        while ( changed.hasNext() )
+        for ( StorageProperty property : changed )
         {
-            StorageProperty prop = changed.next();
-            recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            recordState.nodeChangeProperty( id, property.propertyKeyId(), property.value() );
         }
-        while ( added.hasNext() )
+        for ( StorageProperty property : added )
         {
-            StorageProperty prop = added.next();
-            recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+            recordState.nodeAddProperty( id, property.propertyKeyId(), property.value() );
         }
     }
 
     @Override
-    public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, IntIterable removed )
+    public void visitRelPropertyChanges( long id, Iterable<StorageProperty> added,
+            Iterable<StorageProperty> changed, IntIterable removed )
     {
         removed.each( relId -> recordState.relRemoveProperty( id, relId ) );
-        while ( changed.hasNext() )
+        for ( StorageProperty property : changed )
         {
-            StorageProperty prop = changed.next();
-            recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            recordState.relChangeProperty( id, property.propertyKeyId(), property.value() );
         }
-        while ( added.hasNext() )
+        for ( StorageProperty property : added )
         {
-            StorageProperty prop = added.next();
-            recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
+            recordState.relAddProperty( id, property.propertyKeyId(), property.value() );
         }
     }
 

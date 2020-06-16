@@ -160,17 +160,17 @@ class TxStateVisitorTest
         List<PropertyChange> relPropertyChanges = new ArrayList<>();
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
+        public void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty>
                 changed, IntIterable removed )
         {
-            nodePropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
+            nodePropertyChanges.add( new PropertyChange( id, added.iterator(), changed.iterator(), removed ) );
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
+        public void visitRelPropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty>
                 changed, IntIterable removed )
         {
-            relPropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
+            relPropertyChanges.add( new PropertyChange( id, added.iterator(), changed.iterator(), removed ) );
         }
     }
 }

@@ -99,7 +99,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         if ( read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getNodeState( nodeReference );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties().iterator();
         }
         else
         {
@@ -143,7 +143,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         if ( read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getRelationshipState( relationshipReference );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties().iterator();
         }
         else
         {

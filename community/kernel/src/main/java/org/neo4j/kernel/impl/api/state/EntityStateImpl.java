@@ -25,9 +25,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 
-import java.util.Iterator;
-
-import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -37,7 +35,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
-import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 class EntityStateImpl implements EntityState
@@ -132,15 +130,15 @@ class EntityStateImpl implements EntityState
     }
 
     @Override
-    public Iterator<StorageProperty> addedProperties()
+    public Iterable<StorageProperty> addedProperties()
     {
-        return toPropertyIterator( addedProperties );
+        return toStorageProperties( addedProperties );
     }
 
     @Override
-    public Iterator<StorageProperty> changedProperties()
+    public Iterable<StorageProperty> changedProperties()
     {
-        return toPropertyIterator( changedProperties );
+        return toStorageProperties( changedProperties );
     }
 
     @Override
@@ -150,17 +148,17 @@ class EntityStateImpl implements EntityState
     }
 
     @Override
-    public Iterator<StorageProperty> addedAndChangedProperties()
+    public Iterable<StorageProperty> addedAndChangedProperties()
     {
         if ( addedProperties == null )
         {
-            return toPropertyIterator( changedProperties );
+            return toStorageProperties( changedProperties );
         }
         if ( changedProperties == null )
         {
-            return toPropertyIterator( addedProperties );
+            return toStorageProperties( addedProperties );
         }
-        return Iterators.concat( toPropertyIterator( addedProperties ), toPropertyIterator( changedProperties ) );
+        return Iterables.concat( toStorageProperties( addedProperties ), toStorageProperties( changedProperties ) );
     }
 
     @Override
@@ -198,10 +196,9 @@ class EntityStateImpl implements EntityState
         return null;
     }
 
-    private static Iterator<StorageProperty> toPropertyIterator( LongObjectMap<Value> propertyMap )
+    private static Iterable<StorageProperty> toStorageProperties( LongObjectMap<Value> propertyMap )
     {
-        return propertyMap == null ? emptyIterator()
-                                   : propertyMap.keyValuesView().collect(
-                                           e -> (StorageProperty) new PropertyKeyValue( toIntExact( e.getOne() ), e.getTwo() ) ).iterator();
+        return propertyMap == null ? emptyList()
+                                   : propertyMap.keyValuesView().collect( e -> new PropertyKeyValue( toIntExact( e.getOne() ), e.getTwo() ) );
     }
 }
