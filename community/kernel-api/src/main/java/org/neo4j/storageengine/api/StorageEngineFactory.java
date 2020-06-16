@@ -121,7 +121,8 @@ public interface StorageEngineFactory
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker );
+            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
+            throws IOException;
 
     /**
      * Lists files of a specific storage location.
