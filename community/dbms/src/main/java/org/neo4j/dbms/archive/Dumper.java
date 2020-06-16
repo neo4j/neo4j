@@ -38,7 +38,6 @@ import java.util.function.Predicate;
 import org.neo4j.commandline.Util;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;

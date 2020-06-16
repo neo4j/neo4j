@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.platform.commons.JUnitException;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.FileSystemExtension;

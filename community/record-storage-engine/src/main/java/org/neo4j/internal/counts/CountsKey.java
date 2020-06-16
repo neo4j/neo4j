@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.counts;
 
-import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.counts.CountsVisitor;
