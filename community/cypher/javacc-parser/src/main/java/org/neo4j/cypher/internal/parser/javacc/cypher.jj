@@ -1541,7 +1541,8 @@ EXPRESSION Properties() :
 
 REL_PATTERN RelationshipPattern() :
 {
-  Token t = token;
+  Token firstToken = token.next;
+  Token t;
   boolean left = false;
   boolean right = false;
   VARIABLE v = null;
@@ -1557,7 +1558,7 @@ REL_PATTERN RelationshipPattern() :
         ( <BAR> ( ":" {legacyTypeSeparator = true; } )? t=SymbolicNameString() {relTypes.add(t.image);} )*
     )? ( pathLength=PathLength() )? ( properties=Properties() )? <RBRACKET> )?
   ArrowLine() ( RightArrow() { right = true; } )?
-  { return astFactory.relationshipPattern(pos(t.next), left, right, v, (List<String>)relTypes, pathLength, properties, legacyTypeSeparator); }
+  { return astFactory.relationshipPattern(pos(firstToken), left, right, v, (List<String>)relTypes, pathLength, properties, legacyTypeSeparator); }
 }
 
 void LeftArrow() :

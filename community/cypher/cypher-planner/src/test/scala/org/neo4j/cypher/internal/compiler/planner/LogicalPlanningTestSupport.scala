@@ -297,7 +297,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
     readPropertiesFromCursor = false,
-    useJavaCCParser = false
+    useJavaCCParser = true
   )
 
   def buildSinglePlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None): SinglePlannerQuery = {

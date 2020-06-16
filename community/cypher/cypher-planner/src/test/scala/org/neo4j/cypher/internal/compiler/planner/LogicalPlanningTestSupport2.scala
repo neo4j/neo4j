@@ -120,7 +120,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
     readPropertiesFromCursor = false,
-    useJavaCCParser = false
+    useJavaCCParser = true
   )
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
@@ -132,7 +132,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty)) andThen
+    parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads, readPropertiesFromCursor = readPropertiesFromCursor)
   }
