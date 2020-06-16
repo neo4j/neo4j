@@ -750,13 +750,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long nodesGetCount( )
+    public long nodesGetCount()
     {
         return countsForNode( TokenRead.ANY_LABEL );
     }
 
     @Override
-    public long relationshipsGetCount( )
+    public long relationshipsGetCount()
     {
         return countsForRelationship( TokenRead.ANY_LABEL, TokenRead.ANY_RELATIONSHIP_TYPE, TokenRead.ANY_LABEL );
     }

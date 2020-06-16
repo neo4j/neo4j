@@ -48,14 +48,24 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor>
 {
+    private static final String TRACER_TAG = "RelationshipStoreScan_getRelationshipCount";
+
     public RelationshipStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory, LockService locks,
             @Nullable TokenScanConsumer relationshipTypeScanConsumer,
             @Nullable PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, storeCursorsFactory, storageReader.relationshipsGetCount(), relationshipTypeIds, propertyKeyIdFilter,
+        super( config, storageReader, storeCursorsFactory, getRelationshipCount( storageReader, cacheTracer ), relationshipTypeIds, propertyKeyIdFilter,
                 propertyScanConsumer, relationshipTypeScanConsumer, id -> locks.acquireRelationshipLock( id, SHARED ),
                 new RelationshipCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
+    }
+
+    private static long getRelationshipCount( StorageReader storageReader, PageCacheTracer cacheTracer )
+    {
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( TRACER_TAG ) ) )
+        {
+            return storageReader.relationshipsGetCount( cursorContext );
+        }
     }
 }

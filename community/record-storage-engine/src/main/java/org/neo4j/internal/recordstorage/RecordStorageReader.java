@@ -263,7 +263,7 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long relationshipsGetCount()
+    public long relationshipsGetCount( CursorContext cursorContext )
     {
         return relationshipStore.getNumberOfIdsInUse();
     }
