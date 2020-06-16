@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.schema;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaCache;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
-class StorageSchemaReaderSnapshot implements StorageSchemaReader
+public class StorageSchemaReaderSnapshot implements StorageSchemaReader
 {
     private final SchemaCache schema;
 
-    StorageSchemaReaderSnapshot( SchemaCache schema )
+    public StorageSchemaReaderSnapshot( SchemaCache schema )
     {
         this.schema = schema;
     }
