@@ -82,7 +82,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     @Override
     public void properties( PropertyCursor cursor )
     {
-        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference(), propertiesReference(), read, read );
+        ((DefaultPropertyCursor) cursor).initRelationship( this, read, read );
     }
 
     @Override

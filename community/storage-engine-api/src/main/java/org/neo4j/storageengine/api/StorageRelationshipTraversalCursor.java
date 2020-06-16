@@ -26,9 +26,20 @@ public interface StorageRelationshipTraversalCursor extends StorageRelationshipC
     long originNodeReference();
 
     /**
-     * Called when traversing all relationships for a node.
+     * Called when traversing relationships for a node.
      * @param nodeReference reference to the node that has these relationships.
      * @param reference reference to the relationships.
+     * @param selection which relationships to select.
      */
     void init( long nodeReference, long reference, RelationshipSelection selection );
+
+    /**
+     * Called when traversing all relationships for a node.
+     *
+     * @param nodeCursor node cursor refers to these relationships.
+     */
+    default void init( StorageNodeCursor nodeCursor, RelationshipSelection selection )
+    {
+        init( nodeCursor.entityReference(), nodeCursor.relationshipsReference(), selection );
+    }
 }

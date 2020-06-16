@@ -72,7 +72,23 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         storeCursor.initNodeProperties( reference );
         this.entityReference = nodeReference;
 
-        // Transaction state
+        initializeNodeTransactionState( nodeReference, read );
+    }
+
+    void initNode( DefaultNodeCursor nodeCursor, Read read, AssertOpen assertOpen )
+    {
+        entityReference = nodeCursor.nodeReference();
+        assert entityReference != NO_ID;
+
+        init( read, assertOpen );
+        this.type = NODE;
+        storeCursor.initNodeProperties( nodeCursor.storeCursor );
+
+        initializeNodeTransactionState( entityReference, read );
+    }
+
+    private void initializeNodeTransactionState( long nodeReference, Read read )
+    {
         if ( read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getNodeState( nodeReference );
@@ -93,6 +109,22 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         storeCursor.initRelationshipProperties( reference );
         this.entityReference = relationshipReference;
 
+        initializeRelationshipTransactionState( relationshipReference, read );
+    }
+
+    void initRelationship( DefaultRelationshipCursor<?,?> relationshipCursor, Read read, AssertOpen assertOpen )
+    {
+        entityReference = relationshipCursor.relationshipReference();
+        assert entityReference != NO_ID;
+
+        init( read, assertOpen );
+        storeCursor.initRelationshipProperties( relationshipCursor.storeCursor );
+
+        initializeRelationshipTransactionState( entityReference, read );
+    }
+
+    private void initializeRelationshipTransactionState( long relationshipReference, Read read )
+    {
         // Transaction state
         if ( read.hasTxStateWithChanges() )
         {

@@ -197,7 +197,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     @Override
     public void properties( PropertyCursor cursor )
     {
-        ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
+        ((DefaultPropertyCursor) cursor).initNode( this, read, read );
     }
 
     @Override
