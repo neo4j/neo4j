@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.ToIntBiFunction;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.RawIterator;
@@ -47,9 +46,7 @@ import org.neo4j.internal.batchimport.input.Inputs;
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;

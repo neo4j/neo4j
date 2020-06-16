@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.function.ToIntBiFunction;
-
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;

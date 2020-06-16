@@ -25,7 +25,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.util.Arrays;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;

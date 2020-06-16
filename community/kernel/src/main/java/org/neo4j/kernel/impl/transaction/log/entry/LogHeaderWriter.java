@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreId;

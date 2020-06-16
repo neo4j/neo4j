@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
-import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;

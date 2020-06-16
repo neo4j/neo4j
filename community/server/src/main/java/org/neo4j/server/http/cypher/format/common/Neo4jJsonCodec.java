@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.common;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;

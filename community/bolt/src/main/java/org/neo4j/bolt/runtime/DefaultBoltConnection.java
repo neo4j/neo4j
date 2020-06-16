@@ -21,7 +21,6 @@ package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Clock;
 import java.util.ArrayList;

@@ -44,7 +44,6 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
