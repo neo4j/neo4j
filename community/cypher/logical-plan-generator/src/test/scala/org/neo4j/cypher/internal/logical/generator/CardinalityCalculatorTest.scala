@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.generator
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -52,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -65,9 +67,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
-class CardinalityCalculatorTest extends FunSuite with Matchers {
-
-  private val pos = InputPosition.NONE
+class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstructionTestSupport {
 
   private val defaultSourceCardinality = Cardinality(123)
 
@@ -499,6 +499,30 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
     val c = CardinalityCalculator.unwindCollectionCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c shouldBe Cardinality.EMPTY
+  }
+
+  test("ValueHashJoin") {
+    val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
+
+    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should be > defaultSourceCardinality
+    c should be < defaultSourceCardinality * defaultSourceCardinality
+  }
+
+  test("ValueHashJoin empty LHS") {
+    val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
+    defaultState.cardinalities.set(plan.lhs.get.id, Cardinality.EMPTY)
+
+    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c shouldBe Cardinality.EMPTY
+  }
+
+  test("ValueHashJoin empty RHS") {
+    val plan = ValueHashJoin(Argument(), Argument(), equals(trueLiteral, trueLiteral))
+    defaultState.cardinalities.set(plan.rhs.get.id, Cardinality.EMPTY)
+
+    val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c shouldBe Cardinality.EMPTY
   }
 

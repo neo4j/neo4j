@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
@@ -261,6 +262,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     Gen.lzy(apply(state)),
     Gen.lzy(semiApply(state)),
     Gen.lzy(antiSemiApply(state)),
+    Gen.lzy(valueHashJoin(state)),
   )
 
   // Leaf Plans
@@ -505,11 +507,22 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     state <- state.popLeafCardinalityMultiplier()
   } yield WithState((left, right), state)
 
-  def cartesianProduct(state: State): Gen[WithState[CartesianProduct]] = for {
+  private def cartesianProduct(state: State): Gen[WithState[CartesianProduct]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
     WithState(right, state) <- innerLogicalPlan(state)
   } yield {
     val plan = CartesianProduct(left, right)(state.idGen)
+    annotate(plan, state)
+  }
+
+  private def valueHashJoin(state: State): Gen[WithState[ValueHashJoin]] = for {
+    WithState(left, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
+    WithState(right, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
+    joinOnLeft <- Gen.oneOf(left.availableSymbols.toSeq)
+    joinOnRight <- Gen.oneOf(right.availableSymbols.toSeq)
+  } yield {
+    val equalsExpr = equals(varFor(joinOnLeft), varFor(joinOnRight))
+    val plan = ValueHashJoin(left, right, equalsExpr)(state.idGen)
     annotate(plan, state)
   }
 
