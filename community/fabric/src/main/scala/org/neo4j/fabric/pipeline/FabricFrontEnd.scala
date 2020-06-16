@@ -142,6 +142,7 @@ case class FabricFrontEnd(
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       semanticFeatures = semanticFeatures,
+      useJavaCCParser = cypherConfig.useJavaCCParser
     )
 
     object parseAndPrepare {

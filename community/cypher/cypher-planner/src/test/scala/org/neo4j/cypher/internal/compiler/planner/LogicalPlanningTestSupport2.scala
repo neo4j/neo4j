@@ -119,7 +119,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     csvBufferSize = 4 * 1024 * 1024,
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
-    readPropertiesFromCursor = false
+    readPropertiesFromCursor = false,
+    useJavaCCParser = false
   )
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 

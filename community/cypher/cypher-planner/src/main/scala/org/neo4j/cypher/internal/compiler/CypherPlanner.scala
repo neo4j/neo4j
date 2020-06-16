@@ -95,7 +95,11 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          innerVariableNamer = innerVariableNamer,
                                          params )
     CompilationPhases.parsing(ParsingConfig(
-      sequencer, context.innerVariableNamer, compatibilityMode, parameterTypeMapping = context.getParameterValueTypeMapping
+      sequencer,
+      context.innerVariableNamer,
+      compatibilityMode,
+      parameterTypeMapping = context.getParameterValueTypeMapping,
+      useJavaCCParser = config.useJavaCCParser
     )).transform(startState, context)
   }
 
@@ -112,4 +116,5 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
                                       planSystemCommands: Boolean,
-                                      readPropertiesFromCursor: Boolean)
+                                      readPropertiesFromCursor: Boolean,
+                                      useJavaCCParser: Boolean)

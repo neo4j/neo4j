@@ -77,10 +77,11 @@ object CompilationPhases {
     literalExtraction: LiteralExtraction = IfNoParameter,
     parameterTypeMapping: Map[String, CypherType] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+    useJavaCCParser: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    val parse = Parsing.adds(BaseContains[Statement])
+    val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing).adds(BaseContains[Statement])
     val parseAndCompatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
         case Compatibility3_5 =>

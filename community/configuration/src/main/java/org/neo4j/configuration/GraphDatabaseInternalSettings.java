@@ -244,6 +244,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> cypher_read_properties_from_cursor =
             newBuilder( "unsupported.cypher.read_properties_from_cursor", BOOL, false).build();
 
+    public enum CypherParser
+    {
+        DEFAULT, PARBOILED, JAVACC
+    }
+    @Internal
+    @Description( "The parser implementation to use for parsing cypher queries." )
+    public static final Setting<CypherParser> cypher_parser =
+            newBuilder( "unsupported.cypher.parser", ofEnum( CypherParser.class ), CypherParser.DEFAULT ).build();
+
     @Internal
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +

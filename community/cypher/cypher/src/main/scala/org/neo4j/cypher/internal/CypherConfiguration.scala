@@ -66,7 +66,8 @@ object CypherConfiguration {
       CypherOperatorEngineOption(config.get(GraphDatabaseInternalSettings.cypher_operator_engine).toString),
       CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
       new ConfigMemoryTrackingController(config),
-      config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
+      config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
+      config.get(GraphDatabaseInternalSettings.cypher_parser) == GraphDatabaseInternalSettings.CypherParser.JAVACC
     )
   }
 
@@ -130,7 +131,8 @@ case class CypherConfiguration(version: CypherVersion,
                                operatorEngine: CypherOperatorEngineOption,
                                interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                                memoryTrackingController: MemoryTrackingController,
-                               enableMonitors: Boolean) {
+                               enableMonitors: Boolean,
+                               useJavaCCParser: Boolean) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
@@ -162,6 +164,7 @@ case class CypherConfiguration(version: CypherVersion,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
       planSystemCommands = planSystemCommands,
-      readPropertiesFromCursor = config.get(GraphDatabaseInternalSettings.cypher_read_properties_from_cursor)
+      readPropertiesFromCursor = config.get(GraphDatabaseInternalSettings.cypher_read_properties_from_cursor),
+      useJavaCCParser = useJavaCCParser
     )
 }
