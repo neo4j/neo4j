@@ -189,6 +189,10 @@ public interface ProcedureITBase
         ArrayList<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
         result.addAll( List.of(
                 // enterprise only functions
+                proc( "db.listLocks",
+                        "() :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
+                        "List all locks at this database.",
+                        stringArray( "admin" ), "DBMS"),
                 proc( "dbms.listTransactions",
                         "() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?," +
                                 " clientAddress :: STRING?, requestUri :: STRING?, currentQueryId :: STRING?, currentQuery :: STRING?, " +
