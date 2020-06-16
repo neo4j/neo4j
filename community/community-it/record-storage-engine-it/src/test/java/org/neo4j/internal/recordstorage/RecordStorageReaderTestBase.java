@@ -157,7 +157,7 @@ public abstract class RecordStorageReaderTestBase
     protected long createRelationship( long sourceNode, long targetNode, RelationshipType relationshipType ) throws Exception
     {
         TxState txState = new TxState();
-        long relationshipId = commitContext.reserveRelationship();
+        long relationshipId = commitContext.reserveRelationship( sourceNode );
         txState.relationshipDoCreate( relationshipId, getOrCreateRelationshipTypeId( relationshipType ), sourceNode, targetNode );
         apply( txState );
         return relationshipId;

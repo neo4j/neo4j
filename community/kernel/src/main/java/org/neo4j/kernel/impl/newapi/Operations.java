@@ -296,7 +296,7 @@ public class Operations implements Write, SchemaWrite
         assertNodeExists( targetNode );
 
         TransactionState txState = ktx.txState();
-        long id = commandCreationContext.reserveRelationship();
+        long id = commandCreationContext.reserveRelationship( sourceNode );
         txState.relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }

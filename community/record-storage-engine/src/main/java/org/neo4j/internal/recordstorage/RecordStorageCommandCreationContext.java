@@ -102,7 +102,7 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     }
 
     @Override
-    public long reserveRelationship()
+    public long reserveRelationship( long sourceNode )
     {
         return nextId( StoreType.RELATIONSHIP );
     }

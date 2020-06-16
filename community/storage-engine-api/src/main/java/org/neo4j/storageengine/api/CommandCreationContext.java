@@ -47,8 +47,9 @@ public interface CommandCreationContext extends AutoCloseable
      * This will likely change in the future though.
      *
      * @return a reserved relationship id for future use.
+     * @param sourceNode id of the source node to reserve this id for.
      */
-    long reserveRelationship();
+    long reserveRelationship( long sourceNode );
 
     /**
      * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here

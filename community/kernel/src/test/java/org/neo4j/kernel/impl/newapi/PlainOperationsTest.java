@@ -142,7 +142,7 @@ public class PlainOperationsTest extends OperationsTest
         // THEN
         InOrder lockingOrder = inOrder( creationContext );
         lockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, lowId, highId );
-        lockingOrder.verify( creationContext ).reserveRelationship();
+        lockingOrder.verify( creationContext ).reserveRelationship( lowId );
         lockingOrder.verifyNoMoreInteractions();
         reset( creationContext );
 
@@ -152,7 +152,7 @@ public class PlainOperationsTest extends OperationsTest
         // THEN
         InOrder lowLockingOrder = inOrder( creationContext );
         lowLockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, highId, lowId );
-        lowLockingOrder.verify( creationContext ).reserveRelationship();
+        lowLockingOrder.verify( creationContext ).reserveRelationship( highId );
         lowLockingOrder.verifyNoMoreInteractions();
     }
 
@@ -999,7 +999,7 @@ public class PlainOperationsTest extends OperationsTest
         // then
         InOrder inOrder = inOrder( ktx, commandCreationContext );
         inOrder.verify( ktx ).txState();
-        inOrder.verify( commandCreationContext ).reserveRelationship();
+        inOrder.verify( commandCreationContext ).reserveRelationship( anyLong() );
         inOrder.verifyNoMoreInteractions();
     }
 
