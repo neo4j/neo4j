@@ -61,6 +61,11 @@ public interface Locks
     interface Client extends ResourceLocker, AutoCloseable
     {
         /**
+         * Invalid transaction id that lock clients using before they are initialised or after close
+         */
+        long INVALID_TRANSACTION_ID = -1;
+
+        /**
          * Represents the fact that no lock session is used because no locks are taken.
          */
         int NO_LOCK_SESSION_ID = -1;

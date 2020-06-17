@@ -53,7 +53,6 @@ import static org.neo4j.lock.LockType.SHARED;
 
 public class CommunityLockClient implements Locks.Client
 {
-    private static final long INVALID_TRANSACTION_ID = -1;
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
 
