@@ -226,7 +226,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( SHARED, resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
@@ -414,7 +414,7 @@ public class RWLock
 
                 if ( waitEvent == null )
                 {
-                    waitEvent = tracer.waitForLock( resource.getLockType(), resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
+                    waitEvent = tracer.waitForLock( EXCLUSIVE, resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );

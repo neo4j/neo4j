@@ -22,23 +22,20 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.Objects;
 
 import org.neo4j.internal.helpers.MathUtil;
-import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
 public class LockResource
 {
     private final ResourceType resourceType;
-    private final LockType lockType;
     private final long resourceId;
 
     /** Local reference count, used for each client to count references to a lock. */
     private int refCount = 1;
 
-    public LockResource( ResourceType resourceType, LockType lockType, long resourceId )
+    public LockResource( ResourceType resourceType, long resourceId )
     {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
-        this.lockType = lockType;
     }
 
     @Override
@@ -65,7 +62,7 @@ public class LockResource
     @Override
     public String toString()
     {
-        return String.format( "%s %s(%d)", resourceType, lockType, resourceId );
+        return String.format( "%s(%d)", resourceType, resourceId );
     }
 
     public void acquireReference()
@@ -87,10 +84,4 @@ public class LockResource
     {
         return resourceType;
     }
-
-    public LockType getLockType()
-    {
-        return lockType;
-    }
-
 }

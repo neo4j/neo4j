@@ -23,6 +23,7 @@ import java.time.Clock;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.LockType;
 
 public class CommunityLockManger implements Locks
 {
@@ -55,7 +56,8 @@ public class CommunityLockManger implements Locks
             var transactionIds = rwLock.transactionIds();
             LockResource lockResource = rwLock.resource();
             transactionIds.forEach(
-                    txId -> visitor.visit( lockResource.getLockType(), lockResource.resourceType(), txId, lockResource.resourceId(), rwLock.describe(),
+                    txId -> visitor.visit( rwLock.getWriteCount() > 0 ? LockType.EXCLUSIVE : LockType.SHARED,
+                            lockResource.resourceType(), txId, lockResource.resourceId(), rwLock.describe(),
                             rwLock.maxWaitTime(), System.identityHashCode( lockResource ) ) );
             return false;
         } );

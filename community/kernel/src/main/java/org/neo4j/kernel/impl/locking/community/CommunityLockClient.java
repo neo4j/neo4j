@@ -103,7 +103,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, SHARED, resourceId );
+                    resource = new LockResource( resourceType, resourceId );
                     if ( manager.getReadLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -137,7 +137,7 @@ public class CommunityLockClient implements Locks.Client
                 }
                 else
                 {
-                    resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
+                    resource = new LockResource( resourceType, resourceId );
                     if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
@@ -170,7 +170,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, EXCLUSIVE, resourceId );
+                resource = new LockResource( resourceType, resourceId );
                 if ( manager.tryWriteLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -203,7 +203,7 @@ public class CommunityLockClient implements Locks.Client
             }
             else
             {
-                resource = new LockResource( resourceType, SHARED, resourceId );
+                resource = new LockResource( resourceType, resourceId );
                 if ( manager.tryReadLock( resource, lockTransaction ) )
                 {
                     localLocks.put( resourceId, resource );
@@ -276,7 +276,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseReadLock( new LockResource( resourceType, SHARED, resourceId ), lockTransaction );
+                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
                 }
             }
         }
@@ -299,7 +299,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseWriteLock( new LockResource( resourceType, EXCLUSIVE, resourceId ), lockTransaction );
+                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
                 }
             }
         }

@@ -38,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.lock.LockType.EXCLUSIVE;
-import static org.neo4j.lock.LockType.SHARED;
 
 class RWLockTest
 {
@@ -63,7 +61,7 @@ class RWLockTest
     void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
+        final LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         var tx = mock( LockTransaction.class );
 
@@ -80,7 +78,7 @@ class RWLockTest
     void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10 );
+        final LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         var tx = mock( LockTransaction.class );
 
@@ -101,7 +99,7 @@ class RWLockTest
     void testWaitingWriterLock() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10 );
+        LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction lockTransaction = new LockTransaction();
         final LockTransaction anotherTransaction = new LockTransaction();
@@ -146,7 +144,7 @@ class RWLockTest
     void testWaitingReaderLock() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
+        LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction transaction = new LockTransaction();
         final LockTransaction readerTransaction = new LockTransaction();
@@ -185,7 +183,7 @@ class RWLockTest
     void testThreadRemovedFromWaitingListOnDeadlock() throws Exception
     {
         RagManager ragManager = mock( RagManager.class );
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10 );
+        LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         final LockTransaction lockTransaction = new LockTransaction();
         final LockTransaction anotherTransaction = new LockTransaction();
@@ -246,7 +244,7 @@ class RWLockTest
     void testLockCounters() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, SHARED, 10 );
+        LockResource resource = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, resource );
         LockTransaction lockTransaction = new LockTransaction();
         LockTransaction anotherTransaction = new LockTransaction();
@@ -298,9 +296,9 @@ class RWLockTest
     void testDeadlockDetection() throws Exception
     {
         RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
-        LockResource node2 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
-        LockResource node3 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, 10 );
+        LockResource node2 = new LockResource( ResourceTypes.NODE, 10 );
+        LockResource node3 = new LockResource( ResourceTypes.NODE, 10 );
 
         final RWLock lockNode1 = createRWLock( ragManager, node1 );
         final RWLock lockNode2 = createRWLock( ragManager, node2 );
@@ -339,7 +337,7 @@ class RWLockTest
     {
         // given
         RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, EXCLUSIVE, 10 );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, 10 );
         final RWLock lock = createRWLock( ragManager, node1 );
         final LockTransaction mainTransaction = new LockTransaction();
 
