@@ -4,21 +4,28 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>community-integration-tests</artifactId>
         <version>4.2.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>community-integration-tests</artifactId>
-    <packaging>pom</packaging>
+    <groupId>org.neo4j.community</groupId>
+    <artifactId>fabric-it</artifactId>
 
-    <name>Neo4j - Community Integration Tests</name>
-    <description>Neo4j community edition integration tests modules.</description>
+    <name>Neo4j - Community Fabric Integration Tests</name>
+    <packaging>jar</packaging>
+    <description>Neo4j community edition fabric integration tests.</description>
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
+        <moduleName>org.neo4j.community.fabric.it</moduleName>
     </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
     <licenses>
         <license>
@@ -40,32 +47,16 @@
         </license>
     </licenses>
 
-    <modules>
-        <module>it-test-support</module>
-        <module>record-storage-engine-it</module>
-        <module>kernel-it</module>
-        <module>batch-insert-it</module>
-        <module>index-it</module>
-        <module>import-it</module>
-        <module>dbms-it</module>
-        <module>algo-it</module>
-        <module>consistency-it</module>
-        <module>bolt-it</module>
-        <module>community-it</module>
-        <module>fabric-it</module>
-    </modules>
-
-    <profiles>
-        <profile>
-            <id>include-cypher</id>
-            <activation>
-                <property>
-                    <name>!skipCypher</name>
-                </property>
-            </activation>
-            <modules>
-                <module>cypher-it</module>
-            </modules>
-        </profile>
-    </profiles>
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j.community</groupId>
+            <artifactId>it-test-support</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+        </dependency>
+    </dependencies>
 </project>

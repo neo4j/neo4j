@@ -149,14 +149,14 @@ class FabricPlannerTest
         .shouldEqual(
           Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
             singleQuery(
-              LoadCSV(false, literal("someurl"), varFor("line"), None)(pos),
+              LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
               create(nodePat("n")),
               return_(varFor("line").as("line"))
             ))(pos)
         )
     }
 
-    "single admin command with USE" in {
+    "single admin command" in {
       val remote = asRemote(
         """CREATE ROLE myRole
           |""".stripMargin)
@@ -620,7 +620,7 @@ class FabricPlannerTest
             |RETURN 1 AS x
             |""".stripMargin
 
-        the[InvalidSemanticsException].thrownBy(plan(q, params, true))
+        the[InvalidSemanticsException].thrownBy(plan(q, params, fabricContext = true))
           .check(_.getMessage.should(include("'PROFILE' not supported in Fabric context")))
       }
 
@@ -652,7 +652,7 @@ class FabricPlannerTest
       local.state.statement().shouldEqual(
         Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
           singleQuery(
-            LoadCSV(false, literal("someurl"), varFor("line"), None)(pos),
+            LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
             create(nodePat("n")),
             return_(varFor("line").as("line"))
           ))(pos)
