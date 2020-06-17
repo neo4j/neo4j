@@ -17,8 +17,15 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticError, SemanticFeature, SemanticState}
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Parameter, Variable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
+import org.neo4j.cypher.internal.v4_0.expressions.Parameter
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
@@ -80,6 +87,14 @@ final case class CreateUser(userName: String,
   }
 }
 
+final case class CreateUserWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "CREATE USER"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters for username in CREATE USER is not supported in this version of Neo4j.", unsupportedParameter.position)
+}
+
 final case class DropUser(userName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP USER"
@@ -87,6 +102,14 @@ final case class DropUser(userName: String, ifExists: Boolean)(val position: Inp
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+}
+
+final case class DropUserWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "DROP USER"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in DROP USER is not supported in this version of Neo4j.", unsupportedParameter.position)
 }
 
 final case class AlterUser(userName: String,
@@ -102,6 +125,14 @@ final case class AlterUser(userName: String,
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+}
+
+final case class AlterUserWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "ALTER USER"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters for username in ALTER USER is not supported in this version of Neo4j.", unsupportedParameter.position)
 }
 
 final case class SetOwnPassword(newStringPassword: Option[String],
@@ -150,6 +181,14 @@ final case class CreateRole(roleName: String, from: Option[String], ifExistsDo: 
   }
 }
 
+final case class CreateRoleWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name: String = "CREATE ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in CREATE ROLE is not supported in this version of Neo4j.", unsupportedParameter.position)
+}
+
 final case class DropRole(roleName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP ROLE"
@@ -162,6 +201,14 @@ final case class DropRole(roleName: String, ifExists: Boolean)(val position: Inp
         SemanticState.recordCurrentScope(this)
     }
   }
+}
+
+final case class DropRoleWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name: String = "DROP ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in DROP ROLE is not supported in this version of Neo4j.", unsupportedParameter.position)
 }
 
 final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -267,7 +314,11 @@ sealed trait ShowPrivilegeScope
 
 final case class ShowRolePrivileges(role: String)(val position: InputPosition) extends ShowPrivilegeScope
 
+final case class ShowRolePrivilegesWithUnsupportedParameter(unsupportedParam: Parameter)(val position: InputPosition) extends ShowPrivilegeScope
+
 final case class ShowUserPrivileges(user: String)(val position: InputPosition) extends ShowPrivilegeScope
+
+final case class ShowUserPrivilegesWithUnsupportedParameter(unsupportedParam: Parameter)(val position: InputPosition) extends ShowPrivilegeScope
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
@@ -450,8 +501,13 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
   override def name = "SHOW PRIVILEGE"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+    scope match {
+      case ShowRolePrivilegesWithUnsupportedParameter(param) => SemanticError(s"The usage of parameters in SHOW ROLE PRIVILEGES is not supported in this version of Neo4j.", param.position)
+      case ShowUserPrivilegesWithUnsupportedParameter(param) => SemanticError(s"The usage of parameters in SHOW USER PRIVILEGES is not supported in this version of Neo4j.", param.position)
+      case _ =>
+        super.semanticCheck chain
+          SemanticState.recordCurrentScope(this)
+    }
 }
 
 final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -481,6 +537,14 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
+final case class ShowDatabaseWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "SHOW DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in SHOW DATABASE is not supported in this version of Neo4j.", unsupportedParameter.position)
+}
+
 final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = ifExistsDo match {
@@ -496,6 +560,14 @@ final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val posi
   }
 }
 
+final case class CreateDatabaseWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name: String = "CREATE DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in CREATE DATABASE is not supported in this version of Neo4j.", unsupportedParameter.position)
+}
+
 final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP DATABASE"
@@ -503,6 +575,14 @@ final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: I
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+}
+
+final case class DropDatabaseWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "DROP DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in DROP DATABASE is not supported in this version of Neo4j.", unsupportedParameter.position)
 }
 
 final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -514,6 +594,14 @@ final case class StartDatabase(dbName: String)(val position: InputPosition) exte
       SemanticState.recordCurrentScope(this)
 }
 
+final case class StartDatabaseWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "START DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in START DATABASE is not supported in this version of Neo4j.", unsupportedParameter.position)
+}
+
 final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "STOP DATABASE"
@@ -521,6 +609,14 @@ final case class StopDatabase(dbName: String)(val position: InputPosition) exten
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+}
+
+final case class StopDatabaseWithUnsupportedParameter(unsupportedParameter: Parameter)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+
+  override def name = "STOP DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    SemanticError(s"The usage of parameters in STOP DATABASE is not supported in this version of Neo4j.", unsupportedParameter.position)
 }
 
 object CreateGraph {
