@@ -44,6 +44,7 @@ object ScenarioTestHelper {
                   config: TestConfig,
                   graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
                   dbConfig: collection.Map[Setting[_], Object],
+                  useBolt: Boolean = false,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     checkForDuplicates(scenarios, blacklist.toList)
@@ -62,7 +63,7 @@ object ScenarioTestHelper {
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
-            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig)).execute()
+            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt)).execute()
           } match {
             case Success(_) =>
               if (!config.experimental) {
@@ -97,7 +98,7 @@ object ScenarioTestHelper {
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
       val name = scenario.toString()
-      val executable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig))
+      val executable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt))
       DynamicTest.dynamicTest(name, executable)
     }
     (expectPassTests ++ expectFailTests).asJavaCollection
@@ -145,13 +146,14 @@ object ScenarioTestHelper {
     It can be very useful when adding a new runtime for example.
    */
   def printComputedBlacklist(scenarios: Seq[Scenario],
-                             config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder): Unit = {
+                             config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
+                             useBolt: Boolean = false): Unit = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
     //TODO: Investigate this!
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig)).execute()).isFailure
+      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig, useBolt)).execute()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None

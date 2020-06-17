@@ -54,6 +54,7 @@
                 <module>logical-plan-generator</module>
                 <module>runtime-spec-suite</module>
                 <module>expression-evaluator</module>
+                <module>cypher-testing</module>
             </modules>
         </profile>
     </profiles>

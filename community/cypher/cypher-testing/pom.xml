@@ -1,6 +1,4 @@
 <?xml version="1.0"?>
-
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
@@ -11,22 +9,22 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+    <artifactId>neo4j-cypher-testing</artifactId>
     <packaging>jar</packaging>
-    <name>Neo4j - Cypher Specification Suite Tools</name>
-    <description>Neo4j query language test suite tools</description>
+    <name>Neo4j - Cypher</name>
+    <description>Neo4j query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <properties>
+        <moduleName>org.neo4j.cypher</moduleName>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+    </properties>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
-
-    <properties>
-        <moduleName>org.neo4j.cypher.internal.spec.suite.tools</moduleName>
-        <license-text.header>headers/GPL-3-header.txt</license-text.header>
-    </properties>
 
     <licenses>
         <license>
@@ -49,91 +47,31 @@
     </licenses>
 
     <dependencies>
-
-        <!-- shared versions are defined in the parent pom -->
-
-        <dependency>
-            <groupId>org.opencypher</groupId>
-            <artifactId>tck-api_2.12</artifactId>
-            <version>${opencypher.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.jupiter</groupId>
-                    <artifactId>junit-jupiter-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apiguardian</groupId>
-                    <artifactId>apiguardian-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- scala -->
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
-
-        <!-- scala test dependencies -->
-
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scalacheck</groupId>
-            <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j.community</groupId>
-            <artifactId>it-test-support</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- neo4j -->
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-exceptions</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-collections</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-planner</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-testing</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- neo4j testing -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
+
 </project>

@@ -34,12 +34,10 @@ import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
-import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 import org.opencypher.tools.tck.api.CypherValueRecords
@@ -71,14 +69,14 @@ object Neo4jValueRecords {
 trait Neo4jProcedureAdapter extends ProcedureSupport {
   self: Graph =>
 
-  protected def database: GraphDatabaseAPI
+  protected def dbms: FeatureDatabaseManagementService
 
   protected val parser = new ProcedureSignatureParser
 
   override def registerProcedure(signature: String, values: CypherValueRecords): Unit = {
     val parsedSignature = parser.parse(signature)
     val kernelProcedure = buildProcedure(parsedSignature, values)
-    Try(database.getDependencyResolver.resolveDependency(classOf[Kernel]).registerProcedure(kernelProcedure)) match {
+    Try(dbms.registerProcedure(kernelProcedure)) match {
       case Success(_) =>
       case Failure(e) => System.err.println(s"\nRegistration of procedure $signature failed: " + e.getMessage)
     }
@@ -118,21 +116,21 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {
       case Some(fields) => fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }
-      case None => builder.out(procs.ProcedureSignature.VOID)
+      case None         => builder.out(procs.ProcedureSignature.VOID)
     }
     builder.build()
   }
 
   private def asKernelType(tpe: CypherType): Neo4jTypes.AnyType = tpe match {
-    case CTMap => Neo4jTypes.NTMap
-    case CTNode => Neo4jTypes.NTNode
-    case CTRelationship => Neo4jTypes.NTRelationship
-    case CTPath => Neo4jTypes.NTPath
+    case CTMap              => Neo4jTypes.NTMap
+    case CTNode             => Neo4jTypes.NTNode
+    case CTRelationship     => Neo4jTypes.NTRelationship
+    case CTPath             => Neo4jTypes.NTPath
     case ListType(innerTpe) => Neo4jTypes.NTList(asKernelType(innerTpe))
-    case CTString => Neo4jTypes.NTString
-    case CTBoolean => Neo4jTypes.NTBoolean
-    case CTNumber => Neo4jTypes.NTNumber
-    case CTInteger => Neo4jTypes.NTInteger
-    case CTFloat => Neo4jTypes.NTFloat
+    case CTString           => Neo4jTypes.NTString
+    case CTBoolean          => Neo4jTypes.NTBoolean
+    case CTNumber           => Neo4jTypes.NTNumber
+    case CTInteger          => Neo4jTypes.NTInteger
+    case CTFloat            => Neo4jTypes.NTFloat
   }
 }

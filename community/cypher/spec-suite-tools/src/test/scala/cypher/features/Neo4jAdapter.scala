@@ -22,13 +22,14 @@ package cypher.features
 import java.lang.Boolean.TRUE
 
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
-import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.configuration.connectors.BoltConnector
+import org.neo4j.configuration.helpers.SocketAddress
+import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
+import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.ExecQuery
 import org.opencypher.tools.tck.api.Graph
@@ -36,9 +37,7 @@ import org.opencypher.tools.tck.api.QueryType
 import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -47,9 +46,19 @@ object Neo4jAdapter {
   val defaultTestConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
-            dbConfig: collection.Map[Setting[_], Object]): Neo4jAdapter = {
-    val managementService = createManagementService(dbConfig, graphDatabaseFactory)
-    new Neo4jAdapter(managementService, executionPrefix)
+            dbConfig: collection.Map[Setting[_], Object], useBolt: Boolean): Neo4jAdapter = {
+    val enhancedConfig =
+      (dbConfig + (BoltConnector.enabled -> true) + (BoltConnector.listen_address -> new SocketAddress("localhost", 0)))
+        .asInstanceOf[Map[Setting[_], Object]]
+    val managementService = createManagementService(enhancedConfig, graphDatabaseFactory)
+    val config = Config.newBuilder().set(enhancedConfig.asJava).build()
+    val executorFactory = if (useBolt) {
+      DriverCypherExecutorFactory(managementService, config)
+    } else {
+      EmbeddedCypherExecutorFactory(managementService, config)
+    }
+    val dbms = FeatureDatabaseManagementService(managementService, executorFactory)
+    new Neo4jAdapter(dbms, executionPrefix)
   }
 
   private def createManagementService(config: collection.Map[Setting[_], Object], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
@@ -57,64 +66,47 @@ object Neo4jAdapter {
   }
 }
 
-class Neo4jAdapter(var managementService: DatabaseManagementService,
+class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
                    executionPrefix: String) extends Graph with Neo4jProcedureAdapter {
-
-  protected var database: GraphDatabaseFacade =
-    new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME)).getGraphDatabaseService
-
   private val explainPrefix = "EXPLAIN\n"
 
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
-    val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v)).asJava
+    val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v))
 
-    var tx = database.beginTx
+    var tx = dbms.begin()
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     } else query
-    val result: Result = Try(tx.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
+    Try(tx.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
       case Success(converted) =>
         Try(tx.commit()) match {
           case Failure(exception) =>
             convert(Phase.runtime, exception)
-          case Success(_) => converted
+          case Success(_)         => converted
         }
       case Failure(exception) =>
-        tx.close()
-        tx = database.beginTx()
-        val explainedResult = Try(tx.execute(explainPrefix + queryToExecute, neo4jParams))
+        tx.rollback()
+        tx = dbms.begin()
+        val explainedResult = Try(tx.execute(explainPrefix + queryToExecute, neo4jParams).consume())
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
           case Success(_) => Phase.runtime
         }
         Try(tx.rollback()) match {
           case Failure(exception) => convert(Phase.runtime, exception)
-          case Success(_) => convert(phase, exception)
+          case Success(_)         => convert(phase, exception)
         }
-    }
-    Try(tx.close()) match {
-      case Failure(exception) =>
-        convert(Phase.runtime, exception)
-      case Success(_) => result
     }
   }
 
-  def convertResult(result: org.neo4j.graphdb.Result): Result = {
-    val header = result.columns().asScala.toList
-    val rows = ArrayBuffer[Map[String, String]]()
-    result.accept(new ResultVisitor[RuntimeException] {
-      override def visit(row: org.neo4j.graphdb.Result.ResultRow): Boolean = {
-        rows.append(header.map(k => k -> Neo4jValueToString(row.get(k))).toMap)
-        true
-      }
-    })
-    StringRecords(header, rows.toList)
+  def convertResult(result: StatementResult): Result = {
+    val header = result.columns().toList
+    val rows = result.records().map(record => record.map { case (key, value) => (key, CypherTestValueToString(value)) }).toList
+    StringRecords(header, rows)
   }
 
   override def close(): Unit = {
-    managementService.shutdown()
-    managementService = null
-    database = null
+    dbms.shutdown()
   }
 
 }
