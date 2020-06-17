@@ -69,16 +69,26 @@ final class Aggregator
     {
         long progress = PROGRESS_UPDATER.addAndGet( this, delta );
         int current = (int) ((progress * indicator.reportResolution()) / totalCount);
-        for ( int last = this.last; current > last; last = this.last )
+        updateTo( current );
+    }
+
+    private void updateTo( int to )
+    {
+        for ( int last = this.last; to > last; last = this.last )
         {
-            if ( LAST_UPDATER.compareAndSet( this, last, current ) )
+            if ( LAST_UPDATER.compareAndSet( this, last, to ) )
             {
                 synchronized ( this )
                 {
-                    indicator.progress( last, current );
+                    indicator.progress( last, to );
                 }
             }
         }
+    }
+
+    void updateRemaining()
+    {
+        updateTo( indicator.reportResolution() );
     }
 
     synchronized void start( ProgressListener.MultiPartProgressListener part )
@@ -97,6 +107,7 @@ final class Aggregator
             if ( states.isEmpty() )
             {
                 indicator.completeProcess();
+                updateRemaining();
             }
         }
     }

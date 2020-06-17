@@ -134,6 +134,7 @@ class ProgressMonitorTest
         }
         order.verify( indicator ).completePart( "other" );
         order.verify( indicator ).completeProcess();
+        order.verify( indicator ).reportResolution();
         order.verifyNoMoreInteractions();
     }
 
@@ -226,6 +227,7 @@ class ProgressMonitorTest
         }
         order.verify( indicator ).completePart( "other" );
         order.verify( indicator ).completeProcess();
+        order.verify( indicator ).reportResolution();
         order.verifyNoMoreInteractions();
     }
 
@@ -374,6 +376,22 @@ class ProgressMonitorTest
         {
             verify( indicator ).progress( i, i + 1 );
         }
+    }
+
+    @Test
+    void shouldPrintFullIndicatorsWhenZeroTotalCount( TestInfo testInfo )
+    {
+        // given
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.multipleParts( testInfo.getDisplayName() );
+        ProgressListener part1 = builder.progressForPart( "Part 1", 0 );
+        ProgressListener part2 = builder.progressForPart( "Part 2", 0 );
+        ProgressMonitorFactory.Completer completer = builder.build();
+
+        // when
+        completer.close();
+
+        // then
+        verify( indicator ).progress( 0, 10 );
     }
 
     private static Indicator indicatorMock()
