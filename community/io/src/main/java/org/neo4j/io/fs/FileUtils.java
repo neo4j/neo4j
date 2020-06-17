@@ -275,6 +275,10 @@ public final class FileUtils
      */
     public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
     {
+        if ( !targetDirectory.exists() )
+        {
+            Files.createDirectories( targetDirectory.toPath() );
+        }
         if ( !targetDirectory.isDirectory() )
         {
             throw new IllegalArgumentException(
