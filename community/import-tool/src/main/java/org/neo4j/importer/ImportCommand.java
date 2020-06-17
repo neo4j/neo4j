@@ -127,11 +127,13 @@ public class ImportCommand extends AbstractCommand
     private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
     @Option( names = "--delimiter", paramLabel = "<char>", converter = EscapedCharacterConverter.class,
-            description = "Delimiter character between values in CSV data." )
+            description = "Delimiter character between values in CSV data. " +
+                    "Also accepts 'TAB' and e.g. 'U+20AC' for specifying character using unicode." )
     private char delimiter = DEFAULT_CSV_CONFIG.delimiter();
 
     @Option( names = "--array-delimiter", paramLabel = "<char>", converter = EscapedCharacterConverter.class,
-            description = "Delimiter character between array elements within a value in CSV data." )
+            description = "Delimiter character between array elements within a value in CSV data. " +
+                    "Also accepts 'TAB' and e.g. 'U+20AC' for specifying character using unicode." )
     private char arrayDelimiter = DEFAULT_CSV_CONFIG.arrayDelimiter();
 
     @Option( names = "--quote", paramLabel = "<char>", converter = EscapedCharacterConverter.class,
@@ -382,7 +384,6 @@ public class ImportCommand extends AbstractCommand
 
     static class EscapedCharacterConverter implements ITypeConverter<Character>
     {
-
         @Override
         public Character convert( String value )
         {

@@ -93,6 +93,15 @@ class CharacterConverterTest
         assertThrows( IllegalArgumentException.class, () -> converter.apply( "bogus" ) );
     }
 
+    @Test
+    void shouldConvertUnicodeCharacter()
+    {
+        assertCorrectConversion( '\u20AC', "\\u20AC" );
+        assertCorrectConversion( '\u20AC', "\\U20AC" );
+        assertCorrectConversion( '\u20AC', "u+20AC" );
+        assertCorrectConversion( '\u20AC', "U+20AC" );
+    }
+
     private void assertCorrectConversion( char expected, String material )
     {
         // WHEN

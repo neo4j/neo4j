@@ -132,10 +132,13 @@ class ImportCommandTest
                         "                               interpreted as inner quote." + lineSeparator() +
                         "                               Default: false" + lineSeparator() +
                         "      --delimiter=<char>     Delimiter character between values in CSV data." + lineSeparator() +
+                        "                               Also accepts 'TAB' and e.g. 'U+20AC' for" + lineSeparator() +
+                        "                               specifying character using unicode." + lineSeparator() +
                         "                               Default: ," + lineSeparator() +
                         "      --array-delimiter=<char>" + lineSeparator() +
                         "                             Delimiter character between array elements within" + lineSeparator() +
-                        "                               a value in CSV data." + lineSeparator() +
+                        "                               a value in CSV data. Also accepts 'TAB' and e.g." + lineSeparator() +
+                        "                               'U+20AC' for specifying character using unicode." + lineSeparator() +
                         "                               Default: ;" + lineSeparator() +
                         "      --quote=<char>         Character to treat as quotation character for" + lineSeparator() +
                         "                               values in CSV data. Quotes can be escaped as per" + lineSeparator() +

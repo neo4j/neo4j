@@ -22,6 +22,7 @@ package org.neo4j.importer;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.util.Preconditions;
 
 /**
  * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character. Can be
@@ -29,14 +30,21 @@ import org.neo4j.csv.reader.Configuration;
  */
 public class CharacterConverter implements Function<String,Character>
 {
-
     @Override
     public Character apply( String value ) throws RuntimeException
     {
         // Parse "raw" ASCII character style characters:
         // - \123 --> character with id 123
+        // - U+XXXX --> unicode character HEX
         // - \t   --> tab character
-        if ( value.startsWith( "\\" ) && value.length() > 1 )
+        String lowerCaseValue = value.toLowerCase();
+        if ( lowerCaseValue.startsWith( "\\u" ) || lowerCaseValue.startsWith( "u+" ) )
+        {
+            String code = value.substring( 2 );
+            Preconditions.checkState( code.length() == 4, "Unicode characters should be specified with 4 HEX characters, e.g. 'U+20AC'" );
+            return (char) Integer.parseInt( code, 16 );
+        }
+        else if ( value.startsWith( "\\" ) && value.length() > 1 )
         {
             String raw = value.substring( 1 );
             try
