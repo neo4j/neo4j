@@ -114,7 +114,7 @@ case object QueryPlanner
     }
 
     val planWithProduceResults = newContext.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, newContext)
-    verifyBestPlan(planWithProduceResults, query.query, newContext)
+    verifyBestPlan(plan = planWithProduceResults, expected = query.query, context = newContext)
     (query.periodicCommit, planWithProduceResults, newContext)
   }
 }
