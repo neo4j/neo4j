@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
@@ -65,6 +66,14 @@ object CardinalityCalculator {
 
   implicit val allNodesScanCardinality: CardinalityCalculator[AllNodesScan] =
     (_, state, stats, _) => state.leafCardinalityMultiplier * stats.nodesAllCardinality()
+
+  implicit val undirectedRelationshipByIdSeek: CardinalityCalculator[UndirectedRelationshipByIdSeek] =
+    (plan, state, _, _) => {
+      val numberOfRels = plan.relIds.sizeHint.map(Cardinality(_))
+        .getOrElse(PlannerDefaults.DEFAULT_LIST_CARDINALITY)
+
+      numberOfRels * Multiplier(2) * state.leafCardinalityMultiplier
+    }
 
   implicit val nodeByLabelScanCardinality: CardinalityCalculator[NodeByLabelScan] = {
     (plan, state, stats, labelsWithIds) =>

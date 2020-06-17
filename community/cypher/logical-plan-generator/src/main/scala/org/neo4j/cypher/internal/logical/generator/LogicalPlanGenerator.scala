@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -67,6 +68,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -77,6 +79,8 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.scalacheck.Gen
 
 import scala.collection.mutable
@@ -166,7 +170,12 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
  * @param stats Statistics of a graphs that plans are executed against.
  * @param costLimit Maximum allowed cost of a generated plan.
  */
-class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int], stats: GraphStatistics, costLimit: Cost) extends AstConstructionTestSupport {
+class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
+                           relTypesWithIds: Map[String, Int],
+                           stats: GraphStatistics,
+                           costLimit: Cost,
+                           nodes: Seq[Node],
+                           rels: Seq[Relationship]) extends AstConstructionTestSupport {
 
   private val labels = labelsWithIds.keys.toVector
   private val relTypes = relTypesWithIds.keys.toVector
@@ -219,6 +228,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
     argument(state),
     allNodesScan(state),
     nodeByLabelScan(state),
+    sortedUndirectedRelationshipByIdSeek(state),
   )
 
   def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -288,6 +298,23 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int], relTypesWithIds: Map
   } yield {
     val plan = Expand(source, from, dir, relTypes, to, rel)(state.idGen)
     annotate(plan, state)
+  }
+
+  def sortedUndirectedRelationshipByIdSeek(state: State): Gen[WithState[Sort]] = for {
+    WithState(idName, state) <- newVariable(state)
+    state <- state.newRelationship(idName)
+    WithState(left, state) <- newVariable(state)
+    state <- state.newNode(left)
+    WithState(right, state) <- newVariable(state)
+    state <- state.newNode(right)
+    relIds <- Gen.someOf(rels.map(_.getId))
+  } yield {
+    val seekableArgs = ManySeekableArgs(listOfInt(relIds:_*))
+    val plan = UndirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
+    annotate(plan, state)
+    // result is non-deterministic, so we need to sort in order to make it deterministic
+    val sortPlan = Sort(plan, Seq(Ascending(left), Ascending(idName)))(state.idGen)
+    annotate(sortPlan, state)
   }
 
   def skip(state: State): Gen[WithState[Skip]] = for {

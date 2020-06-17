@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -43,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -246,6 +249,36 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
         val marginOfError = expectedAmountApprox * 0.01
         actualAmount should equal(expectedAmountApprox +- marginOfError)
       }
+  }
+
+  test("UndirectedRelationshipByIdSeek with no relationship ids") {
+    val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
+    val plan = UndirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
+
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality.EMPTY)
+  }
+
+  test("UndirectedRelationshipByIdSeek with non empty list of relationship ids") {
+    val relIdsSize = 100
+    val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
+    val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
+    val plan = UndirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality(relIdsSize * 2))
+  }
+
+  test("UndirectedRelationshipByIdSeek under apply") {
+    val relIdsSize = 100
+    val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
+    val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
+    val plan = UndirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+    val leafCardinalityMultiplier = Cardinality(5)
+
+    val state = defaultState.pushLeafCardinalityMultiplier(leafCardinalityMultiplier)
+    val c = CardinalityCalculator.undirectedRelationshipByIdSeek(plan, state, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality(relIdsSize * 2) * leafCardinalityMultiplier)
   }
 
   test("Limit amount < node count") {

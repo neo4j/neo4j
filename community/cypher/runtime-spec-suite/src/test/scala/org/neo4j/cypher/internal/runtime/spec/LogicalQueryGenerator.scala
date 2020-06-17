@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.attribution.Default
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.NullLog
 import org.scalacheck.Gen
@@ -37,7 +39,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object LogicalQueryGenerator {
 
-  def logicalQuery(txContext: TransactionalContext, costLimit: Cost): Gen[WithState[LogicalQuery]] = {
+  def logicalQuery(txContext: TransactionalContext, costLimit: Cost, nodes: Seq[Node], rels: Seq[Relationship]): Gen[WithState[LogicalQuery]] = {
     val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
@@ -50,7 +52,7 @@ object LogicalQueryGenerator {
     val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 
     for {
-      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, stats, costLimit).logicalPlan
+      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, stats, costLimit, nodes, rels).logicalPlan
     } yield WithState(LogicalQuery(logicalPlan,
       "<<queryText>>",
       readOnly = true,
