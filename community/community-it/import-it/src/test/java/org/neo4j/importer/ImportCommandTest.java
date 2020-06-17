@@ -616,26 +616,18 @@ class ImportCommandTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        try
-        {
-            runImport(
-                    "--delimiter", "TAB",
-                    "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
-                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                    .getAbsolutePath(),
-                    "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
-                            relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
-
-            fail( "Should have thrown exception" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT FAILED" ) );
-            assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
-            assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
-        }
+        var e = assertThrows( InputException.class, () ->
+                runImport(
+                "--delimiter", "TAB",
+                "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
+                        nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
+                                .getAbsolutePath(),
+                "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
+                        relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT FAILED" ) );
+        assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
+        assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
     }
 
     @Test
@@ -950,19 +942,11 @@ class ImportCommandTest
         File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
 
         // WHEN
-        try
-        {
-            runImport(
-                    "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
-                               nodeData1.getAbsolutePath() + "," +
-                               nodeData2.getAbsolutePath() );
-            fail( "Should have failed with duplicate node IDs" );
-        }
-        catch ( Exception e )
-        {
-            // THEN
-            assertExceptionContains( e, "'a' is defined more than once", DuplicateInputIdException.class );
-        }
+        var e = assertThrows( Exception.class, () -> runImport(
+                "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
+                        nodeData1.getAbsolutePath() + "," +
+                        nodeData2.getAbsolutePath() ) );
+        assertExceptionContains( e, "'a' is defined more than once", DuplicateInputIdException.class );
     }
 
     @Test
@@ -1107,20 +1091,12 @@ class ImportCommandTest
         File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
-        try
-        {
-            runImport(
+        var e = assertThrows( Exception.class, () -> runImport(
                     "--nodes", nodeData.getAbsolutePath(),
                     "--report-file", bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
-                    "--relationships", relationshipData.getAbsolutePath() );
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // THEN
-            assertExceptionContains( e, relationshipData.getAbsolutePath(), InputException.class );
-        }
+                    "--relationships", relationshipData.getAbsolutePath() ) );
+        assertExceptionContains( e, relationshipData.getAbsolutePath(), InputException.class );
     }
 
     @Test
@@ -1141,21 +1117,13 @@ class ImportCommandTest
         File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
-        try
-        {
-            runImport(
+        var e = assertThrows( Exception.class, () -> runImport(
                     "--nodes", nodeData.getAbsolutePath(),
                     "--report-file", bad.getAbsolutePath(),
                     "--skip-bad-relationships=false",
                     "--relationships", relationshipData1.getAbsolutePath() + "," +
-                                       relationshipData2.getAbsolutePath() );
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // THEN
-            assertExceptionContains( e, relationshipData1.getAbsolutePath(), InputException.class );
-        }
+                                       relationshipData2.getAbsolutePath() ) );
+        assertExceptionContains( e, relationshipData1.getAbsolutePath(), InputException.class );
     }
 
     @Test
@@ -1213,18 +1181,10 @@ class ImportCommandTest
         Configuration config = Configuration.COMMAS;
 
         // WHEN
-        try
-        {
-            runImport(
+        var e = assertThrows( MissingParameterException.class, () -> runImport(
                     "--relationships",
-                    relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( MissingParameterException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( "Missing required option '--nodes" );
-        }
+                    relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+        assertThat( e ).hasMessageContaining( "Missing required option: '--nodes" );
     }
 
     @Test
@@ -1272,17 +1232,8 @@ class ImportCommandTest
         File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
 
         // WHEN
-        try
-        {
-            runImport(
-                    "--nodes", data.getAbsolutePath() );
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // THEN
-            assertExceptionContains( e, "Multi-line", IllegalMultilineFieldException.class );
-        }
+        var e = assertThrows( Exception.class, () -> runImport( "--nodes", data.getAbsolutePath() ) );
+        assertExceptionContains( e, "Multi-line", IllegalMultilineFieldException.class );
     }
 
     @Test
@@ -1451,19 +1402,12 @@ class ImportCommandTest
                 "1,\"one\ntwo\nthree\"",
                 "2,four" );
 
-        try
-        {
-            runImport(
+        var e = assertThrows( InputException.class, () -> runImport(
                     "--nodes", data.getAbsolutePath(),
-                    "--multiline-fields=false" );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {
+                    "--multiline-fields=false" ) );
             // THEN
-            assertTrue( suppressOutput.getErrorVoice().containsMessage( "Detected field which spanned multiple lines" ) );
-            assertTrue( suppressOutput.getErrorVoice().containsMessage( "multiline-fields" ) );
-        }
+        assertTrue( suppressOutput.getErrorVoice().containsMessage( "Detected field which spanned multiple lines" ) );
+        assertTrue( suppressOutput.getErrorVoice().containsMessage( "multiline-fields" ) );
     }
 
     @Test
@@ -1529,20 +1473,12 @@ class ImportCommandTest
         Configuration config = Configuration.TABS;
 
         // WHEN
-        try
-        {
-            runImport(
+        var e = assertThrows( ParameterException.class, () -> runImport(
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( ParameterException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( "bogus" );
-        }
+                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+        assertThat( e ).hasMessageContaining( "bogus" );
     }
 
     @Test
@@ -1552,18 +1488,10 @@ class ImportCommandTest
         int unbalancedStartLine = 10;
 
         // WHEN
-        try
-        {
-            runImport(
+        var e = assertThrows( InputException.class, () -> runImport(
                     "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
-                            .getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( "Multi-line fields are illegal" );
-        }
+                            .getAbsolutePath() ) );
+        assertThat( e.getMessage() ).contains( "Multi-line fields are illegal" );
     }
 
     @Test
@@ -1607,17 +1535,9 @@ class ImportCommandTest
         int unbalancedStartLine = 10;
 
         // WHEN
-        try
-        {
-            runImport(
-                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertThat( e.getMessage() ).contains( format( "Multi-line fields" ) );
-        }
+        var e = assertThrows( InputException.class, () -> runImport(
+                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() ) );
+        assertThat( e ).hasMessageContaining( "Multi-line fields" );
     }
 
     @Test
@@ -1665,17 +1585,10 @@ class ImportCommandTest
         int unbalancedStartLine = 10;
 
         // WHEN
-        try
-        {
-            runImport(
+        assertThrows( InputException.class, () -> runImport(
                     "--multiline-fields", "true",
                     "--nodes",
-                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( InputException e )
-        {   // THEN OK
-        }
+                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() ) );
     }
 
     private File nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine ) throws Exception
@@ -1804,20 +1717,12 @@ class ImportCommandTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        try
-        {
-            runImport(
+        var e = assertThrows( IllegalStateException.class, () -> runImport(
                     "--additional-config", dbConfig.getAbsolutePath(),
                     "--nodes", data( lines.toArray( new String[0] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
-                    );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN good
-            assertThat( e.getMessage() ).contains( "input data" );
-        }
+                    ) );
+        assertThat( e ).hasMessageContaining( "input data" );
     }
 
     @Test
@@ -1838,18 +1743,9 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds( 10 );
 
-        try
-        {
-            // WHEN
-            runImport( "--nodes",
-                    nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
-            fail( "Should have failed" );
-        }
-        catch ( ParameterException e )
-        {
-            // THEN good
-            assertThat( e.getMessage() ).contains( "percent" );
-        }
+        var e = assertThrows( ParameterException.class, () -> runImport( "--nodes",
+                    nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" ) );
+        assertThat( e ).hasMessageContaining( "percent" );
     }
 
     @Test
@@ -1901,25 +1797,18 @@ class ImportCommandTest
         final var configFile = prepareDefaultConfigFile();
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        try
-        {
-            runImport(
+        var e = assertThrows( InputException.class, () -> runImport(
                     "--additional-config=" + configFile.getAbsolutePath(),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
-                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
-            fail( "Should have thrown exception" );
-        }
-        catch ( InputException e )
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() ) );
+        // THEN the store files should be there
+        for ( StoreType storeType : StoreType.values() )
         {
-            // THEN the store files should be there
-            for ( StoreType storeType : StoreType.values() )
-            {
-                assertTrue( databaseLayout.file( storeType.getDatabaseFile() ).exists() );
-            }
-
-            List<String> errorLines = suppressOutput.getErrorVoice().lines();
-            assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
+            assertTrue( databaseLayout.file( storeType.getDatabaseFile() ).exists() );
         }
+
+        List<String> errorLines = suppressOutput.getErrorVoice().lines();
+        assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
     }
 
     @Test
@@ -2032,21 +1921,14 @@ class ImportCommandTest
             writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
             writer.println( "1,1,DC,9999999999,123456789" );
         } );
-        try
-        {
-            runImport(
+        var e = assertThrows( InputException.class, () -> runImport(
                     "--additional-config", dbConfig.getAbsolutePath(),
                     "--normalize-types", "false",
                     "--nodes", nodeData.getAbsolutePath(),
-                    "--relationships", relationshipData.getAbsolutePath() );
-            fail();
-        }
-        catch ( InputException e )
-        {
-            String message = e.getMessage();
-            assertThat( message ).contains( "1000000" );
-            assertThat( message ).contains( "too big" );
-        }
+                    "--relationships", relationshipData.getAbsolutePath() ) );
+        String message = e.getMessage();
+        assertThat( message ).contains( "1000000" );
+        assertThat( message ).contains( "too big" );
     }
 
     private static void assertContains( List<String> errorLines, String string )
