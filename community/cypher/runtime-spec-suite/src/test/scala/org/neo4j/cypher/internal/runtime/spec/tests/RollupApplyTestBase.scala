@@ -95,30 +95,6 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     runtimeResult should beColumns("x", "list").withRows(expectedRows)
   }
 
-  test("non-empty lhs, non-empty rhs should produce null lists for null lhs variables") {
-    val size = Math.sqrt(sizeHint).toInt
-    val (aNodes, bNodes) =
-      given {
-        bipartiteGraph(size, "A", "B", "R")
-      }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "list")
-      .rollUpApply("list", "y", Set("y"))
-      .|.argument("y")
-      .optionalExpandAll("(x)-->(y)")
-      .allNodeScan("x")
-      .build()
-
-    // then
-    val expectedRows: Iterable[Array[_]] =
-      aNodes.flatMap(a => bNodes.map(b => Array[Any](a, Collections.singletonList(b)))) ++
-      bNodes.map(b => Array[Any](b, null))
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x", "list").withRows(expectedRows)
-  }
-
   test("non-empty lhs, non-empty rhs should produce lists preserving nulls") {
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =

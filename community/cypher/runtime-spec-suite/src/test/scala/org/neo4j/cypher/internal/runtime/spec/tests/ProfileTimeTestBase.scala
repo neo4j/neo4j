@@ -143,7 +143,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "list")
-      .rollUpApply("list", "y", Set("y"))
+      .rollUpApply("list", "y")
       .|.argument("y")
       .optionalExpandAll("(x)-->(y)")
       .allNodeScan("x")

@@ -283,7 +283,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
   testPlan("rollUpApply",
     new TestPlanBuilder()
       .produceResults("x", "list")
-      .rollUpApply("list", "y", Set("x"))
+      .rollUpApply("list", "y")
       .|.allNodeScan("y")
       .allNodeScan("x")
       .build())

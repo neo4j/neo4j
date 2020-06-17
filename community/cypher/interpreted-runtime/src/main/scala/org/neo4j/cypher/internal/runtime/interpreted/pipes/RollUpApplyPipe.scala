@@ -21,27 +21,21 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
-case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
+case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String)
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(lhs) {
 
   override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
     input.map {
       ctx =>
-        if (nullableIdentifiers.map(ctx.getByName).exists(_ eq NO_VALUE)) {
-          ctx.set(collectionName, NO_VALUE)
-          ctx
-        } else {
-          val original = ctx.createClone()
-          val innerState = state.withInitialContext(ctx)
-          val innerResults = rhs.createResults(innerState)
-          val collection = VirtualValues.list(innerResults.map(m => m.getByName(identifierToCollect)).toArray:_*)
-          original.set(collectionName, collection)
-          original
-        }
+        val original = ctx.createClone()
+        val innerState = state.withInitialContext(ctx)
+        val innerResults = rhs.createResults(innerState)
+        val collection = VirtualValues.list(innerResults.map(m => m.getByName(identifierToCollect)).toArray: _*)
+        original.set(collectionName, collection)
+        original
     }
   }
 }

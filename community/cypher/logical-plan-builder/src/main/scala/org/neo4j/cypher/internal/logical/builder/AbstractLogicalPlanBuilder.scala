@@ -685,9 +685,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
 
   def rollUpApply(collectionName: String,
-                  variableToCollect: String,
-                  nullableIdentifiers: Set[String] = Set.empty): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect, nullableIdentifiers)(_)))
+                  variableToCollect: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
 
   def cartesianProduct(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)(_)))

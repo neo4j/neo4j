@@ -892,7 +892,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RightOuterHashJoin(nodes, _, _) =>
         PlanDescriptionImpl(id, "NodeRightOuterHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables)
 
-      case RollUpApply(_, _, collectionName, variableToCollect, _) =>
+      case RollUpApply(_, _, collectionName, variableToCollect) =>
         val detailsList = Seq(collectionName, variableToCollect).map(e => keyNamesInfo(Seq(e)))
         PlanDescriptionImpl(id, "RollUpApply", children, Seq(Details(detailsList)), variables)
 

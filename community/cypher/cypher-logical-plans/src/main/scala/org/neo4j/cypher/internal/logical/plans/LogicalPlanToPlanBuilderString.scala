@@ -262,8 +262,8 @@ object LogicalPlanToPlanBuilderString {
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         indexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr)
-      case RollUpApply(_, _, collectionName, variableToCollect, nullableVariables) =>
-        s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}, Set(${wrapInQuotationsAndMkString(nullableVariables)})"""
+      case RollUpApply(_, _, collectionName, variableToCollect) =>
+        s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}"""
       case ConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case AntiConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case LetSemiApply(_, _, idName) => wrapInQuotations(idName)

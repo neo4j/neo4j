@@ -252,7 +252,7 @@ object PatternExpressionSolver {
                                                                    pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
                                                                   (implicit m: ClassTag[T]) {
 
-    case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
+    case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan) {
       def variableToCollect: String = columnName
     }
 
@@ -264,7 +264,6 @@ object PatternExpressionSolver {
         subQueryPlan.innerPlan,
         key,
         subQueryPlan.variableToCollect,
-        subQueryPlan.nullableIdentifiers,
         context)
 
       (producedPlan, Variable(key)(expr.position))
@@ -302,7 +301,7 @@ object PatternExpressionSolver {
       val collectionName = FreshIdNameGenerator.name(expr.position)
       val projectedPath = projectionCreator(namedExpr)
       val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), innerContext)
-      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
+      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner)
     }
 
     /*

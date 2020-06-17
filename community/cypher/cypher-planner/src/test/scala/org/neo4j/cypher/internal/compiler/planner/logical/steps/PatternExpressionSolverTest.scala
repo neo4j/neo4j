@@ -62,7 +62,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     resultPlan should beLike {
       case RollUpApply(`source`,
       Projection(`otherSide`, MapKeys("  FRESHID0")),
-      "x", "  FRESHID0", SetExtractor("a")) => ()
+      "x", "  FRESHID0") => ()
     }
     expressions should equal(Map("x" -> varFor("x")))
   }
@@ -94,9 +94,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       case RollUpApply(
       RollUpApply(`source`,
       Projection(`b1`, MapKeys("  FRESHID0")),
-      "x", "  FRESHID0", SetExtractor("a")),
+      "x", "  FRESHID0"),
       Projection(`b2`, MapKeys("  FRESHID3")),
-      "y", "  FRESHID3", SetExtractor("a")) => ()
+      "y", "  FRESHID3") => ()
     }
     expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }
@@ -120,9 +120,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       case RollUpApply(
       RollUpApply(`source`,
       Projection(`b1`, MapKeys("  FRESHID0")),
-      "  FRESHID1", "  FRESHID0", SetExtractor("a")),
+      "  FRESHID1", "  FRESHID0"),
       Projection(`b2`, MapKeys("  FRESHID3")),
-      "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
+      "  FRESHID4", "  FRESHID3") => ()
     }
 
     expressions should equal(Map("x" -> equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
@@ -147,9 +147,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       case RollUpApply(
       RollUpApply(`source`,
       Projection(`b1`, MapKeys("  FRESHID0")),
-      "  FRESHID1", "  FRESHID0", SetExtractor("a")),
+      "  FRESHID1", "  FRESHID0"),
       Projection(`b2`, MapKeys("  FRESHID3")),
-      "  FRESHID4", "  FRESHID3", SetExtractor("a")) => ()
+      "  FRESHID4", "  FRESHID3") => ()
     }
 
     expression should equal(equals(varFor("  FRESHID1"), varFor("  FRESHID4")))

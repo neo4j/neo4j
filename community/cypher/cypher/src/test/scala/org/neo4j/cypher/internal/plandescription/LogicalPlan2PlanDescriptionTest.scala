@@ -1266,7 +1266,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("RollUpApply") {
-    assertGood(attach(RollUpApply(lhsLP, rhsLP, "collection", "x", Set("y")), 2345.0),
+    assertGood(attach(RollUpApply(lhsLP, rhsLP, "collection", "x"), 2345.0),
       planDescription(id, "RollUpApply", TwoChildren(lhsPD, rhsPD), Seq(details(Seq("collection", "x"))), Set("a", "collection")))
   }
 

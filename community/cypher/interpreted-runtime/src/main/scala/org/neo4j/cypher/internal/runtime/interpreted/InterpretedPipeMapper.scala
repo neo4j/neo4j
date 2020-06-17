@@ -720,8 +720,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case ForeachApply(_, _, variable, expression) =>
         ForeachPipe(lhs, rhs, variable, buildExpression(expression))(id = id)
 
-      case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
-        RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection, nullables)(id = id)
+      case RollUpApply(_, _, collectionName, identifierToCollection) =>
+        RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")

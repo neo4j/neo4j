@@ -40,7 +40,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         Iterator.empty
       }
     })
-    val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y", nullableIdentifiers = Set("a"))()
+    val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y")()
 
     // when
     pipe.createResults(QueryStateHelper.empty).toList

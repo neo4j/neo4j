@@ -218,12 +218,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                    rhs: LogicalPlan,
                    collectionName: String,
                    variableToCollect: String,
-                   nullable: Set[String],
                    context: LogicalPlanningContext): LogicalPlan = {
       // The LHS is either the plan we're building on top of, with the correct solved or it is the result of [[planArgument]].
       // The RHS is the sub-query
       val solved = solveds.get(lhs.id)
-      annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), solved, providedOrders.get(lhs.id).fromLeft, context)
+      annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect), solved, providedOrders.get(lhs.id).fromLeft, context)
     }
   }
 

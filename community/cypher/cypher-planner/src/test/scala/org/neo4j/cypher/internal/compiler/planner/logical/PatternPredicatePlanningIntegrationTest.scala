@@ -150,8 +150,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                 Map("  FRESHID41" -> prop("u2", "id"))
               ),
               "  FRESHID42",
-              "  FRESHID41",
-              Set("u")
+              "  FRESHID41"
             ),
             Map(patternComprehensionExpressionKeyString -> function("size", Variable("  FRESHID42")(pos)))
           ),
@@ -354,7 +353,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  NodeByIdSeek("n", _, SetExtractor(argumentName))
                 ) if collectionName == argumentName => ()
     }
@@ -370,7 +369,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  DirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName))
                 ) if collectionName == argumentName => ()
     }
@@ -386,7 +385,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  UndirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName))
                 ) if collectionName == argumentName => ()
     }
@@ -405,7 +404,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _)
                 ) if collectionName == argumentName => ()
     }
@@ -424,7 +423,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should beLike {
       case Apply(
-                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _)
                 ) if collectionName == argumentName => ()
     }
@@ -443,7 +442,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
       NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _)
       ) if collectionName == argumentName => ()
     }
@@ -462,7 +461,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should beLike {
       case Apply(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
       NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _)
       ) if collectionName == argumentName => ()
     }
@@ -479,7 +478,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case Selection(
       Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       ) => ()
     }
   }
@@ -496,7 +495,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case Selection(
       Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
-      RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one")), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one"))/* <- This is the subQuery */, _, _, _),
       ) => ()
     }
   }
@@ -511,7 +510,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SelectOrAntiSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
       _
       ) => ()
@@ -529,7 +528,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case SelectOrAntiSemiApply(
       LetSelectOrAntiSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
       _,
       _
@@ -550,7 +549,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SelectOrSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
       _
       ) => ()
@@ -568,7 +567,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case SelectOrSemiApply(
       LetSelectOrSemiApply(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
       _,
       _
@@ -587,7 +586,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _) => ()
+      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _) => ()
     }
   }
 
@@ -599,7 +598,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _, _) => ()
+      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _) => ()
     }
   }
 
@@ -612,7 +611,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Aggregation(
-        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
+        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
       _,
       _
       ) => ()
@@ -628,7 +627,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Aggregation(
-        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _, _),
+        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _),
       _,
       _
       ) => ()
@@ -644,7 +643,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Distinct(
-      RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
+      RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
       _
       ) => ()
     }
@@ -658,7 +657,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case LoadCSV(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _, _, _, _
       ) => ()
     }
@@ -672,7 +671,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case UnwindCollection(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       "foo",
       _
       ) => ()
@@ -701,7 +700,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Create(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _
       ) => ()
     }
@@ -717,13 +716,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case AntiConditionalApply(
       Optional(
                Selection(_,
-                         RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _) // Match part
+                         RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
                         ), _
               ),
       MergeCreateNode(
                       RollUpApply(
                         Argument(SetExtractor()),
-                      _/* <- This is the subQuery */, _, _, _), _,_ ,_ // Create part
+                      _/* <- This is the subQuery */, _, _), _,_ ,_ // Create part
                      ), _
       ) => ()
     }
@@ -740,12 +739,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Optional(
                Selection(_,
                        RollUpApply(
-                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _) // Match part
+                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
                ), _
               ),
       MergeCreateRelationship(
                       RollUpApply(
-                                  _: MergeCreateNode, _/* <- This is the subQuery */, _, _, _), _,_ ,_, _, _ // Create part
+                                  _: MergeCreateNode, _/* <- This is the subQuery */, _, _), _,_ ,_, _, _ // Create part
                      ), _
       ) => ()
     }
@@ -805,7 +804,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetNodeProperty(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }
@@ -819,7 +818,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetNodePropertiesFromMap(
-      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }
@@ -833,7 +832,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetRelationshipProperty(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }
@@ -847,7 +846,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetRelationshipPropertiesFromMap(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _),
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }
@@ -862,7 +861,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case EmptyResult(
                        SetProperty(
-                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
       )) => ()
     }
@@ -878,7 +877,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case EmptyResult(
                        ForeachApply(
-                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
       )) => ()
     }
