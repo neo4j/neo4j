@@ -525,10 +525,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planSemiApplyInHorizon(left: LogicalPlan, right: LogicalPlan, expr: ExistsSubClause, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(left.id).asSinglePlannerQuery.updateHorizon {
+    val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {
       case horizon: QueryProjection => horizon.addPredicates(expr)
       case horizon => horizon
-    }
+    })
     annotate(SemiApply(left, right), solved, providedOrders.get(left.id), context)
   }
 
