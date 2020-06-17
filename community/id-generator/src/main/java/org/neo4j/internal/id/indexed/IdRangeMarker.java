@@ -31,7 +31,6 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdGenerator.Marker;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
@@ -219,7 +218,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
 
     private int idOffset( long id )
     {
-        return toIntExact( id % idsPerEntry );
+        return (int) (id % idsPerEntry);
     }
 
     /**
