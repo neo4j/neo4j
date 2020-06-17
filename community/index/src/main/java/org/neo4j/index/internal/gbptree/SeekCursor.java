@@ -500,10 +500,10 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     {
         int currentReadLevel = 0;
         int completedReadLevel = -1;
-        boolean lookingForChild = true;
         do
         {
             // Read
+            boolean lookingForChild = true;
             do
             {
                 // Where we are
@@ -538,7 +538,6 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 isInternal = true;
                 currentReadLevel = 0;
                 completedReadLevel = -1;
-                lookingForChild = true;
                 continue;
             }
             else if ( !saneRead() )

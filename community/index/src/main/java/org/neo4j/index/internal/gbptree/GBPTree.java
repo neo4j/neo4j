@@ -1062,7 +1062,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * <p>
      * We want to create our partitions as high up in the tree as possible, simply to terminate the partioning step as soon as possible.
      * If we want to create three partitions in the tree above for the range [0,300) we can use the tree subtrees seen from the root
-     * and me done, but if we want a more fine grained partitioning we need to the lower parts of the tree.
+     * and be done, but if we want a more fine grained partitioning we need to go to the lower parts of the tree.
      * <p>
      * This is what we do: We start at level 0 and collect all keys within our target range, let's say we find N keys [K1, K2,... KN].
      * In between each key and on both sides of the range is a subtree which means we now have a way to create N+1 partitions of
