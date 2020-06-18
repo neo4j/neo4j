@@ -193,6 +193,10 @@ public interface ProcedureITBase
         List<Object[]> result = new ArrayList<>( getExpectedCommunityProcs() );
         result.addAll( List.of(
                 // enterprise only functions
+                proc( "db.listLocks",
+                        "() :: (resourceType :: STRING?, resourceId :: INTEGER?, description :: STRING?)",
+                        "List all locks at this database.",
+                        stringArray( "admin" ), "DBMS"),
                 proc( "dbms.listPools",
                         "() :: (pool :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, " +
                                 "nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, " +
