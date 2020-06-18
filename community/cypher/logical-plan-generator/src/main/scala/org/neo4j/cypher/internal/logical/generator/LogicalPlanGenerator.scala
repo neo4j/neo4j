@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -233,6 +234,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     nodeByLabelScan(state),
     sortedUndirectedRelationshipByIdSeek(state),
     sortedDirectedRelationshipByIdSeek(state),
+    nodeCountFromCountStore(state),
   )
 
   def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -279,6 +281,19 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   def argument(state: State): Gen[WithState[Argument]] = {
     val plan = Argument(state.arguments)(state.idGen)
     Gen.const(annotate(plan, state))
+  }
+
+  private def nodeCountFromCountStore(state: State): Gen[WithState[NodeCountFromCountStore]] = for {
+    WithState(idName, state) <- newVariable(state)
+    state <- state.declareTypeAny(idName)
+    labels <- Gen.listOf {
+      Gen.oneOf(
+        label.map(Some(_)),
+        Gen.const(None))
+    }
+  } yield {
+    val plan = NodeCountFromCountStore(idName, labels, state.arguments)(state.idGen)
+    annotate(plan, state)
   }
 
   // One child plans

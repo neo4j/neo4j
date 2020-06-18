@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -148,6 +149,21 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
 
     val c = CardinalityCalculator.argumentCardinality(plan, state, new TestGraphStatistics, Map.empty)
+    c should equal(multiplier)
+  }
+
+  test("NodeCountFromCountStore") {
+    val plan = NodeCountFromCountStore("", List.empty, Set.empty)
+    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality.SINGLE)
+  }
+
+  test("NodeCountFromCountStore under Apply") {
+    val plan = NodeCountFromCountStore("", List.empty, Set.empty)
+    val multiplier = Cardinality(10)
+    val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
+
+    val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(plan, state, new TestGraphStatistics, Map.empty)
     c should equal(multiplier)
   }
 

@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -165,4 +166,7 @@ object CardinalityCalculator {
 
   implicit val unwindCollectionCardinality: CardinalityCalculator[UnwindCollection] =
     (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_LIST_CARDINALITY
+
+  implicit val nodeCountFromCountStoreCardinality: CardinalityCalculator[NodeCountFromCountStore] =
+    (_, state, _, _) => state.leafCardinalityMultiplier
 }
