@@ -684,6 +684,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def letSelectOrSemiApply(idName: String, predicate: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
 
+  def letSelectOrAntiSemiApply(idName: String, predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrAntiSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
+
   def rollUpApply(collectionName: String,
                   variableToCollect: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
