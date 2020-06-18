@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.test.Race;
@@ -85,6 +86,40 @@ class StoreLogServiceTest
         // then
         assertFalse( logStatementFound( file, firstMessage ) );
         assertTrue( logStatementFound( file, secondMessage ) );
+    }
+
+    @Test
+    void shouldReactToChangeInUserLogLevelIfOurLogProvider() throws IOException
+    {
+        // given
+        File userLog = directory.file( "userlog" );
+        FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( fs.openAsOutputStream( userLog, true ) );
+        File file = directory.file( "log" );
+        StoreLogService logService = StoreLogService
+                .withInternalLog( file )
+                .withUserLogProvider( userLogProvider )
+                .withDefaultLevel( Level.INFO )
+                .build( fs );
+        String firstMessage = "FirstMessage";
+        String secondMessage = "SecondMessage";
+        String thirdMessage = "ThirdMessage";
+        try ( Lifespan ignored = new Lifespan( logService ) )
+        {
+            Log log = logService.getUserLog( getClass() );
+            log.debug( firstMessage );
+
+            // when
+            logService.setDefaultLogLevel( Level.DEBUG );
+            log.debug( secondMessage );
+
+            logService.setDefaultLogLevel( Level.INFO );
+            log.debug( thirdMessage );
+        }
+
+        // then
+        assertFalse( logStatementFound( userLog, firstMessage ) );
+        assertTrue( logStatementFound( userLog, secondMessage ) );
+        assertFalse( logStatementFound( userLog, thirdMessage ) );
     }
 
     @Test
@@ -139,22 +174,39 @@ class StoreLogServiceTest
     @Test
     void shouldChangeDefaultLogLevelSettingStressfully() throws Throwable
     {
-        shouldChangeLogLevelSettingStressfully( StoreLogService::setDefaultLogLevel );
+        shouldChangeLogLevelSettingStressfully( StoreLogService::setDefaultLogLevel, false );
+    }
+
+    @Test
+    void shouldChangeDefaultUserLogLevelSettingStressfully() throws Throwable
+    {
+        shouldChangeLogLevelSettingStressfully( StoreLogService::setDefaultLogLevel, true );
     }
 
     @Test
     void shouldChangeSpecificLogLevelSettingStressfully() throws Throwable
     {
         shouldChangeLogLevelSettingStressfully( ( logService, level ) -> logService.setContextLogLevels(
-                Stream.of( level ).collect( HashMap::new, ( map, lvl ) -> map.put( StoreLogServiceTest.class.getName(), lvl ), HashMap::putAll ) ) );
+                Stream.of( level ).collect( HashMap::new, ( map, lvl ) -> map.put( StoreLogServiceTest.class.getName(), lvl ), HashMap::putAll ) ), false );
     }
 
-    private void shouldChangeLogLevelSettingStressfully( BiConsumer<StoreLogService,Level> levelChanger ) throws Throwable
+    private Log getLogFromLogService( StoreLogService logService, boolean getUserLogProvider )
+    {
+        if ( !getUserLogProvider )
+        {
+            return logService.getInternalLog( StoreLogServiceTest.class );
+        }
+        return logService.getUserLog( StoreLogServiceTest.class );
+    }
+
+    private void shouldChangeLogLevelSettingStressfully( BiConsumer<StoreLogService,Level> levelChanger, boolean testUserLogProvider ) throws Throwable
     {
         // given
         File file = directory.file( "log" );
+        File userFile = directory.file( "userlog" );
         StoreLogService logService = StoreLogService
                 .withInternalLog( file )
+                .withUserLogProvider( FormattedLogProvider.toOutputStream( fs.openAsOutputStream( userFile, true ) ) )
                 .withDefaultLevel( Level.DEBUG )
                 .build( fs );
 
@@ -164,7 +216,7 @@ class StoreLogServiceTest
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Sometimes instantiate the log here.
         // Also sometimes not since we want to exercise the race of instantiating the log instance concurrently with changing log level.
-        Log globalLog = random.nextBoolean() ? logService.getInternalLog( StoreLogServiceTest.class ) : null;
+        Log globalLog = random.nextBoolean() ? getLogFromLogService( logService, testUserLogProvider ) : null;
         AtomicInteger logRequestsMade = new AtomicInteger();
         try ( Lifespan ignored = new Lifespan( logService ) )
         {
@@ -179,7 +231,7 @@ class StoreLogServiceTest
                     long id = nextId.incrementAndGet();
                     String message = String.valueOf( id );
                     // If global log is available then sometimes use it, otherwise pick from log service directly
-                    Log log = globalLog != null && tlRandom.nextBoolean() ? globalLog : logService.getInternalLog( StoreLogServiceTest.class );
+                    Log log = globalLog != null && tlRandom.nextBoolean() ? globalLog : getLogFromLogService( logService, testUserLogProvider );
                     log.debug( message );
                     log.info( message );
                     log.warn( message );
@@ -206,7 +258,7 @@ class StoreLogServiceTest
 
         // then
         long[] highestIdForLevel = new long[Level.values().length];
-        for ( String line : Files.readAllLines( file.toPath() ) )
+        for ( String line : Files.readAllLines( testUserLogProvider ? userFile.toPath() : file.toPath() ) )
         {
             Level level = logLevelOfLine( line );
             highestIdForLevel[level.ordinal()] = max( highestIdForLevel[level.ordinal()], idOfLine( line ) );
@@ -214,8 +266,9 @@ class StoreLogServiceTest
         for ( Level level : new Level[]{Level.DEBUG, Level.INFO, Level.WARN} )
         {
             long highestForLevel = highestIdForLevel[level.ordinal()];
-            assertThat( highestForLevel ).isGreaterThan( 0L );
+            assertThat( highestForLevel ).describedAs( level.name() + " was never logged" ).isGreaterThan( 0L );
         }
+
         assertEquals( nextId.get(), highestIdForLevel[Level.ERROR.ordinal()] );
     }
 

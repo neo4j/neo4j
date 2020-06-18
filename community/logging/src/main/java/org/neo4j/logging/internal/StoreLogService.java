@@ -163,6 +163,8 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
     private final SimpleLogService logService;
     // keep a (somewhat redundant) reference to the internal log provider, although more strongly typed
     private final FormattedLogProvider internalLogProvider;
+    // keep a reference to the sent in user log provider for log level change to be possible
+    private final LogProvider originalUserLogProvider;
 
     private StoreLogService( LogProvider userLogProvider,
             FileSystemAbstraction fileSystem,
@@ -224,7 +226,11 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
             internalLogProvider = internalLogBuilder.toOutputStream( rotatingSupplier );
             this.closeable = rotatingSupplier;
         }
-        this.logService = new SimpleLogService( userLogProvider, internalLogProvider );
+        this.originalUserLogProvider = userLogProvider;
+        // If the user log provider comes from us we make sure that it starts with the default log level.
+        setUserLogLevel( defaultLevel );
+
+        this.logService = new SimpleLogService( originalUserLogProvider, internalLogProvider );
         this.internalLogProvider = internalLogProvider;
     }
 
@@ -264,10 +270,19 @@ public final class StoreLogService extends AbstractLogService implements Lifecyc
     public void setDefaultLogLevel( Level newLevel )
     {
         internalLogProvider.setDefaultLevel( newLevel );
+        setUserLogLevel( newLevel );
     }
 
     public void setContextLogLevels( Map<String,Level> newLevels )
     {
         internalLogProvider.setContextLogLevels( newLevels );
+    }
+
+    private void setUserLogLevel( Level level )
+    {
+        if ( originalUserLogProvider instanceof FormattedLogProvider )
+        {
+            ((FormattedLogProvider) originalUserLogProvider).setDefaultLevel( level );
+        }
     }
 }

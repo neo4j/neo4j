@@ -88,43 +88,4 @@ class DuplicatingLogTest
         verifyNoMoreInteractions( infoLogger1 );
         verifyNoMoreInteractions( infoLogger2 );
     }
-
-    @Test
-    void shouldRemoveLogFromDuplication()
-    {
-        // Given
-        DuplicatingLog log = new DuplicatingLog( log1, log2 );
-
-        // When
-        log.info( "When the going gets weird" );
-        log.remove( log1 );
-        log.info( "The weird turn pro" );
-
-        // Then
-        verify( infoLogger1 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "The weird turn pro" );
-        verifyNoMoreInteractions( infoLogger1 );
-        verifyNoMoreInteractions( infoLogger2 );
-    }
-
-    @Test
-    void shouldRemoveLoggersFromDuplication()
-    {
-        // Given
-        DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Logger logger = log.infoLogger();
-
-        // When
-        logger.log( "When the going gets weird" );
-        log.remove( log1 );
-        logger.log( "The weird turn pro" );
-
-        // Then
-        verify( infoLogger1 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "The weird turn pro" );
-        verifyNoMoreInteractions( infoLogger1 );
-        verifyNoMoreInteractions( infoLogger2 );
-    }
 }
