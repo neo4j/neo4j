@@ -52,7 +52,6 @@ public class TestExceptionTypeOnInvalidIds
     private static final long BIG_POSITIVE_LONG = Long.MAX_VALUE;
     private static final long BIG_NEGATIVE_LONG = Long.MIN_VALUE;
     private static GraphDatabaseService graphdb;
-    private static GraphDatabaseService graphDbReadOnly;
     private Transaction tx;
 
     @ClassRule
@@ -70,14 +69,12 @@ public class TestExceptionTypeOnInvalidIds
         DatabaseManagementService managementService1 = new TestDatabaseManagementServiceBuilder( readOnlyLayout ).build();
         managementService1.shutdown();
         readOnlyService = new TestDatabaseManagementServiceBuilder( readOnlyLayout ).setConfig( read_only, true ).build();
-        graphDbReadOnly = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass
     public static void destroyDatabase()
     {
         readOnlyService.shutdown();
-        graphDbReadOnly = null;
         managementService.shutdown();
         graphdb = null;
     }

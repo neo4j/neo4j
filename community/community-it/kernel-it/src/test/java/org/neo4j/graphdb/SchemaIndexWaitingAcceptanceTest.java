@@ -19,52 +19,49 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 public class SchemaIndexWaitingAcceptanceTest
 {
+    @Inject
+    private GraphDatabaseService database;
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
-    @Rule
-    public final DbmsRule rule = new ImpermanentDbmsRule()
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        @Override
-        protected void configure( DatabaseManagementServiceBuilder databaseFactory )
-        {
-            super.configure( databaseFactory );
-            List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
-            ((TestDatabaseManagementServiceBuilder) databaseFactory).setExtensions( extensions ).noOpSystemGraphInitializer();
-        }
-    }.withSetting( default_schema_provider, provider.getProviderDescriptor().name() );
+        List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
+        builder.setExtensions( extensions ).noOpSystemGraphInitializer();
+        builder.setConfig( default_schema_provider, provider.getProviderDescriptor().name() );
+    }
 
     @Test
-    public void shouldTimeoutWaitingForIndexToComeOnline()
+    void shouldTimeoutWaitingForIndexToComeOnline()
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseAPI();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         IndexDefinition index;
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             index = tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.commit();
@@ -72,33 +69,24 @@ public class SchemaIndexWaitingAcceptanceTest
 
         latch.waitForAllToStart();
 
-        // when
-        try ( Transaction tx = db.beginTx() )
+        var e = assertThrows( IllegalStateException.class, () ->
         {
-            // then
-            tx.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
-
-            fail( "Expected IllegalStateException to be thrown" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-            assertThat( e.getMessage() ).contains( "come online" );
-        }
-        finally
-        {
-            latch.finish();
-        }
+            try ( Transaction tx = database.beginTx() )
+            {
+                tx.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
+            }
+        } );
+        assertThat( e ).hasMessageContaining( "come online" );
+        latch.finish();
     }
 
     @Test
-    public void shouldTimeoutWaitingForIndexByNameToComeOnline()
+    void shouldTimeoutWaitingForIndexByNameToComeOnline()
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseAPI();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).withName( "my_index" ).create();
             tx.commit();
@@ -106,33 +94,24 @@ public class SchemaIndexWaitingAcceptanceTest
 
         latch.waitForAllToStart();
 
-        // when
-        try ( Transaction tx = db.beginTx() )
+        var e = assertThrows( IllegalStateException.class, () ->
         {
-            // then
-            tx.schema().awaitIndexOnline( "my_index", 1, TimeUnit.MILLISECONDS );
-
-            fail( "Expected IllegalStateException to be thrown" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-            assertThat( e.getMessage() ).contains( "come online" );
-        }
-        finally
-        {
-            latch.finish();
-        }
+            try ( Transaction tx = database.beginTx() )
+            {
+                tx.schema().awaitIndexOnline( "my_index", 1, TimeUnit.MILLISECONDS );
+            }
+        } );
+        assertThat( e ).hasMessageContaining( "come online" );
+        latch.finish();
     }
 
     @Test
-    public void shouldTimeoutWaitingForAllIndexesToComeOnline()
+    void shouldTimeoutWaitingForAllIndexesToComeOnline()
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseAPI();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.commit();
@@ -141,21 +120,14 @@ public class SchemaIndexWaitingAcceptanceTest
         latch.waitForAllToStart();
 
         // when
-        try ( Transaction tx = db.beginTx() )
+        var e = assertThrows( IllegalStateException.class, () ->
         {
-            // then
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
-
-            fail( "Expected IllegalStateException to be thrown" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-            assertThat( e.getMessage() ).contains( "come online" );
-        }
-        finally
-        {
-            latch.finish();
-        }
+            try ( Transaction tx = database.beginTx() )
+            {
+                tx.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
+            }
+        } );
+        assertThat( e ).hasMessageContaining( "come online" );
+        latch.finish();
     }
 }

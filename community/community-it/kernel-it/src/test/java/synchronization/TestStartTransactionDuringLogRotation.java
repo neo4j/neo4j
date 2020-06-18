@@ -19,10 +19,10 @@
  */
 package synchronization;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
@@ -42,44 +41,46 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
+@DbmsExtension( configurationCallback = "configure" )
+@ExtendWith( OtherThreadExtension.class )
 public class TestStartTransactionDuringLogRotation
 {
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule()
-    {
-        @Override
-        protected void configure( DatabaseManagementServiceBuilder databaseFactory )
-        {
-            super.configure( databaseFactory );
-            databaseFactory.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) );
-        }
-    };
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
+    @Inject
+    public GraphDatabaseAPI database;
+    @Inject
+    private OtherThreadRule<Void> t2;
+    @Inject
+    private Monitors monitors;
 
     private ExecutorService executor;
     private CountDownLatch startLogRotationLatch;
     private CountDownLatch completeLogRotationLatch;
     private AtomicBoolean writerStopped;
-    private Monitors monitors;
-    private LogRotationMonitor rotationListener;
     private Label label;
     private Future<Void> rotationFuture;
 
-    @Before
-    public void setUp() throws InterruptedException
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) );
+    }
+
+    @BeforeEach
+    void setUp() throws InterruptedException
     {
         executor = Executors.newCachedThreadPool();
         startLogRotationLatch = new CountDownLatch( 1 );
         completeLogRotationLatch = new CountDownLatch( 1 );
         writerStopped = new AtomicBoolean();
-        monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
 
-        rotationListener = new LogRotationMonitorAdapter()
+        LogRotationMonitor rotationListener = new LogRotationMonitorAdapter()
         {
             @Override
             public void startRotation( long currentLogVersion )
@@ -99,7 +100,7 @@ public class TestStartTransactionDuringLogRotation
         monitors.addMonitorListener( rotationListener );
         label = Label.label( "Label" );
 
-        rotationFuture = t2.execute( forceLogRotation( db ) );
+        rotationFuture = t2.execute( forceLogRotation( database ) );
 
         // Waiting for the writer task to start a log rotation
         startLogRotationLatch.await();
@@ -124,7 +125,7 @@ public class TestStartTransactionDuringLogRotation
         };
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         rotationFuture.get();
@@ -132,10 +133,10 @@ public class TestStartTransactionDuringLogRotation
         executor.shutdown();
     }
 
-    @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingReadTransaction()
+    @Test
+    void logRotationMustNotObstructStartingReadTransaction()
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             tx.getNodeById( 0 );
             completeLogRotationLatch.countDown();
@@ -143,10 +144,10 @@ public class TestStartTransactionDuringLogRotation
         }
     }
 
-    @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingWriteTransaction()
+    @Test
+    void logRotationMustNotObstructStartingWriteTransaction()
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             tx.createNode();
             completeLogRotationLatch.countDown();

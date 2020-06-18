@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
@@ -56,14 +55,15 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
@@ -73,26 +73,27 @@ import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 public class IndexPopulationMissConcurrentUpdateIT
 {
     private static final String NAME_PROPERTY = "name";
     private static final long INITIAL_CREATION_NODE_ID_THRESHOLD = 30;
     private static final long SCAN_BARRIER_NODE_ID_THRESHOLD = 10;
-
     private final ControlledSchemaIndexProvider index = new ControlledSchemaIndexProvider();
 
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule()
-    {
-        @Override
-        protected DatabaseManagementServiceBuilder newFactory()
-        {
-            return new TestDatabaseManagementServiceBuilder().impermanent().noOpSystemGraphInitializer().addExtension( index );
-        }
-    }.withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
-    // The single-threaded setting makes the test deterministic. The multi-threaded variant has the same problem tested below.
+    @Inject
+    private GraphDatabaseService db;
+    @Inject
+    private IdController idController;
 
-    @Before
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.noOpSystemGraphInitializer().addExtension( index );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
+    }
+
+    @BeforeEach
     public void setFeatureToggle()
     {
         // let our populator have fine-grained insight into updates coming in
@@ -100,7 +101,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         FeatureToggles.set( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 1 );
     }
 
-    @After
+    @AfterEach
     public void resetFeatureToggle()
     {
         FeatureToggles.clear( MultipleIndexPopulator.class, BATCH_SIZE_NAME );
@@ -115,7 +116,7 @@ public class IndexPopulationMissConcurrentUpdateIT
      * after it had read and cached that bit-set it would not apply the update and miss that entity in the scan and would end up with an index
      * that was inconsistent with the store.
      */
-    @Test( timeout = 60_000 )
+    @Test
     public void shouldNoticeConcurrentUpdatesWithinCurrentLabelIndexEntryRange() throws Exception
     {
         // given nodes [0...30]. Why 30, because this test ties into a bug regarding "caching" of bit-sets in label index reader,
@@ -140,7 +141,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         assertThat( count( filter( n -> n.getId() > SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ) ).as(
                 "At least two nodes above the scan barrier threshold and below initial creation threshold must have been created, " +
                         "otherwise test assumptions are invalid or outdated" ).isGreaterThan( 1L );
-        db.getDependencyResolver().resolveDependency( IdController.class ).maintenance();
+        idController.maintenance();
 
         // when
         try ( Transaction tx = db.beginTx() )
