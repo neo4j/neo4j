@@ -44,7 +44,7 @@ object SyntaxExceptionCreator {
 
       // In neo4j, disabled SemanticFeature.UseGraphSelector indicates that you are trying to run a Fabric query
       case FeatureError(_, SemanticFeature.UseGraphSelector, _) =>
-        "The USE clause is only available in the Fabric execution context. Try enabling the Fabric feature and connecting to that database."
+        "The `USE` clause is only available in the Fabric execution context. Enable Fabric using the setting `fabric.database.name=<name>`."
 
       case e =>
         e.msg
