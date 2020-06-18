@@ -54,6 +54,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
+    public NULL fromClause( NULL p, Object e )
+    {
+        throw new UnsupportedOperationException( "fromClause is not a literal" );
+    }
+
+    @Override
+    public NULL useClause( NULL p, Object e )
+    {
+        throw new UnsupportedOperationException( "useClause is not a literal" );
+    }
+
+    @Override
     public NULL newReturnClause( NULL p, boolean distinct, boolean returnAll, List<NULL> nulls, List<NULL> order, Object skip, Object limit )
     {
         throw new UnsupportedOperationException( "newReturnClause is not a literal" );
@@ -144,7 +156,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL setLabels( Object o, List<String> value )
+    public NULL setLabels( Object o, List<StringPos<NULL>> value )
     {
         throw new UnsupportedOperationException( "setLabels is not a literal" );
     }
@@ -162,7 +174,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL removeLabels( Object o, List<String> labels )
+    public NULL removeLabels( Object o, List<StringPos<NULL>> labels )
     {
         throw new UnsupportedOperationException( "removeLabels is not a literal" );
     }
@@ -192,7 +204,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL callResultItem( String name, Object v )
+    public NULL callResultItem( NULL p, String name, Object v )
     {
         throw new UnsupportedOperationException( "callResultItem is not a literal" );
     }
@@ -222,13 +234,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL nodePattern( NULL p, Object v, List<String> labels, Object properties )
+    public NULL nodePattern( NULL p, Object v, List<StringPos<NULL>> labels, Object properties )
     {
         throw new UnsupportedOperationException( "nodePattern is not a literal" );
     }
 
     @Override
-    public NULL relationshipPattern( NULL p, boolean left, boolean right, Object v, List<String> relTypes, NULL aNull, Object properties,
+    public NULL relationshipPattern( NULL p, boolean left, boolean right, Object v, List<StringPos<NULL>> relTypes, NULL aNull, Object properties,
                                      boolean legacyTypeSeparator )
     {
         throw new UnsupportedOperationException( "relationshipPattern is not a literal" );
@@ -274,6 +286,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     public Object newParameter( NULL p, String offset )
     {
         throw new UnsupportedOperationException( "newParameter is not a literal" );
+    }
+
+    @Override
+    public Object oldParameter( NULL p, Object v )
+    {
+        throw new UnsupportedOperationException( "oldParameter is not a literal" );
     }
 
     @Override
@@ -376,44 +394,44 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public Object mapLiteral( NULL p, List<String> keys, List<Object> values )
+    public Object mapLiteral( NULL p, List<StringPos<NULL>> keys, List<Object> values )
     {
         HashMap<String,Object> x = new HashMap<>();
-        Iterator<String> keyIterator = keys.iterator();
+        Iterator<StringPos<NULL>> keyIterator = keys.iterator();
         Iterator<Object> valueIterator = values.iterator();
         while ( keyIterator.hasNext() )
         {
-            x.put( keyIterator.next(), valueIterator.next() );
+            x.put( keyIterator.next().string, valueIterator.next() );
         }
         return x;
     }
 
     @Override
-    public Object hasLabels( Object subject, List<String> labels )
+    public Object hasLabels( Object subject, List<StringPos<NULL>> labels )
     {
         throw new UnsupportedOperationException( "hasLabels is not a literal" );
     }
 
     @Override
-    public Object property( Object subject, String propertyKeyName )
+    public Object property( Object subject, StringPos<NULL> propertyKeyName )
     {
         throw new UnsupportedOperationException( "property is not a literal" );
     }
 
     @Override
-    public Object or( Object lhs, Object rhs )
+    public Object or( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "or is not a literal" );
     }
 
     @Override
-    public Object xor( Object lhs, Object rhs )
+    public Object xor( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "xor is not a literal" );
     }
 
     @Override
-    public Object and( Object lhs, Object rhs )
+    public Object and( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "and is not a literal" );
     }
@@ -431,37 +449,37 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public Object plus( Object lhs, Object rhs )
+    public Object plus( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "plus is not a literal" );
     }
 
     @Override
-    public Object minus( Object lhs, Object rhs )
+    public Object minus( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "minus is not a literal" );
     }
 
     @Override
-    public Object multiply( Object lhs, Object rhs )
+    public Object multiply( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "multiply is not a literal" );
     }
 
     @Override
-    public Object divide( Object lhs, Object rhs )
+    public Object divide( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "divide is not a literal" );
     }
 
     @Override
-    public Object modulo( Object lhs, Object rhs )
+    public Object modulo( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "modulo is not a literal" );
     }
 
     @Override
-    public Object pow( Object lhs, Object rhs )
+    public Object pow( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "pow is not a literal" );
     }
@@ -479,73 +497,73 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public Object eq( Object lhs, Object rhs )
+    public Object eq( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "eq is not a literal" );
     }
 
     @Override
-    public Object neq( Object lhs, Object rhs )
+    public Object neq( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "neq is not a literal" );
     }
 
     @Override
-    public Object neq2( Object lhs, Object rhs )
+    public Object neq2( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "neq2 is not a literal" );
     }
 
     @Override
-    public Object lte( Object lhs, Object rhs )
+    public Object lte( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "lte is not a literal" );
     }
 
     @Override
-    public Object gte( Object lhs, Object rhs )
+    public Object gte( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "gte is not a literal" );
     }
 
     @Override
-    public Object lt( Object lhs, Object rhs )
+    public Object lt( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "lt is not a literal" );
     }
 
     @Override
-    public Object gt( Object lhs, Object rhs )
+    public Object gt( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "gt is not a literal" );
     }
 
     @Override
-    public Object regeq( Object lhs, Object rhs )
+    public Object regeq( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "regeq is not a literal" );
     }
 
     @Override
-    public Object startsWith( Object lhs, Object rhs )
+    public Object startsWith( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "startsWith is not a literal" );
     }
 
     @Override
-    public Object endsWith( Object lhs, Object rhs )
+    public Object endsWith( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "endsWith is not a literal" );
     }
 
     @Override
-    public Object contains( Object lhs, Object rhs )
+    public Object contains( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "contains is not a literal" );
     }
 
     @Override
-    public Object in( Object lhs, Object rhs )
+    public Object in( NULL p, Object lhs, Object rhs )
     {
         throw new UnsupportedOperationException( "in is not a literal" );
     }
@@ -653,13 +671,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL mapProjectionLiteralEntry( String property, Object value )
+    public NULL mapProjectionLiteralEntry( StringPos<NULL> property, Object value )
     {
         throw new UnsupportedOperationException( "mapProjectionLiteralEntry is not a literal" );
     }
 
     @Override
-    public NULL mapProjectionProperty( String property )
+    public NULL mapProjectionProperty( StringPos<NULL> property )
     {
         throw new UnsupportedOperationException( "mapProjectionProperty is not a literal" );
     }

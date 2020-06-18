@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
@@ -66,6 +67,7 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
@@ -73,6 +75,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
+import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -123,6 +126,7 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
@@ -220,6 +224,12 @@ class Neo4jASTFactory(query: String)
     Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(p)))(p)),
       SingleQuery(loadCsv +: queryBody.asScala)(p)
     )(p)
+
+  override def fromClause(p: InputPosition,
+                          e: Expression): Clause = FromGraph(e)(p)
+
+  override def useClause(p: InputPosition,
+                         e: Expression): Clause = UseGraph(e)(p)
 
   override def newReturnClause(p: InputPosition,
                                distinct: Boolean,
@@ -319,17 +329,16 @@ class Neo4jASTFactory(query: String)
                                  value: Expression): SetItem = SetIncludingPropertiesFromMapItem(variable, value)(variable.position)
 
   override def setLabels(variable: Variable,
-                         labels: util.List[String]): SetItem =
-    SetLabelItem(variable, labels.asScala.toList.map(LabelName(_)(variable.position)))(variable.position)
+                         labels: util.List[StringPos[InputPosition]]): SetItem =
+    SetLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(variable.position)
 
   override def removeClause(p: InputPosition, removeItems: util.List[RemoveItem]): Clause =
     Remove(removeItems.asScala.toList)(p)
 
   override def removeProperty(property: Property): RemoveItem = RemovePropertyItem(property)
 
-  override def removeLabels(variable: Variable,
-                            labels: util.List[String]): RemoveItem =
-    RemoveLabelItem(variable, labels.asScala.toList.map(LabelName(_)(variable.position)))(variable.position)
+  override def removeLabels(variable: Variable, labels: util.List[StringPos[InputPosition]]): RemoveItem =
+    RemoveLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(variable.position)
 
   override def deleteClause(p: InputPosition,
                             detach: Boolean,
@@ -365,10 +374,11 @@ class Neo4jASTFactory(query: String)
       Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(Where(_)(p)))(p))
     )(p)
 
-  override def callResultItem(name: String,
+  override def callResultItem(p: InputPosition,
+                              name: String,
                               v: Variable): ProcedureResultItem =
-    if (v == null) ProcedureResultItem(Variable(name)(InputPosition.NONE))(InputPosition.NONE)
-    else ProcedureResultItem(ProcedureOutput(name)(v.position), v)(v.position)
+    if (v == null) ProcedureResultItem(Variable(name)(p))(p)
+    else ProcedureResultItem(ProcedureOutput(name)(v.position), v)(p)
 
   override def loadCsvClause(p: InputPosition,
                              headers: Boolean,
@@ -406,22 +416,22 @@ class Neo4jASTFactory(query: String)
     while (relIter.hasNext) {
       val relPattern = relIter.next()
       val rightNodePattern = nodeIter.next()
-      patternElement = RelationshipChain(patternElement, relPattern, rightNodePattern)(nodes.get(0).position)
+      patternElement = RelationshipChain(patternElement, relPattern, rightNodePattern)(relPattern.position)
     }
     EveryPath(patternElement)
   }
 
   override def nodePattern(p: InputPosition,
                            v: Variable,
-                           labels: util.List[String],
+                           labels: util.List[StringPos[InputPosition]],
                            properties: Expression): NodePattern =
-    NodePattern(Option(v), labels.asScala.toList.map(LabelName(_)(p)), Option(properties))(p)
+    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), Option(properties))(p)
 
   override def relationshipPattern(p: InputPosition,
                                    left: Boolean,
                                    right: Boolean,
                                    v: Variable,
-                                   relTypes: util.List[String],
+                                   relTypes: util.List[StringPos[InputPosition]],
                                    pathLength: Option[Range],
                                    properties: Expression,
                                    legacyTypeSeparator: Boolean): RelationshipPattern = {
@@ -437,7 +447,13 @@ class Neo4jASTFactory(query: String)
         case Some(r) => Some(Some(r))
       }
 
-    RelationshipPattern(Option(v), relTypes.asScala.toList.map(RelTypeName(_)(p)), range, Option(properties), direction, legacyTypeSeparator)(p)
+    RelationshipPattern(
+      Option(v),
+      relTypes.asScala.toList.map(sp => RelTypeName(sp.string)(sp.pos)),
+      range,
+      Option(properties),
+      direction,
+      legacyTypeSeparator)(p)
   }
 
   override def pathLength(p: InputPosition, minLength: String, maxLength: String): Option[Range] = {
@@ -457,6 +473,8 @@ class Neo4jASTFactory(query: String)
   override def newParameter(p: InputPosition, v: Variable): Expression = Parameter(v.name, CTAny)(p)
 
   override def newParameter(p: InputPosition, offset: String): Expression = Parameter(offset, CTAny)(p)
+
+  override def oldParameter(p: InputPosition, v: Variable): Expression = ParameterWithOldSyntax(v.name, CTAny)(p)
 
   override def newDouble(p: InputPosition, image: String): Expression = DecimalDoubleLiteral(image)(p)
 
@@ -485,7 +503,7 @@ class Neo4jASTFactory(query: String)
   }
 
   override def mapLiteral(p: InputPosition,
-                          keys: util.List[String],
+                          keys: util.List[StringPos[InputPosition]],
                           values: util.List[Expression]): Expression = {
 
     if (keys.size() != values.size()) {
@@ -497,29 +515,31 @@ class Neo4jASTFactory(query: String)
     val pairs = new Array[(PropertyKeyName, Expression)](keys.size())
 
     while (i < keys.size()) {
-      pairs(i) = PropertyKeyName(keys.get(i))(p) -> values.get(i)
+      val key = keys.get(i)
+      pairs(i) = PropertyKeyName(key.string)(key.pos) -> values.get(i)
       i += 1
     }
 
     MapExpression(pairs)(p)
   }
 
-  override def hasLabels(subject: Expression,
-                         labels: util.List[String]): Expression =
-    HasLabels(subject, labels.asScala.toList.map(LabelName(_)(subject.position)))(subject.position)
+  override def hasLabels(subject: Expression, labels: util.List[StringPos[InputPosition]]): Expression =
+    HasLabels(subject, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(subject.position)
 
-  override def property(subject: Expression,
-                        propertyKeyName: String): Property =
-    Property(subject, PropertyKeyName(propertyKeyName)(subject.position))(subject.position)
+  override def property(subject: Expression, propertyKeyName: StringPos[InputPosition]): Property =
+    Property(subject, PropertyKeyName(propertyKeyName.string)(propertyKeyName.pos))(subject.position)
 
-  override def or(lhs: Expression,
-                  rhs: Expression): Expression = Or(lhs, rhs)(lhs.position)
+  override def or(p: InputPosition,
+                  lhs: Expression,
+                  rhs: Expression): Expression = Or(lhs, rhs)(p)
 
-  override def xor(lhs: Expression,
-                   rhs: Expression): Expression = Xor(lhs, rhs)(lhs.position)
+  override def xor(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = Xor(lhs, rhs)(p)
 
-  override def and(lhs: Expression,
-                   rhs: Expression): Expression = And(lhs, rhs)(lhs.position)
+  override def and(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = And(lhs, rhs)(p)
 
   override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList.toSet)(exprs.get(0).position)
 
@@ -529,63 +549,81 @@ class Neo4jASTFactory(query: String)
       case _ => Not(e)(e.position)
     }
 
-  override def plus(lhs: Expression,
-                    rhs: Expression): Expression = Add(lhs, rhs)(lhs.position)
+  override def plus(p: InputPosition,
+                    lhs: Expression,
+                    rhs: Expression): Expression = Add(lhs, rhs)(p)
 
-  override def minus(lhs: Expression,
-                     rhs: Expression): Expression = Subtract(lhs, rhs)(lhs.position)
+  override def minus(p: InputPosition,
+                     lhs: Expression,
+                     rhs: Expression): Expression = Subtract(lhs, rhs)(p)
 
-  override def multiply(lhs: Expression,
-                        rhs: Expression): Expression = Multiply(lhs, rhs)(lhs.position)
+  override def multiply(p: InputPosition,
+                        lhs: Expression,
+                        rhs: Expression): Expression = Multiply(lhs, rhs)(p)
 
-  override def divide(lhs: Expression,
-                      rhs: Expression): Expression = Divide(lhs, rhs)(lhs.position)
+  override def divide(p: InputPosition,
+                      lhs: Expression,
+                      rhs: Expression): Expression = Divide(lhs, rhs)(p)
 
-  override def modulo(lhs: Expression,
-                      rhs: Expression): Expression = Modulo(lhs, rhs)(lhs.position)
+  override def modulo(p: InputPosition,
+                      lhs: Expression,
+                      rhs: Expression): Expression = Modulo(lhs, rhs)(p)
 
-  override def pow(lhs: Expression,
-                   rhs: Expression): Expression = Pow(lhs, rhs)(lhs.position)
+  override def pow(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = Pow(lhs, rhs)(p)
 
   override def unaryPlus(e: Expression): Expression = UnaryAdd(e)(e.position)
 
   override def unaryMinus(e: Expression): Expression = UnarySubtract(e)(e.position)
 
-  override def eq(lhs: Expression,
-                  rhs: Expression): Expression = Equals(lhs, rhs)(lhs.position)
+  override def eq(p: InputPosition,
+                  lhs: Expression,
+                  rhs: Expression): Expression = Equals(lhs, rhs)(p)
 
-  override def neq(lhs: Expression,
-                   rhs: Expression): Expression = NotEquals(lhs, rhs)(lhs.position)
+  override def neq(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = NotEquals(lhs, rhs)(p)
 
-  override def neq2(lhs: Expression,
-                    rhs: Expression): Expression = NotEquals(lhs, rhs)(lhs.position)
+  override def neq2(p: InputPosition,
+                    lhs: Expression,
+                    rhs: Expression): Expression = NotEquals(lhs, rhs)(p)
 
-  override def lte(lhs: Expression,
-                   rhs: Expression): Expression = LessThanOrEqual(lhs, rhs)(lhs.position)
+  override def lte(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = LessThanOrEqual(lhs, rhs)(p)
 
-  override def gte(lhs: Expression,
-                   rhs: Expression): Expression = GreaterThanOrEqual(lhs, rhs)(lhs.position)
+  override def gte(p: InputPosition,
+                   lhs: Expression,
+                   rhs: Expression): Expression = GreaterThanOrEqual(lhs, rhs)(p)
 
-  override def lt(lhs: Expression,
-                  rhs: Expression): Expression = LessThan(lhs, rhs)(lhs.position)
+  override def lt(p: InputPosition,
+                  lhs: Expression,
+                  rhs: Expression): Expression = LessThan(lhs, rhs)(p)
 
-  override def gt(lhs: Expression,
-                  rhs: Expression): Expression = GreaterThan(lhs, rhs)(lhs.position)
+  override def gt(p: InputPosition,
+                  lhs: Expression,
+                  rhs: Expression): Expression = GreaterThan(lhs, rhs)(p)
 
-  override def regeq(lhs: Expression,
-                     rhs: Expression): Expression = RegexMatch(lhs, rhs)(lhs.position)
+  override def regeq(p: InputPosition,
+                     lhs: Expression,
+                     rhs: Expression): Expression = RegexMatch(lhs, rhs)(p)
 
-  override def startsWith(lhs: Expression,
-                          rhs: Expression): Expression = StartsWith(lhs, rhs)(lhs.position)
+  override def startsWith(p: InputPosition,
+                          lhs: Expression,
+                          rhs: Expression): Expression = StartsWith(lhs, rhs)(p)
 
-  override def endsWith(lhs: Expression,
-                        rhs: Expression): Expression = EndsWith(lhs, rhs)(lhs.position)
+  override def endsWith(p: InputPosition,
+                        lhs: Expression,
+                        rhs: Expression): Expression = EndsWith(lhs, rhs)(p)
 
-  override def contains(lhs: Expression,
-                        rhs: Expression): Expression = Contains(lhs, rhs)(lhs.position)
+  override def contains(p: InputPosition,
+                        lhs: Expression,
+                        rhs: Expression): Expression = Contains(lhs, rhs)(p)
 
-  override def in(lhs: Expression,
-                  rhs: Expression): Expression = In(lhs, rhs)(lhs.position)
+  override def in(p: InputPosition,
+                  lhs: Expression,
+                  rhs: Expression): Expression = In(lhs, rhs)(p)
 
   override def isNull(e: Expression): Expression = IsNull(e)(e.position)
 
@@ -692,12 +730,12 @@ class Neo4jASTFactory(query: String)
                              items: util.List[MapProjectionElement]): Expression =
     MapProjection(v, items.asScala.toList)(p, None)
 
-  override def mapProjectionLiteralEntry(property: String,
+  override def mapProjectionLiteralEntry(property: StringPos[InputPosition],
                                          value: Expression): MapProjectionElement =
-    LiteralEntry(PropertyKeyName(property)(value.position), value)(value.position)
+    LiteralEntry(PropertyKeyName(property.string)(property.pos), value)(value.position)
 
-  override def mapProjectionProperty(property: String): MapProjectionElement =
-    PropertySelector(Variable(property)(InputPosition.NONE))(InputPosition.NONE)
+  override def mapProjectionProperty(property: StringPos[InputPosition]): MapProjectionElement =
+    PropertySelector(Variable(property.string)(property.pos))(property.pos)
 
 
   override def mapProjectionVariable(v: Variable): MapProjectionElement =

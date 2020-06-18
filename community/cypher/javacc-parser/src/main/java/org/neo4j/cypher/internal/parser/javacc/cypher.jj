@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
+import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
 
 /** Simple brace matcher. */
 public class Cypher<STATEMENT,
@@ -241,6 +242,8 @@ TOKEN [IGNORE_CASE] :
 | < MATCH: "MATCH" >
 | < WITH: "WITH" >
 | < UNWIND: "UNWIND" >
+| < USE: "USE" >
+| < GRAPH: "GRAPH" >
 | < CALL: "CALL" >
 | < YIELD: "YIELD" >
 | < LOAD: "LOAD" >
@@ -289,6 +292,7 @@ TOKEN [IGNORE_CASE] :
 | < LT: "<" >
 | < GT: ">" >
 | < REGEQ: "=~" >
+| < EQUIV: "~" >
 | < STARTS: "STARTS" >
 | < ENDS: "ENDS" >
 | < CONTAINS: "CONTAINS" >
@@ -1040,7 +1044,7 @@ List<CLAUSE> PeriodicCommitQueryBody() :
   List<CLAUSE> clauses = new ArrayList();
 }
 {
-  ( x=Clause() { clauses.add(x); } )?
+  ( x=Clause() { clauses.add(x); } )*
   { return (List<CLAUSE>)clauses; }
 }
 
@@ -1083,7 +1087,9 @@ CLAUSE Clause() :
 {CLAUSE x = null;}
 {
   (
-    x=ReturnClause()
+    x=FromClause()
+  | x=UseClause()
+  | x=ReturnClause()
   | x=CreateClause() // because create index/constraint
   | x=DeleteClause()
   | x=SetClause()
@@ -1098,6 +1104,28 @@ CLAUSE Clause() :
   | x=ForeachClause()
   )
   { return x; }
+}
+
+// FROM & USE
+
+CLAUSE FromClause() :
+{
+  Token t;
+  EXPRESSION e;
+}
+{
+  t=<FROM> ( <GRAPH> )? e=Expression()
+  { return astFactory.fromClause(pos(t), e); }
+}
+
+CLAUSE UseClause() :
+{
+  Token t;
+  EXPRESSION e;
+}
+{
+  t=<USE> ( <GRAPH> )? e=Expression()
+  { return astFactory.useClause(pos(t), e); }
 }
 
 // RETURN
@@ -1217,12 +1245,12 @@ SET_CLAUSE SetClause() :
 }
 
 SET_ITEM SetItem() :
-{EXPRESSION e; PROPERTY p; VARIABLE v; List labels; }
+{EXPRESSION e; PROPERTY p; VARIABLE v; List<StringPos<POS>> labels; }
 {
   LOOKAHEAD(2) e=Expression1() p=Property(e) <EQ> e=Expression() { return astFactory.setProperty(p, e); }
 | LOOKAHEAD(2) v=Variable() <EQ> e=Expression() { return astFactory.setVariable(v, e); }
 | LOOKAHEAD(2) v=Variable() "+=" e=Expression() { return astFactory.addAndSetVariable(v, e); }
-| v=Variable() labels=NodeLabels() { return astFactory.setLabels(v, (List<String>)labels); }
+| v=Variable() labels=NodeLabels() { return astFactory.setLabels(v, labels); }
 }
 
 // REMOVE
@@ -1239,10 +1267,10 @@ CLAUSE RemoveClause() :
 }
 
 REMOVE_ITEM RemoveItem() :
-{EXPRESSION e; PROPERTY p; VARIABLE v; List labels; }
+{EXPRESSION e; PROPERTY p; VARIABLE v; List<StringPos<POS>> labels; }
 {
   LOOKAHEAD(2) e=Expression1() p=Property(e) { return astFactory.removeProperty(p); }
-| v=Variable() labels=NodeLabels() { return astFactory.removeLabels(v, (List<String>)labels); }
+| v=Variable() labels=NodeLabels() { return astFactory.removeLabels(v, labels); }
 }
 
 // DELETE
@@ -1368,7 +1396,7 @@ CALL_RESULT_ITEM ProcedureResultItem() :
 }
 {
   t=SymbolicNameString() ( <AS> v=Variable() )?
-  { return astFactory.callResultItem(t.image, v); }
+  { return astFactory.callResultItem(pos(t), t.image,  v); }
 }
 
 // LOAD CSV
@@ -1495,31 +1523,31 @@ NODE_PATTERN NodePattern() :
 {
   Token t;
   VARIABLE v = null;
-  List labels = java.util.Collections.emptyList();
+  List<StringPos<POS>> labels = java.util.Collections.emptyList();
   EXPRESSION properties = null;
 }
 {
   t=<LPAREN> ( v=Variable() )? ( labels=NodeLabels() )? ( properties=Properties() )? <RPAREN>
-  { return astFactory.nodePattern(pos(t), v, (List<String>)labels, properties); }
+  { return astFactory.nodePattern(pos(t), v, labels, properties); }
 }
 
-List<String> NodeLabels() :
+List<StringPos<POS>> NodeLabels() :
 {
   Token label;
-  List labels = new ArrayList();
+  List<StringPos<POS>> labels = new ArrayList<>();
 }
 {
-  ( LOOKAHEAD(2) label=NodeLabel() { labels.add(label.image); } )+
+  ( LOOKAHEAD(2) label=NodeLabel() { labels.add(new StringPos(label.image, pos(label))); } )+
   { return labels; }
 }
 
 EXPRESSION HasLabels(EXPRESSION subject) :
 {
-  List labels;
+  List<StringPos<POS>> labels;
 }
 {
   labels=NodeLabels()
-  { return astFactory.hasLabels(subject, (List<String>)labels); }
+  { return astFactory.hasLabels(subject, labels); }
 }
 
 Token NodeLabel() :
@@ -1533,8 +1561,9 @@ EXPRESSION Properties() :
 { EXPRESSION e; }
 {
   (
-    e=MapLiteral()
+    LOOKAHEAD(3) e=MapLiteral()
   | e=Parameter()
+  | e=OldParameter()
   )
   { return e; }
 }
@@ -1546,7 +1575,7 @@ REL_PATTERN RelationshipPattern() :
   boolean left = false;
   boolean right = false;
   VARIABLE v = null;
-  List relTypes = java.util.Collections.emptyList();
+  List<StringPos<POS>> relTypes = java.util.Collections.emptyList();
   boolean legacyTypeSeparator = false;
   PATH_LENGTH pathLength = null;
   EXPRESSION properties = null;
@@ -1554,11 +1583,11 @@ REL_PATTERN RelationshipPattern() :
 {
   ( LeftArrow() { left = true; })? ArrowLine()
   ( <LBRACKET> ( v=Variable() )? (
-    ":" t=SymbolicNameString() {relTypes = new ArrayList(); relTypes.add(t.image);}
-        ( <BAR> ( ":" {legacyTypeSeparator = true; } )? t=SymbolicNameString() {relTypes.add(t.image);} )*
+    ":" t=SymbolicNameString() {relTypes = new ArrayList(); relTypes.add(new StringPos(t.image, pos(t)));}
+        ( <BAR> ( ":" {legacyTypeSeparator = true; } )? t=SymbolicNameString() {relTypes.add(new StringPos(t.image, pos(t)));} )*
     )? ( pathLength=PathLength() )? ( properties=Properties() )? <RBRACKET> )?
   ArrowLine() ( RightArrow() { right = true; } )?
-  { return astFactory.relationshipPattern(pos(firstToken), left, right, v, (List<String>)relTypes, pathLength, properties, legacyTypeSeparator); }
+  { return astFactory.relationshipPattern(pos(firstToken), left, right, v, relTypes, pathLength, properties, legacyTypeSeparator); }
 }
 
 void LeftArrow() :
@@ -1611,31 +1640,34 @@ EXPRESSION Expression() :
 
 EXPRESSION Expression12() :
 {
+  Token t;
   EXPRESSION e;
   EXPRESSION temp;
 }
 {
-  e=Expression11() (<OR> temp=Expression11() { e = astFactory.or(e, temp); } )*
+  e=Expression11() (t=<OR> temp=Expression11() { e = astFactory.or(pos(t), e, temp); } )*
   {return e;}
 }
 
 EXPRESSION Expression11() :
 {
+  Token t;
   EXPRESSION e;
   EXPRESSION temp;
 }
 {
-  e=Expression10() (<XOR> temp=Expression10() { e = astFactory.xor(e, temp); } )*
+  e=Expression10() (t=<XOR> temp=Expression10() { e = astFactory.xor(pos(t), e, temp); } )*
   {return e;}
 }
 
 EXPRESSION Expression10() :
 {
+  Token t;
   EXPRESSION e;
   EXPRESSION temp;
 }
 {
-  e=Expression9() (<AND> temp=Expression9() { e = astFactory.and(e, temp); } )*
+  e=Expression9() (t=<AND> temp=Expression9() { e = astFactory.and(pos(t), e, temp); } )*
   {return e;}
 }
 
@@ -1653,6 +1685,7 @@ EXPRESSION Expression9() :
 
 EXPRESSION Expression8() :
 {
+  Token t;
   EXPRESSION e;
   EXPRESSION lhs;
   EXPRESSION rhs;
@@ -1660,13 +1693,13 @@ EXPRESSION Expression8() :
 }
 {
   e=Expression7() {lhs = e;} ( LOOKAHEAD(2)
-      <EQ>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.eq(lhs, rhs)); lhs = rhs; }
-    | <NEQ> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq(lhs, rhs)); lhs = rhs; }
-    | <NEQ2> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq2(lhs, rhs)); lhs = rhs; }
-    | <LE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lte(lhs, rhs)); lhs = rhs; }
-    | <GE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gte(lhs, rhs)); lhs = rhs; }
-    | <LT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lt(lhs, rhs)); lhs = rhs; }
-    | <GT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gt(lhs, rhs)); lhs = rhs; }
+      t=<EQ>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.eq(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<NEQ> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<NEQ2> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.neq2(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<LE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lte(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<GE> rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gte(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<LT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.lt(pos(t), lhs, rhs)); lhs = rhs; }
+    | t=<GT>  rhs=Expression7() { if (cmps == null) {cmps = new ArrayList();} cmps.add(astFactory.gt(pos(t), lhs, rhs)); lhs = rhs; }
   )*
   {
     if (cmps == null) return e;
@@ -1686,16 +1719,17 @@ EXPRESSION Expression7() :
 
 EXPRESSION ComparisonExpression6(EXPRESSION lhs) :
 {
+  Token t;
   EXPRESSION rhs;
 }
 {
   LOOKAHEAD(2)
-  <REGEQ> rhs=Expression6() { return astFactory.regeq(lhs, rhs); }
-| <STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith(lhs, rhs); }
-| <ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith(lhs, rhs); }
-| <CONTAINS> rhs=Expression6() { return astFactory.contains(lhs, rhs); }
-| <IN> rhs=Expression6() { return astFactory.in(lhs, rhs); }
-| <IS> (
+  t=<REGEQ> rhs=Expression6() { return astFactory.regeq(pos(t), lhs, rhs); }
+| t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith(pos(t), lhs, rhs); }
+| t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith(pos(t), lhs, rhs); }
+| t=<CONTAINS> rhs=Expression6() { return astFactory.contains(pos(t), lhs, rhs); }
+| t=<IN> rhs=Expression6() { return astFactory.in(pos(t), lhs, rhs); }
+| t=<IS> (
     <NULL> { return astFactory.isNull(lhs); }
   | <NOT> <NULL> { return astFactory.not(astFactory.isNull(lhs)); }
   )
@@ -1703,38 +1737,41 @@ EXPRESSION ComparisonExpression6(EXPRESSION lhs) :
 
 EXPRESSION Expression6() :
 {
+  Token t;
   EXPRESSION lhs;
   EXPRESSION rhs;
 }
 {
   lhs=Expression5() (
-    <PLUS> rhs=Expression5() { lhs = astFactory.plus(lhs, rhs); }
-  | <MINUS> rhs=Expression5() { lhs = astFactory.minus(lhs, rhs); }
+    t=<PLUS> rhs=Expression5() { lhs = astFactory.plus(pos(t), lhs, rhs); }
+  | t=<MINUS> rhs=Expression5() { lhs = astFactory.minus(pos(t), lhs, rhs); }
   )*
   { return lhs; }
 }
 
 EXPRESSION Expression5() :
 {
+  Token t;
   EXPRESSION lhs;
   EXPRESSION rhs;
 }
 {
   lhs=Expression4() (
-    <TIMES> rhs=Expression4() { lhs = astFactory.multiply(lhs, rhs); }
-  | <DIVIDE> rhs=Expression4() { lhs = astFactory.divide(lhs, rhs); }
-  | <MODULO> rhs=Expression4() { lhs = astFactory.modulo(lhs, rhs); }
+    t=<TIMES> rhs=Expression4() { lhs = astFactory.multiply(pos(t), lhs, rhs); }
+  | t=<DIVIDE> rhs=Expression4() { lhs = astFactory.divide(pos(t), lhs, rhs); }
+  | t=<MODULO> rhs=Expression4() { lhs = astFactory.modulo(pos(t), lhs, rhs); }
   )*
   { return lhs; }
 }
 
 EXPRESSION Expression4() :
 {
+  Token t;
   EXPRESSION lhs;
   EXPRESSION rhs;
 }
 {
-  lhs=Expression3() ( <POW> rhs=Expression3() { lhs = astFactory.pow(lhs, rhs); } )*
+  lhs=Expression3() ( t=<POW> rhs=Expression3() { lhs = astFactory.pow(pos(t), lhs, rhs); } )*
   { return lhs; }
 }
 
@@ -1780,10 +1817,10 @@ EXPRESSION PostFix1(EXPRESSION subject) :
 PROPERTY Property(EXPRESSION subject) :
 {
   EXPRESSION e;
-  Token propKeyName;
+  StringPos<POS> propKeyName;
 }
 {
-  <DOT> propKeyName=PropertyKeyName() { return astFactory.property(subject, propKeyName.image); }
+  <DOT> propKeyName=PropertyKeyName() { return astFactory.property(subject, propKeyName); }
 }
 
 EXPRESSION Expression1() :
@@ -1798,9 +1835,10 @@ EXPRESSION Expression1() :
   | t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
   | LOOKAHEAD(3) e=CaseExpression()
   | LOOKAHEAD(3) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar(pos(t)); }
-  | e=MapLiteral()
+  | LOOKAHEAD(3) e=MapLiteral()
   | LOOKAHEAD(3) e=ExistsSubQuery() // `exists { match` should not be a map-projection
   | LOOKAHEAD(2) e=MapProjection()
+  | e=OldParameter()
   | LOOKAHEAD(3) e=ListComprehension() // before literal because it takes precedence
   | LOOKAHEAD(3) e=PatternComprehension()
   | LOOKAHEAD(3) e=ListLiteral()
@@ -1986,13 +2024,13 @@ EXPRESSION MapProjection() :
 MAP_PROJECTION_ITEM MapProjectionItem() :
 {
   Token t;
-  Token p;
+  StringPos<POS> p;
   EXPRESSION e;
   VARIABLE v;
 }
 {
-  LOOKAHEAD(2) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry(p.image, e); }
-| LOOKAHEAD(2) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty(p.image); }
+  LOOKAHEAD(2) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry(p, e); }
+| LOOKAHEAD(2) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty(p); }
 | v=Variable() { return astFactory.mapProjectionVariable(v); }
 | <DOT> t=<TIMES> { return astFactory.mapProjectionAll(pos(t)); }
 }
@@ -2039,15 +2077,15 @@ EXPRESSION ListLiteralOfLiterals() :
 EXPRESSION MapLiteralOfLiterals() :
 {
   Token t;
-  Token key;
+  StringPos<POS> key;
   EXPRESSION value;
-  List keys = new ArrayList();
-  List values = new ArrayList();
+  List<StringPos<POS>> keys = new ArrayList();
+  List<EXPRESSION> values = new ArrayList();
 }
 {
-  t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add(key.image); values.add(value);} )?
-           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add(key.image); values.add(value);} )* <RCURLY>
-  { return astFactory.mapLiteral(pos(t), (List<String>)keys, (List<EXPRESSION>)values); }
+  t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add(key); values.add(value);} )?
+           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add(key); values.add(value);} )* <RCURLY>
+  { return astFactory.mapLiteral(pos(t), keys, values); }
 }
 
 EXPRESSION StringLiteral() :
@@ -2082,22 +2120,22 @@ EXPRESSION ListLiteral() :
 EXPRESSION MapLiteral() :
 {
   Token t;
-  Token key;
+  StringPos<POS> key;
   EXPRESSION value;
-  List keys = new ArrayList();
-  List values = new ArrayList();
+  List<StringPos<POS>> keys = new ArrayList();
+  List<EXPRESSION> values = new ArrayList();
 }
 {
-  t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() {keys.add(key.image); values.add(value);} )?
-           ( "," key=PropertyKeyName() ":" value=Expression() {keys.add(key.image); values.add(value);} )* <RCURLY>
-  { return astFactory.mapLiteral(pos(t), (List<String>)keys, (List<EXPRESSION>)values); }
+  t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() {keys.add(key); values.add(value);} )?
+           ( "," key=PropertyKeyName() ":" value=Expression() {keys.add(key); values.add(value);} )* <RCURLY>
+  { return astFactory.mapLiteral(pos(t), keys, values); }
 }
 
-Token PropertyKeyName() :
+StringPos<POS> PropertyKeyName() :
 {Token t;}
 {
   t=SymbolicNameString()
-  { return t; }
+  { return new StringPos(t.image, pos(t)); }
 }
 
 EXPRESSION Parameter() :
@@ -2107,6 +2145,13 @@ EXPRESSION Parameter() :
     v=Variable() { return astFactory.newParameter(pos(t), v); }
   | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter(pos(t), token.image); }
   )
+}
+
+EXPRESSION OldParameter() :
+{Token t; VARIABLE v;}
+{
+  t=<LCURLY> v=Variable() <RCURLY>
+  { return astFactory.oldParameter(pos(t), v); }
 }
 
 EXPRESSION FunctionInvocation() :
@@ -2193,6 +2238,7 @@ Token SymbolicNameString() :
   | t=<DISTINCT>
   | t=<MERGE>
   | t=<OPTIONAL>
+  | t=<ORDER>
   | t=<DESC>
   | t=<ASC>
   | t=<SKIPROWS>

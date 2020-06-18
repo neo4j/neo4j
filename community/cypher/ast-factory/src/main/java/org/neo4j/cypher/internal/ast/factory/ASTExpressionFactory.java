@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.ast.factory;
 
 import java.util.List;
 
+import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
+
 /**
  * Factory for constructing AST expressions.
  * <p>
@@ -45,6 +47,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION newParameter( POS p, String offset );
 
+    EXPRESSION oldParameter( POS p, VARIABLE v );
+
     EXPRESSION newDouble( POS p, String image );
 
     EXPRESSION newDecimalInteger( POS p, String image, boolean negated );
@@ -63,61 +67,61 @@ public interface ASTExpressionFactory<
 
     EXPRESSION listLiteral( POS p, List<EXPRESSION> values );
 
-    EXPRESSION mapLiteral( POS p, List<String> keys, List<EXPRESSION> values );
+    EXPRESSION mapLiteral( POS p, List<StringPos<POS>> keys, List<EXPRESSION> values );
 
-    EXPRESSION hasLabels( EXPRESSION subject, List<String> labels );
+    EXPRESSION hasLabels( EXPRESSION subject, List<StringPos<POS>> labels );
 
-    PROPERTY property( EXPRESSION subject, String propertyKeyName );
+    PROPERTY property( EXPRESSION subject, StringPos<POS> propertyKeyName );
 
-    EXPRESSION or( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION or( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION xor( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION xor( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION and( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION and( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
     EXPRESSION ands( List<EXPRESSION> exprs );
 
     EXPRESSION not( EXPRESSION e );
 
-    EXPRESSION plus( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION plus( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION minus( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION minus( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION multiply( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION multiply( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION divide( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION divide( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION modulo( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION modulo( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION pow( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION pow( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
     EXPRESSION unaryPlus( EXPRESSION e );
 
     EXPRESSION unaryMinus( EXPRESSION e );
 
-    EXPRESSION eq( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION eq( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION neq( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION neq( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION neq2( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION neq2( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION lte( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION lte( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION gte( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION gte( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION lt( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION lt( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION gt( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION gt( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION regeq( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION regeq( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION startsWith( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION startsWith( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION endsWith( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION endsWith( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION contains( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION contains( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
-    EXPRESSION in( EXPRESSION lhs, EXPRESSION rhs );
+    EXPRESSION in( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
     EXPRESSION isNull( EXPRESSION e );
 
@@ -153,9 +157,9 @@ public interface ASTExpressionFactory<
 
     EXPRESSION mapProjection( POS p, VARIABLE v, List<MAP_PROJECTION_ITEM> items );
 
-    MAP_PROJECTION_ITEM mapProjectionLiteralEntry( String property, EXPRESSION value );
+    MAP_PROJECTION_ITEM mapProjectionLiteralEntry( StringPos<POS> property, EXPRESSION value );
 
-    MAP_PROJECTION_ITEM mapProjectionProperty( String property );
+    MAP_PROJECTION_ITEM mapProjectionProperty( StringPos<POS> property );
 
     MAP_PROJECTION_ITEM mapProjectionVariable( VARIABLE v );
 

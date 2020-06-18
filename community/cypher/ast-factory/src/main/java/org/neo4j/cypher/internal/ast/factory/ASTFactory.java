@@ -65,6 +65,18 @@ public interface ASTFactory<STATEMENT,
         }
     }
 
+    class StringPos<POS>
+    {
+        public final String string;
+        public final POS pos;
+
+        public StringPos( String string, POS pos )
+        {
+            this.string = string;
+            this.pos = pos;
+        }
+    }
+
     // QUERY
 
     QUERY newSingleQuery( List<CLAUSE> clauses );
@@ -72,6 +84,10 @@ public interface ASTFactory<STATEMENT,
     QUERY newUnion( POS p, QUERY lhs, QUERY rhs, boolean all );
 
     QUERY periodicCommitQuery( POS p, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
+
+    CLAUSE fromClause( POS p, EXPRESSION e );
+
+    CLAUSE useClause( POS p, EXPRESSION e );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,
                                    boolean returnAll,
@@ -108,13 +124,13 @@ public interface ASTFactory<STATEMENT,
 
     SET_ITEM addAndSetVariable( VARIABLE variable, EXPRESSION value );
 
-    SET_ITEM setLabels( VARIABLE variable, List<String> value );
+    SET_ITEM setLabels( VARIABLE variable, List<StringPos<POS>> value );
 
     CLAUSE removeClause( POS p, List<REMOVE_ITEM> removeItems );
 
     REMOVE_ITEM removeProperty( PROPERTY property );
 
-    REMOVE_ITEM removeLabels( VARIABLE variable, List<String> labels );
+    REMOVE_ITEM removeLabels( VARIABLE variable, List<StringPos<POS>> labels );
 
     CLAUSE deleteClause( POS p, boolean detach, List<EXPRESSION> expressions );
 
@@ -135,7 +151,7 @@ public interface ASTFactory<STATEMENT,
                        List<CALL_RESULT_ITEM> resultItems,
                        EXPRESSION where );
 
-    CALL_RESULT_ITEM callResultItem( String name, VARIABLE v );
+    CALL_RESULT_ITEM callResultItem( POS p, String name, VARIABLE v );
 
     PATTERN namedPattern( VARIABLE v, PATTERN pattern );
 
@@ -145,13 +161,13 @@ public interface ASTFactory<STATEMENT,
 
     PATTERN everyPathPattern( List<NODE_PATTERN> nodes, List<REL_PATTERN> relationships );
 
-    NODE_PATTERN nodePattern( POS p, VARIABLE v, List<String> labels, EXPRESSION properties );
+    NODE_PATTERN nodePattern( POS p, VARIABLE v, List<StringPos<POS>> labels, EXPRESSION properties );
 
     REL_PATTERN relationshipPattern( POS p,
                                      boolean left,
                                      boolean right,
                                      VARIABLE v,
-                                     List<String> relTypes,
+                                     List<StringPos<POS>> relTypes,
                                      PATH_LENGTH pathLength,
                                      EXPRESSION properties,
                                      boolean legacyTypeSeparator );

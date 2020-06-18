@@ -36,6 +36,12 @@ import org.neo4j.exceptions.SyntaxException
 
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
+  private val FALLBACK_TRIGGERS = Seq("INDEX", "CONSTRAINT", "DROP", "DATABASE", "ROLE", "SHOW", "GRANT", "DENY", "CONSTRUCT", "CATALOG", "~")
+  private def shouldFallBack(errorMsg: String): Boolean = {
+    val upper = errorMsg.toUpperCase()
+    FALLBACK_TRIGGERS.exists(upper.contains)
+  }
+
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val charStream = new CypherCharStream(in.queryText)
     val astFactory = new Neo4jASTFactory(in.queryText)
@@ -50,7 +56,7 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
         throw neo4jExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
       }
     } catch {
-      case e: SyntaxException if e.getMessage.contains("INDEX") || e.getMessage.contains("CONSTRAINT") || e.getMessage.contains("DROP") =>
+      case e: SyntaxException if shouldFallBack(e.getMessage) =>
         Parsing.process(in, context)
     }
   }

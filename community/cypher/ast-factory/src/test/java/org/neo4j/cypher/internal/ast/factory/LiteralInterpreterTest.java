@@ -102,7 +102,13 @@ public class LiteralInterpreterTest
         final var x = new LiteralInterpreter();
 
         assertEquals( Map.of(), x.mapLiteral( POS, List.of(), List.of() ) );
-        assertEquals( Map.of( "1", 1 ), x.mapLiteral( POS, List.of( "1" ), List.of( 1 ) ) );
-        assertEquals( Map.of( "1", 2, "3", 4, "5", 6 ), x.mapLiteral( POS, List.of( "1", "3", "5" ), List.of( 2, 4, 6 ) ) );
+        assertEquals( Map.of( "1", 1 ), x.mapLiteral( POS, List.of( stringPos( "1" ) ), List.of( 1 ) ) );
+        assertEquals( Map.of( "1", 2, "3", 4, "5", 6 ),
+                      x.mapLiteral( POS, List.of( stringPos( "1" ), stringPos( "3" ), stringPos( "5" ) ), List.of( 2, 4, 6 ) ) );
+    }
+
+    private ASTFactory.StringPos<ASTFactory.NULL> stringPos( String string )
+    {
+        return new ASTFactory.StringPos<>( string, POS );
     }
 }

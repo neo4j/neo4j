@@ -67,7 +67,7 @@ object CypherConfiguration {
       CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
       new ConfigMemoryTrackingController(config),
       config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
-      config.get(GraphDatabaseInternalSettings.cypher_parser) == GraphDatabaseInternalSettings.CypherParser.JAVACC
+      config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
     )
   }
 
