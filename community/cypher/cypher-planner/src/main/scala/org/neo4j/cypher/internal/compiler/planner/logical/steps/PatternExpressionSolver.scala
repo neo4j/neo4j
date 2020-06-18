@@ -279,7 +279,8 @@ object PatternExpressionSolver {
       val projectedPath = projectionCreator(namedExpr)
       val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath),
                                       InterestingOrder.empty, innerContext)
-      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
+      val nullableIdentifiers = (qg.patternNodes ++ qg.patternRelationships.map(_.name)).filter(source.availableSymbols)
+      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = nullableIdentifiers)
     }
 
     /*
