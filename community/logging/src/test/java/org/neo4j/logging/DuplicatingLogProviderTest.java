@@ -67,30 +67,4 @@ class DuplicatingLogProviderTest
         DuplicatingLog log = logProvider.getLog( "test context" );
         assertThat( logProvider.getLog( "test context" ), sameInstance( log ) );
     }
-
-    @Test
-    void shouldRemoveLogProviderFromDuplication()
-    {
-        // Given
-        LogProvider logProvider1 = mock( LogProvider.class );
-        LogProvider logProvider2 = mock( LogProvider.class );
-
-        doReturn( log1 ).when( logProvider1 ).getLog( any( Class.class ) );
-        doReturn( log2 ).when( logProvider2 ).getLog( any( Class.class ) );
-
-        DuplicatingLogProvider logProvider = new DuplicatingLogProvider( logProvider1, logProvider2 );
-
-        // When
-        Log log = logProvider.getLog( getClass() );
-        log.info( "When the going gets weird" );
-        assertTrue( logProvider.remove( logProvider1 ) );
-        log.info( "The weird turn pro" );
-
-        // Then
-        verify( infoLogger1 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "The weird turn pro" );
-        verifyNoMoreInteractions( infoLogger1 );
-        verifyNoMoreInteractions( infoLogger2 );
-    }
 }

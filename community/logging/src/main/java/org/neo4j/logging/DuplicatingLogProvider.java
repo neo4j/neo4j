@@ -45,26 +45,6 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
         this.logProviders = new CopyOnWriteArraySet<>( Arrays.asList( logProviders ) );
     }
 
-    /**
-     * Remove a {@link LogProvider} from the duplicating set. Note that the LogProvider must return
-     * cached Log instances from its {@link LogProvider#getLog(String)} for this to behave as expected.
-     *
-     * @param logProvider the LogProvider to be removed
-     * @return true if the log was found and removed
-     */
-    public boolean remove( LogProvider logProvider )
-    {
-        if ( !this.logProviders.remove( logProvider ) )
-        {
-            return false;
-        }
-        for ( DuplicatingLog duplicatingLog : cachedLogs() )
-        {
-            duplicatingLog.remove( duplicatingLogCache.get( duplicatingLog ).remove( logProvider ) );
-        }
-        return true;
-    }
-
     @Override
     protected DuplicatingLog buildLog( final Class<?> loggingClass )
     {
