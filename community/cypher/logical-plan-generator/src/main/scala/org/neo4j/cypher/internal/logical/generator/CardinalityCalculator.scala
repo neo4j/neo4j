@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -62,6 +63,9 @@ trait CardinalityCalculator[-T <: LogicalPlan] {
 object CardinalityCalculator {
 
   private val SAME_AS_LEFT: CardinalityCalculator[LogicalPlan] = (plan, state, _, _) => state.cardinalities(plan.lhs.get.id)
+
+  private val LEAF_CARDINALITY: CardinalityCalculator[LogicalPlan] =
+    (_, state, _, _) => state.leafCardinalityMultiplier
 
   implicit val produceResultCardinality: CardinalityCalculator[ProduceResult] =
     SAME_AS_LEFT
@@ -92,7 +96,7 @@ object CardinalityCalculator {
   }
 
   implicit val argumentCardinality: CardinalityCalculator[Argument] =
-    (_, state, _, _) => state.leafCardinalityMultiplier
+    LEAF_CARDINALITY
 
   implicit val eagerCardinality: CardinalityCalculator[Eager] =
     SAME_AS_LEFT
@@ -168,5 +172,8 @@ object CardinalityCalculator {
     (plan, state, _, _) => state.cardinalities.get(plan.source.id) * PlannerDefaults.DEFAULT_LIST_CARDINALITY
 
   implicit val nodeCountFromCountStoreCardinality: CardinalityCalculator[NodeCountFromCountStore] =
-    (_, state, _, _) => state.leafCardinalityMultiplier
+    LEAF_CARDINALITY
+
+  implicit val relationshipCountFromCountStoreCardinality: CardinalityCalculator[RelationshipCountFromCountStore] =
+    LEAF_CARDINALITY
 }

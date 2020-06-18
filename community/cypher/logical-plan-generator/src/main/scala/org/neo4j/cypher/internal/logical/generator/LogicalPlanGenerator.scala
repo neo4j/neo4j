@@ -66,6 +66,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -235,6 +236,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     sortedUndirectedRelationshipByIdSeek(state),
     sortedDirectedRelationshipByIdSeek(state),
     nodeCountFromCountStore(state),
+    relCountFromCountStore(state),
   )
 
   def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -286,13 +288,20 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   private def nodeCountFromCountStore(state: State): Gen[WithState[NodeCountFromCountStore]] = for {
     WithState(idName, state) <- newVariable(state)
     state <- state.declareTypeAny(idName)
-    labels <- Gen.listOf {
-      Gen.oneOf(
-        label.map(Some(_)),
-        Gen.const(None))
-    }
+    labels <- Gen.listOf(optionalLabel)
   } yield {
     val plan = NodeCountFromCountStore(idName, labels, state.arguments)(state.idGen)
+    annotate(plan, state)
+  }
+
+  private def relCountFromCountStore(state: State): Gen[WithState[RelationshipCountFromCountStore]] = for {
+    WithState(idName, state) <- newVariable(state)
+    state <- state.declareTypeAny(idName)
+    label <- optionalLabel
+    (startLabel, endLabel) <- Gen.oneOf(label -> None, None -> label)
+    typeNames <- relTypeNames
+  } yield {
+    val plan = RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, state.arguments)(state.idGen)
     annotate(plan, state)
   }
 
@@ -501,6 +510,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   private def label: Gen[LabelName] = for {
     name <- Gen.oneOf(labels)
   } yield LabelName(name)(pos)
+
+  private def optionalLabel: Gen[Option[LabelName]] = Gen.option(label)
 
   private def relTypeNames: Gen[Seq[RelTypeName]] = for {
     names <- zeroOrMore(relTypes)
