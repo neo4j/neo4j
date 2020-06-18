@@ -249,7 +249,8 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
     val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
-    PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
+    val nullableIdentifiers = (qg.patternNodes ++ qg.patternRelationships.map(_.name)).filter(source.availableSymbols)
+    PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = nullableIdentifiers)
   }
 
   /*

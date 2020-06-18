@@ -584,3 +584,25 @@ Feature: PatternExpressionAcceptance
     | (:Chicken) |
     | (:Ham)     |
     And no side effects
+
+  Scenario: Handling a null value in inner predicate
+    Given an empty graph
+    And having executed:
+    """
+    CREATE (tom: Person {name: 'Tom Hanks'}),
+           (matt: Person {name: 'Matt Damon'}),
+           (movie: Movie {title: 'Saving Private Ryan'}),
+           (tom)-[:ACTED_IN]->(movie),
+           (matt)-[:ACTED_IN]->(movie)
+    """
+    When executing query:
+    """
+    MATCH (tom:Person)-[:ACTED_IN]->(movie:Movie)
+    WHERE tom.name = 'Tom Hanks'
+    WITH tom, movie, null as customValue
+    RETURN [(movie)<-[:ACTED_IN]-(coActor:Person) WHERE coActor.name <> coalesce(tom.name, '') OR customValue IS NOT null | coActor.name ] as coActors
+    """
+    Then the result should be:
+      | coActors       |
+      | ['Matt Damon'] |
+    And no side effects
