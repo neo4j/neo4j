@@ -70,6 +70,20 @@ class FileUtilsTest
     }
 
     @Test
+    void moveFileToDirectoryCreatesNonExistingDirectory() throws Exception
+    {
+        File file = touchFile( "source" );
+        File targetDir = new File( path, "nonexisting" );
+
+        File newLocationOfFile = FileUtils.moveFileToDirectory( file, targetDir );
+        assertTrue( newLocationOfFile.exists() );
+        assertFalse( file.exists() );
+        File[] files = targetDir.listFiles();
+        assertNotNull( files );
+        assertEquals( newLocationOfFile, files[0] );
+    }
+
+    @Test
     void moveFile() throws Exception
     {
         File file = touchFile( "source" );
