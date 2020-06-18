@@ -497,7 +497,7 @@ class PrettifierIT extends CypherFunSuite {
       "show user abc privileges" ->
         "SHOW USER abc PRIVILEGES",
 
-      "show  user `$aB%x`  privileges" ->
+      "show  users `$aB%x`  privileges" ->
         "SHOW USER `$aB%x` PRIVILEGES",
 
       "show user `$user` privileges" ->
@@ -506,7 +506,16 @@ class PrettifierIT extends CypherFunSuite {
       "show user $user privileges" ->
         "SHOW USER $user PRIVILEGES",
 
+      "show user abc,$user,edf privileges" ->
+        "SHOW USERS abc, $user, edf PRIVILEGES",
+
+      "show users $user1,abc,$user2,edf privileges" ->
+        "SHOW USERS $user1, abc, $user2, edf PRIVILEGES",
+
       "show user privileges" ->
+        "SHOW USER PRIVILEGES",
+
+      "show users privileges" ->
         "SHOW USER PRIVILEGES",
 
       "show role abc privileges" ->
@@ -515,11 +524,17 @@ class PrettifierIT extends CypherFunSuite {
       "show  role `$aB%x`  privileges" ->
         "SHOW ROLE `$aB%x` PRIVILEGES",
 
-      "show role `$role` privileges" ->
+      "show roles `$role` privileges" ->
         "SHOW ROLE `$role` PRIVILEGES",
 
       "show role $role privileges" ->
         "SHOW ROLE $role PRIVILEGES",
+
+      "show role $role1,abc, $role2 privileges" ->
+        "SHOW ROLES $role1, abc, $role2 PRIVILEGES",
+
+      "show roles $role1,abc, $role2,$role3 privileges" ->
+        "SHOW ROLES $role1, abc, $role2, $role3 PRIVILEGES",
 
       "catalog show databases" ->
         "SHOW DATABASES",

@@ -171,11 +171,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => (context, parameterMapping) =>
-      val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
+      val userNameFields = getNameFields("username", userName)
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
-        s"""MATCH (user:User {name: $$`$userNameKey`}) DETACH DELETE user
+        s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`}) DETACH DELETE user
           |RETURN 1 AS ignore""".stripMargin,
-        VirtualValues.map(Array(userNameKey), Array(userNameValue)),
+        VirtualValues.map(Array(userNameFields.nameKey), Array(userNameFields.nameValue)),
         QueryHandler
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
@@ -183,7 +183,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeValue(userName, p)}'.", error)
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
-        parameterConverter = userNameConverter
+        parameterConverter = userNameFields.nameConverter
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -245,13 +245,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDefaultDatabase")
         // show database name
         case NamedGraphScope(p) =>
-          val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
+          val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
           val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
             val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
             val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
-            converter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
+            nameFields.nameConverter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
           }
-          (s"AND d.name = $$`$key`", VirtualValues.map(Array(key), Array(value)), combinedConverter, "ShowDatabase")
+          (s"AND d.name = $$`${nameFields.nameKey}`", VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)), combinedConverter, "ShowDatabase")
         // show all databases
         case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDatabases")
       }
@@ -267,12 +267,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       SystemCommandExecutionPlan(name, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 
     case DoNothingIfNotExists(source, label, name, valueMapper) => (context, parameterMapping) =>
-      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
+      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$`$nameKey`})
+           |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
+        """.stripMargin, VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
         QueryHandler
           .ignoreNoResult()
           .handleError {
@@ -281,16 +281,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
-        parameterConverter = nameConverter
+        parameterConverter = nameFields.nameConverter
       )
 
     case DoNothingIfExists(source, label, name, valueMapper) => (context, parameterMapping) =>
-      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
+      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
-           |MATCH (node:$label {name: $$`$nameKey`})
+           |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array(nameKey), Array(nameValue)),
+        """.stripMargin, VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
         QueryHandler
           .ignoreOnResult()
           .handleError {
@@ -299,16 +299,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case (error, p) => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
-        parameterConverter = nameConverter
+        parameterConverter = nameFields.nameConverter
       )
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name, valueMapper) => (context, parameterMapping) =>
-      val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
+      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
-        s"""MATCH (node:$label {name: $$`$nameKey`})
+        s"""MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node""".stripMargin,
-        VirtualValues.map(Array(nameKey), Array(nameValue)),
+        VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
         QueryHandler
           .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $label does not exist.")))
           .handleError {
@@ -317,7 +317,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping)),
-        parameterConverter = nameConverter
+        parameterConverter = nameFields.nameConverter
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)

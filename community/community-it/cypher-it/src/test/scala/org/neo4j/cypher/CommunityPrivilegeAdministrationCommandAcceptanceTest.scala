@@ -35,11 +35,13 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
   test("should fail on showing role privileges from community") {
     assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported administration command: SHOW ROLE reader PRIVILEGES")
     assertFailure("SHOW ROLE $role PRIVILEGES", "Unsupported administration command: SHOW ROLE $role PRIVILEGES")
+    assertFailure("SHOW ROLES role1, $role2 PRIVILEGES", "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES")
   }
 
   test("should fail on showing user privileges for non-existing user with correct error message") {
     assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
     assertFailure("SHOW USER $foo PRIVILEGES", "Unsupported administration command: SHOW USER $foo PRIVILEGES")
+    assertFailure("SHOW USERS $foo, bar PRIVILEGES", "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES")
   }
 
   private val enterprisePrivileges = Seq(

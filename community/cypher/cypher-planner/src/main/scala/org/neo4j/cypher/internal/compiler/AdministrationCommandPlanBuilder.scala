@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
@@ -306,7 +307,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
         Some(plans.ShowPrivileges(source, scope, sp.returnColumnNames, where, yields, returns))
 
-      // SHOW [ALL | ROLE role] PRIVILEGES
+      // SHOW USERS user1, user2 PRIVILEGES
+      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, where, yields, returns) =>
+        val source =
+          if (scope.users.isDefined) {
+            val users = scope.users.get
+            if (users.size > 1) Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction)))
+            else Some(plans.AssertDbmsAdminOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction)))
+          } else None
+        Some(plans.ShowPrivileges(source, scope, sp.returnColumnNames, where, yields, returns))
+
+      // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
       case sp @ ShowPrivileges(scope, where, yields, returns) =>
         Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, sp.returnColumnNames, where, yields, returns))
 

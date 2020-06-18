@@ -167,12 +167,13 @@ import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
-import org.neo4j.cypher.internal.ast.ShowRolePrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -1350,12 +1351,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     }
 
   def _showPrivileges: Gen[ShowPrivileges] = for {
-    name       <- _nameAsEither
-    optionName <- option(name)
-    showRole   = ShowRolePrivileges(name)(pos)
-    showUser   = ShowUserPrivileges(optionName)(pos)
+    names      <- _listOfNameOfEither
+    showRole   = ShowRolesPrivileges(names)(pos)
+    showUser1  = ShowUsersPrivileges(Some(names))(pos) // sending in None here will be parsed as ShowUserPrivilege instead
+    showUser2  = ShowUserPrivileges(None)(pos)
     showAll    = ShowAllPrivileges()(pos)
-    scope      <- oneOf(showRole, showUser, showAll)
+    scope      <- oneOf(showRole, showUser1, showUser2, showAll)
     where      <- Gen.option(_where)
     yields     <- Gen.option(_yield)
   } yield ShowPrivileges(scope, yields, where, None)(pos)

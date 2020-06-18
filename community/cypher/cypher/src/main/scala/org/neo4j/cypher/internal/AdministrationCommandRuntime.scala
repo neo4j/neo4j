@@ -144,16 +144,18 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   protected def getNameFields(key: String,
                               name: Either[String, AnyRef],
-                              valueMapper: String => String = s => s): (String, Value, (Transaction, MapValue) => MapValue) = name match {
+                              valueMapper: String => String = s => s): NameFields = name match {
     case Left(u) =>
-      (s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
+      NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
       // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
       val parameter = p.asInstanceOf[ParameterFromSlot]
       validateStringParameterType(parameter)
       def rename: String => String = paramName => internalKey(paramName)
-      (rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
+      NameFields(rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
   }
+
+  case class NameFields(nameKey: String, nameValue: Value, nameConverter: (Transaction, MapValue) => MapValue)
 
   case object IdentityConverter extends ((Transaction, MapValue) => MapValue) {
     def apply(transaction: Transaction, map: MapValue): MapValue = map
@@ -174,18 +176,18 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
+    val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password)
-    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameConverter(tx, p))
+    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$`$userNameKey`, credentials: $$`${credentials.key}`,
+      s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, credentials: $$`${credentials.key}`,
          |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`})
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey),
+        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey),
         Array(
-          userNameValue,
+          userNameFields.nameValue,
           credentials.value,
           credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
@@ -213,8 +215,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             sourcePlan: Option[ExecutionPlan],
                                             normalExecutionEngine: ExecutionEngine
                                           ): ExecutionPlan = {
-          val (userNameKey, userNameValue, userNameConverter) = getNameFields("username", userName)
-      val maybePw = password.map(getPasswordExpression(_))
+    val userNameFields = getNameFields("username", userName)
+      val maybePw = password.map(getPasswordExpression)
       val params = Seq(
         maybePw -> "credentials",
         requirePasswordChange -> "passwordChangeRequired",
@@ -227,15 +229,15 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           case Some(p) => throw new InvalidArgumentsException(s"Invalid option type for ALTER USER, expected PasswordExpression or Boolean but got: ${p.getClass.getSimpleName}")
         }
       }
-      val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`$userNameKey`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>
+      val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`${userNameFields.nameKey}`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>
         val propertyName: String = param._1
         val key: String = param._2
         val value: Value = param._3
         (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
       }
-      val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameKey
-      val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameValue
-      val mapper: (Transaction, MapValue) => MapValue = (tx, m) => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameConverter(tx, m))
+      val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
+      val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
+      val mapper: (Transaction, MapValue) => MapValue = (tx, m) => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, m))
       UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
         s"$query RETURN oldCredentials",
         VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),

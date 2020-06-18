@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstrai
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.ShowPrivileges
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -72,7 +75,15 @@ object Additions {
   // This is functionality that has been added in 4.2 and should not work when using CYPHER 3.5 and CYPHER 4.1
   case object addedFeaturesIn4_2 extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = {}
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+      // SHOW ROLE role1, role2 PRIVILEGES
+      case s@ShowPrivileges(ShowRolesPrivileges(r), _, _, _) if r.size > 1 =>
+        throw cypherExceptionFactory.syntaxException("Multiple roles in SHOW ROLE PRIVILEGE command is not supported in this Cypher version.", s.position)
+
+      // SHOW USER user1, user2 PRIVILEGES
+      case s@ShowPrivileges(ShowUsersPrivileges(Some(u)), _, _, _) if u.size > 1 =>
+        throw cypherExceptionFactory.syntaxException("Multiple users in SHOW USER PRIVILEGE command is not supported in this Cypher version.", s.position)
+    }
   }
 }
 

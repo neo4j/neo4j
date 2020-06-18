@@ -120,10 +120,11 @@ import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
-import org.neo4j.cypher.internal.ast.ShowRolePrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.Start
@@ -712,7 +713,20 @@ object Prettifier {
           s"USER ${escapeName(name.get)}"
         else
           "USER"
-      case ShowRolePrivileges(name) => s"ROLE ${escapeName(name)}"
+      case ShowUsersPrivileges(names) =>
+        if (names.isDefined) {
+          val n = names.get
+          if (n.size == 1)
+            s"USER ${escapeName(n.head)}"
+          else
+            s"USERS ${escapeNames(n)}"
+        } else
+          "USER"
+      case ShowRolesPrivileges(names) =>
+        if (names.size == 1)
+          s"ROLE ${escapeName(names.head)}"
+        else
+          s"ROLES ${escapeNames(names)}"
       case ShowAllPrivileges()      => "ALL"
       case _                        => "<unknown>"
     }

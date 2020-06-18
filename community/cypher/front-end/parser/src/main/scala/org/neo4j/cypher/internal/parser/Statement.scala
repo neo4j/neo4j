@@ -85,14 +85,14 @@ trait Statement extends Parser
   }
 
   def AdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Administration statement")(
-    optional(UseGraph) ~~ (MultiDatabaseAdministrationCommand | UserAdministrationCommand | PrivilegeAdministrationCommand) ~~> ((use, command) => command.withGraph(use))
+    optional(UseGraph) ~~ (MultiDatabaseAdministrationCommand | PrivilegeAdministrationCommand | UserAndRoleAdministrationCommand) ~~> ((use, command) => command.withGraph(use))
   )
 
   def MultiDatabaseAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("MultiDatabase administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
-  def UserAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
+  def UserAndRoleAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
@@ -244,12 +244,12 @@ trait Statement extends Parser
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
-    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNameOrStringParameterList ~~
+    group(keyword("GRANT") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~
       keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.GrantRolesToUsers(_, _))
   }
 
   def RevokeRole: Rule1[RevokeRolesFromUsers] = rule("CATALOG REVOKE ROLE") {
-    group(keyword("REVOKE") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNameOrStringParameterList ~~
+    group(keyword("REVOKE") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~
       keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.RevokeRolesFromUsers(_, _))
   }
 
@@ -532,6 +532,10 @@ trait Statement extends Parser
 
   private def passwordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
 
+  private def RoleKeyword: Rule0 = keyword("ROLES") | keyword("ROLE")
+
+  private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
+
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
       group((SymbolicNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
@@ -539,9 +543,9 @@ trait Statement extends Parser
   )
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(
-    group(keyword("ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolePrivileges(_)) |
-      group(keyword("USER") ~~ optional(SymbolicNameOrStringParameter) ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUserPrivileges(_)) |
-      group(keyword("USER") ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
+    group(RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolesPrivileges(_)) |
+      group(UserKeyword ~~ optional(SymbolicNameOrStringParameterList) ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
+      group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
       optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   )
 

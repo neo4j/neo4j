@@ -374,14 +374,19 @@ sealed trait ShowPrivilegeScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this
 }
 
-final case class ShowRolePrivileges(role: Either[String, Parameter])(val position: InputPosition) extends ShowPrivilegeScope {
-  override def dup(children: Seq[AnyRef]): ShowRolePrivileges.this.type =
-    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+final case class ShowRolesPrivileges(roles: List[Either[String, Parameter]])(val position: InputPosition) extends ShowPrivilegeScope {
+  override def dup(children: Seq[AnyRef]): ShowRolesPrivileges.this.type =
+    this.copy(children.head.asInstanceOf[List[Either[String, Parameter]]])(position).asInstanceOf[this.type]
 }
 
 final case class ShowUserPrivileges(user: Option[Either[String, Parameter]])(val position: InputPosition) extends ShowPrivilegeScope {
   override def dup(children: Seq[AnyRef]): ShowUserPrivileges.this.type =
     this.copy(children.head.asInstanceOf[Option[Either[String, Parameter]]])(position).asInstanceOf[this.type]
+}
+
+final case class ShowUsersPrivileges(users: Option[List[Either[String, Parameter]]])(val position: InputPosition) extends ShowPrivilegeScope {
+  override def dup(children: Seq[AnyRef]): ShowUsersPrivileges.this.type =
+    this.copy(children.head.asInstanceOf[Option[List[Either[String, Parameter]]]])(position).asInstanceOf[this.type]
 }
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
@@ -634,7 +639,7 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope, override  val yields:
 
   override val defaultColumnSet: List[(String, CypherType)] = List(("access", CTString), ("action", CTString),
     ("resource", CTString), ("graph", CTString), ("segment", CTString), ("role", CTString)) ++ (scope match {
-    case _: ShowUserPrivileges => List(("user", CTString))
+    case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(("user", CTString))
     case _ => List.empty
   })
 
