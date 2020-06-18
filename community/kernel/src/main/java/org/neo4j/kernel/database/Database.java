@@ -884,11 +884,9 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    public synchronized void upgrade()
+    public synchronized void upgrade( boolean startAfterUpgrade )
     {
-        boolean upgradingStartedDatabase = started;
-
-        if ( upgradingStartedDatabase )
+        if ( started )
         {
             stop();
         }
@@ -896,10 +894,11 @@ public class Database extends LifecycleAdapter
         init();
         DatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
         migrator.migrate( true );
+        start(); // Start is required to bring the database to a "complete" state (ideally this should not be needed)
 
-        if ( upgradingStartedDatabase )
+        if ( !startAfterUpgrade )
         {
-            start();
+            stop();
         }
     }
 

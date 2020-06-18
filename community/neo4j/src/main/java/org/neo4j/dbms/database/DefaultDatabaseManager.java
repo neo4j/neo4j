@@ -99,6 +99,27 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
+    public synchronized void upgradeDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
+    {
+        StandaloneDatabaseContext context = getDatabaseContext( namedDatabaseId )
+                .orElseThrow( () -> new DatabaseNotFoundException( "Database not found: " + namedDatabaseId ) );
+        Database database = context.database();
+        log.info( "Upgrading '%s' database.", namedDatabaseId.name() );
+        context.fail( null ); // Clear any failed state, e.g. due to format being too old on startup.
+        try
+        {
+            database.upgrade( true );
+        }
+        catch ( Throwable throwable )
+        {
+            String message = "Failed to upgrade database: " + namedDatabaseId.name();
+            log.error( message, throwable );
+            context.fail( throwable );
+            throw new DatabaseManagementException( message, throwable );
+        }
+    }
+
+    @Override
     public void stopDatabase( NamedDatabaseId ignore )
     {
         throw new DatabaseManagementException( "Default database manager does not support database stop." );

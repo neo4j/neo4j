@@ -73,6 +73,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -164,6 +165,8 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
+        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
@@ -193,7 +196,7 @@ public class StoreUpgraderInterruptionTestIT
         var recordMigratorTracer = new DefaultPageCacheTracer();
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, idMigratorTracer );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
@@ -236,6 +239,8 @@ public class StoreUpgraderInterruptionTestIT
         };
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
 
+        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+
         try
         {
             newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator, idMigrator )
@@ -246,8 +251,6 @@ public class StoreUpgraderInterruptionTestIT
         {
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
-
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );

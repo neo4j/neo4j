@@ -101,6 +101,17 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     void dropDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
 
     /**
+     * Upgrade database with specified name.
+     * The database will be restarted if it is running.
+     * @param namedDatabaseId ID of database to upgrade.
+     * @throws DatabaseNotFoundException if there is no database by the given name.
+     */
+    default void upgradeDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
+    {
+        throw new UnsupportedOperationException( "Database upgrade is not yet implemented for " + getClass().getSimpleName() );
+    }
+
+    /**
      * Stop database with specified name.
      * Stopping already stopped database does not have any effect.
      * @param namedDatabaseId database ID to stop

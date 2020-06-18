@@ -88,7 +88,15 @@ public class MigrationTestUtils
 
     public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check )
     {
-        return check.checkUpgrade( RecordFormatSelector.defaultFormat().storeVersion(), PageCursorTracer.NULL ).outcome.isSuccessful();
+        String defaultFormatVersion = RecordFormatSelector.defaultFormat().storeVersion();
+        boolean successful = check.checkUpgrade( defaultFormatVersion, PageCursorTracer.NULL ).outcome.isSuccessful();
+        if ( successful )
+        {
+            String storeVersion = check.storeVersion( PageCursorTracer.NULL )
+                    .orElseThrow( () -> new RuntimeException( "Expected store to have a store version." ) );
+            return defaultFormatVersion.equals( storeVersion );
+        }
+        return false;
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )
