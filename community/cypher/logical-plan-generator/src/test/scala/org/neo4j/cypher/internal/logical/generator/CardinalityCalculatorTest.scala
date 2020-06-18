@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -249,6 +250,24 @@ class CardinalityCalculatorTest extends FunSuite with Matchers {
         val marginOfError = expectedAmountApprox * 0.01
         actualAmount should equal(expectedAmountApprox +- marginOfError)
       }
+  }
+
+  test("DirectedRelationshipByIdSeek with no relationship ids") {
+    val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
+    val plan = DirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
+
+    val c = CardinalityCalculator.directedRelationshipByIdSeek(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality.EMPTY)
+  }
+
+  test("DirectedRelationshipByIdSeek with non empty list of relationship ids") {
+    val relIdsSize = 100
+    val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
+    val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
+    val plan = DirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+
+    val c = CardinalityCalculator.directedRelationshipByIdSeek(plan, defaultState, new TestGraphStatistics, Map.empty)
+    c should equal(Cardinality(relIdsSize))
   }
 
   test("UndirectedRelationshipByIdSeek with no relationship ids") {

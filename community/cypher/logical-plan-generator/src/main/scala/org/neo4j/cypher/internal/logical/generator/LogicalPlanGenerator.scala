@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -229,6 +230,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     allNodesScan(state),
     nodeByLabelScan(state),
     sortedUndirectedRelationshipByIdSeek(state),
+    sortedDirectedRelationshipByIdSeek(state),
   )
 
   def oneChildPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
@@ -300,7 +302,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     annotate(plan, state)
   }
 
-  def sortedUndirectedRelationshipByIdSeek(state: State): Gen[WithState[Sort]] = for {
+  private def sortedRelationshipByIdSeek(state: State, directed: Boolean): Gen[WithState[Sort]] =  for {
     WithState(idName, state) <- newVariable(state)
     state <- state.newRelationship(idName)
     WithState(left, state) <- newVariable(state)
@@ -310,12 +312,27 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     relIds <- Gen.someOf(rels.map(_.getId))
   } yield {
     val seekableArgs = ManySeekableArgs(listOfInt(relIds:_*))
-    val plan = UndirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
-    annotate(plan, state)
+    val plan = if(directed) {
+      val p = DirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
+      annotate(p, state)
+      p
+    } else {
+      val p = UndirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
+      annotate(p, state)
+      p
+    }
+
     // result is non-deterministic, so we need to sort in order to make it deterministic
     val sortPlan = Sort(plan, Seq(Ascending(left), Ascending(idName)))(state.idGen)
     annotate(sortPlan, state)
   }
+
+
+  def sortedUndirectedRelationshipByIdSeek(state: State): Gen[WithState[Sort]] =
+    sortedRelationshipByIdSeek(state, directed = false)
+
+  def sortedDirectedRelationshipByIdSeek(state: State): Gen[WithState[Sort]] =
+    sortedRelationshipByIdSeek(state, directed = true)
 
   def skip(state: State): Gen[WithState[Skip]] = for {
     WithState(source, state) <- innerLogicalPlan(state)

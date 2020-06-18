@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -73,6 +74,14 @@ object CardinalityCalculator {
         .getOrElse(PlannerDefaults.DEFAULT_LIST_CARDINALITY)
 
       numberOfRels * Multiplier(2) * state.leafCardinalityMultiplier
+    }
+
+  implicit val directedRelationshipByIdSeek: CardinalityCalculator[DirectedRelationshipByIdSeek] =
+    (plan, state, _, _) => {
+      val numberOfRels = plan.relIds.sizeHint.map(Cardinality(_))
+        .getOrElse(PlannerDefaults.DEFAULT_LIST_CARDINALITY)
+
+      numberOfRels * state.leafCardinalityMultiplier
     }
 
   implicit val nodeByLabelScanCardinality: CardinalityCalculator[NodeByLabelScan] = {
