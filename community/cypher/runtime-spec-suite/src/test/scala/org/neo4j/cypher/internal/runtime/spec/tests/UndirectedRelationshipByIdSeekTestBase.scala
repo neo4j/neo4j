@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -155,5 +156,27 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     runtimeResult should beColumns("r", "x", "y").withRows(Seq(
       Array(attachedToFind, attachedToFind.getStartNode, attachedToFind.getEndNode),
       Array(attachedToFind, attachedToFind.getEndNode, attachedToFind.getStartNode)))
+  }
+
+  test("should handle limit + sort") {
+    val (nodes, relationships) = given {
+      circleGraph(sizeHint, "A")
+    }
+    val limit = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(limit)
+      .|.sort(Seq(Ascending("r"), Ascending("x")))
+      .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(nodes.map(_ => Array[Any](nodes.head)))
   }
 }
