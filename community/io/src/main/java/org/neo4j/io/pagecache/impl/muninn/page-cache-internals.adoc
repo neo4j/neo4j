@@ -129,7 +129,7 @@ The paged file also has a LatchMap, which is used to coordinate page faults.
 
 Files that are managed by the page cache are represented as a sequential list of file pages, starting from page 0, until the end of the file.
 These pages are faulted into memory in an arbitrary order, and so the order of the pages in the file has no correlation with the order of pages in memory.
-Therefor, each file needs a table that can translate the sequantial file page ids into the page list index where the given page is placed in memory, or otherwise indicate if the page is not in memory.
+Therefor, each file needs a table that can translate the sequential file page ids into the page list index where the given page is placed in memory, or otherwise indicate if the page is not in memory.
 
 This is what the translation table in the paged file does:
 Translate file page ids, into page list indexes.
@@ -221,7 +221,7 @@ When a thread wishes to access a page, but finds that the page is not yet in mem
 There might be other threads interested in the same page, and coming to the same conclusion, so the page faults needs to be coordinated.
 The LatchMap provides this coordination, via its `takeOrAwaitLatch` method.
 This method will atomically either install and return a latch for a given page id.
-Or wait for any exisitng latch to be released.
+Or wait for any existing latch to be released.
 If the method returns a latch, then the calling thread knows that it now holds the lock and is the only one allowed to proceed with faulting in the page in question.
 Once the page fault completes, the latch is released, allowing other threads to proceed.
 Their calls will then return null, and this signals that someone did a page fault for them, and they need to loop back and check the translation table for the page they're interested in.
@@ -259,7 +259,7 @@ This limits the number of swapper ids to 2.097.151.
 We are likely to run out of available file descriptors due to operating system limits, before we run out of available swapper ids.
 However, it is a limit that may become relevant in the future, as people deploy multiple databases within a DBMS, and create ever larger number of native indexes.
 More importantly, though, is that files are mapped and unmapped at runtime.
-This mapping and unmappign churn swapper ids; each new mapping requires a new swapper id, and each unmapping frees up a swapper id.
+This mapping and unmapping churn swapper ids; each new mapping requires a new swapper id, and each unmapping frees up a swapper id.
 However, a swapper id cannot be reused until all pages bound to that file have been evicted.
 We don't immediately evict all pages for a given file when we unmap that file.
 These pages cannot be reused, should the same file be mapped again, because the file might have changed in the meantime, so every time we map a file we give the file a new swapper id.
