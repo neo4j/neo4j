@@ -21,15 +21,14 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Nested;
 
-import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.time.SystemNanoClock;
 
 /** Base for locking tests. */
 public abstract class LockingCompatibilityTestSuite
 {
-    protected abstract Locks createLockManager( Config config, Clock clock );
+    protected abstract Locks createLockManager( Config config, SystemNanoClock clock );
 
     /**
      * Implementing this requires intricate knowledge of implementation of the particular locks client.

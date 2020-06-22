@@ -432,7 +432,7 @@ class RWLockTest
 
     private static RWLock createRWLock( RagManager ragManager, LockResource resource )
     {
-        return new RWLock( resource, ragManager, Clocks.systemClock(), 0 );
+        return new RWLock( resource, ragManager, Clocks.nanoClock(), 0 );
     }
 
     private static void waitWaitingThreads( RWLock lock, int expectedThreads ) throws InterruptedException

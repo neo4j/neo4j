@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.time.Clock;
-
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
 public class CommunityLocksFactory implements LocksFactory
 {
     @Override
-    public Locks newInstance( Config config, Clock clock, ResourceType[] resourceTypes )
+    public Locks newInstance( Config config, SystemNanoClock clock, ResourceType[] resourceTypes )
     {
         return new CommunityLockManger( config, clock );
     }

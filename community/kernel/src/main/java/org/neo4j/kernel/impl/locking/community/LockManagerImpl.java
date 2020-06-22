@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,25 +28,26 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 public class LockManagerImpl
 {
     private final Map<Object,RWLock> resourceLockMap = new HashMap<>();
     private final RagManager ragManager;
-    private final Clock clock;
+    private final SystemNanoClock clock;
 
     /**
      * Time within which any particular lock should be acquired.
      * @see GraphDatabaseSettings#lock_acquisition_timeout
      */
-    private final long lockAcquisitionTimeoutMillis;
+    private final long lockAcquisitionTimeoutNano;
 
-    LockManagerImpl( RagManager ragManager, Config config, Clock clock )
+    LockManagerImpl( RagManager ragManager, Config config, SystemNanoClock clock )
     {
         this.ragManager = ragManager;
         this.clock = clock;
-        this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toMillis();
+        this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
     }
 
     boolean getReadLock( LockTracer tracer, LockResource resource, LockTransaction tx )
@@ -143,7 +143,7 @@ public class LockManagerImpl
     @VisibleForTesting
     protected RWLock createLock( LockResource resource )
     {
-        return new RWLock( resource, ragManager, clock, lockAcquisitionTimeoutMillis );
+        return new RWLock( resource, ragManager, clock, lockAcquisitionTimeoutNano );
     }
 
     private RWLock getRWLockForReleasing( Object resource, Object tx, int readCountPrerequisite,

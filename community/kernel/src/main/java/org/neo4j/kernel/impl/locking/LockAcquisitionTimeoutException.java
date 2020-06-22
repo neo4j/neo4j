@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -33,10 +35,10 @@ import org.neo4j.lock.ResourceType;
  */
 public class LockAcquisitionTimeoutException extends TransactionTerminatedException
 {
-    public LockAcquisitionTimeoutException( ResourceType resourceType, long resourceId, long timeoutMillis )
+    public LockAcquisitionTimeoutException( ResourceType resourceType, long resourceId, long timeoutNano )
     {
         super( Status.Transaction.LockAcquisitionTimeout,
                 String.format( "Unable to acquire lock for resource: %s with id: %d within %d millis.", resourceType,
-                        resourceId, timeoutMillis ) );
+                        resourceId, TimeUnit.NANOSECONDS.toMillis( timeoutNano ) ) );
     }
 }

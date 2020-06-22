@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -28,10 +26,15 @@ import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
+import org.neo4j.time.SystemNanoClock;
 
 public final class EditionLocksFactories
 {
-    public static Locks createLockManager( LocksFactory locksFactory, Config config, Clock clock )
+    private EditionLocksFactories()
+    {
+    }
+
+    public static Locks createLockManager( LocksFactory locksFactory, Config config, SystemNanoClock clock )
     {
         return locksFactory.newInstance( config, clock, ResourceTypes.values() );
     }

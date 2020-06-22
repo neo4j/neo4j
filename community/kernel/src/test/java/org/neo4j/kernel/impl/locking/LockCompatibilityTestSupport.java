@@ -76,7 +76,7 @@ public abstract class LockCompatibilityTestSupport
     @BeforeEach
     public void before()
     {
-        locks = suite.createLockManager( Config.defaults(), Clocks.systemClock() );
+        locks = suite.createLockManager( Config.defaults(), Clocks.nanoClock() );
         clientA = locks.newClient();
         clientB = locks.newClient();
         clientC = locks.newClient();

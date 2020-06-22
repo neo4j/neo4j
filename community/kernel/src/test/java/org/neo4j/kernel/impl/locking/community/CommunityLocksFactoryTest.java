@@ -36,8 +36,8 @@ class CommunityLocksFactoryTest
     void createDifferentCommunityLockManagers()
     {
         CommunityLocksFactory factory = new CommunityLocksFactory();
-        Locks locks1 = factory.newInstance( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
-        Locks locks2 = factory.newInstance( Config.defaults(), Clocks.systemClock(), ResourceTypes.values() );
+        Locks locks1 = factory.newInstance( Config.defaults(), Clocks.nanoClock(), ResourceTypes.values() );
+        Locks locks2 = factory.newInstance( Config.defaults(), Clocks.nanoClock(), ResourceTypes.values() );
         assertNotSame( locks1, locks2 );
         assertThat( locks1 ).isInstanceOf( CommunityLockManger.class );
         assertThat( locks2 ).isInstanceOf( CommunityLockManger.class );

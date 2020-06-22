@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.locking.community;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -36,10 +34,12 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -76,20 +76,20 @@ public class RWLock
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
     private final Map<LockTransaction, TxLockElement> txLockElementMap = new HashMap<>();
     private final RagManager ragManager;
-    private final Clock clock;
-    private final long lockAcquisitionTimeoutMillis;
+    private final SystemNanoClock clock;
+    private final long lockAcquisitionTimeoutNano;
 
     // access to these is guarded by synchronized blocks
     private int totalReadCount;
     private int totalWriteCount;
     private int marked; // synch helper in LockManager
 
-    RWLock( LockResource resource, RagManager ragManager, Clock clock, long lockAcquisitionTimeoutMillis )
+    RWLock( LockResource resource, RagManager ragManager, SystemNanoClock clock, long lockAcquisitionTimeoutNano )
     {
         this.resource = resource;
         this.ragManager = ragManager;
         this.clock = clock;
-        this.lockAcquisitionTimeoutMillis = lockAcquisitionTimeoutMillis;
+        this.lockAcquisitionTimeoutNano = lockAcquisitionTimeoutNano;
     }
 
     // keeps track of a transactions read and write lock count on this RWLock
@@ -153,13 +153,14 @@ public class RWLock
         private final TxLockElement element;
         private final LockType lockType;
         private final Thread waitingThread;
-        private final long since = System.nanoTime();
+        private final long since;
 
-        LockRequest( TxLockElement element, LockType lockType, Thread thread )
+        LockRequest( TxLockElement element, LockType lockType, Thread thread, SystemNanoClock clock )
         {
             this.element = element;
             this.lockType = lockType;
             this.waitingThread = thread;
+            since = clock.nanos();
         }
     }
 
@@ -212,15 +213,15 @@ public class RWLock
             tle.incrementRequests();
             Thread currentThread = currentThread();
 
-            long lockAcquisitionTimeBoundary = clock.millis() + lockAcquisitionTimeoutMillis;
+            long waitStartNano = clock.nanos();
             while ( !tle.isTerminated() && (totalWriteCount > tle.writeCount) )
             {
-                assertNotExpired( lockAcquisitionTimeBoundary );
+                assertNotExpired( waitStartNano );
                 ragManager.checkWaitOn( this, tx );
 
                 if ( addLockRequest )
                 {
-                    lockRequest = new LockRequest( tle, SHARED, currentThread );
+                    lockRequest = new LockRequest( tle, SHARED, currentThread, clock );
                     waitingThreadList.addFirst( lockRequest );
                 }
 
@@ -228,7 +229,7 @@ public class RWLock
                 {
                     waitEvent = tracer.waitForLock( SHARED, resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
-                addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
+                addLockRequest = waitUninterruptedly( waitStartNano );
                 ragManager.stopWaitOn( this, tx );
             }
 
@@ -400,15 +401,15 @@ public class RWLock
             tle.incrementRequests();
             Thread currentThread = currentThread();
 
-            long lockAcquisitionTimeBoundary = clock.millis() + lockAcquisitionTimeoutMillis;
+            long waitStartNano = clock.nanos();
             while ( !tle.isTerminated() && (totalWriteCount > tle.writeCount || totalReadCount > tle.readCount) )
             {
-                assertNotExpired( lockAcquisitionTimeBoundary );
+                assertNotExpired( waitStartNano );
                 ragManager.checkWaitOn( this, tx );
 
                 if ( addLockRequest )
                 {
-                    lockRequest = new LockRequest( tle, EXCLUSIVE, currentThread );
+                    lockRequest = new LockRequest( tle, EXCLUSIVE, currentThread, clock );
                     waitingThreadList.addFirst( lockRequest );
                 }
 
@@ -416,7 +417,7 @@ public class RWLock
                 {
                     waitEvent = tracer.waitForLock( EXCLUSIVE, resource.resourceType(), tx.getTransactionId(), resource.resourceId() );
                 }
-                addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
+                addLockRequest = waitUninterruptedly( waitStartNano );
                 ragManager.stopWaitOn( this, tx );
             }
 
@@ -453,15 +454,15 @@ public class RWLock
         }
     }
 
-    private boolean waitUninterruptedly( long lockAcquisitionTimeBoundary )
+    private boolean waitUninterruptedly( long waitStartNano )
     {
         boolean addLockRequest;
         try
         {
-            if ( lockAcquisitionTimeoutMillis > 0 )
+            if ( lockAcquisitionTimeoutNano > 0 )
             {
-                assertNotExpired( lockAcquisitionTimeBoundary );
-                wait( Math.abs( lockAcquisitionTimeBoundary - clock.millis() ) );
+                assertNotExpired( waitStartNano );
+                wait( NANOSECONDS.toMillis( Math.abs( lockAcquisitionTimeoutNano - clock.nanos() + waitStartNano ) ) );
             }
             else
             {
@@ -613,7 +614,7 @@ public class RWLock
                 max = thread.since;
             }
         }
-        return TimeUnit.NANOSECONDS.toMillis( System.nanoTime() - max );
+        return NANOSECONDS.toMillis( clock.nanos() - max );
     }
 
     // for specified transaction object mark all lock elements as terminated
@@ -686,13 +687,14 @@ public class RWLock
         return txLockElementMap.computeIfAbsent( tx, TxLockElement::new );
     }
 
-    private void assertNotExpired( long timeBoundary )
+    private void assertNotExpired( long waitStartNano )
     {
-        if ( lockAcquisitionTimeoutMillis > 0 )
+        long timeoutNano = lockAcquisitionTimeoutNano;
+        if ( timeoutNano > 0 )
         {
-            if ( timeBoundary < clock.millis() )
+            if ( (clock.nanos() - waitStartNano) >= timeoutNano )
             {
-                throw new LockAcquisitionTimeoutException( resource.resourceType(), resource.resourceId(), lockAcquisitionTimeoutMillis );
+                throw new LockAcquisitionTimeoutException( resource.resourceType(), resource.resourceId(), timeoutNano );
             }
         }
     }

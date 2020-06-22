@@ -21,8 +21,6 @@ package org.neo4j.graphdb.factory;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.LocksFactory;
@@ -30,6 +28,7 @@ import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +47,7 @@ class EditionLocksFactoriesTest
     {
         LocksFactory lockFactory = mock( LocksFactory.class );
         Config config = Config.defaults();
-        Clock clock = Clocks.systemClock();
+        SystemNanoClock clock = Clocks.nanoClock();
 
         createLockManager( lockFactory, config, clock );
 

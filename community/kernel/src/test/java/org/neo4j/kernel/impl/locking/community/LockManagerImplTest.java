@@ -115,7 +115,7 @@ class LockManagerImplTest
 
     private static LockManagerImpl createLockManager()
     {
-        return new LockManagerImpl( new RagManager(), Config.defaults(), Clocks.systemClock() );
+        return new LockManagerImpl( new RagManager(), Config.defaults(), Clocks.nanoClock() );
     }
 
     private static int countLocks( LockManagerImpl lockManager )
@@ -136,7 +136,7 @@ class LockManagerImplTest
 
         MockedLockLockManager( RagManager ragManager, RWLock lock )
         {
-            super( ragManager, Config.defaults(), Clocks.systemClock() );
+            super( ragManager, Config.defaults(), Clocks.nanoClock() );
             this.lock = lock;
         }
 
