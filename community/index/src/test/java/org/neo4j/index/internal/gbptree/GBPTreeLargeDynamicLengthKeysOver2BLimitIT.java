@@ -32,7 +32,7 @@ public class GBPTreeLargeDynamicLengthKeysOver2BLimitIT extends GBPTreeLargeDyna
 {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension =
-            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( USE_2B_OFFSET_PAGE_SIZE_LIMIT ) );
+            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( USE_2B_OFFSET_PAGE_SIZE_LIMIT ).withMemory( "16MiB" ) );
     @Inject
     private PageCache pageCache;
 

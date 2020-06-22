@@ -32,7 +32,7 @@ public class GBPTreeLargeDynamicKeys4MIT extends GBPTreeLargeDynamicKeysITBase
 {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension =
-            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) mebiBytes( 4 ) ).withMemory( "16MiB" ) );
+            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) mebiBytes( 4 ) ).withMemory( "64MiB" ) );
     @Inject
     private PageCache pageCache;
 
