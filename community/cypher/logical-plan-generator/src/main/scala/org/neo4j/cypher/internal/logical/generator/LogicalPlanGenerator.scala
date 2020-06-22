@@ -82,6 +82,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
+import org.neo4j.kernel.api.StatementConstants
 import org.scalacheck.Gen
 
 import scala.collection.mutable
@@ -180,6 +181,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   private val labels = labelsWithIds.keys.toVector
   private val relTypes = relTypesWithIds.keys.toVector
+  private val relIds = rels.map(_.getId)
 
   /**
    * A convenience conversion that allows us to mix LogicalPlan Gens with State mutators in the same for comprehension.
@@ -309,7 +311,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     state <- state.newNode(left)
     WithState(right, state) <- newVariable(state)
     state <- state.newNode(right)
-    relIds <- Gen.someOf(rels.map(_.getId))
+    relIds <- Gen.someOf(relIds ++ Seq.fill(relIds.size)(StatementConstants.NO_SUCH_RELATIONSHIP))
   } yield {
     val seekableArgs = ManySeekableArgs(listOfInt(relIds:_*))
     val plan = if(directed) {
@@ -322,7 +324,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       p
     }
 
-    // result is non-deterministic, so we need to sort in order to make it deterministic
+    // result order is undefined, sort to make sure we get the same result for all runtimes
     val sortPlan = Sort(plan, Seq(Ascending(left), Ascending(idName)))(state.idGen)
     annotate(sortPlan, state)
   }
