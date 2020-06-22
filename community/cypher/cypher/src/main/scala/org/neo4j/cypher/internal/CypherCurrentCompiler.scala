@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -61,6 +62,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -146,7 +148,17 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
       new SequentialIdGen(planningAttributesCopy.cardinalities.size))
 
-    val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext)
+
+    val executionPlan: ExecutionPlan = try {
+      runtime.compileToExecutable(logicalQuery, runtimeContext)
+    } catch {
+      case e: Exception =>
+        // The logical plan is valuable information if we fail to create an executionPlan
+        val lpStr = LogicalPlanToPlanBuilderString(logicalPlan)
+        val planInfo = new InternalException("Failed with plan:\n" + lpStr)
+        e.addSuppressed(planInfo)
+        throw e
+    }
 
     new CypherExecutableQuery(
       logicalPlan,
