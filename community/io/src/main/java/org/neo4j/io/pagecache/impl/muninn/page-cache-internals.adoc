@@ -626,3 +626,77 @@ When a page is evicted, this field in the paged file will be updated, if the tra
 When a page is faulted back in, it adopts the transaction id of the paged file.
 
 The _Version Context_ the component that communicates this transaction id, and the dirty state, between the page cache, the snapshot execution engine, and the transaction system.
+
+== Testing the Page Cache
+
+A bug in the page cache could hypothetically cause arbitrary corruptions to peoples data.
+For this reason, we take correctness seriously and test the page cache code thoroughly.
+A number of testing strategies are employed for this purpose:
+
+* Unit testing.
+* Stress testing.
+* Fault injection.
+
+There are also integration tests, but their main differentiator is just that they are a bit slower, or placed in a different package.
+For that reason, they can just as well be categorised as either unit tests, or stress tests.
+
+=== Unit Tests
+
+The primary vehicle for unit testing is the PageCacheTest class.
+Tests in this class are implementation agnostic.
+They adhere to the following the principle:
+
+[quote]
+Only test for observable behaviour of the public API.
+
+By following this principle, the tests are less likely to become over-specified, and less likely to become brittle.
+Tests that are over-specifying, or brittle, break when unrelated code changes, or when the related code changes in ways that preserves the behaviour of the API.
+
+Not everything can be tested in this way, however.
+Some tests do need to reach into the implementation, or otherwise make strong assumptions about the inner workings of the unit being tested.
+These page cache tests live in the implementation-specific MuninnPageCacheTest class.
+
+=== Stress Tests
+
+Since the page cache is a multi-threaded component, we use stress testing to gives us confidence in its correct concurrent behaviour.
+
+The PageCacheSlowTest family of classes contain a number of bespoke tests that try to stress varous particular areas of the code.
+
+The PageCacheHarnessTest family instead uses a randomising test harness to build and run schenarios.
+The harness can be configured to execute only a subset of the available methods via a command set.
+Concurrency levels, fault-injection, etc. can also be configured via this harness.
+
+The PageCacheStressTesting runs as a separate build, for a longer period of time.
+It aims to stress eviction in particular, and how it interacts with code accessing the page cache and the data it holds.
+
+=== Fault Injection
+
+The fault injection is implemented via a system of _adversaries_ or _adversarial_ implementation of external components.
+The most prominent among these is the AdversarialFileSystemAbstraction.
+
+The Adversary is an object that decides, on a per-method call basis, to inject faults, exceptions or mischief.
+The most common Adversary implementation picks a behaviour at random.
+There are other implementation that filter by call-site, and other criteria.
+
+The AdversarialFileSystem was created by going through the implementations of all the JDK methods our DefaultFileSystemAbstraction was calling, and identifying all of the possible failure modes.
+These failure modes were then built into the AdversarialFileSystemAbstraction as possible outcomes.
+
+We run numerous page cache tests using the AdversarialFileSystemAbstraction, using random fault injection.
+This has been very profitable so far, found many bugs in our error handling code, and ensured that our released code have much higher quality than it otherwise would.
+
+Another important adversarial implementation is the AdversarialPageCache.
+Most test rules and test extensions that provide a page cache, or some component that has a page cache inside of it, uses the AdversarialPageCache by default, as the implementation.
+The AdversarialPageCache does not test the page cache itself, but is used to test the code relying on the page cache.
+The concept of mischief, as a type of fault that can be injected, is important for the AdversarialPageCache.
+
+When mischief is injected, it causes `shouldRetry` on the PageCursor to return `true`.
+When `shouldRetry` returns `true`, it indicates that the read access to the page in question overlapped with either a write, or an eviction.
+This means a read page cursor could potentially observe arbitrary data from a page, when the next `shouldRetry` call will return `true`.
+To cover our code more intelligently, the adversarial page cursor injects mischief in the following way:
+First, the sequence of read accesses, such as `getByte()`, to the page is recorded, but otherwise delegated to the real page cursor as normal.
+Then `shouldRetry` returns `true` and forces the code to go through another pass of the data.
+In the second iteration, the adversarial page cursor chooses a read access from the recorded sequence, as a pivot point.
+When the second pass gets to the pivot access, the adversarial page cursor returns _random_ data, rather than delegating to the underlying real page cursor.
+From the pivot point and onwards, all the data read from the adversarial page cursor will be entirely random.
+This forces the parsing code to be robust against any arbitrary interleaving of page faults and evictions, with its read page cursor.
+The `shouldRetry` method returns `true` again, to force a 3rd pass, and this time the mischief is over, and the cursor returns the correct data.
