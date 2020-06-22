@@ -457,7 +457,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def unwindCollection(state: State): Gen[WithState[UnwindCollection]] = for {
     WithState(source, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
-    WithState(xpr, state) <- validExpression(source.availableSymbols.toSeq, state, _._list)
+    WithState(xpr, state) <- validExpression(
+      source.availableSymbols.toSeq,
+      state,
+      expressionGen => expressionGen._listOf(expressionGen.nonAggregatingExpression))
     WithState(name, state) <- newVariable(state)
     state <- state.declareTypeAny(name)
   } yield {

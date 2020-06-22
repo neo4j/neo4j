@@ -555,8 +555,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     items <- oneOrMore(_mapProjectionElement)
   } yield MapProjection(name, items)(pos, None)
 
-  def _list: Gen[ListLiteral] = for {
-    parts <- zeroOrMore(_expression)
+  def _list: Gen[ListLiteral] =
+    _listOf(_expression)
+
+  def _listOf(expressionGen: Gen[Expression]): Gen[ListLiteral] = for {
+    parts <- zeroOrMore(expressionGen)
   } yield ListLiteral(parts)(pos)
 
   def _listSlice: Gen[ListSlice] = for {
