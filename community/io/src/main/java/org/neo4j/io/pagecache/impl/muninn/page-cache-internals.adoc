@@ -64,7 +64,7 @@ To deal with this, a paged file contain a translation table, which maps a file p
 When the store, and the working set, is greater than the memory available to the page cache, pages will have to be swapped to service the demand.
 The page replacement algorithm we use in Muninn is called CLOCK.
 Imagine the page list is wound along the circumference of a clock face.
-A clock arm moves around the list in a circular fashion, jumping back to the start when it gets to the end.
+A clock arm moves around the list in a circular motion, jumping back to the start when it gets to the end.
 The clock arm decrements the usage counter of the page frames it lands on, as it moves around the page list.
 When the usage counter reaches zero, the page is evicted.
 Conversely, every time a page cursor _pins_ a page, the usage counter is incremented, up to a maximum value of 4.
@@ -113,7 +113,7 @@ The MuninnPagedFile objects extend the PageList, so they can directly access the
 The page frames are allocated as soon as the page cache is created, but the page buffers they reference are not allocated until the page is used in a page fault for the first time.
 This means most of our page cache memory is lazily allocated, and we avoid wasting memory when a larger than strictly necessary page cache is configured.
 
-The PageList class acts as a facade to accessing and manipulating the page list and the page frames it contains.
+The PageList class acts as a facade to accessing and manipulating the page list, and the page frames it contains.
 See the javadocs on the PageList class for more information about the information stored in each page frame.
 
 == PagedFiles
@@ -133,7 +133,7 @@ Therefor, each file needs a table that can translate the sequential file page id
 
 This is what the translation table in the paged file does:
 Translate file page ids, into page list indexes.
-And based on page list indexes, we can get page references (often `pageRef` in the code), which are direct pointers to the page frames in the page list.
+Based on the page list indexes, we can get page references (often `pageRef` in the code), which are direct pointers to the page frames in the page list.
 
 [NOTE]
 ====
@@ -146,7 +146,7 @@ The translation table is implemented as a concurrent 2-trie.
 It is a trie because the key (the file page id) describe the path from the root to the relevant leaf.
 The 2-trie is so-called because it only has 2 levels: a root-array that points to arrays of leaf entries.
 Each entry is an int, with a special value for unmapped pages.
-Thus the trie is an array of int arrays.
+Thus, the trie is an array of int arrays.
 The second level arrays, called chunks, are always the same size.
 The capacity of the trie is increased by increasing the branching factor of the root node.
 Expanding the capacity of the root node happens under a lock.
@@ -227,7 +227,7 @@ Once the page fault completes, the latch is released, allowing other threads to 
 Their calls will then return null, and this signals that someone did a page fault for them, and they need to loop back and check the translation table for the page they're interested in.
 
 The LatchMap is implemented as an array of BinaryLatches.
-The latch instances are atomically installed into this array via a compare-and-set operation, and it is the success or failure of this operation that determines if a thread gets to go ahead with its page fault, or if it gets to wait for an existing on-going page fault to complete.
+The latch instances are atomically installed into this array via a compare-and-set operation, and it is the success or failure of this operation that determines if a thread gets to go ahead with its page fault, or if it gets to wait for an existing ongoing page fault to complete.
 The latch array has a fixed size of 128 entries by default.
 This is small enough to not consume much memory, yet large enough to have a low probability of collisions.
 Collisions can occur because the page id is hashed and truncated, in order to pick an index in the array for a given page id.
@@ -244,7 +244,7 @@ This continues until the page fault succeeds one way or the other, or the paged 
 The SwapperSet maps swapper ids, which are ints, to page swappers, the component of the paged files that is in charge of doing IO when pages are flushed or faulted in.
 
 Every page frame in the page list needs to know what swapper to use in case the page needs to be evicted.
-However, since the page list is entirely off heap, it cannot refer to any objects.
+However, since the page list is entirely off-heap, it cannot refer to any objects.
 The swapper set maintains this mapping, between swapper ids and swapper objects.
 
 The swapper set is only modified when we map or unmap files, so it uses synchronisation (monitor locks) to coordinate changes.
@@ -420,7 +420,7 @@ Therefor, the volatile load in the validation method is preceded by an `UnsafeUt
 The load fence prevents loads prior to the call from being reordered with loads and stores after the call.
 This means load operations can no longer leave the critical section of the optimistic read lock through reordering with the stamp validation.
 
-For more details, please see this concurrency-interest thread on the memory effects of the StampedLock optimistic read locks, which is implemented in a similar way as our optimistic read page locks:
+For more details, please see this concurrency-interest thread on the memory effects of the StampedLock optimistic read locks, which is implemented similar as our optimistic read page locks:
 http://cs.oswego.edu/pipermail/concurrency-interest/2014-April/012599.html
 
 === Locking Protocol for Eviction, Faulting and Flushing
@@ -471,7 +471,7 @@ Page *faulting* works through the following protocol:
 
 . A thread wishes to access a page in a paged file, and has noticed that the translation table is either missing an entry for that page, or the referenced page is not bound to the expected file page.
 . The thread then tries to grab a latch in the <<LatchMap>> for the relevant file page id.
-.. The thread will then either wait for any on-going and potentially relevant page fault to complete, and then try again from the top, or...
+.. The thread will then either wait for any ongoing and potentially relevant page fault to complete, and then try again from the top, or...
 .. The thread got the latch and can proceed to do the page fault, because no other thread can at this point fault in this particular page.
 . We check again, under the latch, that the translation table entry is missing.
   It could be that another thread completed a page fault in-between our first noticing the missing translation table entry, and our getting the latch.
@@ -529,7 +529,7 @@ Page *flushing* (outside of eviction) works through the following protocol:
 There's a special case for write page cursors opened with the `PF_EAGER_FLUSH` flag.
 When such a cursor unpins a page, the write lock is converted to a flush lock.
 If this conversion succeeds, then the page is immediately flushed, and then the flush lock is released.
-Otherwise there was a conflict with another overlapping flush, and the write lock is just released.
+Otherwise, there was a conflict with another overlapping flush, and the write lock is just released.
 The eager flushing does not involve any implied `fsync(2)` call.
 ====
 
@@ -537,7 +537,7 @@ The eager flushing does not involve any implied `fsync(2)` call.
 
 The `flushAndForce` methods on the PagedFile and PageCache take an IOLimiter argument.
 The purpose of this is literally to slow down the rate IO being performed when flushing dirty pages.
-The reason we do this is because until very recently, Linux could exhibit poor system-wide IO performance when the percentage of dirty pages in the OS page cache got too high, and the write-back kernel process started to assume priority.
+The reason we do this is that until very recently, Linux could exhibit poor system-wide IO performance when the percentage of dirty pages in the OS page cache got too high, and the write-back kernel process started to assume priority.
 In a cloud setting this can also be relevant because IO can be rate limited, and we don't want IO heavy background process, like check-pointing, to monopolise the IO sub-system and its quotas.
 
 == Background Eviction Process
@@ -558,9 +558,9 @@ The background eviction thread follows the <<CLOCK Page Replacement Algorithm>> 
 It iterates the page list and decrements the usage counters, evicting the pages where the count goes to zero.
 However, the eviction thread does not progress unless there's a demand for free pages.
 This creates windows of time where page cache accesses can accumulate and increment the usage counters of a lot of pages.
-Thus it's possible that the eviction thread will have to go through the page list a couple of times before it evicts its first page.
+Thus, it's possible that the eviction thread will have to go through the page list a couple of times before it evicts its first page.
 This is not a problem in practice, however, because it is quite unlikely that _all_ pages in the cache will have high usage counters.
-And even if they did, iterating even millions of pages in the cache is quite fast.
+Even if they did, iterating even millions of pages in the cache is quite fast.
 Since the usages counters max out at 4, there is also an upper limit to how many full page list iterations the eviction thread can conceivably do before it finds a candidate page to evict.
 
 Whenever IO is performed, there is always the possibility that an exception might be thrown.
@@ -580,7 +580,7 @@ The victim page, once allocated, lives until the end of the JVM process.
 
 All out-of-bounds memory accesses on a page cursor lands on the victim page.
 The reason is that our optimistic read locks allow readers to read arbitrary garbage from the page cursor, as long as the `shouldRetry` method returns `true`.
-This means that the reading code can conceivably be tricked into performing non-sensical accesses on the page.
+This means that the reading code can conceivably be tricked into performing nonsensical accesses on the page.
 For instance, a string value might be encoded on a page as a 16-bit short, indicating the length of the string, followed by that many bytes.
 The short, however, is capable of indicating lengths that go far beyond the page size.
 If the reading of the string overlaps with a write, an eviction, or a page fault, in the right way, the reading code could be tricked into attempting to read more bytes than what is available on the page.
@@ -660,19 +660,19 @@ These page cache tests live in the implementation-specific MuninnPageCacheTest c
 
 Since the page cache is a multi-threaded component, we use stress testing to gives us confidence in its correct concurrent behaviour.
 
-The PageCacheSlowTest family of classes contain a number of bespoke tests that try to stress varous particular areas of the code.
+The PageCacheSlowTest family of classes contain a number of bespoke tests that try to stress various particular areas of the code.
 
-The PageCacheHarnessTest family instead uses a randomising test harness to build and run schenarios.
+The PageCacheHarnessTest family instead uses a randomising test harness to build and run scenarios.
 The harness can be configured to execute only a subset of the available methods via a command set.
 Concurrency levels, fault-injection, etc. can also be configured via this harness.
 
 The PageCacheStressTesting runs as a separate build, for a longer period of time.
-It aims to stress eviction in particular, and how it interacts with code accessing the page cache and the data it holds.
+It aims to stress eviction in particular, and how it interacts with code accessing the page cache, and the data it holds.
 
 === Fault Injection
 
 The fault injection is implemented via a system of _adversaries_ or _adversarial_ implementation of external components.
-The most prominent among these is the AdversarialFileSystemAbstraction.
+The most prominent among these, is the AdversarialFileSystemAbstraction.
 
 The Adversary is an object that decides, on a per-method call basis, to inject faults, exceptions or mischief.
 The most common Adversary implementation picks a behaviour at random.
@@ -697,6 +697,6 @@ First, the sequence of read accesses, such as `getByte()`, to the page is record
 Then `shouldRetry` returns `true` and forces the code to go through another pass of the data.
 In the second iteration, the adversarial page cursor chooses a read access from the recorded sequence, as a pivot point.
 When the second pass gets to the pivot access, the adversarial page cursor returns _random_ data, rather than delegating to the underlying real page cursor.
-From the pivot point and onwards, all the data read from the adversarial page cursor will be entirely random.
+From the pivot point and onward, all the data read from the adversarial page cursor will be entirely random.
 This forces the parsing code to be robust against any arbitrary interleaving of page faults and evictions, with its read page cursor.
 The `shouldRetry` method returns `true` again, to force a 3rd pass, and this time the mischief is over, and the cursor returns the correct data.
