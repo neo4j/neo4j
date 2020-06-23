@@ -159,6 +159,30 @@ public class CypherCharStreamTest
     }
 
     @Test
+    void beginPosition2() throws IOException
+    {
+        CypherCharStream x = new CypherCharStream( Q1 );
+
+        for ( int i = 0; i + 1 < Q1_offset.length; i++ )
+        {
+            x.beginToken();
+            assertEquals( Q1_offset[i], x.getBeginOffset() );
+            assertEquals( Q1_column[i], x.getBeginColumn() );
+            assertEquals( Q1_line[i], x.getBeginLine() );
+
+            int remaining = Q1_offset.length - i - 1;
+            for ( int j = 0; j < remaining; j++ )
+            {
+                x.readChar();
+                assertEquals( Q1_offset[i], x.getBeginOffset() );
+                assertEquals( Q1_column[i], x.getBeginColumn() );
+                assertEquals( Q1_line[i], x.getBeginLine() );
+            }
+            x.backup( remaining );
+        }
+    }
+
+    @Test
     void backupShouldMaintainPosition() throws IOException
     {
         CypherCharStream x = new CypherCharStream( Q1 );
