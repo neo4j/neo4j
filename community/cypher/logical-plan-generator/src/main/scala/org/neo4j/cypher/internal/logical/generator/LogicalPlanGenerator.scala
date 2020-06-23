@@ -518,10 +518,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   private def valueHashJoin(state: State): Gen[WithState[ValueHashJoin]] = for {
     WithState(left, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
     WithState(right, state) <- innerLogicalPlanWithAtLeastOneSymbol(state)
-    joinOnLeft <- Gen.oneOf(left.availableSymbols.toSeq)
-    joinOnRight <- Gen.oneOf(right.availableSymbols.toSeq)
+    WithState(leftExpr, state) <- valueHashJoinExpression(left, state)
+    WithState(rightExpr, state) <- valueHashJoinExpression(right, state)
   } yield {
-    val equalsExpr = equals(varFor(joinOnLeft), varFor(joinOnRight))
+    val equalsExpr = equals(leftExpr, rightExpr)
     val plan = ValueHashJoin(left, right, equalsExpr)(state.idGen)
     annotate(plan, state)
   }
@@ -582,7 +582,6 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
    */
   private def validExpression(availableSymbols: Seq[String], state: State, expressionGen: SemanticAwareAstGenerator => Gen[Expression]): Gen[WithState[Expression]] = {
     val semanticState = SemanticState(new ScopeLocation(Scope.empty.location(ScopeZipper)), state.semanticTable.types, ASTAnnotationMap.empty)
-
     for {
       expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))
         .suchThat(e => {
@@ -596,4 +595,11 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     }
   }
 
+  private def valueHashJoinExpression(plan: LogicalPlan, state: State): Gen[WithState[Expression]] = {
+    val symbols = plan.availableSymbols.toSeq
+    Gen.oneOf(
+      validExpression(symbols, state, _.nonAggregatingExpression),
+      Gen.oneOf(symbols).map(s => WithState(varFor(s), state))
+    )
+  }
 }
