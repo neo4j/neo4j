@@ -99,7 +99,7 @@ class LoadCommandTest
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .set( default_database, "foo" )
                 .build();
-        File databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory();
+        File databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory().toFile();
         testDirectory.getFileSystem().mkdirs( databaseDirectory );
     }
 
@@ -244,7 +244,7 @@ class LoadCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Files.createDirectories( databaseDirectory );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )

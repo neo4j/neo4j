@@ -49,7 +49,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
     public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File databaseDir = context.directory();
+        File databaseDir = context.directory().toFile();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( loggingClass() );
         Monitors monitors = dependencies.monitors();

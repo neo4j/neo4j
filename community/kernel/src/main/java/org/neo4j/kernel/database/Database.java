@@ -22,6 +22,8 @@ package org.neo4j.kernel.database;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -797,16 +799,18 @@ public class Database extends LifecycleAdapter
     public synchronized void truncate()
     {
         boolean truncateStartedDatabase = started;
-        List<File> filesToKeep = filesToKeepOnTruncation( databaseLayout );
-        File[] transactionLogs = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
-                                                              : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getLogFiles();
+        List<Path> filesToKeep = filesToKeepOnTruncation( databaseLayout );
+        File[] transactionLogsFiles = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
+                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory().toFile() ).getLogFiles();
+
+        final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).map( File::toPath ).toArray( Path[]::new );
         if ( truncateStartedDatabase )
         {
-            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.file() ) );
+            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.file().toPath() ) );
             stop();
         }
 
-        List<File> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, transactionLogs );
+        List<Path> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, transactionLogs );
         deleteDatabaseFiles( filesToDelete );
         if ( truncateStartedDatabase )
         {
@@ -814,13 +818,13 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    private void deleteDatabaseFiles( List<File> files )
+    private void deleteDatabaseFiles( List<Path> files )
     {
         try
         {
-            for ( File fileToDelete : files )
+            for ( Path fileToDelete : files )
             {
-                FileSystemUtils.deleteFile( fs, fileToDelete );
+                FileSystemUtils.deleteFile( fs, fileToDelete.toFile() );
             }
         }
         catch ( IOException e )

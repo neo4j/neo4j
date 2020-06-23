@@ -112,7 +112,7 @@ public class LoadCommand extends AbstractCommand
         Config config = buildConfig();
 
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
-        databaseLayout.databaseDirectory().mkdirs();
+        databaseLayout.databaseDirectory().toFile().mkdirs();
         try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             deleteIfNecessary( databaseLayout, force );
@@ -148,8 +148,8 @@ public class LoadCommand extends AbstractCommand
             if ( force )
             {
                 // we remove everything except our database lock
-                deletePathRecursively( databaseLayout.databaseDirectory().toPath(), path -> !path.equals( databaseLayout.databaseLockFile().toPath() ) );
-                deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+                deletePathRecursively( databaseLayout.databaseDirectory(), path -> !path.equals( databaseLayout.databaseLockFile() ) );
+                deleteRecursively( databaseLayout.getTransactionLogsDirectory().toFile() );
             }
         }
         catch ( IOException e )

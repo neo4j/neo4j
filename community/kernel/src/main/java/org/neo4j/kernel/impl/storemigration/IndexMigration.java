@@ -46,8 +46,8 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneDir = directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
-                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File luceneDir = directoryRootByProviderKey( layout.databaseDirectory().toFile(), providerKey );
+                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     return new File[]{luceneDir, lucene10Dir};
                 }
 
@@ -55,7 +55,7 @@ enum IndexMigration
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
                         PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
-                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     File spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
@@ -67,7 +67,7 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneNative10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File luceneNative10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     return new File[]{luceneNative10Dir};
                 }
 
@@ -87,7 +87,7 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneNative20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File luceneNative20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     return new File[]{luceneNative20Dir};
                 }
 
@@ -108,7 +108,7 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File nativeBtree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File nativeBtree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     return new File[]{nativeBtree10Dir};
                 }
 
@@ -127,7 +127,7 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File fulltext10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File fulltext10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
                     return new File[]{fulltext10Dir};
                 }
 

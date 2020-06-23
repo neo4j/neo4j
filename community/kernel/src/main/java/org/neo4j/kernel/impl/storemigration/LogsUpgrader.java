@@ -183,8 +183,8 @@ public class LogsUpgrader
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
                     fs, store, commandReaderFactory, tracer );
 
-            File transactionLogsDirectory = layout.getTransactionLogsDirectory();
-            File legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
+            File transactionLogsDirectory = layout.getTransactionLogsDirectory().toFile();
+            File legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory().toFile();
             boolean filesNeedsToMove = !transactionLogsDirectory.equals( legacyLogsDirectory );
 
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fs )

@@ -22,8 +22,9 @@ package org.neo4j.io.fs.watcher;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -56,15 +57,15 @@ public class DefaultFileSystemWatcher implements FileWatcher
     }
 
     @Override
-    public WatchedResource watch( File file ) throws IOException
+    public WatchedResource watch( Path path ) throws IOException
     {
-        if ( !file.isDirectory() )
+        if ( !Files.isDirectory( path ) )
         {
             throw new IllegalArgumentException( format( "File `%s` is not a directory. Only directories can be " +
-                    "registered to be monitored.", file.getCanonicalPath() ) );
+                    "registered to be monitored.", path.toAbsolutePath().normalize() ) );
         }
-        WatchKey watchKey = file.toPath().register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
-        return new WatchedFile( watchKey, file );
+        WatchKey watchKey = path.register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
+        return new WatchedFile( watchKey, path );
     }
 
     @Override

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -443,10 +445,10 @@ class RecoveryIT
         managementService.shutdown();
 
         File[] txLogFiles = buildLogFiles().logFiles();
-        File databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
+        Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
         DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
-        File transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
+        File transactionLogsDirectory = logsLocator.getTransactionLogsDirectory().toFile();
         assertNotNull( txLogFiles );
         assertTrue( txLogFiles.length > 0 );
         for ( File logFile : txLogFiles )
@@ -479,7 +481,7 @@ class RecoveryIT
         PageCache pageCache = getDatabasePageCache( database );
         generateSomeData( database );
 
-        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
+        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore().toFile(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
 
         managementService.shutdown();
 
@@ -619,13 +621,13 @@ class RecoveryIT
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
+        fileSystem.deleteFileOrThrow( layout.idRelationshipStore().toFile() );
         assertTrue( isRecoveryRequired( layout ) );
 
         performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE );
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
+        assertTrue( fileSystem.fileExists( layout.idRelationshipStore().toFile() ) );
     }
 
     @Test
@@ -636,18 +638,18 @@ class RecoveryIT
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        for ( File idFile : layout.idFiles() )
+        for ( Path idFile : layout.idFiles() )
         {
-            fileSystem.deleteFileOrThrow( idFile );
+            fileSystem.deleteFileOrThrow( idFile.toFile() );
         }
         assertTrue( isRecoveryRequired( layout ) );
 
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        for ( File idFile : layout.idFiles() )
+        for ( Path idFile : layout.idFiles() )
         {
-            assertTrue( fileSystem.fileExists( idFile ) );
+            assertTrue( fileSystem.fileExists( idFile.toFile() ) );
         }
     }
 
@@ -788,7 +790,7 @@ class RecoveryIT
     private LogFiles buildLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fileSystem )
                 .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
                 .build();
     }
@@ -927,7 +929,8 @@ class RecoveryIT
         try
         {
             PageCache restartedCache = getDatabasePageCache( restartedDatabase );
-            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL );
+            final long record =
+                    getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore().toFile(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL );
             assertThat( record ).isGreaterThan( 0L );
         }
         finally

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -198,7 +198,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles()
+    public ResourceIterator<Path> snapshotFiles()
     {
         return accessor.snapshotFiles();
     }

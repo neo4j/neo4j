@@ -426,7 +426,7 @@ public class ConsistencyCheckService
         @Override
         public CountsStore get() throws IOException
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
             counts.start( NULL, memoryTracker );
             return counts;

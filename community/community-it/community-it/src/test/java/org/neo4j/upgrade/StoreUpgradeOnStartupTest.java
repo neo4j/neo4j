@@ -93,11 +93,11 @@ public class StoreUpgradeOnStartupTest
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingHomeDir = testDir.homeDir( "working_" + version );
-        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
+        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir.toPath() ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         File prepareDirectory = testDir.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
     }
 
     @Test
@@ -117,7 +117,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory().toFile() );
         GraphDatabaseAPI database = createGraphDatabaseService();
         try
         {

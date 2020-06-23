@@ -19,6 +19,13 @@
  */
 package org.neo4j.internal.batchimport;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -31,12 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -226,7 +227,7 @@ public class ParallelBatchImporterTest
             jobScheduler.close();
             if ( !successful )
             {
-                File failureFile = new File( databaseLayout.databaseDirectory(), "input" );
+                File failureFile = new File( databaseLayout.databaseDirectory().toFile(), "input" );
                 try ( PrintStream out = new PrintStream( failureFile ) )
                 {
                     out.println( "Seed used in this failing run: " + random.seed() );

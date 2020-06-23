@@ -63,8 +63,8 @@ class TransactionLogsInSeparateLocationIT
                 .set( transaction_logs_root_path, txDirectory.toPath().toAbsolutePath() )
                 .build();
         DatabaseLayout layout = DatabaseLayout.of( config );
-        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory() );
-        verifyTransactionLogs( layout.getTransactionLogsDirectory(), layout.databaseDirectory(), storageEngineFactory );
+        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory().toFile() );
+        verifyTransactionLogs( layout.getTransactionLogsDirectory().toFile(), layout.databaseDirectory().toFile(), storageEngineFactory );
     }
 
     private static StorageEngineFactory performTransactions( Path txPath, File storeDir )

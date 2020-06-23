@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -83,11 +84,16 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         super( homeDirectory );
     }
 
+    public TestDatabaseManagementServiceBuilder( Path homeDirectory )
+    {
+        super( homeDirectory.toFile() );
+    }
+
     public TestDatabaseManagementServiceBuilder( Neo4jLayout layout )
     {
-        super( layout.homeDirectory() );
-        setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory().toPath() );
-        setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() );
+        super( layout.homeDirectory().toFile() );
+        setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory() );
+        setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory() );
     }
 
     public TestDatabaseManagementServiceBuilder( DatabaseLayout layout )

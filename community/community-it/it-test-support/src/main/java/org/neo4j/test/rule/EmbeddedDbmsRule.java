@@ -58,7 +58,7 @@ public class EmbeddedDbmsRule extends DbmsRule
     @Override
     public DatabaseLayout databaseLayout()
     {
-        return Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
+        return Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     @Override

@@ -75,7 +75,7 @@ public class LabelScanStoreChaosIT
 
     private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.labelScanStore();
+        return databaseLayout.labelScanStore().toFile();
     }
 
     private DbmsRule.RestartAction corruptTheLabelScanStoreIndex()

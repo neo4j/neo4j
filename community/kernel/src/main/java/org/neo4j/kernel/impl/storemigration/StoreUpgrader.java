@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,7 +124,7 @@ public class StoreUpgrader
     public void migrateIfNeeded( DatabaseLayout layout )
     {
         // nothing to migrate
-        if ( !layout.databaseDirectory().exists() )
+        if ( !Files.exists( layout.databaseDirectory() ) )
         {
             return;
         }
@@ -138,9 +139,9 @@ public class StoreUpgrader
         {
             DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
-            cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
+            cleanupLegacyLeftOverDirsIn( layout.databaseDirectory().toFile() );
 
-            File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
+            File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE ).toFile();
             // if migration directory exists than we might have failed to move files into the store dir so do it again
             if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
             {
@@ -201,7 +202,7 @@ public class StoreUpgrader
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorTracer );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
             logsUpgrader.assertCleanlyShutDown( dbDirectoryLayout );
-            cleanMigrationDirectory( migrationLayout.databaseDirectory() );
+            cleanMigrationDirectory( migrationLayout.databaseDirectory().toFile() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
             MigrationStatus.moving.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );

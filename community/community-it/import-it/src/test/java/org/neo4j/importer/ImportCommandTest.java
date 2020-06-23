@@ -1661,7 +1661,7 @@ class ImportCommandTest
         int stringBlockSize = 12;
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
-                databases_root_path.name(), databaseLayout.getNeo4jLayout().databasesDirectory().getAbsolutePath(),
+                databases_root_path.name(), databaseLayout.getNeo4jLayout().databasesDirectory().toAbsolutePath().toString(),
                 GraphDatabaseInternalSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
                 GraphDatabaseInternalSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
                 transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
@@ -1804,7 +1804,7 @@ class ImportCommandTest
         // THEN the store files should be there
         for ( StoreType storeType : StoreType.values() )
         {
-            assertTrue( databaseLayout.file( storeType.getDatabaseFile() ).exists() );
+            assertTrue( Files.exists( databaseLayout.file( storeType.getDatabaseFile() ) ) );
         }
 
         List<String> errorLines = suppressOutput.getErrorVoice().lines();
@@ -2316,12 +2316,12 @@ class ImportCommandTest
 
     private File file( String localname )
     {
-        return databaseLayout.file( localname );
+        return databaseLayout.file( localname ).toFile();
     }
 
     private File badFile()
     {
-        return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
+        return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME ).toFile();
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -2435,7 +2435,7 @@ class ImportCommandTest
 
     private String getTransactionLogsRoot()
     {
-        return databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath();
+        return databaseLayout.getTransactionLogsDirectory().toFile().getParentFile().getAbsolutePath();
     }
 
     private File prepareDefaultConfigFile() throws IOException

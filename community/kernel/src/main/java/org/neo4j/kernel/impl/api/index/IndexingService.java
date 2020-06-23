@@ -28,9 +28,9 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -799,9 +799,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return indexIds;
     }
 
-    public ResourceIterator<File> snapshotIndexFiles() throws IOException
+    public ResourceIterator<Path> snapshotIndexFiles() throws IOException
     {
-        Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
+        Collection<ResourceIterator<Path>> snapshots = new ArrayList<>();
         snapshots.add( asResourceIterator( iterator( indexStatisticsStore.storeFile() ) ) );
         for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
         {

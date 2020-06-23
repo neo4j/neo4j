@@ -137,7 +137,7 @@ class HttpCopierTest
         Path source = createDump();
         runHappyPathTest( source, true );
         // assert dump was deleted
-        assertFalse( source.toFile().exists() );
+        assertFalse( Files.exists( source ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ class HttpCopierTest
         Path source = createDump();
         runHappyPathTest( source, false );
         // assert externally provided dump was not deleted
-        assertTrue( source.toFile().exists() );
+        assertTrue( Files.exists( source ) );
     }
 
     private void runHappyPathTest( Path source, boolean sourceProvided ) throws CommandFailedException

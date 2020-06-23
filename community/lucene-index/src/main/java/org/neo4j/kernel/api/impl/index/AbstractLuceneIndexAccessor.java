@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -138,7 +138,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles()
+    public ResourceIterator<Path> snapshotFiles()
     {
         try
         {

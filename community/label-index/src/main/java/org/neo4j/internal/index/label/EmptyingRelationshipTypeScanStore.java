@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.index.label;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -30,9 +30,9 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -105,7 +105,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     }
 
     @Override
-    public ResourceIterator<File> snapshotStoreFiles()
+    public ResourceIterator<Path> snapshotStoreFiles()
     {
         return Iterators.emptyResourceIterator();
     }
@@ -125,7 +125,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     @Override
     public void init()
     {
-        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore().toFile() ) )
         {
             throw new IllegalStateException(
                     "Database was started in read only mode and with relationship type scan store turned OFF, " +
@@ -135,7 +135,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
                             "Note that consistency check use read only mode. " +
                             "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
         }
-        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
+        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore().toFile() );
     }
 
     @Override

@@ -181,7 +181,7 @@ public class ImportLogic implements Closeable
             ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        this.databaseDirectory = databaseLayout.databaseDirectory();
+        this.databaseDirectory = databaseLayout.databaseDirectory().toFile();
         this.neoStore = neoStore;
         this.config = config;
         this.dbConfig = dbConfig;

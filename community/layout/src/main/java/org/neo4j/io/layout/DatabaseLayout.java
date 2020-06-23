@@ -19,12 +19,15 @@
  */
 package org.neo4j.io.layout;
 
-import java.io.File;
-import java.io.FileFilter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,16 +49,15 @@ public class DatabaseLayout
 {
     private static final String DATABASE_LOCK_FILENAME = "database_lock";
 
-    private static final File[] EMPTY_FILES_ARRAY = new File[0];
-    private final File databaseDirectory;
+    private final Path databaseDirectory;
     private final Neo4jLayout neo4jLayout;
     private final String databaseName;
 
-    public static DatabaseLayout ofFlat( File databaseDirectory )
+    public static DatabaseLayout ofFlat( Path databaseDirectory )
     {
-        File canonical = FileUtils.getCanonicalFile( databaseDirectory );
-        File home = canonical.getParentFile();
-        String dbName = canonical.getName();
+        Path canonical = FileUtils.getCanonicalFile( databaseDirectory );
+        Path home = canonical.getParent();
+        String dbName = canonical.getFileName().toString();
         return Neo4jLayout.ofFlat( home ).databaseLayout( dbName );
     }
 
@@ -73,18 +75,18 @@ public class DatabaseLayout
     {
         var normalizedName = new NormalizedDatabaseName( databaseName ).name();
         this.neo4jLayout = neo4jLayout;
-        this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), normalizedName ) );
+        this.databaseDirectory = FileUtils.getCanonicalFile( neo4jLayout.databasesDirectory().resolve( normalizedName ) );
         this.databaseName = normalizedName;
     }
 
-    public File getTransactionLogsDirectory()
+    public Path getTransactionLogsDirectory()
     {
-        return new File( neo4jLayout.transactionLogsRootDirectory(), getDatabaseName() );
+        return neo4jLayout.transactionLogsRootDirectory().resolve( getDatabaseName() );
     }
 
-    public File databaseLockFile()
+    public Path databaseLockFile()
     {
-        return new File( databaseDirectory(), DATABASE_LOCK_FILENAME );
+        return databaseDirectory().resolve( DATABASE_LOCK_FILENAME );
     }
 
     public String getDatabaseName()
@@ -97,107 +99,107 @@ public class DatabaseLayout
         return neo4jLayout;
     }
 
-    public File databaseDirectory()
+    public Path databaseDirectory()
     {
         return databaseDirectory;
     }
 
-    public File metadataStore()
+    public Path metadataStore()
     {
         return file( DatabaseFile.METADATA_STORE.getName() );
     }
 
-    public File labelScanStore()
+    public Path labelScanStore()
     {
         return file( DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
-    public File relationshipTypeScanStore()
+    public Path relationshipTypeScanStore()
     {
         return file( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() );
     }
 
-    public File countStore()
+    public Path countStore()
     {
         return file( DatabaseFile.COUNTS_STORE.getName() );
     }
 
-    public File propertyStringStore()
+    public Path propertyStringStore()
     {
         return file( DatabaseFile.PROPERTY_STRING_STORE.getName() );
     }
 
-    public File relationshipStore()
+    public Path relationshipStore()
     {
         return file( DatabaseFile.RELATIONSHIP_STORE.getName() );
     }
 
-    public File propertyStore()
+    public Path propertyStore()
     {
         return file( DatabaseFile.PROPERTY_STORE.getName() );
     }
 
-    public File nodeStore()
+    public Path nodeStore()
     {
         return file( DatabaseFile.NODE_STORE.getName() );
     }
 
-    public File nodeLabelStore()
+    public Path nodeLabelStore()
     {
         return file( DatabaseFile.NODE_LABEL_STORE.getName() );
     }
 
-    public File propertyArrayStore()
+    public Path propertyArrayStore()
     {
         return file( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
     }
 
-    public File propertyKeyTokenStore()
+    public Path propertyKeyTokenStore()
     {
         return file( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
     }
 
-    public File propertyKeyTokenNamesStore()
+    public Path propertyKeyTokenNamesStore()
     {
         return file( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File relationshipTypeTokenStore()
+    public Path relationshipTypeTokenStore()
     {
         return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
     }
 
-    public File relationshipTypeTokenNamesStore()
+    public Path relationshipTypeTokenNamesStore()
     {
         return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File labelTokenStore()
+    public Path labelTokenStore()
     {
         return file( DatabaseFile.LABEL_TOKEN_STORE.getName() );
     }
 
-    public File schemaStore()
+    public Path schemaStore()
     {
         return file( DatabaseFile.SCHEMA_STORE.getName() );
     }
 
-    public File relationshipGroupStore()
+    public Path relationshipGroupStore()
     {
         return file( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
     }
 
-    public File labelTokenNamesStore()
+    public Path labelTokenNamesStore()
     {
         return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File indexStatisticsStore()
+    public Path indexStatisticsStore()
     {
         return file( DatabaseFile.INDEX_STATISTICS_STORE.getName() );
     }
 
-    public Set<File> idFiles()
+    public Set<Path> idFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
                 .filter( DatabaseFile::hasIdFile )
@@ -205,115 +207,121 @@ public class DatabaseLayout
                 .collect( Collectors.toSet() );
     }
 
-    public Set<File> storeFiles()
+    public Set<Path> storeFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
                 .map( this::file )
                 .collect( Collectors.toSet() );
     }
 
-    public Optional<File> idFile( DatabaseFile file )
+    public Optional<Path> idFile( DatabaseFile file )
     {
         return file.hasIdFile() ? Optional.of( idFile( file.getName() ) ) : Optional.empty();
     }
 
-    public File file( String fileName )
+    public Path file( String fileName )
     {
-        return new File( databaseDirectory, fileName );
+        return databaseDirectory.resolve( fileName );
     }
 
-    public File file( DatabaseFile databaseFile )
+    public Path file( DatabaseFile databaseFile )
     {
         return file( databaseFile.getName() );
     }
 
-    public Stream<File> allFiles( DatabaseFile databaseFile )
+    public Stream<Path> allFiles( DatabaseFile databaseFile )
     {
         return Stream.concat( idFile( databaseFile ).stream(), Stream.of( file( databaseFile ) ) );
     }
 
-    public File[] listDatabaseFiles( FileFilter filter )
+    public Path[] listDatabaseFiles( Predicate<? super Path> filter )
     {
-        File[] files = databaseDirectory.listFiles( filter );
-        return files != null ? files : EMPTY_FILES_ARRAY;
+        try ( Stream<Path> list = Files.list( databaseDirectory ) )
+        {
+            return list.filter( filter ).toArray( Path[]::new );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    public File idMetadataStore()
+    public Path idMetadataStore()
     {
         return idFile( DatabaseFile.METADATA_STORE.getName() );
     }
 
-    public File idNodeStore()
+    public Path idNodeStore()
     {
         return idFile( DatabaseFile.NODE_STORE.getName() );
     }
 
-    public File idNodeLabelStore()
+    public Path idNodeLabelStore()
     {
         return idFile( DatabaseFile.NODE_LABEL_STORE.getName() );
     }
 
-    public File idPropertyStore()
+    public Path idPropertyStore()
     {
         return idFile( DatabaseFile.PROPERTY_STORE.getName() );
     }
 
-    public File idPropertyKeyTokenStore()
+    public Path idPropertyKeyTokenStore()
     {
         return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
     }
 
-    public File idPropertyKeyTokenNamesStore()
+    public Path idPropertyKeyTokenNamesStore()
     {
         return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File idPropertyStringStore()
+    public Path idPropertyStringStore()
     {
         return idFile( DatabaseFile.PROPERTY_STRING_STORE.getName() );
     }
 
-    public File idPropertyArrayStore()
+    public Path idPropertyArrayStore()
     {
         return idFile( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
     }
 
-    public File idRelationshipStore()
+    public Path idRelationshipStore()
     {
         return idFile( DatabaseFile.RELATIONSHIP_STORE.getName() );
     }
 
-    public File idRelationshipGroupStore()
+    public Path idRelationshipGroupStore()
     {
         return idFile( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
     }
 
-    public File idRelationshipTypeTokenStore()
+    public Path idRelationshipTypeTokenStore()
     {
         return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
     }
 
-    public File idRelationshipTypeTokenNamesStore()
+    public Path idRelationshipTypeTokenNamesStore()
     {
         return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File idLabelTokenStore()
+    public Path idLabelTokenStore()
     {
         return idFile( DatabaseFile.LABEL_TOKEN_STORE.getName() );
     }
 
-    public File idLabelTokenNamesStore()
+    public Path idLabelTokenNamesStore()
     {
         return idFile( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
     }
 
-    public File idSchemaStore()
+    public Path idSchemaStore()
     {
         return idFile( DatabaseFile.SCHEMA_STORE.getName() );
     }
 
-    private File idFile( String name )
+    private Path idFile( String name )
     {
         return file( idFileName( name ) );
     }
@@ -332,7 +340,7 @@ public class DatabaseLayout
     @Override
     public String toString()
     {
-        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory=" + getTransactionLogsDirectory() + '}';
+        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory=" + getTransactionLogsDirectory().toFile() + '}';
     }
 
     @Override

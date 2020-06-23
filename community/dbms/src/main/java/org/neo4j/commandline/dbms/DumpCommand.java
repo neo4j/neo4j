@@ -90,7 +90,7 @@ public class DumpCommand extends AbstractCommand
 
         try
         {
-            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory().toFile() );
         }
         catch ( IllegalArgumentException e )
         {
@@ -132,12 +132,12 @@ public class DumpCommand extends AbstractCommand
 
     private void dump( DatabaseLayout databaseLayout, Path archive )
     {
-        Path databasePath = databaseLayout.databaseDirectory().toPath();
+        Path databasePath = databaseLayout.databaseDirectory();
         try
         {
             CompressionFormat format = selectCompressionFormat( ctx.err() );
-            File lockFile = databaseLayout.databaseLockFile();
-            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory().toPath(), archive,
+            File lockFile = databaseLayout.databaseLockFile().toFile();
+            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), archive,
                     format, path -> Objects.equals( path.getFileName().toString(), lockFile.getName() ) );
         }
         catch ( FileAlreadyExistsException e )

@@ -149,7 +149,7 @@ public class RecordFormatSelector
     public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
             PageCacheTracer pageCacheTracer )
     {
-        File neoStoreFile = databaseLayout.metadataStore();
+        File neoStoreFile = databaseLayout.metadataStore().toFile();
         if ( fs.fileExists( neoStoreFile ) )
         {
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )

@@ -272,7 +272,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         {
             if ( counts == null )
             {
-                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
+                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore().toFile(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
                         new CountsBuilder()
                         {
                             @Override
@@ -344,7 +344,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public DatabaseLayout databaseLayout()
     {
-        return Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
+        return Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     public Statistics getAccessStatistics()

@@ -22,8 +22,8 @@ package org.neo4j.graphdb;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -146,10 +146,10 @@ class RelationshipTypeScanStoreIT
         List<Long> expectedIds = new ArrayList<>();
         createRelationshipInTx( expectedIds );
 
-        ResourceIterator<File> files = getRelationshipTypeScanStoreFiles();
+        ResourceIterator<Path> files = getRelationshipTypeScanStoreFiles();
         dbmsController.restartDbms( builder ->
         {
-            files.forEachRemaining( file -> fs.deleteFile( file ) );
+            files.forEachRemaining( file -> fs.deleteFile( file.toFile() ) );
             return builder;
         });
 
@@ -273,7 +273,7 @@ class RelationshipTypeScanStoreIT
         assertContainIds( expectedIds );
     }
 
-    private ResourceIterator<File> getRelationshipTypeScanStoreFiles()
+    private ResourceIterator<Path> getRelationshipTypeScanStoreFiles()
     {
         RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
         return relationshipTypeScanStore.snapshotStoreFiles();
@@ -408,7 +408,7 @@ class RelationshipTypeScanStoreIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fs ).build();
     }
 
     private RelationshipTypeScanStore getRelationshipTypeScanStore()

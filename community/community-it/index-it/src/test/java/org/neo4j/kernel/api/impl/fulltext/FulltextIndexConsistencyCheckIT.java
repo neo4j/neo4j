@@ -729,7 +729,7 @@ class FulltextIndexConsistencyCheckIT
 
     private ConsistencyCheckService.Result checkConsistency() throws ConsistencyCheckIncompleteException
     {
-        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory().toPath() );
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );

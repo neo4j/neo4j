@@ -75,7 +75,7 @@ class TestShutdownSequence
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
         managementService.shutdown();
-        fileSystemAbstraction.deleteRecursively( databaseAPI.databaseLayout().databaseDirectory() );
+        fileSystemAbstraction.deleteRecursively( databaseAPI.databaseLayout().databaseDirectory().toFile() );
         managementService.shutdown();
     }
 

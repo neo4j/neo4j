@@ -146,18 +146,18 @@ class StoreFactoryTest
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
-        assertTrue( fileSystem.listFiles( databaseLayout.databaseDirectory() ).length >= StoreType.values().length );
+        assertTrue( fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ).length >= StoreType.values().length );
 
         // THEN
         neoStores.close();
-        assertEquals( 0, fileSystem.listFiles( databaseLayout.databaseDirectory() ).length );
+        assertEquals( 0, fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ).length );
     }
 
     @Test
     void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
         StoreFactory storeFactory = storeFactory( defaults(), NULL );
-        fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ) );
+        fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ).toFile() );
         storeFactory.openAllNeoStores( true ).close();
     }
 
@@ -166,7 +166,7 @@ class StoreFactoryTest
     {
         StoreFactory storeFactory = storeFactory( defaults(), NULL );
         storeFactory.openAllNeoStores( true ).close();
-        for ( File f : fileSystem.listFiles( databaseLayout.databaseDirectory() ) )
+        for ( File f : fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ) )
         {
             if ( !f.getName().endsWith( ".id" ) )
             {

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,7 +96,7 @@ class LuceneSchemaIndexIT
 
             // When & Then
             List<String> singlePartitionFileTemplates = Arrays.asList( ".cfe", ".cfs", ".si", "segments_1" );
-            try ( ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
+            try ( ResourceIterator<Path> snapshotIterator = indexAccessor.snapshotFiles() )
             {
                 List<String> indexFileNames = asFileInsidePartitionNames( snapshotIterator );
 
@@ -118,7 +119,7 @@ class LuceneSchemaIndexIT
         // Given
         // A completely un-used index
         try ( LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor();
-              ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
+              ResourceIterator<Path> snapshotIterator = indexAccessor.snapshotFiles() )
         {
             assertThat( asUniqueSetOfNames( snapshotIterator ) ).isEqualTo( emptySet() );
         }
@@ -249,11 +250,11 @@ class LuceneSchemaIndexIT
         return new LuceneIndexAccessor( index, descriptor );
     }
 
-    private List<String> asFileInsidePartitionNames( ResourceIterator<File> resources )
+    private List<String> asFileInsidePartitionNames( ResourceIterator<Path> resources )
     {
         int testDirectoryPathLength = testDir.homeDir().getAbsolutePath().length();
         return asList( resources ).stream()
-                .map( file -> file.getAbsolutePath().substring( testDirectoryPathLength ) )
+                .map( file -> file.toAbsolutePath().toString().substring( testDirectoryPathLength ) )
                 .collect( Collectors.toList() );
     }
 
@@ -289,12 +290,12 @@ class LuceneSchemaIndexIT
         return templateMatches;
     }
 
-    private static Set<String> asUniqueSetOfNames( ResourceIterator<File> files )
+    private static Set<String> asUniqueSetOfNames( ResourceIterator<Path> files )
     {
         List<String> out = new ArrayList<>();
         while ( files.hasNext() )
         {
-            String name = files.next().getName();
+            String name = files.next().getFileName().toString();
             out.add( name );
         }
         return Iterables.asUniqueSet( out );

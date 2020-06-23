@@ -21,12 +21,10 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.Collections;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -40,6 +38,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,15 +60,7 @@ class KernelDiagnosticsTest
     @Test
     void shouldPrintDiskUsage() throws IOException
     {
-        // Not sure how to get around this w/o spying. The method that we're unit testing will construct
-        // other File instances with this guy as parent and internally the File constructor uses the field 'path'
-        // which, if purely mocked, won't be assigned. At the same time we want to control the total/free space methods
-        // and what they return... a tough one.
-        File storeDir = Mockito.spy( new File( "storeDir" ) );
-        DatabaseLayout layout = mock( DatabaseLayout.class );
-        when( layout.databaseDirectory() ).thenReturn( storeDir );
-        when( storeDir.getTotalSpace() ).thenReturn( 100L );
-        when( storeDir.getFreeSpace() ).thenReturn( 40L );
+        DatabaseLayout layout = DatabaseLayout.ofFlat( testDirectory.homePath() );
         StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
         when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Collections.emptyList() );
 
@@ -77,7 +68,7 @@ class KernelDiagnosticsTest
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        assertThat( logProvider ).containsMessages( "100 / 40 / 40" );
+        assertThat( logProvider ).containsMessages( "Disk space on partition" );
     }
 
     @Test
@@ -98,13 +89,13 @@ class KernelDiagnosticsTest
         // file structure:
         //   storeDir/indexDir/indexFile (1 kB)
         //   storeDir/neostore (3 kB)
-        File storeDir = testDirectory.directory( "storedir" );
+        Path storeDir = testDirectory.directoryPath( "storedir" );
         DatabaseLayout layout = DatabaseLayout.ofFlat( storeDir );
-        File indexDir = directory( storeDir, "indexDir" );
+        Path indexDir = directory( storeDir, "indexDir" );
         file( indexDir, "indexFile", (int) kibiBytes( 1 ) );
-        file( storeDir, layout.metadataStore().getName(), (int) kibiBytes( 3 ) );
+        file( storeDir, layout.metadataStore().getFileName().toString(), (int) kibiBytes( 3 ) );
         StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
-        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Arrays.asList( layout.metadataStore() ) );
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( singletonList( layout.metadataStore().toFile() ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
@@ -113,17 +104,17 @@ class KernelDiagnosticsTest
         assertThat( logProvider ).containsMessages( "Total size of store: 4.000KiB", "Total size of mapped files: 3.000KiB" );
     }
 
-    private File directory( File parent, String name ) throws IOException
+    private Path directory( Path parent, String name ) throws IOException
     {
-        File dir = new File( parent, name );
-        fs.mkdirs( dir );
+        Path dir = parent.resolve( name );
+        fs.mkdirs( dir.toFile() );
         return dir;
     }
 
-    private File file( File parent, String name, int size ) throws IOException
+    private Path file( Path parent, String name, int size ) throws IOException
     {
-        File file = new File( parent, name );
-        try ( StoreChannel channel = fs.write( file ) )
+        Path file = parent.resolve( name );
+        try ( StoreChannel channel = fs.write( file.toFile() ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( size, INSTANCE );
             buffer.position( size ).flip();

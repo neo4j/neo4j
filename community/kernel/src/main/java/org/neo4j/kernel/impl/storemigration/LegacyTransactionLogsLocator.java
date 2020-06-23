@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -38,14 +38,14 @@ public class LegacyTransactionLogsLocator
         this.databaseLayout = databaseLayout;
     }
 
-    public File getTransactionLogsDirectory()
+    public Path getTransactionLogsDirectory()
     {
-        File databaseDirectory = databaseLayout.databaseDirectory();
+        Path databaseDirectory = databaseLayout.databaseDirectory();
         if ( databaseLayout.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) )
         {
             return databaseDirectory;
         }
-        config.setIfNotSet( logical_logs_location, databaseDirectory.toPath() );
-        return config.get( logical_logs_location ).toFile();
+        config.setIfNotSet( logical_logs_location, databaseDirectory );
+        return config.get( logical_logs_location );
     }
 }

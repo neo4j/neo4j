@@ -54,11 +54,11 @@ abstract class NativeIndexRestartAction implements DbmsRule.RestartAction
 
     static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout )
     {
-        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( DEFAULT_PROVIDER_DESCRIPTOR );
+        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory().toFile() ).forProvider( DEFAULT_PROVIDER_DESCRIPTOR );
     }
 
     static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout, IndexProviderDescriptor providerDescriptor )
     {
-        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( providerDescriptor );
+        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory().toFile() ).forProvider( providerDescriptor );
     }
 }

@@ -28,6 +28,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -177,8 +178,8 @@ class RecordStorageEngineTest
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
-        Set<File> currentFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
-        Set<File> allPossibleFiles = databaseLayout.storeFiles();
+        Set<Path> currentFiles = files.stream().map( StoreFileMetadata::file ).map( File::toPath ).collect( Collectors.toSet() );
+        Set<Path> allPossibleFiles = databaseLayout.storeFiles();
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
         allPossibleFiles.remove( databaseLayout.relationshipTypeScanStore() );
         allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );

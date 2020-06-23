@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -158,7 +158,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * need to remain available until the resource iterator returned here is closed. This is used to duplicate created
      * indexes across clusters, among other things.
      */
-    ResourceIterator<File> snapshotFiles();
+    ResourceIterator<Path> snapshotFiles();
 
     /**
      * Verifies that each value in this index is unique.
@@ -245,7 +245,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles()
+        public ResourceIterator<Path> snapshotFiles()
         {
             return emptyResourceIterator();
         }
@@ -326,7 +326,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles()
+        public ResourceIterator<Path> snapshotFiles()
         {
             return delegate.snapshotFiles();
         }

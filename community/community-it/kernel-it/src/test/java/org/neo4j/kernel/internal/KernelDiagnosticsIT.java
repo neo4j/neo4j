@@ -71,7 +71,7 @@ class KernelDiagnosticsIT
         {
             // given
             Neo4jLayout layout = neo4jLayout;
-            createIndexInIsolatedDbInstance( layout.homeDirectory(), schemaIndex );
+            createIndexInIsolatedDbInstance( layout.homeDirectory().toFile(), schemaIndex );
 
             // when
             DatabaseLayout databaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
@@ -82,7 +82,7 @@ class KernelDiagnosticsIT
             assertNotNull( capture.size );
 
             // then
-            long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory() );
+            long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory().toFile() );
             assertEquals( bytesToString( expected ), capture.size );
         }
     }

@@ -28,6 +28,7 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -45,13 +46,13 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheConfig;
@@ -101,7 +102,7 @@ public class DatabaseTest
     @Before
     public void setUp()
     {
-        databaseLayout = DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) );
+        databaseLayout = DatabaseLayout.ofFlat( directory.directoryPath( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
@@ -145,13 +146,13 @@ public class DatabaseTest
         database.stop();
 
         assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
 
         database.drop();
 
-        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
     }
 
     @Test
@@ -165,12 +166,12 @@ public class DatabaseTest
         database.start();
         database.stop();
 
-        File databaseDirectory = databaseLayout.databaseDirectory();
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
         assertTrue( fs.fileExists( databaseDirectory ) );
         assertTrue( fs.fileExists( transactionLogsDirectory ) );
 
-        File[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().filter( File::exists ).toArray( File[]::new );
+        File[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().map( Path::toFile ).filter( File::exists ).toArray( File[]::new );
 
         database.truncate();
 
@@ -194,9 +195,9 @@ public class DatabaseTest
                 .collect( Collectors.toList() );
 
         DatabaseLayout databaseLayout = database.getDatabaseLayout();
-        Set<File> files = databaseLayout.storeFiles();
+        Set<Path> files = databaseLayout.storeFiles();
         files.removeAll( filesToKeepOnTruncation( databaseLayout ) );
-        File[] filesShouldBeDeleted = files.stream().filter( File::exists ).toArray( File[]::new );
+        File[] filesShouldBeDeleted = files.stream().map( Path::toFile ).filter( File::exists ).toArray( File[]::new );
         assertThat( removedFiles ).contains( filesShouldBeDeleted );
     }
 
@@ -210,8 +211,8 @@ public class DatabaseTest
 
         database.start();
 
-        File databaseDirectory = databaseLayout.databaseDirectory();
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
         assertTrue( fs.fileExists( databaseDirectory ) );
         assertTrue( fs.fileExists( transactionLogsDirectory ) );
 
@@ -261,13 +262,13 @@ public class DatabaseTest
         database.start();
 
         assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
 
         database.drop();
 
-        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
     }
 
     @Test

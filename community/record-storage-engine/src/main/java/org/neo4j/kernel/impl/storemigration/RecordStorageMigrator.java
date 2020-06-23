@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.impl.factory.Sets;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -36,8 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.impl.factory.Sets;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -191,7 +192,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
     {
         // Extract information about the last transaction from legacy neostore
-        File neoStore = directoryLayout.metadataStore();
+        File neoStore = directoryLayout.metadataStore().toFile();
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) )
         {
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
@@ -273,7 +274,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
         StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
-                GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
+                GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore().toFile(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker ), false, cacheTracer,
                         GBPTreeCountsStore.NO_MONITOR ) )
         {
@@ -348,12 +349,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static File lastTxInformationFile( DatabaseLayout migrationStructure )
     {
-        return migrationStructure.file( "lastxinformation" );
+        return migrationStructure.file( "lastxinformation" ).toFile();
     }
 
     private static File lastTxLogPositionFile( DatabaseLayout migrationStructure )
     {
-        return migrationStructure.file( "lastxlogposition" );
+        return migrationStructure.file( "lastxlogposition" ).toFile();
     }
 
     TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
@@ -409,7 +410,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
 
-        TransactionLogFilesHelper logFiles = new TransactionLogFilesHelper( fileSystem, sourceDirectoryStructure.getTransactionLogsDirectory() );
+        TransactionLogFilesHelper logFiles = new TransactionLogFilesHelper( fileSystem, sourceDirectoryStructure.getTransactionLogsDirectory().toFile() );
         RangeLogVersionVisitor versionVisitor = new RangeLogVersionVisitor();
         logFiles.accept( versionVisitor );
         long logVersion = versionVisitor.getHighestVersion();
@@ -432,7 +433,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
         boolean requiresPropertyMigration =
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
-        File badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME );
+        File badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME ).toFile();
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure );
               OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) );
               Collector badCollector = Collectors.badCollector( badOutput, 0 ) )
@@ -442,7 +443,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 @Override
                 public boolean highIO()
                 {
-                    return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory().toPath() );
+                    return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =
@@ -649,16 +650,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
         {
             // Delete the old counts store
-            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory(), "neostore.counts.db.a" ) );
-            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory(), "neostore.counts.db.b" ) );
+            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory().toFile(), "neostore.counts.db.a" ) );
+            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory().toFile(), "neostore.counts.db.b" ) );
         }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition, PageCursorTracer cursorTracer ) throws IOException
     {
-        final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
-        final File migrationDirNeoStore = migrationStructure.metadataStore();
+        final File storeDirNeoStore = sourceDirectoryStructure.metadataStore().toFile();
+        final File migrationDirNeoStore = migrationStructure.metadataStore().toFile();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure,
                 migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
                 ExistingTargetStrategy.SKIP );
@@ -721,8 +722,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
             try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
                   SchemaStore35 srcSchema = new SchemaStore35(
-                          directoryLayout.schemaStore(),
-                          directoryLayout.idSchemaStore(),
+                          directoryLayout.schemaStore().toFile(),
+                          directoryLayout.idSchemaStore().toFile(),
                           config,
                           org.neo4j.internal.id.IdType.SCHEMA,
                           srcIdGeneratorFactory,
@@ -898,7 +899,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     @Override
     public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( migrationLayout.databaseDirectory() );
+        fileSystem.deleteRecursively( migrationLayout.databaseDirectory().toFile() );
     }
 
     @Override

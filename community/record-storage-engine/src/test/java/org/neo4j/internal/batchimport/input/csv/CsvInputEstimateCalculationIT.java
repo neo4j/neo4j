@@ -29,6 +29,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -215,14 +216,14 @@ class CsvInputEstimateCalculationIT
         assertEquals( 0, estimates.numberOfNodeLabels() );
     }
 
-    private long propertyStorageSize()
+    private long propertyStorageSize() throws IOException
     {
         return sizeOf( DatabaseFile.PROPERTY_STORE ) + sizeOf( DatabaseFile.PROPERTY_ARRAY_STORE ) + sizeOf( DatabaseFile.PROPERTY_STRING_STORE );
     }
 
-    private long sizeOf( DatabaseFile file )
+    private long sizeOf( DatabaseFile file ) throws IOException
     {
-        return databaseLayout.file( file ).length();
+        return Files.size( databaseLayout.file( file ) );
     }
 
     private Input generateData() throws IOException

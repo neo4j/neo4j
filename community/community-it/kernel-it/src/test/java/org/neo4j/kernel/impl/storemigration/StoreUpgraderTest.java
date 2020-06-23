@@ -19,8 +19,17 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,12 +37,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -174,13 +177,13 @@ public class StoreUpgraderTest
         init( formats );
         File comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
         fileSystem.deleteRecursively( comparisonDirectory );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
-        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
     }
 
     @ParameterizedTest
@@ -190,13 +193,13 @@ public class StoreUpgraderTest
         init( formats );
         File comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
         fileSystem.deleteRecursively( comparisonDirectory );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
-        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
     }
 
     @ParameterizedTest
@@ -247,7 +250,7 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -272,7 +275,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -299,7 +302,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
         var pageCacheTracer = new DefaultPageCacheTracer();
         new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
 
@@ -316,7 +319,7 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -351,12 +354,12 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ) );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ) );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ) );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ).toFile() );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ).toFile() );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ).toFile() );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ).toFile() );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ).toFile() );
 
         // When
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -401,7 +404,7 @@ public class StoreUpgraderTest
             .migrateIfNeeded( migrationLayout );
 
         assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
-        assertThat( getLogFiles( migrationLayout.databaseDirectory() ) ).isEmpty();
+        assertThat( getLogFiles( migrationLayout.databaseDirectory().toFile() ) ).isEmpty();
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );
 
@@ -477,7 +480,7 @@ public class StoreUpgraderTest
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             File databaseDirectory ) throws IOException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout.databaseDirectory(), databaseDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout.databaseDirectory().toFile(), databaseDirectory );
     }
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )
@@ -574,10 +577,11 @@ public class StoreUpgraderTest
         return upgrader;
     }
 
-    private List<File> migrationHelperDirs()
+    private List<Path> migrationHelperDirs()
     {
-        File[] tmpDirs = databaseLayout.listDatabaseFiles( file -> file.isDirectory() &&
-                (file.getName().equals( StoreUpgrader.MIGRATION_DIRECTORY ) || file.getName().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
+        Path[] tmpDirs = databaseLayout.listDatabaseFiles( file -> Files.isDirectory( file ) &&
+                (file.getFileName().toString().equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
+                        file.getFileName().toString().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
         assertNotNull( tmpDirs, "Some IO errors occurred" );
         return Arrays.asList( tmpDirs );
     }

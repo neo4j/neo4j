@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -73,7 +72,7 @@ public class TransactionLogInitializer
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
                         fileSystem, store, StorageEngineFactory.selectStorageEngine().commandReaderFactory(),
                         PageCacheTracer.NULL );
-                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory() );
+                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory().toFile() );
             }
             catch ( IOException e )
             {

@@ -59,8 +59,8 @@ class FileLockerTest
 
     static Stream<LockerFactory> lockerFactories()
     {
-        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, Neo4jLayout.of( directory.homeDir() ) ),
-                ( fs, directory ) -> new DatabaseLocker( fs, Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME ) ) );
+        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, Neo4jLayout.of( directory.homePath() ) ),
+                ( fs, directory ) -> new DatabaseLocker( fs, Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ) ) );
     }
 
     @ParameterizedTest

@@ -36,7 +36,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
 
     public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
     {
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         this.logVersion = readLogVersion( pageCache, neoStore, cursorTracer );
     }
 

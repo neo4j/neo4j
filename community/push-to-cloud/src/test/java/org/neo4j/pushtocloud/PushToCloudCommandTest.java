@@ -305,7 +305,7 @@ class PushToCloudCommandTest
                 "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
 
         new CommandLine( command ).execute( args );
-        assertTrue( dump.toFile().exists() );
+        assertTrue( Files.exists( dump ) );
         verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "user" ), eq( "abc".toCharArray() ), anyBoolean() );
     }
 
@@ -329,7 +329,7 @@ class PushToCloudCommandTest
 
         var environment = Map.of( "NEO4J_USERNAME", "user", "NEO4J_PASSWORD", "" );
         new CommandLine( command ).setResourceBundle( new MapResourceBundle( environment ) ).execute( args );
-        assertTrue( dump.toFile().exists() );
+        assertTrue( Files.exists( dump ) );
         verify( targetCommunicator ).authenticate( anyBoolean(), anyString(), eq( "user" ), eq( "abc".toCharArray() ), anyBoolean() );
     }
 

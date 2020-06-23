@@ -23,8 +23,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
@@ -39,7 +39,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
 {
     private final SearcherManager searcherManager;
 
-    ReadOnlyIndexPartition( File partitionFolder, Directory directory ) throws IOException
+    ReadOnlyIndexPartition( Path partitionFolder, Directory directory ) throws IOException
     {
         super( partitionFolder, directory );
         this.searcherManager = new SearcherManager( directory, new Neo4jSearcherFactory() );
@@ -85,7 +85,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
      * @throws IOException if any IO operation fails.
      */
     @Override
-    public ResourceIterator<File> snapshot() throws IOException
+    public ResourceIterator<Path> snapshot() throws IOException
     {
         return LuceneIndexSnapshots.forIndex( partitionFolder, directory );
     }

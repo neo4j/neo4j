@@ -100,7 +100,7 @@ class ImportNumericalFailureTest
         }
 
         Exception exception = assertThrows( Exception.class,
-                () -> runImport( databaseLayout.databaseDirectory().toPath().toAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
+                () -> runImport( databaseLayout.databaseDirectory().toAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
         assertExceptionContains( exception, expectedError, InputException.class );
     }
 
@@ -111,7 +111,7 @@ class ImportNumericalFailureTest
 
     private File file( DatabaseLayout databaseLayout, String localname )
     {
-        return databaseLayout.file( localname );
+        return databaseLayout.file( localname ).toFile();
     }
 
     private static void runImport( Path homeDir, String... arguments )

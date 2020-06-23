@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -109,7 +110,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         List<AbstractIndexPartition> list = new ArrayList<>( indexDirectories.size() );
         for ( Map.Entry<File,Directory> entry : indexDirectories )
         {
-            list.add( partitionFactory.createPartition( entry.getKey(), entry.getValue() ) );
+            list.add( partitionFactory.createPartition( entry.getKey().toPath(), entry.getValue() ) );
         }
         partitions.addAll( list );
         open = true;
@@ -288,10 +289,10 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      * @throws IOException
      * @see WritableIndexSnapshotFileIterator
      */
-    public ResourceIterator<File> snapshot() throws IOException
+    public ResourceIterator<Path> snapshot() throws IOException
     {
         ensureOpen();
-        List<ResourceIterator<File>> snapshotIterators = null;
+        List<ResourceIterator<Path>> snapshotIterators = null;
         try
         {
             List<AbstractIndexPartition> partitions = getPartitions();
@@ -375,7 +376,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         ensureOpen();
         File partitionFolder = createNewPartitionFolder();
         Directory directory = indexStorage.openDirectory( partitionFolder );
-        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder, directory );
+        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder.toPath(), directory );
         partitions.add( indexPartition );
         return indexPartition;
     }

@@ -163,7 +163,7 @@ class TestReadOnlyNeo4j
 
     private void deleteIndexFolder()
     {
-        File databaseDir = Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory();
+        File databaseDir = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory().toFile();
         fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
     }
 

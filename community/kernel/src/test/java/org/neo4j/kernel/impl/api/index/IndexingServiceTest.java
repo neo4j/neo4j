@@ -33,6 +33,7 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -586,7 +587,7 @@ class IndexingServiceTest
         life.start();
 
         // WHEN
-        ResourceIterator<File> files = indexing.snapshotIndexFiles();
+        ResourceIterator<Path> files = indexing.snapshotIndexFiles();
 
         // THEN
         // We get a snapshot per online index
@@ -616,7 +617,7 @@ class IndexingServiceTest
         life.start();
 
         // WHEN
-        ResourceIterator<File> files = indexing.snapshotIndexFiles();
+        ResourceIterator<Path> files = indexing.snapshotIndexFiles();
         populatorLatch.countDown(); // only now, after the snapshot, is the population job allowed to finish
         waitForIndexesToComeOnline( indexing, index1, index2 );
 
@@ -1594,7 +1595,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles()
+        public ResourceIterator<Path> snapshotFiles()
         {
             throw new UnsupportedOperationException( "Not required" );
         }

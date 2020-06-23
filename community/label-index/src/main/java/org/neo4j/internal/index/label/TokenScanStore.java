@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.index.label;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -136,7 +136,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      */
     AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer );
 
-    ResourceIterator<File> snapshotStoreFiles();
+    ResourceIterator<Path> snapshotStoreFiles();
 
     /**
      * Acquire a listener that can take care of entity token updates.

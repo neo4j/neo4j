@@ -180,8 +180,7 @@ class RebuildCountsTest
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-
-        assertTrue( snapshot.deleteFile( databaseLayout.countStore() ) );
+        assertTrue( snapshot.deleteFile( databaseLayout.countStore().toFile() ) );
     }
 
     private FileSystemAbstraction shutdown()

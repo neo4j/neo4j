@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
@@ -196,7 +197,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         this.cacheTracer = cacheTracer;
         this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
-        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
+        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore().toFile() : directoryStructure.relationshipTypeScanStore().toFile();
         this.readOnly = readOnly;
         this.monitors = monitors;
         String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
@@ -349,9 +350,9 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     @Override
-    public ResourceIterator<File> snapshotStoreFiles()
+    public ResourceIterator<Path> snapshotStoreFiles()
     {
-        return Iterators.asResourceIterator( Iterators.iterator( storeFile ) );
+        return Iterators.asResourceIterator( Iterators.iterator( storeFile.toPath() ) );
     }
 
     @Override

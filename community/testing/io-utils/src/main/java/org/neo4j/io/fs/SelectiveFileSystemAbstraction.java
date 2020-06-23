@@ -58,7 +58,7 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public FileWatcher fileWatcher() throws IOException
     {
-        return new SelectiveFileWatcher( specialFile, defaultFileSystem.fileWatcher(), specialFileSystem.fileWatcher() );
+        return new SelectiveFileWatcher( specialFile.toPath(), defaultFileSystem.fileWatcher(), specialFileSystem.fileWatcher() );
     }
 
     @Override

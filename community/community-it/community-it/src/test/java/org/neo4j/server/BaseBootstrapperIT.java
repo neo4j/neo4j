@@ -210,10 +210,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
         dbms.shutdown();
 
-        assertEquals( relativePath( serverDir, serverLayout.homeDirectory() ), relativePath( embeddedDir, embeddedLayout.homeDirectory() ) );
-        assertEquals( relativePath( serverDir, serverLayout.databasesDirectory() ), relativePath( embeddedDir, embeddedLayout.databasesDirectory() ) );
-        assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory() ),
-                relativePath( embeddedDir, embeddedLayout.transactionLogsRootDirectory() ) );
+        assertEquals( relativePath( serverDir, serverLayout.homeDirectory().toFile() ), relativePath( embeddedDir, embeddedLayout.homeDirectory().toFile() ) );
+        assertEquals( relativePath( serverDir, serverLayout.databasesDirectory().toFile() ),
+                relativePath( embeddedDir, embeddedLayout.databasesDirectory().toFile() ) );
+        assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory().toFile() ),
+                relativePath( embeddedDir, embeddedLayout.transactionLogsRootDirectory().toFile() ) );
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms( File homeDir );

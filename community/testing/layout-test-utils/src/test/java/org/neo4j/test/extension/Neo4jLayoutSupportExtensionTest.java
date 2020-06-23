@@ -21,6 +21,8 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -60,12 +62,12 @@ class Neo4jLayoutSupportExtensionTest
     @Test
     void shouldCreateDirectories()
     {
-        assertTrue( fs.fileExists( neo4jLayout.homeDirectory() ) );
-        assertTrue( fs.fileExists( neo4jLayout.databasesDirectory() ) );
-        assertTrue( fs.fileExists( neo4jLayout.transactionLogsRootDirectory() ) );
+        assertTrue( Files.exists( neo4jLayout.homeDirectory() ) );
+        assertTrue( Files.exists( neo4jLayout.databasesDirectory() ) );
+        assertTrue( Files.exists( neo4jLayout.transactionLogsRootDirectory() ) );
 
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
     }
 
     @Test

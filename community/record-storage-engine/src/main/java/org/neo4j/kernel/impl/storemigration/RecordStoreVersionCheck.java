@@ -57,7 +57,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     RecordStoreVersionCheck( PageCache pageCache, DatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
     {
         this.pageCache = pageCache;
-        this.metaDataFile = databaseLayout.metadataStore();
+        this.metaDataFile = databaseLayout.metadataStore().toFile();
         this.configuredFormat = configuredFormat;
         this.config = config;
     }

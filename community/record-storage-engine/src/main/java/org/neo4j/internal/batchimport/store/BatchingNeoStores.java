@@ -161,7 +161,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean databaseExistsAndContainsData()
     {
-        File metaDataFile = databaseLayout.metadataStore();
+        File metaDataFile = databaseLayout.metadataStore().toFile();
         try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), immutable.of( READ ) ) )
         {
             // OK so the db probably exists
@@ -192,7 +192,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // There may have been a previous import which was killed before it even started, where the label scan store could
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
         // the db is either completely empty or non-existent anyway, so deleting this file is OK.
-        fileSystem.deleteFile( databaseLayout.labelScanStore() );
+        fileSystem.deleteFile( databaseLayout.labelScanStore().toFile() );
         deleteCountsStore();
 
         instantiateStores();
@@ -200,14 +200,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void deleteCountsStore()
     {
-        fileSystem.deleteFile( databaseLayout.countStore() );
+        fileSystem.deleteFile( databaseLayout.countStore().toFile() );
     }
 
     public void assertDatabaseIsEmptyOrNonExistent()
     {
         if ( databaseExistsAndContainsData() )
         {
-            throw new IllegalStateException( databaseLayout.databaseDirectory() + " already contains data, cannot do import here" );
+            throw new IllegalStateException( databaseLayout.databaseDirectory().toFile() + " already contains data, cannot do import here" );
         }
     }
 
@@ -232,7 +232,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( !storesToKeep.test( type ) )
             {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.allFiles( databaseFile ).forEach( fileSystem::deleteFile );
+                databaseLayout.allFiles( databaseFile ).forEach( fileName -> fileSystem.deleteFile( fileName.toFile() ) );
             }
         }
     }
@@ -377,7 +377,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         deleteCountsStore();
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
@@ -428,8 +428,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void cleanup() throws IOException
     {
-        File tempDbDirectory = temporaryDatabaseLayout.databaseDirectory();
-        if ( !tempDbDirectory.getParentFile().equals( databaseLayout.databaseDirectory() ) )
+        File tempDbDirectory = temporaryDatabaseLayout.databaseDirectory().toFile();
+        if ( !tempDbDirectory.getParentFile().equals( databaseLayout.databaseDirectory().toFile() ) )
         {
             throw new IllegalStateException( "Temporary store is dislocated. It should be located under current database directory but instead located in: " +
                     tempDbDirectory.getParent() );

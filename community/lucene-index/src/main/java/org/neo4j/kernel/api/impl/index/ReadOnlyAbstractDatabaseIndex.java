@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -88,7 +88,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<File> snapshot() throws IOException
+    public ResourceIterator<Path> snapshot() throws IOException
     {
         return luceneIndex.snapshot();
     }

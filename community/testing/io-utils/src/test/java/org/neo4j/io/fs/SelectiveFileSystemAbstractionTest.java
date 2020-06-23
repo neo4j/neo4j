@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
@@ -83,8 +84,8 @@ class SelectiveFileSystemAbstractionTest
     @Test
     void provideSelectiveWatcher() throws IOException
     {
-        File specialFile = new File( "special" );
-        File otherFile = new File( "other" );
+        Path specialFile = Path.of( "special" );
+        Path otherFile = Path.of( "other" );
 
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
@@ -99,7 +100,7 @@ class SelectiveFileSystemAbstractionTest
         when( specialWatcher.watch( specialFile ) ).thenReturn( specialResource );
         when( normalWatcher.watch( otherFile ) ).thenReturn( normalResource );
 
-        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
+        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile.toFile(), special, normal ) )
         {
             FileWatcher fileWatcher = fs.fileWatcher();
             assertSame( specialResource, fileWatcher.watch( specialFile ) );

@@ -19,19 +19,20 @@
  */
 package org.neo4j.io.layout;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 
-import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
@@ -75,27 +76,26 @@ public final class Neo4jLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
 
-    private final File homeDirectory;
-    private final File databasesRootDirectory;
-    private final File txLogsRootDirectory;
+    private final Path homeDirectory;
+    private final Path databasesRootDirectory;
+    private final Path txLogsRootDirectory;
 
-    public static Neo4jLayout of( File homeDirectory )
+    public static Neo4jLayout of( Path homeDirectory )
     {
-        File canonicalHome = FileUtils.getCanonicalFile( homeDirectory );
-        return of( Config.defaults( GraphDatabaseSettings.neo4j_home, canonicalHome.toPath().toAbsolutePath() ) );
+        return of( Config.defaults( GraphDatabaseSettings.neo4j_home, FileUtils.getCanonicalFile( homeDirectory ).toAbsolutePath() ) );
     }
 
     public static Neo4jLayout of( Config config )
     {
-        File homeDirectory = config.get( GraphDatabaseSettings.neo4j_home ).toFile();
-        File databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path ).toFile();
-        File txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path ).toFile();
+        Path homeDirectory = config.get( GraphDatabaseSettings.neo4j_home );
+        Path databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path );
+        Path txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path );
         return new Neo4jLayout( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
 
-    public static Neo4jLayout ofFlat( File homeDirectory )
+    public static Neo4jLayout ofFlat( Path homeDirectory )
     {
-        Path home = homeDirectory.toPath().toAbsolutePath();
+        Path home = homeDirectory.toAbsolutePath();
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, home )
                 .set( GraphDatabaseSettings.transaction_logs_root_path, home )
@@ -104,7 +104,7 @@ public final class Neo4jLayout
         return of( config );
     }
 
-    private Neo4jLayout( File homeDirectory, File databasesRootDirectory, File txLogsRootDirectory )
+    private Neo4jLayout( Path homeDirectory, Path databasesRootDirectory, Path txLogsRootDirectory )
     {
         this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
         this.databasesRootDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
@@ -119,12 +119,18 @@ public final class Neo4jLayout
      */
     public Collection<DatabaseLayout> databaseLayouts()
     {
-        File[] directories = databasesRootDirectory.listFiles( File::isDirectory );
-        if ( ArrayUtils.isEmpty( directories ) )
+        try ( Stream<Path> list = Files.list( databasesRootDirectory) )
+        {
+            return list.filter( Files::isDirectory ).map( directory -> DatabaseLayout.of( this, directory.getFileName().toString() ) ).collect( toList() );
+        }
+        catch ( NoSuchFileException e )
         {
             return emptyList();
         }
-        return stream( directories ).map( directory -> DatabaseLayout.of( this, directory.getName() ) ).collect( toList() );
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     /**
@@ -143,7 +149,7 @@ public final class Neo4jLayout
      * Databases root directory where all databases are located.
      * @return all databases root directory
      */
-    public File databasesDirectory()
+    public Path databasesDirectory()
     {
         return databasesRootDirectory;
     }
@@ -152,19 +158,19 @@ public final class Neo4jLayout
      * Neo4J root directory.
      * @return the root of the Neo4j instance
      */
-    public File homeDirectory()
+    public Path homeDirectory()
     {
         return homeDirectory;
     }
 
-    public File transactionLogsRootDirectory()
+    public Path transactionLogsRootDirectory()
     {
         return txLogsRootDirectory;
     }
 
-    public File storeLockFile()
+    public Path storeLockFile()
     {
-        return new File( databasesRootDirectory, STORE_LOCK_FILENAME );
+        return databasesRootDirectory.resolve( STORE_LOCK_FILENAME );
     }
 
     @Override

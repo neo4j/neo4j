@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -110,7 +110,7 @@ public interface DatabaseIndex<READER extends IndexReader> extends Closeable
      * @throws IOException
      * @see WritableIndexSnapshotFileIterator
      */
-    ResourceIterator<File> snapshot() throws IOException;
+    ResourceIterator<Path> snapshot() throws IOException;
 
     /**
      * Refresh all partitions to make newly inserted data visible for readers.

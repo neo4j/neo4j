@@ -124,7 +124,7 @@ class LabelScanStoreStartupIT
 
     private static File storeFile( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.labelScanStore();
+        return databaseLayout.labelScanStore().toFile();
     }
 
     private void corruptLabelScanStoreFiles( DatabaseLayout databaseLayout ) throws IOException

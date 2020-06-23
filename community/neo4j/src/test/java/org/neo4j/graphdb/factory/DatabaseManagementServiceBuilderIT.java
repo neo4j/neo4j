@@ -102,11 +102,11 @@ class DatabaseManagementServiceBuilderIT
     {
         Neo4jLayout layout = neo4jLayout;
 
-        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( layout.homeDirectory() ).build();
+        DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( layout.homeDirectory().toFile() ).build();
         try
         {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory() ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory().toFile() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory().toFile() ) );
         }
         finally
         {

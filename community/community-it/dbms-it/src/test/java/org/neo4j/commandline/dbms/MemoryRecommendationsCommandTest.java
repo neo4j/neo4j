@@ -356,11 +356,11 @@ class MemoryRecommendationsCommandTest
         MutableLong luceneTotal = new MutableLong();
         for ( StoreType storeType : StoreType.values() )
         {
-            long length = databaseLayout.file( storeType.getDatabaseFile() ).length();
+            long length = databaseLayout.file( storeType.getDatabaseFile() ).toFile().length();
             pageCacheTotal.add( length );
         }
 
-        File indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
+        File indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory().toFile() );
         if ( indexFolder.exists() )
         {
             Files.walkFileTree( indexFolder.toPath(), new SimpleFileVisitor<>()
@@ -380,7 +380,7 @@ class MemoryRecommendationsCommandTest
                 }
             } );
         }
-        pageCacheTotal.add( databaseLayout.labelScanStore().length() );
+        pageCacheTotal.add( databaseLayout.labelScanStore().toFile().length() );
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
@@ -389,7 +389,7 @@ class MemoryRecommendationsCommandTest
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory() ).setConfig(
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory().toFile() ).setConfig(
                             default_schema_provider, schemaIndex.providerName() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             String key = "key-" + schemaIndex.name();

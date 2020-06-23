@@ -47,7 +47,7 @@ class TestIdReuse
     @Test
     void makeSureIdsGetsReusedForPropertyStore()
     {
-        makeSureIdsGetsReused( databaseLayout.propertyStore(), 10, 200 );
+        makeSureIdsGetsReused( databaseLayout.propertyStore().toFile(), 10, 200 );
     }
 
     @Test
@@ -58,7 +58,7 @@ class TestIdReuse
         {
             array[i] = 0xFFFFFFFFFFFFL + i;
         }
-        makeSureIdsGetsReused( databaseLayout.propertyArrayStore(), array, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyArrayStore().toFile(), array, 20 );
     }
 
     @Test
@@ -69,7 +69,7 @@ class TestIdReuse
         {
             string += "something else " + i;
         }
-        makeSureIdsGetsReused( databaseLayout.propertyStringStore(), string, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyStringStore().toFile(), string, 20 );
     }
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )

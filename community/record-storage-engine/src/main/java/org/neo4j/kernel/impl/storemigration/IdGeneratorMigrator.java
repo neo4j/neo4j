@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -109,7 +110,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         for ( StoreType storeType : StoreType.values() )
         {
             // See if it exists in migration directory, otherwise it must be in the db directory
-            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ) )
+            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ).toFile() )
                                    ? storesInMigrationDirectory
                                    : storesInDbDirectory;
             list.add( storeType );
@@ -117,7 +118,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 
         // The built id files will end up in this rebuiltIdGenerators
         IdGeneratorFactory rebuiltIdGenerators = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-        List<Pair<File,File>> renameList = new ArrayList<>();
+        List<Pair<Path,Path>> renameList = new ArrayList<>();
 
         // Build the ones from the legacy (the current, really) directory that haven't been migrated
         try ( NeoStores stores = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() ).openNeoStores(
@@ -143,10 +144,10 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             fileSystem.deleteFile( emptyPlaceHolderStoreFile );
         }
         // Renamed the built id files (they're called what they should be called, except with a '.new' in the end) by removing the suffix
-        for ( Pair<File,File> rename : renameList )
+        for ( Pair<Path,Path> rename : renameList )
         {
-            fileSystem.deleteFile( rename.getRight() );
-            fileSystem.renameFile( rename.getLeft(), rename.getRight() );
+            fileSystem.deleteFile( rename.getRight().toFile() );
+            fileSystem.renameFile( rename.getLeft().toFile(), rename.getRight().toFile() );
         }
     }
 
@@ -155,7 +156,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         Set<File> createdStores = new HashSet<>();
         StoreType[] storesToCreate = Stream.of( StoreType.values() ).filter( t ->
         {
-            File file = layout.file( t.getDatabaseFile() );
+            File file = layout.file( t.getDatabaseFile() ).toFile();
             boolean exists = fileSystem.fileExists( file );
             if ( !exists )
             {
@@ -168,19 +169,19 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void buildIdFiles( DatabaseLayout layout, List<StoreType> storeTypes, IdGeneratorFactory rebuiltIdGenerators,
-        List<Pair<File,File>> renameMap, NeoStores stores, PageCursorTracer cursorTracer )
+        List<Pair<Path,Path>> renameMap, NeoStores stores, PageCursorTracer cursorTracer )
     {
         for ( StoreType storeType : storeTypes )
         {
             RecordStore<AbstractBaseRecord> store = stores.getRecordStore( storeType );
             long highId = store.getHighId();
-            File actualIdFile = layout.idFile( storeType.getDatabaseFile() ).get();
-            File idFile = new File( actualIdFile.getAbsolutePath() + ".new" );
+            Path actualIdFile = layout.idFile( storeType.getDatabaseFile() ).get();
+            Path idFile = actualIdFile.resolveSibling( actualIdFile.getFileName() + ".new" );
             renameMap.add( Pair.of( idFile, actualIdFile ) );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
+                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile.toFile(), storeType.getIdType(), highId, true, Long.MAX_VALUE,
                             readOnly, cursorTracer, immutable.empty() );
                   Marker marker = idGenerator.marker( cursorTracer ) )
             {

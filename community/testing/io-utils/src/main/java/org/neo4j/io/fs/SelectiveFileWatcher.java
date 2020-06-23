@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -28,25 +28,25 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 /**
  * File watcher that will perform watching activities using specific file watcher in case if
- * requested resource will match to provided {@link File specificFile}.
+ * requested resource will match to provided {@link SelectiveFileWatcher#specialPath}.
  */
 public class SelectiveFileWatcher implements FileWatcher
 {
-    private File specialFile;
+    private final Path specialPath;
     private final FileWatcher defaultFileWatcher;
     private final FileWatcher specificFileWatcher;
 
-    SelectiveFileWatcher( File specialFile, FileWatcher defaultFileWatcher, FileWatcher specificFileWatcher )
+    SelectiveFileWatcher( Path specialPath, FileWatcher defaultFileWatcher, FileWatcher specificFileWatcher )
     {
-        this.specialFile = specialFile;
+        this.specialPath = specialPath;
         this.defaultFileWatcher = defaultFileWatcher;
         this.specificFileWatcher = specificFileWatcher;
     }
 
     @Override
-    public WatchedResource watch( File file ) throws IOException
+    public WatchedResource watch( Path path ) throws IOException
     {
-        return chooseFileWatcher( file ).watch( file );
+        return chooseFileWatcher( path ).watch( path );
     }
 
     @Override
@@ -84,8 +84,8 @@ public class SelectiveFileWatcher implements FileWatcher
         specificFileWatcher.close();
     }
 
-    private FileWatcher chooseFileWatcher( File file )
+    private FileWatcher chooseFileWatcher( Path path )
     {
-        return file.equals( specialFile ) ? specificFileWatcher : defaultFileWatcher;
+        return path.equals( specialPath ) ? specificFileWatcher : defaultFileWatcher;
     }
 }

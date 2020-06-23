@@ -25,8 +25,8 @@ import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -57,7 +57,7 @@ class IndexPartitionFactoryTest
     {
         prepareIndex();
         try ( AbstractIndexPartition indexPartition =
-                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.homeDir(), directory ) )
+                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.homePath(), directory ) )
         {
             assertThrows(UnsupportedOperationException.class, indexPartition::getIndexWriter );
         }
@@ -68,7 +68,7 @@ class IndexPartitionFactoryTest
     {
         try ( AbstractIndexPartition indexPartition =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
-                              .createPartition( testDirectory.homeDir(), directory ) )
+                              .createPartition( testDirectory.homePath(), directory ) )
         {
 
             try ( IndexWriter indexWriter = indexPartition.getIndexWriter() )
@@ -86,10 +86,10 @@ class IndexPartitionFactoryTest
 
     private void prepareIndex() throws IOException
     {
-        File location = testDirectory.homeDir();
+        Path location = testDirectory.homePath();
         try ( AbstractIndexPartition ignored =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
-                              .createPartition( location, DirectoryFactory.PERSISTENT.open( location ) ) )
+                              .createPartition( location, DirectoryFactory.PERSISTENT.open( location.toFile() ) ) )
         {
             // empty
         }

@@ -92,7 +92,7 @@ class IndexConsistencyIT
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = databaseLayout.file( "indexesCopy" );
+        File indexesCopy = databaseLayout.file( "indexesCopy" ).toFile();
         File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
@@ -118,7 +118,7 @@ class IndexConsistencyIT
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = databaseLayout.file( "indexesCopy" );
+        File indexesCopy = databaseLayout.file( "indexesCopy" ).toFile();
         File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
@@ -243,7 +243,7 @@ class IndexConsistencyIT
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             DatabaseLayout databaseLayout = db.databaseLayout();
-            Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
+            Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
             return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, false, ConsistencyFlags.DEFAULT );
         }
     }

@@ -287,7 +287,7 @@ class BatchingNeoStoresTest
     void shouldRebuildCountsStoreEvenIfExistsInEmptyDb() throws IOException
     {
         // given
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start( NULL, INSTANCE );
@@ -320,7 +320,7 @@ class BatchingNeoStoresTest
         }
 
         // then
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL ) );

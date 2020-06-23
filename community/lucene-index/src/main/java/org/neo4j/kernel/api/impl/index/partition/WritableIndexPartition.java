@@ -24,8 +24,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
@@ -40,8 +40,7 @@ public class WritableIndexPartition extends AbstractIndexPartition
     private final IndexWriter indexWriter;
     private final SearcherManager searcherManager;
 
-    public WritableIndexPartition( File partitionFolder, Directory directory, IndexWriterConfig writerConfig )
-            throws IOException
+    public WritableIndexPartition( Path partitionFolder, Directory directory, IndexWriterConfig writerConfig ) throws IOException
     {
         super( partitionFolder, directory );
         this.indexWriter = new IndexWriter( directory, writerConfig );
@@ -88,7 +87,7 @@ public class WritableIndexPartition extends AbstractIndexPartition
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<File> snapshot() throws IOException
+    public ResourceIterator<Path> snapshot() throws IOException
     {
         return LuceneIndexSnapshots.forIndex( partitionFolder, indexWriter );
     }

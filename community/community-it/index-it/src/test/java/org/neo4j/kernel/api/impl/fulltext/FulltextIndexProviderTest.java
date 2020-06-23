@@ -199,7 +199,7 @@ class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
-            File indexDir = Path.of( db.databaseLayout().databaseDirectory().getAbsolutePath(),
+            File indexDir = Path.of( db.databaseLayout().databaseDirectory().toFile().getAbsolutePath(),
                     "schema", "index", descriptor.getIndexProvider().name(), "" + descriptor.getId() ).toFile();
             List<File> listFiles = List.of( requireNonNull( indexDir.listFiles() ) );
             assertTrue( listFiles.contains( new File( indexDir, "failure-message" ) ) );
@@ -514,7 +514,7 @@ class FulltextIndexProviderTest
         {
             var cacheTracer = NULL;
             FileSystemAbstraction fs = builder.getFileSystem();
-            DatabaseLayout databaseLayout = Neo4jLayout.of( builder.getHomeDirectory() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            DatabaseLayout databaseLayout = Neo4jLayout.of( builder.getHomeDirectory().toPath() ).databaseLayout( DEFAULT_DATABASE_NAME );
             DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore() );
             try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
                   PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, cacheTracer ) )

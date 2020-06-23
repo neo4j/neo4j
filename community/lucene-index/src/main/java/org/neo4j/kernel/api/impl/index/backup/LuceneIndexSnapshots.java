@@ -27,8 +27,8 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -40,7 +40,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
  * Create iterators over Lucene index files for a particular {@link IndexCommit index commit}.
  * Applicable only to a single Lucene index partition.
  */
-public class LuceneIndexSnapshots
+public final class LuceneIndexSnapshots
 {
     private LuceneIndexSnapshots()
     {
@@ -53,7 +53,7 @@ public class LuceneIndexSnapshots
      * @return index file name iterator
      * @throws IOException
      */
-    public static ResourceIterator<File> forIndex( File indexFolder, IndexWriter indexWriter ) throws IOException
+    public static ResourceIterator<Path> forIndex( Path indexFolder, IndexWriter indexWriter ) throws IOException
     {
         IndexDeletionPolicy deletionPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
         if ( deletionPolicy instanceof SnapshotDeletionPolicy )
@@ -79,7 +79,7 @@ public class LuceneIndexSnapshots
      * @return index file name resource iterator
      * @throws IOException
      */
-    public static ResourceIterator<File> forIndex( File indexFolder, Directory directory ) throws IOException
+    public static ResourceIterator<Path> forIndex( Path indexFolder, Directory directory ) throws IOException
     {
         if ( !hasCommits( directory ) )
         {

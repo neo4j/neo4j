@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +67,7 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles()
+    public ResourceIterator<Path> snapshotFiles()
     {
         throw unsupportedOperation( "Cannot snapshot a recovering index." );
     }

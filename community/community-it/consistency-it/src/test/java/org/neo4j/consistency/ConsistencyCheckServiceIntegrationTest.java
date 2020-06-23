@@ -199,7 +199,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( settings() ) );
         assertFalse( consistencyCheck.isSuccessful() );
         // using commons file utils since they do not forgive not closed file descriptors on windows
-        org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseLayout().databaseDirectory() );
+        org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseLayout().databaseDirectory().toFile() );
     }
 
     @Test
@@ -311,7 +311,8 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // Given a lucene index
         GraphDatabaseService db =
-                getGraphDatabaseService( databaseLayout.databaseDirectory(), Map.of( GraphDatabaseSettings.default_schema_provider, NATIVE30.providerName() ) );
+                getGraphDatabaseService( databaseLayout.databaseDirectory().toFile(),
+                        Map.of( GraphDatabaseSettings.default_schema_provider, NATIVE30.providerName() ) );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -347,7 +348,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private static File findFile( DatabaseLayout databaseLayout, String targetFile )
     {
-        File file = databaseLayout.file( targetFile );
+        File file = databaseLayout.file( targetFile ).toFile();
         if ( !file.exists() )
         {
             fail( "Could not find file " + targetFile );
@@ -423,7 +424,7 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fs )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build().logFiles();
         for ( File file : txLogs )
@@ -438,7 +439,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         for ( File file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
         {
-            fs.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
+            fs.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory().toFile() );
         }
     }
 
@@ -446,7 +447,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         Map<Setting<?>, Object> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory, "8m" );
-        defaults.put( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory().toPath() );
+        defaults.put( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
         defaults.put( record_format, getRecordFormatName() );
         return defaults;
     }

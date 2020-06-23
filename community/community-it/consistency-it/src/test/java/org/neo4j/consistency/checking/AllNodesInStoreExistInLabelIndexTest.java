@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +105,7 @@ class AllNodesInStoreExistInLabelIndexTest
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
+        Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
         try ( Transaction tx = db.beginTx() )
@@ -129,7 +130,7 @@ class AllNodesInStoreExistInLabelIndexTest
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
+        Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
         managementService.shutdown();
@@ -277,16 +278,16 @@ class AllNodesInStoreExistInLabelIndexTest
         managementService.shutdown();
 
         DatabaseLayout databaseLayout = db.databaseLayout();
-        fs.deleteFile( databaseLayout.labelScanStore() );
-        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
+        fs.deleteFile( databaseLayout.labelScanStore().toFile() );
+        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore().toFile() );
     }
 
     private File copyLabelIndexFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
+        File labelIndexFileCopy = databaseLayout.file( "label_index_copy" ).toFile();
         database.stop();
-        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
+        fs.copyFile( databaseLayout.labelScanStore().toFile(), labelIndexFileCopy );
         database.start();
         return labelIndexFileCopy;
     }
@@ -377,7 +378,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         ConsistencyCheckService service = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = db.databaseLayout();
-        Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
+        Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
         return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, true, ConsistencyFlags.DEFAULT );
     }
 }

@@ -100,7 +100,7 @@ class TransactionLogFileRotateAndReadRaceIT
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, databaseLayout.getNeo4jLayout().homeDirectory().toPath() )
+                .set( GraphDatabaseSettings.neo4j_home, databaseLayout.getNeo4jLayout().homeDirectory() )
                 .set( GraphDatabaseSettings.preallocate_logical_logs, false )
                 .set( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
                 .build();

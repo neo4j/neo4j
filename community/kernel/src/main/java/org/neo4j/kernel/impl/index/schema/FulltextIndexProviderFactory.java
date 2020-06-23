@@ -86,7 +86,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
         JobScheduler scheduler = dependencies.scheduler();
-        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory() );
+        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory().toFile() );
         TokenHolders tokenHolders = dependencies.tokenHolders();
         Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
 

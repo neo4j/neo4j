@@ -2151,7 +2151,7 @@ public class FullCheckIntegrationTest
     private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
     {
         // given
-        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore() );
+        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore().toFile() );
         assertTrue( corrupted );
 
         // When

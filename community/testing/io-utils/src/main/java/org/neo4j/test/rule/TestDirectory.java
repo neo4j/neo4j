@@ -31,6 +31,8 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -165,9 +167,23 @@ public class TestDirectory extends ExternalResource
         return directory;
     }
 
+    public Path homePath()
+    {
+        if ( !isInitialised() )
+        {
+            throw new IllegalStateException( "Not initialized" );
+        }
+        return directory.toPath();
+    }
+
     public File homeDir( String homeDirName )
     {
         return directory( homeDirName );
+    }
+
+    public Path homePath( String homeDirName )
+    {
+        return directory( homeDirName ).toPath();
     }
 
     public boolean isInitialised()
@@ -182,9 +198,31 @@ public class TestDirectory extends ExternalResource
         return dir;
     }
 
+    public Path directoryPath( String name, String... path )
+    {
+        Path dir = homePath();
+        for ( String s : path )
+        {
+            dir = dir.resolve( s );
+        }
+        dir = dir.resolve( name );
+        createDirectory( dir );
+        return dir;
+    }
+
     public File file( String name, String... path )
     {
         return new File( FileUtils.path( homeDir(), path ), name );
+    }
+
+    public Path filePath( String name, String... path )
+    {
+        Path dir = homePath();
+        for ( String s : path )
+        {
+            dir = dir.resolve( s );
+        }
+        return dir.resolve( name );
     }
 
     public File createFile( String name, String... path )
@@ -280,6 +318,18 @@ public class TestDirectory extends ExternalResource
         try
         {
             fileSystem.mkdirs( directory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( "Failed to create directory: " + directory, e );
+        }
+    }
+
+    private void createDirectory( Path directory )
+    {
+        try
+        {
+            Files.createDirectories( directory );
         }
         catch ( IOException e )
         {

@@ -191,10 +191,12 @@ class CommonAbstractStoreTest
     void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws IOException
     {
         // GIVEN
-        File nodeStore = databaseLayout.nodeStore();
-        File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
-        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
-                NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
+        File nodeStore = databaseLayout.nodeStore().toFile();
+        File idFile =
+                databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) ).toFile();
+        TheStore store =
+                new TheStore( nodeStore, databaseLayout.idNodeStore().toFile(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
+                        NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
         store.initialise( true, NULL );
         store.start( NULL );
         assertTrue( fs.fileExists( nodeStore ) );

@@ -67,7 +67,7 @@ public class TransactionAppenderStressTest
 
         long appendedTxs = runner.call();
 
-        assertEquals( new TransactionIdChecker( databaseLayout.getTransactionLogsDirectory() ).parseAllTxLogs(), appendedTxs );
+        assertEquals( new TransactionIdChecker( databaseLayout.getTransactionLogsDirectory().toFile() ).parseAllTxLogs(), appendedTxs );
     }
 
     public static class Builder

@@ -318,7 +318,7 @@ class CountsComputerTest
 
     private File countsStoreFile()
     {
-        return databaseLayout.countStore();
+        return databaseLayout.countStore().toFile();
     }
 
     private static long getLastTxId( GraphDatabaseAPI db )
@@ -363,7 +363,7 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
-        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, false, PageCacheTracer.NULL,
+        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem, immediate(), builder, false, PageCacheTracer.NULL,
                 GBPTreeCountsStore.NO_MONITOR );
     }
 

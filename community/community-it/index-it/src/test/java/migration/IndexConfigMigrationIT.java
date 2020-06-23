@@ -213,7 +213,7 @@ class IndexConfigMigrationIT
     @Test
     void shouldHaveCorrectDataAndIndexConfiguration() throws IOException, IndexNotFoundKernelException
     {
-        File databaseDir = databaseLayout.databaseDirectory();
+        File databaseDir = databaseLayout.databaseDirectory().toFile();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )

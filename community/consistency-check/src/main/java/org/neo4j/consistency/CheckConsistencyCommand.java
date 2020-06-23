@@ -123,7 +123,7 @@ public class CheckConsistencyCommand extends AbstractCommand
         {
 
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
-                    .map( Path::toFile ).map( DatabaseLayout::ofFlat )
+                    .map( DatabaseLayout::ofFlat )
                     .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database.name() ) );
 
             checkDatabaseExistence( databaseLayout );
@@ -169,7 +169,7 @@ public class CheckConsistencyCommand extends AbstractCommand
     {
         try
         {
-            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory().toFile() );
         }
         catch ( IllegalArgumentException e )
         {

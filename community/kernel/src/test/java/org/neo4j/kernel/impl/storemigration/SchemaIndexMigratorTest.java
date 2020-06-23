@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -64,8 +64,8 @@ class SchemaIndexMigratorTest
     @BeforeEach
     void setup()
     {
-        databaseLayout = Neo4jLayout.of( testDirectory.directory( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-        migrationLayout = Neo4jLayout.of( testDirectory.directory( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        databaseLayout = Neo4jLayout.of( testDirectory.directoryPath( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        migrationLayout = Neo4jLayout.of( testDirectory.directoryPath( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     @Test
@@ -76,7 +76,7 @@ class SchemaIndexMigratorTest
         when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
         when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
-        File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
+        File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" ).toFile();
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, directoryStructure, storageEngineFactory );
         when( indexProvider.getProviderDescriptor() )

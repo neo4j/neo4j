@@ -24,8 +24,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -585,14 +585,13 @@ class BatchInsertTest
     @Test
     void messagesLogGetsClosed() throws IOException
     {
-
         Config config = Config.newBuilder()
                 .set( preallocate_logical_logs, false )
                 .set( neo4j_home, testDirectory.homeDir().toPath() )
                 .build();
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, config );
         inserter.shutdown();
-        assertTrue( new File( databaseLayout.getNeo4jLayout().homeDirectory(), INTERNAL_LOG_FILE ).delete() );
+        Files.delete( databaseLayout.getNeo4jLayout().homeDirectory().resolve( INTERNAL_LOG_FILE ) );
     }
 
     @ParameterizedTest

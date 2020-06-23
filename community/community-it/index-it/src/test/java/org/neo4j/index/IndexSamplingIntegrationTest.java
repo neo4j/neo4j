@@ -21,6 +21,7 @@ package org.neo4j.index;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -42,11 +43,11 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
+import static java.nio.file.Files.delete;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.fs.FileUtils.deleteFile;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @Neo4jLayoutExtension
@@ -216,9 +217,9 @@ class IndexSamplingIntegrationTest
         }
     }
 
-    private void triggerIndexResamplingOnNextStartup()
+    private void triggerIndexResamplingOnNextStartup() throws IOException
     {
         // Trigger index resampling on next at startup
-        deleteFile( databaseLayout.countStore() );
+        delete( databaseLayout.countStore() );
     }
 }

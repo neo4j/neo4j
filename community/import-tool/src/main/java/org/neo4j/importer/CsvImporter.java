@@ -189,7 +189,7 @@ class CsvImporter implements Importer
                     TransactionLogInitializer.getLogFilesInitializer(),
                     memoryTracker );
 
-            printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
+            printOverview( databaseLayout.databaseDirectory().toFile(), nodeFiles, relationshipFiles, importConfig, stdOut );
 
             importer.doImport( input );
 
@@ -213,7 +213,7 @@ class CsvImporter implements Importer
 
             if ( !success )
             {
-                stdErr.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
+                stdErr.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().toAbsolutePath() +
                         " are left as they are, although they are likely in an unusable state. " +
                         "Starting a database on these store files will likely fail or observe inconsistent records so " +
                         "start at your own risk or delete the store manually" );

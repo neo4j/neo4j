@@ -21,7 +21,6 @@ package org.neo4j.io.fs.watcher;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -61,7 +60,7 @@ class DefaultFileSystemWatcherTest
     {
         DefaultFileSystemWatcher watcher = createWatcher();
 
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> watcher.watch( new File( "notADirectory" ) ) );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> watcher.watch( Path.of( "notADirectory" ) ) );
         assertThat( exception.getMessage() ).contains( "Only directories can be registered to be monitored." );
     }
 
@@ -71,8 +70,8 @@ class DefaultFileSystemWatcherTest
         try ( DefaultFileSystemWatcher watcher = new DefaultFileSystemWatcher(
                 FileSystems.getDefault().newWatchService() ) )
         {
-            File directory1 = testDirectory.directory( "test1" );
-            File directory2 = testDirectory.directory( "test2" );
+            Path directory1 = testDirectory.directoryPath( "test1" );
+            Path directory2 = testDirectory.directoryPath( "test2" );
             WatchedResource watchedResource1 = watcher.watch( directory1 );
             WatchedResource watchedResource2 = watcher.watch( directory2 );
             assertNotSame( watchedResource1, watchedResource2 );

@@ -253,7 +253,7 @@ public class LogFilesBuilder
         {
             return logsDirectory;
         }
-        return databaseLayout.getTransactionLogsDirectory();
+        return databaseLayout.getTransactionLogsDirectory().toFile();
     }
 
     TransactionLogFilesContext buildContext() throws IOException

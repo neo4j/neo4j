@@ -139,9 +139,9 @@ class RecordStorageMigratorIT
     @BeforeEach
     void setup() throws IOException
     {
-        migrationLayout = Neo4jLayout.of( testDirectory.homeDir( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        migrationLayout = Neo4jLayout.of( testDirectory.homePath( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         batchImporterFactory = BatchImporterFactory.withHighestPriority();
-        testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory() );
+        testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory().toFile() );
     }
 
     @AfterEach
@@ -158,7 +158,7 @@ class RecordStorageMigratorIT
         // GIVEN a legacy database
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -188,7 +188,7 @@ class RecordStorageMigratorIT
 
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         LogService logService = new SimpleLogService( logProvider, logProvider );
@@ -220,7 +220,7 @@ class RecordStorageMigratorIT
 
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -252,7 +252,7 @@ class RecordStorageMigratorIT
 
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -278,7 +278,7 @@ class RecordStorageMigratorIT
 
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -303,7 +303,7 @@ class RecordStorageMigratorIT
 
         File prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
 
@@ -326,8 +326,8 @@ class RecordStorageMigratorIT
         stores.close();
 
         // Prepare the legacy schema store we'll migrate.
-        File storeFile = databaseLayout.schemaStore();
-        File idFile = databaseLayout.idSchemaStore();
+        File storeFile = databaseLayout.schemaStore().toFile();
+        File idFile = databaseLayout.idSchemaStore().toFile();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
                 immutable.empty() );
         schemaStore35.initialise( false, NULL );

@@ -74,7 +74,7 @@ class StoreInfoCommandTest
     {
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
+        databaseLayout = DatabaseLayout.ofFlat( databaseDirectory );
         Files.createDirectories( databaseDirectory );
 
         out = mock( PrintStream.class );
@@ -180,7 +180,7 @@ class StoreInfoCommandTest
 
     private File createNeoStoreFile() throws IOException
     {
-        File neoStoreFile = databaseLayout.metadataStore();
+        File neoStoreFile = databaseLayout.metadataStore().toFile();
         fileSystem.write( neoStoreFile ).close();
         return neoStoreFile;
     }

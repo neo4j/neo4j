@@ -69,8 +69,8 @@ class PropertyStoreTest
     @BeforeEach
     void setup()
     {
-        storeFile = databaseLayout.propertyStore();
-        idFile = databaseLayout.idPropertyStore();
+        storeFile = databaseLayout.propertyStore().toFile();
+        idFile = databaseLayout.idPropertyStore().toFile();
     }
 
     @Test

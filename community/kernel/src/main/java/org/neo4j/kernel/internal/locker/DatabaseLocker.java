@@ -29,6 +29,6 @@ public class DatabaseLocker extends GlobalFileLocker
 {
     public DatabaseLocker( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout )
     {
-        super( fileSystemAbstraction, databaseLayout.databaseLockFile() );
+        super( fileSystemAbstraction, databaseLayout.databaseLockFile().toFile() );
     }
 }

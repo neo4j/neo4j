@@ -28,8 +28,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -51,14 +51,14 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     @Inject
     private TestDirectory testDir;
 
-    File indexDir;
+    Path indexDir;
     protected Directory dir;
 
     @BeforeEach
     void setUp() throws IOException
     {
-        indexDir = testDir.homeDir();
-        dir = DirectoryFactory.PERSISTENT.open( indexDir );
+        indexDir = testDir.homePath();
+        dir = DirectoryFactory.PERSISTENT.open( indexDir.toFile() );
     }
 
     @AfterEach
@@ -75,9 +75,9 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
         Set<String> files = listDir( dir );
         assertFalse( files.isEmpty() );
 
-        try ( ResourceIterator<File> snapshot = makeSnapshot() )
+        try ( ResourceIterator<Path> snapshot = makeSnapshot() )
         {
-            Set<String> snapshotFiles = snapshot.stream().map( File::getName ).collect( toSet() );
+            Set<String> snapshotFiles = snapshot.stream().map( Path::getFileName ).map( Path::toString ).collect( toSet() );
             assertEquals( files, snapshotFiles );
         }
     }
@@ -85,7 +85,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     @Test
     void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
-        try ( ResourceIterator<File> snapshot = makeSnapshot() )
+        try ( ResourceIterator<Path> snapshot = makeSnapshot() )
         {
             assertFalse( snapshot.hasNext() );
         }
@@ -99,7 +99,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
         }
     }
 
-    protected ResourceIterator<File> makeSnapshot() throws IOException
+    protected ResourceIterator<Path> makeSnapshot() throws IOException
     {
         return LuceneIndexSnapshots.forIndex( indexDir, dir );
     }

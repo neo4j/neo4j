@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -95,7 +96,7 @@ class BatchInserterImplTest
     {
         try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
         {
-            assertTrue( databaseLayout.databaseLockFile().exists() );
+            assertTrue( Files.exists( databaseLayout.databaseLockFile() ) );
         }
     }
 

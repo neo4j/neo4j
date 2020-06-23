@@ -31,6 +31,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -169,7 +170,7 @@ public class TokenScanStoreTest
     void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = databaseLayout.labelScanStore();
+        File labelScanStoreFile = databaseLayout.labelScanStore().toFile();
         fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
@@ -230,9 +231,9 @@ public class TokenScanStoreTest
     {
         LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(), PageCacheTracer.NULL,
                 INSTANCE );
-        ResourceIterator<File> files = store.snapshotStoreFiles();
+        ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
-        File storeFile = files.next();
+        Path storeFile = files.next();
         assertThat( storeFile ).isEqualTo( databaseLayout.labelScanStore() );
         assertFalse( files.hasNext() );
     }
@@ -242,9 +243,9 @@ public class TokenScanStoreTest
     {
         RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
                 PageCacheTracer.NULL, INSTANCE );
-        ResourceIterator<File> files = store.snapshotStoreFiles();
+        ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
-        File storeFile = files.next();
+        Path storeFile = files.next();
         assertThat( storeFile ).isEqualTo( databaseLayout.relationshipTypeScanStore() );
         assertFalse( files.hasNext() );
     }
@@ -254,9 +255,9 @@ public class TokenScanStoreTest
     {
         prepareIndex();
         createAndStartReadOnly();
-        try ( ResourceIterator<File> indexFiles = store.snapshotStoreFiles() )
+        try ( ResourceIterator<Path> indexFiles = store.snapshotStoreFiles() )
         {
-            List<File> files = Iterators.asList( indexFiles );
+            List<Path> files = Iterators.asList( indexFiles );
             assertThat( files ).as( "Should have at least index segment file." ).contains( databaseLayout.labelScanStore() );
         }
     }
@@ -642,7 +643,7 @@ public class TokenScanStoreTest
         relationshipTypeScanStore.init();
         relationshipTypeScanStore.start();
         relationshipTypeScanStore.shutdown();
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) ).as( "relationship type scan store exists" ).isTrue();
+        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore().toFile() ) ).as( "relationship type scan store exists" ).isTrue();
 
         // when
         Config config = Config.defaults();
@@ -658,7 +659,7 @@ public class TokenScanStoreTest
         assertThat( e.getMessage() ).contains( "Database was started in read only mode and with relationship type scan store turned OFF",
                 "Note that consistency check use read only mode.",
                 "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) )
+        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore().toFile() ) )
                 .as( "relationship type scan store was not deleted in read only mode and does still exists" ).isTrue();
     }
 
@@ -680,7 +681,7 @@ public class TokenScanStoreTest
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
     {
-        File lssFile = databaseLayout.labelScanStore();
+        File lssFile = databaseLayout.labelScanStore().toFile();
         scrambleFile( lssFile );
     }
 

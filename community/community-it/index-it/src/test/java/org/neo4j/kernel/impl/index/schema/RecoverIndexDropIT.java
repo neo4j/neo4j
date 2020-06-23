@@ -97,7 +97,7 @@ class RecoverIndexDropIT
         createIndex( db );
         StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         managementService.shutdown();
-        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction, storageEngineFactory );
+        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory().toFile(), dropTransaction, storageEngineFactory );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();

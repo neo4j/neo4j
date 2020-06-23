@@ -93,7 +93,7 @@ class FileWatchIT
     @Test
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException
     {
-        String fileName = databaseLayout.metadataStore().getName();
+        String fileName = databaseLayout.metadataStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
@@ -106,10 +106,10 @@ class FileWatchIT
         }
         while ( !deletionListener.awaitModificationNotification() );
 
-        deleteFile( databaseLayout.databaseDirectory(), fileName );
+        deleteFile( databaseLayout.databaseDirectory().toFile(), fileName );
         deletionListener.awaitDeletionNotification();
 
-        assertThat( logProvider ).containsMessages( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getName() +
+        assertThat( logProvider ).containsMessages( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getFileName().toString() +
                 "' database was deleted while it was running." );
     }
 
@@ -142,7 +142,7 @@ class FileWatchIT
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = dependencyResolver.resolveDependency( CheckPointer.class );
 
-        String propertyStoreName = databaseLayout.propertyStore().getName();
+        String propertyStoreName = databaseLayout.propertyStore().getFileName().toString();
         AccumulativeDeletionEventListener accumulativeListener = new AccumulativeDeletionEventListener();
         ModificationEventListener modificationListener = new ModificationEventListener( propertyStoreName );
         fileWatcher.addFileWatchEventListener( modificationListener );
@@ -179,7 +179,7 @@ class FileWatchIT
     {
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
-        String metadataStore = databaseLayout.metadataStore().getName();
+        String metadataStore = databaseLayout.metadataStore().getFileName().toString();
         ModificationEventListener modificationEventListener = new ModificationEventListener( metadataStore );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
@@ -193,7 +193,7 @@ class FileWatchIT
         String fileName = TransactionLogFilesHelper.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
-        deleteFile( databaseLayout.getTransactionLogsDirectory(), fileName );
+        deleteFile( databaseLayout.getTransactionLogsDirectory().toFile(), fileName );
         deletionListener.awaitDeletionNotification();
 
         assertThat( logProvider ).forClass( DefaultFileDeletionEventListener.class ).forLevel( INFO ).doesNotContainMessage( fileName );
@@ -202,7 +202,7 @@ class FileWatchIT
     @Test
     void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
-        String fileName = databaseLayout.metadataStore().getName();
+        String fileName = databaseLayout.metadataStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
 
@@ -216,15 +216,15 @@ class FileWatchIT
         while ( !modificationListener.awaitModificationNotification() );
         fileWatcher.removeFileWatchEventListener( modificationListener );
 
-        String storeDirectoryName = databaseLayout.databaseDirectory().getName();
+        String storeDirectoryName = databaseLayout.databaseDirectory().getFileName().toString();
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
-        FileUtils.deleteRecursively( databaseLayout.databaseDirectory() );
+        FileUtils.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
 
         eventListener.awaitDeletionNotification();
 
         assertThat( logProvider ).containsMessages( "'" + storeDirectoryName + "' which belongs to the '" +
-                databaseLayout.databaseDirectory().getName() + "' database was deleted while it was running." );
+                databaseLayout.databaseDirectory().getFileName().toString() + "' database was deleted while it was running." );
     }
 
     @Test

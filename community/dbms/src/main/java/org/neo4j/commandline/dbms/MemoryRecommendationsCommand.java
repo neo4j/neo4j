@@ -283,7 +283,8 @@ class MemoryRecommendationsCommand extends AbstractCommand
     private long getDatabasePageCacheSize( DatabaseLayout layout )
     {
         return sumStoreFiles( layout ) +
-                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory() ), getNativeIndexFileFilter( layout.databaseDirectory(), false ) );
+                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory().toFile() ), getNativeIndexFileFilter(
+                        layout.databaseDirectory().toFile(), false ) );
     }
 
     private long luceneSize( Collection<DatabaseLayout> layouts )
@@ -293,7 +294,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
 
     private long getDatabaseLuceneSize( DatabaseLayout databaseLayout )
     {
-        File databaseDirectory = databaseLayout.databaseDirectory();
+        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
         return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
     }
 
@@ -327,7 +328,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
             long total = storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
 
             // Include label index
-            total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
+            total += sizeOfFileIfExists( databaseLayout.labelScanStore().toFile() );
             return total;
         }
         catch ( IOException e )

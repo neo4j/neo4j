@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index.partition;
 
-
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Factory to create particular partition of partitioned index in specified folder and represented by {@link Directory}
  */
 public interface IndexPartitionFactory
 {
-    AbstractIndexPartition createPartition( File partitionFolder, Directory directory ) throws IOException;
+    AbstractIndexPartition createPartition( Path partitionFolder, Directory directory ) throws IOException;
 }

@@ -182,7 +182,7 @@ class CheckConsistencyCommandIT
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
         DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
 
-        testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
+        testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory().toFile() );
 
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
@@ -373,7 +373,7 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directory( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directoryPath( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );

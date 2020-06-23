@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -127,7 +127,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<File> snapshot() throws IOException
+    public ResourceIterator<Path> snapshot() throws IOException
     {
         commitCloseLock.lock();
         try

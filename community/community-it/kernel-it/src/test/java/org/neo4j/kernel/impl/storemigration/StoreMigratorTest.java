@@ -120,7 +120,7 @@ class StoreMigratorTest
 
         // ... and files
 
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         neoStore.createNewFile();
 
         // ... and mocks
@@ -148,7 +148,7 @@ class StoreMigratorTest
         // given
         long txId = 42;
 
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
@@ -182,7 +182,7 @@ class StoreMigratorTest
         // given
         long txId = 1;
 
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
@@ -235,14 +235,14 @@ class StoreMigratorTest
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
         DatabaseLayout dbLayout = databaseLayout;
-        File neoStore = dbLayout.metadataStore();
+        File neoStore = dbLayout.metadataStore().toFile();
         neoStore.createNewFile();
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
-        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
+        fileSystem.mkdirs( migrationLayout.databaseDirectory().toFile() );
         migrator.migrate( dbLayout, migrationLayout, progressReporter,
                 StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
@@ -269,7 +269,7 @@ class StoreMigratorTest
             }
         }
         DatabaseLayout databaseLayout = database.databaseLayout();
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,

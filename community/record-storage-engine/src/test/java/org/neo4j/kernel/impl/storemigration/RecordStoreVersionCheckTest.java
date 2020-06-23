@@ -185,7 +185,7 @@ class RecordStoreVersionCheckTest
 
     private File emptyFile( FileSystemAbstraction fs ) throws IOException
     {
-        File shortFile = databaseLayout.metadataStore();
+        File shortFile = databaseLayout.metadataStore().toFile();
         fs.deleteFile( shortFile );
         fs.write( shortFile ).close();
         return shortFile;
@@ -193,7 +193,7 @@ class RecordStoreVersionCheckTest
 
     private void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
-        File shortFile = layout.metadataStore();
+        File shortFile = layout.metadataStore().toFile();
         fs.deleteFile( shortFile );
         try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
         {

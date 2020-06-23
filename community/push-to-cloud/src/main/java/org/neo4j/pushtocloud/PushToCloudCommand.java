@@ -228,11 +228,11 @@ public class PushToCloudCommand extends AbstractCommand
             File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
 
             DatabaseLayout layout = Neo4jLayout.of( getConfig( configFile ) ).databaseLayout( database.name() );
-            long storeFilesSize = FileUtils.sizeOf( layout.databaseDirectory() );
+            long storeFilesSize = FileUtils.sizeOf( layout.databaseDirectory().toFile() );
             long txLogSize;
             try
             {
-                txLogSize = FileUtils.sizeOf( layout.getTransactionLogsDirectory() );
+                txLogSize = FileUtils.sizeOf( layout.getTransactionLogsDirectory().toFile() );
             }
             catch ( IllegalArgumentException e )
             {

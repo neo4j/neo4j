@@ -132,7 +132,7 @@ class DatabaseFileListingTest
         RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
         DatabaseLayout databaseLayout = mock( DatabaseLayout.class );
-        when( databaseLayout.metadataStore() ).thenReturn( mock( File.class ) );
+        when( databaseLayout.metadataStore() ).thenReturn( mock( Path.class ) );
         LogFiles logFiles = mock( LogFiles.class );
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
@@ -140,11 +140,11 @@ class DatabaseFileListingTest
         DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, relationshipTypeScanStore,
                 indexingService, storageEngine, idGeneratorFactory );
 
-        ResourceIterator<File> labelScanSnapshot = scanStoreFilesAre( labelScanStore,
+        ResourceIterator<Path> labelScanSnapshot = scanStoreFilesAre( labelScanStore,
                 new String[]{"blah/scan.store", "scan.more"} );
-        ResourceIterator<File> relationshipTypeScanSnapshot = scanStoreFilesAre( relationshipTypeScanStore,
+        ResourceIterator<Path> relationshipTypeScanSnapshot = scanStoreFilesAre( relationshipTypeScanStore,
                 new String[]{"blah/scan.store", "scan.more"} );
-        ResourceIterator<File> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
+        ResourceIterator<Path> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
         ResourceIterator<StoreFileMetadata> result = fileListing.builder().excludeLogFiles().build();
 
@@ -161,14 +161,14 @@ class DatabaseFileListingTest
     void shouldListMetaDataStoreLast() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( false ) );
-        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
+        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore().toFile() );
     }
 
     @Test
     void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( true ) );
-        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
+        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore().toFile() );
     }
 
     @Test
@@ -198,15 +198,16 @@ class DatabaseFileListingTest
     void shouldListNeostoreFiles() throws Exception
     {
         DatabaseLayout layout = database.getDatabaseLayout();
-        Set<File> expectedFiles = layout.storeFiles();
+        Set<Path> expectedFiles = layout.storeFiles();
         if ( !Config.defaults().get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
-            expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getName() ) );
+            expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getFileName().toString() ) );
         }
         // there was no rotation
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
-        Set<File> listedStoreFiles = storeFiles.stream()
+        Set<Path> listedStoreFiles = storeFiles.stream()
                 .map( StoreFileMetadata::file )
+                .map( File::toPath )
                 .collect( Collectors.toSet() );
         assertEquals( expectedFiles, listedStoreFiles );
     }
@@ -238,27 +239,27 @@ class DatabaseFileListingTest
 
     private static void filesInStoreDirAre( DatabaseLayout databaseLayout, String[] filenames, String[] dirs )
     {
-        List<File> files = new ArrayList<>();
+        List<Path> files = new ArrayList<>();
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
-        when( databaseLayout.listDatabaseFiles(any()) ).thenReturn( files.toArray( new File[0] ) );
+        when( databaseLayout.listDatabaseFiles( any() ) ).thenReturn( files.toArray( new Path[0] ) );
     }
 
-    private static ResourceIterator<File> scanStoreFilesAre( TokenScanStore labelScanStore, String[] fileNames )
+    private static ResourceIterator<Path> scanStoreFilesAre( TokenScanStore labelScanStore, String[] fileNames )
     {
-        List<File> files = new ArrayList<>();
+        List<Path> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
-        ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
+        ResourceIterator<Path> snapshot = spy( asResourceIterator( files.iterator() ) );
         when( labelScanStore.snapshotStoreFiles() ).thenReturn( snapshot );
         return snapshot;
     }
 
-    private static ResourceIterator<File> indexFilesAre( IndexingService indexingService, String[] fileNames )
+    private static ResourceIterator<Path> indexFilesAre( IndexingService indexingService, String[] fileNames )
             throws IOException
     {
-        List<File> files = new ArrayList<>();
+        List<Path> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
-        ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
+        ResourceIterator<Path> snapshot = spy( asResourceIterator( files.iterator() ) );
         when( indexingService.snapshotIndexFiles() ).thenReturn( snapshot );
         return snapshot;
     }
@@ -266,18 +267,19 @@ class DatabaseFileListingTest
     private void createIndexDbFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        final File indexFile = databaseLayout.file( "index.db" );
+        final File indexFile = databaseLayout.file( "index.db" ).toFile();
         if ( !indexFile.exists() )
         {
             assertTrue( indexFile.createNewFile() );
         }
     }
 
-    private static void mockFiles( String[] filenames, List<File> files, boolean isDirectories )
+    private static void mockFiles( String[] filenames, List<Path> files, boolean isDirectories )
     {
         for ( String filename : filenames )
         {
             File file = mock( File.class );
+            Path path = mock( Path.class );
 
             String[] fileNameParts = filename.split( "/" );
             when( file.getName() ).thenReturn( fileNameParts[fileNameParts.length - 1] );
@@ -286,7 +288,8 @@ class DatabaseFileListingTest
             when( file.isDirectory() ).thenReturn( isDirectories );
             when( file.exists() ).thenReturn( true );
             when( file.getPath() ).thenReturn( filename );
-            files.add( file );
+            when( path.toFile() ).thenReturn( file );
+            files.add( path );
         }
     }
 

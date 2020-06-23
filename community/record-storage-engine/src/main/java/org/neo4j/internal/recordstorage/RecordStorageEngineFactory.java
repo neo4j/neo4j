@@ -22,11 +22,11 @@ package org.neo4j.internal.recordstorage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -87,6 +87,7 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
@@ -135,14 +136,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        if ( !fileSystem.fileExists( databaseLayout.metadataStore() ) )
+        if ( !fileSystem.fileExists( databaseLayout.metadataStore().toFile() ) )
         {
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
 
         return Arrays.stream( StoreType.values() )
-                .map( t -> databaseLayout.file( t.getDatabaseFile() ) )
-                .filter( fileSystem::fileExists ).collect( Collectors.toList() );
+                .map( t -> databaseLayout.file( t.getDatabaseFile() ).toFile() )
+                .filter( fileSystem::fileExists ).collect( toList() );
     }
 
     @Override
@@ -186,7 +187,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
     {
-        File neoStoreFile = databaseLayout.metadataStore();
+        File neoStoreFile = databaseLayout.metadataStore().toFile();
         return MetaDataStore.getStoreId( pageCache, neoStoreFile, cursorTracer );
     }
 
@@ -218,22 +219,22 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
-        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
+        boolean allIdFilesExist = databaseLayout.idFiles().stream().map( Path::toFile ).allMatch( fs::fileExists );
         if ( !allIdFilesExist )
         {
             return StorageFilesState.recoverableState();
         }
 
-        Set<File> storeFiles = databaseLayout.storeFiles();
+        Set<Path> storeFiles = databaseLayout.storeFiles();
         // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
         storeFiles.remove( databaseLayout.countStore() );
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
         storeFiles.remove( databaseLayout.labelScanStore() );
         storeFiles.remove( databaseLayout.relationshipTypeScanStore() );
-        boolean allStoreFilesExist = storeFiles.stream().allMatch( fs::fileExists );
+        boolean allStoreFilesExist = storeFiles.stream().map( Path::toFile ).allMatch( fs::fileExists );
         if ( !allStoreFilesExist )
         {
-            return StorageFilesState.unrecoverableState( storeFiles.stream().filter( file -> !fs.fileExists( file ) ).collect( Collectors.toList() ) );
+            return StorageFilesState.unrecoverableState( storeFiles.stream().map( Path::toFile ).filter( file -> !fs.fileExists( file ) ).collect( toList() ) );
         }
 
         return StorageFilesState.recoveredState();

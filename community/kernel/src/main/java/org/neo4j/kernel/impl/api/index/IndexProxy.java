@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -110,7 +110,7 @@ public interface IndexProxy extends MinimalIndexAccessor
      */
     void validateBeforeCommit( Value[] tuple );
 
-    ResourceIterator<File> snapshotFiles() throws IOException;
+    ResourceIterator<Path> snapshotFiles() throws IOException;
 
     default void verifyDeferredConstraints( NodePropertyAccessor accessor )  throws IndexEntryConflictException, IOException
     {

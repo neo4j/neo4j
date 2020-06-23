@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.extension.context;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 
 abstract class BaseExtensionContext implements ExtensionContext
 {
-    private final File contextDirectory;
+    private final Path contextDirectory;
     private final DbmsInfo dbmsInfo;
     private final DependencySatisfier satisfier;
 
-    BaseExtensionContext( File contextDirectory, DbmsInfo dbmsInfo, DependencySatisfier satisfier )
+    BaseExtensionContext( Path contextDirectory, DbmsInfo dbmsInfo, DependencySatisfier satisfier )
     {
         this.contextDirectory = contextDirectory;
         this.dbmsInfo = dbmsInfo;
@@ -50,7 +50,7 @@ abstract class BaseExtensionContext implements ExtensionContext
     }
 
     @Override
-    public File directory()
+    public Path directory()
     {
         return contextDirectory;
     }

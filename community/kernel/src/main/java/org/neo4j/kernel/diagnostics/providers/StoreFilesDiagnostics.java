@@ -63,7 +63,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         logger.log( "Storage files stored on file store: " + getFileStoreType( databaseLayout.databaseDirectory() ) );
         logger.log( "Storage files: (filename : modification date - size)" );
         MappedFileCounter mappedCounter = new MappedFileCounter();
-        long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
+        long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory().toFile(), mappedCounter );
         logger.log( "Storage summary: " );
         logger.log( "  Total size of store: " + bytesToString( totalSize ) );
         logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
@@ -123,7 +123,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private static String getDiskSpace( DatabaseLayout databaseLayout )
     {
-        File directory = databaseLayout.databaseDirectory();
+        File directory = databaseLayout.databaseDirectory().toFile();
         long free = directory.getFreeSpace();
         long total = directory.getTotalSpace();
         long percentage = total != 0 ? (free * 100 / total) : 0;
@@ -146,7 +146,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             {
                 // Hmm, there was no storage here
             }
-            mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory() );
+            mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory().toFile() );
         }
 
         void addFile( File file )
@@ -170,7 +170,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
          */
         boolean canBeManagedByPageCache( File storeFile )
         {
-            boolean isLabelScanStore = databaseLayout.labelScanStore().equals( storeFile );
+            boolean isLabelScanStore = databaseLayout.labelScanStore().toFile().equals( storeFile );
             return isLabelScanStore || mappedCandidates.contains( storeFile );
         }
     }

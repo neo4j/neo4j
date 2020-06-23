@@ -23,8 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -73,7 +73,7 @@ class DatabaseLayoutWatcherTest
         watcher.start();
 
         verify( fileWatcher ).watch( databaseLayout.databaseDirectory() );
-        verify( fileWatcher ).watch( testDirectory.homeDir() );
+        verify( fileWatcher ).watch( testDirectory.homePath() );
         verify( fileWatcher ).addFileWatchEventListener( eventListener );
     }
 
@@ -92,15 +92,15 @@ class DatabaseLayoutWatcherTest
     private static class CountingWatchedResource implements WatchedResource
     {
         private static final AtomicLong COUNTER = new AtomicLong();
-        private final File file;
+        private final Path file;
 
-        CountingWatchedResource( File file )
+        CountingWatchedResource( Path path )
         {
-            this.file = file;
+            this.file = path;
         }
 
         @Override
-        public File getWatchedFile()
+        public Path getWatchedFile()
         {
             return file;
         }

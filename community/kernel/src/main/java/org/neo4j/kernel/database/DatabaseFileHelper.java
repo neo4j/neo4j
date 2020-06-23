@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,9 +29,13 @@ import java.util.stream.Collectors;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 
-class DatabaseFileHelper
+final class DatabaseFileHelper
 {
-    static List<File> filesToKeepOnTruncation( DatabaseLayout databaseLayout )
+    private DatabaseFileHelper()
+    {
+    }
+
+    static List<Path> filesToKeepOnTruncation( DatabaseLayout databaseLayout )
     {
         DatabaseFile[] filesToKeep = {DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.LABEL_TOKEN_NAMES_STORE,
                 DatabaseFile.LABEL_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE,
@@ -39,11 +43,11 @@ class DatabaseFileHelper
         return Arrays.stream( filesToKeep ).flatMap( databaseLayout::allFiles ).collect( Collectors.toList() );
     }
 
-    static List<File> filesToDeleteOnTruncation( List<File> filesToKeep, DatabaseLayout databaseLayout, File[] transactionLogs )
+    static List<Path> filesToDeleteOnTruncation( List<Path> filesToKeep, DatabaseLayout databaseLayout, Path[] transactionLogs )
     {
-        List<File> filesToDelete = new ArrayList<>();
+        List<Path> filesToDelete = new ArrayList<>();
         Collections.addAll( filesToDelete, databaseLayout.listDatabaseFiles( file -> !filesToKeep.contains( file ) ) );
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
         if ( !transactionLogsDirectory.equals( databaseLayout.databaseDirectory() ) )
         {
             if ( transactionLogs != null )

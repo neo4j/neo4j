@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -71,20 +72,20 @@ public class IndexBackupIT
         prepareDatabase( label );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
         removeOldNodes( LongStream.range( 1, 20 )  );
         updateOldNodes( LongStream.range( 30, 40 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         generateData( label );
         removeOldNodes( LongStream.range( 50, 60 )  );
         updateOldNodes( LongStream.range( 70, 80 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
@@ -105,11 +106,11 @@ public class IndexBackupIT
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );
 
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
@@ -183,9 +184,10 @@ public class IndexBackupIT
                 "second snapshot files are: " + secondFileSet;
     }
 
-    private Set<String> getFileNames( ResourceIterator<File> files )
+    private Set<String> getFileNames( ResourceIterator<Path> files )
     {
-        return files.stream().map( File::getAbsolutePath )
+        return files.stream().map( Path::toAbsolutePath)
+                .map( Path::toString )
                 .filter( this::segmentsFilePredicate )
                 .collect( Collectors.toSet() );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.Optional;
 import java.util.Set;
@@ -59,7 +59,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
             var watchedResource = getListenedResource( key );
             if ( watchedResource.isPresent() )
             {
-                File watchedFile = watchedResource.get().getWatchedFile();
+                Path watchedFile = watchedResource.get().getWatchedFile();
                 if ( isDatabaseDirectory( fileName, watchedFile ) )
                 {
                     printWarning( fileName );
@@ -72,7 +72,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
         }
     }
 
-    private boolean isDatabaseDirectory( String fileName, File watchedFile )
+    private boolean isDatabaseDirectory( String fileName, Path watchedFile )
     {
         Neo4jLayout neo4jLayout = databaseLayout.getNeo4jLayout();
         return fileName.equals( databaseLayout.getDatabaseName() ) &&
@@ -80,7 +80,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
                  neo4jLayout.transactionLogsRootDirectory().equals( watchedFile ));
     }
 
-    private boolean isFileInDatabaseDirectories( File watchedFile )
+    private boolean isFileInDatabaseDirectories( Path watchedFile )
     {
         return databaseLayout.databaseDirectory().equals( watchedFile ) ||
                databaseLayout.getTransactionLogsDirectory().equals( watchedFile );

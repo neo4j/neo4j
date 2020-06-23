@@ -22,7 +22,7 @@ package org.neo4j.commandline.dbms;
 import picocli.CommandLine.Parameters;
 
 import java.io.Closeable;
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
@@ -53,7 +53,7 @@ import static picocli.CommandLine.Command;
 public class StoreInfoCommand extends AbstractCommand
 {
     @Parameters( description = "Path to database store." )
-    private File storePath;
+    private Path storePath;
 
     public StoreInfoCommand( ExecutionContext ctx )
     {
@@ -63,7 +63,7 @@ public class StoreInfoCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
+        Validators.CONTAINS_EXISTING_DATABASE.validate( storePath.toFile() );
 
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
         var cacheTracer = PageCacheTracer.NULL;

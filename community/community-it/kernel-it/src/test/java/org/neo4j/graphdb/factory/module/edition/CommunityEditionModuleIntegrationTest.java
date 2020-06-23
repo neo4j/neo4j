@@ -74,8 +74,8 @@ class CommunityEditionModuleIntegrationTest
     void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
-        assertFalse( filter.test( databaseLayout.metadataStore().getName() ) );
-        assertFalse( filter.test( databaseLayout.nodeStore().getName() ) );
+        assertFalse( filter.test( databaseLayout.metadataStore().getFileName().toString() ) );
+        assertFalse( filter.test( databaseLayout.nodeStore().getFileName().toString() ) );
         assertTrue( filter.test( TransactionLogFilesHelper.DEFAULT_NAME + ".1" ) );
     }
 

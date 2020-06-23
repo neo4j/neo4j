@@ -429,7 +429,8 @@ public final class Recovery
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
                 logVersionRepository, logFiles, positionMonitor, log );
-        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker );
+        CorruptedLogsTruncator logsTruncator =
+                new CorruptedLogsTruncator( databaseLayout.databaseDirectory().toFile(), logFiles, fileSystemAbstraction, memoryTracker );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles,
                 startupChecker, pageCacheTracer );
@@ -555,7 +556,7 @@ public final class Recovery
         private File[] findLegacyLogFiles()
         {
             LegacyTransactionLogsLocator locator = new LegacyTransactionLogsLocator( Config.defaults(), databaseLayout );
-            File logsDirectory = locator.getTransactionLogsDirectory();
+            File logsDirectory = locator.getTransactionLogsDirectory().toFile();
             TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fs, logsDirectory );
             return logFilesHelper.getLogFiles();
         }

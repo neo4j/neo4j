@@ -47,6 +47,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.nio.file.Files.delete;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +72,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveDoesntExist() throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
 
         deleteLayoutFolders( databaseLayout );
 
@@ -82,7 +83,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInGzipFormat() throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         Files.write( archive, singletonList( "some incorrectly formatted data" ) );
 
         deleteLayoutFolders( databaseLayout );
@@ -94,7 +95,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInTarFormat() throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         try ( GzipCompressorOutputStream compressor =
                       new GzipCompressorOutputStream( Files.newOutputStream( archive ) ) )
         {
@@ -112,10 +113,10 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException, IncorrectFormat
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
 
-        assertTrue( databaseLayout.databaseDirectory().delete() );
-        assertTrue( databaseLayout.getTransactionLogsDirectory().delete() );
+        delete( databaseLayout.databaseDirectory() );
+        delete( databaseLayout.getTransactionLogsDirectory() );
 
         final File testFile = testDirectory.file( "testFile" );
         try ( TarArchiveOutputStream tar = new TarArchiveOutputStream(
@@ -131,12 +132,12 @@ class LoaderTest
     }
 
     @Test
-    void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists()
+    void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
 
-        assertTrue( databaseLayout.databaseDirectory().delete() );
-        assertTrue( databaseLayout.getTransactionLogsDirectory().exists() );
+        delete( databaseLayout.databaseDirectory() );
+        assertTrue( Files.exists( databaseLayout.getTransactionLogsDirectory() ) );
 
         FileAlreadyExistsException exception = assertThrows( FileAlreadyExistsException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( databaseLayout.getTransactionLogsDirectory().toString(), exception.getMessage() );
@@ -145,9 +146,9 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist()
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( destination.getParent().toString(), noSuchFileException.getMessage() );
@@ -156,7 +157,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryDoesntExist() throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         Path txLogsDestination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "txLogs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homeDir().toPath() )
@@ -173,10 +174,10 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsAFile()
             throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
         Files.write( destination.getParent(), new byte[0] );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
         FileSystemException exception = assertThrows( FileSystemException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( destination.getParent() + ": Not a directory", exception.getMessage() );
@@ -188,11 +189,11 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        File destination = testDirectory.directory( "subdir/the-destination" );
+        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path destination = testDirectory.directoryPath( "subdir/the-destination" );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
-        Path parentPath = databaseLayout.databaseDirectory().getParentFile().toPath();
+        Path parentPath = databaseLayout.databaseDirectory().getParent();
         try ( Closeable ignored = withPermissions( parentPath, emptySet() ) )
         {
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, databaseLayout ) );
@@ -206,7 +207,7 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
             throws IOException
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         File txLogsDirectory = testDirectory.directory( "subdir/txLogs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homeDir().toPath() )
@@ -215,7 +216,7 @@ class LoaderTest
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( config );
 
-        Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParentFile().toPath();
+        Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParent();
         try ( Closeable ignored = withPermissions( txLogsRoot, emptySet() ) )
         {
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, databaseLayout ) );
@@ -225,7 +226,7 @@ class LoaderTest
 
     private void deleteLayoutFolders( DatabaseLayout databaseLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+        fileSystem.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory().toFile() );
     }
 }

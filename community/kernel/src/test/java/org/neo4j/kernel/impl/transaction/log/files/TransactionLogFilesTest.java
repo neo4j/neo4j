@@ -155,8 +155,8 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystem.write( databaseLayout.file( filename ) ).close();
+        fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ).toFile() ).close();
+        fileSystem.write( databaseLayout.file( filename ).toFile() ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -253,7 +253,7 @@ class TransactionLogFilesTest
 
     private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
     {
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
         return new File( transactionLogsDirectory, fileName );
     }
 

@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.index.backup;
 
 import org.apache.lucene.index.IndexCommit;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -33,13 +33,13 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
  * Applicable only to a single Lucene index partition.
  *
  */
-class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
+class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<Path> implements ResourceIterator<Path>
 {
-    private final File indexDirectory;
+    private final Path indexDirectory;
     private final Iterator<String> fileNames;
     private final IndexCommit indexCommit;
 
-    ReadOnlyIndexSnapshotFileIterator( File indexDirectory, IndexCommit indexCommit ) throws IOException
+    ReadOnlyIndexSnapshotFileIterator( Path indexDirectory, IndexCommit indexCommit ) throws IOException
     {
         this.indexDirectory = indexDirectory;
         this.indexCommit = indexCommit;
@@ -47,13 +47,13 @@ class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<File> implem
     }
 
     @Override
-    protected File fetchNextOrNull()
+    protected Path fetchNextOrNull()
     {
         if ( !fileNames.hasNext() )
         {
             return null;
         }
-        return new File( indexDirectory, fileNames.next() );
+        return indexDirectory.resolve( fileNames.next() );
     }
 
     @Override
@@ -67,7 +67,7 @@ class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<File> implem
         return indexCommit;
     }
 
-    File getIndexDirectory()
+    Path getIndexDirectory()
     {
         return indexDirectory;
     }

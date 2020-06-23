@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.fs.watcher.resource;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.WatchKey;
 
 /**
@@ -28,18 +28,18 @@ import java.nio.file.WatchKey;
 public class WatchedFile implements WatchedResource
 {
     private final WatchKey watchKey;
-    private final File file;
+    private final Path path;
 
-    public WatchedFile( WatchKey watchKey, File file )
+    public WatchedFile( WatchKey watchKey, Path path )
     {
         this.watchKey = watchKey;
-        this.file = file;
+        this.path = path;
     }
 
     @Override
-    public File getWatchedFile()
+    public Path getWatchedFile()
     {
-        return file;
+        return path;
     }
 
     @Override

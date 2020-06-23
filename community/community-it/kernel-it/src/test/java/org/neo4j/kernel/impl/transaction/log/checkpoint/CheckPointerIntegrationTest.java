@@ -296,7 +296,7 @@ class CheckPointerIntegrationTest
 
     private File logsDirectory()
     {
-        return databaseLayout.getTransactionLogsDirectory();
+        return databaseLayout.getTransactionLogsDirectory().toFile();
     }
 
     private static class CheckPointCollector

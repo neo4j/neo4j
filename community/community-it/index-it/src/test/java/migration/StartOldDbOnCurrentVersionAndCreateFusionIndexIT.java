@@ -174,7 +174,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
     {
         // given
-        File targetDirectory = databaseLayout.databaseDirectory();
+        File targetDirectory = databaseLayout.databaseDirectory().toFile();
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when

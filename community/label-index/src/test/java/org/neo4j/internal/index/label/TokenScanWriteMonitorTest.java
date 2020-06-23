@@ -75,7 +75,7 @@ class TokenScanWriteMonitorTest
         secondWriteMonitor.close();
 
         // then
-        assertEquals( 2, requireNonNull( databaseLayout.databaseDirectory().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
+        assertEquals( 2, requireNonNull( databaseLayout.databaseDirectory().toFile().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
     }
 
     @Test
@@ -183,7 +183,7 @@ class TokenScanWriteMonitorTest
     void shouldRotateAtConfiguredThreshold()
     {
         // given
-        File storeDir = databaseLayout.databaseDirectory();
+        File storeDir = databaseLayout.databaseDirectory().toFile();
         int rotationThreshold = 1_000;
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS,
                 NODE );
@@ -210,7 +210,7 @@ class TokenScanWriteMonitorTest
     void shouldPruneAtConfiguredThreshold()
     {
         // given
-        File storeDir = databaseLayout.databaseDirectory();
+        File storeDir = databaseLayout.databaseDirectory().toFile();
         long pruneThreshold = 200;
         TokenScanWriteMonitor writeMonitor =
                 new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS, NODE );
@@ -241,11 +241,11 @@ class TokenScanWriteMonitorTest
     void shouldUseTargetRelationshipTypeScanStoreIfEntityTypeRelationship()
     {
         // given
-        assertThat( fs.listFiles( databaseLayout.databaseDirectory() ).length ).isEqualTo( 0 );
+        assertThat( fs.listFiles( databaseLayout.databaseDirectory().toFile() ).length ).isEqualTo( 0 );
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, RELATIONSHIP );
         writeMonitor.close();
-        List<File> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
+        List<File> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory().toFile() ) );
         assertThat( filesAfter.size() ).isEqualTo( 1 );
-        assertThat( filesAfter.get( 0 ).getName() ).contains( databaseLayout.relationshipTypeScanStore().getName() );
+        assertThat( filesAfter.get( 0 ).getName() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
     }
 }

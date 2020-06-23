@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.fs.watcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,7 +45,7 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
     private final FileWatcher fileWatcher;
     private final DatabaseLayout databaseLayout;
     private final FileWatchEventListenerFactory listenerFactory;
-    private final Set<File> filesToWatch = ConcurrentHashMap.newKeySet();
+    private final Set<Path> filesToWatch = ConcurrentHashMap.newKeySet();
     private final Set<WatchedResource> watchedResources = ConcurrentHashMap.newKeySet();
     private FileWatchEventListener eventListener;
 
@@ -85,7 +85,7 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
         startWatching();
     }
 
-    private void watch( File file )
+    private void watch( Path file )
     {
         filesToWatch.add( file );
     }
@@ -105,13 +105,13 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
 
     private void startWatching()
     {
-        for ( File fileToWatch : filesToWatch )
+        for ( Path fileToWatch : filesToWatch )
         {
             watchFile( fileToWatch );
         }
     }
 
-    private void watchFile( File fileToWatch )
+    private void watchFile( Path fileToWatch )
     {
         try
         {

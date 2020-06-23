@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -344,7 +344,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<Path> snapshotFiles() throws IOException
     {
         lock.readLock().lock();
         try

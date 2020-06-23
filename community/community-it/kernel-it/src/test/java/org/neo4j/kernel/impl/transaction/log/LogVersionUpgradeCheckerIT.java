@@ -71,7 +71,7 @@ class LogVersionUpgradeCheckerIT
     @BeforeEach
     void setUp()
     {
-        databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( DEFAULT_DATABASE_NAME ) );
+        databaseLayout = DatabaseLayout.ofFlat( testDirectory.directoryPath( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
@@ -165,10 +165,10 @@ class LogVersionUpgradeCheckerIT
 
     private DatabaseManagementService startDatabaseService( boolean allowUpgrade )
     {
-        var rootDirectory = databaseLayout.databaseDirectory().getParentFile();
+        var rootDirectory = databaseLayout.databaseDirectory().getParent();
         return new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem ).impermanent()
-                .setConfig( transaction_logs_root_path, rootDirectory.toPath() )
+                .setConfig( transaction_logs_root_path, rootDirectory )
                 .setConfig( allow_upgrade, allowUpgrade ).build();
     }
 }

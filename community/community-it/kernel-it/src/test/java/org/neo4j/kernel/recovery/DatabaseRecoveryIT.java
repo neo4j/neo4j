@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -164,7 +165,7 @@ class DatabaseRecoveryIT
     @Test
     void idGeneratorsRebuildAfterRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.homeDir() );
+        GraphDatabaseService database = startDatabase( directory.homePath() );
         int numberOfNodes = 10;
         try ( Transaction transaction = database.beginTx() )
         {
@@ -190,7 +191,7 @@ class DatabaseRecoveryIT
     @Test
     void reportProgressOnRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.homeDir() );
+        GraphDatabaseService database = startDatabase( directory.homePath() );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -215,7 +216,7 @@ class DatabaseRecoveryIT
     @Test
     void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.homeDir() );
+        GraphDatabaseService database = startDatabase( directory.homePath() );
         Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
@@ -268,9 +269,9 @@ class DatabaseRecoveryIT
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = directory.homeDir();
+        Path storeDir = directory.homePath();
         DatabaseManagementService managementService =
-                AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
+                AdversarialPageCacheGraphDatabaseFactory.create( storeDir.toFile(), fileSystem, adversary ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -791,11 +792,11 @@ class DatabaseRecoveryIT
 
     private DatabaseLayout copyStore() throws IOException
     {
-        DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homeDir( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-        fileSystem.mkdirs( restoreDbLayout.databaseDirectory() );
-        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, databaseLayout.getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, databaseLayout.databaseDirectory(), restoreDbLayout.databaseDirectory() );
+        DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homePath( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        fileSystem.mkdirs( restoreDbLayout.databaseDirectory().toFile() );
+        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory().toFile() );
+        copy( fileSystem, databaseLayout.getTransactionLogsDirectory().toFile(), restoreDbLayout.getTransactionLogsDirectory().toFile() );
+        copy( fileSystem, databaseLayout.databaseDirectory().toFile(), restoreDbLayout.databaseDirectory().toFile() );
         return restoreDbLayout;
     }
 
@@ -824,7 +825,7 @@ class DatabaseRecoveryIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private GraphDatabaseService startDatabase( File homeDir )
+    private GraphDatabaseService startDatabase( Path homeDir )
     {
         if ( managementService != null )
         {
@@ -834,7 +835,7 @@ class DatabaseRecoveryIT
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private DatabaseManagementService getManagementService( File homeDir )
+    private DatabaseManagementService getManagementService( Path homeDir )
     {
         return new TestDatabaseManagementServiceBuilder( homeDir ).setInternalLogProvider( logProvider ).build();
     }

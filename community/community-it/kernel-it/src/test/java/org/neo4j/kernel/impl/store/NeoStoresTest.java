@@ -383,8 +383,8 @@ public class NeoStoresTest
     {
         File storeDir = dir.homeDir();
         createShutdownTestDatabase( fs, storeDir );
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, NULL ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, NULL ) );
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 10, NULL ) );
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 12, NULL ) );
 
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, LOG_PROVIDER );
@@ -411,7 +411,7 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
-        File file = databaseLayout.metadataStore();
+        File file = databaseLayout.metadataStore().toFile();
         try ( StoreChannel channel = fs.write( file ) )
         {
             channel.position( 0 );
@@ -491,7 +491,7 @@ public class NeoStoresTest
         {
             neoStores.getMetaDataStore();
         }
-        File file = databaseLayout.metadataStore();
+        File file = databaseLayout.metadataStore().toFile();
         fileSystem.deleteFile( file );
 
         assertThrows( StoreNotFoundException.class, () ->
@@ -520,7 +520,7 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
-        File file = databaseLayout.metadataStore();
+        File file = databaseLayout.metadataStore().toFile();
 
         assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, NULL ) );
         assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, NULL ) );
@@ -652,7 +652,7 @@ public class NeoStoresTest
     void isPresentAfterCreatingAllStores() throws Exception
     {
         // given
-        fs.deleteRecursively( databaseLayout.databaseDirectory() );
+        fs.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
@@ -668,7 +668,7 @@ public class NeoStoresTest
     void isPresentFalseAfterCreatingAllButLastStoreType() throws Exception
     {
         // given
-        fs.deleteRecursively( databaseLayout.databaseDirectory() );
+        fs.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
         StoreType[] allStoreTypes = StoreType.values();
@@ -706,7 +706,7 @@ public class NeoStoresTest
             managementService.shutdown();
         }
         managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).setExternalDependencies( dependencies )
-                .setDatabaseRootDirectory( databaseLayout.databaseDirectory() ).build();
+                .setDatabaseRootDirectory( databaseLayout.databaseDirectory().toFile() ).build();
         final GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
 

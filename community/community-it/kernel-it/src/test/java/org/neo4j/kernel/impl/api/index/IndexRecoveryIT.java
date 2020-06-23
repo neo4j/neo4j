@@ -350,8 +350,8 @@ class IndexRecoveryIT
         try
         {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.copyRecursively( layout.databaseDirectory(), new File( snapshotDir, "data" ) );
-            FileUtils.copyRecursively( layout.getTransactionLogsDirectory(), new File( snapshotDir, "transactions" ) );
+            FileUtils.copyRecursively( layout.databaseDirectory().toFile(), new File( snapshotDir, "data" ) );
+            FileUtils.copyRecursively( layout.getTransactionLogsDirectory().toFile(), new File( snapshotDir, "transactions" ) );
         }
         catch ( IOException e )
         {
@@ -364,10 +364,10 @@ class IndexRecoveryIT
         try
         {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.deleteRecursively( layout.databaseDirectory() );
-            FileUtils.deleteRecursively( layout.getTransactionLogsDirectory() );
-            FileUtils.copyRecursively( new File( snapshotDir, "data" ), layout.databaseDirectory() );
-            FileUtils.copyRecursively( new File( snapshotDir, "transactions" ), layout.getTransactionLogsDirectory() );
+            FileUtils.deleteRecursively( layout.databaseDirectory().toFile() );
+            FileUtils.deleteRecursively( layout.getTransactionLogsDirectory().toFile() );
+            FileUtils.copyRecursively( new File( snapshotDir, "data" ), layout.databaseDirectory().toFile() );
+            FileUtils.copyRecursively( new File( snapshotDir, "transactions" ), layout.getTransactionLogsDirectory().toFile() );
             FileUtils.deleteRecursively( snapshotDir );
         }
         catch ( IOException e )

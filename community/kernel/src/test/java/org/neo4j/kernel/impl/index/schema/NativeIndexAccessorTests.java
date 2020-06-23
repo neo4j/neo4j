@@ -24,8 +24,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -646,11 +646,11 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void snapshotFilesShouldReturnIndexFile()
     {
         // when
-        ResourceIterator<File> files = accessor.snapshotFiles();
+        ResourceIterator<Path> files = accessor.snapshotFiles();
 
         // then
         assertTrue( files.hasNext() );
-        assertEquals( indexFiles.getStoreFile(), files.next() );
+        assertEquals( indexFiles.getStoreFile().toPath(), files.next() );
         assertFalse( files.hasNext() );
     }
 

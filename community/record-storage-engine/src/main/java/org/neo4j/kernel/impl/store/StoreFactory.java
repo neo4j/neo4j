@@ -124,7 +124,7 @@ public class StoreFactory
         {
             try
             {
-                fileSystemAbstraction.mkdirs( databaseLayout.databaseDirectory() );
+                fileSystemAbstraction.mkdirs( databaseLayout.databaseDirectory().toFile() );
             }
             catch ( IOException e )
             {

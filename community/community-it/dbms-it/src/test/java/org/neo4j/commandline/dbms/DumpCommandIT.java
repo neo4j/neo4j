@@ -109,7 +109,7 @@ class DumpCommandIT
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
         databaseLayout = neo4jLayout.databaseLayout( "foo" );
-        databaseDirectory = databaseLayout.databaseDirectory().toPath();
+        databaseDirectory = databaseLayout.databaseDirectory();
         putStoreInDirectory( buildConfig(), databaseDirectory );
     }
 
@@ -201,7 +201,7 @@ class DumpCommandIT
     void shouldRespectTheDatabaseLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
@@ -263,10 +263,10 @@ class DumpCommandIT
     @DisabledForRoot
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            Path file = databaseLayout.databaseLockFile().toPath();
+            Path file = databaseLayout.databaseLockFile();
             try ( Closeable ignored = withPermissions( file, emptySet() ) )
             {
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
@@ -279,7 +279,7 @@ class DumpCommandIT
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
-        File lockFile = DatabaseLayout.ofFlat( new File( "." ) ).databaseLockFile();
+        File lockFile = DatabaseLayout.ofFlat( Path.of( "." ) ).databaseLockFile().toFile();
         doAnswer( invocation ->
         {
             Predicate<Path> exclude = invocation.getArgument( 4 );
@@ -357,7 +357,7 @@ class DumpCommandIT
     private static void assertCanLockDatabase( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              Locker locker = new DatabaseLocker( fileSystem, DatabaseLayout.ofFlat( databaseDirectory.toFile() ) ) )
+              Locker locker = new DatabaseLocker( fileSystem, DatabaseLayout.ofFlat( databaseDirectory ) ) )
         {
             locker.checkLock();
         }
@@ -365,7 +365,7 @@ class DumpCommandIT
 
     private void putStoreInDirectory( Config config, Path databaseDirectory )
     {
-        String databaseName = databaseDirectory.toFile().getName();
+        String databaseName = databaseDirectory.getFileName().toString();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent().toFile() )
                 .setConfig( config )
                 .setConfig( default_database, databaseName )

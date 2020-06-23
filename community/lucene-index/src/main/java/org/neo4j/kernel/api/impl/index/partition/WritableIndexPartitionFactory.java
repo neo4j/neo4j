@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.impl.index.partition;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.function.Factory;
 
@@ -32,7 +32,7 @@ import org.neo4j.function.Factory;
  */
 public class WritableIndexPartitionFactory implements IndexPartitionFactory
 {
-    private Factory<IndexWriterConfig> writerConfigFactory;
+    private final Factory<IndexWriterConfig> writerConfigFactory;
 
     public WritableIndexPartitionFactory( Factory<IndexWriterConfig> writerConfigFactory )
     {
@@ -40,7 +40,7 @@ public class WritableIndexPartitionFactory implements IndexPartitionFactory
     }
 
     @Override
-    public AbstractIndexPartition createPartition( File partitionFolder, Directory directory ) throws IOException
+    public AbstractIndexPartition createPartition( Path partitionFolder, Directory directory ) throws IOException
     {
         return new WritableIndexPartition( partitionFolder, directory, writerConfigFactory.newInstance() );
     }

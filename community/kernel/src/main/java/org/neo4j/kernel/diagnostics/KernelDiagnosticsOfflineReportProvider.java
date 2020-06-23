@@ -55,7 +55,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory );
+        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory.toPath() );
     }
 
     @Override
@@ -199,7 +199,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         try
         {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fs ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory().toFile(), fs ).build();
             for ( File file : logFiles.logFiles() )
             {
                 sources.add( DiagnosticsReportSources.newDiagnosticsFile( "tx/" + file.getName(), fs, file ) );

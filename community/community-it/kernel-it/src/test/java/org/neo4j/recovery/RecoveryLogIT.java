@@ -80,7 +80,7 @@ class RecoveryLogIT
             tx.commit();
         }
 
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fileSystem )
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build().logFiles();
         for ( File file : txLogs )
@@ -99,7 +99,7 @@ class RecoveryLogIT
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build().logFiles() )
         {
-            fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
+            fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory().toFile() );
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();

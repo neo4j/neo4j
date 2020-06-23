@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -137,7 +137,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles()
+    public ResourceIterator<Path> snapshotFiles()
     {
         return concatResourceIterators( instanceSelector.transform( IndexAccessor::snapshotFiles ).iterator() );
     }

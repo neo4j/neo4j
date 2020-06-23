@@ -21,7 +21,6 @@ package org.neo4j.io.layout;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,9 +48,8 @@ class Neo4jLayoutTest
     @Test
     void storeLayoutForAbsoluteFile()
     {
-        File homeDir = testDirectory.homeDir();
-        File storeDir = testDirectory.directory( "store" );
-        Neo4jLayout storeLayout = Neo4jLayout.of( Config.defaults( databases_root_path, storeDir.toPath() ) );
+        Path storeDir = testDirectory.directoryPath( "store" );
+        Neo4jLayout storeLayout = Neo4jLayout.of( Config.defaults( databases_root_path, storeDir ) );
         assertEquals( storeDir, storeLayout.databasesDirectory() );
     }
 
@@ -59,9 +57,9 @@ class Neo4jLayoutTest
     void storeLayoutResolvesLinks() throws IOException
     {
         Path basePath = testDirectory.homeDir().toPath();
-        File storeDir = testDirectory.homeDir("notAbsolute");
+        Path storeDir = testDirectory.homePath("notAbsolute");
         Path linkPath = basePath.resolve( "link" );
-        Path symbolicLink = Files.createSymbolicLink( linkPath, storeDir.toPath() );
+        Path symbolicLink = Files.createSymbolicLink( linkPath, storeDir );
         Neo4jLayout storeLayout = Neo4jLayout.of( Config.defaults( databases_root_path, symbolicLink ) );
         assertEquals( storeDir, storeLayout.databasesDirectory() );
     }
@@ -71,31 +69,30 @@ class Neo4jLayoutTest
     {
         Path basePath = testDirectory.homeDir("notCanonical").toPath();
         Path notCanonicalPath = basePath.resolve( "../anotherLocation" );
-        Neo4jLayout storeLayout = Neo4jLayout.of( notCanonicalPath.toFile() );
-        assertEquals( testDirectory.directory( "anotherLocation" ), storeLayout.homeDirectory() );
+        Neo4jLayout storeLayout = Neo4jLayout.of( notCanonicalPath );
+        assertEquals( testDirectory.directoryPath( "anotherLocation" ), storeLayout.homeDirectory() );
     }
 
     @Test
     void storeLockFileLocation()
     {
-        Neo4jLayout layout = Neo4jLayout.of( testDirectory.homeDir() );
-        File storeLockFile = layout.storeLockFile();
-        assertEquals( "store_lock", storeLockFile.getName() );
-        assertEquals( layout.databasesDirectory(), storeLockFile.getParentFile() );
+        Neo4jLayout layout = Neo4jLayout.of( testDirectory.homePath() );
+        Path storeLockFile = layout.storeLockFile();
+        assertEquals( "store_lock", storeLockFile.getFileName().toString() );
+        assertEquals( layout.databasesDirectory(), storeLockFile.getParent() );
     }
 
     @Test
     void emptyStoreLayoutDatabasesCollection()
     {
-        Neo4jLayout storeLayout = Neo4jLayout.of( testDirectory.homeDir() );
+        Neo4jLayout storeLayout = Neo4jLayout.of( testDirectory.homePath() );
         assertTrue( storeLayout.databaseLayouts().isEmpty() );
     }
 
     @Test
     void storeLayoutDatabasesOnlyBasedOnSubfolders()
     {
-        File homeDir = testDirectory.homeDir();
-        Neo4jLayout layout = Neo4jLayout.of( homeDir );
+        Neo4jLayout layout = Neo4jLayout.of( testDirectory.homePath() );
 
         testDirectory.directory( "abc", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
         testDirectory.directory( "bcd", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );

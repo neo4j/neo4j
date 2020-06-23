@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -124,7 +125,7 @@ class RecoveryCorruptedTransactionLogIT
                     Integer.BYTES; // checksum
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
-    private File databaseDirectory;
+    private Path databaseDirectory;
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
     private TestDatabaseManagementServiceBuilder databaseFactory;
@@ -662,8 +663,8 @@ class RecoveryCorruptedTransactionLogIT
             assertThat( numberOfRecoveredTransactions ).isGreaterThanOrEqualTo( 0 );
         }
 
-        File corruptedLogArchives = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertThat( corruptedLogArchives.listFiles() ).isNotEmpty();
+        Path corruptedLogArchives = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        assertThat( corruptedLogArchives.toFile().listFiles() ).isNotEmpty();
     }
 
     @Test
@@ -687,8 +688,8 @@ class RecoveryCorruptedTransactionLogIT
             assertThat( numberOfRecoveredTransactions ).isGreaterThanOrEqualTo( 0 );
         }
 
-        File corruptedLogArchives = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertThat( corruptedLogArchives.listFiles() ).isNotEmpty();
+        Path corruptedLogArchives = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        assertThat( corruptedLogArchives.toFile().listFiles() ).isNotEmpty();
     }
 
     private StoreId getStoreId( GraphDatabaseAPI database )

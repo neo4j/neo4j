@@ -68,7 +68,7 @@ class RecordStoreVersionTest
         @BeforeEach
         void setup() throws IOException
         {
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory().toFile() );
         }
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
@@ -117,9 +117,9 @@ class RecordStoreVersionTest
     private void setupUnsupported( String version ) throws IOException
         {
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
-            changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
-            File metadataStore = databaseLayout.metadataStore();
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory().toFile() );
+            changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore().toFile(), version );
+            File metadataStore = databaseLayout.metadataStore().toFile();
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
         }
 

@@ -199,7 +199,7 @@ public class IndexCleanupIT
     private File[] providerDirectories( FileSystemAbstraction fs, DbmsRule db )
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        File dbDir = databaseLayout.databaseDirectory();
+        File dbDir = databaseLayout.databaseDirectory().toFile();
         File schemaDir = new File( dbDir, "schema" );
         File indexDir = new File( schemaDir, "index" );
         return fs.listFiles( indexDir );

@@ -309,7 +309,7 @@ class MultipleIndexPopulationStressIT
         try ( RandomDataInput input = new RandomDataInput( count );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            DatabaseLayout layout = Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            DatabaseLayout layout = Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, null, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,

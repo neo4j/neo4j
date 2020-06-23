@@ -92,7 +92,7 @@ public class DatabaseFileListing
         int index = 0;
         for ( StoreFileMetadata file : files )
         {
-            if ( databaseLayout.metadataStore().equals( file.file() ) )
+            if ( databaseLayout.metadataStore().equals( file.file().toPath() ) )
             {
                 break;
             }

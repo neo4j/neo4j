@@ -142,23 +142,23 @@ public class DbRepresentation
     public static DbRepresentation of( DatabaseLayout databaseLayout )
     {
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
-        return of( databaseLayout.databaseDirectory(),
+        return of( databaseLayout.databaseDirectory().toFile(),
                 Config.newBuilder()
-                        .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
-                        .set( databases_root_path, layout.databasesDirectory().toPath().toAbsolutePath() )
+                        .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toAbsolutePath() )
+                        .set( databases_root_path, layout.databasesDirectory().toAbsolutePath() )
                         .set( default_database, databaseLayout.getDatabaseName() )
-                        .build());
+                        .build() );
     }
 
     public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
     {
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         Config cfg = Config.newBuilder().fromConfig( config )
-                .setDefault( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
-                .setDefault( databases_root_path, layout.databasesDirectory().toPath().toAbsolutePath() )
+                .setDefault( transaction_logs_root_path, layout.transactionLogsRootDirectory().toAbsolutePath() )
+                .setDefault( databases_root_path, layout.databasesDirectory().toAbsolutePath() )
                 .setDefault( default_database, databaseLayout.getDatabaseName() )
                 .build();
-        return of( databaseLayout.databaseDirectory(), cfg );
+        return of( databaseLayout.databaseDirectory().toFile(), cfg );
     }
 
     @Override

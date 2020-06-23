@@ -60,8 +60,8 @@ public class Loader
 
     public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat
     {
-        Path databaseDestination = databaseLayout.databaseDirectory().toPath();
-        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toPath();
+        Path databaseDestination = databaseLayout.databaseDirectory();
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
 
         validatePath( databaseDestination, false );
         validatePath( transactionLogsDirectory, true );
@@ -104,15 +104,15 @@ public class Loader
 
     private void checkDatabasePresence( DatabaseLayout databaseLayout ) throws FileAlreadyExistsException
     {
-        if ( databaseLayout.metadataStore().exists() )
+        if ( Files.exists( databaseLayout.metadataStore() ) )
         {
-            throw new FileAlreadyExistsException( databaseLayout.metadataStore().getAbsolutePath() );
+            throw new FileAlreadyExistsException( databaseLayout.metadataStore().toFile().getAbsolutePath() );
         }
     }
 
     private void createDestination( Path destination ) throws IOException
     {
-        if ( !destination.toFile().exists() )
+        if ( !Files.exists( destination ) )
         {
             Files.createDirectories( destination );
         }

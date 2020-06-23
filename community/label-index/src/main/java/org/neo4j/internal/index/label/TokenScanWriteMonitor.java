@@ -97,7 +97,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         this.fs = fs;
         this.rotationThreshold = rotationThresholdUnit.toBytes( rotationThreshold );
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
-        this.storeDir = databaseLayout.databaseDirectory();
+        this.storeDir = databaseLayout.databaseDirectory().toFile();
         this.file = writeLogBaseFile( databaseLayout, entityType );
         try
         {
@@ -115,7 +115,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     static File writeLogBaseFile( DatabaseLayout databaseLayout, EntityType entityType )
     {
-        File baseFile = entityType == EntityType.NODE ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
+        File baseFile = entityType == EntityType.NODE ? databaseLayout.labelScanStore().toFile() : databaseLayout.relationshipTypeScanStore().toFile();
         return new File( baseFile + ".writelog" );
     }
 
@@ -391,7 +391,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             return;
         }
 
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( new File( arguments.orphans().get( 0 ) ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( new File( arguments.orphans().get( 0 ) ).toPath() );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         TxFilter txFilter = parseTxFilter( arguments.get( ARG_TXFILTER, null ) );
         PrintStream out = System.out;
@@ -419,7 +419,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     {
         File writeLogFile = writeLogBaseFile( databaseLayout, entityType );
         String writeLogFileBaseName = writeLogFile.getName();
-        File[] files = fs.listFiles( databaseLayout.databaseDirectory(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
+        File[] files = fs.listFiles( databaseLayout.databaseDirectory().toFile(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
         Arrays.sort( files, comparing( file -> file.getName().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
         long session = 0;
         for ( File file : files )

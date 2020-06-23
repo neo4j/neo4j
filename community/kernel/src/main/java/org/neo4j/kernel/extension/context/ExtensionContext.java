@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.extension.context;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -38,5 +38,5 @@ public interface ExtensionContext
      * Depending from type of context directory can be equal to store root directory or database root directory.
      * @return context root directory.
      */
-    File directory();
+    Path directory();
 }

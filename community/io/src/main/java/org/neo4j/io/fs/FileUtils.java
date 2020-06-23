@@ -373,6 +373,11 @@ public final class FileUtils
         Files.copy( srcFile.toPath(), dstFile.toPath(), copyOptions );
     }
 
+    public static void copyFile( Path srcFile, Path dstFile ) throws IOException
+    {
+        copyFile( srcFile.toFile(), dstFile.toFile(), StandardCopyOption.REPLACE_EXISTING );
+    }
+
     public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         copyRecursively( fromDirectory, toDirectory, null );
@@ -660,6 +665,18 @@ public final class FileUtils
         }
     }
 
+    public static Path getCanonicalFile( Path file )
+    {
+        try
+        {
+            return Files.exists( file ) ? file.toRealPath().normalize() : file.normalize();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     public static void writeAll( FileChannel channel, ByteBuffer src, long position ) throws IOException
     {
         long filePosition = position;
@@ -713,15 +730,15 @@ public final class FileUtils
 
     /**
      * Get type of file store where provided file is located.
-     * @param file file to get file store type for.
+     * @param path file to get file store type for.
      * @return name of file store or "Unknown file store type: " + exception message,
      *         in case if exception occur during file store type retrieval.
      */
-    public static String getFileStoreType( File file )
+    public static String getFileStoreType( Path path )
     {
         try
         {
-            return Files.getFileStore( file.toPath() ).type();
+            return Files.getFileStore( path ).type();
         }
         catch ( IOException e )
         {

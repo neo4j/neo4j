@@ -19,8 +19,8 @@
  */
 package org.neo4j.adversaries.watcher;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
@@ -50,10 +50,10 @@ public class AdversarialFileWatcher implements FileWatcher
     }
 
     @Override
-    public WatchedResource watch( File file ) throws IOException
+    public WatchedResource watch( Path path ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return fileWatcher.watch( file );
+        return fileWatcher.watch( path );
     }
 
     @Override

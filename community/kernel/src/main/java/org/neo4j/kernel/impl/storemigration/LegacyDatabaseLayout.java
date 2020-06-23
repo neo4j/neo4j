@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -35,7 +35,7 @@ class LegacyDatabaseLayout extends DatabaseLayout
     }
 
     @Override
-    public File getTransactionLogsDirectory()
+    public Path getTransactionLogsDirectory()
     {
         return logsLocator.getTransactionLogsDirectory();
     }

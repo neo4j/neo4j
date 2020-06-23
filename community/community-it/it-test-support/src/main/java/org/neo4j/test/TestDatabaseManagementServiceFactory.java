@@ -152,13 +152,13 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         @Override
         public Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout )
         {
-            return new Locker( fileSystem, storeLayout.storeLockFile() );
+            return new Locker( fileSystem, storeLayout.storeLockFile().toFile() );
         }
 
         @Override
         public Locker createDatabaseLocker( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
         {
-            return new Locker( fileSystem, databaseLayout.databaseLockFile() );
+            return new Locker( fileSystem, databaseLayout.databaseLockFile().toFile() );
         }
     }
 }

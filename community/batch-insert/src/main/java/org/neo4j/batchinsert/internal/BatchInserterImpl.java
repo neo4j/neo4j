@@ -256,9 +256,9 @@ public class BatchInserterImpl implements BatchInserter
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         this.config = Config.newBuilder()
                 .setDefaults( getDefaultParams() )
-                .set( neo4j_home, layout.homeDirectory().toPath() )
-                .set( databases_root_path, layout.databasesDirectory().toPath() )
-                .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() )
+                .set( neo4j_home, layout.homeDirectory() )
+                .set( databases_root_path, layout.databasesDirectory() )
+                .set( transaction_logs_root_path, layout.transactionLogsRootDirectory() )
                 .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
                 .build();
@@ -578,7 +578,7 @@ public class BatchInserterImpl implements BatchInserter
         var cacheTracer = PageCacheTracer.NULL;
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeIndex,
                 NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore().toFile(),
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
@@ -623,7 +623,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
-        File countsStoreFile = databaseLayout.countStore();
+        File countsStoreFile = databaseLayout.countStore().toFile();
         fileSystem.deleteRecursively( countsStoreFile );
         CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile, fileSystem, immediate(), initialCountsBuilder,
@@ -1227,7 +1227,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public String getStoreDir()
     {
-        return databaseLayout.databaseDirectory().getPath();
+        return databaseLayout.databaseDirectory().toFile().getPath();
     }
 
     private static void dumpConfiguration( Config config )

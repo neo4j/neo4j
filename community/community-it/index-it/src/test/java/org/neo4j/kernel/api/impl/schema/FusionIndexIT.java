@@ -131,7 +131,7 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
     {
-        File databaseDirectory = this.databaseLayout.databaseDirectory();
+        File databaseDirectory = this.databaseLayout.databaseDirectory().toFile();
         File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
         File[] files = fs.listFiles( rootDirectory );
         for ( File indexFile : files )

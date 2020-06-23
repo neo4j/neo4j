@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class SchemaAndIndexingFileIndexListing
 {
-    private static final Function<File,StoreFileMetadata> toStoreFileMetadata = file -> new StoreFileMetadata( file, 1 );
+    private static final Function<Path,StoreFileMetadata> toStoreFileMetadata = file -> new StoreFileMetadata( file.toFile(), 1 );
 
     private final LabelScanStore labelScanStore;
     private final RelationshipTypeScanStore relationshipTypeScanStore;
@@ -56,7 +56,7 @@ public class SchemaAndIndexingFileIndexListing
 
     Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
-        ResourceIterator<File> snapshot = indexingService.snapshotIndexFiles();
+        ResourceIterator<Path> snapshot = indexingService.snapshotIndexFiles();
         getSnapshotFilesMetadata( snapshot, targetFiles );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
@@ -65,7 +65,7 @@ public class SchemaAndIndexingFileIndexListing
 
     Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
     {
-        ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
+        ResourceIterator<Path> snapshot = labelScanStore.snapshotStoreFiles();
         getSnapshotFilesMetadata( snapshot, targetFiles );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
@@ -74,14 +74,14 @@ public class SchemaAndIndexingFileIndexListing
 
     Resource gatherRelationshipTypeScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
     {
-        ResourceIterator<File> snapshot = relationshipTypeScanStore.snapshotStoreFiles();
+        ResourceIterator<Path> snapshot = relationshipTypeScanStore.snapshotStoreFiles();
         getSnapshotFilesMetadata( snapshot, targetFiles );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
     }
 
-    private void getSnapshotFilesMetadata( ResourceIterator<File> snapshot, Collection<StoreFileMetadata> targetFiles )
+    private void getSnapshotFilesMetadata( ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
         snapshot.stream().map( toStoreFileMetadata ).forEach( targetFiles::add );
     }

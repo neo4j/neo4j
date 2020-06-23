@@ -148,7 +148,7 @@ class ArchiveTest
         Files.createDirectories( expectedOutput );
         Files.write( expectedOutput.resolve( "a-file" ), new byte[0] );
 
-        assertEquals( describeRecursively( expectedOutput ), describeRecursively( databaseLayout.databaseDirectory().toPath() ) );
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( databaseLayout.databaseDirectory() ) );
     }
 
     @ParameterizedTest
@@ -170,7 +170,7 @@ class ArchiveTest
         Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
         Files.createDirectories( expectedOutput );
 
-        assertEquals( describeRecursively( expectedOutput ), describeRecursively( databaseLayout.databaseDirectory().toPath() ) );
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( databaseLayout.databaseDirectory() ) );
     }
 
     @ParameterizedTest
@@ -179,14 +179,14 @@ class ArchiveTest
     {
         File txLogsRoot = testDirectory.directory( "txLogsRoot" );
         DatabaseLayout testDatabaseLayout = layoutWithCustomTxRoot( txLogsRoot,"testDatabase" );
-        Files.createDirectories( testDatabaseLayout.databaseDirectory().toPath() );
-        Path txLogsDirectory = testDatabaseLayout.getTransactionLogsDirectory().toPath();
+        Files.createDirectories( testDatabaseLayout.databaseDirectory() );
+        Path txLogsDirectory = testDatabaseLayout.getTransactionLogsDirectory();
         Files.createDirectories( txLogsDirectory );
-        Files.write( testDatabaseLayout.databaseDirectory().toPath().resolve( "dbfile" ), new byte[0] );
+        Files.write( testDatabaseLayout.databaseDirectory().resolve( "dbfile" ), new byte[0] );
         Files.write( txLogsDirectory.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        new Dumper().dump( testDatabaseLayout.databaseDirectory().toPath(), txLogsDirectory, archive, compressionFormat, alwaysFalse() );
+        new Dumper().dump( testDatabaseLayout.databaseDirectory(), txLogsDirectory, archive, compressionFormat, alwaysFalse() );
 
         File newTxLogsRoot = testDirectory.directory( "newTxLogsRoot" );
         DatabaseLayout newDatabaseLayout = layoutWithCustomTxRoot( newTxLogsRoot,"the-new-database" );
@@ -199,8 +199,8 @@ class ArchiveTest
         Path expectedTxLogs = testDirectory.directory( "expectedTxLogs" ).toPath();
         Files.write( expectedTxLogs.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
-        assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDatabaseLayout.databaseDirectory().toPath() ) );
-        assertEquals( describeRecursively( expectedTxLogs ), describeRecursively( newDatabaseLayout.getTransactionLogsDirectory().toPath() ) );
+        assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDatabaseLayout.databaseDirectory() ) );
+        assertEquals( describeRecursively( expectedTxLogs ), describeRecursively( newDatabaseLayout.getTransactionLogsDirectory() ) );
     }
 
     private DatabaseLayout layoutWithCustomTxRoot( File txLogsRoot, String databaseName )
@@ -218,7 +218,7 @@ class ArchiveTest
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         new Dumper().dump( oldDirectory, oldDirectory, archive, compressionFormat, alwaysFalse() );
         File newDirectory = testDirectory.file( "the-new-directory" );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( newDirectory );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( newDirectory.toPath() );
         new Loader().load( archive, databaseLayout );
 
         assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory.toPath() ) );

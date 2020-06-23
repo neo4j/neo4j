@@ -233,7 +233,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
         try
         {
-            return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
+            return new GBPTreeCountsStore( pageCache, layout.countStore().toFile(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 
@@ -455,7 +455,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public Collection<StoreFileMetadata> listStorageFiles()
     {
         List<StoreFileMetadata> files = new ArrayList<>();
-        files.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
+        files.add( new StoreFileMetadata( databaseLayout.countStore().toFile(), RecordFormat.NO_RECORD_SIZE ) );
         for ( StoreType type : StoreType.values() )
         {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );

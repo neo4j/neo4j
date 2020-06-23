@@ -34,6 +34,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -670,7 +671,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
             DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome.toPath() ) );
 
-            final File[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory(), NATIVE30 );
+            final File[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory().toFile(), NATIVE30 );
             final List<File> files = corruptIndexes( fs, true, ( tree, inspection ) -> {
                 long leafNode = inspection.getLeafNodes().get( 1 );
                 long internalNode = inspection.getInternalNodes().get( 0 );
@@ -778,32 +779,32 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private File labelScanStoreFile()
     {
-        return databaseLayout.labelScanStore();
+        return databaseLayout.labelScanStore().toFile();
     }
 
     private File relationshipTypeScanStoreFile()
     {
-        return databaseLayout.relationshipTypeScanStore();
+        return databaseLayout.relationshipTypeScanStore().toFile();
     }
 
     private File indexStatisticsStoreFile()
     {
-        return databaseLayout.indexStatisticsStore();
+        return databaseLayout.indexStatisticsStore().toFile();
     }
 
     private File countsStoreFile()
     {
-        return databaseLayout.countStore();
+        return databaseLayout.countStore().toFile();
     }
 
     private File[] idStoreFiles()
     {
-        return databaseLayout.idFiles().toArray( File[]::new );
+        return databaseLayout.idFiles().stream().map( Path::toFile ).toArray( File[]::new );
     }
 
     private File[] schemaIndexFiles() throws IOException
     {
-        final File databaseDir = databaseLayout.databaseDirectory();
+        final File databaseDir = databaseLayout.databaseDirectory().toFile();
         return schemaIndexFiles( fs, databaseDir, NATIVE_BTREE10 );
     }
 

@@ -100,7 +100,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 
@@ -141,7 +141,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = databaseLayout.metadataStore();
+        File neoStore = databaseLayout.metadataStore().toFile();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index.stats;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly, PageCacheTracer pageCacheTracer )
     {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly, pageCacheTracer );
+        this( pageCache, databaseLayout.indexStatisticsStore().toFile(), recoveryCleanupWorkCollector, readOnly, pageCacheTracer );
     }
 
     @Override
@@ -228,9 +229,9 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    public File storeFile()
+    public Path storeFile()
     {
-        return file;
+        return file.toPath();
     }
 
     @Override

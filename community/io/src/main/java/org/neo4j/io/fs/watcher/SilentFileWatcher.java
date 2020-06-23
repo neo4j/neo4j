@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.fs.watcher;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
@@ -31,7 +31,7 @@ public class SilentFileWatcher implements FileWatcher
 {
 
     @Override
-    public WatchedResource watch( File file )
+    public WatchedResource watch( Path path )
     {
         return WatchedResource.EMPTY;
     }

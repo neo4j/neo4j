@@ -71,9 +71,8 @@ class DatabaseShutdownTest
     @Test
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
-
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
-                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
+                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory().toFile(), fs );
         DatabaseManagementService managementService = factory.build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );

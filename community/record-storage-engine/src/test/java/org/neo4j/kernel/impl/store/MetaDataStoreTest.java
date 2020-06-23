@@ -563,7 +563,7 @@ class MetaDataStoreTest
 
     private File createMetaDataFile() throws IOException
     {
-        File file = databaseLayout.metadataStore();
+        File file = databaseLayout.metadataStore().toFile();
         fs.write( file ).close();
         return file;
     }
