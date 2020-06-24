@@ -113,7 +113,6 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         catch ( Throwable throwable )
         {
             String message = "Failed to upgrade database: " + namedDatabaseId.name();
-            log.error( message, throwable );
             context.fail( throwable );
             throw new DatabaseManagementException( message, throwable );
         }

@@ -90,10 +90,7 @@ class DefaultDatabaseManagerUpgradeIT
     @AfterEach
     void tearDown()
     {
-        if ( dbms != null )
-        {
-            dbms.shutdown();
-        }
+        dbms.shutdown();
     }
 
     @Test
