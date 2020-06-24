@@ -32,7 +32,6 @@ import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Objects;
 
 import static org.objectweb.asm.Type.getType;
 
@@ -235,7 +234,7 @@ interface ByteCodeVisitor
                     prefix = "";
                     for ( int i = 0; i < nStack; i++ )
                     {
-                        frame.append( prefix ).append( Objects.toString( stack[i] ) );
+                        frame.append( prefix ).append( stack[i] );
                         prefix = ", ";
                     }
                     println( frame.append( ']' ) );

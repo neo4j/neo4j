@@ -133,13 +133,13 @@ public class SslResourceBuilder
 
         for ( int trustedKeyId : trusted )
         {
-            File targetTrustedCertificate = new File( targetTrusted, String.valueOf( trustedKeyId ) + ".crt" );
+            File targetTrustedCertificate = new File( targetTrusted, trustedKeyId + ".crt" );
             copy( resource( SELF_SIGNED_NAME, trustedKeyId ), targetTrustedCertificate );
         }
 
         for ( int revokedKeyId : revoked )
         {
-            File targetRevokedCRL = new File( targetRevoked, String.valueOf( revokedKeyId ) + ".crl" );
+            File targetRevokedCRL = new File( targetRevoked, revokedKeyId + ".crl" );
             copy( resource( REVOKED_NAME, revokedKeyId ), targetRevokedCRL );
         }
 
@@ -157,7 +157,7 @@ public class SslResourceBuilder
 
     private static URL resource( String filename, int keyId )
     {
-        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + String.valueOf( keyId ) + "/" + filename );
+        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + keyId + "/" + filename );
     }
 
     private static URL resource( String filename )

@@ -84,7 +84,7 @@ public abstract class FileRepositorySerializer<S>
 
         long n = random.nextLong();
         n = (n == Long.MIN_VALUE) ? 0 : Math.abs( n );
-        return new File( directory, Long.toString( n ) + "_" + recordsFile.getName() + ".tmp" );
+        return new File( directory, n + "_" + recordsFile.getName() + ".tmp" );
     }
 
     public List<S> loadRecordsFromFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException, FormatException
