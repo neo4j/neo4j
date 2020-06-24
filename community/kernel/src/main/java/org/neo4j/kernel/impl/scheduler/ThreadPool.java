@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.scheduler;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.scheduler.Group;
@@ -66,20 +69,28 @@ final class ThreadPool
 
     public <T> JobHandle<T> submit( Callable<T> job )
     {
-        Object registryKey = new Object();
-        Callable<T> registeredJob = () ->
+        var registryKey = new Object();
+        var jobHandle = new CompletableFuture<Void>();
+
+        Supplier<T> registeredJob = () ->
         {
             try
             {
                 return job.call();
+            }
+            catch ( Exception e )
+            {
+                throw new CompletionException( e );
             }
             finally
             {
                 registry.remove( registryKey );
             }
         };
-        Future<T> future = executor.submit( registeredJob );
+
+        var future = jobHandle.thenCompose( ignored -> CompletableFuture.supplyAsync( registeredJob, executor ) );
         registry.put( registryKey, future );
+        jobHandle.complete( null );
         return new PooledJobHandle<>( future, registryKey, registry );
     }
 
@@ -94,6 +105,11 @@ final class ThreadPool
             job.run();
             return null;
         };
+    }
+
+    int activeJobCount()
+    {
+        return registry.size();
     }
 
     int activeThreadCount()
