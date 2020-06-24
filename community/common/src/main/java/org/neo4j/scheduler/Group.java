@@ -94,7 +94,10 @@ public enum Group
 
     // FABRIC
     FABRIC_IDLE_DRIVER_MONITOR( "FabricIdleDriverMonitor" ),
-    FABRIC_WORKER( "FabricWorker" );
+    FABRIC_WORKER( "FabricWorker" ),
+
+    //TESTING
+    TESTING( "TestingGroup" );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
