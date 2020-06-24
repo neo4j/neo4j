@@ -24,10 +24,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
@@ -50,6 +46,9 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,7 +83,7 @@ class DefaultDatabaseManagerUpgradeIT
         userLogProvider = mock( LogProvider.class, RETURNS_MOCKS );
         databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         File prepareDirectory = testDirectory.directory( "prepare" );
-        File workingDirectory = databaseLayout.databaseDirectory();
+        File workingDirectory = databaseLayout.databaseDirectory().toFile();
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV3_4.STORE_VERSION, fs, workingDirectory, prepareDirectory );
     }
 
