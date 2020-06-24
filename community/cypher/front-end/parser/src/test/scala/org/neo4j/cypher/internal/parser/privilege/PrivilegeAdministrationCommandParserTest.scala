@@ -39,8 +39,9 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   // yield / skip / limit / order by / where
   Seq(
     ("ALL", ast.ShowAllPrivileges() _),
-    ("USER neo4j", ast.ShowUsersPrivileges(Some(List(literal("neo4j")))) _),
-    ("USERS neo4j, $user", ast.ShowUsersPrivileges(Some(List(literal("neo4j"), param("user")))) _),
+    ("USER", ast.ShowUserPrivileges(None) _),
+    ("USER neo4j", ast.ShowUsersPrivileges(List(literal("neo4j"))) _),
+    ("USERS neo4j, $user", ast.ShowUsersPrivileges(List(literal("neo4j"), param("user"))) _),
     ("ROLES $role", ast.ShowRolesPrivileges(List(param("role"))) _),
     ("ROLE $role, reader", ast.ShowRolesPrivileges(List(param("role"), literal("reader"))) _)
   ).foreach{ case (privType, privilege) => {
@@ -91,23 +92,23 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   }}
 
   test("SHOW USER user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(Some(List(literal("user")))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"))) _, None, None, None))
   }
 
   test("SHOW USERS $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(Some(List(param("user")))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(param("user"))) _, None, None, None))
   }
 
   test("SHOW USER `us%er` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(Some(List(literal("us%er")))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er"))) _, None, None, None))
   }
 
   test("SHOW USER user, $userParam PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(Some(List(literal("user"), param("userParam")))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"), param("userParam"))) _, None, None, None))
   }
 
   test("SHOW USERS user1, $userParam, user2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(Some(List(literal("user1"), param("userParam"), literal("user2")))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user1"), param("userParam"), literal("user2"))) _, None, None, None))
   }
 
   test("SHOW USER PRIVILEGES") {

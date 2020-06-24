@@ -714,14 +714,10 @@ object Prettifier {
         else
           "USER"
       case ShowUsersPrivileges(names) =>
-        if (names.isDefined) {
-          val n = names.get
-          if (n.size == 1)
-            s"USER ${escapeName(n.head)}"
-          else
-            s"USERS ${escapeNames(n)}"
-        } else
-          "USER"
+        if (names.size == 1)
+          s"USER ${escapeName(names.head)}"
+        else
+          s"USERS ${escapeNames(names)}"
       case ShowRolesPrivileges(names) =>
         if (names.size == 1)
           s"ROLE ${escapeName(names.head)}"

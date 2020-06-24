@@ -544,7 +544,7 @@ trait Statement extends Parser
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(
     group(RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolesPrivileges(_)) |
-      group(UserKeyword ~~ optional(SymbolicNameOrStringParameterList) ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
+      group(UserKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
       group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
       optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   )

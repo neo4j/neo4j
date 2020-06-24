@@ -1353,7 +1353,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _showPrivileges: Gen[ShowPrivileges] = for {
     names      <- _listOfNameOfEither
     showRole   = ShowRolesPrivileges(names)(pos)
-    showUser1  = ShowUsersPrivileges(Some(names))(pos) // sending in None here will be parsed as ShowUserPrivilege instead
+    showUser1  = ShowUsersPrivileges(names)(pos)
     showUser2  = ShowUserPrivileges(None)(pos)
     showAll    = ShowAllPrivileges()(pos)
     scope      <- oneOf(showRole, showUser1, showUser2, showAll)

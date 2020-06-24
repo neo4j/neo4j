@@ -309,13 +309,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // SHOW USERS user1, user2 PRIVILEGES
       case sp @ ShowPrivileges(scope: ShowUsersPrivileges, where, yields, returns) =>
-        val source =
-          if (scope.users.isDefined) {
-            val users = scope.users.get
-            if (users.size > 1) Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction)))
-            else Some(plans.AssertDbmsAdminOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction)))
-          } else None
-        Some(plans.ShowPrivileges(source, scope, sp.returnColumnNames, where, yields, returns))
+        val (newScope, source) = {
+          val users = scope.users
+          if (users.size > 1) (scope, Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction))))
+          else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertDbmsAdminOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+        }
+        Some(plans.ShowPrivileges(source, newScope, sp.returnColumnNames, where, yields, returns))
 
       // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
       case sp @ ShowPrivileges(scope, where, yields, returns) =>

@@ -384,9 +384,9 @@ final case class ShowUserPrivileges(user: Option[Either[String, Parameter]])(val
     this.copy(children.head.asInstanceOf[Option[Either[String, Parameter]]])(position).asInstanceOf[this.type]
 }
 
-final case class ShowUsersPrivileges(users: Option[List[Either[String, Parameter]]])(val position: InputPosition) extends ShowPrivilegeScope {
+final case class ShowUsersPrivileges(users: List[Either[String, Parameter]])(val position: InputPosition) extends ShowPrivilegeScope {
   override def dup(children: Seq[AnyRef]): ShowUsersPrivileges.this.type =
-    this.copy(children.head.asInstanceOf[Option[List[Either[String, Parameter]]]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[List[Either[String, Parameter]]])(position).asInstanceOf[this.type]
 }
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope

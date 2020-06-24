@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.ReadAction
-import org.neo4j.cypher.internal.ast.ShowRolePrivileges
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
@@ -1132,7 +1132,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolePrivileges(util.Left("role1"))(pos), List(), None, None, None), 1.0),
+    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolesPrivileges(List(util.Left("role1")))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),
