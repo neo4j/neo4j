@@ -19,21 +19,41 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * Indicates that a transaction couldn't complete successfully due to an intermediate failure.
- *
- * A proper response to a caught exception of this type is to cancel the unit of work that produced
- * this exception and retry the unit of work again, as a whole.
+ * <p>
+ * A proper response to a caught exception of this type is to cancel the unit of work that produced this exception and retry the unit of work again, as a
+ * whole.
  */
 public class TransientTransactionFailureException extends TransientFailureException
 {
+    private static final Status DEFAULT_STATUS = Status.Transaction.TransientTransactionFailure;
+
+    private final Status status;
+
+    @Deprecated // A specific status should be provided
     public TransientTransactionFailureException( String message, Throwable cause )
     {
-        super( message, cause );
+        this( DEFAULT_STATUS, message, cause );
     }
 
-    public TransientTransactionFailureException( String message )
+    public TransientTransactionFailureException( Status status, String message, Throwable cause )
+    {
+        super( message, cause );
+        this.status = status;
+    }
+
+    public TransientTransactionFailureException( Status status, String message )
     {
         super( message );
+        this.status = status;
+    }
+
+    @Override
+    public Status status()
+    {
+        return status;
     }
 }

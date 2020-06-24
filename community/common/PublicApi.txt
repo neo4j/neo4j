@@ -175,6 +175,7 @@ org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionRollbackFailed or
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionStartFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionTimedOut org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::TransactionValidationFailed org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::TransientTransactionFailure org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Transaction::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Transaction public static
 org.neo4j.kernel.api.exceptions.Status.Transaction::values() org.neo4j.kernel.api.exceptions.Status.Transaction[] public static

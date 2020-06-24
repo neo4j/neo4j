@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.TransientDatabaseFailureException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -82,7 +82,15 @@ class TransactionImplTest
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
-        doThrow( new TransientDatabaseFailureException( "Just a random failure" ) ).when( kernelTransaction ).close();
+        doThrow( new TransientFailureException( "Just a random failure" )
+                 {
+                     //@Override
+                     public Status status()
+                     {
+                         return null;
+                     }
+                 }
+        ).when( kernelTransaction ).close();
         TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN

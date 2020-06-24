@@ -19,13 +19,15 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * Indicates a type of failure that is intermediate and, in a way benign.
  *
  * A proper response to a caught exception of this type is to cancel the unit of work that produced
  * this exception and retry the unit of work again, as a whole.
  */
-public abstract class TransientFailureException extends RuntimeException
+public abstract class TransientFailureException extends RuntimeException implements Status.HasStatus
 {
     protected TransientFailureException( String message, Throwable cause )
     {

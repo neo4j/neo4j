@@ -172,7 +172,10 @@ public interface Status
         Terminated( TransientError,
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,
-                "Interrupted while waiting." );
+                "Interrupted while waiting." ),
+        @Deprecated // Non-specific Status for migrating legacy exceptions.
+        TransientTransactionFailure( TransientError,
+                                     "Unable to complete transaction." );
 
         private final Code code;
 

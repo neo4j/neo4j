@@ -54,10 +54,11 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
         }
         else if ( e instanceof KernelException || e instanceof TransactionTerminatedException )
         {
-            Status.Code statusCode = ((Status.HasStatus) e).status().code();
+            Status status = ((Status.HasStatus) e).status();
+            Status.Code statusCode = status.code();
             if ( statusCode.classification() == Status.Classification.TransientError )
             {
-                return new TransientTransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
+                return new TransientTransactionFailureException( status, UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
             }
             return new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
         }
