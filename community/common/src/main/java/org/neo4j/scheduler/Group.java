@@ -92,8 +92,10 @@ public enum Group
 
     // MISC.
     /** UDC timed events. */
-    UDC( "UsageDataCollector" )
-    ;
+    UDC( "UsageDataCollector" ),
+
+    //TESTING
+    TESTING( "TestingGroup" );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
