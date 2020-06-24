@@ -20,7 +20,6 @@
 package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,6 +32,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -64,8 +65,6 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 @Neo4jLayoutExtension
 class DefaultDatabaseManagerUpgradeIT
 {
-    private NamedDatabaseId defaultNamedDatabaseId;
-
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -109,7 +108,8 @@ class DefaultDatabaseManagerUpgradeIT
 
         // Then
         assertTrue( db.isAvailable( 100 ), "Expected database to be available after upgrade" );
-        Assertions.assertTrue( MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check ), "Expected store version to be default." );
+        RecordFormats expectedFormat = RecordFormatSelector.findSuccessor( StandardV3_4.RECORD_FORMATS ).orElseThrow();
+        assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, expectedFormat ), "Expected store version to be default." );
     }
 
     @Test
@@ -133,7 +133,7 @@ class DefaultDatabaseManagerUpgradeIT
         assertThat( e ).hasMessage( "Failed to upgrade database: " + namedDatabaseId.name() );
         assertThat( e ).hasRootCause( expectedException );
         assertFalse( db.isAvailable( 100 ), "Expected database to be available after upgrade" );
-        Assertions.assertFalse( MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check ), "Expected store version to be default." );
+        assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, StandardV3_4.RECORD_FORMATS ), "Expected store not upgraded." );
     }
 
     private void createDbms()

@@ -49,6 +49,8 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
@@ -80,13 +82,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -98,8 +102,6 @@ public class StoreUpgraderInterruptionTestIT
 
     @Parameterized.Parameter
     public String version;
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
-    private PageCache pageCache;
 
     @Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -113,6 +115,9 @@ public class StoreUpgraderInterruptionTestIT
     private DatabaseLayout workingDatabaseLayout;
     private File prepareDirectory;
     private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
+    private PageCache pageCache;
+    private RecordFormats baselineFormat;
+    private RecordFormats successorFormat;
 
     @Before
     public void setUpLabelScanStore()
@@ -123,6 +128,8 @@ public class StoreUpgraderInterruptionTestIT
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheRule.getPageCache( fs );
+        baselineFormat = RecordFormatSelector.selectForVersion( version );
+        successorFormat = RecordFormatSelector.findSuccessor( baselineFormat ).orElse( baselineFormat );
     }
 
     @After
@@ -165,14 +172,14 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( neo4jLayout.homeDirectory() );
@@ -196,12 +203,12 @@ public class StoreUpgraderInterruptionTestIT
         var recordMigratorTracer = new DefaultPageCacheTracer();
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, idMigratorTracer );
 
-        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
@@ -239,7 +246,7 @@ public class StoreUpgraderInterruptionTestIT
         };
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
 
-        assertFalse( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         try
         {
@@ -255,7 +262,7 @@ public class StoreUpgraderInterruptionTestIT
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         pageCache.close();
 
