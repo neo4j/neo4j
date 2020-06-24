@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.harness;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -54,8 +55,10 @@ import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @TestDirectoryExtension
+@ResourceLock( SHARED_RESOURCE )
 @ExtendWith( ProfilerExtension.class )
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {

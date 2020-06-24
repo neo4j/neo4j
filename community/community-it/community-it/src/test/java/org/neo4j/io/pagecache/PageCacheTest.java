@@ -2662,7 +2662,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 // Cause the page under the reader cursor to be evicted.
                 try ( PagedFile otherPagedFile = map( existingFile( "b" ), filePageSize ) )
                 {
-                    IOException ioe = assertThrows( IOException.class, () ->
+                    assertThrows( IOException.class, () ->
                     {
                         //noinspection InfiniteLoopStatement
                         for ( ;; )
@@ -2686,7 +2686,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                             otherPagedFile.flushAndForce();
                         }
                     } );
-                    ioe.printStackTrace();
                 }
             }
         }
