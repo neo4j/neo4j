@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,10 +28,14 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
@@ -44,9 +49,15 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -75,11 +86,10 @@ class LabelScanStoreIT
     private DefaultPageCacheTracer cacheTracer;
 
     @BeforeEach
-    void before()
+    void before() throws IOException
     {
         cacheTracer = new DefaultPageCacheTracer();
-        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
-                immediate(), cacheTracer, INSTANCE ) );
+        newLabelScanStore();
     }
 
     @Test
@@ -234,6 +244,70 @@ class LabelScanStoreIT
             assertThat( cursorTracer.unpins() ).isOne();
             assertThat( cursorTracer.hits() ).isOne();
         }
+    }
+
+    @Test
+    public void shouldRemoveEmptyBitMaps() throws IOException
+    {
+        TokenScanLayout labelScanLayout = new TokenScanLayout();
+        int nodeId = 1;
+        long nodeIdRange = NativeTokenScanWriter.rangeOf( nodeId );
+        int labelId = 1;
+        long[] noLabels = new long[0];
+        long[] singleLabel = new long[]{labelId};
+        TokenScanKey key = labelScanLayout.newKey();
+        key.set( labelId, nodeIdRange );
+
+        // Add
+        try ( TokenScanWriter writer = store.newWriter( NULL ) )
+        {
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId, noLabels, singleLabel ) );
+        }
+        store.force( IOLimiter.UNLIMITED, NULL );
+        store.shutdown();
+
+        // Verify exists
+        try ( GBPTree<TokenScanKey,TokenScanValue> tree = openReadOnlyGBPTree( labelScanLayout ) )
+        {
+            try ( Seeker<TokenScanKey,TokenScanValue> seek = tree.seek( key, key, NULL ) )
+            {
+                assertTrue( seek.next(), "Expected to find the newly inserted entry" );
+            }
+        }
+
+        // Remove
+        newLabelScanStore();
+        try ( TokenScanWriter writer = store.newWriter( NULL ) )
+        {
+            writer.write( EntityTokenUpdate.tokenChanges( nodeId, singleLabel, noLabels ) );
+        }
+        store.force( IOLimiter.UNLIMITED, NULL );
+        store.shutdown();
+
+        // Verify don't exists
+        try ( GBPTree<TokenScanKey,TokenScanValue> tree = openReadOnlyGBPTree( labelScanLayout ) )
+        {
+            try ( Seeker<TokenScanKey,TokenScanValue> seek = tree.seek( key, key, NULL ) )
+            {
+                assertFalse( seek.next(), "Expected tree to be empty after removing the last label" );
+            }
+        }
+    }
+
+    private GBPTree<TokenScanKey,TokenScanValue> openReadOnlyGBPTree( TokenScanLayout labelScanLayout )
+    {
+        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER,
+                NO_HEADER_WRITER, ignore(), true, PageCacheTracer.NULL, Sets.immutable.empty() );
+    }
+
+    private void newLabelScanStore() throws IOException
+    {
+        if ( store != null )
+        {
+            store.shutdown();
+        }
+        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
+                immediate(), cacheTracer, INSTANCE ) );
     }
 
     private void verifyReads( long[] expected )
