@@ -72,6 +72,14 @@ interface ExecutorServiceFactory
     }
 
     /**
+     * Executes all jobs on the calling thread.
+     */
+    static ExecutorServiceFactory callingThread()
+    {
+        return ( group, factory, threadCount ) -> new CallingThreadExecutorService( group );
+    }
+
+    /**
      * Execute jobs in a dynamically growing pool of threads. The threads will be cached and kept around for a little while to cope with work load spikes
      * and troughs.
      */
@@ -218,6 +226,23 @@ interface ExecutorServiceFactory
         private static RejectedExecutionException newUnschedulableException( Group group )
         {
             return new RejectedExecutionException( "Tasks cannot be scheduled directly to the " + group.groupName() + " group." );
+        }
+    }
+
+    /**
+     * An executor service which always executes the runnable on the calling thread.
+     */
+    class CallingThreadExecutorService extends ExecutorServiceAdapter
+    {
+        private CallingThreadExecutorService( Group group )
+        {
+            super( group );
+        }
+
+        @Override
+        public void execute( Runnable runnable )
+        {
+            runnable.run();
         }
     }
 }

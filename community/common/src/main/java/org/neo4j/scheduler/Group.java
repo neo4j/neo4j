@@ -97,7 +97,7 @@ public enum Group
     FABRIC_WORKER( "FabricWorker" ),
 
     //TESTING
-    TESTING( "TestingGroup" );
+    TESTING( "TestingGroup", ExecutorServiceFactory.callingThread() );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
