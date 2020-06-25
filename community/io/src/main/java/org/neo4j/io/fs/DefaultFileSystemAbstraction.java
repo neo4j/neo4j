@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -82,7 +83,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return Files.newInputStream( fileName.toPath() );
+        return new BufferedInputStream( Files.newInputStream( fileName.toPath() ) );
     }
 
     @Override
