@@ -75,6 +75,14 @@ interface ExecutorServiceFactory
     }
 
     /**
+     * Executes all jobs on the calling thread.
+     */
+    static ExecutorServiceFactory callingThread()
+    {
+        return ( group, factory, threadCount ) -> new CallingThreadExecutorService( group );
+    }
+
+    /**
      * Execute jobs in a dynamically growing pool of threads. The threads will be cached and kept around for a little while to cope with work load spikes
      * and troughs.
      */
@@ -229,6 +237,23 @@ interface ExecutorServiceFactory
         @Override
         public void execute( Runnable runnable )
         {
+        }
+    }
+
+    /**
+     * An executor service which always executes the runnable on the calling thread.
+     */
+    class CallingThreadExecutorService extends ExecutorServiceAdapter
+    {
+        private CallingThreadExecutorService( Group group )
+        {
+            super( group );
+        }
+
+        @Override
+        public void execute( Runnable runnable )
+        {
+            runnable.run();
         }
     }
 }
