@@ -497,6 +497,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(Argument(args.toSet)(_)))
   }
 
+  def nodeByLabelScan(node: String, label: String, args: String*): IMPL =
+    nodeByLabelScan(node, label, IndexOrderNone, args: _*)
+
   def nodeByLabelScan(node: String, label: String, indexOrder: IndexOrder, args: String*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
