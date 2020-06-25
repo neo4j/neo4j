@@ -95,7 +95,7 @@ public enum Group
     UDC( "UsageDataCollector" ),
 
     //TESTING
-    TESTING( "TestingGroup" );
+    TESTING( "TestingGroup", ExecutorServiceFactory.callingThread() );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
