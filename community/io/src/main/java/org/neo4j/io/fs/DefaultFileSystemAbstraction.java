@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new BufferedOutputStream( Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS ) );
+        return new BufferedOutputStream( openFileOutputStream( fileName, append ) );
     }
 
     @Override
@@ -96,7 +97,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
     {
-        return new OutputStreamWriter( openAsOutputStream( fileName, append ), charset );
+        return new BufferedWriter( new OutputStreamWriter( openFileOutputStream( fileName, append ), charset ) );
     }
 
     @Override
@@ -263,5 +264,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     private static InputStream openFileInputStream( File fileName ) throws IOException
     {
         return Files.newInputStream( fileName.toPath() );
+    }
+
+    private OutputStream openFileOutputStream( File fileName, boolean append ) throws IOException
+    {
+        return Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
     }
 }
