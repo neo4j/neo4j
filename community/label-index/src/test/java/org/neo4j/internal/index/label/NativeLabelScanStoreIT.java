@@ -27,9 +27,11 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
@@ -41,10 +43,16 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
-import static org.neo4j.io.fs.FileUtils.blockSize;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
@@ -71,10 +79,7 @@ class NativeLabelScanStoreIT
     @BeforeEach
     void before() throws IOException
     {
-        store = life.add( new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY,
-                false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
-                // a bit of random pageSize
-                Math.min( pageCache.pageSize(), toIntExact( blockSize( databaseLayout.databaseDirectory() ) ) << random.nextInt( 5 ) ) ) );
+        newLabelScanStore();
     }
 
     @Test
@@ -90,6 +95,70 @@ class NativeLabelScanStoreIT
             verifyReads( expected );
             randomModifications( expected, NODE_COUNT / 10 );
         }
+    }
+
+    @Test
+    public void shouldRemoveEmptyBitMaps() throws IOException
+    {
+        LabelScanLayout labelScanLayout = new LabelScanLayout();
+        int nodeId = 1;
+        long nodeIdRange = NativeLabelScanWriter.rangeOf( nodeId );
+        int labelId = 1;
+        long[] noLabels = new long[0];
+        long[] singleLabel = new long[]{labelId};
+        LabelScanKey key = labelScanLayout.newKey();
+        key.set( labelId, nodeIdRange );
+
+        // Add
+        try ( LabelScanWriter writer = store.newWriter() )
+        {
+            writer.write( NodeLabelUpdate.labelChanges( nodeId, noLabels, singleLabel ) );
+        }
+        store.force( IOLimiter.UNLIMITED );
+        store.shutdown();
+
+        // Verify exists
+        try ( GBPTree<LabelScanKey,LabelScanValue> tree = openReadOnlyGBPTree( labelScanLayout ) )
+        {
+            try ( Seeker<LabelScanKey,LabelScanValue> seek = tree.seek( key, key ) )
+            {
+                assertTrue( seek.next(), "Expected to find the newly inserted entry" );
+            }
+        }
+
+        // Remove
+        newLabelScanStore();
+        try ( LabelScanWriter writer = store.newWriter() )
+        {
+            writer.write( NodeLabelUpdate.labelChanges( nodeId, singleLabel, noLabels ) );
+        }
+        store.force( IOLimiter.UNLIMITED );
+        store.shutdown();
+
+        // Verify don't exists
+        try ( GBPTree<LabelScanKey,LabelScanValue> tree = openReadOnlyGBPTree( labelScanLayout ) )
+        {
+            try ( Seeker<LabelScanKey,LabelScanValue> seek = tree.seek( key, key ) )
+            {
+                assertFalse( seek.next(), "Expected tree to be empty after removing the last label" );
+            }
+        }
+    }
+
+    private GBPTree<LabelScanKey,LabelScanValue> openReadOnlyGBPTree( LabelScanLayout labelScanLayout )
+    {
+        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, 0, NO_MONITOR, NO_HEADER_READER,
+                NO_HEADER_WRITER, ignore(), true );
+    }
+
+    private void newLabelScanStore() throws IOException
+    {
+        if ( store != null )
+        {
+            store.shutdown();
+        }
+
+        store = life.add( new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() ) );
     }
 
     private void verifyReads( long[] expected )
