@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
+        return new BufferedOutputStream( Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS ) );
     }
 
     @Override

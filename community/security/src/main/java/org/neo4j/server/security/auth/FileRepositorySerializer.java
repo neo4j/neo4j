@@ -39,7 +39,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public abstract class FileRepositorySerializer<S>
 {
-    private SecureRandom random = new SecureRandom();
+    private final SecureRandom random = new SecureRandom();
 
     public static void writeToFile( FileSystemAbstraction fs, File file, byte[] bytes ) throws IOException
     {

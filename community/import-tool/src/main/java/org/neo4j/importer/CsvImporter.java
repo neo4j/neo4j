@@ -19,7 +19,6 @@
  */
 package org.neo4j.importer;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -141,7 +140,7 @@ class CsvImporter implements Importer
     @Override
     public void doImport() throws IOException
     {
-        try ( OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( reportFile, false ) );
+        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile, false );
                 Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
             // Extract the default time zone from the database configuration

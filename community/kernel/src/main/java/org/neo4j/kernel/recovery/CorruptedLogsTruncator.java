@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -107,7 +106,7 @@ public class CorruptedLogsTruncator
     {
         File corruptedLogArchive = getArchiveFile( recoveredTransactionLogVersion, recoveredTransactionOffset );
         try ( ZipOutputStream recoveryContent = new ZipOutputStream(
-                new BufferedOutputStream( fs.openAsOutputStream( corruptedLogArchive, false ) ) );
+                fs.openAsOutputStream( corruptedLogArchive, false ) );
                 var bufferScope = new HeapScopedBuffer(  1, MebiByte, memoryTracker ) )
         {
             copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent, bufferScope.getBuffer() );
