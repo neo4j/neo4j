@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.io.IOUtils.lineIterator;
 
 enum MigrationStatus
 {
@@ -64,15 +65,16 @@ enum MigrationStatus
 
     private static Pair<String, String> readFromFile( FileSystemAbstraction fs, File file, MigrationStatus expectedSate )
     {
-        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( file, StandardCharsets.UTF_8 ) ) )
+        try ( var reader = fs.openAsReader( file, UTF_8 ) )
         {
-            String state = reader.readLine().trim();
+            var lineIterator = lineIterator( reader );
+            String state = lineIterator.next().trim();
             if ( expectedSate != null && !expectedSate.name().equals( state ) )
             {
                 throw new IllegalStateException(
                         "Not in the expected state, expected=" + expectedSate.name() + ", actual=" + state );
             }
-            String info = reader.readLine().trim();
+            String info = lineIterator.next().trim();
             return Pair.of( state, info );
         }
         catch ( NoSuchFileException e )
@@ -99,7 +101,7 @@ enum MigrationStatus
             }
         }
 
-        try ( Writer writer = fs.openAsWriter( stateFile, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fs.openAsWriter( stateFile, UTF_8, false ) )
         {
             writer.write( name() );
             writer.write( '\n' );

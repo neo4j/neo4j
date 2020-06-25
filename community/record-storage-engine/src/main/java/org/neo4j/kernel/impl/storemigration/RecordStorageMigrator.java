@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -121,6 +120,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
@@ -329,9 +329,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private static long[] readTxLogCounters( FileSystemAbstraction fs, File file, int numberOfCounters )
             throws IOException
     {
-        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( file, StandardCharsets.UTF_8 ) ) )
+        try ( var reader = fs.openAsReader( file, StandardCharsets.UTF_8 ) )
         {
-            String line = reader.readLine();
+            String line = lineIterator( reader ).next();
             String[] split = StringUtils.split( line, TX_LOG_COUNTERS_SEPARATOR );
             if ( split.length != numberOfCounters )
             {

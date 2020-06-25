@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -35,6 +34,8 @@ import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class is the amber in which 3.5 fulltext index config reading is preserved in.
@@ -52,7 +53,7 @@ class FulltextConfigExtractor
         Properties settings = new Properties();
         if ( fs.fileExists( settingsFile ) )
         {
-            try ( Reader reader = fs.openAsReader( settingsFile, StandardCharsets.UTF_8 ) )
+            try ( Reader reader = fs.openAsReader( settingsFile, UTF_8 ) )
             {
                 settings.load( reader );
             }

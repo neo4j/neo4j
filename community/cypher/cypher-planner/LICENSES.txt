@@ -4,6 +4,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons IO
   Caffeine cache
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library

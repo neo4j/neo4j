@@ -26,6 +26,7 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
   Java Concurrency Tools Core Library
   Jettison

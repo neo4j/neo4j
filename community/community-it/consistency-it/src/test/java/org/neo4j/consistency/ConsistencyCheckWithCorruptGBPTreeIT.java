@@ -27,19 +27,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -77,6 +73,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.io.IOUtils.readLines;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -511,9 +509,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
         assertTrue( result.isSuccessful(), "Expected store to be considered inconsistent." );
-        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( result.reportFile(), Charset.defaultCharset() ) ) )
+        try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
         {
-            reader.lines().forEach( System.out::println );
+            readLines( reader ).forEach( System.out::println );
         }
         assertResultContainsMessage( result,
                 "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
@@ -703,10 +701,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
-        try ( Reader reader = fs.openAsReader( result.reportFile(), Charset.defaultCharset() );
-                BufferedReader bufferedReader = new BufferedReader( reader ) )
+        try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
         {
-            final List<String> lines = bufferedReader.lines().collect( Collectors.toList() );
+            var lines = readLines( reader );
             boolean reportContainExpectedMessage = false;
             for ( String line : lines )
             {

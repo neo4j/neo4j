@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -83,13 +84,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new BufferedInputStream( Files.newInputStream( fileName.toPath() ) );
+        return new BufferedInputStream( openFileInputStream( fileName ) );
     }
 
     @Override
     public Reader openAsReader( File fileName, Charset charset ) throws IOException
     {
-        return new InputStreamReader( openAsInputStream( fileName ), charset );
+        return new BufferedReader( new InputStreamReader( openFileInputStream( fileName ), charset ) );
     }
 
     @Override
@@ -248,14 +249,19 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return channel.getFileDescriptor();
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        // nothing
+    }
+
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return new StoreFileChannel( channel );
     }
 
-    @Override
-    public void close() throws IOException
+    private static InputStream openFileInputStream( File fileName ) throws IOException
     {
-        // nothing
+        return Files.newInputStream( fileName.toPath() );
     }
 }

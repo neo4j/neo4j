@@ -22,6 +22,7 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
+  Apache Commons IO
   Apache Commons Lang
   ascli
   aws-sign2

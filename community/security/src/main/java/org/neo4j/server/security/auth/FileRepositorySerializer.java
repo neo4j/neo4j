@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,6 +35,7 @@ import org.neo4j.string.UTF8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.apache.commons.io.IOUtils.readLines;
 
 public abstract class FileRepositorySerializer<S>
 {
@@ -51,22 +51,10 @@ public abstract class FileRepositorySerializer<S>
 
     private static List<String> readFromFile( FileSystemAbstraction fs, File file ) throws IOException
     {
-        List<String> lines = new ArrayList<>();
-
-        try ( BufferedReader r = new BufferedReader( fs.openAsReader( file, UTF_8 ) ) )
+        try ( var reader = fs.openAsReader( file, UTF_8 ) )
         {
-            while ( true )
-            {
-                String line = r.readLine();
-                if ( line == null )
-                {
-                    break;
-                }
-                lines.add( line );
-            }
+            return readLines( reader );
         }
-
-        return lines;
     }
 
     public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records ) throws
