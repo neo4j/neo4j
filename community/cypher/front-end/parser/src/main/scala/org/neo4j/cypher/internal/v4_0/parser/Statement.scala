@@ -90,7 +90,7 @@ trait Statement extends Parser
       ast.CreateUser(userNameAndIfExistsDo._1, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2)) |
     //
     group(keyword("CREATE") ~~ optional(keyword("OR REPLACE")) ~~ keyword( "USER") ~~ Parameter
-      ~~ optional(keyword("IF NOT EXISTS")) ~~ optional(keyword("SET PASSWORD") ~~ (Parameter | StringLiteral)) ~~
+      ~~ optional(keyword("IF NOT EXISTS")) ~~ keyword("SET PASSWORD") ~~ (Parameter | StringLiteral) ~~
         optional(optionalRequirePasswordChange) ~~ optionalStatus) ~~>> ((p, _, _, _) => ast.CreateUserWithUnsupportedParameter(p))
   }
 
@@ -104,8 +104,8 @@ trait Statement extends Parser
 
   def DropUser: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG DROP USER") {
     group(keyword("DROP USER") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropUser(_, ifExists = true)) |
-    group(keyword("DROP USER") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropUserWithUnsupportedParameter(_)) |
-    group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = false))
+    group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = false)) |
+    group(keyword("DROP USER") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropUserWithUnsupportedParameter(_))
   }
 
   def AlterUser: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG ALTER USER") {
@@ -134,6 +134,8 @@ trait Statement extends Parser
     // ALTER USER username setStatus
     group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setStatus) ~~>>
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended))) |
+    //
+    // ALTER USER $param <anything else>
     group(keyword("ALTER USER") ~~ Parameter ~~ optional(keyword("SET PASSWORD") ~~ (StringLiteral | Parameter)) ~~
       optional(setRequirePasswordChange) ~~ optionalStatus) ~~>> ((p, _, _, _) => ast.AlterUserWithUnsupportedParameter(p))
   }
@@ -190,9 +192,9 @@ trait Statement extends Parser
 
   def CreateRole: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG CREATE ROLE") {
     group(keyword("CREATE") ~~ optional(keyword("OR REPLACE")) ~~ keyword("ROLE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS")) ~~
-        optional(keyword("AS COPY OF") ~~ (Parameter | SymbolicNameString))) ~~>> ((p, _) => ast.CreateRoleWithUnsupportedParameter(p)) |
+      optional(keyword("AS COPY OF") ~~ (Parameter | SymbolicNameString))) ~~>> ((p, _) => ast.CreateRoleWithUnsupportedParameter(p)) |
     group(keyword("CREATE") ~~ optional(keyword("OR REPLACE")) ~~ keyword("ROLE") ~~ SymbolicNameString ~~ optional(keyword("IF NOT EXISTS")) ~~
-        keyword("AS COPY OF") ~~ Parameter) ~~>> ((_, p) => ast.CreateRoleWithUnsupportedParameter(p)) |
+      keyword("AS COPY OF") ~~ Parameter) ~~>> ((_, p) => ast.CreateRoleWithUnsupportedParameter(p)) |
     group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsInvalidSyntax())) |
     group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameString ~~
@@ -200,13 +202,13 @@ trait Statement extends Parser
     group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing())) |
     group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~
-        optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
+      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
   }
 
   def DropRole: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG DROP ROLE") {
     group(keyword("DROP ROLE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
-    group(keyword("DROP ROLE") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropRoleWithUnsupportedParameter(_)) |
-    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = false))
+    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = false)) |
+    group(keyword("DROP ROLE") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropRoleWithUnsupportedParameter(_))
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
@@ -505,17 +507,17 @@ trait Statement extends Parser
 
   def CreateDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG CREATE DATABASE") {
     group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax())) |
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_)) |
     group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsReplace())) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_)) |
     group(keyword("CREATE DATABASE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
-    group(keyword("CREATE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsThrowError()))
+    group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsThrowError())) |
+    group(keyword("CREATE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_))
   }
 
   def DropDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG DROP DATABASE") {
     group(keyword("DROP DATABASE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropDatabase(_, ifExists = true)) |
-    group(keyword("DROP DATABASE") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropDatabaseWithUnsupportedParameter(_)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = false))
+    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = false)) |
+    group(keyword("DROP DATABASE") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropDatabaseWithUnsupportedParameter(_))
   }
 
   def StartDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG START DATABASE") {
