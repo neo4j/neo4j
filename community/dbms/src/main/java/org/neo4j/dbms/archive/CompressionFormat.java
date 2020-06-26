@@ -96,11 +96,6 @@ public enum CompressionFormat
         return (this == ZSTD && stream instanceof ZstdInputStream) || (this == GZIP && stream instanceof GZIPInputStream);
     }
 
-    public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier ) throws IOException
-    {
-        return compress( streamSupplier, selectCompressionFormat() );
-    }
-
     public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
     {
         OutputStream sink = streamSupplier.get();
