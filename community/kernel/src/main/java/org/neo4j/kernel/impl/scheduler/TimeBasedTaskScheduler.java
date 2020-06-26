@@ -20,13 +20,19 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -38,24 +44,46 @@ final class TimeBasedTaskScheduler implements Runnable
 
     private final SystemNanoClock clock;
     private final ThreadPoolManager pools;
+    private final FailedJobRunsStore failedJobRunsStore;
+    private final Set<ScheduledJobHandle<?>> monitoredJobs = ConcurrentHashMap.newKeySet();
     private final PriorityBlockingQueue<ScheduledJobHandle<?>> delayedTasks;
     private final ConcurrentLinkedQueue<ScheduledJobHandle<?>> canceledTasks;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
 
-    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools )
+    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools, FailedJobRunsStore failedJobRunsStore )
     {
         this.clock = clock;
         this.pools = pools;
+        this.failedJobRunsStore = failedJobRunsStore;
         delayedTasks = new PriorityBlockingQueue<>( 42, DEADLINE_COMPARATOR );
         canceledTasks = new ConcurrentLinkedQueue<>();
     }
 
     public JobHandle<?> submit( Group group, Runnable job, long initialDelayNanos, long reschedulingDelayNanos )
     {
+        return submit( group, JobMonitoringParams.NOT_MONITORED, job, initialDelayNanos, reschedulingDelayNanos );
+    }
+
+    public JobHandle<?> submit( Group group, JobMonitoringParams jobMonitoringParams, Runnable job, long initialDelayNanos, long reschedulingDelayNanos )
+    {
         long now = clock.nanos();
         long nextDeadlineNanos = now + initialDelayNanos;
-        ScheduledJobHandle<?> task = new ScheduledJobHandle<>( this, group, job, nextDeadlineNanos, reschedulingDelayNanos );
+        ScheduledJobHandle<?> task = new ScheduledJobHandle<>( this,
+                group,
+                job,
+                nextDeadlineNanos,
+                reschedulingDelayNanos,
+                jobMonitoringParams,
+                clock.nanos(),
+                monitoredJobs,
+                failedJobRunsStore,
+                clock );
+
+        if ( jobMonitoringParams != JobMonitoringParams.NOT_MONITORED )
+        {
+            monitoredJobs.add( task );
+        }
         enqueueTask( task );
         return task;
     }
@@ -100,6 +128,7 @@ final class TimeBasedTaskScheduler implements Runnable
         {
             ScheduledJobHandle<?> canceled = canceledTasks.poll();
             delayedTasks.remove( canceled );
+            monitoredJobs.remove( canceled );
         }
         while ( !stopped && !delayedTasks.isEmpty() && delayedTasks.peek().nextDeadlineNanos <= now )
         {
@@ -124,5 +153,12 @@ final class TimeBasedTaskScheduler implements Runnable
     void cancelTask( ScheduledJobHandle<?> job )
     {
         canceledTasks.add( job );
+    }
+
+    List<MonitoredJobInfo> getMonitoredJobs()
+    {
+        return monitoredJobs.stream()
+                            .map( ScheduledJobHandle::getMonitoringInfo )
+                            .collect( Collectors.toList() );
     }
 }

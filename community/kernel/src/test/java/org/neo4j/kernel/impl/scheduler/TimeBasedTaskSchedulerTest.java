@@ -57,8 +57,9 @@ class TimeBasedTaskSchedulerTest
     void setUp()
     {
         clock = new FakeClock();
-        pools = new ThreadPoolManager( new ThreadGroup( "TestPool" ) );
-        scheduler = new TimeBasedTaskScheduler( clock, pools );
+        FailedJobRunsStore failedJobRunsStore = new FailedJobRunsStore( 10 );
+        pools = new ThreadPoolManager( new ThreadGroup( "TestPool" ), clock, failedJobRunsStore );
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore );
         counter = new AtomicInteger();
         semaphore = new Semaphore( 0 );
     }

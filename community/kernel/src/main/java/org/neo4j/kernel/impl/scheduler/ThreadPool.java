@@ -19,29 +19,40 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobType;
+import org.neo4j.scheduler.MonitoredJobInfo;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.SchedulerThreadFactory;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.time.SystemNanoClock;
 
 final class ThreadPool
 {
     private static final int SHUTDOWN_TIMEOUT_SECONDS = FeatureToggles.getInteger( ThreadPool.class, "shutdownTimeout", 30 );
     private final SchedulerThreadFactory threadFactory;
     private final ExecutorService executor;
-    private final ConcurrentHashMap<Object,Future<?>> registry;
+    private final ConcurrentHashMap<Object,RegisteredJob> registry;
+    private final Group group;
+    private final SystemNanoClock clock;
+    private final FailedJobRunsStore failedJobRunsStore;
     private InterruptedException shutdownInterrupted;
 
     static class ThreadPoolParameters
@@ -50,8 +61,11 @@ final class ThreadPool
         volatile SchedulerThreadFactoryFactory providedThreadFactory = GroupedDaemonThreadFactory::new;
     }
 
-    ThreadPool( Group group, ThreadGroup parentThreadGroup, ThreadPoolParameters parameters )
+    ThreadPool( Group group, ThreadGroup parentThreadGroup, ThreadPoolParameters parameters, SystemNanoClock clock, FailedJobRunsStore failedJobRunsStore )
     {
+        this.group = group;
+        this.clock = clock;
+        this.failedJobRunsStore = failedJobRunsStore;
         threadFactory = parameters.providedThreadFactory.newSchedulerThreadFactory( group, parentThreadGroup );
         executor = group.buildExecutorService( threadFactory, parameters.desiredParallelism );
         registry = new ConcurrentHashMap<>();
@@ -67,17 +81,23 @@ final class ThreadPool
         return executor;
     }
 
-    public <T> JobHandle<T> submit( Callable<T> job )
+    public <T> JobHandle<T> submit( JobMonitoringParams jobMonitoringParams, Callable<T> job )
     {
-        var registryKey = new Object();
-        var placeHolder = CompletableFuture.<Void>completedFuture( null );
-        registry.put( registryKey, placeHolder );
-
+        Object registryKey = new Object();
+        AtomicBoolean running = new AtomicBoolean();
+        Instant submitted = clock.instant();
         Callable<T> registeredJob = () ->
         {
+            Instant executionStart = clock.instant();
             try
             {
+                running.set( true );
                 return job.call();
+            }
+            catch ( Throwable t )
+            {
+                recordFailedRun( jobMonitoringParams, submitted, executionStart, t );
+                throw t;
             }
             finally
             {
@@ -85,14 +105,24 @@ final class ThreadPool
             }
         };
 
-        var future = executor.submit( registeredJob );
-        registry.replace( registryKey, placeHolder, future );
-        return new PooledJobHandle<>( future, registryKey, registry );
+        var placeHolder = new RegisteredJob( null, null, null, null );
+        registry.put( registryKey, placeHolder );
+        try
+        {
+            var future = executor.submit( registeredJob );
+            registry.replace( registryKey, new RegisteredJob( future, jobMonitoringParams, submitted, running ) );
+            return new PooledJobHandle<>( future, registryKey, registry );
+        }
+        catch ( Exception e )
+        {
+            registry.remove( registryKey );
+            throw e;
+        }
     }
 
-    public JobHandle<?> submit( Runnable job )
+    public JobHandle<?> submit( JobMonitoringParams jobMonitoringParams, Runnable job )
     {
-        return submit( asCallable( job ) );
+        return submit( jobMonitoringParams, asCallable( job ) );
     }
 
     private static Callable<?> asCallable( Runnable job )
@@ -125,9 +155,9 @@ final class ThreadPool
 
     void cancelAllJobs()
     {
-        registry.values().removeIf( future ->
+        registry.values().removeIf( registeredJob ->
         {
-            future.cancel( true );
+            registeredJob.future.cancel( true );
             return true;
         } );
     }
@@ -145,8 +175,62 @@ final class ThreadPool
         }
     }
 
+    List<MonitoredJobInfo> getMonitoredJobs()
+    {
+        return registry.values().stream()
+                       .filter( registeredJob -> registeredJob.monitoredJobParams != JobMonitoringParams.NOT_MONITORED )
+                       .map( monitoredJob ->
+                               new MonitoredJobInfo(
+                                       group,
+                                       monitoredJob.submitted,
+                                       monitoredJob.monitoredJobParams.getSubmitter(),
+                                       monitoredJob.monitoredJobParams.getTargetDatabaseName(),
+                                       monitoredJob.monitoredJobParams.getDescription(),
+                                       null,
+                                       null,
+                                       monitoredJob.running.get() ? MonitoredJobInfo.State.EXECUTING : MonitoredJobInfo.State.ENQUEUED,
+                                       JobType.IMMEDIATE )
+                       )
+                       .collect( Collectors.toList() );
+    }
+
     InterruptedException getShutdownException()
     {
         return shutdownInterrupted;
+    }
+
+    private void recordFailedRun( JobMonitoringParams jobMonitoringParams, Instant submitted, Instant executionStart, Throwable t )
+    {
+        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
+        {
+            return;
+        }
+
+        FailedJobRun failedJobRun = new FailedJobRun( group,
+                jobMonitoringParams.getSubmitter(),
+                jobMonitoringParams.getTargetDatabaseName(),
+                jobMonitoringParams.getDescription(),
+                JobType.IMMEDIATE,
+                submitted,
+                executionStart,
+                clock.instant(),
+                t );
+        failedJobRunsStore.add( failedJobRun );
+    }
+
+    private static class RegisteredJob
+    {
+        private final Future<?> future;
+        private final JobMonitoringParams monitoredJobParams;
+        private final Instant submitted;
+        private final AtomicBoolean running;
+
+        RegisteredJob( Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
+        {
+            this.future = future;
+            this.monitoredJobParams = monitoredJobParams;
+            this.submitted = submitted;
+            this.running = running;
+        }
     }
 }

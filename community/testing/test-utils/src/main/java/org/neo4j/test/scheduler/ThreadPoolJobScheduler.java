@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.scheduler;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -33,9 +34,12 @@ import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -101,13 +105,31 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle<?> schedule( Group group, Runnable job )
     {
         return new FutureJobHandle<>( executor.submit( job ) );
     }
 
     @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
         throw new UnsupportedOperationException();
     }
@@ -119,7 +141,20 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
+            TimeUnit timeUnit )
     {
         throw new UnsupportedOperationException();
     }
@@ -132,6 +167,18 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public void profileGroup( Group group, Profiler profiler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<MonitoredJobInfo> getMonitoredJobs()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<FailedJobRun> getFailedJobRuns()
     {
         throw new UnsupportedOperationException();
     }

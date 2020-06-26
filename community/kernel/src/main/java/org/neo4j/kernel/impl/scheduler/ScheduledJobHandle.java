@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -27,8 +30,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.CancelListener;
+import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobType;
+import org.neo4j.scheduler.MonitoredJobInfo;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
@@ -54,7 +62,8 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     // These are the possible state values:
     private static final int RUNNABLE = 0;
     private static final int SUBMITTED = 1;
-    private static final int FAILED = 2;
+    private static final int EXECUTING = 2;
+    private static final int FAILED = 3;
 
     // Access is synchronized via the PriorityBlockingQueue in TimeBasedTaskScheduler:
     // - Write to this field happens before the handle is added to the queue.
@@ -69,24 +78,47 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private final CopyOnWriteArrayList<CancelListener> cancelListeners;
     private final BinaryLatch handleRelease;
     private final Runnable task;
+    private final JobMonitoringParams jobMonitoringParams;
+    private final long submittedMillis;
+    private final long reschedulingDelayNanos;
+    private final Set<ScheduledJobHandle<?>> monitoredJobs;
+    private final FailedJobRunsStore failedJobRunsStore;
     private volatile JobHandle latestHandle;
     private volatile Throwable lastException;
 
-    ScheduledJobHandle( TimeBasedTaskScheduler scheduler, Group group, Runnable task,
-                        long nextDeadlineNanos, long reschedulingDelayNanos )
+    ScheduledJobHandle( TimeBasedTaskScheduler scheduler,
+            Group group,
+            Runnable task,
+            long nextDeadlineNanos,
+            long reschedulingDelayNanos,
+            JobMonitoringParams jobMonitoringParams,
+            long submittedMillis,
+            Set<ScheduledJobHandle<?>> monitoredJobs,
+            FailedJobRunsStore failedJobRunsStore,
+            SystemNanoClock clock )
     {
+        this.jobMonitoringParams = jobMonitoringParams;
+        this.submittedMillis = submittedMillis;
         this.state = new AtomicInteger();
         this.scheduler = scheduler;
         this.group = group;
         this.nextDeadlineNanos = nextDeadlineNanos;
+        this.reschedulingDelayNanos = reschedulingDelayNanos;
+        this.monitoredJobs = monitoredJobs;
+        this.failedJobRunsStore = failedJobRunsStore;
         handleRelease = new BinaryLatch();
         cancelListeners = new CopyOnWriteArrayList<>();
         boolean isRecurring = reschedulingDelayNanos > 0;
         this.task = () ->
         {
+            Instant executionStart = clock.instant();
             try
             {
-                task.run();
+                if ( state.compareAndSet( SUBMITTED, EXECUTING ) )
+                {
+                    task.run();
+                }
+
                 lastException = null;
             }
             catch ( Throwable e )
@@ -96,17 +128,22 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
                 {
                     state.set( FAILED );
                 }
+                recordFailedRun( executionStart, clock.instant(), e );
             }
             finally
             {
                 // Use compareAndSet to avoid overriding any cancellation state.
-                if ( state.compareAndSet( SUBMITTED, RUNNABLE ) && isRecurring )
+                if ( state.compareAndSet( EXECUTING, RUNNABLE ) && isRecurring  )
                 {
                     // We only reschedule if the rescheduling delay is greater than zero.
                     // A rescheduling delay of zero means this is a delayed task.
                     // If the rescheduling delay is greater than zero, then this is a recurring task.
                     this.nextDeadlineNanos += reschedulingDelayNanos;
                     scheduler.enqueueTask( this );
+                }
+                else
+                {
+                    monitoredJobs.remove( this );
                 }
             }
         };
@@ -116,7 +153,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     {
         if ( state.compareAndSet( RUNNABLE, SUBMITTED ) )
         {
-            latestHandle = pools.getThreadPool( group ).submit( task );
+            latestHandle = pools.getThreadPool( group ).submit( JobMonitoringParams.NOT_MONITORED, task );
             handleRelease.release();
         }
     }
@@ -124,6 +161,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     @Override
     public void cancel()
     {
+        monitoredJobs.remove( this );
         state.set( FAILED );
         JobHandle handle = latestHandle;
         if ( handle != null )
@@ -191,5 +229,67 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     public void registerCancelListener( CancelListener listener )
     {
         cancelListeners.add( listener );
+    }
+
+    MonitoredJobInfo getMonitoringInfo()
+    {
+        if ( JobMonitoringParams.NOT_MONITORED == jobMonitoringParams )
+        {
+            return null;
+        }
+
+        return new MonitoredJobInfo( group,
+                Instant.ofEpochMilli( submittedMillis ),
+                jobMonitoringParams.getSubmitter(),
+                jobMonitoringParams.getTargetDatabaseName(),
+                jobMonitoringParams.getDescription(),
+                Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nextDeadlineNanos ) ),
+                reschedulingDelayNanos == 0 ? null : Duration.ofNanos( reschedulingDelayNanos ),
+                getStatus(),
+                getJobType() );
+    }
+
+    private MonitoredJobInfo.State getStatus()
+    {
+        switch ( state.get() )
+        {
+        case RUNNABLE:
+            return MonitoredJobInfo.State.SCHEDULED;
+        case SUBMITTED:
+            return MonitoredJobInfo.State.ENQUEUED;
+        case EXECUTING:
+            // A job can be in failed state only in a glimpse between being marked
+            // as failed and being removed from monitored jobs immediately after that.
+            // Let's show such job as still executing as there is no point confusing
+            // users with this esoteric state.
+        case FAILED:
+            return MonitoredJobInfo.State.EXECUTING;
+        default:
+            throw new IllegalStateException( "Unexpected job state: " + state );
+        }
+    }
+
+    private void recordFailedRun( Instant executionStart, Instant failureTime, Throwable t )
+    {
+        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
+        {
+            return;
+        }
+
+        FailedJobRun failedJobRun = new FailedJobRun( group,
+                jobMonitoringParams.getSubmitter(),
+                jobMonitoringParams.getTargetDatabaseName(),
+                jobMonitoringParams.getDescription(),
+                getJobType(),
+                Instant.ofEpochMilli( submittedMillis ),
+                executionStart,
+                failureTime,
+                t );
+        failedJobRunsStore.add( failedJobRun );
+    }
+
+    private JobType getJobType()
+    {
+        return reschedulingDelayNanos > 0 ? JobType.PERIODIC : JobType.DELAYED;
     }
 }

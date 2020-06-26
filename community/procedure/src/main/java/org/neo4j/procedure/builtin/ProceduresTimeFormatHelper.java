@@ -38,7 +38,7 @@ public class ProceduresTimeFormatHelper
                 .format( ISO_OFFSET_DATE_TIME );
     }
 
-    static String formatInterval( final long l )
+    public static String formatInterval( final long l )
     {
         final long hr = MILLISECONDS.toHours( l );
         final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );

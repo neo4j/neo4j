@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,9 +33,12 @@ import java.util.stream.Stream;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
+import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.FakeClock;
 
@@ -138,11 +142,23 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
+    {
+        return schedule( group, job );
+    }
+
+    @Override
     public JobHandle<?> schedule( Group group, Runnable job )
     {
         JobTrigger handle = schedule( job, now() );
         processSchedule();
         return handle;
+    }
+
+    @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
+    {
+        return schedule( group, job );
     }
 
     @Override
@@ -157,11 +173,23 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job, long initialDelay, TimeUnit timeUnit )
+    {
+        return schedule( group, job, initialDelay, timeUnit );
+    }
+
+    @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable job, long period, TimeUnit timeUnit )
     {
         JobTrigger handle = scheduleRecurring( job, now(), timeUnit.toMillis( period ) );
         processSchedule();
         return handle;
+    }
+
+    @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable job, long period, TimeUnit timeUnit )
+    {
+        return scheduleRecurring( group, job, period, timeUnit );
     }
 
     @Override
@@ -176,6 +204,13 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable job, long initialDelay, long period,
+            TimeUnit timeUnit )
+    {
+        return scheduleRecurring( group, job, initialDelay, period, timeUnit );
+    }
+
+    @Override
     public Stream<ActiveGroup> activeGroups()
     {
         return Stream.empty();
@@ -184,6 +219,18 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     @Override
     public void profileGroup( Group group, Profiler profiler )
     {
+    }
+
+    @Override
+    public List<MonitoredJobInfo> getMonitoredJobs()
+    {
+        return List.of();
+    }
+
+    @Override
+    public List<FailedJobRun> getFailedJobRuns()
+    {
+        return List.of();
     }
 
     @Override

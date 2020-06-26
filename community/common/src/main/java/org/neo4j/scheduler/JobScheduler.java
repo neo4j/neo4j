@@ -19,6 +19,7 @@
  */
 package org.neo4j.scheduler;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -86,17 +87,32 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     /** Schedule a new callable in the specified group. */
     <T> JobHandle<T> schedule( Group group, Callable<T> job );
 
+    /** Schedule a new callable in the specified group. */
+    <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job );
+
     /** Schedule a new job in the specified group. */
     JobHandle<?> schedule( Group group, Runnable job );
+
+    /** Schedule a new job in the specified group. */
+    JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job );
 
     /** Schedule a new job in the specified group with the given delay */
     JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );
 
+    /** Schedule a new job in the specified group with the given delay */
+    JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit );
+
     /** Schedule a recurring job */
     JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
 
+    /** Schedule a recurring job */
+    JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit );
+
     /** Schedule a recurring job where the first invocation is delayed the specified time */
     JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
+
+    /** Schedule a recurring job where the first invocation is delayed the specified time */
+    JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 
     /**
      * Return a stream of all active scheduling groups.
@@ -110,4 +126,12 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      * @param profiler the profiler to use.
      */
     void profileGroup( Group group, Profiler profiler );
+
+    /**
+     *  Returns information about jobs that are registered in the scheduler (submitted but not completed yet)
+     *  Only jobs that were submitted with {@link JobMonitoringParams} are included in the list.
+     */
+    List<MonitoredJobInfo> getMonitoredJobs();
+
+    List<FailedJobRun> getFailedJobRuns();
 }

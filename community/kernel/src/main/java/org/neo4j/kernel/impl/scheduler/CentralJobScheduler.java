@@ -38,9 +38,12 @@ import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.SystemNanoClock;
 
@@ -53,6 +56,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     private final TopLevelGroup topLevelGroup;
     private final ThreadPoolManager pools;
     private final ConcurrentHashMap<Group,ThreadPoolParameters> extraParameters;
+    private final FailedJobRunsStore failedJobRunsStore;
 
     private volatile boolean started;
 
@@ -74,8 +78,9 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     protected CentralJobScheduler( SystemNanoClock clock )
     {
         topLevelGroup = new TopLevelGroup();
-        pools = new ThreadPoolManager( topLevelGroup );
-        scheduler = new TimeBasedTaskScheduler( clock, pools );
+        this.failedJobRunsStore = new FailedJobRunsStore( 100 );
+        pools = new ThreadPoolManager( topLevelGroup, clock, failedJobRunsStore );
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore );
         extraParameters = new ConcurrentHashMap<>();
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().
@@ -141,34 +146,59 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public <T> JobHandle<T> schedule( Group group, Callable<T> job )
     {
+        return schedule( group, JobMonitoringParams.NOT_MONITORED, job );
+    }
+
+    @Override
+    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
+    {
         if ( !started )
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-        return tryRegisterCancelListener( job, getThreadPool( group ).submit( job ) );
+        return tryRegisterCancelListener( job, getThreadPool( group ).submit( jobMonitoringParams, job ) );
     }
 
     @Override
     public JobHandle<?> schedule( Group group, Runnable job )
     {
+        return schedule( group, JobMonitoringParams.NOT_MONITORED, job );
+    }
+
+    @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
+    {
         if ( !started )
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-        return tryRegisterCancelListener( job, getThreadPool( group ).submit( job ) );
+        return tryRegisterCancelListener( job, getThreadPool( group ).submit( jobMonitoringParams, job ) );
     }
 
     @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
-        return scheduleRecurring( group, runnable, 0, period, timeUnit );
+        return scheduleRecurring( group, JobMonitoringParams.NOT_MONITORED, runnable, period, timeUnit );
+    }
+
+    @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
+    {
+        return scheduleRecurring( group, monitoredJobParams, runnable, 0, period, timeUnit );
     }
 
     @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit unit )
     {
-        return tryRegisterCancelListener( runnable, scheduler.submit(
-                group, runnable, unit.toNanos( initialDelay ), unit.toNanos( period ) ) );
+        return scheduleRecurring( group, JobMonitoringParams.NOT_MONITORED, runnable, initialDelay, period, unit );
+    }
+
+    @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
+            TimeUnit timeUnit )
+    {
+        return tryRegisterCancelListener( runnable,
+                scheduler.submit( group, monitoredJobParams, runnable, timeUnit.toNanos( initialDelay ), timeUnit.toNanos( period ) ) );
     }
 
     @Override
@@ -199,7 +229,29 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public JobHandle<?> schedule( Group group, Runnable runnable, long initialDelay, TimeUnit unit )
     {
-        return tryRegisterCancelListener( runnable, scheduler.submit( group, runnable, unit.toNanos( initialDelay ), 0 ) );
+        return schedule( group, JobMonitoringParams.NOT_MONITORED, runnable, initialDelay, unit );
+    }
+
+    @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    {
+        return tryRegisterCancelListener( runnable, scheduler.submit( group, monitoredJobParams, runnable, timeUnit.toNanos( initialDelay ), 0 ) );
+    }
+
+    @Override
+    public List<MonitoredJobInfo> getMonitoredJobs()
+    {
+        List<MonitoredJobInfo> monitoredJobInfos = new ArrayList<>( scheduler.getMonitoredJobs() );
+
+        pools.forEachStarted( ( group, pool ) -> monitoredJobInfos.addAll( pool.getMonitoredJobs() ) );
+
+        return monitoredJobInfos;
+    }
+
+    @Override
+    public List<FailedJobRun> getFailedJobRuns()
+    {
+        return failedJobRunsStore.getFailedJobRuns();
     }
 
     @Override

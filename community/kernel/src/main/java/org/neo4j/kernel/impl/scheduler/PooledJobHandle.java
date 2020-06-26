@@ -34,10 +34,10 @@ final class PooledJobHandle<T> implements JobHandle<T>
 {
     private final Future<T> future;
     private final Object registryKey;
-    private final ConcurrentHashMap<Object,Future<?>> registry;
+    private final ConcurrentHashMap<Object,?> registry;
     private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-    PooledJobHandle( Future<T> future, Object registryKey, ConcurrentHashMap<Object,Future<?>> registry )
+    PooledJobHandle( Future<T> future, Object registryKey, ConcurrentHashMap<Object,?> registry )
     {
         this.future = future;
         this.registryKey = registryKey;
