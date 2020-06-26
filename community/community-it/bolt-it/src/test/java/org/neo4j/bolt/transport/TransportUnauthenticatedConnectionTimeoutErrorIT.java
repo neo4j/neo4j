@@ -81,7 +81,7 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
     {
         return settings -> {
             settings.put( BoltConnector.encryption_level, OPTIONAL );
-            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 1 ) );
+            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofSeconds( 5 ) );
             settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes, ByteUnit.kibiBytes( 1 ) );
         };
     }
