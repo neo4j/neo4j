@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher
 
-import java.util
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
-import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
@@ -43,7 +41,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
-import org.neo4j.kernel.impl.util.ValueUtils.asMapValue
+import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
@@ -217,14 +215,11 @@ trait GraphIcing {
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def inTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = withTx(f, txType)
 
-    def inTx[T](f: => T): T = inTx(_ => f)
-
-    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+    def inTx[T](f: => T): T = inTx(_ => f, Type.IMPLICIT)
 
     private def createTransactionalContext(tx: InternalTransaction, queryText: String, params: Map[String, Any] = Map.empty): TransactionalContext = {
-      val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService)
-      contextFactory.newContext(tx, queryText, asMapValue(javaParams))
+      contextFactory.newContext(tx, queryText, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
     }
 
     def transactionalContext(tx: InternalTransaction, query: (String, Map[String, Any])): TransactionalContext = {
