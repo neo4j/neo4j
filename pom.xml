@@ -76,6 +76,7 @@
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:+ExitOnOutOfMemoryError
       -XX:MaxInlineLevel=15
+      -XX:-UseBiasedLocking
       -Djdk.nio.maxCachedBufferSize=262144
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
