@@ -101,7 +101,6 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -237,7 +236,6 @@ public class Database extends LifecycleAdapter
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final Factory<DatabaseHealth> databaseHealthFactory;
     private final QueryEngineProvider engineProvider;
-    private volatile boolean initalized;
     private volatile boolean started;
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
@@ -249,9 +247,6 @@ public class Database extends LifecycleAdapter
     private final DatabaseStartupController startupController;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
-    private MemoryTracker otherDatabaseMemoryTracker;
-    private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-    private DatabaseAvailability databaseAvailability;
 
     public Database( DatabaseCreationContext context )
     {
@@ -305,14 +300,10 @@ public class Database extends LifecycleAdapter
         this.startupController = context.getStartupController();
     }
 
-    /**
-     * Initialize the database, and bring it to a state where its version can be examined, and it can be
-     * upgraded if necessary.
-     */
     @Override
-    public synchronized void init()
+    public synchronized void start()
     {
-        if ( initalized )
+        if ( started )
         {
             return;
         }
@@ -328,8 +319,8 @@ public class Database extends LifecycleAdapter
 
             databaseHealth = databaseHealthFactory.newInstance();
             accessCapability = accessCapabilityFactory.newAccessCapability( databaseConfig );
-            databaseAvailability = new DatabaseAvailability(
-                    databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
+            DatabaseAvailability databaseAvailability =
+                    new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             databaseDependencies.satisfyDependency( this );
             databaseDependencies.satisfyDependency( startupController );
@@ -352,7 +343,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
 
-            recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
             life.add( new PageCacheLifecycle( databasePageCache ) );
@@ -364,38 +355,14 @@ public class Database extends LifecycleAdapter
 
             otherDatabasePool = otherMemoryPool.newDatabasePool( namedDatabaseId.name(), 0, null );
             life.add( onShutdown( () -> otherDatabasePool.close() ) );
-            otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
+            var otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
 
             databaseDependencies.satisfyDependency( new DatabaseMemoryTrackers( otherDatabaseMemoryTracker ) );
-
-            initalized = true;
-        }
-        catch ( Throwable e )
-        {
-            handleStartupFailure( e );
-        }
-    }
-
-    /**
-     * Start the database and make it ready for transaction processing.
-     * A database will automatically recover itself, if necessary, when started.
-     * If the store files are obsolete (older than oldest supported version), then start will throw an exception.
-     */
-    @Override
-    public synchronized void start()
-    {
-        if ( started )
-        {
-            return;
-        }
-        init(); // Ensure we're initialized
-        try
-        {
             // Upgrade the store before we begin
             upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
 
             // Check the tail of transaction logs and validate version
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
+            final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
                     .withConfig( databaseConfig )
@@ -515,36 +482,30 @@ public class Database extends LifecycleAdapter
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
             eventListeners.databaseStart( namedDatabaseId );
-
-            /*
-             * At this point recovery has completed and the database is ready for use. Whatever panic might have
-             * happened before has been healed. So we can safely set the kernel health to ok.
-             * This right now has any real effect only in the case of internal restarts (for example, after a store copy).
-             * Standalone instances will have to be restarted by the user, as is proper for all database panics.
-             */
-            databaseHealth.healed();
-            started = true;
         }
         catch ( Throwable e )
         {
-            handleStartupFailure( e );
+            // Something unexpected happened during startup
+            databaseAvailabilityGuard.startupFailure( e );
+            msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
+            try
+            {
+                executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
+            }
+            catch ( Exception closeException )
+            {
+                msgLog.error( "Couldn't close database after startup failure", closeException );
+            }
+            throw new RuntimeException( e );
         }
-    }
-
-    private void handleStartupFailure( Throwable e )
-    {
-        // Something unexpected happened during startup
-        databaseAvailabilityGuard.startupFailure( e );
-        msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
-        try
-        {
-            executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
-        }
-        catch ( Exception closeException )
-        {
-            msgLog.error( "Couldn't close database after startup failure", closeException );
-        }
-        throw new RuntimeException( e );
+        /*
+         * At this point recovery has completed and the database is ready for use. Whatever panic might have
+         * happened before has been healed. So we can safely set the kernel health to ok.
+         * This right now has any real effect only in the case of internal restarts (for example, after a store copy).
+         * Standalone instances will have to be restarted by the user, as is proper for all database panics.
+         */
+        databaseHealth.healed();
+        started = true;
     }
 
     private void checkStoreId( PageCacheTracer pageCacheTracer, LogTailScanner tailScanner ) throws IOException
@@ -568,20 +529,10 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    /**
-     * A database can be upgraded <em>after</em> it has been {@link #init() initialized},
-     * and <em>before</em> it is {@link #start() started}.
-     */
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
-        createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate( false );
-    }
-
-    private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
-    {
-        var factory = new DatabaseMigratorFactory(
-                fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(), memoryTracker );
-        return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(),
+                memoryTracker ).createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 
     /**
@@ -827,7 +778,6 @@ public class Database extends LifecycleAdapter
         awaitAllClosingTransactions();
         life.shutdown();
         started = false;
-        initalized = false;
     }
 
     public void prepareToDrop()
@@ -881,24 +831,6 @@ public class Database extends LifecycleAdapter
         {
             internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", namedDatabaseId.name() ), e );
             throw new UncheckedIOException( e );
-        }
-    }
-
-    public synchronized void upgrade( boolean startAfterUpgrade )
-    {
-        if ( started )
-        {
-            stop();
-        }
-
-        init();
-        DatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
-        migrator.migrate( true );
-        start(); // Start is required to bring the database to a "complete" state (ideally this should not be needed)
-
-        if ( !startAfterUpgrade )
-        {
-            stop();
         }
     }
 

@@ -121,13 +121,7 @@ public class StoreUpgrader
         }
     }
 
-    /**
-     * Upgrade the store format, if it is not the latest version or is different from the configured desired format.
-     *
-     * @param layout The layout of the existing database store.
-     * @param forceUpgrade If {@code true}, the value of the {@link GraphDatabaseSettings#allow_upgrade} setting is ignored.
-     */
-    public void migrateIfNeeded( DatabaseLayout layout, boolean forceUpgrade )
+    public void migrateIfNeeded( DatabaseLayout layout )
     {
         // nothing to migrate
         if ( !Files.exists( layout.databaseDirectory() ) )
@@ -155,7 +149,7 @@ public class StoreUpgrader
                 return;
             }
 
-            if ( isUpgradeAllowed() || forceUpgrade )
+            if ( isUpgradeAllowed() )
             {
                 migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
             }

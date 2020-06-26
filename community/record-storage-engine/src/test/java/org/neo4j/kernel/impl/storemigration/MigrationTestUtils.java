@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -86,17 +86,9 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy34Store.class, "upgradeTest34Db.zip", targetDir );
     }
 
-    public static boolean checkNeoStoreHasFormatVersion( StoreVersionCheck check, RecordFormats expectedFormat )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check )
     {
-        String expectedVersion = expectedFormat.storeVersion();
-        boolean successful = check.checkUpgrade( expectedVersion, PageCursorTracer.NULL ).outcome.isSuccessful();
-        if ( successful )
-        {
-            String storeVersion = check.storeVersion( PageCursorTracer.NULL )
-                    .orElseThrow( () -> new RuntimeException( "Expected store to have a store version." ) );
-            return expectedVersion.equals( storeVersion );
-        }
-        return false;
+        return check.checkUpgrade( RecordFormatSelector.defaultFormat().storeVersion(), PageCursorTracer.NULL ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

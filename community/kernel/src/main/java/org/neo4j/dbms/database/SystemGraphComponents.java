@@ -88,20 +88,15 @@ public class SystemGraphComponents implements SystemGraphComponent
             if ( errors.size() == 1 )
             {
                 Pair<SystemGraphComponent,Exception> e = errors.get( 0 );
-                String componentId = e.first().component();
-                Exception cause = e.other();
                 return Optional.of( new IllegalStateException(
-                        "Failed to initialize system graph component '" + componentId + "': " + cause.getMessage(),
-                        cause ) );
+                        String.format( "Failed to %s system graph component '%s': %s", "initialize", e.first().component(), e.other().getMessage() ),
+                        e.other() ) );
             }
             else
             {
-                IllegalStateException exception = new IllegalStateException( "Multiple components failed to initialize the system graph" );
-                for ( Pair<SystemGraphComponent, Exception> error : errors )
-                {
-                    exception.addSuppressed( error.other() );
-                }
-                return Optional.of( exception );
+                StringBuilder sb = new StringBuilder( String.format( "Multiple components failed to %s the system graph:", "initialize" ) );
+                errors.forEach( e -> sb.append( "\n\t" ).append( e.first().component() ).append( ": " ).append( e.other().toString() ) );
+                return Optional.of( new IllegalStateException( sb.toString() ) );
             }
         }
         return Optional.empty();
