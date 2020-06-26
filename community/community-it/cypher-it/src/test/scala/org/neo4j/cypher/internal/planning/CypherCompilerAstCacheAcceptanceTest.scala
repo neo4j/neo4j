@@ -23,6 +23,7 @@ import java.time.{Clock, Duration, Instant, ZoneOffset}
 
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher
+import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
@@ -30,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDive
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL, MIN_NODES_WITH_LABEL}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.helpers.collection.Pair
@@ -124,7 +124,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def runQuery(query: String,
                        params: scala.Predef.Map[String, AnyRef] = Map.empty,
                        cypherCompiler: Compiler = compiler): Unit = {
-    import collection.JavaConverters._
 
     val preParser = new PreParser(CypherVersion.default,
       CypherPlannerOption.default,
@@ -139,7 +138,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
-      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
+      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
       context.close()
     }
   }
