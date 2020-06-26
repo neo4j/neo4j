@@ -49,6 +49,8 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
@@ -73,19 +75,22 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -97,8 +102,6 @@ public class StoreUpgraderInterruptionTestIT
 
     @Parameterized.Parameter
     public String version;
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
-    private PageCache pageCache;
 
     @Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -112,6 +115,9 @@ public class StoreUpgraderInterruptionTestIT
     private DatabaseLayout workingDatabaseLayout;
     private File prepareDirectory;
     private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
+    private PageCache pageCache;
+    private RecordFormats baselineFormat;
+    private RecordFormats successorFormat;
 
     @Before
     public void setUpLabelScanStore()
@@ -122,6 +128,8 @@ public class StoreUpgraderInterruptionTestIT
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheRule.getPageCache( fs );
+        baselineFormat = RecordFormatSelector.selectForVersion( version );
+        successorFormat = RecordFormatSelector.findSuccessor( baselineFormat ).orElse( baselineFormat );
     }
 
     @After
@@ -156,7 +164,7 @@ public class StoreUpgraderInterruptionTestIT
         try
         {
             newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
-                    .migrateIfNeeded( workingDatabaseLayout );
+                    .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -164,12 +172,14 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
+
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( neo4jLayout.homeDirectory() );
@@ -193,12 +203,12 @@ public class StoreUpgraderInterruptionTestIT
         var recordMigratorTracer = new DefaultPageCacheTracer();
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, idMigratorTracer );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
@@ -236,10 +246,12 @@ public class StoreUpgraderInterruptionTestIT
         };
         IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
 
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
+
         try
         {
             newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator, idMigrator )
-                    .migrateIfNeeded( workingDatabaseLayout );
+                    .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -247,12 +259,10 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
-
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
+        assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
         pageCache.close();
 
@@ -269,7 +279,7 @@ public class StoreUpgraderInterruptionTestIT
         dependencies.satisfyDependencies( new Monitors() );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         LogsUpgrader logsUpgrader = new LogsUpgrader(
-                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE );
+                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE, false );
         StoreUpgrader upgrader = new StoreUpgrader(
                 versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
         for ( StoreMigrationParticipant participant : participants )

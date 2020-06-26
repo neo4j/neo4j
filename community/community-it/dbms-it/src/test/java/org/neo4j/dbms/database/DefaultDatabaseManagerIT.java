@@ -29,10 +29,10 @@ import java.util.List;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -59,12 +59,12 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homePath() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) )
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-        defaultNamedDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
+        defaultNamedDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).orElseThrow();
     }
 
     @AfterEach

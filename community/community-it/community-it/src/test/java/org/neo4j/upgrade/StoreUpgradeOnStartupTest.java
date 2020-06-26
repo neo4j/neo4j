@@ -41,6 +41,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -58,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
 
@@ -81,6 +83,8 @@ public class StoreUpgradeOnStartupTest
     private StoreVersionCheck check;
     private Path workingHomeDir;
     private DatabaseManagementService managementService;
+    private RecordFormats baselineFormat;
+    private RecordFormats successorFormat;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -99,6 +103,8 @@ public class StoreUpgradeOnStartupTest
                 Config.defaults(), NULL );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
+        baselineFormat = RecordFormatSelector.selectForVersion( version );
+        successorFormat = RecordFormatSelector.findSuccessor( baselineFormat ).orElse( baselineFormat );
     }
 
     @Test
@@ -110,7 +116,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasDefaultFormatVersion( check ) );
+                checkNeoStoreHasFormatVersion( check, successorFormat ) );
         assertConsistentStore( workingDatabaseLayout );
     }
 

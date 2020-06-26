@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
@@ -97,6 +98,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 @PageCacheExtension
@@ -167,7 +169,23 @@ public class StoreUpgraderTest
                 .build();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout ) );
+        assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout, false ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldUpgradeIfUpgradeConfigurationVetoIsOverriddenByForce( RecordFormats formats ) throws IOException
+    {
+        init( formats );
+        Config deniedMigrationConfig = Config.newBuilder()
+                .set( GraphDatabaseSettings.allow_upgrade, false ) // Upgrade is not allowed.
+                .set( GraphDatabaseSettings.record_format, Standard.LATEST_NAME )
+                .build();
+        StoreVersionCheck check = getVersionCheck( pageCache );
+
+        // Must not throw, because 'forceUpgrade' is 'true'.
+        newUpgrader( check, pageCache, deniedMigrationConfig, SILENT, NULL, true ).migrateIfNeeded( databaseLayout, true );
+        verifyStoreUpgradedWithin( 1, MINUTES );
     }
 
     @ParameterizedTest
@@ -182,7 +200,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
+        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
     }
 
@@ -198,7 +216,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
+        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
     }
 
@@ -221,7 +239,7 @@ public class StoreUpgraderTest
             upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
 
             // WHEN
-            var e = assertThrows( UnableToUpgradeException.class, () -> upgrader.migrateIfNeeded( databaseLayout ) );
+            var e = assertThrows( UnableToUpgradeException.class, () -> upgrader.migrateIfNeeded( databaseLayout, false ) );
             assertTrue( e.getCause() instanceof IOException );
             assertEquals( failureMessage, e.getCause().getMessage() );
         }
@@ -231,7 +249,7 @@ public class StoreUpgraderTest
             StoreUpgrader upgrader = newUpgrader( check, pageCache );
             StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
             upgrader.addParticipant( observingParticipant );
-            upgrader.migrateIfNeeded( databaseLayout );
+            upgrader.migrateIfNeeded( databaseLayout, false );
 
             // THEN
             verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ), any( ProgressReporter.class ),
@@ -254,19 +272,10 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
-        newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout );
+        newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout, false );
 
         // Then
-        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
-        try ( NeoStores neoStores = factory.openAllNeoStores() )
-        {
-            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
-
-            long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isGreaterThan( minuteAgo );
-        }
+        verifyStoreUpgradedWithin( 1, MINUTES );
     }
 
     @ParameterizedTest
@@ -279,7 +288,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        newUpgrader( check, allowMigrateConfig, pageCache, pageCacheTracer ).migrateIfNeeded( databaseLayout );
+        newUpgrader( check, allowMigrateConfig, pageCache, pageCacheTracer ).migrateIfNeeded( databaseLayout, false );
 
         assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 );
         assertThat( pageCacheTracer.pins() ).isGreaterThan( 0 );
@@ -323,7 +332,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
-        newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout );
+        newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout, false );
 
         // Then
         assertThat( migrationHelperDirs() ).isEmpty();
@@ -341,7 +350,7 @@ public class StoreUpgraderTest
         // When
         AssertableLogProvider logProvider = new AssertableLogProvider();
         newUpgrader( check, pageCache, allowMigrateConfig,
-            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
+            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout, false );
 
         // Then
         assertThat( logProvider ).containsMessages( "Store files", "Indexes", "Successfully finished" );
@@ -364,7 +373,7 @@ public class StoreUpgraderTest
         // When
         StoreVersionCheck check = getVersionCheck( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( check, pageCache );
-        storeUpgrader.migrateIfNeeded( databaseLayout );
+        storeUpgrader.migrateIfNeeded( databaseLayout, false );
 
         // Then
         assertThat( migrationHelperDirs() ).isEmpty();
@@ -380,7 +389,7 @@ public class StoreUpgraderTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, pageCache, Config.defaults(),
-            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout ) );
+            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout, false ) );
     }
 
     @ParameterizedTest
@@ -401,7 +410,7 @@ public class StoreUpgraderTest
         DatabaseLayout migrationLayout = DatabaseLayout.of( config );
 
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
-            .migrateIfNeeded( migrationLayout );
+            .migrateIfNeeded( migrationLayout, false );
 
         assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
         assertThat( getLogFiles( migrationLayout.databaseDirectory().toFile() ) ).isEmpty();
@@ -436,7 +445,7 @@ public class StoreUpgraderTest
 
         assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->
                 newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
-                .migrateIfNeeded( migrationLayout ) );
+                .migrateIfNeeded( migrationLayout, false ) );
     }
 
     @ParameterizedTest
@@ -543,16 +552,17 @@ public class StoreUpgraderTest
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
             PageCacheTracer pageCacheTracer ) throws IOException
     {
-        return newUpgrader( storeVersionCheck, pageCache, config, MigrationProgressMonitor.SILENT, pageCacheTracer );
+        return newUpgrader( storeVersionCheck, pageCache, config, SILENT, pageCacheTracer, false );
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config, MigrationProgressMonitor progressMonitor )
     {
-        return newUpgrader( storeVersionCheck, pageCache, config, progressMonitor, NULL );
+        return newUpgrader( storeVersionCheck, pageCache, config, progressMonitor, NULL, false );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
-            MigrationProgressMonitor progressMonitor, PageCacheTracer pageCacheTracer )
+    private StoreUpgrader newUpgrader(
+            StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
+            MigrationProgressMonitor progressMonitor, PageCacheTracer pageCacheTracer, boolean forceUpgrade )
     {
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
@@ -565,7 +575,7 @@ public class StoreUpgraderTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
         LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
-                logsLocator, config, dependencies, pageCacheTracer, INSTANCE );
+                                                      logsLocator, config, dependencies, pageCacheTracer, INSTANCE, forceUpgrade );
         StoreUpgrader upgrader = new StoreUpgrader(
                 storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader, pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
@@ -619,6 +629,20 @@ public class StoreUpgraderTest
         File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
         fileSystem.truncate( logFile, byteOffset );
+    }
+
+    private void verifyStoreUpgradedWithin( long duration, TimeUnit unit )
+    {
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
+                                                 pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
+        {
+            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
+
+            long minuteAgo = System.currentTimeMillis() - unit.toMillis( duration );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isGreaterThan( minuteAgo );
+        }
     }
 
     private static class EmptyNamedMigrationParticipant extends AbstractStoreMigrationParticipant
