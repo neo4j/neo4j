@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -41,6 +44,20 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
         Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
           AllNodesScan("n", Set.empty)),
         Map("n.prop1" -> cachedNodeProp("n", "prop1"))
+      )
+    )
+  }
+
+  test("should cache node property on multiple usages without return") {
+    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 SET n.prop2 = n.prop1")
+
+    plan._2 should equal(
+      EmptyResult(
+        SetNodeProperty(
+          Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+            AllNodesScan("n", Set.empty)),
+          "n", PropertyKeyName("prop2")(pos), cachedNodeProp("n", "prop1")
+        )
       )
     )
   }
