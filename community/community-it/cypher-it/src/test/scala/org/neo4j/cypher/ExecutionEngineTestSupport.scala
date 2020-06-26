@@ -22,17 +22,17 @@ package org.neo4j.cypher
 import java.util
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.InputDataStream
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -49,12 +49,10 @@ import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.LogProvider
 import org.neo4j.logging.NullLogProvider
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.VirtualValues
 
+import scala.collection.JavaConverters.asJavaIterable
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.mapAsJavaMap
 import scala.collection.Map
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -105,30 +103,17 @@ object ExecutionEngineHelper {
     resolver.resolveDependency(classOf[QueryExecutionEngine]).asInstanceOf[org.neo4j.cypher.internal.javacompat.ExecutionEngine].getCypherExecutionEngine
   }
 
-  def asMapValue(map: Map[String, Any]): MapValue = {
-    val keys = map.keys.toArray
-    val values = map.values.map(asValue).toArray
-    VirtualValues.map(keys, values)
+  def asJavaMapDeep(map: Map[String, Any]): java.util.Map[String, AnyRef] = {
+    mapAsJavaMap(map.mapValues(asJavaValueDeep))
   }
 
-  def asMap(map: MapValue, context: QueryContext): java.util.Map[String, AnyRef] = {
-    val out = new util.HashMap[String, AnyRef]()
-    map.foreach((key: String, value: AnyValue) => {
-      out.put(key, context.asObject(value))
-    })
-    out
-  }
-
-  def asValue(any: Any): AnyValue =
+  def asJavaValueDeep(any: Any): AnyRef =
     any match {
-      case map: Map[String, Any] => asMapValue(map)
-      case array: Array[AnyRef] =>
-        val value = Values.unsafeOf(array, false)
-        if (value == null) VirtualValues.list(array.map(asValue):_*)
-        else value
-      case iterable: Iterable[_] => VirtualValues.list(iterable.map(asValue).toArray:_*)
-      case traversable: TraversableOnce[_] => VirtualValues.list(traversable.map(asValue).toArray:_*)
-      case x => ValueUtils.of(x)
+      case map: Map[String, Any] => asJavaMapDeep(map)
+      case array: Array[Any] => array.map(asJavaValueDeep)
+      case iterable: Iterable[_] => asJavaIterable(iterable.map(asJavaValueDeep))
+      case traversable: TraversableOnce[_] => asJavaIterable(traversable.map(asJavaValueDeep).toList)
+      case x => x.asInstanceOf[AnyRef]
     }
 
   private def scalar[T](input: List[Map[String, Any]]): T = input match {
@@ -171,7 +156,7 @@ trait ExecutionEngineHelper {
     val context = graph.transactionalContext(tx, query = q -> params.toMap)
     val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context), new ResourceManager)
     RewindableExecutionResult(eengine.execute(q,
-      ExecutionEngineHelper.asMapValue(params),
+      ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
       context,
       profile = false,
       prePopulate = false,
@@ -188,7 +173,7 @@ trait ExecutionEngineHelper {
       RewindableExecutionResult(
         eengine.execute(
           query = fpq,
-          params = ExecutionEngineHelper.asMapValue(params),
+          params = ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
           context = context,
           prePopulate = false,
           input = input,

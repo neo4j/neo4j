@@ -35,6 +35,7 @@ import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CommunityCompilerFactory
@@ -64,8 +65,6 @@ import org.neo4j.logging.Log
 import org.neo4j.logging.LogAssertions.assertThat
 import org.neo4j.logging.NullLog
 import org.neo4j.logging.NullLogProvider
-
-import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
@@ -154,7 +153,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
-      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
+      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
       context.close()
     }
   }
