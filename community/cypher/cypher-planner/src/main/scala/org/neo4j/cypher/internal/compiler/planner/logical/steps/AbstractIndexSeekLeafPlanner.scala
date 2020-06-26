@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
@@ -62,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
@@ -83,6 +85,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
+                              indexOrder: IndexOrder,
                               context: LogicalPlanningContext,
                               onlyExists: Boolean)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
@@ -145,9 +148,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         (predicates, canGetValues, providedOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
+         (predicates, canGetValues, providedOrder, indexOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, indexOrder, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -160,6 +163,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 isUnique: Boolean,
                                 canGetValues: Seq[GetValueFromIndexBehavior],
                                 providedOrder: ProvidedOrder,
+                                indexOrder: IndexOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
@@ -171,7 +175,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       }
     }
 
-    val equalityPredicates = indexCompatiblePredicates.takeWhile(_.exactPredicate)
+    val equalityPredicates = indexCompatiblePredicates.takeWhile(_.exactPredicate != NotExactPredicate)
     val equalityAndNextPredicates =
       if (equalityPredicates == indexCompatiblePredicates) equalityPredicates
       else equalityPredicates :+ indexCompatiblePredicates(equalityPredicates.length)
@@ -184,7 +188,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context, indexedPredicates.head.isExists)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, indexOrder, context, indexedPredicates.head.isExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
       .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
@@ -213,7 +217,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if validDependencies(seekable) =>
         val queryExpression = seekable.args.asQueryExpression
-        IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = true,
+        val exactPredicate = if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
+        IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = exactPredicate,
           hints, argumentIds, solvesPredicate = true)
 
       // ... = n.prop
@@ -222,7 +227,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case predicate@Equals(a, prop@Property(seekable@LogicalVariable(_), propKeyName))
         if a.dependencies.forall(arguments) && !arguments(seekable) =>
         val expr = SingleQueryExpression(a)
-        IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = true,
+        IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = SingleExactPredicate,
           hints, argumentIds, solvesPredicate = true)
 
       // n.prop STARTS WITH "prefix%..."
@@ -230,14 +235,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         val partialPredicate = PartialPredicate(seekable.expr, predicate)
         val queryExpression = seekable.asQueryExpression
         val propertyKey = seekable.propertyKey
-        IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+        IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
           hints, argumentIds, solvesPredicate = true)
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) if validDependencies(seekable) =>
         val queryExpression = seekable.asQueryExpression
         val keyName = seekable.propertyKeyName
-        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
           hints, argumentIds, solvesPredicate = true)
 
       // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
@@ -246,7 +251,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case predicate@AsDistanceSeekable(seekable) if validDependencies(seekable) =>
         val queryExpression = seekable.asQueryExpression
         val keyName = seekable.propertyKeyName
-        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = false,
+        IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
           hints, argumentIds, solvesPredicate = false)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
@@ -256,7 +261,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         // scannable.expr is partialPredicate saying it solves exists() but not the predicate
         val solvedPredicate = if (scannable.solvesPredicate) predicate else scannable.expr
         IndexCompatiblePredicate(scannable.name, scannable.propertyKey, solvedPredicate, ExistenceQueryExpression(), CTAny,
-          exactPredicate = false, hints, argumentIds, solvesPredicate = true)
+          exactPredicate = NotExactPredicate, hints, argumentIds, solvesPredicate = true)
 
       // n.prop ENDS WITH 'substring'
       // It is always converted to exists and will need filtering
@@ -266,7 +271,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
           FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), prop)(predicate.position),
           predicate
         )
-        IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = false,
+        IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = NotExactPredicate,
           hints, argumentIds, solvesPredicate = true)
 
       // n.prop CONTAINS 'substring'
@@ -277,7 +282,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
           FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), prop)(predicate.position),
           predicate
         )
-        IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = false,
+        IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = NotExactPredicate,
           hints, argumentIds, solvesPredicate = true)
     }
   }
@@ -291,7 +296,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
    * contains two lists of the same size, which is indexDescriptor.properties.length
    */
   private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrder: InterestingOrder)
-                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder)] = {
+                                (implicit semanticTable: SemanticTable): Option[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder)] = {
     val maybeMatchingPredicates = indexDescriptor.properties.foldLeft(Option(Seq.empty[IndexCompatiblePredicate])) {
       case (None, _) => None
       case (Some(acc), propertyKeyId) =>
@@ -310,7 +315,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
                                                                    indexDescriptor: IndexDescriptor,
-                                                                   interestingOrder: InterestingOrder): (Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder) = {
+                                                                   interestingOrder: InterestingOrder): (Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder) = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its value capabilities for the types of all properties.
@@ -319,20 +324,21 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     // Combine plannable predicates with their available properties
     val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
-      case (_, true) => CanGetValue
+      case (_, SingleExactPredicate) => CanGetValue
+      case (_, MultipleExactPredicate) => CanGetValue
       case (behavior, _) => behavior
     }
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
-    val indexProperties = matchingPredicates.map(mp => {
+    val indexPropertiesAndPredicateTypes = matchingPredicates.map(mp => {
       val pos = mp.propertyPredicate.position
-      Property(Variable(mp.name)(pos), mp.propertyKeyName)(pos)
-    }).slice(0, types.length)
+      PropertyAndPredicateType(Property(Variable(mp.name)(pos), mp.propertyKeyName)(pos), mp.exactPredicate == SingleExactPredicate)
+    })
 
-    val providedOrder = ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexProperties, types, indexDescriptor.orderCapability)
+    val (providedOrder, indexOrder) = ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability)
 
     // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
-    (matchingPredicates, propertyBehaviours, providedOrder)
+    (matchingPredicates, propertyBehaviours, providedOrder, indexOrder)
   }
 
   /**
@@ -347,7 +353,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                               propertyPredicate: Expression,
                                               queryExpression: QueryExpression[Expression],
                                               propertyType: CypherType,
-                                              exactPredicate: Boolean,
+                                              exactPredicate: ExactPredicate,
                                               hints: Set[Hint],
                                               argumentIds: Set[String],
                                               solvesPredicate: Boolean)
@@ -357,7 +363,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case _: ExistenceQueryExpression[Expression] => this
       case _: CompositeQueryExpression[Expression] => throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
       case _ =>
-        copy(queryExpression = ExistenceQueryExpression(), exactPredicate = false, solvesPredicate = false)
+        copy(queryExpression = ExistenceQueryExpression(), exactPredicate = NotExactPredicate, solvesPredicate = false)
     }
 
     def isExists: Boolean = queryExpression match {
@@ -365,4 +371,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case _ => false
     }
   }
+
+  sealed trait ExactPredicate
+  case object SingleExactPredicate extends ExactPredicate
+  case object MultipleExactPredicate extends ExactPredicate
+  case object NotExactPredicate extends ExactPredicate
 }

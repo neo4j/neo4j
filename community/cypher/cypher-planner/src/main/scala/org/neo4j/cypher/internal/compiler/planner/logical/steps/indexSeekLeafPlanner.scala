@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
@@ -38,11 +39,12 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                        hint: Option[UsingIndexHint],
                                        argumentIds: Set[String],
                                        providedOrder: ProvidedOrder,
+                                       indexOrder: IndexOrder,
                                        context: LogicalPlanningContext,
                                        onlyExists: Boolean)
                                       (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
     if (onlyExists) {
-      context.logicalPlanProducer.planNodeIndexScan(idName, label, properties, solvedPredicates, hint, argumentIds, providedOrder, context)
+      context.logicalPlanProducer.planNodeIndexScan(idName, label, properties, solvedPredicates, hint, argumentIds, providedOrder, indexOrder, context)
     } else if (isUnique) {
       context.logicalPlanProducer.planNodeUniqueIndexSeek(idName,
                                                           label,
@@ -53,6 +55,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                           hint,
                                                           argumentIds,
                                                           providedOrder,
+                                                          indexOrder,
                                                           context)
     } else {
       context.logicalPlanProducer.planNodeIndexSeek(idName,
@@ -64,6 +67,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                     hint,
                                                     argumentIds,
                                                     providedOrder,
+                                                    indexOrder,
                                                     context)
     }
 

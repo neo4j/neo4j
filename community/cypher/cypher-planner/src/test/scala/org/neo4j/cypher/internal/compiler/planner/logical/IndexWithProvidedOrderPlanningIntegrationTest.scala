@@ -62,9 +62,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
-  val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
-  val DESCENDING = TestOrder(IndexOrderDescending, "DESC", DESC, Descending)
-  val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, Descending)
+  private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
+  private val DESCENDING = TestOrder(IndexOrderDescending, "DESC", DESC, Descending)
+  private val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, Descending)
 
   override val pushdownPropertyReads: Boolean = false
 
@@ -1012,10 +1012,150 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     }
   }
 
+  test("Order by index backed for composite index with different directions and equality predicate on first property") {
+    val projection = Map(
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2")
+    )
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC",                ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),
+      ("n.prop1 DESC",               ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),                  // Index gives ASC, reports DESC
+      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending, true,  Seq(Ascending("n.prop1")),  Seq(Descending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),                  // Index gives ASC ASC, reports DESC ASC
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1")), Seq(Descending("n.prop2"))), // Index gives ASC ASC, reports DESC ASC
+
+      // Descending index
+      ("n.prop1 ASC",                DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),                 // Index gives DESC, reports ASC
+      ("n.prop1 DESC",               DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1")),  Seq(Ascending("n.prop2"))), // Index gives DESC DESC, reports ASC DESC
+      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),                 // Index gives DESC DESC, reports ASC DESC
+      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending, true,  Seq(Descending("n.prop1")), Seq(Ascending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),
+
+      // Both index
+      ("n.prop1 ASC",                BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
+      ("n.prop1 DESC",               BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC, reports DESC, since ASC is cheaper
+      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty), // Index gives DESC DESC, reports ASC DESC
+      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC ASC, reports DESC ASC
+      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty),
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 = 42 AND n.prop2 <= 3
+             |RETURN n.prop1, n.prop2
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = IndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
+        plan._2 should equal {
+          if (shouldSort)
+            PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
+          else
+            Projection(leafPlan, projection)
+        }
+    }
+  }
+
+  test("Order by index backed for composite index with different directions and equality predicate on second property") {
+    val projection = Map(
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2")
+    )
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending, false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
+      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1"), Ascending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1"), Descending("n.prop2"))),
+
+      // Descending index
+      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
+      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1"), Descending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
+      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty),
+
+      // Both index
+      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderAscending,  false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
+      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
+      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty),
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 <= 42 AND n.prop2 = 3
+             |RETURN n.prop1, n.prop2
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), IndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue))
+        plan._2 should equal {
+          if (shouldSort)
+            Sort(Projection(leafPlan, projection), toBeSorted)
+          else
+            Projection(leafPlan, projection)
+        }
+    }
+  }
+
+  test("Order by index backed for composite index with different directions and equality predicate on both properties") {
+    val projection = Map(
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2")
+    )
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending),
+      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
+      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
+
+      // Descending index
+      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC ASC
+      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC DESC
+      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports DESC ASC
+      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending),
+
+      // Both index
+      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending),
+      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
+      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
+      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 = 42 AND n.prop2 = 3
+             |RETURN n.prop1, n.prop2
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+        } getLogicalPlanFor query
+
+        plan._2 should equal(Projection(IndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue), projection))
+    }
+  }
+
   // Min and Max
 
   // Tests (ASC, min), (DESC, max), (BOTH, min), (BOTH, max) -> interesting and provided order are the same
-  val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
+  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
   for ((TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <- List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))) {
 
     test(s"$orderCapability-$functionName: should use provided index order with range") {

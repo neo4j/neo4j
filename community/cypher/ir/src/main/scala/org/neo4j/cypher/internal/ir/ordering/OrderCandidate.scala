@@ -42,9 +42,9 @@ trait OrderCandidate {
 
   def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): OrderCandidate
 
-  def asc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): OrderCandidate
 
-  def desc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): OrderCandidate
 
   def asProvidedOrder: ProvidedOrder = ProvidedOrder(order.map {
     case Asc(expression, _) => ProvidedOrder.Asc(expression)
@@ -64,7 +64,7 @@ case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidat
                     projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Desc(expression, projections))
 }
 
-object RequiredOrderCandidate {
+object RequiredOrderCandidate extends OrderCandidateFactory {
   def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = empty.asc(expression, projections)
 
   def empty: RequiredOrderCandidate = RequiredOrderCandidate(Seq.empty)
@@ -82,10 +82,18 @@ case class InterestingOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandi
                     projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(expression, projections))
 }
 
-object InterestingOrderCandidate {
+object InterestingOrderCandidate extends OrderCandidateFactory {
   def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.asc(expression, projections)
 
   def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.desc(expression, projections)
 
   def empty: InterestingOrderCandidate = InterestingOrderCandidate(Seq.empty)
+}
+
+trait OrderCandidateFactory {
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): OrderCandidate
+
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): OrderCandidate
+
+  def empty: OrderCandidate
 }

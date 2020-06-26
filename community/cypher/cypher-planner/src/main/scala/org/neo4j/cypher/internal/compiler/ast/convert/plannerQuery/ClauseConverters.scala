@@ -248,7 +248,7 @@ object ClauseConverters {
         }
 
       //  RETURN n.prop AS foo ORDER BY foo * 2
-      //  RETURN n.prop * 2 ORDER BY n.prop * 2
+      //  RETURN n.prop ORDER BY n.prop * 2
       case AscSortItem(expression) =>
         val depNames = expression.dependencies.map(_.name)
         val orderProjections = projections.filter(p => depNames.contains(p._1))

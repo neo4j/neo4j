@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -46,6 +47,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
 import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -66,20 +68,20 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-          lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
+          lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-          lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
+          lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case AsPropertyScannable(scannable) =>
         val name = scannable.name
 
-        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
@@ -99,7 +101,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
         val plans: Set[LogicalPlan] = properties.flatMap(prop => {
           val property = Property(expr, PropertyKeyName(prop)(predicate.position))(predicate.position)
-          produceForConstraintOrAggregation(name, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+          produceForConstraintOrAggregation(name, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, _, context), context)
         })
 
         maybeLeafPlans(name, plans)
@@ -129,7 +131,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         None
     }.toSet
 
-  type PlanProducer = (String, LabelToken, Seq[IndexedProperty], Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder) => LogicalPlan
+  type PlanProducer = (String, LabelToken, Seq[IndexedProperty], Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder, IndexOrder) => LogicalPlan
 
   private def produce(variableName: String,
                       qg: QueryGraph,
@@ -198,11 +200,11 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     // Index scan is always on just one property
     val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
     val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
-    val orderProperty = Property(property.map, property.propertyKey)(property.position)
-    val providedOrder = ResultOrdering.providedOrderForIndexOperator(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
+    val orderProperty = PropertyAndPredicateType(Property(property.map, property.propertyKey)(property.position), isSingleExactPredicate = false)
+    val (providedOrder, indexOrder) = ResultOrdering.providedOrderForIndexOperator(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
 
     val labelToken = LabelToken(labelName, labelId)
     val predicates = Seq(predicate, labelPredicate)
-    planProducer(variableName, labelToken, Seq(indexProperty), predicates, hint, qg.argumentIds, providedOrder)
+    planProducer(variableName, labelToken, Seq(indexProperty), predicates, hint, qg.argumentIds, providedOrder, indexOrder)
   }
 }
