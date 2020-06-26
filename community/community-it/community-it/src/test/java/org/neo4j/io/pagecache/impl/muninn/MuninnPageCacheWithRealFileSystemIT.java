@@ -32,9 +32,9 @@ class MuninnPageCacheWithRealFileSystemIT extends MuninnPageCacheTest
 
     MuninnPageCacheWithRealFileSystemIT()
     {
-        SHORT_TIMEOUT_MILLIS = 120_000;
-        SEMI_LONG_TIMEOUT_MILLIS = 360_000;
-        LONG_TIMEOUT_MILLIS = 1_200_000;
+        SHORT_TIMEOUT_MILLIS = 240_000;
+        SEMI_LONG_TIMEOUT_MILLIS = 720_000;
+        LONG_TIMEOUT_MILLIS = 2_400_000;
     }
 
     @Override
