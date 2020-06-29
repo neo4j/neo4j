@@ -23,12 +23,15 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.LabelResource
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
@@ -395,8 +398,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case ShowDatabase(scope, _, _, where, _) =>
         val (name, args) = scope match {
-          case NamedGraphScope(dbName) => ("ShowDatabase", showCommandDetails(where, escapeName(dbName)))
-          case _: AllGraphsScope => ("ShowDatabases", showCommandDetails(where))
+          case NamedDatabaseScope(dbName) => ("ShowDatabase", showCommandDetails(where, escapeName(dbName)))
+          case _: AllDatabasesScope => ("ShowDatabases", showCommandDetails(where))
           case _: DefaultDatabaseScope => ("ShowDefaultDatabase", showCommandDetails(where))
         }
         PlanDescriptionImpl(id, name, NoChildren, args, variables)
@@ -1140,7 +1143,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractDatabaseArguments(action: AdminAction,
-                                       database: GraphScope,
+                                       database: DatabaseScope,
                                        qualifier: PrivilegeQualifier,
                                        roleName: Either[String, Parameter]): Seq[PrettyString] =
     Seq(asPrettyString.raw(action.name), extractDbScope(database)) ++ extractUserQualifier(qualifier).toSeq :+ getRoleInfo(roleName)
@@ -1164,11 +1167,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     (dbName, qualifierText, resourceText)
   }
 
-  private def extractGraphScope(dbScope: GraphScope): PrettyString = {
-    dbScope match {
+  private def extractGraphScope(graphScope: GraphScope): PrettyString = {
+    graphScope match {
       case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
       case AllGraphsScope() => pretty"ALL GRAPHS"
-      case DefaultDatabaseScope() => pretty""
     }
   }
 
@@ -1194,9 +1196,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     case _ => None
   }
 
-  private def extractDbScope(dbScope: GraphScope): PrettyString = dbScope match {
-    case NamedGraphScope(name) => pretty"DATABASE ${escapeName(name)}"
-    case AllGraphsScope() => pretty"ALL DATABASES"
+  private def extractDbScope(dbScope: DatabaseScope): PrettyString = dbScope match {
+    case NamedDatabaseScope(name) => pretty"DATABASE ${escapeName(name)}"
+    case AllDatabasesScope() => pretty"ALL DATABASES"
     case DefaultDatabaseScope() => pretty"DEFAULT DATABASE"
   }
 

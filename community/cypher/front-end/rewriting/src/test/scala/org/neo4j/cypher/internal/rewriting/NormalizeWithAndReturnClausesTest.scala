@@ -72,7 +72,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("name")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
     assertRewrite(
       "SHOW DATABASES YIELD name",
-      ast.ShowDatabase(ast.AllGraphsScope()(InputPosition.NONE), yields, None, None)(InputPosition.NONE))
+      ast.ShowDatabase(ast.AllDatabasesScope()(InputPosition.NONE), yields, None, None)(InputPosition.NONE))
   }
 
   test("WITH: attach ORDER BY expressions to existing aliases") {

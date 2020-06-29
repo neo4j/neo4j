@@ -17,11 +17,11 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
-import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Where
@@ -31,10 +31,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // SHOW DATABASE
 
   Seq(
-    ("DATABASES", ast.ShowDatabase.apply(AllGraphsScope()(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
+    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
     ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
-    ("DATABASE $db",  ast.ShowDatabase.apply(NamedGraphScope(param("db"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
-    ("DATABASE neo4j",  ast.ShowDatabase.apply(NamedGraphScope(literal("neo4j"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  )
+    ("DATABASE $db",  ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
+    ("DATABASE neo4j",  ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  )
   ).foreach{ case (dbType, privilege) =>
     test(s"SHOW $dbType") {
       yields(privilege(None, None, None))
@@ -87,7 +87,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(NamedGraphScope(literal("foo.bar"))(pos), None, None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None, None))
   }
 
   test("SHOW DATABASE foo.bar") {

@@ -23,7 +23,7 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
@@ -244,7 +244,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         // show default database
         case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDefaultDatabase")
         // show database name
-        case NamedGraphScope(p) =>
+        case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
           val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
             val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()

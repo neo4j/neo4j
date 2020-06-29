@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
@@ -113,6 +114,7 @@ import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
@@ -1373,8 +1375,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _databasePrivilege: Gen[PrivilegeCommand] = for {
     databaseAction      <- _databaseAction
-    namedScope          <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
-    databaseScope       <- oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultDatabaseScope()(pos)))
+    namedScope          <- _listOfNameOfEither.map(_.map(n => NamedDatabaseScope(n)(pos)))
+    databaseScope       <- oneOf(namedScope, List(AllDatabasesScope()(pos)), List(DefaultDatabaseScope()(pos)))
     databaseQualifier   <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
     roleNames           <- _listOfNameOfEither
     revokeType          <- _revokeType
@@ -1408,7 +1410,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showDatabase: Gen[ShowDatabase] = for {
     dbName <- _nameAsEither
-    scope  <- oneOf(NamedGraphScope(dbName)(pos), AllGraphsScope()(pos), DefaultDatabaseScope()(pos))
+    scope  <- oneOf(NamedDatabaseScope(dbName)(pos), AllDatabasesScope()(pos), DefaultDatabaseScope()(pos))
     where  <- Gen.option(_where)
     yields <- Gen.option(_yield)
   } yield ShowDatabase(scope, yields, where, None)(pos)

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateView
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
+import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -432,11 +433,11 @@ trait Statement extends Parser
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 
-  private def Database: Rule1[List[GraphScope]] = rule("on a database") {
+  private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
       group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-        group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedGraphScope(_)(pos)))) |
-          (keyword("*") ~~~> (pos => List(ast.AllGraphsScope()(pos)))))
+        group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+          (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
@@ -553,9 +554,9 @@ trait Statement extends Parser
     group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_,_))
   }
 
-  private def ScopeForShowDatabase: Rule1[GraphScope] = rule("show database scope")(
-    group(keyword("DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.NamedGraphScope(_)) |
-    keyword("DATABASES") ~~~> (ast.AllGraphsScope()) |
+  private def ScopeForShowDatabase: Rule1[DatabaseScope] = rule("show database scope")(
+    group(keyword("DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
+    keyword("DATABASES") ~~~> (ast.AllDatabasesScope()) |
     keyword("DEFAULT DATABASE") ~~~> (ast.DefaultDatabaseScope())
   )
 

@@ -1106,13 +1106,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeDbmsAction(privLhsLP, CreateUserAction, util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeDbmsAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedGraphScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")), 1.0),
+    assertGood(attach(GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")), 1.0),
       planDescription(id, "GrantDatabaseAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "DATABASE foo", "ALL USERS", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllGraphsScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")), 1.0),
       planDescription(id, "DenyDatabaseAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllGraphsScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "revokeType"), 1.0),
+    assertGood(attach(RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeDatabaseAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
 
     assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
