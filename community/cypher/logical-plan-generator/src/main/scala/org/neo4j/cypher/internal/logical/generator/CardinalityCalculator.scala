@@ -149,21 +149,15 @@ object CardinalityCalculator {
   implicit val semiApplyCardinality: CardinalityCalculator[SemiApply] =
     (plan, state, _, _) => {
       val lhsCardinality = state.cardinalities.get(plan.left.id)
-      val rhsCardinality = state.cardinalities.get(plan.right.id)
-      val selectivity = (rhsCardinality / lhsCardinality).getOrElse(PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
 
-      lhsCardinality * selectivity
+      lhsCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
     }
 
   implicit val antiSemiApplyCardinality: CardinalityCalculator[AntiSemiApply] =
     (plan, state, _, _) => {
       val lhsCardinality = state.cardinalities.get(plan.left.id)
-      val rhsCardinality = state.cardinalities.get(plan.right.id)
-      val selectivity = (rhsCardinality / lhsCardinality)
-        .map(_.negate)
-        .getOrElse(PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY)
 
-      lhsCardinality * selectivity
+      lhsCardinality * PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
     }
 
   implicit val cartesianProductCardinality: CardinalityCalculator[CartesianProduct] =
