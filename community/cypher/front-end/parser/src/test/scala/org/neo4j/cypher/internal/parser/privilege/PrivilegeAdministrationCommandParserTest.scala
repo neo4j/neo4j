@@ -177,16 +177,16 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
 
   // Granting/denying/revoking read and match to/from role
   Seq(
-    (ast.GraphPrivilege(ast.ReadAction)(pos), "GRANT", "TO", grant: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.ReadAction)(pos), "DENY", "TO", deny: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE GRANT", "FROM", revokeGrant: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE DENY", "FROM", revokeDeny: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE", "FROM", revokeBoth: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.MatchAction)(pos), "GRANT", "TO", grant: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.MatchAction)(pos), "DENY", "TO", deny: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE GRANT", "FROM", revokeGrant: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE DENY", "FROM", revokeDeny: resourcePrivilegeFunc),
-    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE", "FROM", revokeBoth: resourcePrivilegeFunc)
+    (ast.GraphPrivilege(ast.ReadAction)(pos), "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.ReadAction)(pos), "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.ReadAction)(pos), "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.MatchAction)(pos), "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.MatchAction)(pos), "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
+    (ast.GraphPrivilege(ast.MatchAction)(pos), "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc)
   ).foreach {
     case (privilege: ast.PrivilegeType, command: String, preposition: String, func: resourcePrivilegeFunc) =>
 

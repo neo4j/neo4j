@@ -29,11 +29,11 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationComman
   type privilegeTypeFunction = () => InputPosition => PrivilegeType
 
   Seq(
-    ("GRANT", "TO", grant: resourcePrivilegeFunc),
-    ("DENY", "TO", deny: resourcePrivilegeFunc),
-    ("REVOKE GRANT", "FROM", revokeGrant: resourcePrivilegeFunc),
-    ("REVOKE DENY", "FROM", revokeDeny: resourcePrivilegeFunc),
-    ("REVOKE", "FROM", revokeBoth: resourcePrivilegeFunc)
+    ("GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
+    ("DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
+    ("REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
+    ("REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
+    ("REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: resourcePrivilegeFunc) =>
 

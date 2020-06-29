@@ -28,11 +28,11 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
   type privilegeTypeFunction = () => InputPosition => PrivilegeType
 
   Seq(
-    ("GRANT", "TO", grant: noResourcePrivilegeFunc),
-    ("DENY", "TO", deny: noResourcePrivilegeFunc),
-    ("REVOKE GRANT", "FROM", revokeGrant: noResourcePrivilegeFunc),
-    ("REVOKE DENY", "FROM", revokeDeny: noResourcePrivilegeFunc),
-    ("REVOKE", "FROM", revokeBoth: noResourcePrivilegeFunc)
+    ("GRANT", "TO", grantGraphPrivilege: noResourcePrivilegeFunc),
+    ("DENY", "TO", denyGraphPrivilege: noResourcePrivilegeFunc),
+    ("REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: noResourcePrivilegeFunc),
+    ("REVOKE DENY", "FROM", revokeDenyGraphPrivilege: noResourcePrivilegeFunc),
+    ("REVOKE", "FROM", revokeGraphPrivilege: noResourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
 
