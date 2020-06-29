@@ -794,6 +794,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)))
   }
 
+  def injectNulls(variable: String): IMPL = {
+    val collection = s"${variable}Collection"
+    val level = indent
+    unwind(s"$collection AS $variable")
+    indent = level
+    projection(s"$collection + [null] AS $collection")
+    indent = level
+    aggregation(Seq(), Seq(s"collect($variable) AS $collection"))
+  }
+
   // SHIP IP
 
   protected def buildLogicalPlan(): LogicalPlan = tree.build()

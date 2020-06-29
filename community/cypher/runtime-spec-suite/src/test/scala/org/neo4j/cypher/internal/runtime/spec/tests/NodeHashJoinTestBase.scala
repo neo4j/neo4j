@@ -98,6 +98,28 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
+  test("should join with nulls in lhs and rhs") {
+    // given
+    val nodes = given { nodeGraph(1) }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      .|.injectNulls("x")
+      .|.allNodeScan("x")
+      .injectNulls("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // because graph contains no relationships, the expand will return no rows
+    runtimeResult should beColumns("x").withSingleRow(nodes.head)
+  }
+
   test("should join after expand on rhs") {
     // given
     val (unfilteredNodes, _) = given { circleGraph(sizeHint) }

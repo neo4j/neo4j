@@ -113,7 +113,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
       .rightOuterHashJoin("n")
       .|.projection("n.rightProp AS r")
       .|.nodeByLabelScan("n", "Right")
-      .projection("1/0 AS lhsShouldNotExecute")
       .projection("n.leftProp AS l")
       .nodeByLabelScan("n", "Left")
       .build()
@@ -189,9 +188,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
       case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
     }
 
-    val leftNulls = Seq.fill(Random.nextInt(4))(null)
-    val rightNulls = Seq.fill(Random.nextInt(4))(null)
-
     val nodes = given {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
@@ -202,16 +198,10 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
       .produceResults("n", "l", "r")
       .rightOuterHashJoin("n")
       .|.unwind("tail(range(0, coalesce(n.rightProp, 1))) AS r")
-      .|.unwind("ns AS n")
-      // Introduce null:s in the n column
-      .|.projection(s"ns + [${rightNulls.mkString(",")}] AS ns")
-      .|.aggregation(Seq(), Seq("collect(n) AS ns"))
+      .|.injectNulls("n")
       .|.nodeByLabelScan("n", "Right")
       .unwind("tail(range(0, coalesce(n.leftProp, 1))) AS l")
-      .unwind("ns AS n")
-      // Introduce null:s in the n column
-      .projection(s"ns + [${leftNulls.mkString(",")}] AS ns")
-      .aggregation(Seq(), Seq("collect(n) AS ns"))
+      .injectNulls("n")
       .nodeByLabelScan("n", "Left")
       .build()
 
@@ -219,13 +209,13 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
 
     // then
     val lhsRows = for {
-      n <- nodes.filter(_.hasLabel(Label.label("Left"))) ++ leftNulls
+      n <- nodes.filter(_.hasLabel(Label.label("Left"))) ++ Seq(null)
       lp = if (n == null) 1 else n.getProperty("leftProp").asInstanceOf[Int]
       l <- Range.inclusive(0, lp).tail
     } yield (n, l)
 
     val rhsRows = for {
-      n <- nodes.filter(_.hasLabel(Label.label("Right"))) ++ rightNulls
+      n <- nodes.filter(_.hasLabel(Label.label("Right"))) ++ Seq(null)
       rp = if (n == null) 1 else n.getProperty("rightProp").asInstanceOf[Int]
       r <- Range.inclusive(0, rp).tail
     } yield (n, r)
@@ -348,8 +338,10 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
 
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
 
+    val lhsFilterDbHits = runtimeResult.runtimeResult.queryProfile().operatorProfile(5).dbHits()
+
     // final projection should only need to look up n.leftProp for :Right nodes
-    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe lhsFilterDbHits/2
   }
 
   // Emulates outer join.
