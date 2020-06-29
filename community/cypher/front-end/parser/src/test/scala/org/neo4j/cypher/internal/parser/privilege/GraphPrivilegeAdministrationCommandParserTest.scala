@@ -38,40 +38,40 @@ class GraphPrivilegeAdministrationCommandParserTest extends AdministrationComman
       // All versions of ALL [[GRAPH] PRIVILEGES] should be allowed
 
       test(s"$verb ALL ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       test(s"$verb ALL PRIVILEGES ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       // Multiple graphs should be allowed
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.AllGraphsScope()(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.AllGraphsScope()(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS foo,bar $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_), ast.NamedGraphScope(literal("bar"))(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_), ast.NamedGraphScope(literal("bar"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       // Multiple roles should be allowed
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.AllQualifier()(_), Seq(literal("role1"), literal("role2"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role1"), literal("role2"))))
       }
 
       // Parameter values should be allowed
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(param("foo"))(_)), ast.AllQualifier()(_), Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(param("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
-        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.AllQualifier()(_), Seq(param("role"))))
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(param("role"))))
       }
 
       // Qualifier or resource should not be supported

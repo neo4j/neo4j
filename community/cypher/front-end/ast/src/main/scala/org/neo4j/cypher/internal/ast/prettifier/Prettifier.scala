@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.prettifier
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllNodes
@@ -60,8 +61,8 @@ import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
-import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -73,7 +74,6 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
-import org.neo4j.cypher.internal.ast.LabelsQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -100,7 +100,6 @@ import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
-import org.neo4j.cypher.internal.ast.RelationshipsQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
@@ -142,7 +141,6 @@ import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.UsersQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -726,7 +724,7 @@ object Prettifier {
     s"$graphWord $dbString"
   }
 
-  def extractScope(dbScope: List[GraphScope], qualifier: PrivilegeQualifier): String = {
+  def extractScope(dbScope: List[GraphScope], qualifier: List[PrivilegeQualifier]): String = {
     s"${extractGraphScope(dbScope)}${extractQualifierString(qualifier)}"
   }
 
@@ -741,7 +739,7 @@ object Prettifier {
     s"$labelNames ON $graphWord $dbString"
   }
 
-  def extractScope(resource: ActionResource, dbScope: List[GraphScope], qualifier: PrivilegeQualifier): (String, String) = {
+  def extractScope(resource: ActionResource, dbScope: List[GraphScope], qualifier: List[PrivilegeQualifier]): (String, String) = {
     val resourceName = resource match {
       case PropertyResource(name) => ExpressionStringifier.backtick(name)
       case PropertiesResource(names) => names.map(ExpressionStringifier.backtick(_)).mkString(", ")
@@ -755,7 +753,7 @@ object Prettifier {
 
   def prettifyDatabasePrivilege(privilegeName: String,
                                 dbScope: List[GraphScope],
-                                qualifier: PrivilegeQualifier,
+                                qualifier: List[PrivilegeQualifier],
                                 preposition: String,
                                 roleNames: Seq[Either[String, Parameter]]): String = {
     val (dbName, default, multiple) = Prettifier.extractDbScope(dbScope)
@@ -769,23 +767,33 @@ object Prettifier {
     s"$privilegeName${extractQualifierString(qualifier)} ON $db $preposition ${escapeNames(roleNames)}"
   }
 
-  def extractQualifierPart(qualifier: PrivilegeQualifier): Option[String] = qualifier match {
-    case LabelQualifier(name)          => Some("NODE " + ExpressionStringifier.backtick(name))
-    case LabelsQualifier(names)        => Some("NODES " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
-    case LabelAllQualifier()           => Some("NODES *")
-    case RelationshipQualifier(name)   => Some("RELATIONSHIP " + ExpressionStringifier.backtick(name))
-    case RelationshipsQualifier(names) => Some("RELATIONSHIPS " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
-    case RelationshipAllQualifier()    => Some("RELATIONSHIPS *")
-    case ElementsQualifier(names)      => Some("ELEMENTS " + names.map(ExpressionStringifier.backtick(_)).mkString(", "))
-    case ElementsAllQualifier()        => Some("ELEMENTS *")
-    case UsersQualifier(names)         => Some("(" + names.map(escapeName).mkString(", ") + ")")
-    case UserQualifier(name)           => Some("(" + escapeName(name) + ")")
-    case UserAllQualifier()            => Some("(*)")
-    case AllQualifier()                => None
-    case _                             => Some("<unknown>")
+  def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
+    def stringify: PartialFunction[PrivilegeQualifier,String] = {
+      case LabelQualifier(name) => ExpressionStringifier.backtick(name)
+      case RelationshipQualifier(name) => ExpressionStringifier.backtick(name)
+      case ElementQualifier(name) => ExpressionStringifier.backtick(name)
+      case UserQualifier(name) => escapeName(name)
+    }
+
+    qualifier match {
+      case l@LabelQualifier(_) :: Nil => Some("NODE " + l.map(stringify).mkString(", "))
+      case l@LabelQualifier(_) :: _ => Some("NODES " + l.map(stringify).mkString(", "))
+      case LabelAllQualifier() :: Nil => Some("NODES *")
+      case rels@RelationshipQualifier(_) :: Nil => Some("RELATIONSHIP " + rels.map(stringify).mkString(", "))
+      case rels@RelationshipQualifier(_) :: _ => Some("RELATIONSHIPS " + rels.map(stringify).mkString(", "))
+      case RelationshipAllQualifier() :: Nil => Some("RELATIONSHIPS *")
+      case elems@ElementQualifier(_) :: _ => Some("ELEMENTS " + elems.map(stringify).mkString(", "))
+      case ElementsAllQualifier() :: Nil => Some("ELEMENTS *")
+      case UserQualifier(user) :: Nil => Some("(" + escapeName(user) + ")")
+      case users@UserQualifier(_) :: _ => Some("(" + users.map(stringify).mkString(", ") + ")")
+      case UserAllQualifier() :: Nil => Some("(*)")
+      case AllQualifier() :: Nil => None
+      case AllDatabasesQualifier() :: Nil => None
+      case _ => Some("<unknown>")
+    }
   }
 
-  private def extractQualifierString(qualifier: PrivilegeQualifier): String = {
+  private def extractQualifierString(qualifier: List[PrivilegeQualifier]): String = {
     val qualifierPart = extractQualifierPart(qualifier)
     qualifierPart match {
       case Some(string) => s" $string"

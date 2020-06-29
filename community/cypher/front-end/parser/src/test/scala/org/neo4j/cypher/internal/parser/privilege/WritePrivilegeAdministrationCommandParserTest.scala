@@ -36,52 +36,52 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
 
       test(s"$verb WRITE ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPHS foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       // Multiple graphs should be allowed (with and without plural GRAPHS)
 
       test(s"$verb WRITE ON GRAPH * $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPHS * $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.AllGraphsScope()(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPH foo, baz $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), ast.ElementsAllQualifier() _, List(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), List(ast.ElementsAllQualifier() _), List(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPHS foo, baz $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), ast.ElementsAllQualifier() _, List(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo")) _, ast.NamedGraphScope(literal("baz")) _), List(ast.ElementsAllQualifier() _), List(literal("role"))))
       }
 
       // Multiple roles should be allowed
       test(s"$verb WRITE ON GRAPH foo $preposition role1, role2") {
-        yields(func(ast.GraphPrivilege(WriteAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier()(_), Seq(literal("role1"), literal("role2"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role1"), literal("role2"))))
       }
 
       // Parameters and escaped strings should be allowed
 
       test(s"$verb WRITE ON GRAPH $$foo $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(param("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(param("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPH `f:oo` $preposition role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("f:oo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("f:oo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
       }
 
       test(s"$verb WRITE ON GRAPH foo $preposition $$role") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(param("role"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(param("role"))))
       }
 
       test(s"$verb WRITE ON GRAPH foo $preposition `r:ole`") {
-        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier() _, Seq(literal("r:ole"))))
+        yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier() _), Seq(literal("r:ole"))))
       }
 
       // Resource or qualifier should not be supported

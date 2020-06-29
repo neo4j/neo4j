@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateView
 import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -37,13 +38,13 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
-import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
@@ -323,7 +324,7 @@ trait Statement extends Parser
     group(keyword("GRANT") ~~ QualifiedWithPropertyGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("GRANT") ~~ GraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+      ((resource, graphScope, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles)) |
     group(keyword("GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, qualifier, action, roles) => ast.GrantPrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles)) |
     group(keyword("GRANT") ~~ QualifiedWithPropertyGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -339,7 +340,7 @@ trait Statement extends Parser
     group(keyword("DENY") ~~ QualifiedWithPropertyGraphAction ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
     group(keyword("DENY") ~~ GraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+      ((resource, graphScope, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles)) |
     group(keyword("DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, qualifier, action, roles) => ast.DenyPrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles)) |
     group(keyword("DENY") ~~ QualifiedWithPropertyGraphActionWithResource ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -356,7 +357,7 @@ trait Statement extends Parser
     group(keyword("REVOKE GRANT") ~~ QualifiedWithPropertyGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) =>  pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeGrantType()(pos))(pos)) |
+      ((resource, graphScope, action, roles) =>  pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ QualifiedWithPropertyGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -368,7 +369,7 @@ trait Statement extends Parser
     group(keyword("REVOKE DENY") ~~ QualifiedWithPropertyGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeDenyType()(pos))(pos)) |
+      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ QualifiedWithPropertyGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -380,7 +381,7 @@ trait Statement extends Parser
     group(keyword("REVOKE") ~~ QualifiedWithPropertyGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeBothType()(pos))(pos)) |
+      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ QualifiedWithPropertyGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -407,22 +408,22 @@ trait Statement extends Parser
       group(keyword("*") ~~~> {ast.AllLabelResource()}))
   }
 
-  private def UserQualifier: Rule1[PrivilegeQualifier] = rule("(usernameList)")(
-    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {ast.UsersQualifier(_)} |
-    group("(" ~~ "*" ~~ ")") ~~~> {ast.UserAllQualifier()}
+  private def UserQualifier: Rule1[List[DatabasePrivilegeQualifier]] = rule("(usernameList)")(
+    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {userName => pos => userName.map(ast.UserQualifier(_)(pos))} |
+    group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos))}
   )
 
-  private def ScopeQualifierWithProperty: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
+  private def ScopeQualifierWithProperty: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
     ScopeQualifier ~~ optional("(" ~~ "*" ~~ ")")
   )
 
-  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes qualifier combination")(
-    group(RelationshipKeyword ~~ SymbolicNamesList) ~~>> {ast.RelationshipsQualifier(_)} |
-    group(RelationshipKeyword ~~ "*") ~~~> {ast.RelationshipAllQualifier()} |
-    group(NodeKeyword ~~ SymbolicNamesList) ~~>> {ast.LabelsQualifier(_)} |
-    group(NodeKeyword ~~ "*") ~~~> {ast.LabelAllQualifier()} |
-    group(ElementKeyword ~~ SymbolicNamesList) ~~>> {ast.ElementsQualifier(_)} |
-    optional(ElementKeyword ~~ "*") ~~~> {ast.ElementsAllQualifier()}
+  private def ScopeQualifier: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes qualifier combination")(
+    group(RelationshipKeyword ~~ SymbolicNamesList) ~~>> { relNames => pos => relNames.map(ast.RelationshipQualifier(_)(pos)) } |
+    group(RelationshipKeyword ~~ "*") ~~~> { pos => List(ast.RelationshipAllQualifier()(pos)) } |
+    group(NodeKeyword ~~ SymbolicNamesList) ~~>> { nodeName => pos => nodeName.map(ast.LabelQualifier(_)(pos)) } |
+    group(NodeKeyword ~~ "*") ~~~> { pos => List(ast.LabelAllQualifier()(pos)) } |
+    group(ElementKeyword ~~ SymbolicNamesList) ~~>> { elemName => pos => elemName.map(ast.ElementQualifier(_)(pos)) } |
+    optional(ElementKeyword ~~ "*") ~~~> { pos => List(ast.ElementsAllQualifier()(pos)) }
   )
 
   private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
@@ -455,26 +456,26 @@ trait Statement extends Parser
       group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
 
-  private def QualifiedDatabaseAction: Rule1[(DatabaseAction, PrivilegeQualifier)] = rule("qualified database action")(
+  private def QualifiedDatabaseAction: Rule1[(DatabaseAction, List[DatabasePrivilegeQualifier])] = rule("qualified database action")(
     group(keyword("SHOW") ~~ TransactionKeyword ~~ UserQualifier) ~~> ((ast.ShowTransactionAction, _)) |
-    group(keyword("SHOW") ~~ TransactionKeyword) ~~~> (pos => (ast.ShowTransactionAction, ast.UserAllQualifier()(pos))) |
+    group(keyword("SHOW") ~~ TransactionKeyword) ~~~> (pos => (ast.ShowTransactionAction, List(ast.UserAllQualifier()(pos)))) |
     group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier) ~~> ((ast.TerminateTransactionAction, _)) |
-    group(keyword("TERMINATE") ~~ TransactionKeyword) ~~~> (pos => (ast.TerminateTransactionAction, ast.UserAllQualifier()(pos))) |
+    group(keyword("TERMINATE") ~~ TransactionKeyword) ~~~> (pos => (ast.TerminateTransactionAction, List(ast.UserAllQualifier()(pos)))) |
     group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier) ~~> ((ast.AllTransactionActions, _)) |
-    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT"))) ~~~> (pos => (ast.AllTransactionActions, ast.UserAllQualifier()(pos)))
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT"))) ~~~> (pos => (ast.AllTransactionActions, List(ast.UserAllQualifier()(pos))))
   )
 
-  private def GraphAction: Rule3[List[GraphScope], GraphAction, ast.PrivilegeQualifier] = rule("graph action")(
-    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~> (_ => ast.AllGraphAction) ~> (_ => ast.AllQualifier()(InputPosition.NONE)) |
-    group(keyword("WRITE") ~~ Graph) ~> (_ => ast.WriteAction) ~> (_ => ast.ElementsAllQualifier()(InputPosition.NONE))
+  private def GraphAction: Rule3[List[GraphScope], GraphAction, List[ast.GraphPrivilegeQualifier]] = rule("graph action")(
+    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~> (_ => ast.AllGraphAction) ~> (_ => List(ast.AllQualifier()(InputPosition.NONE))) |
+    group(keyword("WRITE") ~~ Graph) ~> (_ => ast.WriteAction) ~> (_ => List(ast.ElementsAllQualifier()(InputPosition.NONE)))
   )
 
-  private def QualifiedGraphAction: Rule3[List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified graph action")(
+  private def QualifiedGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action")(
     group(keyword("CREATE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.CreateElementAction)) |
     group(keyword("DELETE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.DeleteElementAction))
   )
 
-  private def QualifiedWithPropertyGraphAction: Rule3[List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified with property graph action")(
+  private def QualifiedWithPropertyGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action")(
     group(keyword("TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.TraverseAction))
   )
 
@@ -483,12 +484,12 @@ trait Statement extends Parser
     group(keyword("REMOVE LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.RemoveLabelAction))
   )
 
-  private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified graph action with resource")(
+  private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action with resource")(
     group(keyword("MERGE") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.MergeAdminAction)) |
     group(keyword("SET PROPERTY") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.SetPropertyAction))
   )
 
-  private def QualifiedWithPropertyGraphActionWithResource: Rule4[ActionResource, List[GraphScope], PrivilegeQualifier, GraphAction] = rule("qualified with property graph action with resource")(
+  private def QualifiedWithPropertyGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action with resource")(
     group(keyword("READ")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.ReadAction)) |
     group(keyword("MATCH")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.MatchAction))
   )

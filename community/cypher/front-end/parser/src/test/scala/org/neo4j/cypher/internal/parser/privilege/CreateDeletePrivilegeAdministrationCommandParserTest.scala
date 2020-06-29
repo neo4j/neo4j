@@ -43,19 +43,19 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
         case (createOrDelete, action) =>
 
           test(s"$verb $createOrDelete ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsAllQualifier()(_), Seq(literal("role"))))
+            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier()(_)), Seq(literal("role"))))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo ELEMENTS bar $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.ElementsQualifier(Seq("bar"))(_), Seq(literal("role"))))
+            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementQualifier("bar")(_)), Seq(literal("role"))))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo NODE bar $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.LabelsQualifier(Seq("bar"))(_), Seq(literal("role"))))
+            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.LabelQualifier("bar")(_)), Seq(literal("role"))))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), ast.RelationshipAllQualifier()(_), Seq(literal("role"))))
+            yields(func(ast.GraphPrivilege(action)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.RelationshipAllQualifier()(_)), Seq(literal("role"))))
           }
 
           test(s"$verb $createOrDelete ON DATABASE blah $preposition role") {

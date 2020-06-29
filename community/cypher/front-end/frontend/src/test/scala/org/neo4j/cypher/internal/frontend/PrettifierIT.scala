@@ -662,10 +662,10 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TRAVERSE ON GRAPH $$foo NODES * $preposition $$role",
 
           s"$action traverse on graph FoO nodes A (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH FoO NODES A $preposition role",
+            s"$action TRAVERSE ON GRAPH FoO NODE A $preposition role",
 
           s"$action traverse on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH `#%¤` NODES `()/&` $preposition role",
+            s"$action TRAVERSE ON GRAPH `#%¤` NODE `()/&` $preposition role",
 
           s"$action traverse on graph foo nodes A,B,C (*) $preposition x,y,z" ->
             s"$action TRAVERSE ON GRAPH foo NODES A, B, C $preposition x, y, z",
@@ -680,10 +680,10 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS * $preposition role",
 
           s"$action traverse on graph FoO relationships A (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH FoO RELATIONSHIPS A $preposition role",
+            s"$action TRAVERSE ON GRAPH FoO RELATIONSHIP A $preposition role",
 
           s"$action traverse on graph `#%¤` relationships `()/&` (*) $preposition role" ->
-            s"$action TRAVERSE ON GRAPH `#%¤` RELATIONSHIPS `()/&` $preposition role",
+            s"$action TRAVERSE ON GRAPH `#%¤` RELATIONSHIP `()/&` $preposition role",
 
           s"$action traverse on graph foo relationships A,B,C (*) $preposition x,y,z" ->
             s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C $preposition x, y, z",
@@ -707,13 +707,13 @@ class PrettifierIT extends CypherFunSuite {
             s"$action READ {*} ON GRAPH foo NODES * $preposition role",
 
           s"$action read {*} on graph foo nodes A (*) $preposition role" ->
-            s"$action READ {*} ON GRAPH foo NODES A $preposition role",
+            s"$action READ {*} ON GRAPH foo NODE A $preposition role",
 
           s"$action read {bar} on graph FoO nodes A (*) $preposition role" ->
-            s"$action READ {bar} ON GRAPH FoO NODES A $preposition role",
+            s"$action READ {bar} ON GRAPH FoO NODE A $preposition role",
 
           s"$action read { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action READ {`&bar`} ON GRAPH `#%¤` NODES `()/&` $preposition role",
+            s"$action READ {`&bar`} ON GRAPH `#%¤` NODE `()/&` $preposition role",
 
           s"$action read {foo,bar} on graph foo nodes A,B,C (*) $preposition x,y,$$z" ->
             s"$action READ {foo, bar} ON GRAPH foo NODES A, B, C $preposition x, y, $$z",
@@ -740,13 +740,13 @@ class PrettifierIT extends CypherFunSuite {
             s"$action MATCH {*} ON GRAPH foo NODES * $preposition role",
 
           s"$action match {*} on graph foo nodes A (*) $preposition role" ->
-            s"$action MATCH {*} ON GRAPH foo NODES A $preposition role",
+            s"$action MATCH {*} ON GRAPH foo NODE A $preposition role",
 
           s"$action match {bar} on graph foo nodes A (*) $preposition role" ->
-            s"$action MATCH {bar} ON GRAPH foo NODES A $preposition role",
+            s"$action MATCH {bar} ON GRAPH foo NODE A $preposition role",
 
           s"$action match { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action MATCH {`&bar`} ON GRAPH `#%¤` NODES `()/&` $preposition role",
+            s"$action MATCH {`&bar`} ON GRAPH `#%¤` NODE `()/&` $preposition role",
 
           s"$action match {foo,bar} on graph foo nodes A,B,C (*) $preposition x,$$y,z" ->
             s"$action MATCH {foo, bar} ON GRAPH foo NODES A, B, C $preposition x, $$y, z",
@@ -851,7 +851,7 @@ class PrettifierIT extends CypherFunSuite {
             s"$action SET PROPERTY {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action set property {foo} on graph * NODES bar $preposition role" ->
-            s"$action SET PROPERTY {foo} ON GRAPH * NODES bar $preposition role",
+            s"$action SET PROPERTY {foo} ON GRAPH * NODE bar $preposition role",
 
           s"$action set property {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
             s"$action SET PROPERTY {*} ON GRAPH * RELATIONSHIPS bar, baz $preposition role",
@@ -875,7 +875,7 @@ class PrettifierIT extends CypherFunSuite {
             s"$action MERGE {*} ON GRAPH * ELEMENTS * $preposition role",
 
           s"$action merge {foo} on graph * NODES bar $preposition role" ->
-            s"$action MERGE {foo} ON GRAPH * NODES bar $preposition role",
+            s"$action MERGE {foo} ON GRAPH * NODE bar $preposition role",
 
           s"$action merge {*} on graph * RELATIONSHIPS bar, baz $preposition role" ->
             s"$action MERGE {*} ON GRAPH * RELATIONSHIPS bar, baz $preposition role",

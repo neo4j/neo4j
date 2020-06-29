@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
 import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
@@ -65,6 +66,7 @@ import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DbmsAdminAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -88,20 +90,21 @@ import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
-import org.neo4j.cypher.internal.ast.ElementsQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
-import org.neo4j.cypher.internal.ast.LabelsQualifier
+import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -128,7 +131,7 @@ import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
-import org.neo4j.cypher.internal.ast.RelationshipsQualifier
+import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
@@ -192,7 +195,7 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserAllQualifier
-import org.neo4j.cypher.internal.ast.UsersQualifier
+import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -1302,36 +1305,36 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )
 
-  def _databaseQualifier(haveUserQualifier: Boolean): Gen[PrivilegeQualifier] =
+  def _databaseQualifier(haveUserQualifier: Boolean): Gen[List[DatabasePrivilegeQualifier]] =
     if (haveUserQualifier) {
       for {
         userNames <- _listOfNameOfEither
-        qualifier <- oneOf(UserAllQualifier()(pos), UsersQualifier(userNames)(pos))
+        qualifier <- oneOf(List(UserAllQualifier()(pos)), userNames.map(UserQualifier(_)(pos)))
       } yield qualifier
     } else {
-      AllQualifier()(pos)
+      List(AllDatabasesQualifier()(pos))
     }
 
-  def _graphQualifier: Gen[PrivilegeQualifier] = for {
+  def _graphQualifier: Gen[List[GraphPrivilegeQualifier]] = for {
     qualifierNames <- oneOrMore(_identifier)
-    qualifier      <- oneOf(RelationshipsQualifier(qualifierNames)(pos), RelationshipAllQualifier()(pos),
-                            LabelsQualifier(qualifierNames)(pos), LabelAllQualifier()(pos),
-                            ElementsQualifier(qualifierNames)(pos), ElementsAllQualifier()(pos))
+    qualifier <- oneOf(qualifierNames.map(RelationshipQualifier(_)(pos)), List(RelationshipAllQualifier()(pos)),
+                       qualifierNames.map(LabelQualifier(_)(pos)), List(LabelAllQualifier()(pos)),
+                       qualifierNames.map(ElementQualifier(_)(pos)), List(ElementsAllQualifier()(pos)))
   } yield qualifier
 
-  def _graphQualifierAndResource(graphAction: GraphAction): Gen[(PrivilegeQualifier, Option[ActionResource])] =
+  def _graphQualifierAndResource(graphAction: GraphAction): Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =
     if (graphAction == AllGraphAction) {
       // ALL GRAPH PRIVILEGES has AllQualifier and no resource
-      (AllQualifier()(pos), None)
+      (List(AllQualifier()(pos)), None)
     } else if (graphAction == WriteAction) {
       // WRITE has AllElementsQualifier and no resource
-      (ElementsAllQualifier()(pos), None)
+      (List(ElementsAllQualifier()(pos)), None)
     } else if (graphAction == SetLabelAction || graphAction == RemoveLabelAction) {
       // SET/REMOVE LABEL have AllLabelQualifier and label resource
       for {
         resourceNames  <- oneOrMore(_identifier)
         resource       <- oneOf(LabelsResource(resourceNames)(pos), AllLabelResource()(pos))
-      } yield (LabelAllQualifier()(pos), Some(resource))
+      } yield (List(LabelAllQualifier()(pos)), Some(resource))
     } else if (graphAction == TraverseAction || graphAction == CreateElementAction || graphAction == DeleteElementAction) {
       // TRAVERSE, CREATE/DELETE ELEMENT have any graph qualifier and no resource
       for {

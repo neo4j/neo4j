@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
-import org.neo4j.cypher.internal.ast.LabelsQualifier
+import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertyResource
@@ -1114,23 +1114,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllGraphsScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeDatabaseAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(DenyGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "DenyTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(RevokeGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeTraverse(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(RevokeGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
+      planDescription(id, "RevokeTraverse(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(GrantGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(GrantGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "GrantRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "ALL PROPERTIES", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "ALL PROPERTIES", "NODE Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
+      planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
 
     assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolePrivileges(util.Left("role1"))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))

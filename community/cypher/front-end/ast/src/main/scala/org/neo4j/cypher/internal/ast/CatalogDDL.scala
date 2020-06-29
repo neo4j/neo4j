@@ -322,44 +322,39 @@ sealed trait PrivilegeQualifier extends Rewritable {
   override def dup(children: Seq[AnyRef]): PrivilegeQualifier.this.type = this
 }
 
-final case class LabelQualifier(label: String)(val position: InputPosition) extends PrivilegeQualifier
-
-final case class LabelsQualifier(labels: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
-  override def simplify: Seq[PrivilegeQualifier] = labels.map(LabelQualifier(_)(position))
+sealed trait GraphPrivilegeQualifier extends PrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): GraphPrivilegeQualifier.this.type = this
 }
 
-final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends PrivilegeQualifier
+final case class LabelQualifier(label: String)(val position: InputPosition) extends GraphPrivilegeQualifier
 
-final case class RelationshipsQualifier(reltypes: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
-  override def simplify: Seq[PrivilegeQualifier] = reltypes.map(RelationshipQualifier(_)(position))
+final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends GraphPrivilegeQualifier
+
+final case class ElementQualifier(value: String)(val position: InputPosition) extends GraphPrivilegeQualifier {
+  override def simplify: Seq[GraphPrivilegeQualifier] = Seq(LabelQualifier(value)(position), RelationshipQualifier(value)(position))
 }
 
-final case class ElementsQualifier(values: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
-  override def simplify: Seq[PrivilegeQualifier] = values.map(LabelQualifier(_)(position)) ++ values.map(RelationshipQualifier(_)(position))
-}
-
-final case class ElementsAllQualifier()(val position: InputPosition) extends PrivilegeQualifier {
+final case class ElementsAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier {
   override def simplify: Seq[PrivilegeQualifier] = Seq(LabelAllQualifier()(position), RelationshipAllQualifier()(position))
 }
 
-final case class LabelAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
+final case class AllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
 
-final case class RelationshipAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
+final case class LabelAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
 
-final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier
+final case class RelationshipAllQualifier()(val position: InputPosition) extends GraphPrivilegeQualifier
 
-final case class UserAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
-
-final case class UserQualifier(username: Either[String, Parameter])(val position: InputPosition) extends PrivilegeQualifier {
-  override def dup(children: Seq[AnyRef]): UserQualifier.this.type =
-    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+sealed trait DatabasePrivilegeQualifier extends PrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): DatabasePrivilegeQualifier.this.type = this
 }
 
-final case class UsersQualifier(usernames: Seq[Either[String, Parameter]])(val position: InputPosition) extends PrivilegeQualifier {
-  override def simplify: Seq[PrivilegeQualifier] = usernames.map(UserQualifier(_)(position))
+final case class AllDatabasesQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier
 
-  override def dup(children: Seq[AnyRef]): UsersQualifier.this.type =
-    this.copy(children.map(_.asInstanceOf[Either[String, Parameter]]))(position).asInstanceOf[this.type]
+final case class UserAllQualifier()(val position: InputPosition) extends DatabasePrivilegeQualifier
+
+final case class UserQualifier(username: Either[String, Parameter])(val position: InputPosition) extends DatabasePrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): UserQualifier.this.type =
+    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
 }
 
 sealed trait GraphScope extends Rewritable {
@@ -520,36 +515,36 @@ case object AllGraphAction extends GraphAction("ALL GRAPH PRIVILEGES", "AllGraph
 object GrantPrivilege {
 
   def dbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
-    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames)
+    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), List(AllQualifier()(InputPosition.NONE)), roleNames)
 
-  def databaseAction(action: DatabaseAction,
+  def databaseAction[T <: DatabasePrivilegeQualifier](action: DatabaseAction,
                      scope: List[GraphScope],
                      roleNames: Seq[Either[String, Parameter]],
-                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => GrantPrivilege =
+                     qualifier: List[T] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => GrantPrivilege =
     GrantPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
 
-  def graphAction(action: GraphAction,
+  def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
                   scope: List[GraphScope],
-                  qualifier: PrivilegeQualifier,
+                  qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
 
 object DenyPrivilege {
   def dbmsAction(action: AdminAction, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
-    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames)
+    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), List(AllQualifier()(InputPosition.NONE)), roleNames)
 
-  def databaseAction(action: DatabaseAction,
+  def databaseAction[T <: DatabasePrivilegeQualifier](action: DatabaseAction,
                      scope: List[GraphScope],
                      roleNames: Seq[Either[String, Parameter]],
-                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => DenyPrivilege =
+                     qualifier: List[T] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => DenyPrivilege =
     DenyPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
 
-  def graphAction(action: GraphAction,
+  def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
                   scope: List[GraphScope],
-                  qualifier: PrivilegeQualifier,
+                  qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
@@ -558,25 +553,25 @@ object RevokePrivilege {
   def dbmsAction(action: AdminAction,
                  roleNames: Seq[Either[String, Parameter]],
                  revokeType: RevokeType): InputPosition => RevokePrivilege =
-    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), AllQualifier()(InputPosition.NONE), roleNames, revokeType)
+    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), List(AllQualifier()(InputPosition.NONE)), roleNames, revokeType)
 
-  def databaseAction(action: DatabaseAction,
+  def databaseAction[T <: DatabasePrivilegeQualifier](action: DatabaseAction,
                      scope: List[GraphScope],
                      roleNames: Seq[Either[String, Parameter]],
                      revokeType: RevokeType,
-                     qualifier: PrivilegeQualifier = AllQualifier()(InputPosition.NONE)): InputPosition => RevokePrivilege =
+                     qualifier: List[T] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => RevokePrivilege =
     RevokePrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames, revokeType)
 
-  def graphAction(action: GraphAction,
+  def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
                   scope: List[GraphScope],
-                  qualifier: PrivilegeQualifier,
+                  qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]],
                   revokeType: RevokeType): InputPosition => RevokePrivilege =
     RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, revokeType)
 }
 
-sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: PrivilegeQualifier, position: InputPosition)
+sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: List[PrivilegeQualifier], position: InputPosition)
   extends WriteAdministrationCommand {
 
   override def semanticCheck: SemanticCheck =
@@ -587,17 +582,16 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: Priv
 final case class GrantPrivilege(privilege: PrivilegeType,
                                 resource: Option[ActionResource],
                                 scope: List[GraphScope],
-                                qualifier: PrivilegeQualifier,
+                                qualifier: List[PrivilegeQualifier],
                                 roleNames: Seq[Either[String, Parameter]])
                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
-
   override def name = s"GRANT ${privilege.name}"
 }
 
 final case class DenyPrivilege(privilege: PrivilegeType,
                                resource: Option[ActionResource],
                                scope: List[GraphScope],
-                               qualifier: PrivilegeQualifier,
+                               qualifier: List[PrivilegeQualifier],
                                roleNames: Seq[Either[String, Parameter]])
                               (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
@@ -614,7 +608,7 @@ final case class DenyPrivilege(privilege: PrivilegeType,
 final case class RevokePrivilege(privilege: PrivilegeType,
                                  resource: Option[ActionResource],
                                  scope: List[GraphScope],
-                                 qualifier: PrivilegeQualifier,
+                                 qualifier: List[PrivilegeQualifier],
                                  roleNames: Seq[Either[String, Parameter]],
                                  revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 

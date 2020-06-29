@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.UsersQualifier
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
@@ -1174,7 +1173,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractQualifierSeq(qualifier: PrivilegeQualifier): Seq[PrettyString] = {
-    Prettifier.extractQualifierPart(qualifier) match {
+    Prettifier.extractQualifierPart(List(qualifier)) match {
       case Some(qualifierString) => Seq(asPrettyString.raw(qualifierString))
       case _ => Seq.empty
     }
@@ -1190,7 +1189,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractUserQualifier(qualifier: PrivilegeQualifier): Option[PrettyString] = qualifier match {
-    case UsersQualifier(names) => Some(pretty"USERS ${names.map(escapeName).mkPrettyString(", ")}")
     case UserQualifier(name) => Some(pretty"USER ${escapeName(name)}")
     case UserAllQualifier() => Some(pretty"ALL USERS")
     case _ => None
