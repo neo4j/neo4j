@@ -36,7 +36,20 @@ import org.neo4j.exceptions.SyntaxException
 
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val FALLBACK_TRIGGERS = Seq("INDEX", "CONSTRAINT", "DROP", "DATABASE", "ROLE", "SHOW", "GRANT", "DENY", "CONSTRUCT", "CATALOG", "~")
+  private val FALLBACK_TRIGGERS = Seq("INDEX",
+                                      "CONSTRAINT",
+                                      "DROP",
+                                      "DATABASE",
+                                      "ROLE",
+                                      "SHOW",
+                                      "GRANT",
+                                      "DENY",
+                                      "ALTER",
+                                      "USER",
+                                      "CONSTRUCT",
+                                      "CATALOG",
+                                      "~")
+
   private def shouldFallBack(errorMsg: String): Boolean = {
     val upper = errorMsg.toUpperCase()
     FALLBACK_TRIGGERS.exists(upper.contains)
