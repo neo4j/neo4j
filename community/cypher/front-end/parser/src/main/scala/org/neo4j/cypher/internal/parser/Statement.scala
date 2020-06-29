@@ -45,6 +45,9 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SetOwnPassword
@@ -271,17 +274,17 @@ trait Statement extends Parser
 
   def RevokeDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE dbms privileges") {
     group(keyword("REVOKE") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => ast.RevokePrivilege.dbmsAction( dbmsAction, grantees ))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeBothType()(pos))(pos))
   }
 
   def RevokeGrantDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT dbms privileges") {
     group(keyword("REVOKE GRANT") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => ast.RevokePrivilege.grantedDbmsAction( dbmsAction, grantees ))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeGrantType()(pos))(pos))
   }
 
   def RevokeDenyDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY dbms privileges") {
     group(keyword("REVOKE DENY") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => ast.RevokePrivilege.deniedDbmsAction( dbmsAction, grantees ))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeDenyType()(pos))(pos))
   }
 
   //` ... ON DATABASE foo TO role`
@@ -301,23 +304,23 @@ trait Statement extends Parser
 
   def RevokeGrantDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT database privileges") {
     group(keyword("REVOKE GRANT") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.grantedDatabaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
+      ((qualifiedAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( qualifiedAction._1, scope, grantees, RevokeGrantType()(pos), qualifiedAction._2)(pos)) |
     group(keyword("REVOKE GRANT") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((databaseAction, scope, grantees) => ast.RevokePrivilege.grantedDatabaseAction( databaseAction, scope, grantees))
+      ((databaseAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees, RevokeGrantType()(pos))(pos))
   }
 
   def RevokeDenyDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY database privileges") {
     group(keyword("REVOKE DENY") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.deniedDatabaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
+      ((qualifiedAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( qualifiedAction._1, scope, grantees, RevokeDenyType()(pos), qualifiedAction._2)(pos)) |
     group(keyword("REVOKE DENY") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((databaseAction, scope, grantees) => ast.RevokePrivilege.deniedDatabaseAction( databaseAction, scope, grantees))
+      ((databaseAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees, RevokeDenyType()(pos))(pos))
   }
 
   def RevokeDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE database privileges") {
     group(keyword("REVOKE") ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((qualifiedAction, scope, grantees) => ast.RevokePrivilege.databaseAction( qualifiedAction._1, scope, grantees, qualifiedAction._2)) |
+      ((qualifiedAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( qualifiedAction._1, scope, grantees, RevokeBothType()(pos), qualifiedAction._2)(pos)) |
     group(keyword("REVOKE") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees))
+      ((databaseAction, scope, grantees) => pos => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees, RevokeBothType()(pos))(pos))
   }
 
   //`GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role`
@@ -335,19 +338,19 @@ trait Statement extends Parser
   //`REVOKE GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeGrantTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT TRAVERSE") {
     group(keyword("REVOKE GRANT TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((scope, qualifier, grantees) => ast.RevokePrivilege.grantedTraverse(scope, qualifier, grantees))
+      ((scope, qualifier, grantees) => pos => ast.RevokePrivilege.traverse(scope, qualifier, grantees, RevokeGrantType()(pos))(pos))
   }
 
   //`REVOKE DENY TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeDenyTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY TRAVERSE") {
     group(keyword("REVOKE DENY TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((scope, qualifier, grantees) => ast.RevokePrivilege.deniedTraverse(scope, qualifier, grantees))
+      ((scope, qualifier, grantees) => pos => ast.RevokePrivilege.traverse(scope, qualifier, grantees, RevokeDenyType()(pos))(pos))
   }
 
   //`REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE TRAVERSE") {
     group(keyword("REVOKE TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
+      ((scope, qualifier, grantees) => pos => ast.RevokePrivilege.traverse(scope, qualifier, grantees, RevokeBothType()(pos))(pos))
   }
 
   //`GRANT READ {a} ON GRAPH foo ELEMENTS A (*) TO role`
@@ -365,19 +368,19 @@ trait Statement extends Parser
   //`REVOKE GRANT READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeGrantRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT READ") {
     group(keyword("REVOKE GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.grantedRead(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.read(prop, scope, qualifier, grantees, RevokeGrantType()(pos))(pos))
   }
 
   //`REVOKE DENY READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeDenyRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY READ") {
     group(keyword("REVOKE DENY READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedRead(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.read(prop, scope, qualifier, grantees, RevokeDenyType()(pos))(pos))
   }
 
   //`REVOKE READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
     group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.read(prop, scope, qualifier, grantees, RevokeBothType()(pos))(pos))
   }
 
   //`GRANT MATCH {a} ON GRAPH foo ELEMENTS A (*) TO role`
@@ -395,19 +398,19 @@ trait Statement extends Parser
   //`REVOKE GRANT MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeGrantMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT MATCH") {
     group(keyword("REVOKE GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.grantedAsMatch(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees, RevokeGrantType()(pos))(pos))
   }
 
   //`REVOKE DENY MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeDenyMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY MATCH") {
     group(keyword("REVOKE DENY MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedAsMatch(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees, RevokeDenyType()(pos))(pos))
   }
 
   //`REVOKE MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE MATCH") {
     group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
+      ((prop, scope, qualifier, grantees) => pos => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees, RevokeBothType()(pos))(pos))
   }
 
    //`GRANT ON GRAPH foo TO role`
@@ -437,29 +440,29 @@ trait Statement extends Parser
   //`REVOKE ON GRAPH foo TO role`
   def RevokeGraphPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT CREATE") {
     group(keyword("REVOKE GRANT") ~~ GraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, action, qualifier, roles) => ast.RevokePrivilege.grantedGraphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, action, qualifier, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.grantedGraphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) =>  ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+      ((resource, graphScope, action, roles) =>  pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE GRANT") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.grantedGraphAction(action, Some(resource), graphScope, qualifier, roles)) |
+      ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeGrantType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ GraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, action, qualifier, roles) => ast.RevokePrivilege.deniedGraphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, action, qualifier, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE DENY") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.deniedGraphAction(action, Some(resource), graphScope, qualifier, roles)) |
+      ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeDenyType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ GraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, action, qualifier, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, action, qualifier, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles)) |
+      ((graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles)) |
+      ((resource, graphScope, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, ast.LabelAllQualifier()(InputPosition.NONE), roles, RevokeBothType()(pos))(pos)) |
     group(keyword("REVOKE") ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles))
+      ((resource, graphScope, qualifier, action, roles) => pos => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, RevokeBothType()(pos))(pos))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
