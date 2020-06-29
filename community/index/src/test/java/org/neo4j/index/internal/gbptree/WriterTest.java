@@ -58,7 +58,7 @@ public class WriterTest
         tree.close();
     }
 
-    @org.junit.Test
+    @Test
     public void shouldPutEntry() throws IOException
     {
         // when
@@ -79,7 +79,7 @@ public class WriterTest
         }
     }
 
-    @org.junit.Test
+    @Test
     public void shouldMergeNonExistentEntry() throws IOException
     {
         // when
@@ -100,7 +100,7 @@ public class WriterTest
         }
     }
 
-    @org.junit.Test
+    @Test
     public void shouldNotChangeEntryOnMergeExistentEntryWithUnchangingMerger() throws IOException
     {
         // given
@@ -127,7 +127,7 @@ public class WriterTest
         }
     }
 
-    @org.junit.Test
+    @Test
     public void shouldChangeEntryOnMergeExistentEntryWithChangingMerger() throws IOException
     {
         // given
