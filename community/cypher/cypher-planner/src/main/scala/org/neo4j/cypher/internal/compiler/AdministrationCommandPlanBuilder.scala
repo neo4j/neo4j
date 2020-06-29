@@ -60,8 +60,6 @@ import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.ShowDatabases
-import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
@@ -312,17 +310,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case sp @ ShowPrivileges(scope, where, yields, returns) =>
         Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, sp.returnColumnNames, where, yields, returns))
 
-      // SHOW DATABASES
-      case sd @ ShowDatabases(yields, where, returns) =>
-        Some(plans.ShowDatabases(sd.returnColumnNames, yields, where, returns))
-
-      // SHOW DEFAULT DATABASE
-      case sd @ ShowDefaultDatabase(yields, where, returns) =>
-        Some(plans.ShowDefaultDatabase(sd.returnColumnNames, yields, where, returns))
-
-      // SHOW DATABASE foo
-      case sd @ ShowDatabase(dbName, yields, where, returns) =>
-        Some(plans.ShowDatabase(dbName, sd.returnColumnNames, yields, where, returns))
+      // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
+      case sd @ ShowDatabase(scope, yields, where, returns) =>
+        Some(plans.ShowDatabase(scope, sd.returnColumnNames, yields, where, returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>

@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.ShowDatabases
-import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -193,14 +191,6 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       query.copy(clauses = (clauses.init :+ finalClause).map(clauseRewriter))(query.position)
 
     case s@ShowPrivileges(_, yields, _, returns) =>
-      s.copy(yields = rewriteOptionalReturn(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-
-    case s@ShowDatabases(yields, _, returns) =>
-      s.copy(yields = rewriteOptionalReturn(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-
-    case s@ShowDefaultDatabase(yields, _, returns) =>
       s.copy(yields = rewriteOptionalReturn(yields), returns = rewriteOptionalReturn(returns))(s.position)
         .withGraph(s.useGraph)
 

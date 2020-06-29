@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
 import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
@@ -40,8 +39,6 @@ import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
-import org.neo4j.cypher.internal.logical.plans.ShowDatabases
-import org.neo4j.cypher.internal.logical.plans.ShowDefaultDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.procs.ActionMapper
@@ -240,20 +237,34 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
       )
 
-    // SHOW DATABASES
-    case ShowDatabases(symbols, yields, where, returns) => (_, _) =>
-      val (query, _, generator, _) = makeShowDatabasesQuery(symbols, yields, where, returns)
-      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
+    // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
+    case ShowDatabase(scope, symbols, yields, where, returns) => (_, _) =>
+      val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
+      val (extraFilter, params, paramConverter, name) = scope match {
+        // show default database
+        case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDefaultDatabase")
+        // show database name
+        case NamedGraphScope(p) =>
+          val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
+          val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
+            val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
+            val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
+            converter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
+          }
+          (s"AND d.name = $$`$key`", VirtualValues.map(Array(key), Array(value)), combinedConverter, "ShowDatabase")
+        // show all databases
+        case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDatabases")
+      }
+      val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
+      val filtering = AdministrationShowCommandUtils.generateWhereClause(where)
 
-    // SHOW DEFAULT DATABASE
-    case ShowDefaultDatabase(symbols, yields, where, returns) => (_, _) =>
-      val (query, _, generator, _) = makeShowDatabasesQuery(symbols, yields, where, returns,isDefault = true)
-      SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = generator)
-
-    // SHOW DATABASE foo
-    case ShowDatabase(databaseName,symbols, yields, where, returns) => (_, _) =>
-      val (query, params, generator, converter) = makeShowDatabasesQuery(symbols, yields, where, returns, dbName = Some(databaseName))
-      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query, params, parameterGenerator = generator, parameterConverter = converter)
+      val query = s"""MATCH (d: Database)
+                     |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
+                     |CALL dbms.database.state(d.name) yield status, error, address, role
+                     |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
+                     |$filtering
+                     |$returnClause""".stripMargin
+      SystemCommandExecutionPlan(name, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 
     case DoNothingIfNotExists(source, label, name, valueMapper) => (context, parameterMapping) =>
       val (nameKey, nameValue, nameConverter) = getNameFields("name", name, valueMapper = valueMapper)
@@ -333,38 +344,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   }
 
   private val accessibleDbsKey = internalKey("accessibleDbs")
-
-  private def makeShowDatabasesQuery(symbols: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return],
-                                     isDefault: Boolean = false, dbName: Option[Either[String, Parameter]] = None): (String, MapValue, (Transaction, SecurityContext) => MapValue, (Transaction, MapValue) => MapValue) = {
-    val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
-    val (extraFilter, params, paramConverter) = (isDefault, dbName) match {
-      // show default database
-      case (true, _) => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
-      // show database name
-      case (_, Some(p)) =>
-        val (key, value, converter) = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
-        val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
-          val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
-          val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
-          converter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
-        }
-        (s"AND d.name = $$`$key`", VirtualValues.map(Array(key), Array(value)), combinedConverter)
-      // show all databases
-      case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
-    }
-    val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
-    val filtering = AdministrationShowCommandUtils.generateWhereClause(where)
-
-    val query = s"""
-       |MATCH (d: Database)
-       |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
-       |CALL dbms.database.state(d.name) yield status, error, address, role
-       |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
-       |$filtering
-       |$returnClause
-    """.stripMargin
-    (query, params, paramGenerator, paramConverter)
-  }
 
   private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext): MapValue = {
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {

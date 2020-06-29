@@ -123,13 +123,7 @@ case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[
 case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 // Database administration commands
-case class ShowDatabases(override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
-                        (implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-
-case class ShowDefaultDatabase(override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
-                              (implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-
-case class ShowDatabase(databaseName: Either[String, Parameter],
+case class ShowDatabase(scope: GraphScope,
                         override val returnColumns: List[String],
                         yields: Option[Return],
                         where: Option[Where],

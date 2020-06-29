@@ -119,8 +119,6 @@ import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.ShowDatabases
-import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRolePrivileges
@@ -390,17 +388,13 @@ case class Prettifier(
         val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$w$r"
 
-      case x @ ShowDatabases(yields, where, returns) =>
+      case x @ ShowDatabase(scope, yields, where, returns) =>
         val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"${x.name}$y$w$r"
-
-      case x @ ShowDefaultDatabase(yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"${x.name}$y$w$r"
-
-      case x @ ShowDatabase(dbName, yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"${x.name} ${Prettifier.escapeName(dbName)}$y$w$r"
+        val optionalName = scope match {
+          case NamedGraphScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
+          case _ => ""
+        }
+        s"${x.name}$optionalName$y$w$r"
 
       case x @ CreateDatabase(dbName, ifExistsDo) =>
         ifExistsDo match {

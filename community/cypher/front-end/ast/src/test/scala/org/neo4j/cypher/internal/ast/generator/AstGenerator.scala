@@ -161,8 +161,6 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.ShowDatabases
-import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
@@ -1406,19 +1404,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showDatabase: Gen[ShowDatabase] = for {
     dbName <- _nameAsEither
-    where <- Gen.option(_where)
+    scope  <- oneOf(NamedGraphScope(dbName)(pos), AllGraphsScope()(pos), DefaultDatabaseScope()(pos))
+    where  <- Gen.option(_where)
     yields <- Gen.option(_yield)
-  } yield ShowDatabase(dbName, yields, where, None)(pos)
-
-  def _showDatabases: Gen[ShowDatabases] = for {
-    where <- Gen.option(_where)
-    yields <- Gen.option(_yield)
-  } yield ShowDatabases(yields, where, None)(pos)
-
-  def _showDefaultDatabase: Gen[ShowDefaultDatabase] = for {
-    where <- Gen.option(_where)
-    yields <- Gen.option(_yield)
-  } yield ShowDefaultDatabase(yields, where, None)(pos)
+  } yield ShowDatabase(scope, yields, where, None)(pos)
 
   def _createDatabase: Gen[CreateDatabase] = for {
     dbName <- _nameAsEither
@@ -1441,8 +1430,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _multiDatabaseCommand: Gen[AdministrationCommand] = oneOf(
     _showDatabase,
-    _showDatabases,
-    _showDefaultDatabase,
     _createDatabase,
     _dropDatabase,
     _startDatabase,

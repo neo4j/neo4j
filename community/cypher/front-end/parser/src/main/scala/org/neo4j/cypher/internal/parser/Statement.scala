@@ -52,8 +52,6 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.ShowDatabases
-import org.neo4j.cypher.internal.ast.ShowDefaultDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
@@ -90,7 +88,7 @@ trait Statement extends Parser
   )
 
   def MultiDatabaseAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("MultiDatabase administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | ShowDefaultDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
+    optional(keyword("CATALOG")) ~~ (ShowDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
   def UserAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
@@ -548,16 +546,14 @@ trait Statement extends Parser
   )
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
-    group(keyword("SHOW DATABASE") ~~ SymbolicNameOrStringParameter) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_,_))
+    group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_,_))
   }
 
-  def ShowDatabases: Rule1[ShowDatabases] = rule("CATALOG SHOW DATABASES") {
-    keyword("SHOW DATABASES") ~~ ShowCommandClauses ~~>> (ast.ShowDatabases(_,_,_))
-  }
-
-  def ShowDefaultDatabase: Rule1[ShowDefaultDatabase] = rule("CATALOG SHOW DEFAULT DATABASE") {
-    keyword("SHOW DEFAULT DATABASE") ~~ ShowCommandClauses ~~>> (ast.ShowDefaultDatabase(_,_,_))
-  }
+  private def ScopeForShowDatabase: Rule1[GraphScope] = rule("show database scope")(
+    group(keyword("DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.NamedGraphScope(_)) |
+    keyword("DATABASES") ~~~> (ast.AllGraphsScope()) |
+    keyword("DEFAULT DATABASE") ~~~> (ast.DefaultDatabaseScope())
+  )
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
     group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax())) |

@@ -649,39 +649,20 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope, override  val yields:
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabases(override  val yields: Option[Return], override val where: Option[Where],
-                               override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
-
-  override def name = "SHOW DATABASES"
-
-  override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
-    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString), ("default", CTBoolean))
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class ShowDefaultDatabase(override  val yields: Option[Return], override val where: Option[Where],
-                                     override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
-
-  override def name = "SHOW DEFAULT DATABASE"
-
-  override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
-    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString))
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class ShowDatabase(dbName: Either[String, Parameter], override val yields: Option[Return], override val where: Option[Where],
+final case class ShowDatabase(scope: GraphScope, override val yields: Option[Return], override val where: Option[Where],
                               override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
 
-  override def name = "SHOW DATABASE"
+  override def name: String = scope match {
+    case _: NamedGraphScope => "SHOW DATABASE"
+    case _: AllGraphsScope => "SHOW DATABASES"
+    case _: DefaultDatabaseScope => "SHOW DEFAULT DATABASE"
+  }
 
   override val defaultColumnSet: List[(String, CypherType)] = List(("name", CTString), ("address", CTString), ("role", CTString),
-    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString), ("default", CTBoolean))
+    ("requestedStatus", CTString), ("currentStatus", CTString), ("error", CTString)) ++ (scope match {
+    case _: DefaultDatabaseScope => List.empty
+    case _ => List(("default", CTBoolean))
+  })
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

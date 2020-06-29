@@ -204,8 +204,6 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
-import org.neo4j.cypher.internal.logical.plans.ShowDatabases
-import org.neo4j.cypher.internal.logical.plans.ShowDefaultDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
@@ -396,15 +394,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val args = showCommandDetails(where, asPrettyString.raw(Prettifier.extractScope(scope)))
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, args, variables)
 
-      case ShowDatabase(dbName, _, _, where, _) =>
-        val args = showCommandDetails(where, escapeName(dbName))
-        PlanDescriptionImpl(id, "ShowDatabase", NoChildren, args, variables)
-
-      case ShowDatabases(_, _, where, _) =>
-        PlanDescriptionImpl(id, "ShowDatabases", NoChildren, showCommandDetails(where), variables)
-
-      case ShowDefaultDatabase(_, _, where, _) =>
-        PlanDescriptionImpl(id, "ShowDefaultDatabase", NoChildren, showCommandDetails(where), variables)
+      case ShowDatabase(scope, _, _, where, _) =>
+        val (name, args) = scope match {
+          case NamedGraphScope(dbName) => ("ShowDatabase", showCommandDetails(where, escapeName(dbName)))
+          case _: AllGraphsScope => ("ShowDatabases", showCommandDetails(where))
+          case _: DefaultDatabaseScope => ("ShowDefaultDatabase", showCommandDetails(where))
+        }
+        PlanDescriptionImpl(id, name, NoChildren, args, variables)
 
       case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
