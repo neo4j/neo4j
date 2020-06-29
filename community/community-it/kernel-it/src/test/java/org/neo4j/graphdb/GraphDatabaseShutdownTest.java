@@ -49,9 +49,9 @@ public class GraphDatabaseShutdownTest
     private GraphDatabaseAPI db;
 
     @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
+    public final OtherThreadRule t2 = new OtherThreadRule( "T2" );
     @Rule
-    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
+    public final OtherThreadRule t3 = new OtherThreadRule( "T3" );
     private DatabaseManagementService managementService;
 
     @Before
@@ -113,7 +113,7 @@ public class GraphDatabaseShutdownTest
 
         // WHEN
         // one thread locks previously created node and initiates graph db shutdown
-        Future<Void> shutdownFuture = t2.execute( state ->
+        Future<Void> shutdownFuture = t2.execute( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -132,7 +132,7 @@ public class GraphDatabaseShutdownTest
         } );
 
         // other thread tries to lock the same node while it has been locked and graph db is being shutdown
-        Future<Void> secondTxResult = t3.execute( state ->
+        Future<Void> secondTxResult = t3.execute( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {

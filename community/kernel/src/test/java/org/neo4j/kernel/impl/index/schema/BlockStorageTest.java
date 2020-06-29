@@ -301,7 +301,7 @@ class BlockStorageTest
         AtomicBoolean cancelled = new AtomicBoolean();
         try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, heapBufferFactory( 100 ), fileSystem, file, monitor,
                 INSTANCE );
-              OtherThreadExecutor<Void> t2 = new OtherThreadExecutor<>( "T2", null ) )
+              OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" ) )
         {
             while ( monitor.blockFlushedCallCount < blocks )
             {

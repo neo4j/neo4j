@@ -58,8 +58,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @TestDirectoryExtension
 public class CommunityLockAcquisitionTimeoutIT
 {
-    private final OtherThreadExecutor<Void> secondTransactionExecutor = new OtherThreadExecutor<>( "transactionExecutor", null );
-    private final OtherThreadExecutor<Void> clockExecutor = new OtherThreadExecutor<>( "clockExecutor", null );
+    private final OtherThreadExecutor secondTransactionExecutor = new OtherThreadExecutor( "transactionExecutor" );
+    private final OtherThreadExecutor clockExecutor = new OtherThreadExecutor( "clockExecutor" );
 
     private static final String TEST_PROPERTY_NAME = "a";
     private static final Label marker = Label.label( "marker" );
@@ -107,7 +107,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 Node node = nodes.next();
                 node.setProperty( TEST_PROPERTY_NAME, "b" );
 
-                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
+                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( () ->
                 {
                     try ( Transaction transaction1 = database.beginTx() )
                     {
@@ -118,7 +118,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 } );
 
                 secondTransactionExecutor.waitUntilWaiting( exclusiveLockWaitingPredicate() );
-                clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void, Void>) state ->
+                clockExecutor.execute( () ->
                 {
                     fakeClock.forward( 3, TimeUnit.SECONDS );
                     return null;
@@ -142,7 +142,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 Locks lockManger = getLockManager();
                 lockManger.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );
 
-                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
+                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( () ->
                 {
                     try ( Transaction nestedTransaction = database.beginTx() )
                     {
@@ -155,7 +155,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 } );
 
                 secondTransactionExecutor.waitUntilWaiting( sharedLockWaitingPredicate() );
-                clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void, Void>) state ->
+                clockExecutor.execute( () ->
                 {
                     fakeClock.forward( 3, TimeUnit.SECONDS );
                     return null;

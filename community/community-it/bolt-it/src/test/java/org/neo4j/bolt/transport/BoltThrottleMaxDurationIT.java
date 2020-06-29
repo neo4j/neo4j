@@ -71,7 +71,7 @@ public class BoltThrottleMaxDurationIT
     @Inject
     private Neo4jWithSocket server;
     @Inject
-    private OtherThreadRule<Void> otherThread;
+    private OtherThreadRule otherThread;
 
     private AssertableLogProvider logProvider;
 
@@ -143,7 +143,7 @@ public class BoltThrottleMaxDurationIT
         assertThat( client ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( client ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        Future<?> sender = otherThread.execute( state ->
+        Future<?> sender = otherThread.execute( () ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {

@@ -254,9 +254,9 @@ class DynamicTaskExecutorTest
         failingTask.latch.await();
 
         // WHEN
-        try ( OtherThreadExecutor<Void> closer = new OtherThreadExecutor<>( "closer", null ) )
+        try ( OtherThreadExecutor closer = new OtherThreadExecutor( "closer" ) )
         {
-            Future<Void> shutdown = closer.executeDontWait( state ->
+            Future<Void> shutdown = closer.executeDontWait( () ->
             {
                 executor.close();
                 return null;

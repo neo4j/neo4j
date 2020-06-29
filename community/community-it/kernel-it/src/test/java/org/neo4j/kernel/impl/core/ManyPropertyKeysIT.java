@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -102,17 +101,17 @@ class ManyPropertyKeysIT
         // GIVEN
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        OtherThreadExecutor<WorkerState> worker1 = new OtherThreadExecutor<>( "w1", new WorkerState( db ) );
-        OtherThreadExecutor<WorkerState> worker2 = new OtherThreadExecutor<>( "w2", new WorkerState( db ) );
-        worker1.execute( new BeginTx() );
-        worker2.execute( new BeginTx() );
+        Worker worker1 = new Worker( "w1", db );
+        Worker worker2 = new Worker( "w2", db );
+        worker1.beginTx();
+        worker2.beginTx();
 
         // WHEN
         String key = "mykey";
-        worker1.execute( new CreateNodeAndSetProperty( key ) );
-        worker2.execute( new CreateNodeAndSetProperty( key ) );
-        worker1.execute( new FinishTx() );
-        worker2.execute( new FinishTx() );
+        worker1.setProperty( key );
+        worker2.setProperty( key );
+        worker1.commit();
+        worker2.commit();
         worker1.close();
         worker2.close();
 
@@ -176,52 +175,43 @@ class ManyPropertyKeysIT
         }
     }
 
-    private static class WorkerState
+    private static class Worker extends OtherThreadExecutor
     {
-        protected final GraphDatabaseService db;
-        protected Transaction tx;
+        private final GraphDatabaseService db;
+        private Transaction tx;
 
-        WorkerState( GraphDatabaseService db )
+        Worker( String name, GraphDatabaseService db )
         {
+            super( name );
             this.db = db;
         }
-    }
 
-    private static class BeginTx implements WorkerCommand<WorkerState, Void>
-    {
-        @Override
-        public Void doWork( WorkerState state )
+        void beginTx() throws Exception
         {
-            state.tx = state.db.beginTx();
-            return null;
-        }
-    }
-
-    private static class CreateNodeAndSetProperty implements WorkerCommand<WorkerState, Void>
-    {
-        private final String key;
-
-        CreateNodeAndSetProperty( String key )
-        {
-            this.key = key;
+            execute( () ->
+            {
+                tx = db.beginTx();
+                return null;
+            } );
         }
 
-        @Override
-        public Void doWork( WorkerState state )
+        void setProperty( String key ) throws Exception
         {
-            Node node = state.tx.createNode();
-            node.setProperty( key, true );
-            return null;
+            execute( () ->
+            {
+                Node node = tx.createNode();
+                node.setProperty( key, true );
+                return null;
+            } );
         }
-    }
 
-    private static class FinishTx implements WorkerCommand<WorkerState, Void>
-    {
-        @Override
-        public Void doWork( WorkerState state )
+        void commit() throws Exception
         {
-            state.tx.commit();
-            return null;
+            execute( () ->
+            {
+                tx.commit();
+                return null;
+            } );
         }
     }
 }

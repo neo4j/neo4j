@@ -108,8 +108,8 @@ class FlippableIndexProxyTest
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
         final CountDownLatch triggerExternalAccess = new CountDownLatch( 1 );
 
-        try ( OtherThreadExecutor<Void> flippingThread = new OtherThreadExecutor<>( "Flipping thread", null );
-            OtherThreadExecutor<Void> dropIndexThread = new OtherThreadExecutor<>( "Drop index thread", null ) )
+        try ( OtherThreadExecutor flippingThread = new OtherThreadExecutor( "Flipping thread" );
+              OtherThreadExecutor dropIndexThread = new OtherThreadExecutor( "Drop index thread" ) )
         {
             // WHEN one thread starts flipping to another context
             Future<Void> flipContextFuture = flippingThread.executeDontWait( startFlipAndWaitForLatchBeforeFinishing(
@@ -145,10 +145,10 @@ class FlippableIndexProxyTest
         // given the proxy structure
         FakePopulatingIndexProxy delegate = new FakePopulatingIndexProxy();
         FlippableIndexProxy flipper = new FlippableIndexProxy( delegate );
-        try ( OtherThreadExecutor<Void> waiter = new OtherThreadExecutor<>( "Waiter", null ) )
+        try ( OtherThreadExecutor waiter = new OtherThreadExecutor( "Waiter" ) )
         {
             // and a thread stuck in the awaitStoreScanCompletion loop
-            Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted( 0, MILLISECONDS ) );
+            Future<Object> waiting = waiter.executeDontWait( () -> flipper.awaitStoreScanCompleted( 0, MILLISECONDS ) );
             while ( !delegate.awaitCalled )
             {
                 Thread.sleep( 10 );
@@ -162,20 +162,20 @@ class FlippableIndexProxyTest
         }
     }
 
-    private static OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
+    private static Callable<Void> dropTheIndex( final FlippableIndexProxy flippable )
     {
-        return state ->
+        return () ->
         {
             flippable.drop();
             return null;
         };
     }
 
-    private static OtherThreadExecutor.WorkerCommand<Void, Void> startFlipAndWaitForLatchBeforeFinishing(
+    private static Callable<Void> startFlipAndWaitForLatchBeforeFinishing(
         final FlippableIndexProxy flippable, final CountDownLatch triggerFinishFlip,
         final CountDownLatch triggerExternalAccess )
     {
-        return state ->
+        return () ->
         {
             flippable.flip( () ->
             {

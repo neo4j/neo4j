@@ -435,7 +435,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        try ( OtherThreadExecutor<Void> clearThread = new OtherThreadExecutor<>( "clear", null ) )
+        try ( OtherThreadExecutor clearThread = new OtherThreadExecutor( "clear" ) )
         {
             // Wait for the clear call
             Future<Object> clear = clearThread.executeDontWait( command( () -> scanner.clearCache( NULL ) ) );
@@ -468,8 +468,8 @@ class FreeIdScannerTest
         } );
 
         // when
-        try ( OtherThreadExecutor<Void> scanThread = new OtherThreadExecutor<>( "scan", null );
-              OtherThreadExecutor<Void> clearThread = new OtherThreadExecutor<>( "clear", null ) )
+        try ( OtherThreadExecutor scanThread = new OtherThreadExecutor( "scan" );
+              OtherThreadExecutor clearThread = new OtherThreadExecutor( "clear" ) )
         {
             // Wait for the offer call
             Future<Object> scan = scanThread.executeDontWait( command( () -> scanner.tryLoadFreeIdsIntoCache( NULL ) ) );

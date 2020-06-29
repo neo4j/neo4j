@@ -162,7 +162,7 @@ class BadCollectorTest
         // given
         int backPressureThreshold = 10;
         BlockableMonitor monitor = new BlockableMonitor();
-        try ( OtherThreadExecutor<Void> t2 = new OtherThreadExecutor<>( "T2", null );
+        try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" );
               BadCollector badCollector = new BadCollector( NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL, backPressureThreshold, false, monitor ) )
         {
             try ( monitor )

@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -424,7 +423,7 @@ class GBPTreeCountsStoreTest
         CountsAccessor.Updater updater1 = countsStore.apply( BASE_TX_ID + 1, NULL );
         CountsAccessor.Updater updater2 = countsStore.apply( BASE_TX_ID + 2, NULL );
 
-        try ( OtherThreadExecutor<Void> checkpointer = new OtherThreadExecutor<>( "Checkpointer", null ) )
+        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer" ) )
         {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
@@ -447,17 +446,18 @@ class GBPTreeCountsStoreTest
         // given
         CountsAccessor.Updater updaterBeforeCheckpoint = countsStore.apply( BASE_TX_ID + 1, NULL );
 
-        try ( OtherThreadExecutor<Void> checkpointer = new OtherThreadExecutor<>( "Checkpointer", null );
-              OtherThreadExecutor<AtomicReference<CountsStore.Updater>> applier = new OtherThreadExecutor<>( "Applier", new AtomicReference<>() ) )
+        final AtomicReference<CountsAccessor.Updater> updater = new AtomicReference<>();
+        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer" );
+              OtherThreadExecutor applier = new OtherThreadExecutor( "Applier" ) )
         {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
             checkpointer.waitUntilWaiting();
 
             // and when trying to open another applier it must wait
-            Future<Void> applierAfterCheckpoint = applier.executeDontWait( state ->
+            Future<Void> applierAfterCheckpoint = applier.executeDontWait( () ->
             {
-                state.set( countsStore.apply( BASE_TX_ID + 2, NULL ) );
+                updater.set( countsStore.apply( BASE_TX_ID + 2, NULL ) );
                 return null;
             } );
             applier.waitUntilWaiting();
@@ -470,9 +470,9 @@ class GBPTreeCountsStoreTest
 
             // and then also the applier after the checkpoint should be able to continue
             applierAfterCheckpoint.get();
-            applier.execute( state ->
+            applier.execute( () ->
             {
-                state.get().close();
+                updater.get().close();
                 return null;
             } );
         }

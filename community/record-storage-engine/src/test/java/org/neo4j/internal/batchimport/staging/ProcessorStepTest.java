@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +32,6 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +44,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class ProcessorStepTest
 {
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    private final OtherThreadRule t2 = new OtherThreadRule();
 
     @BeforeEach
     void setUp()
@@ -208,9 +208,9 @@ class ProcessorStepTest
         }
     }
 
-    private static WorkerCommand<Void, Void> receive( final int processors, final ProcessorStep<Void> step )
+    private static Callable<Void> receive( final int processors, final ProcessorStep<Void> step )
     {
-        return state ->
+        return () ->
         {
             step.receive( processors, null );
             return null;

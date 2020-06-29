@@ -24,12 +24,12 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
 
@@ -48,7 +48,7 @@ public class NestedIndexReadersIT
     @Rule
     public final ImpermanentDbmsRule db = new ImpermanentDbmsRule();
     @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    public final OtherThreadRule t2 = new OtherThreadRule();
 
     @Test
     public void shouldReadCorrectResultsFromMultipleNestedReaders()
@@ -157,9 +157,9 @@ public class NestedIndexReadersIT
         }
     }
 
-    private WorkerCommand<Void,Void> nodeCreator()
+    private Callable<Void> nodeCreator()
     {
-        return state ->
+        return () ->
         {
             try ( Transaction tx = db.beginTx() )
             {

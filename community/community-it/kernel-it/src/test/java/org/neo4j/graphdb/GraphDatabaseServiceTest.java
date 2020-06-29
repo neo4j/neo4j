@@ -28,6 +28,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -37,7 +38,6 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
@@ -58,8 +58,8 @@ public class GraphDatabaseServiceTest
 
     private final ExpectedException exception = ExpectedException.none();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
-    private final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
+    private final OtherThreadRule t2 = new OtherThreadRule();
+    private final OtherThreadRule t3 = new OtherThreadRule();
 
     @Rule
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception );
@@ -102,7 +102,7 @@ public class GraphDatabaseServiceTest
 
         // When
         Barrier.Control barrier = new Barrier.Control();
-        Future<Object> txFuture = t2.execute( state ->
+        Future<Object> txFuture = t2.execute( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -117,7 +117,7 @@ public class GraphDatabaseServiceTest
         barrier.await();
 
         // now there's a transaction open, blocked on continueTxSignal
-        Future<Object> shutdownFuture = t3.execute( state ->
+        Future<Object> shutdownFuture = t3.execute( () ->
         {
             managementService.shutdown();
             return null;
@@ -156,7 +156,7 @@ public class GraphDatabaseServiceTest
 
         // When
         Barrier.Control barrier = new Barrier.Control();
-        t2.execute( state ->
+        t2.execute( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -166,7 +166,7 @@ public class GraphDatabaseServiceTest
         } );
 
         barrier.await();
-        Future<Object> shutdownFuture = t3.execute( state ->
+        Future<Object> shutdownFuture = t3.execute( () ->
         {
             managementService.shutdown();
             return null;
@@ -205,7 +205,7 @@ public class GraphDatabaseServiceTest
         // (t2) <-- (r1)
         t2.execute( setProperty( t2Tx.getRelationshipById( r1.getId() ), "locked", "absolutely" ) ).get();
         // (t2) --> (n2)
-        Future<Object> t2n2Wait = t2.execute( setProperty( t2Tx.getNodeById( n2.getId() ), "locked", "In my dreams" ) );
+        Future<Void> t2n2Wait = t2.execute( setProperty( t2Tx.getNodeById( n2.getId() ), "locked", "In my dreams" ) );
         t2.get().waitUntilWaiting();
         // (t1) --> (r1) although delayed until commit, this is accomplished by deleting an adjacent
         //               relationship so that its surrounding relationships are locked at commit time.
@@ -255,23 +255,23 @@ public class GraphDatabaseServiceTest
         }
     }
 
-    private WorkerCommand<Void, Transaction> beginTx( final GraphDatabaseService db )
+    private Callable<Transaction> beginTx( final GraphDatabaseService db )
     {
-        return state -> db.beginTx();
+        return db::beginTx;
     }
 
-    private WorkerCommand<Void, Object> setProperty( final Entity entity, final String key, final String value )
+    private Callable<Void> setProperty( final Entity entity, final String key, final String value )
     {
-        return state ->
+        return () ->
         {
             entity.setProperty( key, value );
             return null;
         };
     }
 
-    private WorkerCommand<Void, Void> close( final Transaction tx )
+    private Callable<Void> close( final Transaction tx )
     {
-        return state ->
+        return () ->
         {
             tx.close();
             return null;

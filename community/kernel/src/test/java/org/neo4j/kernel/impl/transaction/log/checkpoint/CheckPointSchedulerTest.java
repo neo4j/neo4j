@@ -43,7 +43,6 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -176,7 +175,7 @@ class CheckPointSchedulerTest
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
-        OtherThreadExecutor<Void> otherThreadExecutor = new OtherThreadExecutor<>( "scheduler stopper", null );
+        OtherThreadExecutor otherThreadExecutor = new OtherThreadExecutor( "scheduler stopper" );
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
@@ -228,7 +227,7 @@ class CheckPointSchedulerTest
 
         checkPointerLatch.waitForAllToStart();
 
-        otherThreadExecutor.executeDontWait( (WorkerCommand<Void,Void>) state ->
+        otherThreadExecutor.executeDontWait( () ->
         {
             try
             {

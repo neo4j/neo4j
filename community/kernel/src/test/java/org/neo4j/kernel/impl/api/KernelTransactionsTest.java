@@ -93,7 +93,6 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
@@ -131,7 +130,7 @@ class KernelTransactionsTest
 {
     private static final NamedDatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
     private static final SystemNanoClock clock = Clocks.nanoClock();
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    private final OtherThreadRule t2 = new OtherThreadRule();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
@@ -377,7 +376,7 @@ class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-            t2.execute( state -> kernelTransactions.newInstance( EXPLICIT, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
+            t2.execute( () -> kernelTransactions.newInstance( EXPLICIT, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -394,7 +393,7 @@ class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-            t2.execute( state -> kernelTransactions.newInstance( EXPLICIT, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
+            t2.execute( () -> kernelTransactions.newInstance( EXPLICIT, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -438,7 +437,7 @@ class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
+        t2.execute( () ->
         {
             stopKernelTransactions( kernelTransactions );
             return null;

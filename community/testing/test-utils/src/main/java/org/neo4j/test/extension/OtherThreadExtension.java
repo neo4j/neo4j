@@ -66,6 +66,6 @@ public class OtherThreadExtension extends StatefulFieldExtension<OtherThreadRule
     public void afterEach( ExtensionContext context )
     {
         var otherThread = getStoredValue( context );
-        otherThread.afterEach( context );
+        otherThread.afterEach();
     }
 }

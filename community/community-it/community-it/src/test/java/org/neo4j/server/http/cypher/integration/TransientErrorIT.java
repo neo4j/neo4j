@@ -40,7 +40,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class TransientErrorIT extends AbstractRestFunctionalTestBase
 {
     @Rule
-    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    public final OtherThreadRule otherThread = new OtherThreadRule();
 
     @Test( timeout = 60000 )
     public void deadlockShouldRollbackTransaction() throws Exception
@@ -64,7 +64,7 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
         long tx2 = extractTxId( firstInTx2 );
 
         // tx1 attempts to take a write lock on node2
-        Future<HTTP.Response> future = otherThread.execute( state -> POST( txUri( tx1 ), quotedJson(
+        Future<HTTP.Response> future = otherThread.execute( () -> POST( txUri( tx1 ), quotedJson(
                 "{'statements': [{'statement': 'MATCH (n {prop : 2}) SET n.prop = 5'}]}" ) ) );
 
         // tx2 attempts to take a write lock on node1

@@ -68,7 +68,7 @@ import static org.mockito.Mockito.when;
 public class TransportWriteThrottleTest
 {
     @Inject
-    public OtherThreadRule<Void> otherThread;
+    public OtherThreadRule otherThread;
 
     private ChannelHandlerContext context;
     private Channel channel;
@@ -129,7 +129,7 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( true );
 
         // when
-        Future future = otherThread.execute( state ->
+        Future<Void> future = otherThread.execute( () ->
         {
             throttle.acquire( channel );
             return null;
@@ -151,7 +151,7 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( false );
 
         // when
-        Future<Void> future = otherThread.execute( state ->
+        Future<Void> future = otherThread.execute( () ->
         {
             throttle.acquire( channel );
             return null;
@@ -194,7 +194,7 @@ public class TransportWriteThrottleTest
         TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
         when( channel.isWritable() ).thenReturn( false );
 
-        Future<Void> completionFuture = otherThread.execute( state ->
+        Future<Void> completionFuture = otherThread.execute( () ->
         {
             throttle.acquire( channel );
             return null;
@@ -224,7 +224,7 @@ public class TransportWriteThrottleTest
         when( channel.isWritable() ).thenReturn( false );
 
         // when
-        Future<Void> future = otherThread.execute( state ->
+        Future<Void> future = otherThread.execute( () ->
         {
             throttle.acquire( channel );
             return null;

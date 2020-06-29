@@ -441,11 +441,10 @@ class IndexPopulationJobTest
         job.setHandle( jobHandle );
 
         Future<Void> runFuture;
-        try ( OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<>(
-            "Population job test runner", null ) )
+        try ( OtherThreadExecutor populationJobRunner = new OtherThreadExecutor( "Population job test runner" ) )
         {
             runFuture = populationJobRunner
-                .executeDontWait( state ->
+                .executeDontWait( () ->
                 {
                     job.run();
                     return null;

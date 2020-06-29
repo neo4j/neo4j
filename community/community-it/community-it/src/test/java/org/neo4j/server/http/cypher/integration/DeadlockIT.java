@@ -22,13 +22,13 @@ package org.neo4j.server.http.cypher.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
@@ -42,7 +42,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
     private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
 
     @Rule
-    public OtherThreadRule<Object> otherThread = new OtherThreadRule<>();
+    public OtherThreadRule otherThread = new OtherThreadRule();
 
     private final CountDownLatch secondNodeLocked = new CountDownLatch( 1 );
 
@@ -74,9 +74,9 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( DeadlockDetected.code().serialize() );
     }
 
-    private OtherThreadExecutor.WorkerCommand<Object, Object> writeToFirstAndSecond()
+    private Callable<Void> writeToFirstAndSecond()
     {
-        return state ->
+        return () ->
         {
             HTTP.Response post = http.POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
             secondNodeLocked.countDown();

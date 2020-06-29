@@ -152,47 +152,40 @@ class ManualAcquireLockTest
         return db;
     }
 
-    private class State
+    private class Worker extends OtherThreadExecutor
     {
         private final GraphDatabaseService graphDb;
         private Transaction tx;
 
-        State( GraphDatabaseService graphDb )
-        {
-            this.graphDb = graphDb;
-        }
-    }
-
-    private class Worker extends OtherThreadExecutor<State>
-    {
         Worker()
         {
-            super( "other thread", new State( getGraphDb() ) );
+            super( "other thread" );
+            graphDb = getGraphDb();
         }
 
         void beginTx() throws Exception
         {
-            execute( (WorkerCommand<State,Void>) state ->
+            execute( () ->
             {
-                state.tx = state.graphDb.beginTx();
+                tx = graphDb.beginTx();
                 return null;
             } );
         }
 
         void finishTx() throws Exception
         {
-            execute( (WorkerCommand<State,Void>) state ->
+            execute( () ->
             {
-                state.tx.commit();
+                tx.commit();
                 return null;
             } );
         }
 
         void setProperty( final Node node, final String key, final Object value ) throws Exception
         {
-            execute( state ->
+            execute( () ->
             {
-                state.tx.getNodeById( node.getId() ).setProperty( key, value );
+                tx.getNodeById( node.getId() ).setProperty( key, value );
                 return null;
             }, 2, SECONDS );
         }

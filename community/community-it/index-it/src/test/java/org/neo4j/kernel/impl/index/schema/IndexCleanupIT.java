@@ -76,7 +76,7 @@ public class IndexCleanupIT
     private FileSystemRule fs = new DefaultFileSystemRule();
     private TestDirectory directory = TestDirectory.testDirectory( fs );
     private DbmsRule db = new EmbeddedDbmsRule( directory ).startLazily();
-    private OtherThreadRule<Void> t2 = new OtherThreadRule( "T2" );
+    private OtherThreadRule t2 = new OtherThreadRule( "T2" );
 
     @Rule
     public RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( db );

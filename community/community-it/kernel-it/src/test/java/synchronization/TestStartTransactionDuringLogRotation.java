@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -55,7 +55,7 @@ public class TestStartTransactionDuringLogRotation
     @Inject
     public GraphDatabaseAPI database;
     @Inject
-    private OtherThreadRule<Void> t2;
+    private OtherThreadRule t2;
     @Inject
     private Monitors monitors;
 
@@ -110,9 +110,9 @@ public class TestStartTransactionDuringLogRotation
         // The test passes when transaction.close completes within the test timeout, that is, it didn't deadlock.
     }
 
-    private WorkerCommand<Void,Void> forceLogRotation( GraphDatabaseAPI db )
+    private Callable<Void> forceLogRotation( GraphDatabaseAPI db )
     {
-        return state ->
+        return () ->
         {
             try ( Transaction tx = db.beginTx() )
             {

@@ -19,27 +19,25 @@
  */
 package org.neo4j.test.rule;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class OtherThreadRule<STATE> implements TestRule
+public class OtherThreadRule implements TestRule
 {
     private String name;
     private long timeout;
     private TimeUnit unit;
-    private volatile OtherThreadExecutor<STATE> executor;
+    private volatile OtherThreadExecutor executor;
 
     public OtherThreadRule()
     {
@@ -69,7 +67,7 @@ public class OtherThreadRule<STATE> implements TestRule
         this.unit = unit;
     }
 
-    public <RESULT> Future<RESULT> execute( OtherThreadExecutor.WorkerCommand<STATE, RESULT> cmd )
+    public <RESULT> Future<RESULT> execute( Callable<RESULT> cmd )
     {
         Future<RESULT> future = executor.executeDontWait( cmd );
         try
@@ -83,44 +81,7 @@ public class OtherThreadRule<STATE> implements TestRule
         return future;
     }
 
-    protected STATE initialState()
-    {
-        return null;
-    }
-
-    public static Matcher<OtherThreadRule> isWaiting()
-    {
-        return isThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
-    }
-
-    private static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
-    {
-        return new TypeSafeMatcher<>()
-        {
-            @Override
-            protected boolean matchesSafely( OtherThreadRule rule )
-            {
-                try
-                {
-                    rule.executor.waitUntilThreadState( eitherOfStates );
-                    return true;
-                }
-                catch ( TimeoutException e )
-                {
-                    rule.executor.printStackTrace( System.err );
-                    return false;
-                }
-            }
-
-            @Override
-            public void describeTo( org.hamcrest.Description description )
-            {
-                description.appendText( "Thread blocked in state WAITING" );
-            }
-        };
-    }
-
-    public OtherThreadExecutor<STATE> get()
+    public OtherThreadExecutor get()
     {
         return executor;
     }
@@ -133,7 +94,7 @@ public class OtherThreadRule<STATE> implements TestRule
     @Override
     public String toString()
     {
-        OtherThreadExecutor<STATE> otherThread = executor;
+        OtherThreadExecutor otherThread = executor;
         if ( otherThread == null )
         {
             return "OtherThreadRule[state=dead]";
@@ -153,7 +114,7 @@ public class OtherThreadRule<STATE> implements TestRule
         init( threadName );
     }
 
-    public void afterEach( ExtensionContext context )
+    public void afterEach()
     {
         try
         {
@@ -198,7 +159,7 @@ public class OtherThreadRule<STATE> implements TestRule
 
     public void init( String threadName )
     {
-        executor = new OtherThreadExecutor<>( threadName, timeout, unit, initialState() );
+        executor = new OtherThreadExecutor( threadName, timeout, unit );
     }
 
     public void close()

@@ -24,6 +24,7 @@ import java.io.PrintStream;
 import java.lang.Thread.State;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -41,16 +42,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Executes {@link WorkerCommand}s in another thread. Very useful for writing
+ * Executes commands in another thread. Very useful for writing
  * tests which handles two simultaneous transactions and interleave them,
  * f.ex for testing locking and data visibility.
- *
- * @param <T> type of state
  */
-public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
+public class OtherThreadExecutor implements ThreadFactory, Closeable
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
-    protected final T state;
     private volatile Thread thread;
     private volatile ExecutionState executionState;
     private final String name;
@@ -89,19 +87,18 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         EXECUTED
     }
 
-    public OtherThreadExecutor( String name, T initialState )
+    public OtherThreadExecutor( String name )
     {
-        this( name, 10, SECONDS, initialState );
+        this( name, 10, SECONDS );
     }
 
-    public OtherThreadExecutor( String name, long timeout, TimeUnit unit, T initialState )
+    public OtherThreadExecutor( String name, long timeout, TimeUnit unit )
     {
         this.name = name;
-        this.state = initialState;
         this.timeoutNanos = NANOSECONDS.convert( timeout, unit );
     }
 
-    public <R> Future<R> executeDontWait( final WorkerCommand<T, R> cmd )
+    public <R> Future<R> executeDontWait( final Callable<R> cmd )
     {
         executionState = ExecutionState.REQUESTED_EXECUTION;
         return commandExecutor.submit( () ->
@@ -109,7 +106,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
             executionState = ExecutionState.EXECUTING;
             try
             {
-                return cmd.doWork( state );
+                return cmd.call();
             }
             finally
             {
@@ -118,12 +115,12 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         } );
     }
 
-    public <R> R execute( WorkerCommand<T, R> cmd ) throws Exception
+    public <R> R execute( Callable<R> cmd ) throws Exception
     {
         return executeDontWait( cmd ).get();
     }
 
-    public <R> R execute( WorkerCommand<T, R> cmd, long timeout, TimeUnit unit ) throws Exception
+    public <R> R execute( Callable<R> cmd, long timeout, TimeUnit unit ) throws Exception
     {
         Future<R> future = executeDontWait( cmd );
         boolean success = false;
@@ -156,14 +153,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         return future.get( timeoutNanos, NANOSECONDS );
     }
 
-    public interface WorkerCommand<T, R>
+    public interface WorkerCommand<R>
     {
-        R doWork( T state ) throws Exception;
+        R doWork() throws Exception;
     }
 
-    public static <T,R> WorkerCommand<T,R> command( Race.ThrowingRunnable runnable )
+    public static <R> Callable<R> command( Race.ThrowingRunnable runnable )
     {
-        return state ->
+        return () ->
         {
             try
             {

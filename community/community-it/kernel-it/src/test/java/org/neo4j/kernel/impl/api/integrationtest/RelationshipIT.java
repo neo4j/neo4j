@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 class RelationshipIT extends KernelIntegrationTest
 {
-    private final OtherThreadRule<Object> otherThread = new OtherThreadRule<>();
+    private final OtherThreadRule otherThread = new OtherThreadRule();
 
     @BeforeEach
     void setUp()
@@ -207,7 +207,7 @@ class RelationshipIT extends KernelIntegrationTest
     private void assertRelsInSeparateTx( final long refNode, final Direction both, final long ... longs ) throws
             InterruptedException, ExecutionException, TimeoutException
     {
-        assertTrue( otherThread.execute( state ->
+        assertTrue( otherThread.execute( () ->
         {
             try ( KernelTransaction ktx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
             {

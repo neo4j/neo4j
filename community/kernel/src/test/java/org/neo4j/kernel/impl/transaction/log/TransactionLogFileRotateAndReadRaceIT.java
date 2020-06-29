@@ -76,7 +76,7 @@ class TransactionLogFileRotateAndReadRaceIT
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    private final OtherThreadRule t2 = new OtherThreadRule();
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final int LIMIT_ROTATIONS = 100;
@@ -123,7 +123,7 @@ class TransactionLogFileRotateAndReadRaceIT
         byte[] dataChunk = new byte[100];
         // one thread constantly writing to and rotating the channel
         CountDownLatch startSignal = new CountDownLatch( 1 );
-        Future<Void> writeFuture = t2.execute( ignored ->
+        Future<Void> writeFuture = t2.execute( () ->
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             startSignal.countDown();

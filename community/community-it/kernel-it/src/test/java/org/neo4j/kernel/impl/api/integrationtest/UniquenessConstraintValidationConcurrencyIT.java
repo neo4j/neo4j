@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
@@ -45,7 +45,7 @@ public class UniquenessConstraintValidationConcurrencyIT
     @Inject
     private GraphDatabaseService database;
     @Inject
-    private OtherThreadRule<Void> otherThread;
+    private OtherThreadRule otherThread;
 
     @Test
     void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
@@ -125,9 +125,9 @@ public class UniquenessConstraintValidationConcurrencyIT
         }
     }
 
-    public OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode( final String label, final String propertyKey, final Object propertyValue )
+    public Callable<Boolean> createNode( final String label, final String propertyKey, final Object propertyValue )
     {
-        return nothing ->
+        return () ->
         {
             try ( Transaction tx = database.beginTx() )
             {

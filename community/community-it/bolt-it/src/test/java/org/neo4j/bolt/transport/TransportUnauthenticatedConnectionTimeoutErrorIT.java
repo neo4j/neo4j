@@ -60,7 +60,7 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
     private Neo4jWithSocket server;
 
     @Inject
-    private OtherThreadRule<Void> otherThread;
+    private OtherThreadRule otherThread;
 
     @BeforeEach
     public void setup( TestInfo testInfo ) throws IOException
@@ -109,7 +109,8 @@ public class TransportUnauthenticatedConnectionTimeoutErrorIT extends AbstractBo
 
         // When
         var conn = connection.connect( address );
-        otherThread.execute( w -> {
+        otherThread.execute( () ->
+        {
             // Each byte will arrive within BoltConnector.unsupported_bolt_auth_timeout.
             // However the timeout is for all bytes.
             byte[] buffer = new byte[1];

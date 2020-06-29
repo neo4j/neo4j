@@ -53,8 +53,8 @@ class StoreCopyCheckPointMutexTest
 {
     private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail( "Should not be called" );
 
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
-    private final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
+    private final OtherThreadRule t2 = new OtherThreadRule();
+    private final OtherThreadRule t3 = new OtherThreadRule();
 
     private final StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 
@@ -79,7 +79,7 @@ class StoreCopyCheckPointMutexTest
         try ( Resource lock = mutex.checkPoint() )
         {
             // WHEN
-            t2.execute( state -> mutex.storeCopy( noop() ) );
+            t2.execute( () -> mutex.storeCopy( noop() ) );
 
             // THEN
             t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "storeCopy" ) );
@@ -93,7 +93,7 @@ class StoreCopyCheckPointMutexTest
         try ( Resource lock = mutex.checkPoint() )
         {
             // WHEN
-            t2.execute( state -> mutex.checkPoint() );
+            t2.execute( mutex::checkPoint );
 
             // THEN
             t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "checkPoint" ) );
@@ -107,7 +107,7 @@ class StoreCopyCheckPointMutexTest
         try ( Resource lock = mutex.storeCopy( noop() ) )
         {
             // WHEN
-            t2.execute( state -> mutex.checkPoint() );
+            t2.execute( mutex::checkPoint );
 
             // THEN
             t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "checkPoint" ) );
@@ -221,7 +221,7 @@ class StoreCopyCheckPointMutexTest
         ThrowingAction<IOException> controllableAndFailingAction = () ->
         {
             // Now that we know we're first, start the second request...
-            secondRequest.set( t3.execute( state -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
+            secondRequest.set( t3.execute( () -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
             // ...and wait for it to reach its destination
             barrier.awaitUninterruptibly();
             try
@@ -235,7 +235,7 @@ class StoreCopyCheckPointMutexTest
             }
         };
 
-        Future<Object> firstRequest = t2.execute( state -> mutex.storeCopy( controllableAndFailingAction ) );
+        Future<Object> firstRequest = t2.execute( () -> mutex.storeCopy( controllableAndFailingAction ) );
         while ( secondRequest.get() == null )
         {
             parkARandomWhile();
