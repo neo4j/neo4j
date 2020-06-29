@@ -313,6 +313,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 try
                 {
                     bufferingOutputStream.writeTo( streamWrapper );
+                    streamWrapper.flush();
                 }
                 catch ( IOException e )
                 {
