@@ -296,7 +296,7 @@ class LabelScanStoreIT
 
     private GBPTree<TokenScanKey,TokenScanValue> openReadOnlyGBPTree( TokenScanLayout labelScanLayout )
     {
-        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER,
+        return new GBPTree<>( pageCache, databaseLayout.labelScanStore().toFile(), labelScanLayout, NO_MONITOR, NO_HEADER_READER,
                 NO_HEADER_WRITER, ignore(), true, PageCacheTracer.NULL, Sets.immutable.empty() );
     }
 
