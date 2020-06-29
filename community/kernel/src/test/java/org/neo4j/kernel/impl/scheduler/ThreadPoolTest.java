@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.scheduler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.scheduler.Group;
-import org.neo4j.test.scheduler.CallingThreadJobScheduler;
+import org.neo4j.scheduler.JobHandle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -39,7 +38,7 @@ public class ThreadPoolTest
     @BeforeEach
     void setup()
     {
-        threadPool = new ThreadPool( Group.TESTING, new ThreadGroup( "TestPool" ), new ThreadPool.ThreadPoolParameters() );
+        threadPool = new ThreadPool( Group.TESTING, new ThreadGroup( "TestPool" ) );
     }
 
     @AfterEach
@@ -55,7 +54,7 @@ public class ThreadPoolTest
     void poolDoesNotLeakFastJobs() throws ExecutionException, InterruptedException
     {
         // When
-        var fastJob = threadPool.submit( () -> { /* do nothing */ } );
+        JobHandle fastJob = threadPool.submit( () -> { /* do nothing */ } );
         fastJob.waitTermination();
 
         // Then
