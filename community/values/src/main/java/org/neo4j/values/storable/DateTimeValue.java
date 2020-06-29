@@ -620,9 +620,8 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return INSTANCE_SIZE;
     }
 
-    private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     private static final Pattern PATTERN = Pattern.compile(
-            DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "])?" + ")?",
+            DATE_PATTERN + "(?<time>T" + TIME_PATTERN + ")?",
             Pattern.CASE_INSENSITIVE );
     private static final DateTimeFormatter ZONE_NAME_PARSER = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()

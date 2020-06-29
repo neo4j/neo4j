@@ -397,8 +397,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
-    static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?";
-    private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
+    private static final String ZONE_NAME_PATTERN = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
+    static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?" + "(?:\\[" + ZONE_NAME_PATTERN + "])?";
+    private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN, Pattern.CASE_INSENSITIVE );
     static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
 
     static ZoneOffset parseOffset( String offset )
@@ -430,6 +431,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
+        String zoneName = matcher.group( "zoneName" );
+        if ( null != zoneName )
+        {
+            throw new InvalidArgumentException(
+                    "Using a named time zone e.g. [UTC] is not valid for a time without a date. Instead, use a specific time zone string e.g. +00:00." );
+        }
         return new TimeValue( OffsetTime.of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
     }
 
