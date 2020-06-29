@@ -28,10 +28,13 @@ import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.LabelsQualifier
+import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertyResource
+import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ShowRolePrivileges
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.expressions.And
@@ -106,9 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
-import org.neo4j.cypher.internal.logical.plans.DenyMatch
-import org.neo4j.cypher.internal.logical.plans.DenyRead
-import org.neo4j.cypher.internal.logical.plans.DenyTraverse
+import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
@@ -144,10 +145,8 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
-import org.neo4j.cypher.internal.logical.plans.GrantMatch
-import org.neo4j.cypher.internal.logical.plans.GrantRead
+import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
-import org.neo4j.cypher.internal.logical.plans.GrantTraverse
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
@@ -198,10 +197,8 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
-import org.neo4j.cypher.internal.logical.plans.RevokeMatch
-import org.neo4j.cypher.internal.logical.plans.RevokeRead
+import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
-import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
@@ -1117,32 +1114,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllGraphsScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeDatabaseAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(GrantTraverse(privLhsLP, ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyTraverse(privLhsLP, ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(DenyGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       planDescription(id, "DenyTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(RevokeTraverse(privLhsLP, ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
+    assertGood(attach(RevokeGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeTraverse(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(GrantRead(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(GrantGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       planDescription(id, "GrantRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyRead(privLhsLP, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
+    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
       planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "ALL PROPERTIES", "NODES Label1", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(RevokeRead(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
+    assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
-
-    assertGood(attach(GrantMatch(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantMatch", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
-
-    assertGood(attach(DenyMatch(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyMatch", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
-
-    assertGood(attach(RevokeMatch(privLhsLP, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelsQualifier(Seq("Label1"))(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeMatch(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODES Label1", "ROLE role1"))), Set.empty))
 
     assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolePrivileges(util.Left("role1"))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))

@@ -99,9 +99,6 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
 import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
-import org.neo4j.cypher.internal.logical.plans.DenyMatch
-import org.neo4j.cypher.internal.logical.plans.DenyRead
-import org.neo4j.cypher.internal.logical.plans.DenyTraverse
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
@@ -136,10 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
-import org.neo4j.cypher.internal.logical.plans.GrantMatch
-import org.neo4j.cypher.internal.logical.plans.GrantRead
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
-import org.neo4j.cypher.internal.logical.plans.GrantTraverse
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -193,10 +187,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
 import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
-import org.neo4j.cypher.internal.logical.plans.RevokeMatch
-import org.neo4j.cypher.internal.logical.plans.RevokeRead
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
-import org.neo4j.cypher.internal.logical.plans.RevokeTraverse
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
@@ -747,48 +738,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
           Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
-      case GrantTraverse(_, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = extractQualifierSeq(qualifier)
-        PlanDescriptionImpl(id, "GrantTraverse", children, Seq(Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case DenyTraverse(_, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = extractQualifierSeq(qualifier)
-        PlanDescriptionImpl(id, "DenyTraverse", children, Seq(Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
-        val dbName = extractGraphScope(database)
-        val qualifierText = extractQualifierSeq(qualifier)
-        val details = Details(Seq(dbName) ++ qualifierText ++ Seq(getRoleInfo(roleName)))
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), children, Seq(details), variables)
-
-      case GrantRead(_, resource, database, qualifier, roleName) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "GrantRead", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case DenyRead(_, resource, database, qualifier, roleName) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "DenyRead", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeRead", revokeType), children,
-          Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case GrantMatch(_, resource, database, qualifier, roleName) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "GrantMatch", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case DenyMatch(_, resource, database, qualifier, roleName) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, "DenyMatch", children, Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case RevokeMatch(_, resource, database, qualifier, roleName, revokeType) =>
-        val (dbName, qualifierText, resourceText) = extractGraphScope(database, qualifier, resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeMatch", revokeType), children,
-          Seq(Details(Seq(dbName, resourceText) ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
       case ShowPrivileges(_, scope, _, _, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
         val args = showCommandDetails(where, asPrettyString.raw(Prettifier.extractScope(scope)))
         PlanDescriptionImpl(id, "ShowPrivileges", children, args, variables)
@@ -1221,7 +1170,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def extractGraphScope(dbScope: GraphScope): PrettyString = {
-
     dbScope match {
       case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
       case AllGraphsScope() => pretty"ALL GRAPHS"

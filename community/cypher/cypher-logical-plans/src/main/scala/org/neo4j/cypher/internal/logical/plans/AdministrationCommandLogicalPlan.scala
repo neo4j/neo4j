@@ -110,18 +110,6 @@ case class GrantGraphAction(source: PrivilegePlan, action: GraphAction, resource
 case class DenyGraphAction(source: PrivilegePlan, action: GraphAction, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class RevokeGraphAction(source: PrivilegePlan, action: GraphAction, resoure: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
-case class GrantTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class DenyTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class RevokeTraverse(source: PrivilegePlan, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-
-case class GrantRead(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class DenyRead(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class RevokeRead(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-
-case class GrantMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class DenyMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class RevokeMatch(source: PrivilegePlan, resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-
 case class ShowPrivileges(source: Option[PrivilegePlan],
                           scope: ShowPrivilegeScope,
                           override val returnColumns: List[String],

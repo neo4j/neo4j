@@ -284,12 +284,6 @@ final case class DbmsPrivilege(action: AdminAction)(val position: InputPosition)
 
 final case class GraphPrivilege(action: GraphAction)(val position: InputPosition) extends PrivilegeType(action.name)
 
-final case class TraversePrivilege()(val position: InputPosition) extends PrivilegeType("TRAVERSE")
-
-final case class ReadPrivilege()(val position: InputPosition) extends PrivilegeType("READ")
-
-final case class MatchPrivilege()(val position: InputPosition) extends PrivilegeType("MATCH")
-
 abstract class RevokeType(val name: String, val relType: String)
 
 final case class RevokeGrantType()(val position: InputPosition) extends RevokeType("GRANT", "GRANTED")
@@ -520,6 +514,7 @@ case object RemoveLabelAction extends GraphAction("REMOVE LABEL", "RemoveLabel")
 case object WriteAction extends GraphAction("WRITE", "Write")
 
 case object SetPropertyAction extends GraphAction("SET PROPERTY", "SetProperty")
+
 case object AllGraphAction extends GraphAction("ALL GRAPH PRIVILEGES", "AllGraphPrivileges")
 
 object GrantPrivilege {
@@ -539,21 +534,6 @@ object GrantPrivilege {
                   qualifier: PrivilegeQualifier,
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
     GrantPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
-
-  def traverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
-    GrantPrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
-
-  def read(resource: ActionResource,
-           scope: List[GraphScope],
-           qualifier: PrivilegeQualifier,
-           roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
-    GrantPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
-
-  def asMatch(resource: ActionResource,
-              scope: List[GraphScope],
-              qualifier: PrivilegeQualifier,
-              roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
-    GrantPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
 }
 
 object DenyPrivilege {
@@ -572,21 +552,6 @@ object DenyPrivilege {
                   qualifier: PrivilegeQualifier,
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
     DenyPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
-
-  def traverse(scope: List[GraphScope], qualifier: PrivilegeQualifier, roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
-    DenyPrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames)
-
-  def read(resource: ActionResource,
-           scope: List[GraphScope],
-           qualifier: PrivilegeQualifier,
-           roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
-    DenyPrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
-
-  def asMatch(resource: ActionResource,
-              scope: List[GraphScope],
-              qualifier: PrivilegeQualifier,
-              roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
-    DenyPrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames)
 }
 
 object RevokePrivilege {
@@ -609,26 +574,6 @@ object RevokePrivilege {
                   roleNames: Seq[Either[String, Parameter]],
                   revokeType: RevokeType): InputPosition => RevokePrivilege =
     RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, revokeType)
-
-  def traverse(scope: List[GraphScope],
-               qualifier: PrivilegeQualifier,
-               roleNames: Seq[Either[String, Parameter]],
-               revokeType: RevokeType): InputPosition => RevokePrivilege =
-    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), None, scope, qualifier, roleNames, revokeType)
-
-  def read(resource: ActionResource,
-           scope: List[GraphScope],
-           qualifier: PrivilegeQualifier,
-           roleNames: Seq[Either[String, Parameter]],
-           revokeType: RevokeType): InputPosition => RevokePrivilege =
-    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, revokeType)
-
-  def asMatch(resource: ActionResource,
-              scope: List[GraphScope],
-              qualifier: PrivilegeQualifier,
-              roleNames: Seq[Either[String, Parameter]],
-              revokeType: RevokeType): InputPosition => RevokePrivilege =
-    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), Some(resource), scope, qualifier, roleNames, revokeType)
 }
 
 sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: PrivilegeQualifier, position: InputPosition)

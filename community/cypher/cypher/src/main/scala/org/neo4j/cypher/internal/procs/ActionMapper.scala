@@ -51,7 +51,9 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
+import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -66,6 +68,7 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
+import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.internal.kernel.api.security
 
@@ -85,6 +88,9 @@ object ActionMapper {
     case CreateRelationshipTypeAction => security.PrivilegeAction.CREATE_RELTYPE
     case CreatePropertyKeyAction => security.PrivilegeAction.CREATE_PROPERTYKEY
 
+    case TraverseAction => security.PrivilegeAction.TRAVERSE
+    case ReadAction => security.PrivilegeAction.READ
+    case MatchAction => security.PrivilegeAction.MATCH
     case WriteAction => security.PrivilegeAction.WRITE
 
     case CreateElementAction => security.PrivilegeAction.CREATE_ELEMENT

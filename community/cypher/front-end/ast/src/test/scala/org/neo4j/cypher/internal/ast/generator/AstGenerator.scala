@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
@@ -123,6 +124,7 @@ import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
@@ -1282,8 +1284,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _revokeType: Gen[RevokeType] = oneOf(RevokeGrantType()(pos), RevokeDenyType()(pos), RevokeBothType()(pos))
 
   def _graphAction: Gen[GraphAction] = oneOf(
-    MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
-    // TODO: TraverseAction, ReadAction and MatchAction are used as individual Privileges and not as actions
+    TraverseAction, ReadAction, MatchAction, MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
   )
 
   def _databaseAction: Gen[DatabaseAction] = oneOf(
@@ -1385,31 +1386,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     graphAction                 <- _graphAction
     namedScope                  <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
     graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)))
-    // qualifier and resource for WRITE, CREATE/DELETE ELEMENT, SET/REMOVE LABEL, SET PROPERTY, ALL
     (qualifier, maybeResource)  <- _graphQualifierAndResource(graphAction)
-    // qualifier and resource for TRAVERSE, READ, MATCH
-    propertyNames               <- oneOrMore(_identifier)
-    propertyResource            <- oneOf(PropertiesResource(propertyNames)(pos), AllPropertyResource()(pos))
-    matchQualifier              <- _graphQualifier
     roleNames                   <- _listOfNameOfEither
     revokeType                  <- _revokeType
     graphGrant                  = GrantPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
-    traverseGrant               = GrantPrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
-    readGrant                   = GrantPrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
-    matchGrant                  = GrantPrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
     graphDeny                   = DenyPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
-    traverseDeny                = DenyPrivilege.traverse(graphScope, matchQualifier, roleNames)(pos)
-    readDeny                    = DenyPrivilege.read(propertyResource, graphScope, matchQualifier, roleNames)(pos)
-    matchDeny                   = DenyPrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames)(pos)
     graphRevoke                 = RevokePrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames, revokeType)(pos)
-    traverseRevoke              = RevokePrivilege.traverse(graphScope, matchQualifier, roleNames, revokeType)(pos)
-    readRevoke                  = RevokePrivilege.read(propertyResource, graphScope, matchQualifier, roleNames, revokeType)(pos)
-    matchRevoke                 = RevokePrivilege.asMatch(propertyResource, graphScope, matchQualifier, roleNames, revokeType)(pos)
-    graphPrivilege              <- oneOf(graphGrant, graphDeny, graphRevoke)
-    traversePrivilege           <- oneOf(traverseGrant, traverseDeny, traverseRevoke)
-    readPrivilege               <- oneOf(readGrant, readDeny, readRevoke)
-    matchPrivilege              <- oneOf(matchGrant, matchDeny, matchRevoke)
-    graph                       <- oneOf(graphPrivilege, traversePrivilege, readPrivilege, matchPrivilege)
+    graph                       <- oneOf(graphGrant, graphDeny, graphRevoke)
   } yield graph
 
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(

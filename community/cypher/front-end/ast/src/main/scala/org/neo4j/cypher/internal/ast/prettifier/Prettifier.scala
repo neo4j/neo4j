@@ -134,7 +134,6 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubQuery
-import org.neo4j.cypher.internal.ast.TraversePrivilege
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
@@ -335,18 +334,6 @@ case class Prettifier(
 
       case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, qualifier, roleNames, _) =>
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
-
-      case x@GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
-        val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
-
-      case x@DenyPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
-        val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
-
-      case x@RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames, _) =>
-        val scope = Prettifier.extractScope(dbScope, qualifier)
-        s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
       case x@GrantPrivilege(GraphPrivilege(WriteAction), _, dbScope, _, roleNames) =>
         val scope = Prettifier.extractGraphScope(dbScope)
