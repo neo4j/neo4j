@@ -715,26 +715,26 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val details = extractDatabaseArguments(action, database, qualifier, roleName)
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children, Seq(Details(details)), variables)
 
-      case GrantGraphAction(_, action, resource, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
+      case GrantGraphAction(_, action, resource, graph, qualifier, roleName) =>
+        val graphName = extractGraphScope(graph)
         val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
         PlanDescriptionImpl(id, s"Grant${action.planName}", children,
-          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
-      case DenyGraphAction(_, action, resource, database, qualifier, roleName) =>
-        val dbName = extractGraphScope(database)
+      case DenyGraphAction(_, action, resource, graph, qualifier, roleName) =>
+        val graphName = extractGraphScope(graph)
         val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
         PlanDescriptionImpl(id, s"Deny${action.planName}", children,
-          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
-      case RevokeGraphAction(_, action, resource, database, qualifier, roleName, revokeType) =>
-        val dbName = extractGraphScope(database)
+      case RevokeGraphAction(_, action, resource, graph, qualifier, roleName, revokeType) =>
+        val graphName = extractGraphScope(graph)
         val qualifierText = extractQualifierSeq(qualifier)
         val resourceText = extractResourcePart(resource)
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
-          Seq(Details(Seq(dbName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
+          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
       case ShowPrivileges(_, scope, _, _, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
         val args = showCommandDetails(where, asPrettyString.raw(Prettifier.extractScope(scope)))
@@ -1156,15 +1156,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     }
   }
 
-  private def extractGraphScope(dbScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, Seq[PrettyString], PrettyString) = {
-    val dbName = extractGraphScope(dbScope)
+  private def extractGraphScope(graphScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, Seq[PrettyString], PrettyString) = {
+    val graphName = extractGraphScope(graphScope)
     val qualifierText = extractQualifierSeq(qualifier)
     val resourceText = resource match {
       case PropertyResource(name) => pretty"PROPERTY ${asPrettyString(name)}"
       case AllPropertyResource() => pretty"ALL PROPERTIES"
       case _ => throw new IllegalStateException(s"Can't handle resource: $resource")
     }
-    (dbName, qualifierText, resourceText)
+    (graphName, qualifierText, resourceText)
   }
 
   private def extractGraphScope(graphScope: GraphScope): PrettyString = {
