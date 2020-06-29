@@ -398,7 +398,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
 
             if ( writingTransaction != null )
             {
-                throw multipleWriteError( writingTransaction.getLocation() );
+                throw multipleWriteError( location );
             }
 
             var tx = writeTransactionSupplier.get();
@@ -498,7 +498,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     {
         return new FabricException(
                 Status.Statement.AccessMode,
-                "Multi-shard writes not allowed. Attempted write to %s, currently writing to %s",
+                "Writing to more than one database per transaction is not allowed. Attempted write to %s, currently writing to %s",
                 attempt, writingTransaction.getLocation() );
     }
 
