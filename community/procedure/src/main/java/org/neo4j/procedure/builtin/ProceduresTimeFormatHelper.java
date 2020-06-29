@@ -31,11 +31,16 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ProceduresTimeFormatHelper
 {
-    public static String formatTime( final long startTime, ZoneId zoneId )
+    public static String formatTime( final Instant instant, ZoneId zoneId )
     {
         return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), zoneId )
+                .ofInstant( instant, zoneId )
                 .format( ISO_OFFSET_DATE_TIME );
+    }
+
+    public static String formatTime( final long startTime, ZoneId zoneId )
+    {
+        return formatTime( Instant.ofEpochMilli( startTime ), zoneId );
     }
 
     public static String formatInterval( final long l )

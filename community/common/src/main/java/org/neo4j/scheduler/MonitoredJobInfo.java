@@ -101,10 +101,6 @@ public class MonitoredJobInfo
          */
         SCHEDULED,
         /**
-         * Submitted to executors queue and awaiting free thread.
-         */
-        ENQUEUED,
-        /**
          * Actively executed by an executors thread.
          */
         EXECUTING,

@@ -46,10 +46,10 @@ import org.neo4j.util.concurrent.BinaryLatch;
  * <ul>
  * <li>The handle is initially in the RUNNABLE state, which means that it is ready to be executed but isn't
  * scheduled to do so yet.</li>
- * <li>When it gets scheduled, it transitions into the SUBMITTED state, and remains there until it has finished
- * executing.</li>
- * <li>A handle that is in the SUBMITTED state cannot be submitted again, even if it comes due.</li>
- * <li>A handle that is both due and SUBMITTED is <em>overdue</em>, and its execution will be delayed until it
+ * <li>When it gets scheduled, it transitions into the SUBMITTED state after which it transitions to EXECUTING state,
+ * when it starts being executed by a thread</li>
+ * <li>A handle that is in the SUBMITTED or EXECUTING state cannot be submitted again, even if it comes due.</li>
+ * <li>A handle that is both due and in SUBMITTED or EXECUTING state is <em>overdue</em>, and its execution will be delayed until it
  * changes out of the SUBMITTED state.</li>
  * <li>If a scheduled handle successfully finishes its execution, it will transition back to the RUNNABLE state.</li>
  * <li>If an exception is thrown during the execution, then the handle transitions to the FAILED state in case task is not recurring,
@@ -251,14 +251,14 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
 
     private MonitoredJobInfo.State getStatus()
     {
-        switch ( state.get() )
+        var state = this.state.get();
+        switch ( state)
         {
         case RUNNABLE:
+        case SUBMITTED:    
             return MonitoredJobInfo.State.SCHEDULED;
-        case SUBMITTED:
-            return MonitoredJobInfo.State.ENQUEUED;
         case EXECUTING:
-            // A job can be in failed state only in a glimpse between being marked
+            // A job can be in failed state only for a glimpse between being marked
             // as failed and being removed from monitored jobs immediately after that.
             // Let's show such job as still executing as there is no point confusing
             // users with this esoteric state.

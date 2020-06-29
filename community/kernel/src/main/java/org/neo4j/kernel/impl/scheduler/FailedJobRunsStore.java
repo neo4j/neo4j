@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.neo4j.scheduler.FailedJobRun;
 
 public class FailedJobRunsStore
 {
     private final int sizeLimit;
-    private final Queue<FailedJobRun> failedJobs;
+    private final Deque<FailedJobRun> failedJobs;
 
     public FailedJobRunsStore( int sizeLimit )
     {
         this.sizeLimit = sizeLimit;
-        failedJobs = new LinkedBlockingQueue<>( sizeLimit );
+        failedJobs = new ArrayDeque<>( sizeLimit );
     }
 
     public synchronized void add( FailedJobRun jobFailure )
     {
         if ( failedJobs.size() + 1 == sizeLimit )
         {
-            failedJobs.remove();
+            failedJobs.removeFirst();
         }
 
         failedJobs.add( jobFailure );

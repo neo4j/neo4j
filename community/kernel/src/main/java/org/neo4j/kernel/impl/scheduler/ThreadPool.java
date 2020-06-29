@@ -188,7 +188,7 @@ final class ThreadPool
                                        monitoredJob.monitoredJobParams.getDescription(),
                                        null,
                                        null,
-                                       monitoredJob.running.get() ? MonitoredJobInfo.State.EXECUTING : MonitoredJobInfo.State.ENQUEUED,
+                                       monitoredJob.running.get() ? MonitoredJobInfo.State.EXECUTING : MonitoredJobInfo.State.SCHEDULED,
                                        JobType.IMMEDIATE )
                        )
                        .collect( Collectors.toList() );

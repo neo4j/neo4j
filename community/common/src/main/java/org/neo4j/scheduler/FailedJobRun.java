@@ -21,6 +21,8 @@ package org.neo4j.scheduler;
 
 import java.time.Instant;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 public class FailedJobRun
 {
     private final Group group;
@@ -44,10 +46,14 @@ public class FailedJobRun
         this.submitted = submitted;
         this.executionStart = executionStart;
         this.failureTime = failureTime;
+        this.failureDescription = constructFailureDescription( failure );
+    }
 
-        String s = failure.getClass().getSimpleName();
-        String message = failure.getLocalizedMessage();
-        this.failureDescription = (message != null) ? (s + ": " + message) : s;
+    private String constructFailureDescription( Throwable failure )
+    {
+        String exceptionClass = failure.getClass().getSimpleName();
+        String message = failure.getMessage();
+        return isNotEmpty( message ) ? exceptionClass + ": " + message : exceptionClass;
     }
 
     public Group getGroup()
