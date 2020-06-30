@@ -19,9 +19,9 @@
  */
 package org.neo4j.test.server;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Callable;
 
@@ -30,6 +30,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.server.helpers.WebContainerHelper;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -37,6 +38,7 @@ import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 import static org.neo4j.test.server.WebContainerHolder.release;
 import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderProperty;
 
+@ExtendWith( SuppressOutputExtension.class )
 public class SharedWebContainerTestBase
 {
     protected static TestWebContainer container()
@@ -46,10 +48,7 @@ public class SharedWebContainerTestBase
 
     private static TestWebContainer testWebContainer;
 
-    @Rule
-    public SuppressOutput suppressOutput = suppressAll();
-
-    @BeforeClass
+    @BeforeAll
     public static void allocateServer() throws Throwable
     {
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
@@ -66,7 +65,7 @@ public class SharedWebContainerTestBase
         } );
     }
 
-    @AfterClass
+    @AfterAll
     public static void releaseServer() throws Exception
     {
         try

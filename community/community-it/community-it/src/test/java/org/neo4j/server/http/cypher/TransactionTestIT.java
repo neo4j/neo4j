@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,9 +36,9 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.POST;
@@ -147,7 +147,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
         long newExpirationTime = expirationTime( result );
 
-        assertTrue( "Expiration time was not increased", newExpirationTime > initialExpirationTime );
+        assertTrue( newExpirationTime > initialExpirationTime, "Expiration time was not increased" );
     }
 
     @Test

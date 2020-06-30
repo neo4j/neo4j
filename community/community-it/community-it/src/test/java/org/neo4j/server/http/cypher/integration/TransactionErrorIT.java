@@ -21,6 +21,8 @@ package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,8 +46,9 @@ import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
  */
 public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBase
 {
-    @Test
-    public void begin__commit_with_invalid_cypher() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void begin__commit_with_invalid_cypher( String txUri ) throws Exception
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -63,8 +66,9 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
-    @Test
-    public void begin__commit_with_malformed_json() throws Exception
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void begin__commit_with_malformed_json( String txUri ) throws Exception
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -81,9 +85,10 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
-    @Test
-    public void begin_and_execute_periodic_commit_that_fails() throws Exception
+    public void begin_and_execute_periodic_commit_that_fails( String txUri ) throws Exception
     {
         File file = File.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv").getAbsoluteFile();
         try

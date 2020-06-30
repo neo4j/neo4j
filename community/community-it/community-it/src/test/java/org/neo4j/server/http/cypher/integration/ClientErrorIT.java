@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -38,65 +39,57 @@ import static org.neo4j.server.http.cypher.integration.TransactionConditions.has
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-@RunWith( Parameterized.class )
 public class ClientErrorIT extends AbstractRestFunctionalTestBase
 {
     private static final int UNIQUE_ISBN = 12345;
 
-    @Parameterized.Parameter( 0 )
-    public String query;
-
-    @Parameterized.Parameter( 1 )
-    public Status errorStatus;
-
-    @Parameterized.Parameters( name = "{0} should cause {1}" )
-    public static List<Object[]> queriesWithStatuses()
+    private static Stream<Arguments> argumentsProvider()
     {
-        return Arrays.asList(
-                new Object[]{
+        return Stream.of(
+                Arguments.of(
                         "Not a valid query",
                         Status.Statement.SyntaxError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "RETURN $foo",
                         Status.Statement.ParameterMissing
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "MATCH (n) WITH n.prop AS n2 RETURN n2.prop",
                         Status.Statement.TypeError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "CYPHER 1.9 EXPLAIN MATCH n RETURN n",
                         Status.Statement.SyntaxError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "RETURN 10 / 0",
                         Status.Statement.ArithmeticError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "SHOW DATABASES",
                         Status.Statement.NotSystemDatabaseError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "CREATE INDEX FOR (n:Person) ON (n.name)",
                         Status.Transaction.ForbiddenDueToTransactionType
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "CREATE (n:``)",
                         Status.Statement.SyntaxError
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})",
                         Status.Schema.ConstraintValidationFailed
-                },
-                new Object[]{
+                ),
+                Arguments.of(
                         "LOAD CSV FROM 'http://127.0.0.1/null/' AS line CREATE (a {name:line[0]})", // invalid for json
                         Status.Request.InvalidFormat
-                }
+                )
         );
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void prepareDatabase()
     {
         POST( txCommitUri(), quotedJson(
@@ -109,8 +102,9 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 "{'statements': [{'statement': 'CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})'}]}" ) );
     }
 
-    @Test
-    public void clientErrorShouldRollbackTheTransaction() throws JsonParseException
+    @ParameterizedTest( name = "{0} should cause {1}" )
+    @MethodSource( "argumentsProvider" )
+    public void clientErrorShouldRollbackTheTransaction( String query, Status errorStatus ) throws JsonParseException
     {
         // Given
         HTTP.Response first = POST( txUri(), quotedJson( "{'statements': [{'statement': 'CREATE (n {prop : 1})'}]}" ) );

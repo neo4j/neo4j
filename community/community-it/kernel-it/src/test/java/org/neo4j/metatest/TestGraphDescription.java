@@ -19,10 +19,10 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -44,24 +44,24 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 
 public class TestGraphDescription implements GraphHolder
 {
     private static GraphDatabaseService graphdb;
-    @Rule
+    @RegisterExtension
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
     private static DatabaseManagementService managementService;
 
     @Test
     public void havingNoGraphAnnotationCreatesAnEmptyDataCollection()
     {
-        assertTrue( "collection was not empty", data.get().isEmpty() );
+        assertTrue( data.get().isEmpty(), "collection was not empty" );
     }
 
     @Test
@@ -113,9 +113,9 @@ public class TestGraphDescription implements GraphHolder
 
         try ( Transaction tx = graphdb.beginTx() )
         {
-            assertTrue( "Person label missing", tx.getNodeById( a.getId() ).hasLabel( label( "Person" ) ) );
-            assertTrue( "Banana label missing", tx.getNodeById( b.getId() ).hasLabel( label( "Banana" ) ) );
-            assertTrue( "Apple label missing", tx.getNodeById( b.getId() ).hasLabel( label( "Apple" ) ) );
+            assertTrue( tx.getNodeById( a.getId() ).hasLabel( label( "Person" ) ), "Person label missing" );
+            assertTrue( tx.getNodeById( b.getId() ).hasLabel( label( "Banana" ) ), "Banana label missing" );
+            assertTrue( tx.getNodeById( b.getId() ).hasLabel( label( "Apple" ) ), "Apple label missing" );
         }
     }
 
@@ -125,41 +125,40 @@ public class TestGraphDescription implements GraphHolder
         Map<String, Node> graph = data.get();
         try ( Transaction tx = graphdb.beginTx() )
         {
-            assertEquals( "Wrong graph size.", 2, graph.size() );
+            assertEquals( 2, graph.size(), "Wrong graph size." );
             Node iNode = tx.getNodeById( graph.get( "I" ).getId() );
-            assertNotNull( "The node 'I' was not defined", iNode );
+            assertNotNull( iNode, "The node 'I' was not defined" );
             Node you = tx.getNodeById( graph.get( "you" ).getId() );
-            assertNotNull( "The node 'you' was not defined", you );
-            assertEquals( "'I' has wrong 'name'.", myName, iNode.getProperty( "name" ) );
-            assertEquals( "'you' has wrong 'name'.", "you",
-                    you.getProperty( "name" ) );
+            assertNotNull( you, "The node 'you' was not defined" );
+            assertEquals( myName, iNode.getProperty( "name" ), "'I' has wrong 'name'." );
+            assertEquals( "you", you.getProperty( "name" ), "'you' has wrong 'name'." );
 
             Iterator<Relationship> rels = iNode.getRelationships().iterator();
-            assertTrue( "'I' has too few relationships", rels.hasNext() );
+            assertTrue( rels.hasNext(), "'I' has too few relationships" );
             Relationship rel = rels.next();
-            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( iNode ) );
-            assertEquals( "Wrong relationship type.", type, rel.getType().name() );
-            assertFalse( "'I' has too many relationships", rels.hasNext() );
+            assertEquals( you, rel.getOtherNode( iNode ), "'I' is not related to 'you'" );
+            assertEquals( type, rel.getType().name(), "Wrong relationship type." );
+            assertFalse( rels.hasNext(), "'I' has too many relationships" );
 
             rels = you.getRelationships().iterator();
-            assertTrue( "'you' has too few relationships", rels.hasNext() );
+            assertTrue( rels.hasNext(), "'you' has too few relationships" );
             rel = rels.next();
-            assertEquals( "'you' is not related to 'i'", iNode, rel.getOtherNode( you ) );
-            assertEquals( "Wrong relationship type.", type, rel.getType().name() );
-            assertFalse( "'you' has too many relationships", rels.hasNext() );
+            assertEquals( iNode, rel.getOtherNode( you ), "'you' is not related to 'i'" );
+            assertEquals( type, rel.getType().name(), "Wrong relationship type." );
+            assertFalse( rels.hasNext(), "'you' has too many relationships" );
 
-            assertEquals( "wrong direction", iNode, rel.getStartNode() );
+            assertEquals( iNode, rel.getStartNode(), "wrong direction" );
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startDatabase()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopDatabase()
     {
         if ( graphdb != null )

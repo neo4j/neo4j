@@ -143,7 +143,7 @@ public class TransportWriteThrottleTest
     }
 
     @Test
-    void shouldLockWhenNotWritable() throws Exception
+    void shouldLockWhenNotWritable()
     {
         // given
         TestThrottleLock lockOverride = new TestThrottleLock();

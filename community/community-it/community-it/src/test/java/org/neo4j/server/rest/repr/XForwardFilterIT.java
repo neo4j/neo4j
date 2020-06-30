@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -36,8 +36,8 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XForwardFilterIT extends AbstractRestFunctionalTestBase
 {
@@ -46,13 +46,13 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
 
     private static GraphDbHelper helper;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer()
     {
         helper = new FunctionalTestHelper( container() ).getGraphDbHelper();
     }
 
-    @Before
+    @BeforeEach
     public void setupTheDatabase()
     {
         helper.createRelationship( "RELATES_TO", helper.createNode(), helper.createNode() );

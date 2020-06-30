@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.web.HttpMethod;
 import org.neo4j.test.server.HTTP;
@@ -27,7 +27,7 @@ import org.neo4j.test.server.HTTP;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_HEADERS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_METHODS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -129,12 +129,12 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
         assertEquals( "Accept, X-Not-Accept", response.header( ACCESS_CONTROL_ALLOW_HEADERS ) );
     }
 
-    private void testCorsAllowMethods( HttpMethod method ) throws Exception
+    private void testCorsAllowMethods( HttpMethod method )
     {
         testCorsAllowMethods( method, "*" );
     }
 
-    private void testCorsAllowMethods( HttpMethod method, String origin ) throws Exception
+    private void testCorsAllowMethods( HttpMethod method, String origin )
     {
         HTTP.Builder requestBuilder = HTTP.withBasicAuth( "authDisabled", "authDisabled" )
                 .withHeaders( ACCESS_CONTROL_REQUEST_METHOD, method.toString() );

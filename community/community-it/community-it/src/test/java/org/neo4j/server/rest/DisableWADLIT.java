@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -27,7 +27,7 @@ import java.net.http.HttpRequest;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DisableWADLIT extends AbstractRestFunctionalTestBase
 {

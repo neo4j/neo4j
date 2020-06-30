@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import org.junit.Rule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -44,10 +45,10 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase implements GraphHolder
 {
-    @Rule
+    @RegisterExtension
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
 
-    @Rule
+    @RegisterExtension
     public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @Override
