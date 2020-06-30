@@ -1099,7 +1099,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         do
         {
             SeekDepthMonitor depthMonitor = new SeekDepthMonitor();
-            try ( Seeker<KEY,VALUE> seek = seekInternal( fromInclusive, toExclusive, cursorTracer, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
+            KEY localFrom = layout.copyKey( fromInclusive, layout.newKey() );
+            KEY localTo = layout.copyKey( toExclusive, layout.newKey() );
+            try ( Seeker<KEY,VALUE> seek = seekInternal( localFrom, localTo, cursorTracer, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
             {
                 if ( depthMonitor.reachedLeafLevel )
                 {
