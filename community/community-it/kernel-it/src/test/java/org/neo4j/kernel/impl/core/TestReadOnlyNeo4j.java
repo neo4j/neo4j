@@ -143,7 +143,7 @@ class TestReadOnlyNeo4j
 
     private void createIndex()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .build();
@@ -170,7 +170,7 @@ class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .build();
@@ -194,7 +194,7 @@ class TestReadOnlyNeo4j
 
     private DatabaseManagementService dbmsReadOnly( LogProvider logProvider )
     {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .setConfig( GraphDatabaseSettings.read_only, true )
@@ -204,7 +204,7 @@ class TestReadOnlyNeo4j
 
     private DatabaseManagementService dbmsReadOnly()
     {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .setConfig( GraphDatabaseSettings.read_only, true )
@@ -213,7 +213,7 @@ class TestReadOnlyNeo4j
 
     private DatabaseManagementService dbms()
     {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();

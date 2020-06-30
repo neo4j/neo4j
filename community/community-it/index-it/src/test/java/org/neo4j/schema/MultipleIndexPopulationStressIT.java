@@ -168,7 +168,7 @@ class MultipleIndexPopulationStressIT
         populateDbAndIndexes( nodeCount );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Config config = Config.newBuilder()
-                .set( neo4j_home, directory.homeDir().toPath() )
+                .set( neo4j_home, directory.homePath() )
                 .set( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .build();
         Result result = cc.runFullConsistencyCheck( DatabaseLayout.of( config ),
@@ -181,7 +181,7 @@ class MultipleIndexPopulationStressIT
     private void populateDbAndIndexes( int nodeCount ) throws InterruptedException
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+                new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -218,7 +218,7 @@ class MultipleIndexPopulationStressIT
     private void dropIndexes()
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( directory.homePath() )
                         .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                         .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -304,7 +304,7 @@ class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws Exception
     {
-        Config config = Config.defaults( neo4j_home, directory.homeDir().toPath() );
+        Config config = Config.defaults( neo4j_home, directory.homePath() );
         RecordFormats recordFormats = RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         try ( RandomDataInput input = new RandomDataInput( count );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
@@ -381,7 +381,7 @@ class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException
+        public Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator )
         {
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }

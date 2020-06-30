@@ -119,7 +119,7 @@ class HttpCopierTest
     {
         wireMock = new WireMockServer( TEST_PORT );
         wireMock.start();
-        Path dir = directory.homeDir().toPath();
+        Path dir = directory.homePath();
         PrintStream out = new PrintStream( NULL_OUTPUT_STREAM );
         ctx = new ExecutionContext( dir, dir, out, out, fs );
     }

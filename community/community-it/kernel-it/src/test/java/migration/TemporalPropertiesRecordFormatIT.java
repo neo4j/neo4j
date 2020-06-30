@@ -21,7 +21,7 @@ package migration;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -49,7 +49,7 @@ class TemporalPropertiesRecordFormatIT
     @Test
     void createDatePropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
@@ -76,7 +76,7 @@ class TemporalPropertiesRecordFormatIT
     @Test
     void createDateArrayOnLatestDatabase()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
@@ -105,7 +105,7 @@ class TemporalPropertiesRecordFormatIT
         managementService.shutdown();
     }
 
-    private static DatabaseManagementService startDatabaseService( File storeDir )
+    private static DatabaseManagementService startDatabaseService( Path storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).build();
     }

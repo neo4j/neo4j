@@ -20,6 +20,7 @@
 package org.neo4j.harness;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.harness.internal.InProcessNeo4jBuilder;
@@ -41,8 +42,18 @@ public final class Neo4jBuilders
 
     /**
      * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
+     * @deprecated Use {@link #newInProcessBuilder(Path)}.
      */
+    @Deprecated( forRemoval = true )
     public static Neo4jBuilder newInProcessBuilder( File workingDirectory )
+    {
+        return newInProcessBuilder( workingDirectory.toPath() );
+    }
+
+    /**
+     * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
+     */
+    public static Neo4jBuilder newInProcessBuilder( Path workingDirectory )
     {
         return new InProcessNeo4jBuilder( workingDirectory );
     }

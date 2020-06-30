@@ -21,7 +21,6 @@ package org.neo4j.graphdb.schema;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -52,9 +51,9 @@ class CancelIndexPopulationIT
     private TestDirectory directory;
 
     @Test
-    void shouldKeepIndexInPopulatingStateBetweenRestarts() throws InterruptedException, IOException
+    void shouldKeepIndexInPopulatingStateBetweenRestarts() throws InterruptedException
     {
-        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
         try
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
@@ -75,7 +74,7 @@ class CancelIndexPopulationIT
             dbms.shutdown();
         }
 
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
         try
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );

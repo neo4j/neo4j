@@ -25,13 +25,20 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.nio.file.Path.of;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -337,6 +344,54 @@ class FileUtilsTest
 
         assertTrue( file.createNewFile() );
         assertFalse( FileUtils.deleteFile( dir ) );
+    }
+
+    @Test
+    void copySubTree() throws IOException
+    {
+        // Setup directory structure
+        // dir/
+        // dir/file1
+        // dir/sub1/
+        // dir/sub2/
+        // dir/sub2/file2
+
+        Path dir = Files.createTempDirectory( "dir" );
+        Files.writeString( dir.resolve( "file1" ), "file1", StandardCharsets.UTF_8 );
+        Files.createDirectory( dir.resolve( "sub1" ) );
+        Path sub2 = dir.resolve( "sub2" );
+        Files.createDirectory( sub2 );
+        Files.writeString( sub2.resolve( "file2" ), "file2", StandardCharsets.UTF_8 );
+
+        // Copy
+        FileUtils.copyDirectory( dir, dir.resolve( "sub2" ) );
+
+        // Validate result
+        // dir/
+        // dir/file1
+        // dir/sub1/
+        // dir/sub2/
+        // dir/sub2/file1
+        // dir/sub2/file2
+        // dir/sub2/sub1/
+        // dir/sub2/sub2/
+        // dir/sub2/sub2/file2
+
+        Set<Path> structure = new TreeSet<>();
+        try ( Stream<Path> walk = Files.walk( dir ) )
+        {
+            walk.forEach( path -> structure.add( dir.relativize( path ) ) );
+        }
+        assertThat( structure ).containsExactly(
+                of( "" ),
+                of( "file1" ),
+                of( "sub1" ),
+                of( "sub2" ),
+                of( "sub2/file1" ),
+                of( "sub2/file2" ),
+                of( "sub2/sub1" ),
+                of( "sub2/sub2" ),
+                of( "sub2/sub2/file2" ) );
     }
 
     private File directory( String name )

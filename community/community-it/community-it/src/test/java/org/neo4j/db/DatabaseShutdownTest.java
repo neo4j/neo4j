@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
@@ -72,7 +73,7 @@ class DatabaseShutdownTest
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
-                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory().toFile(), fs );
+                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
         DatabaseManagementService managementService = factory.build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
@@ -99,7 +100,7 @@ class DatabaseShutdownTest
         private LifeSupport globalLife;
         private volatile boolean failFlush;
 
-        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File homeDirectory, FileSystemAbstraction fs )
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( Path homeDirectory, FileSystemAbstraction fs )
         {
             super( homeDirectory );
             this.fs = fs;

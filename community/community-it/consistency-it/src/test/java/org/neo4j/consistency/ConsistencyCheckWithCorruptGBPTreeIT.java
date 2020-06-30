@@ -94,7 +94,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private static final Label label = Label.label( "label" );
     private static final String propKey1 = "key1";
 
-    private static final File neo4jHome = new File( "neo4j_home" ).getAbsoluteFile();
+    private static final Path neo4jHome = Path.of( "neo4j_home" ).toAbsolutePath();
     // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0
     private EphemeralFileSystemAbstraction sourceSnapshot;
     // Database layout for database created in @BeforeAll
@@ -106,7 +106,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     void createIndex() throws Exception
     {
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        fs.mkdirs( neo4jHome );
+        fs.mkdirs( neo4jHome.toFile() );
 
         dbmsAction( neo4jHome, fs, NATIVE_BTREE10, db ->
         {
@@ -660,14 +660,14 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
         try
         {
-            final File neo4jHome = testDirectory.homeDir();
+            final Path neo4jHome = testDirectory.homePath();
             dbmsAction( neo4jHome, fs, NATIVE30, db ->
             {
                 Label label = Label.label( "label2" );
                 indexWithNumberData( db, label );
             } );
 
-            DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome.toPath() ) );
+            DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
 
             final File[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory().toFile(), NATIVE30 );
             final List<File> files = corruptIndexes( fs, true, ( tree, inspection ) -> {
@@ -681,7 +681,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
             assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
             ConsistencyCheckService.Result result =
-                    runConsistencyCheck( fs, neo4jHome, layout, NullLogProvider.getInstance(), NONE, DEFAULT );
+                    runConsistencyCheck( fs, neo4jHome.toFile(), layout, NullLogProvider.getInstance(), NONE, DEFAULT );
             for ( File file : files )
             {
                 assertResultContainsMessage( fs, result,
@@ -740,7 +740,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags );
+        return runConsistencyCheck( fs, neo4jHome.toFile(), databaseLayout, logProvider, progressFactory, consistencyFlags );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, File neo4jHome, DatabaseLayout databaseLayout,
@@ -755,7 +755,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     /**
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
-    private void dbmsAction( File neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
+    private void dbmsAction( Path neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
             Consumer<GraphDatabaseService> dbSetup )
     {
         final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( neo4jHome )

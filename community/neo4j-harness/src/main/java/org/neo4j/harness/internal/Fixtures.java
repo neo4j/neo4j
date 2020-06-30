@@ -19,10 +19,10 @@
  */
 package org.neo4j.harness.internal;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -40,39 +40,34 @@ public class Fixtures
 
     private static final String cypherSuffix = "cyp";
 
-    private final FileFilter cypherFileOrDirectoryFilter = file ->
+    private final DirectoryStream.Filter<Path> cypherFileOrDirectoryFilter = file ->
     {
-        if ( file.isDirectory() )
+        if ( Files.isDirectory( file ) )
         {
             return true;
         }
-        String[] split = file.getName().split( "\\." );
+        String[] split = file.getFileName().toString().split( "\\." );
         String suffix = split[split.length - 1];
         return suffix.equals( cypherSuffix );
     };
 
-    public void add( File fixturePath )
+    public void add( Path fixturePath )
     {
         try
         {
-            if ( fixturePath.isDirectory() )
+            if ( Files.isDirectory( fixturePath ) )
             {
-                File[] fixtureFiles = fixturePath.listFiles( cypherFileOrDirectoryFilter );
-                if ( fixtureFiles != null )
+                try ( DirectoryStream<Path> paths = Files.newDirectoryStream( fixturePath, cypherFileOrDirectoryFilter ) )
                 {
-                    for ( File file : fixtureFiles )
-                    {
-                        add( file );
-                    }
+                    paths.forEach( this::add );
                 }
                 return;
             }
-            add( Files.readString( fixturePath.toPath() ) );
+            add( Files.readString( fixturePath ) );
         }
         catch ( IOException e )
         {
-            throw new RuntimeException(
-                    "Unable to read fixture file '" + fixturePath.getAbsolutePath() + "': " + e.getMessage(), e );
+            throw new RuntimeException( "Unable to read fixture file '" + fixturePath.toAbsolutePath() + "': " + e.getMessage(), e );
         }
     }
 

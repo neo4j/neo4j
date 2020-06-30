@@ -20,11 +20,11 @@
 package org.neo4j.harness.internal;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,6 +46,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
@@ -69,7 +69,7 @@ import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 {
-    private File serverFolder;
+    private Path serverFolder;
     private final Extensions unmanagedExtentions = new Extensions();
     private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
     private final Fixtures fixtures = new Fixtures();
@@ -81,22 +81,36 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
     }
 
-    public AbstractInProcessNeo4jBuilder( File workingDir, String dataSubDir )
+    public AbstractInProcessNeo4jBuilder( Path workingDir, String dataSubDir )
     {
-        File dataDir = new File( workingDir, dataSubDir ).getAbsoluteFile();
+        Path dataDir = workingDir.resolve( dataSubDir ).toAbsolutePath();
         withWorkingDir( dataDir );
     }
 
+    @SuppressWarnings( "removal" )
     @Override
     public Neo4jBuilder withWorkingDir( File workingDirectory )
     {
-        File dataDir = new File( workingDirectory, randomFolderName() ).getAbsoluteFile();
+        return withWorkingDir( workingDirectory.toPath() );
+    }
+
+    @Override
+    public Neo4jBuilder withWorkingDir( Path workingDirectory )
+    {
+        Path dataDir = workingDirectory.resolve( randomFolderName() ).toAbsolutePath();
         setWorkingDirectory( dataDir );
         return this;
     }
 
+    @SuppressWarnings( "removal" )
     @Override
     public Neo4jBuilder copyFrom( File originalStoreDir )
+    {
+        return copyFrom( originalStoreDir.toPath() );
+    }
+
+    @Override
+    public Neo4jBuilder copyFrom( Path originalStoreDir )
     {
         try
         {
@@ -112,16 +126,16 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     @Override
     public InProcessNeo4j build()
     {
-        File userLogFile = new File( serverFolder, "neo4j.log" );
-        File internalLogFile = new File( serverFolder, "debug.log" );
+        Path userLogFile = serverFolder.resolve( "neo4j.log" );
+        Path internalLogFile = serverFolder.resolve( "debug.log" );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               OutputStream userLogOutputStream = openStream( fileSystem, userLogFile ) )
         {
             config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
-            config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toPath().toAbsolutePath() );
+            config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath() );
 
-            var certificates = new File( serverFolder, "certificates" );
+            var certificates = serverFolder.resolve( "certificates" );
             if ( disabledServer )
             {
                 config.set( HttpConnector.enabled, false );
@@ -137,7 +151,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
                 for ( SslPolicyConfig policy : policies )
                 {
                     config.set( policy.enabled, Boolean.TRUE );
-                    config.set( policy.base_directory, certificates.toPath() );
+                    config.set( policy.base_directory, certificates );
                     config.set( policy.trust_all, true );
                     config.set( policy.client_auth, ClientAuth.NONE );
                 }
@@ -206,8 +220,15 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         return this;
     }
 
+    @SuppressWarnings( "removal" )
     @Override
     public Neo4jBuilder withFixture( File cypherFileOrDirectory )
+    {
+        return withFixture( cypherFileOrDirectory.toPath() );
+    }
+
+    @Override
+    public Neo4jBuilder withFixture( Path cypherFileOrDirectory )
     {
         fixtures.add( cypherFileOrDirectory );
         return this;
@@ -254,7 +275,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         return addAll( this.extensionFactories, extensions );
     }
 
-    private void setWorkingDirectory( File workingDir )
+    private void setWorkingDirectory( Path workingDir )
     {
         setDirectory( workingDir );
         withConfig( auth_enabled, false );
@@ -270,11 +291,10 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         withConfig( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
     }
 
-    private Neo4jBuilder setDirectory( File dir )
+    private void setDirectory( Path dir )
     {
         this.serverFolder = dir;
-        config.set( neo4j_home, serverFolder.toPath().toAbsolutePath() );
-        return this;
+        config.set( neo4j_home, serverFolder.toAbsolutePath() );
     }
 
     private String randomFolderName()
@@ -282,16 +302,11 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
     }
 
-    private static StringBuilder describeJaxRsPackage( StringBuilder builder, ThirdPartyJaxRsPackage jaxRsPackage )
-    {
-        return builder.append( jaxRsPackage.getPackageName() ).append( '=' ).append( jaxRsPackage.getMountPoint() );
-    }
-
-    private static OutputStream openStream( FileSystemAbstraction fs, File file )
+    private static OutputStream openStream( FileSystemAbstraction fs, Path file )
     {
         try
         {
-            return createOrOpenAsOutputStream( fs, file, true );
+            return createOrOpenAsOutputStream( fs, file.toFile(), true );
         }
         catch ( IOException e )
         {
@@ -311,7 +326,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             GlobalProcedures procedures();
         }
 
-        private HarnessRegisteredProcs userProcs;
+        private final HarnessRegisteredProcs userProcs;
 
         Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {

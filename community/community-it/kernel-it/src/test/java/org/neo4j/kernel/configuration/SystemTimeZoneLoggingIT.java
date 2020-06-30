@@ -21,7 +21,6 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,16 +63,15 @@ class SystemTimeZoneLoggingIT
     private void checkStartLogLine( int hoursShift, String timeZoneSuffix ) throws IOException
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
-        File storeDir = testDirectory.homeDir( String.valueOf( hoursShift ) );
+        Path storeDir = testDirectory.homePath( String.valueOf( hoursShift ) );
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )
                         .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM )
                         .build();
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
-        Path databasePath = storeDir.toPath();
         Path debugLog = Paths.get( "logs", "debug.log" );
-        String debugLogLine = getLogLine( databasePath, debugLog );
+        String debugLogLine = getLogLine( storeDir, debugLog );
         assertTrue( debugLogLine.contains( timeZoneSuffix ), debugLogLine );
     }
 

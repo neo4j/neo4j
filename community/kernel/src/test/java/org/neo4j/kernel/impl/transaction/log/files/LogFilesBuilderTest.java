@@ -153,7 +153,7 @@ class LogFilesBuilderTest
     {
         File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, customLogDirectory.toPath().toAbsolutePath() )
                 .build();
         LogFiles logFiles = builder( DatabaseLayout.of( config ), fileSystem )

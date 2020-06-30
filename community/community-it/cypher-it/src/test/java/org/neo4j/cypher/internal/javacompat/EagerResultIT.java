@@ -23,9 +23,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -70,14 +70,14 @@ class EagerResultIT
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier testContextSupplier;
-    private File storeDir;
+    private Path storeDir;
     private TestVersionContext testCursorContext;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        storeDir = testDirectory.homeDir();
+        storeDir = testDirectory.homePath();
         testContextSupplier = new TestTransactionVersionContextSupplier();
         database = startRestartableDatabase();
         prepareData();

@@ -206,7 +206,7 @@ class ArchiveTest
     private DatabaseLayout layoutWithCustomTxRoot( File txLogsRoot, String databaseName )
     {
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txLogsRoot.toPath().toAbsolutePath() )
                 .set( default_database, databaseName )
                 .build();

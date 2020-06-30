@@ -23,7 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,13 +55,13 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
     @BeforeEach
     void createDb()
     {
-        managementService = createGraphDatabaseFactory( dir.homeDir() )
+        managementService = createGraphDatabaseFactory( dir.homePath() )
                 .setFileSystem( fs )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
     {
         return new TestDatabaseManagementServiceBuilder( databaseRootDir );
     }

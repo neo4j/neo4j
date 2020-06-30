@@ -73,7 +73,7 @@ class Neo4jLayoutSupportExtensionTest
     @Test
     void shouldUseDefaultConfig()
     {
-        Config defaultConfig = Config.defaults( neo4j_home, testDirectory.homeDir().toPath() );
+        Config defaultConfig = Config.defaults( neo4j_home, testDirectory.homePath() );
         Neo4jLayout defaultNeo4jLayout = Neo4jLayout.of( defaultConfig );
         DatabaseLayout defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout( defaultConfig.get( default_database ) );
 

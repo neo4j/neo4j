@@ -36,9 +36,9 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
@@ -66,12 +66,12 @@ public final class PkiUtils
         // Disallow any instance creation. Only static methods are available.
     }
 
-    public static X509Certificate[] loadCertificates( File certFile ) throws CertificateException, IOException
+    public static X509Certificate[] loadCertificates( Path certFile ) throws CertificateException, IOException
     {
         CertificateFactory certFactory = CertificateFactory.getInstance( CERTIFICATE_TYPE );
         Collection<X509Certificate> certificates = new LinkedList<>();
 
-        try ( PemReader r = new PemReader( Files.newBufferedReader( certFile.toPath() ) ) )
+        try ( PemReader r = new PemReader( Files.newBufferedReader( certFile ) ) )
         {
             for ( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
             {
@@ -84,13 +84,13 @@ public final class PkiUtils
         }
     }
 
-    public static PrivateKey loadPrivateKey( File privateKeyFile, String passPhrase ) throws IOException
+    public static PrivateKey loadPrivateKey( Path privateKeyFile, String passPhrase ) throws IOException
     {
         if ( passPhrase == null )
         {
             passPhrase = "";
         }
-        try ( PEMParser r = new PEMParser( Files.newBufferedReader( privateKeyFile.toPath() ) ) )
+        try ( PEMParser r = new PEMParser( Files.newBufferedReader( privateKeyFile ) ) )
         {
             Object pemObject = r.readObject();
             final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );

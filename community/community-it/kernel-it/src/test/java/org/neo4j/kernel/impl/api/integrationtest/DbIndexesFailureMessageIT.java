@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -132,7 +132,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     }
 
     @Override
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
     {
         return super.createGraphDatabaseFactory( databaseRootDir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -49,7 +49,7 @@ class TestTxEntries
     @Test
     void testStartEntryWrittenOnceOnRollback()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( fs )
                 .impermanent()

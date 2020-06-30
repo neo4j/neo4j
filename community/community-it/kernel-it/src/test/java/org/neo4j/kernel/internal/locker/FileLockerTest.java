@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -260,7 +261,7 @@ class FileLockerTest
     @Test
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         try
         {

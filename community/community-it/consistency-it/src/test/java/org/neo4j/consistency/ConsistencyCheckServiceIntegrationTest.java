@@ -226,7 +226,7 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Path logsDir = testDirectory.homeDir().toPath();
+        Path logsDir = testDirectory.homePath();
         Config configuration = Config.newBuilder()
                 .set( settings() )
                 .set( GraphDatabaseSettings.logs_directory, logsDir )
@@ -249,7 +249,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( settings() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         String propertyKey = "itemId";
@@ -279,7 +279,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
 
-        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.homeDir() );
+        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.homePath() );
 
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -311,7 +311,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // Given a lucene index
         GraphDatabaseService db =
-                getGraphDatabaseService( databaseLayout.databaseDirectory().toFile(),
+                getGraphDatabaseService( databaseLayout.databaseDirectory(),
                         Map.of( GraphDatabaseSettings.default_schema_provider, NATIVE30.providerName() ) );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
@@ -356,12 +356,12 @@ public class ConsistencyCheckServiceIntegrationTest
         return file;
     }
 
-    private GraphDatabaseService getGraphDatabaseService( File homeDir )
+    private GraphDatabaseService getGraphDatabaseService( Path homeDir )
     {
         return getGraphDatabaseService( homeDir, Map.of() );
     }
 
-    private GraphDatabaseService getGraphDatabaseService( File homeDir, Map<Setting<?>, Object> settings )
+    private GraphDatabaseService getGraphDatabaseService( Path homeDir, Map<Setting<?>, Object> settings )
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( homeDir );
         builder.setConfig( settings() );
@@ -374,7 +374,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( record_format, getRecordFormatName() ).build();
+                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( record_format, getRecordFormatName() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -413,7 +413,7 @@ public class ConsistencyCheckServiceIntegrationTest
         File tmpLogDir = new File( testDirectory.homeDir(), "logs" );
         fs.mkdir( tmpLogDir );
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( settings() ).build();
+                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );

@@ -21,8 +21,6 @@ package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -43,7 +41,7 @@ class FirstStartupIT
     void shouldBeEmptyWhenFirstStarted()
     {
         // When
-        File storeDir = testDir.absolutePath();
+        var storeDir = testDir.homePath().toAbsolutePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

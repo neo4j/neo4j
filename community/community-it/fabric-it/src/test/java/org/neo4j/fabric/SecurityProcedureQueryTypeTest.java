@@ -57,7 +57,7 @@ public class SecurityProcedureQueryTypeTest
     @BeforeAll
     static void beforeAll()
     {
-        databaseManagementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        databaseManagementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setConfig( GraphDatabaseSettings.auth_enabled, true ).build();
         DependencyResolver dependencyResolver = ((GraphDatabaseFacade) databaseManagementService.database( "system" )).getDependencyResolver();
         planner = dependencyResolver.resolveDependency( FabricPlanner.class );

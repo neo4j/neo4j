@@ -35,9 +35,12 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -47,6 +50,10 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.Set;
+
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.exists;
 
 public class SelfSignedCertificateFactory
 {
@@ -72,17 +79,17 @@ public class SelfSignedCertificateFactory
         Security.addProvider( PROVIDER );
     }
 
-    public static void create( File certDir )
+    public static void create( Path certDir )
     {
         create( certDir, DEFAULT_KEY_FILE_NAME, DEFAULT_CERT_FILE_NAME );
     }
 
-    public static void create( File certDir, String keyFileName, String certFileName )
+    public static void create( Path certDir, String keyFileName, String certFileName )
     {
         var certificateFactory = new SelfSignedCertificateFactory();
-        var privateKeyFile = new File( certDir, keyFileName );
-        var certificateFile = new File( certDir, certFileName );
-        if ( !privateKeyFile.exists() && !certificateFile.exists() )
+        var privateKeyFile = certDir.resolve( keyFileName );
+        var certificateFile = certDir.resolve( certFileName );
+        if ( !exists( privateKeyFile ) && !exists( certificateFile ) )
         {
             try
             {
@@ -100,7 +107,7 @@ public class SelfSignedCertificateFactory
         random = useInsecureCertificateGeneration ? new InsecureRandom() : new SecureRandom();
     }
 
-    public void createSelfSignedCertificate( File certificatePath, File privateKeyPath, String hostName )
+    public void createSelfSignedCertificate( Path certificatePath, Path privateKeyPath, String hostName )
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
         installCleanupHook( certificatePath, privateKeyPath );
@@ -139,38 +146,54 @@ public class SelfSignedCertificateFactory
      * The hook should only be installed prior to generation of self-signed certificate, and not if certificates
      * already exist.
      */
-    private static void installCleanupHook( final File certificatePath, final File privateKeyPath )
+    private static void installCleanupHook( final Path certificatePath, final Path privateKeyPath )
     {
         Runtime.getRuntime().addShutdownHook( new Thread( () ->
         {
             if ( cleanupRequired )
             {
                 System.err.println( "Cleaning up partially generated self-signed certificate..." );
-
-                if ( certificatePath.exists() )
+                try
                 {
-                    certificatePath.delete();
+                    if ( exists( certificatePath ) )
+                    {
+                        delete( certificatePath );
+                    }
+
+                    if ( exists( privateKeyPath ) )
+                    {
+                        delete( privateKeyPath );
+                    }
                 }
-
-                if ( privateKeyPath.exists() )
+                catch ( IOException e )
                 {
-                    privateKeyPath.delete();
+                    System.err.println( "Error cleaning up" );
+                    e.printStackTrace( System.err );
                 }
             }
         } ) );
     }
 
-    private void writePem( String type, byte[] encodedContent, File path ) throws IOException
+    private void writePem( String type, byte[] encodedContent, Path path ) throws IOException
     {
-        path.getParentFile().mkdirs();
-        try ( PemWriter writer = new PemWriter( new FileWriter( path ) ) )
+        Files.createDirectories( path.getParent() );
+        try ( PemWriter writer = new PemWriter( Files.newBufferedWriter( path, StandardCharsets.UTF_8 ) ) )
         {
             writer.writeObject( new PemObject( type, encodedContent ) );
             writer.flush();
         }
-        path.setReadable( false, false );
-        path.setWritable( false, false );
-        path.setReadable( true );
-        path.setWritable( true );
+        try
+        {
+            Files.setPosixFilePermissions( path, Set.of( PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ ) );
+        }
+        catch ( UnsupportedOperationException ignore )
+        {
+            // Fallback for windows
+            File file = path.toFile();
+            file.setReadable( false, false );
+            file.setWritable( false, false );
+            file.setReadable( true );
+            file.setWritable( true );
+        }
     }
 }

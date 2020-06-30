@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -137,12 +137,12 @@ public class DetectRandomSabotageIT
     private NeoStores neoStores;
     private DependencyResolver resolver;
 
-    private DatabaseManagementService getDbms( File home )
+    private DatabaseManagementService getDbms( Path home )
     {
         return addConfig( createBuilder( home ) ).build();
     }
 
-    protected TestDatabaseManagementServiceBuilder createBuilder( File home )
+    protected TestDatabaseManagementServiceBuilder createBuilder( Path home )
     {
         return new TestDatabaseManagementServiceBuilder( home );
     }
@@ -150,7 +150,7 @@ public class DetectRandomSabotageIT
     @BeforeEach
     protected void setUp()
     {
-        dbms = getDbms( directory.homeDir() );
+        dbms = getDbms( directory.homePath() );
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
 
         // Create some nodes
@@ -376,7 +376,7 @@ public class DetectRandomSabotageIT
     private ConsistencyCheckService.Result shutDownAndRunConsistencyChecker() throws ConsistencyCheckIncompleteException
     {
         dbms.shutdown();
-        Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() );
+        Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homePath() );
         Config config = addConfig( builder ).build();
         return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );

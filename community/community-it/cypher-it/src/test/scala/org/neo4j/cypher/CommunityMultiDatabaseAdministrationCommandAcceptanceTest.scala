@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import java.io.File
+import java.nio.file.Path
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -483,7 +483,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   override protected def initTest() {}
 
   private def setup(config: Config): Unit = {
-    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig( Config.newBuilder().fromConfig(config).build() ).setInternalLogProvider(logProvider).build()
+    managementService = graphDatabaseFactory(Path.of("test")).impermanent().setConfig( Config.newBuilder().fromConfig(config).build() ).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
 

@@ -21,7 +21,7 @@ package org.neo4j.harness.internal;
 
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -35,10 +35,10 @@ public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
 {
     public InProcessNeo4jBuilder()
     {
-        this( SystemUtils.getJavaIoTmpDir() );
+        this( SystemUtils.getJavaIoTmpDir().toPath() );
     }
 
-    public InProcessNeo4jBuilder( File workingDir )
+    public InProcessNeo4jBuilder( Path workingDir )
     {
         withWorkingDir( workingDir );
     }

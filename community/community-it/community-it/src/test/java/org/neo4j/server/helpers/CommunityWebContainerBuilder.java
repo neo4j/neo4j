@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.helpers;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -95,12 +95,12 @@ public class CommunityWebContainerBuilder
     public TestWebContainer build() throws IOException
     {
         checkState( dataDir != null || !persistent, "Must specify path" );
-        final File configFile = createConfigFiles();
+        final Path configFile = createConfigFiles();
 
         Log log = logProvider.getLog( getClass() );
         Config config = Config.newBuilder()
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .fromFile( configFile )
+                .fromFile( configFile.toFile() )
                 .build();
         config.setLogger( log );
         return new TestWebContainer( build( config ) );
@@ -115,7 +115,7 @@ public class CommunityWebContainerBuilder
         }
         else
         {
-            managementServiceBuilder.setDatabaseRootDirectory( new File( dataDir ) );
+            managementServiceBuilder.setDatabaseRootDirectory( Path.of( dataDir ) );
         }
         return managementServiceBuilder.setConfig( config )
                 .setInternalLogProvider( logProvider )
@@ -127,17 +127,17 @@ public class CommunityWebContainerBuilder
         return new TestDatabaseManagementServiceBuilder();
     }
 
-    private File createConfigFiles() throws IOException
+    private Path createConfigFiles() throws IOException
     {
-        File testFolder = persistent ? new File( dataDir ) : WebContainerTestUtils.createTempDir();
-        File temporaryConfigFile = WebContainerTestUtils.createTempConfigFile( testFolder );
+        Path testFolder = persistent ? Path.of( dataDir ) : WebContainerTestUtils.createTempDir();
+        Path temporaryConfigFile = WebContainerTestUtils.createTempConfigFile( testFolder );
 
         writeConfigToFile( createConfiguration( testFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
     }
 
-    public Map<String, String> createConfiguration( File temporaryFolder )
+    public Map<String, String> createConfiguration( Path temporaryFolder )
     {
         Map<String, String> properties = stringMap(
                 ServerSettings.db_api_path.name(), dbUri,
@@ -167,25 +167,25 @@ public class CommunityWebContainerBuilder
         properties.put( HttpsConnector.enabled.name(), String.valueOf( httpsEnabled ) );
         properties.put( HttpsConnector.listen_address.name(), httpsAddress.toString() );
 
-        properties.put( GraphDatabaseSettings.neo4j_home.name(), temporaryFolder.getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.neo4j_home.name(), temporaryFolder.toAbsolutePath().toString() );
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
 
         if ( httpsEnabled )
         {
-            var certificates = new File( temporaryFolder, "certificates" );
+            var certificates = temporaryFolder.resolve( "certificates" );
             SelfSignedCertificateFactory.create( certificates );
             SslPolicyConfig policy = SslPolicyConfig.forScope( SslPolicyScope.HTTPS );
             properties.put( policy.enabled.name(), Boolean.TRUE.toString() );
-            properties.put( policy.base_directory.name(), certificates.getAbsolutePath() );
+            properties.put( policy.base_directory.name(), certificates.toAbsolutePath().toString() );
             properties.put( policy.trust_all.name(), SettingValueParsers.TRUE );
             properties.put( policy.client_auth.name(), ClientAuth.NONE.name() );
         }
 
         properties.put( GraphDatabaseSettings.logs_directory.name(),
-                new File( temporaryFolder, "logs" ).getAbsolutePath() );
+                temporaryFolder.resolve( "logs" ).toAbsolutePath().toString() );
         properties.put( GraphDatabaseSettings.transaction_logs_root_path.name(),
-                new File( temporaryFolder, "transaction-logs" ).getAbsolutePath() );
+                temporaryFolder.resolve( "transaction-logs" ).toAbsolutePath().toString() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         properties.put( GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "0s" );
 

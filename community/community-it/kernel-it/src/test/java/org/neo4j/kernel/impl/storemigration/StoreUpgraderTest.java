@@ -394,7 +394,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
                 .set( default_database, databaseLayout.getDatabaseName() )
                 .build();
@@ -424,7 +424,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
                 .set( default_database, databaseLayout.getDatabaseName() )
                 .build();

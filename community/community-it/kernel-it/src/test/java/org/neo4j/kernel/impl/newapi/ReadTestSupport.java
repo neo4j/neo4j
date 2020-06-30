@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -48,7 +48,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     }
 
     @Override
-    public void setup( File storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate )
+    public void setup( Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate )
     {
         DatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
         databaseManagementServiceBuilder.setConfig( settings );
@@ -59,7 +59,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
         sysCreate.accept( sysDb );
     }
 
-    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( Path storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
     }

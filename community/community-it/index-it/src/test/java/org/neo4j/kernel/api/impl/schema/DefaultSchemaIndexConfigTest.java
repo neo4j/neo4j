@@ -66,7 +66,7 @@ public class DefaultSchemaIndexConfigTest
     @Before
     public void setup()
     {
-        dbBuilder = new TestDatabaseManagementServiceBuilder( directory.homeDir() );
+        dbBuilder = new TestDatabaseManagementServiceBuilder( directory.homePath() );
     }
 
     @Parameterized.Parameters( name = "{0}" )

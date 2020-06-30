@@ -68,7 +68,7 @@ class RecoveryLogIT
     {
         //Create database with forced recovery
         File tmpLogDir = testDirectory.directory("logs");
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
 
@@ -103,7 +103,7 @@ class RecoveryLogIT
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setInternalLogProvider( provider )
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );

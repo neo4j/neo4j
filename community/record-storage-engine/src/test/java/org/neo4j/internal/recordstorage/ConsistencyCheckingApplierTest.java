@@ -73,7 +73,7 @@ class ConsistencyCheckingApplierTest
     @BeforeEach
     void setUp()
     {
-        Config config = Config.defaults( neo4j_home, directory.homeDir().toPath() );
+        Config config = Config.defaults( neo4j_home, directory.homePath() );
         DatabaseLayout layout = DatabaseLayout.of( config );
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate() ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );

@@ -49,8 +49,8 @@ class PkiUtilsTest
     {
         // Given
         var sslFactory = new SelfSignedCertificateFactory();
-        var cPath = new File( testDirectory.homeDir(), "certificate" );
-        var pkPath = new File( testDirectory.homeDir(), "key" );
+        var cPath = testDirectory.homePath().resolve( "certificate" );
+        var pkPath = testDirectory.homePath().resolve( "key" );
 
         // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
@@ -71,7 +71,7 @@ class PkiUtilsTest
         // Given
         var cert = new SelfSignedCertificate( "example.com" );
 
-        var pemCertificate = cert.certificate();
+        var pemCertificate = cert.certificate().toPath();
 
         // When
         var certificates = PkiUtils.loadCertificates( pemCertificate );
@@ -86,7 +86,7 @@ class PkiUtilsTest
         // Given
         var cert = new SelfSignedCertificate( "example.com" );
 
-        var privateKey = cert.privateKey();
+        var privateKey = cert.privateKey().toPath();
 
         // When
         var pk = PkiUtils.loadPrivateKey( privateKey, null );
@@ -102,7 +102,7 @@ class PkiUtilsTest
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 
-        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile, "neo4j" );
+        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile.toPath(), "neo4j" );
         assertThat( pk.getAlgorithm() ).isEqualTo( "RSA" );
     }
 
@@ -113,7 +113,7 @@ class PkiUtilsTest
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 
-        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile, null ) );
+        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile.toPath(), null ) );
     }
 
     private void copy( URL in, File outFile ) throws IOException

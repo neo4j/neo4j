@@ -23,8 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -77,7 +77,7 @@ class CommunitySystemDatabaseIT
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .noOpSystemGraphInitializer()
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -202,7 +202,7 @@ class CommunitySystemDatabaseIT
         DatabaseManagementService managementService = null;
         try
         {
-            File disabledSystemDbDirectory = testDirectory.homeDir( "withSystemDd" );
+            Path disabledSystemDbDirectory = testDirectory.homePath( "withSystemDd" );
             managementService = new TestDatabaseManagementServiceBuilder( disabledSystemDbDirectory ).build();
             databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );

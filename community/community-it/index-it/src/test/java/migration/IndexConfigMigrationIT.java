@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +51,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -176,19 +177,16 @@ class IndexConfigMigrationIT
     @Inject
     private TestDirectory testDirectory;
 
-    private static File tempStoreDirectory() throws IOException
+    private static Path tempStoreDirectory() throws IOException
     {
-        File file = File.createTempFile( "create-db", "neo4j" );
-        File storeDir = new File( file.getAbsoluteFile().getParentFile(), file.getName() );
-        FileUtils.deleteFile( file );
-        return storeDir;
+        return Files.createTempDirectory( "create-db-neo4j" );
     }
 
     @Disabled( "Here as reference for how 3.5 db was created" )
     @Test
     void create3_5Database() throws Exception
     {
-        File storeDir = tempStoreDirectory();
+        Path storeDir = tempStoreDirectory();
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
         setSpatialConfig( builder );
 
@@ -205,9 +203,9 @@ class IndexConfigMigrationIT
         }
         dbms.shutdown();
 
-        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
-        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
-        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
+        Path zipFile = storeDir.resolveSibling( storeDir.getFileName().toString() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir.toFile(), zipFile.toFile() );
+        System.out.println( "Db created in " + zipFile.toAbsolutePath() );
     }
 
     @Test
@@ -216,7 +214,7 @@ class IndexConfigMigrationIT
         File databaseDir = databaseLayout.databaseDirectory().toFile();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
-        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try

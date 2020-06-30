@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -59,6 +60,7 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;
 
 import static java.lang.String.format;
+import static java.nio.file.Files.exists;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -192,7 +194,7 @@ public class SslPolicyLoader
 
     private KeyAndChain pemKeyAndChain( SslPolicyConfig policyConfig )
     {
-        File privateKeyFile = config.get( policyConfig.private_key ).toFile();
+        Path privateKeyFile = config.get( policyConfig.private_key );
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
         File trustedCertificatesDir = config.get( policyConfig.trusted_dir ).toFile();
 
@@ -207,7 +209,7 @@ public class SslPolicyLoader
             throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
         }
 
-        if ( policyConfig.getScope().isClientOnly() && !privateKeyFile.exists() )
+        if ( policyConfig.getScope().isClientOnly() && !exists( privateKeyFile ) )
         {
             return new KeyAndChain( null, new X509Certificate[0], trustStore );
         }
@@ -215,7 +217,7 @@ public class SslPolicyLoader
         PrivateKey privateKey;
 
         X509Certificate[] keyCertChain;
-        File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
+        Path keyCertChainFile = config.get( policyConfig.public_certificate );
 
         privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
         keyCertChain = loadCertificateChain( keyCertChainFile );
@@ -264,7 +266,7 @@ public class SslPolicyLoader
         return crls;
     }
 
-    private static X509Certificate[] loadCertificateChain( File keyCertChainFile )
+    private static X509Certificate[] loadCertificateChain( Path keyCertChainFile )
     {
         try
         {
@@ -276,7 +278,7 @@ public class SslPolicyLoader
         }
     }
 
-    private PrivateKey loadPrivateKey( File privateKeyFile, SecureString privateKeyPassword )
+    private PrivateKey loadPrivateKey( Path privateKeyFile, SecureString privateKeyPassword )
     {
         String password = privateKeyPassword != null ? privateKeyPassword.getString() : null;
 

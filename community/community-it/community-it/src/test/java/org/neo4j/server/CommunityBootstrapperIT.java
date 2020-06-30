@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -33,7 +33,7 @@ public class CommunityBootstrapperIT extends BaseBootstrapperIT
     }
 
     @Override
-    protected DatabaseManagementService newEmbeddedDbms( File homeDir )
+    protected DatabaseManagementService newEmbeddedDbms( Path homeDir )
     {
         return new TestDatabaseManagementServiceBuilder( homeDir ).build();
     }

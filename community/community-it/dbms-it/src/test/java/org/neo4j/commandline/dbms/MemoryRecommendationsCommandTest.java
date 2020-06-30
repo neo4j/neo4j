@@ -206,7 +206,7 @@ class MemoryRecommendationsCommandTest
     void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = testDirectory.homeDir().toPath();
+        Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
@@ -232,7 +232,7 @@ class MemoryRecommendationsCommandTest
     void doNotPrintRecommendationsForOffHeapWhenOnHeapIsConfigured() throws Exception
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = testDirectory.homeDir().toPath();
+        Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
@@ -278,7 +278,7 @@ class MemoryRecommendationsCommandTest
     void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
-        Path homeDir = testDirectory.homeDir().toPath();
+        Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
@@ -315,7 +315,7 @@ class MemoryRecommendationsCommandTest
     void includeAllDatabasesToMemoryRecommendations() throws IOException
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = testDirectory.homeDir().toPath();
+        Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
@@ -389,7 +389,7 @@ class MemoryRecommendationsCommandTest
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory().toFile() ).setConfig(
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory() ).setConfig(
                             default_schema_provider, schemaIndex.providerName() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             String key = "key-" + schemaIndex.name();

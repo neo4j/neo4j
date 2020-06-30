@@ -76,7 +76,7 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
         TestInstances testInstances = context.getRequiredTestInstances();
         TestDirectory testDir = getTestDirectory( context );
 
-        Config config = Config.defaults( neo4j_home, testDir.homeDir().toPath() );
+        Config config = Config.defaults( neo4j_home, testDir.homePath() );
         Neo4jLayout neo4jLayout = Neo4jLayout.of( config );
         DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( config.get( default_database ) );
 

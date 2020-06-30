@@ -50,8 +50,8 @@ class UtilTest
     @Test
     void correctlyIdentifySameOrChildPath()
     {
-        assertTrue( isSameOrChildPath( directory.homeDir().toPath(), directory.directory( "a" ).toPath() ) );
-        assertTrue( isSameOrChildPath( directory.homeDir().toPath(), directory.homeDir().toPath() ) );
+        assertTrue( isSameOrChildPath( directory.homePath(), directory.directory( "a" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.homePath(), directory.homePath() ) );
         assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(), directory.directory( "a/b" ).toPath() ) );
         assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(), directory.directory( "/a/./b" ).toPath() ) );
 

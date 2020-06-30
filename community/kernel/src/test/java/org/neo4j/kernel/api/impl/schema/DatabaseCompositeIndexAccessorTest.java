@@ -148,7 +148,7 @@ public class DatabaseCompositeIndexAccessorTest
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystemRule, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
                 RecoveryCleanupWorkCollector.ignore() );
         dir.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
-        Config config = Config.defaults( neo4j_home, dir.homeDir().toPath() );
+        Config config = Config.defaults( neo4j_home, dir.homePath() );
         DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );
         DatabaseExtensions extensions = new DatabaseExtensions( context, indexProviderFactories, deps, ExtensionFailureStrategies.fail() );
 

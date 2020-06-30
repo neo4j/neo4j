@@ -56,7 +56,7 @@ class Neo4jLayoutTest
     @Test
     void storeLayoutResolvesLinks() throws IOException
     {
-        Path basePath = testDirectory.homeDir().toPath();
+        Path basePath = testDirectory.homePath();
         Path storeDir = testDirectory.homePath("notAbsolute");
         Path linkPath = basePath.resolve( "link" );
         Path symbolicLink = Files.createSymbolicLink( linkPath, storeDir );

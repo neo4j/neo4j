@@ -1843,7 +1843,7 @@ class ImportCommandTest
         runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
-        File internalLogFile = Config.defaults( neo4j_home, testDirectory.homeDir().toPath() ).get( store_internal_log_path ).toFile();
+        File internalLogFile = Config.defaults( neo4j_home, testDirectory.homePath() ).get( store_internal_log_path ).toFile();
         assertTrue( internalLogFile.exists() );
         List<String> lines = Files.readAllLines( internalLogFile.toPath() );
         assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
@@ -2458,7 +2458,7 @@ class ImportCommandTest
     {
         if ( managementService == null )
         {
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                     .setConfig( GraphDatabaseSettings.default_database, defaultDatabaseName ).build();
         }
         return (GraphDatabaseAPI) managementService.database( defaultDatabaseName );
@@ -2466,7 +2466,7 @@ class ImportCommandTest
 
     private void runImport( String... arguments )
     {
-        runImport( testDirectory.homeDir().toPath().toAbsolutePath(), arguments );
+        runImport( testDirectory.homePath().toAbsolutePath(), arguments );
     }
 
     private void runImport( Path homeDir, String... arguments )

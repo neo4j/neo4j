@@ -27,6 +27,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -119,7 +120,7 @@ public class JUnitRuleTestIT
     public void shouldRuleWorkWithExistingDirectory() throws Throwable
     {
         // given a root folder, create /databases/neo4j folders.
-        File oldLayout = testDirectory.homeDir( "old" );
+        Path oldLayout = testDirectory.homePath( "old" );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( oldLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -134,7 +135,7 @@ public class JUnitRuleTestIT
         }
 
         // When a rule with an pre-populated graph db directory is used
-        File newLayout = testDirectory.homeDir( "new" );
+        Path newLayout = testDirectory.homePath( "new" );
         final Neo4jRule ruleWithDirectory = new Neo4jRule( newLayout ).copyFrom( oldLayout );
         Statement statement = ruleWithDirectory.apply( new Statement()
         {

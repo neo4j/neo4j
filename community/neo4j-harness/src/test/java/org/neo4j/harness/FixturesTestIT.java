@@ -24,12 +24,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -42,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @TestDirectoryExtension
@@ -54,14 +56,14 @@ class FixturesTestIT
     private TestDirectory testDir;
 
     @Test
-    void shouldAccepSingleCypherFileAsFixture() throws Exception
+    void shouldAcceptSingleCypherFileAsFixture() throws Exception
     {
         // Given
-        File targetFolder = testDir.homeDir();
-        File fixture = new File( targetFolder, "fixture.cyp" );
-        FileUtils.writeToFile(fixture,
+        Path targetFolder = testDir.homePath();
+        Path fixture = targetFolder.resolve( "fixture.cyp" );
+        writeFixture( fixture,
                 "CREATE (u:User)" +
-                "CREATE (a:OtherUser)", false);
+                "CREATE (a:OtherUser)" );
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder ).withFixture( fixture ).build() )
@@ -79,17 +81,14 @@ class FixturesTestIT
     void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
-        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
-                false );
-        FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
-                false );
+        Path targetFolder = testDir.homePath();
+        writeFixture( targetFolder.resolve( "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)" );
+        writeFixture( targetFolder.resolve( "fixture2.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)" );
 
         // And given one file in a sub directory
-        File subDir = new File( targetFolder, "subdirectory" );
-        subDir.mkdir();
-        FileUtils.writeToFile( new File( subDir, "subDirFixture.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
-                false );
+        Path subDir = targetFolder.resolve( "subdirectory" );
+        Files.createDirectories( subDir );
+        writeFixture( subDir.resolve( "subDirFixture.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)" );
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder ).withFixture( targetFolder ).build() )
@@ -106,15 +105,15 @@ class FixturesTestIT
     void shouldHandleMultipleFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
-        File fixture1 = new File( targetFolder, "fixture1.cyp" );
-        FileUtils.writeToFile( fixture1,
+        Path targetFolder = testDir.homePath();
+        Path fixture1 = targetFolder.resolve( "fixture1.cyp" );
+        writeFixture( fixture1,
                 "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
-        File fixture2 = new File( targetFolder, "fixture2.cyp" );
-        FileUtils.writeToFile( fixture2,
+                "CREATE (a:OtherUser)" );
+        Path fixture2 = targetFolder.resolve( "fixture2.cyp" );
+        writeFixture( fixture2,
                 "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
+                "CREATE (a:OtherUser)" );
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder )
@@ -134,7 +133,7 @@ class FixturesTestIT
     void shouldHandleStringFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
+        Path targetFolder = testDir.homePath();
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder )
@@ -153,10 +152,9 @@ class FixturesTestIT
     void shouldIgnoreEmptyFixtureFiles() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
-        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
-                false );
-        FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "", false );
+        Path targetFolder = testDir.homePath();
+        writeFixture( targetFolder.resolve( "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)" );
+        writeFixture( targetFolder.resolve( "fixture2.cyp" ), "" );
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder )
@@ -174,8 +172,8 @@ class FixturesTestIT
     void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
-        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "this is not a valid cypher statement", false );
+        Path targetFolder = testDir.homePath();
+        writeFixture( targetFolder.resolve( "fixture1.cyp" ), "this is not a valid cypher statement" );
 
         // When
         try ( Neo4j ignore = getServerBuilder( targetFolder )
@@ -195,7 +193,7 @@ class FixturesTestIT
     void shouldHandleFunctionFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.homeDir();
+        Path targetFolder = testDir.homePath();
 
         // When
         try ( Neo4j server = getServerBuilder( targetFolder )
@@ -218,14 +216,18 @@ class FixturesTestIT
         }
     }
 
-    private Neo4jBuilder getServerBuilder( File targetFolder )
+    private Neo4jBuilder getServerBuilder( Path targetFolder )
     {
-        SelfSignedCertificateFactory.create( testDir.homeDir() );
-        return newInProcessBuilder( targetFolder )
+        SelfSignedCertificateFactory.create( testDir.homePath() );
+        return Neo4jBuilders.newInProcessBuilder( targetFolder )
                 .withConfig( SslPolicyConfig.forScope( BOLT ).enabled, Boolean.TRUE )
-                .withConfig( SslPolicyConfig.forScope( BOLT ).base_directory, testDir.homeDir().toPath() )
+                .withConfig( SslPolicyConfig.forScope( BOLT ).base_directory, testDir.homePath() )
                 .withConfig( SslPolicyConfig.forScope( HTTPS ).enabled, Boolean.TRUE )
-                .withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, testDir.homeDir().toPath() );
+                .withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, testDir.homePath() );
     }
 
+    private static void writeFixture( Path fixture, String cypher ) throws IOException
+    {
+        Files.writeString( fixture, cypher, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING );
+    }
 }

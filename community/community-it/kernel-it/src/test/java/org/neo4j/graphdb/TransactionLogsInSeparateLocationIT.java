@@ -59,15 +59,15 @@ class TransactionLogsInSeparateLocationIT
     {
         File txDirectory = testDirectory.directory( "transaction-logs" );
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txDirectory.toPath().toAbsolutePath() )
                 .build();
         DatabaseLayout layout = DatabaseLayout.of( config );
-        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory().toFile() );
+        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory() );
         verifyTransactionLogs( layout.getTransactionLogsDirectory().toFile(), layout.databaseDirectory().toFile(), storageEngineFactory );
     }
 
-    private static StorageEngineFactory performTransactions( Path txPath, File storeDir )
+    private static StorageEngineFactory performTransactions( Path txPath, Path storeDir )
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )

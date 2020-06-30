@@ -19,7 +19,6 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
@@ -61,7 +60,7 @@ import static java.lang.Boolean.FALSE;
  */
 public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
 {
-    private static final File EPHEMERAL_PATH = new File( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    private static final Path EPHEMERAL_PATH = Path.of( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
     public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
     public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
@@ -76,22 +75,17 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder()
     {
-        super( null );
-    }
-
-    public TestDatabaseManagementServiceBuilder( File homeDirectory )
-    {
-        super( homeDirectory );
+        super( (Path) null );
     }
 
     public TestDatabaseManagementServiceBuilder( Path homeDirectory )
     {
-        super( homeDirectory.toFile() );
+        super( homeDirectory );
     }
 
     public TestDatabaseManagementServiceBuilder( Neo4jLayout layout )
     {
-        super( layout.homeDirectory().toFile() );
+        super( layout.homeDirectory() );
         setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory() );
         setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory() );
     }
@@ -105,7 +99,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     public DatabaseManagementService build()
     {
-        Config cfg = config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
+        Config cfg = config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath() )
                 .fromConfig( fromConfig )
                 .build();
 
@@ -158,7 +152,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return fileSystem;
     }
 
-    public File getHomeDirectory()
+    public Path getHomeDirectory()
     {
         return homeDirectory;
     }
@@ -169,7 +163,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
-    public TestDatabaseManagementServiceBuilder setDatabaseRootDirectory( File storeDir )
+    public TestDatabaseManagementServiceBuilder setDatabaseRootDirectory( Path storeDir )
     {
         this.homeDirectory = storeDir;
         return this;

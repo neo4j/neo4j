@@ -120,7 +120,7 @@ class FileWatchIT
         DatabaseManagementService service = null;
         try
         {
-            service = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir( "failed-start-db" ) )
+            service = new TestDatabaseManagementServiceBuilder( testDirectory.homePath( "failed-start-db" ) )
                     .setInternalLogProvider( logProvider )
                     .setFileSystem( new NonWatchableFileSystemAbstraction() )
                     .build();
@@ -234,7 +234,7 @@ class FileWatchIT
         DatabaseManagementService service = null;
         try
         {
-            service = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir( "failed-start-db" ) )
+            service = new TestDatabaseManagementServiceBuilder( testDirectory.homePath( "failed-start-db" ) )
                     .setInternalLogProvider( logProvider )
                     .setFileSystem( new NonWatchableFileSystemAbstraction() )
                     .setConfig( GraphDatabaseSettings.filewatcher_enabled, false )

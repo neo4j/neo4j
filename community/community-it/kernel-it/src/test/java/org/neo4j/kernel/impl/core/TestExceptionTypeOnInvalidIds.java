@@ -26,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,8 +62,8 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        File writableLayout = testDirectory.homeDir( "writable" );
-        File readOnlyLayout = testDirectory.homeDir( "readOnly" );
+        Path writableLayout = testDirectory.homePath( "writable" );
+        Path readOnlyLayout = testDirectory.homePath( "readOnly" );
         managementService = new TestDatabaseManagementServiceBuilder( writableLayout ).build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManagementService managementService1 = new TestDatabaseManagementServiceBuilder( readOnlyLayout ).build();

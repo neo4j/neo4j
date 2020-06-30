@@ -75,7 +75,7 @@ class CheckConsistencyCommandIT
     @BeforeEach
     void setUp()
     {
-        homeDir = testDirectory.homeDir().toPath();
+        homeDir = testDirectory.homePath();
         confPath = testDirectory.directory( "conf" ).toPath();
         prepareDatabase( neo4jLayout.databaseLayout( "mydb" ) );
     }

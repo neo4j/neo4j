@@ -65,13 +65,13 @@ class RecoveryRequiredCheckerTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private File storeDir;
+    private Path storeDir;
     private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
 
     @BeforeEach
     void setup()
     {
-        storeDir = testDirectory.homeDir();
+        storeDir = testDirectory.homePath();
     }
 
     @Test
@@ -119,7 +119,7 @@ class RecoveryRequiredCheckerTest
     {
         File customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, testDirectory.homeDir().toPath() )
+                .set( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, customTransactionLogsLocation.toPath().toAbsolutePath() )
                 .build();
         recoverBrokenStoreWithConfig( config );
@@ -294,7 +294,7 @@ class RecoveryRequiredCheckerTest
         return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory );
     }
 
-    private static EphemeralFileSystemAbstraction createSomeDataAndCrash( File store, Config config ) throws IOException
+    private static EphemeralFileSystemAbstraction createSomeDataAndCrash( Path store, Config config ) throws IOException
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
@@ -316,14 +316,14 @@ class RecoveryRequiredCheckerTest
         }
     }
 
-    private static DatabaseManagementService startDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    private static DatabaseManagementService startDatabase( FileSystemAbstraction fileSystem, Path storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( fileSystem )
                 .build();
     }
 
-    private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    private static void startStopDatabase( FileSystemAbstraction fileSystem, Path storeDir )
     {
         DatabaseManagementService managementService = startDatabase( fileSystem, storeDir );
         managementService.shutdown();

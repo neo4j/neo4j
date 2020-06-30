@@ -587,7 +587,7 @@ class BatchInsertTest
     {
         Config config = Config.newBuilder()
                 .set( preallocate_logical_logs, false )
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .build();
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, config );
         inserter.shutdown();

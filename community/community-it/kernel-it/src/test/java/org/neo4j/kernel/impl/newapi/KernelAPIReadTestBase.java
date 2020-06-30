@@ -111,7 +111,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homeDir(), this::createTestGraph, this::createSystemGraph );
+            testSupport.setup( testDirectory.homePath(), this::createTestGraph, this::createSystemGraph );
         }
         changeUser( LoginContext.AUTH_DISABLED );
     }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -71,7 +72,7 @@ class KernelDiagnosticsIT
         {
             // given
             Neo4jLayout layout = neo4jLayout;
-            createIndexInIsolatedDbInstance( layout.homeDirectory().toFile(), schemaIndex );
+            createIndexInIsolatedDbInstance( layout.homeDirectory(), schemaIndex );
 
             // when
             DatabaseLayout databaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
@@ -87,7 +88,7 @@ class KernelDiagnosticsIT
         }
     }
 
-    private static void createIndexInIsolatedDbInstance( File homeDir, GraphDatabaseSettings.SchemaIndex index )
+    private static void createIndexInIsolatedDbInstance( Path homeDir, GraphDatabaseSettings.SchemaIndex index )
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                         .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() )

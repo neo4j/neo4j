@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -82,7 +82,7 @@ class PartialTransactionFailureIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )

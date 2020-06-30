@@ -21,7 +21,7 @@ package migration;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,7 +50,7 @@ class PointPropertiesRecordFormatIT
     @Test
     void createPointPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
@@ -77,7 +77,7 @@ class PointPropertiesRecordFormatIT
     @Test
     void createPointArrayPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
@@ -106,7 +106,7 @@ class PointPropertiesRecordFormatIT
         managementService.shutdown();
     }
 
-    private static DatabaseManagementService startDatabaseService( File storeDir )
+    private static DatabaseManagementService startDatabaseService( Path storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).build();
     }

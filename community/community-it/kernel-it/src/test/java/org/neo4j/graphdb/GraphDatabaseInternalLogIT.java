@@ -53,7 +53,7 @@ class GraphDatabaseInternalLogIT
     void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         managementService.shutdown();
@@ -71,7 +71,7 @@ class GraphDatabaseInternalLogIT
     void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -94,7 +94,7 @@ class GraphDatabaseInternalLogIT
     void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
                 .setConfig( GraphDatabaseInternalSettings.store_internal_debug_contexts, List.of( getClass().getName(), "java.io" ) )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();

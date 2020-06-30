@@ -25,8 +25,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -51,8 +52,8 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 @Neo4jWithSocketExtension
 public class CertificatesIT
 {
-    private static File keyFile;
-    private static File certFile;
+    private static Path keyFile;
+    private static Path certFile;
     private static SelfSignedCertificateFactory certFactory;
     private static TransportTestUtil util;
 
@@ -66,8 +67,8 @@ public class CertificatesIT
         {
             SslPolicyConfig policy = SslPolicyConfig.forScope( BOLT );
             settings.put( policy.enabled, true );
-            settings.put( policy.public_certificate, certFile.toPath().toAbsolutePath() );
-            settings.put( policy.private_key, keyFile.toPath().toAbsolutePath() );
+            settings.put( policy.public_certificate, certFile.toAbsolutePath() );
+            settings.put( policy.private_key, keyFile.toAbsolutePath() );
             settings.put( BoltConnector.enabled, true );
             settings.put( BoltConnector.encryption_level, OPTIONAL );
             settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
@@ -109,14 +110,12 @@ public class CertificatesIT
     public static void setup() throws IOException, GeneralSecurityException, OperatorCreationException
     {
         certFactory = new SelfSignedCertificateFactory();
-        keyFile = File.createTempFile( "key", "pem" );
-        certFile = File.createTempFile( "key", "pem" );
-        keyFile.deleteOnExit();
-        certFile.deleteOnExit();
+        keyFile = Files.createTempFile( "key", "pem" );
+        certFile = Files.createTempFile( "key", "pem" );
 
         // make sure files are not there
-        keyFile.delete();
-        certFile.delete();
+        Files.delete( keyFile );
+        Files.delete( certFile );
 
         certFactory.createSelfSignedCertificate( certFile, keyFile, "my.domain" );
 

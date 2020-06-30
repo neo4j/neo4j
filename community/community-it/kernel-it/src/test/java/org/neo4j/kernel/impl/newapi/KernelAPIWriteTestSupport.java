@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,7 +35,7 @@ public interface KernelAPIWriteTestSupport
      * Create the Kernel to test in the provided directory.
      * @param storeDir The directory to hold the database
      */
-    void setup( File storeDir, Consumer<GraphDatabaseService> sysCreate );
+    void setup( Path storeDir, Consumer<GraphDatabaseService> sysCreate );
 
     /**
      * Clear the graph. Executed before each test.

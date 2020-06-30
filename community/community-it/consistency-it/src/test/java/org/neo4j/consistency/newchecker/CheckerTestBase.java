@@ -150,7 +150,7 @@ class CheckerTestBase
     @BeforeEach
     void setUpDb() throws Exception
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.homeDir() );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.homePath() );
         configure( builder );
         dbms = builder.build();
         db = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
@@ -218,7 +218,7 @@ class CheckerTestBase
 
         // We do this as late as possible because of how it eagerly caches which indexes exist so if the test creates an index
         // this lazy instantiation allows the context to pick it up
-        Config config = Config.defaults( neo4j_home, directory.homeDir().toPath() );
+        Config config = Config.defaults( neo4j_home, directory.homePath() );
         DependencyResolver dependencies = db.getDependencyResolver();
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );

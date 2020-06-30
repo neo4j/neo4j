@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
@@ -132,11 +133,11 @@ class Neo4jExtensionRegisterIT
         return Files.readString( new File( homeDir, file ).toPath() );
     }
 
-    private static File createTempDirectory()
+    private static Path createTempDirectory()
     {
         try
         {
-            return Files.createTempDirectory( REGISTERED_TEMP_PREFIX ).toFile();
+            return Files.createTempDirectory( REGISTERED_TEMP_PREFIX );
         }
         catch ( IOException e )
         {

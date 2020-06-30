@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 import org.neo4j.common.DependencyResolver;
@@ -204,12 +204,12 @@ public abstract class KernelIntegrationTest
 
     protected DatabaseManagementService createDatabaseService()
     {
-        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.homeDir() ) )
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.homePath() ) )
                 .setFileSystem( testDir.getFileSystem() );
         return configure( databaseManagementServiceBuilder ).build();
     }
 
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
     {
         return new TestDatabaseManagementServiceBuilder( databaseRootDir );
     }

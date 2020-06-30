@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -32,7 +32,7 @@ public class IndexQueryingTest extends AbstractIndexQueryingTest<ReadTestSupport
         return new ReadTestSupport()
         {
             @Override
-            protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+            protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( Path storeDir )
             {
                 return super.newManagementServiceBuilder( storeDir ).useLazyProcedures( false );
             }

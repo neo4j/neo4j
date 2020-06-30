@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.configuration;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -29,30 +29,30 @@ import org.neo4j.server.WebContainerTestUtils;
 
 public class ConfigFileBuilder
 {
-    private final File directory;
+    private final Path directory;
     private final Map<String,String> config;
 
-    public static ConfigFileBuilder builder( File directory )
+    public static ConfigFileBuilder builder( Path directory )
     {
         return new ConfigFileBuilder( directory );
     }
 
-    private ConfigFileBuilder( File directory )
+    private ConfigFileBuilder( Path directory )
     {
         this.directory = directory;
 
         //initialize config with defaults that doesn't pollute
         //workspace with generated data
         this.config = MapUtil.stringMap(
-                GraphDatabaseSettings.data_directory.name(), directory.getAbsolutePath() + "/data",
+                GraphDatabaseSettings.data_directory.name(), directory.toAbsolutePath().toString() + "/data",
                 ServerSettings.db_api_path.name(), "http://localhost:7474/db/data/" );
     }
 
-    public File build()
+    public Path build()
     {
-        File file = new File( directory, "config" );
-        WebContainerTestUtils.writeConfigToFile( config, file );
-        return file;
+        Path path = directory.resolve( "config" );
+        WebContainerTestUtils.writeConfigToFile( config, path );
+        return path;
     }
 
     public ConfigFileBuilder withNameValue( String name, String value )
@@ -61,13 +61,13 @@ public class ConfigFileBuilder
         return this;
     }
 
-    public ConfigFileBuilder withSetting( Setting setting, String value )
+    public ConfigFileBuilder withSetting( Setting<?> setting, String value )
     {
         config.put( setting.name(), value );
         return this;
     }
 
-    public ConfigFileBuilder withoutSetting( Setting setting )
+    public ConfigFileBuilder withoutSetting( Setting<?> setting )
     {
         config.remove( setting.name() );
         return this;

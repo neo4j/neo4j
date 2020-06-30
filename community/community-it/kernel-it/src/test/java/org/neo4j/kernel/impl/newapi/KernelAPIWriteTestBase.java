@@ -67,7 +67,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homeDir(), this::createSystemGraph );
+            testSupport.setup( testDirectory.homePath(), this::createSystemGraph );
             graphDb = testSupport.graphBackdoor();
         }
         testSupport.clearGraph();

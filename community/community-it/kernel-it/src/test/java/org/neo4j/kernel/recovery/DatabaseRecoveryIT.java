@@ -271,7 +271,7 @@ class DatabaseRecoveryIT
 
         Path storeDir = directory.homePath();
         DatabaseManagementService managementService =
-                AdversarialPageCacheGraphDatabaseFactory.create( storeDir.toFile(), fileSystem, adversary ).build();
+                AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -341,7 +341,7 @@ class DatabaseRecoveryIT
         // between applying transactions normally and recovering them after a crash, index update wise.
 
         // given
-        File storeDir = directory.absolutePath();
+        Path storeDir = directory.homePath().toAbsolutePath();
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( IndexProvider.EMPTY, new HashMap<>() );
         GraphDatabaseAPI db = startDatabase( storeDir, fs, updateCapturingIndexProvider );
@@ -396,7 +396,7 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();
@@ -439,7 +439,7 @@ class DatabaseRecoveryIT
             }
         } );
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setFileSystem( crashedFs ).setExternalDependencies(
+                new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( crashedFs ).setExternalDependencies(
                         dependencies ).setMonitors( monitors ).impermanent().build();
 
         managementService.shutdown();
@@ -807,7 +807,7 @@ class DatabaseRecoveryIT
         fs.copyRecursively( fromDirectory, toDirectory );
     }
 
-    private GraphDatabaseAPI startDatabase( File homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
+    private GraphDatabaseAPI startDatabase( Path homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
 
         if ( managementService != null )

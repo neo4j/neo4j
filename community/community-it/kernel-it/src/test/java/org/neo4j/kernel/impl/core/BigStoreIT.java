@@ -78,7 +78,7 @@ class BigStoreIT
 
     private void startDb()
     {
-        var builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setFileSystem( fs );
+        var builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setFileSystem( fs );
         managementService = builder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

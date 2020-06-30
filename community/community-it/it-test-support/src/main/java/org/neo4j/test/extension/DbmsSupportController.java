@@ -23,11 +23,11 @@ import org.apache.commons.lang3.ClassUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstances;
 
-import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -143,7 +143,7 @@ public class DbmsSupportController
     public DatabaseManagementService buildDbms( String configurationCallback, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
     {
         var testDir = getTestDirectory();
-        var builder = createBuilder( testDir.homeDir(), testDir.getFileSystem() );
+        var builder = createBuilder( testDir.homePath(), testDir.getFileSystem() );
         for ( Object testInstance : testInstances.getAllInstances() )
         {
             maybeInvokeCallback( testInstance, builder, configurationCallback );
@@ -155,7 +155,7 @@ public class DbmsSupportController
         return dbms;
     }
 
-    public TestDatabaseManagementServiceBuilder createBuilder( File homeDirectory, FileSystemAbstraction fileSystem )
+    public TestDatabaseManagementServiceBuilder createBuilder( Path homeDirectory, FileSystemAbstraction fileSystem )
     {
         return new TestDatabaseManagementServiceBuilder( homeDirectory ).setFileSystem( fileSystem );
     }

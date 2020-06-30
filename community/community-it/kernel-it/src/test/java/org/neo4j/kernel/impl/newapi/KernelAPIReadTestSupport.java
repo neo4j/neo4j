@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +41,7 @@ public interface KernelAPIReadTestSupport
      * @param systemCreate Method which populates the system database.
      * @throws IOException If database creation failed due to IO problems.
      */
-    void setup( File storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> systemCreate );
+    void setup( Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> systemCreate );
 
     /**
      * The Kernel to test. Called before every test.

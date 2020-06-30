@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -79,7 +79,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def startGraphDatabase(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
-    managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+    managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
     onNewGraphDatabase()
@@ -111,13 +111,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  protected def startGraphDatabase(storeDir: File): Unit = {
+  protected def startGraphDatabase(storeDir: Path): Unit = {
     managementService = graphDatabaseFactory(storeDir).impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  protected final def graphDatabaseFactory(databaseRootDir: File): TestDatabaseManagementServiceBuilder = {
+  protected final def graphDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = {
     val factory = createDatabaseFactory(databaseRootDir)
     this match {
       case custom: FakeClock =>
@@ -130,7 +130,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   /**
    * Override this method when you need an enterprise ManagementServiceBuilder
    */
-  protected def createDatabaseFactory(databaseRootDir: File): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder(databaseRootDir)
+  protected def createDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder(databaseRootDir)
 
   protected def restartWithConfig(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
     managementService.shutdown()

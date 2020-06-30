@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.io.fs.PathUtils.deleteDirectory;
+import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
@@ -73,7 +73,7 @@ class DatabaseFailureIT
     void startWhenDefaultDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deleteDirectory( databaseLayout.getTransactionLogsDirectory() );
+        deletePathRecursively( databaseLayout.getTransactionLogsDirectory() );
 
         database = startDatabase();
         DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
@@ -85,7 +85,7 @@ class DatabaseFailureIT
     void failToStartWhenSystemDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deleteDirectory( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
+        deletePathRecursively( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
         Exception startException = assertThrows( Exception.class, this::startDatabase );
         assertThat( startException ).hasCauseInstanceOf( UnableToStartDatabaseException.class );
@@ -99,7 +99,7 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setExternalDependencies( noOpSystemGraphInitializer() )
                 .build();
     }

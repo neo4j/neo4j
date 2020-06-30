@@ -20,6 +20,7 @@
 package org.neo4j.harness;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Function;
 
 import org.neo4j.annotations.api.PublicApi;
@@ -82,8 +83,18 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
+     * @deprecated Use {@link #withFixture(Path)}.
      */
+    @Deprecated( forRemoval = true )
     T withFixture( File cypherFileOrDirectory );
+
+    /**
+     * Data fixtures to inject upon server build. This can be either a file with a plain-text cypher query
+     * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
+     * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
+     * @return this configurator instance
+     */
+    T withFixture( Path cypherFileOrDirectory );
 
     /**
      * Data fixture to inject upon server build. This should be a valid Cypher statement.
@@ -105,8 +116,18 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
+     * @deprecated Use {@link #copyFrom(Path)}.
      */
+    @Deprecated( forRemoval = true )
     T copyFrom( File sourceDirectory );
+
+    /**
+     * Pre-populate the server with databases copied from the specified source directory.
+     * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
+     * @param sourceDirectory the directory to copy from
+     * @return this configurator instance
+     */
+    T copyFrom( Path sourceDirectory );
 
     /**
      * Configure the server to load the specified procedure definition class. The class should contain one or more
@@ -143,6 +164,16 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      *
      * @param workingDirectory new working directory
      * @return this configurator instance
+     * @deprecated Use {@link #withWorkingDir(Path)}.
      */
+    @Deprecated( forRemoval = true )
     T withWorkingDir( File workingDirectory );
+
+    /**
+     * Configure the Neo4j to use provided directory
+     *
+     * @param workingDirectory new working directory
+     * @return this configurator instance
+     */
+    T withWorkingDir( Path workingDirectory );
 }

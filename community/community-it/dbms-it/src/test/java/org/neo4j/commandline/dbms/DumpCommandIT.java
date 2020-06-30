@@ -104,7 +104,7 @@ class DumpCommandIT
     @BeforeEach
     void setUp()
     {
-        homeDir = testDirectory.homeDir().toPath();
+        homeDir = testDirectory.homePath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
@@ -366,7 +366,7 @@ class DumpCommandIT
     private void putStoreInDirectory( Config config, Path databaseDirectory )
     {
         String databaseName = databaseDirectory.getFileName().toString();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent().toFile() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent() )
                 .setConfig( config )
                 .setConfig( default_database, databaseName )
                 .build();

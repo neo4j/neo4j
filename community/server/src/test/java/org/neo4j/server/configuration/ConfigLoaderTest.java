@@ -26,8 +26,11 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
@@ -65,11 +68,11 @@ class ConfigLoaderTest
     void shouldProvideAConfiguration()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).build();
 
         // when
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         // then
         assertNotNull( config );
@@ -79,12 +82,12 @@ class ConfigLoaderTest
     void shouldUseSpecifiedConfigFile()
     {
         // given
-        File configFile =
-                ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( default_advertised_address.name(), "bar" ).build();
+        Path configFile =
+                ConfigFileBuilder.builder( testDirectory.homePath() ).withNameValue( default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         // then
         final String EXPECTED_VALUE = "bar";
@@ -95,11 +98,11 @@ class ConfigLoaderTest
     void shouldUseSpecifiedHomeDir()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         // then
         assertEquals( testDirectory.homeDir().getAbsolutePath(), testConf.get( neo4j_home ).toString() );
@@ -109,10 +112,10 @@ class ConfigLoaderTest
     void shouldUseWorkingDirForHomeDirIfUnspecified()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).build();
 
         // when
-        Config testConf = Config.newBuilder().fromFile( configFile ).build();
+        Config testConf = Config.newBuilder().fromFile( configFile.toFile() ).build();
 
         // then
         assertEquals( new File( System.getProperty( "user.dir" ) ).getAbsolutePath(), testConf.get( neo4j_home ).toString() );
@@ -122,13 +125,13 @@ class ConfigLoaderTest
     void shouldAcceptDuplicateKeysWithSameValue()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() )
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() )
                 .withNameValue( default_advertised_address.name(), "bar" )
                 .withNameValue( default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         // then
         assertNotNull( testConf );
@@ -140,11 +143,11 @@ class ConfigLoaderTest
     void loadOfflineConfigShouldDisableBolt()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( BoltConnector.enabled.name(), TRUE ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withNameValue( BoltConnector.enabled.name(), TRUE ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
         ConfigUtils.disableAllConnectors( testConf );
 
         // then
@@ -156,11 +159,11 @@ class ConfigLoaderTest
     void loadOfflineConfigAddDisabledBoltConnector()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).build();
 
         // when
         Config testConf =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
         ConfigUtils.disableAllConnectors( testConf );
 
         // then
@@ -172,9 +175,9 @@ class ConfigLoaderTest
     void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File file = WebContainerTestUtils.createTempConfigFile( testDirectory.homeDir() );
+        Path file = WebContainerTestUtils.createTempConfigFile( testDirectory.homePath() );
 
-        try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
+        try ( BufferedWriter out = Files.newBufferedWriter( file, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND ) )
         {
             out.write( ServerSettings.third_party_packages.name() );
             out.write( "=" );
@@ -186,8 +189,8 @@ class ConfigLoaderTest
 
         // when
         Config config = Config.newBuilder()
-                .fromFile( file )
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .fromFile( file.toFile() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .build();
 
         // then
@@ -200,13 +203,13 @@ class ConfigLoaderTest
     void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
     {
         // given
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withNameValue( ServerSettings.third_party_packages.name(),
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withNameValue( ServerSettings.third_party_packages.name(),
                 "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" ).build();
 
         // when
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -225,7 +228,7 @@ class ConfigLoaderTest
 
         // When
         assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( nonExistentConfigFile )
-                .set( neo4j_home, testDirectory.homeDir().toPath() ).build() );
+                .set( neo4j_home, testDirectory.homePath() ).build() );
    }
 
     @Test
@@ -236,7 +239,7 @@ class ConfigLoaderTest
 
         // When
         Config config = Config.newBuilder().fromFileNoThrow( nonExistentConfigFile ).set( neo4j_home,
-                testDirectory.homeDir().toPath() ).build();
+                testDirectory.homePath() ).build();
 
         // Then
         assertNotNull( config );
@@ -245,9 +248,9 @@ class ConfigLoaderTest
     @Test
     void shouldDefaultToCorrectValueForAuthStoreLocation()
     {
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withoutSetting( GraphDatabaseSettings.data_directory ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withoutSetting( GraphDatabaseSettings.data_directory ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
                 new File( testDirectory.homeDir(), "data/dbms" ).getAbsoluteFile().toPath() );
@@ -256,9 +259,9 @@ class ConfigLoaderTest
     @Test
     void shouldSetAValueForAuthStoreLocation()
     {
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).build();
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
                 new File( testDirectory.homeDir(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() );
@@ -267,10 +270,10 @@ class ConfigLoaderTest
     @Test
     void shouldNotOverwriteAuthStoreLocationIfProvided()
     {
-        File configFile = ConfigFileBuilder.builder( testDirectory.homeDir() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
+        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
                 GraphDatabaseInternalSettings.auth_store, "foo/bar/auth" ).build();
         Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homeDir().toPath() ).build();
+                Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( GraphDatabaseInternalSettings.auth_store ) ).isEqualTo(
                 new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() );

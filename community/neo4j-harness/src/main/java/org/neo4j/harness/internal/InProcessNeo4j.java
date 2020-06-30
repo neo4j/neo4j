@@ -19,13 +19,13 @@
  */
 package org.neo4j.harness.internal;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.configuration.Config;
@@ -45,15 +45,25 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 @PublicApi
 public class InProcessNeo4j implements Neo4j
 {
-    private final File serverFolder;
-    private final File userLogFile;
-    private final File internalLogFile;
+    private final Path serverFolder;
+    private final Path userLogFile;
+    private final Path internalLogFile;
     private final DatabaseManagementService managementService;
     private final Config config;
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
 
+    /**
+     * @deprecated Use {@link #InProcessNeo4j(Path, Path, Path, DatabaseManagementService, Config, Closeable)}.
+     */
+    @Deprecated( forRemoval = true )
     public InProcessNeo4j( File serverFolder, File userLogFile, File internalLogFile, DatabaseManagementService managementService, Config config,
+            Closeable additionalClosable )
+    {
+        this( serverFolder.toPath(), userLogFile.toPath(), internalLogFile.toPath(), managementService, config, additionalClosable );
+    }
+
+    public InProcessNeo4j( Path serverFolder, Path userLogFile, Path internalLogFile, DatabaseManagementService managementService, Config config,
             Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
@@ -114,9 +124,9 @@ public class InProcessNeo4j implements Neo4j
         }
         try
         {
-            if ( looksLikeMd5Hash( serverFolder.getName() ) )
+            if ( looksLikeMd5Hash( serverFolder.getFileName().toString() ) )
             {
-                FileUtils.deleteRecursively( serverFolder );
+                FileUtils.deletePathRecursively( serverFolder );
             }
         }
         catch ( IOException e )
@@ -132,15 +142,15 @@ public class InProcessNeo4j implements Neo4j
         printLog( "Internal Log File", internalLogFile, out );
     }
 
-    private static void printLog( String description, File file, PrintStream out )
+    private static void printLog( String description, Path file, PrintStream out )
     {
-        if ( file != null && file.exists() )
+        if ( file != null && Files.exists( file ) )
         {
             out.println( String.format( "---------- BEGIN %s ----------", description ) );
 
-            try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
+            try
             {
-                reader.lines().forEach( out::println );
+                Files.readAllLines( file ).forEach( out::println );
             }
             catch ( IOException ex )
             {

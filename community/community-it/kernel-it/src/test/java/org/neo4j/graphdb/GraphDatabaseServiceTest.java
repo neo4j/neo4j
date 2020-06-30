@@ -300,7 +300,7 @@ public class GraphDatabaseServiceTest
 
     private GraphDatabaseService getTemporaryDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.directory( "impermanent" ) ).impermanent()
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.directoryPath( "impermanent" ) ).impermanent()
                 .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ofSeconds( 10 ) ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

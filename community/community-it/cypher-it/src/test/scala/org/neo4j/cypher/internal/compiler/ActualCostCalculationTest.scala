@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
@@ -91,8 +90,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private val RELATIONSHIP = "REL"
 
   ignore("do the test") {
-    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestDatabaseManagementServiceBuilder(new File(path)).build()
+    val path = Files.createTempDirectory("apa").toAbsolutePath
+    val managementService = new TestDatabaseManagementServiceBuilder(path).build()
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     try {
       graph.createIndex(LABEL, PROPERTY)
@@ -125,8 +124,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   ignore("cost for eagerness") {
-    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestDatabaseManagementServiceBuilder(new File(path)).build()
+    val path = Files.createTempDirectory("apa").toAbsolutePath
+    val managementService = new TestDatabaseManagementServiceBuilder(path).build()
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     try {
       graph.createIndex(LABEL, PROPERTY)
@@ -152,8 +151,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   ignore("hash joins") {
-    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestDatabaseManagementServiceBuilder(new File(path)).build()
+    val path = Files.createTempDirectory("apa").toAbsolutePath
+    val managementService = new TestDatabaseManagementServiceBuilder(path).build()
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
     val x = ListBuffer.empty[Array[Double]]

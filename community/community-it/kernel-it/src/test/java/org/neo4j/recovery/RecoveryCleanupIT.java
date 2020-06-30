@@ -82,7 +82,7 @@ class RecoveryCleanupIT
     void setup()
     {
         testSpecificConfig.clear();
-        factory = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        factory = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
     }
 
     @AfterEach

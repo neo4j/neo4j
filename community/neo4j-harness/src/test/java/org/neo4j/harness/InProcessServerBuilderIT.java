@@ -24,9 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -34,6 +35,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -58,6 +60,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -79,7 +82,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
@@ -93,21 +95,24 @@ class InProcessServerBuilderIT
     private TestDirectory directory;
 
     @Test
-    void shouldLaunchAServerInSpecifiedDirectory()
+    void shouldLaunchAServerInSpecifiedDirectory() throws IOException
     {
         // Given
-        File workDir = directory.directory( "specific" );
+        Path workDir = directory.directoryPath( "specific" );
 
         // When
         try ( Neo4j neo4j = getTestBuilder( workDir ).build() )
         {
             // Then
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
-            assertThat( workDir.list().length ).isEqualTo( 1 );
+            try ( Stream<Path> list = Files.list( workDir ) )
+            {
+                assertThat( list.count() ).isEqualTo( 1 );
+            }
         }
 
         // And after it's been closed, it should've cleaned up after itself.
-        assertThat( workDir.list().length ).as( Arrays.toString( workDir.list() ) ).isEqualTo( 0 );
+        assertTrue( FileUtils.isDirectoryEmpty( workDir ) );
     }
 
     @Test
@@ -123,12 +128,12 @@ class InProcessServerBuilderIT
         // When
         SslPolicyConfig pem = SslPolicyConfig.forScope( HTTPS );
 
-        var certificates = directory.directory( "certificates" );
+        var certificates = directory.directoryPath( "certificates" );
         SelfSignedCertificateFactory.create( certificates, "private.key", "public.crt" );
-        new File( certificates, "trusted" ).mkdir();
-        new File( certificates, "revoked" ).mkdir();
+        Files.createDirectories( certificates.resolve( "trusted" ) );
+        Files.createDirectories(  certificates.resolve( "revoked" ) );
 
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() )
                 .withConfig( HttpConnector.enabled, true )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .withConfig( HttpsConnector.enabled, true )
@@ -136,7 +141,7 @@ class InProcessServerBuilderIT
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, 20 )
                 // override legacy policy
                 .withConfig( pem.enabled, Boolean.TRUE )
-                .withConfig( pem.base_directory, certificates.toPath() )
+                .withConfig( pem.base_directory, certificates )
                 .withConfig( pem.ciphers, defaultCiphers )
                 .withConfig( pem.tls_versions, List.of( "TLSv1.2", "TLSv1.1", "TLSv1" ) )
                 .withConfig( pem.client_auth, ClientAuth.NONE )
@@ -155,7 +160,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByClass()
     {
         // When
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() )
                 .withUnmanagedExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
                 .build() )
         {
@@ -168,7 +173,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() )
                 .withUnmanagedExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
                 .build() )
         {
@@ -180,7 +185,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithCustomExtension()
     {
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() )
                 .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
         {
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
@@ -191,7 +196,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithDisabledServer()
     {
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() ).withDisabledServer().build() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() ).withDisabledServer().build() )
         {
             assertThrows( IllegalStateException.class, neo4j::httpURI );
             assertThrows( IllegalStateException.class, neo4j::httpsURI );
@@ -212,10 +217,10 @@ class InProcessServerBuilderIT
     void shouldFindFreePort()
     {
         // Given one server is running
-        try ( Neo4j firstServer = getTestBuilder( directory.homeDir() ).build() )
+        try ( Neo4j firstServer = getTestBuilder( directory.homePath() ).build() )
         {
             // When I build a second server
-            try ( Neo4j secondServer = getTestBuilder( directory.homeDir() ).build() )
+            try ( Neo4j secondServer = getTestBuilder( directory.homePath() ).build() )
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort() ).isNotEqualTo( firstServer.httpURI().getPort() );
@@ -228,7 +233,7 @@ class InProcessServerBuilderIT
     {
         // When
         // create graph db with one node upfront
-        File existingHomeDir = directory.homeDir( "existingStore" );
+        Path existingHomeDir = directory.homePath( "existingStore" );
 
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( existingHomeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -279,7 +284,7 @@ class InProcessServerBuilderIT
     void shouldOpenBoltPort()
     {
         // given
-        try ( Neo4j neo4j = getTestBuilder( directory.homeDir() ).build() )
+        try ( Neo4j neo4j = getTestBuilder( directory.homePath() ).build() )
         {
             URI uri = neo4j.boltURI();
 
@@ -291,14 +296,12 @@ class InProcessServerBuilderIT
     @Test
     void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException
     {
-        File notADirectory = File.createTempFile( "prefix", "suffix" );
-        assertFalse( notADirectory.isDirectory() );
+        Path notADirectory = Files.createTempFile( "prefix", "suffix" );
+        assertFalse( Files.isDirectory( notADirectory ) );
 
-        RuntimeException exception =
-                assertThrows( RuntimeException.class, () -> getTestBuilder( directory.homeDir() ).copyFrom( notADirectory ).build() );
-        Throwable cause = exception.getCause();
-        assertTrue( cause instanceof IOException );
-        assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
+        IllegalArgumentException exception =
+                assertThrows( IllegalArgumentException.class, () -> getTestBuilder( directory.homePath() ).copyFrom( notADirectory ).build() );
+        assertThat( exception.getMessage() ).contains( "is not a directory" );
     }
 
     @Test
@@ -345,8 +348,8 @@ class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
-        var certificates = directory.directory( "certificates" );
-        Neo4jBuilder serverBuilder = newInProcessBuilder( directory.homeDir() )
+        var certificates = directory.directoryPath( "certificates" );
+        Neo4jBuilder serverBuilder = Neo4jBuilders.newInProcessBuilder( directory.homePath() )
                 .withConfig( HttpConnector.enabled, httpEnabled )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( 0 ) )
                 .withConfig( HttpsConnector.enabled, httpsEnabled )
@@ -358,7 +361,7 @@ class InProcessServerBuilderIT
         {
             SelfSignedCertificateFactory.create( certificates );
             serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).enabled, Boolean.TRUE );
-            serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
+            serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, certificates );
         }
 
         try ( Neo4j neo4j = serverBuilder.build() )
@@ -420,9 +423,9 @@ class InProcessServerBuilderIT
         HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
     }
 
-    private static Neo4jBuilder getTestBuilder( File workDir )
+    private static Neo4jBuilder getTestBuilder( Path workDir )
     {
-        return newInProcessBuilder( workDir );
+        return Neo4jBuilders.newInProcessBuilder( workDir );
     }
 
     private static class TestExtensionFactory extends ExtensionFactory<TestExtensionFactory.Dependencies>

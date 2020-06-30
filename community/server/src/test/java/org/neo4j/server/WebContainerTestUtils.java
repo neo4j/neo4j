@@ -20,8 +20,6 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,37 +49,37 @@ public final class WebContainerTestUtils
     {
     }
 
-    public static File createTempDir() throws IOException
+    public static Path createTempDir() throws IOException
     {
-        return Files.createTempDirectory( "neo4j-test" ).toFile();
+        return Files.createTempDirectory( "neo4j-test" );
     }
 
-    public static Path getRelativePath( File folder, Setting<Path> setting )
+    public static Path getRelativePath( Path folder, Setting<Path> setting )
     {
-        return folder.toPath().resolve( setting.defaultValue() );
+        return folder.resolve( setting.defaultValue() );
     }
 
-    public static Map<String,String> getDefaultRelativeProperties( File folder )
+    public static Map<String,String> getDefaultRelativeProperties( Path folder )
     {
         Map<String,String> settings = new HashMap<>();
         addDefaultRelativeProperties( settings, folder );
         return settings;
     }
 
-    public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
+    public static void addDefaultRelativeProperties( Map<String,String> properties, Path temporaryFolder )
     {
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 
-    private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,
+    private static void addRelativeProperty( Path temporaryFolder, Map<String,String> properties,
             Setting<Path> setting )
     {
         properties.put( setting.name(), getRelativePath( temporaryFolder, setting ).toString() );
     }
 
-    public static void writeConfigToFile( Map<String, String> properties, File file )
+    public static void writeConfigToFile( Map<String, String> properties, Path file )
     {
         Properties props = loadProperties( file );
         for ( Map.Entry<String, String> entry : properties.entrySet() )
@@ -102,9 +100,9 @@ public final class WebContainerTestUtils
         return builder.toString();
     }
 
-    private static void storeProperties( File file, Properties properties )
+    private static void storeProperties( Path file, Properties properties )
     {
-        try ( OutputStream out = new FileOutputStream( file ) )
+        try ( OutputStream out = Files.newOutputStream( file ) )
         {
             properties.store( out, "" );
         }
@@ -114,12 +112,12 @@ public final class WebContainerTestUtils
         }
     }
 
-    private static Properties loadProperties( File file )
+    private static Properties loadProperties( Path file )
     {
         Properties properties = new Properties();
-        if ( file.exists() )
+        if ( Files.exists( file ) )
         {
-            try ( InputStream in = new FileInputStream( file ) )
+            try ( InputStream in = Files.newInputStream( file ) )
             {
                 properties.load( in );
             }
@@ -131,11 +129,9 @@ public final class WebContainerTestUtils
         return properties;
     }
 
-    public static File createTempConfigFile( File parentDir )
+    public static Path createTempConfigFile( Path parentDir )
     {
-        File file = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
-        file.deleteOnExit();
-        return file;
+        return parentDir.resolve( "test-" + new Random().nextInt() + ".properties" );
     }
 
     public interface BlockWithCSVFileURL

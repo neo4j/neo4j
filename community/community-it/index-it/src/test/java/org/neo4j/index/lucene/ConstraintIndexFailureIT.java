@@ -22,7 +22,7 @@ package org.neo4j.index.lucene;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -60,7 +60,7 @@ class ConstraintIndexFailureIT
     void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
     {
         // given a perfectly normal constraint
-        File dir = directory.homeDir();
+        Path dir = directory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( dir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
@@ -74,7 +74,7 @@ class ConstraintIndexFailureIT
         }
 
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
-        FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
+        FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir.toFile() ) );
         managementService = new TestDatabaseManagementServiceBuilder( dir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )

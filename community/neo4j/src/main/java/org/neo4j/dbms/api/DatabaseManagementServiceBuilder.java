@@ -66,18 +66,27 @@ public class DatabaseManagementServiceBuilder
     protected LogProvider userLogProvider = NullLogProvider.getInstance();
     protected DependencyResolver dependencies = new Dependencies();
     protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
-    protected File homeDirectory;
+    protected Path homeDirectory;
     protected Config.Builder config = Config.newBuilder();
 
-    public DatabaseManagementServiceBuilder( File homeDirectory )
+    public DatabaseManagementServiceBuilder( Path homeDirectory )
     {
         this.homeDirectory = homeDirectory;
         Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
     }
 
+    /**
+     * @deprecated Use {@link #DatabaseManagementServiceBuilder(Path)}.
+     */
+    @Deprecated( forRemoval = true )
+    public DatabaseManagementServiceBuilder( File homeDirectory )
+    {
+        this( homeDirectory.toPath() );
+    }
+
     public DatabaseManagementService build()
     {
-        config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() );
+        config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath() );
         return newDatabaseManagementService( config.build(), databaseDependencies() );
     }
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -106,23 +106,23 @@ public class DbRepresentation
         }
     }
 
-    public static DbRepresentation of( File databaseDirectory )
+    public static DbRepresentation of( Path databaseDirectory )
     {
         return of( databaseDirectory, Config.defaults() );
     }
 
-    public static DbRepresentation of( File databaseDirectory, Config config )
+    public static DbRepresentation of( Path databaseDirectory, Config config )
     {
-        return of( databaseDirectory.getParentFile(), config.get( default_database ), config );
+        return of( databaseDirectory.getParent(), config.get( default_database ), config );
     }
 
-    public static DbRepresentation of( File storeDirectory, String databaseName )
+    public static DbRepresentation of( Path storeDirectory, String databaseName )
     {
-        Config config = Config.defaults( transaction_logs_root_path, storeDirectory.toPath().toAbsolutePath() );
+        Config config = Config.defaults( transaction_logs_root_path, storeDirectory.toAbsolutePath() );
         return of( storeDirectory, databaseName, config );
     }
 
-    public static DbRepresentation of( File storeDirectory, String databaseName, Config config )
+    public static DbRepresentation of( Path storeDirectory, String databaseName, Config config )
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
                 .setConfig( config )
@@ -142,7 +142,7 @@ public class DbRepresentation
     public static DbRepresentation of( DatabaseLayout databaseLayout )
     {
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
-        return of( databaseLayout.databaseDirectory().toFile(),
+        return of( databaseLayout.databaseDirectory(),
                 Config.newBuilder()
                         .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toAbsolutePath() )
                         .set( databases_root_path, layout.databasesDirectory().toAbsolutePath() )
@@ -158,7 +158,7 @@ public class DbRepresentation
                 .setDefault( databases_root_path, layout.databasesDirectory().toAbsolutePath() )
                 .setDefault( default_database, databaseLayout.getDatabaseName() )
                 .build();
-        return of( databaseLayout.databaseDirectory().toFile(), cfg );
+        return of( databaseLayout.databaseDirectory(), cfg );
     }
 
     @Override

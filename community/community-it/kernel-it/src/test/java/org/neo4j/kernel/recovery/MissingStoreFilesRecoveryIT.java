@@ -68,7 +68,7 @@ class MissingStoreFilesRecoveryIT
     @BeforeEach
     void setUp() throws IOException
     {
-        serviceBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        serviceBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase( managementService );
         createSomeData( databaseApi );

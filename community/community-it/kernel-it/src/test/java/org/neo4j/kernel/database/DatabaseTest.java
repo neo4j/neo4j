@@ -138,7 +138,7 @@ public class DatabaseTest
     public void dropDataOfNotStartedDatabase()
     {
         File customTxLogsRoot = directory.directory( "customTxLogs" );
-        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homePath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 
@@ -159,7 +159,7 @@ public class DatabaseTest
     public void truncateNotStartedDatabase()
     {
         File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
-        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homePath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs, pageCacheRule.getPageCache( fs ) );
 
@@ -205,7 +205,7 @@ public class DatabaseTest
     public void filesRecreatedAfterTruncate()
     {
         File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
-        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homePath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 
@@ -255,7 +255,7 @@ public class DatabaseTest
     public void removeDatabaseDataAndLogsOnDrop()
     {
         File customTxLogsRoot = directory.directory( "customTxLogs" );
-        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homePath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 

@@ -21,8 +21,8 @@ package org.neo4j.bolt.transport;
 
 import org.junit.jupiter.api.TestInfo;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -55,7 +55,7 @@ public class Neo4jWithSocket
     private final TestDirectory testDirectory;
     private TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
-    private File workingDirectory;
+    private Path workingDirectory;
     private ConnectorPortRegister connectorRegister;
     private DatabaseManagementService managementService;
 
@@ -92,7 +92,7 @@ public class Neo4jWithSocket
     {
         var testName = testInfo.getTestMethod().get().getName();
         testDirectory.prepareDirectory( testInfo.getTestClass().get(), testName );
-        workingDirectory = testDirectory.directory( testName );
+        workingDirectory = testDirectory.directoryPath( testName );
 
         ensureDatabase( settings -> {} );
     }
@@ -132,7 +132,7 @@ public class Neo4jWithSocket
         }
 
         Map<Setting<?>,Object> settings = configure( overrideSettingsFunction );
-        File storeDir = new File( workingDirectory, "storeDir" );
+        Path storeDir = workingDirectory.resolve( "storeDir" );
 
         installSelfSignedCertificateIfEncryptionEnabled( settings );
 
@@ -149,21 +149,21 @@ public class Neo4jWithSocket
         if ( encryptionLevel != DISABLED )
         {
             // Install self-signed certs if ssl is enabled
-            var certificates = new File( workingDirectory, "certificates" );
+            var certificates = workingDirectory.resolve( "certificates" );
             SelfSignedCertificateFactory.create( certificates );
 
             settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).enabled, Boolean.TRUE );
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates.toPath() );
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates );
         }
 
         SslPolicyConfig clusterConfig = SslPolicyConfig.forScope( SslPolicyScope.CLUSTER );
         if ( settings.containsKey( clusterConfig.enabled ) )
         {
-            var clusterCertificates = new File( workingDirectory, "cluster-cert" );
+            var clusterCertificates = workingDirectory.resolve( "cluster-cert" );
             SelfSignedCertificateFactory.create( clusterCertificates );
 
             settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).enabled, Boolean.TRUE );
-            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).base_directory, clusterCertificates.toPath() );
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.CLUSTER ).base_directory, clusterCertificates );
         }
     }
 

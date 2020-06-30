@@ -34,9 +34,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.harness.Neo4jBuilders;
 import org.neo4j.harness.internal.InProcessNeo4j;
-
-import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 
 /**
  * Community Neo4j JUnit 5 Extension.
@@ -82,7 +81,7 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
 
     public Neo4jExtension()
     {
-        this( newInProcessBuilder() );
+        this( Neo4jBuilders.newInProcessBuilder() );
     }
 
     protected Neo4jExtension( Neo4jBuilder builder )

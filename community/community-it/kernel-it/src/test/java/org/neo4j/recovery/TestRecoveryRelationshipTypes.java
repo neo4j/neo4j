@@ -21,8 +21,8 @@ package org.neo4j.recovery;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -55,10 +55,10 @@ class TestRecoveryRelationshipTypes
     void recoverNeoAndHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         assertEquals( 0, getRuntime().exec( new String[]{
                 getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
-                getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
+                getClassPath(), getClass().getName(), storeDir.toAbsolutePath().toString()} ).waitFor() );
 
         // When
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
@@ -83,7 +83,7 @@ class TestRecoveryRelationshipTypes
             exit( 1 );
         }
 
-        File storeDir = new File( args[0] );
+        Path storeDir = Path.of( args[0] ).toAbsolutePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )

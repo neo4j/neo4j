@@ -59,7 +59,7 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) )
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );

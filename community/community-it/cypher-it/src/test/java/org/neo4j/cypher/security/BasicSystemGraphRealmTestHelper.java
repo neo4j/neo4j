@@ -71,7 +71,7 @@ public class BasicSystemGraphRealmTestHelper
 
         protected DatabaseManagementService createManagementService( TestDirectory testDir )
         {
-            return new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).impermanent()
+            return new TestDatabaseManagementServiceBuilder( testDir.homePath() ).impermanent()
                     .noOpSystemGraphInitializer()
                     .setConfig( GraphDatabaseSettings.auth_enabled, false ).build();
         }

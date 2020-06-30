@@ -27,7 +27,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
@@ -40,32 +39,39 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
+import static java.nio.file.Files.createDirectory;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.walkFileTree;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * Set of utility methods to work with {@link File} and {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -85,17 +91,21 @@ public final class FileUtils
 
     public static void deleteRecursively( File directory ) throws IOException
     {
-        if ( !directory.exists() )
-        {
-            return;
-        }
-        Path path = directory.toPath();
-        deletePathRecursively( path );
+        deletePathRecursively( directory.toPath() );
     }
 
     public static void deletePathRecursively( Path path ) throws IOException
     {
         deletePathRecursively( path, alwaysTrue() );
+    }
+
+    public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
+    {
+        if ( Files.notExists( path ) )
+        {
+            return;
+        }
+        windowsSafeIOOperation( () -> walkFileTree( path, new DeletingFileVisitor( removeFilePredicate ) ) );
     }
 
     public static long blockSize( File file ) throws IOException
@@ -111,80 +121,6 @@ public final class FileUtils
             throw new IOException( "Fail to determine block size for file: " + file );
         }
         return Files.getFileStore( path ).getBlockSize();
-    }
-
-    public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
-    {
-
-        windowsSafeIOOperation( () ->
-        {
-            Files.walkFileTree( path, new SimpleFileVisitor<>()
-            {
-                private int skippedFiles;
-
-                @Override
-                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
-                {
-                    if ( removeFilePredicate.test( file ) )
-                    {
-                        Files.delete( file );
-                    }
-                    else
-                    {
-                        skippedFiles++;
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
-                {
-                    if ( e != null )
-                    {
-                        throw e;
-                    }
-                    try
-                    {
-                        if ( skippedFiles == 0 )
-                        {
-                            Files.delete( dir );
-                            return FileVisitResult.CONTINUE;
-                        }
-                        if ( isDirectoryEmpty( dir ) )
-                        {
-                            Files.delete( dir );
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-                    catch ( DirectoryNotEmptyException notEmpty )
-                    {
-                        String reason = notEmptyReason( dir, notEmpty );
-                        throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
-                    }
-                }
-
-                private boolean isDirectoryEmpty( Path dir ) throws IOException
-                {
-                    try ( Stream<Path> list = Files.list( dir ) )
-                    {
-                        return list.noneMatch( alwaysTrue() );
-                    }
-                }
-
-                private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
-                {
-                    try ( Stream<Path> list = Files.list( dir ) )
-                    {
-                        return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        notEmpty.addSuppressed( e );
-                        return "(could not list directory: " + e.getMessage() + ")";
-                    }
-                }
-            } );
-        } );
     }
 
     public static boolean deleteFile( File file )
@@ -224,8 +160,7 @@ public final class FileUtils
     /**
      * Utility method that moves a file from its current location to the
      * new target location. If rename fails (for example if the target is
-     * another disk) a copy/delete will be performed instead. This is not a rename,
-     * use {@link #renameFile(File, File, CopyOption...)} instead.
+     * another disk) a copy/delete will be performed instead.
      *
      * @param toMove The File object to move.
      * @param target Target file to move to.
@@ -265,8 +200,7 @@ public final class FileUtils
     /**
      * Utility method that moves a file from its current location to the
      * provided target directory. If rename fails (for example if the target is
-     * another disk) a copy/delete will be performed instead. This is not a rename,
-     * use {@link #renameFile(File, File, CopyOption...)} instead.
+     * another disk) a copy/delete will be performed instead.
      *
      * @param toMove The File object to move.
      * @param targetDirectory the destination directory
@@ -314,21 +248,11 @@ public final class FileUtils
         copyFile( file, target );
     }
 
-    public static void renameFile( File srcFile, File renameToFile, CopyOption... copyOptions ) throws IOException
-    {
-        Files.move( srcFile.toPath(), renameToFile.toPath(), copyOptions );
-    }
-
-    public static void truncateFile( SeekableByteChannel fileChannel, long position ) throws IOException
-    {
-        windowsSafeIOOperation( () -> fileChannel.truncate( position ) );
-    }
-
     public static void truncateFile( File file, long position ) throws IOException
     {
         try ( RandomAccessFile access = new RandomAccessFile( file, "rw" ) )
         {
-            truncateFile( access.getChannel(), position );
+            windowsSafeIOOperation( () -> ((SeekableByteChannel) access.getChannel()).truncate( position ) );
         }
     }
 
@@ -402,6 +326,18 @@ public final class FileUtils
                 }
             }
         }
+    }
+
+    public static void copyDirectory( Path from, Path to ) throws IOException
+    {
+        requireNonNull( from );
+        requireNonNull( to );
+        checkArgument( from.isAbsolute(), "From directory must be absolute" );
+        checkArgument( to.isAbsolute(), "To directory must be absolute" );
+        checkArgument( isDirectory( from ), "From is not a directory" );
+        checkArgument( !from.normalize().equals( to.normalize() ), "From and to directories are the same" );
+
+        walkFileTree( from, new CopyingFileVisitor( from, to, REPLACE_EXISTING, COPY_ATTRIBUTES ) );
     }
 
     public static void writeToFile( File target, String text, boolean append ) throws IOException
@@ -704,30 +640,6 @@ public final class FileUtils
         }
     }
 
-    public static FileChannel open( Path path, Set<OpenOption> options ) throws IOException
-    {
-        return FileChannel.open( path, options );
-    }
-
-    public static InputStream openAsInputStream( Path path ) throws IOException
-    {
-        return Files.newInputStream( path, READ );
-    }
-
-    public static OutputStream openAsOutputStream( Path path, boolean append ) throws IOException
-    {
-        OpenOption[] options;
-        if ( append )
-        {
-            options = new OpenOption[]{CREATE, WRITE, APPEND};
-        }
-        else
-        {
-            options = new OpenOption[]{CREATE, WRITE};
-        }
-        return Files.newOutputStream( path, options );
-    }
-
     /**
      * Get type of file store where provided file is located.
      * @param path file to get file store type for.
@@ -770,4 +682,126 @@ public final class FileUtils
         directoryChannel.force( true );
     }
 
+    public static boolean isDirectoryEmpty( Path directory ) throws IOException
+    {
+        try ( DirectoryStream<Path> dirStream = Files.newDirectoryStream( directory ) )
+        {
+            return !dirStream.iterator().hasNext();
+        }
+    }
+
+    private static class DeletingFileVisitor extends SimpleFileVisitor<Path>
+    {
+        private final Predicate<Path> removeFilePredicate;
+        private int skippedFiles;
+
+        DeletingFileVisitor( Predicate<Path> removeFilePredicate )
+        {
+            this.removeFilePredicate = removeFilePredicate;
+        }
+
+        @Override
+        public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+        {
+            if ( removeFilePredicate.test( file ) )
+            {
+                Files.delete( file );
+            }
+            else
+            {
+                skippedFiles++;
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
+        {
+            if ( e != null )
+            {
+                throw e;
+            }
+            try
+            {
+                if ( skippedFiles == 0 || isDirectoryEmpty( dir ) )
+                {
+                    Files.delete( dir );
+                }
+                return FileVisitResult.CONTINUE;
+            }
+            catch ( DirectoryNotEmptyException notEmpty )
+            {
+                String reason = notEmptyReason( dir, notEmpty );
+                throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
+            }
+        }
+
+        private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
+        {
+            try ( Stream<Path> list = Files.list( dir ) )
+            {
+                return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
+            }
+            catch ( Exception e )
+            {
+                notEmpty.addSuppressed( e );
+                return "(could not list directory: " + e.getMessage() + ")";
+            }
+        }
+    }
+
+    private static class CopyingFileVisitor extends SimpleFileVisitor<Path>
+    {
+        private final Path from;
+        private final Path to;
+        private final CopyOption[] copyOption;
+        private final Set<Path> copiedPathsInDestination = new HashSet<>();
+
+        CopyingFileVisitor( Path from, Path to, CopyOption... copyOption )
+        {
+            this.from = from.normalize();
+            this.to = to.normalize();
+            this.copyOption = copyOption;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
+        {
+            if ( copiedPathsInDestination.contains( dir ) )
+            {
+                return SKIP_SUBTREE;
+            }
+
+            Path target = to.resolve( from.relativize( dir ) );
+            if ( !exists( target ) )
+            {
+                createDirectory( target );
+                if ( isInDestination( target ) )
+                {
+                    copiedPathsInDestination.add( target );
+                }
+            }
+            return CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+        {
+            if ( !copiedPathsInDestination.contains( file ) )
+            {
+                Path target = to.resolve( from.relativize( file ) );
+                Files.copy( file, target, copyOption );
+                if ( isInDestination( target ) )
+                {
+                    copiedPathsInDestination.add( target );
+                }
+            }
+            return CONTINUE;
+        }
+
+        private boolean isInDestination( Path path )
+        {
+            return path.startsWith( to );
+        }
+    }
 }

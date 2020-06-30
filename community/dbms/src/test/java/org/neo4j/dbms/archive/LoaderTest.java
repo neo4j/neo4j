@@ -160,7 +160,7 @@ class LoaderTest
         Path archive = testDirectory.filePath( "the-archive.dump" );
         Path txLogsDestination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "txLogs" );
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txLogsDestination.toAbsolutePath() )
                 .set( default_database, "destination" )
                 .build();
@@ -210,7 +210,7 @@ class LoaderTest
         Path archive = testDirectory.filePath( "the-archive.dump" );
         File txLogsDirectory = testDirectory.directory( "subdir/txLogs" );
         Config config = Config.newBuilder()
-                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txLogsDirectory.toPath().toAbsolutePath() )
                 .set( default_database, "destination" )
                 .build();

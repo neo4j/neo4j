@@ -320,7 +320,7 @@ class IndexRecoveryIT
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( testDirectory.getFileSystem() )
                 .setExtensions( singletonList( mockedIndexProviderFactory ) )
                 .noOpSystemGraphInitializer()

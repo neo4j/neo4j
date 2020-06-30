@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
@@ -44,7 +44,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     protected DatabaseManagementService managementService;
 
     @Override
-    public void setup( File storeDir, Consumer<GraphDatabaseService> sysCreate )
+    public void setup( Path storeDir, Consumer<GraphDatabaseService> sysCreate )
     {
         TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
         managementService = configure( databaseManagementServiceBuilder ).build();
@@ -67,7 +67,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
         sysCreate.accept( sysDb );
     }
 
-    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( File storeDir )
+    protected TestDatabaseManagementServiceBuilder newManagementServiceBuilder( Path storeDir )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
     }

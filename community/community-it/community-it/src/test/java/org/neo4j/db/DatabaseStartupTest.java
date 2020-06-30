@@ -21,8 +21,8 @@ package org.neo4j.db;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
@@ -201,7 +201,7 @@ class DatabaseStartupTest
     @Test
     void startTestDatabaseOnProvidedNonAbsoluteFile()
     {
-        File directory = new File( "notAbsoluteDirectory" );
+        Path directory = Path.of( "notAbsoluteDirectory" );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory ).impermanent().build();
         managementService.shutdown();
     }
@@ -209,7 +209,7 @@ class DatabaseStartupTest
     @Test
     void startCommunityDatabaseOnProvidedNonAbsoluteFile()
     {
-        File directory = new File( "notAbsoluteDirectory" );
+        Path directory = Path.of( "notAbsoluteDirectory" );
         EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
         DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
         DatabaseManagementService managementService = databaseFactory.build();
@@ -270,7 +270,7 @@ class DatabaseStartupTest
     {
         private final EphemeralCommunityManagementServiceFactory factory;
 
-        EphemeralDatabaseManagementServiceBuilder( File homeDirectory, EphemeralCommunityManagementServiceFactory factory )
+        EphemeralDatabaseManagementServiceBuilder( Path homeDirectory, EphemeralCommunityManagementServiceFactory factory )
         {
             super( homeDirectory );
             this.factory = factory;

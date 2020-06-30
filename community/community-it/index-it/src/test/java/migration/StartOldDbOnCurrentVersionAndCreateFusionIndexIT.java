@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +55,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -125,7 +126,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     @Test
     void create3_5Database() throws Exception
     {
-        File storeDir = tempStoreDirectory();
+        Path storeDir = tempStoreDirectory();
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
 
         createIndexDataAndShutdown( builder, "lucene-1.0", Provider.LUCENE_10.label );
@@ -159,9 +160,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             }
         } );
 
-        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
-        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
-        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
+        Path zipFile = storeDir.resolveSibling( storeDir.getFileName().toString() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir.toFile(), zipFile.toFile() );
+        System.out.println( "Db created in " + zipFile.toAbsolutePath() );
     }
 
     @Test
@@ -178,7 +179,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
-        File storeDir = testDirectory.homeDir();
+        Path storeDir = testDirectory.homePath();
         managementService = setupDb( storeDir, indexRecoveryTracker );
         GraphDatabaseAPI db = getDefaultDatabase();
         // then
@@ -329,7 +330,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return Stream.of( Provider.values() ).filter( p -> p.ordinal() <= provider.ordinal() ).toArray( Provider[]::new );
     }
 
-    private DatabaseManagementService setupDb( File storeDir, IndexRecoveryTracker indexRecoveryTracker )
+    private DatabaseManagementService setupDb( Path storeDir, IndexRecoveryTracker indexRecoveryTracker )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
@@ -407,12 +408,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         createIndexesAndData( db, label );
     }
 
-    private static File tempStoreDirectory() throws IOException
+    private static Path tempStoreDirectory() throws IOException
     {
-        File file = File.createTempFile( "create-db", "neo4j" );
-        File storeDir = new File( file.getAbsoluteFile().getParentFile(), file.getName() );
-        FileUtils.deleteFile( file );
-        return storeDir;
+        return Files.createTempDirectory( "create-db-neo4j" );
     }
 
     private static void createIndexesAndData( GraphDatabaseService db, Label label )

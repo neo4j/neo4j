@@ -22,7 +22,8 @@ package org.neo4j.ssl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
@@ -36,6 +37,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
+import static java.nio.file.Files.createDirectories;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -51,24 +53,24 @@ class SslPolicyLoaderTest
     @Inject
     private TestDirectory testDirectory;
 
-    private File home;
-    private File publicCertificateFile;
-    private File privateKeyFile;
+    private Path home;
+    private Path publicCertificateFile;
+    private Path privateKeyFile;
 
     @BeforeEach
     void setup() throws Exception
     {
-        home = testDirectory.directory( "home" );
-        File baseDir = new File( home, "certificates/default" );
-        publicCertificateFile = new File( baseDir, "public.crt" );
-        privateKeyFile = new File( baseDir, "private.key" );
+        home = testDirectory.directoryPath( "home" );
+        Path baseDir = home.resolve( "certificates/default" );
+        publicCertificateFile = baseDir.resolve( "public.crt" );
+        privateKeyFile = baseDir.resolve( "private.key" );
 
         new SelfSignedCertificateFactory().createSelfSignedCertificate( publicCertificateFile, privateKeyFile, "localhost" );
 
-        File trustedDir = new File( baseDir, "trusted" );
-        trustedDir.mkdir();
-        FileUtils.copyFile( publicCertificateFile, new File( trustedDir, "public.crt" ) );
-        new File( baseDir, "revoked" ).mkdir();
+        Path trustedDir = baseDir.resolve( "trusted" );
+        createDirectories( trustedDir );
+        FileUtils.copyFile( publicCertificateFile, trustedDir.resolve( "public.crt" ) );
+        createDirectories( baseDir.resolve( "revoked" ) );
     }
 
     @Test
@@ -78,7 +80,7 @@ class SslPolicyLoaderTest
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( neo4j_home, home.toAbsolutePath() )
                 .set( policyConfig.enabled, Boolean.TRUE )
                 .set( policyConfig.base_directory, Path.of("certificates/default" ) )
                 .build();
@@ -96,26 +98,26 @@ class SslPolicyLoaderTest
     }
 
     @Test
-    void shouldComplainIfMissingPrivateKey()
+    void shouldComplainIfMissingPrivateKey() throws IOException
     {
         shouldComplainIfMissingFile( privateKeyFile );
     }
 
     @Test
-    void shouldComplainIfMissingPublicCertificate()
+    void shouldComplainIfMissingPublicCertificate() throws IOException
     {
         shouldComplainIfMissingFile( publicCertificateFile );
     }
 
-    private void shouldComplainIfMissingFile( File file )
+    private void shouldComplainIfMissingFile( Path file ) throws IOException
     {
         // given
-        FileUtils.deleteFile( file );
+        Files.delete( file );
 
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( neo4j_home, home.toAbsolutePath() )
                 .set( policyConfig.enabled, Boolean.TRUE )
                 .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
                 .build();
@@ -132,7 +134,7 @@ class SslPolicyLoaderTest
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( neo4j_home, home.toAbsolutePath() )
                 .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
                 .build();
 

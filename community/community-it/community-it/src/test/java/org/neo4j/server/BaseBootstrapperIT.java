@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -76,7 +77,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     public void before()
     {
         bootstrapper = newBootstrapper();
-        SelfSignedCertificateFactory.create( testDirectory.homeDir() );
+        SelfSignedCertificateFactory.create( testDirectory.homePath() );
     }
 
     @After
@@ -115,7 +116,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.homeDir() ) );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
@@ -137,7 +138,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.homeDir() ) );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
@@ -205,19 +206,20 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         var serverLayout = databaseAPI.databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
 
-        File embeddedDir = testDirectory.directory( "embedded-dir" );
+        Path embeddedDir = testDirectory.directoryPath( "embedded-dir" );
         DatabaseManagementService dbms = newEmbeddedDbms( embeddedDir );
         Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
         dbms.shutdown();
 
-        assertEquals( relativePath( serverDir, serverLayout.homeDirectory().toFile() ), relativePath( embeddedDir, embeddedLayout.homeDirectory().toFile() ) );
+        assertEquals( relativePath( serverDir, serverLayout.homeDirectory().toFile() ),
+                relativePath( embeddedDir.toFile(), embeddedLayout.homeDirectory().toFile() ) );
         assertEquals( relativePath( serverDir, serverLayout.databasesDirectory().toFile() ),
-                relativePath( embeddedDir, embeddedLayout.databasesDirectory().toFile() ) );
+                relativePath( embeddedDir.toFile(), embeddedLayout.databasesDirectory().toFile() ) );
         assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory().toFile() ),
-                relativePath( embeddedDir, embeddedLayout.transactionLogsRootDirectory().toFile() ) );
+                relativePath( embeddedDir.toFile(), embeddedLayout.transactionLogsRootDirectory().toFile() ) );
     }
 
-    protected abstract DatabaseManagementService newEmbeddedDbms( File homeDir );
+    protected abstract DatabaseManagementService newEmbeddedDbms( Path homeDir );
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
@@ -225,7 +227,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         if ( httpsEnabled )
         {
             //create self signed
-            SelfSignedCertificateFactory.create( testDirectory.homeDir().getAbsoluteFile() );
+            SelfSignedCertificateFactory.create( testDirectory.homePath().toAbsolutePath() );
         }
 
         String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, SettingValueParsers.TRUE ) : "",

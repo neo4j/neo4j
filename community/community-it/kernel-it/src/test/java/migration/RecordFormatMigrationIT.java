@@ -22,7 +22,7 @@ package migration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -54,12 +54,12 @@ class RecordFormatMigrationIT
 {
     @Inject
     private TestDirectory testDirectory;
-    private File databaseDirectory;
+    private Path databaseDirectory;
 
     @BeforeEach
     void setUp()
     {
-        databaseDirectory = testDirectory.homeDir();
+        databaseDirectory = testDirectory.homePath();
     }
 
     @Test
@@ -207,7 +207,7 @@ class RecordFormatMigrationIT
         return new TestDatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format, name ).build();
     }
 
-    private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
+    private static DatabaseManagementService startDatabaseServiceWithUpgrade( Path storeDir, String formatName )
     {
         return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
                 .setConfig( allow_upgrade, true ).build();

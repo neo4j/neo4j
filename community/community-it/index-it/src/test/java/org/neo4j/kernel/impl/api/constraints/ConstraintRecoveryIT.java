@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.constraints;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -67,7 +67,7 @@ class ConstraintRecoveryIT
     void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
     {
         // given
-        File pathToDb = testDirectory.homeDir();
+        Path pathToDb = testDirectory.homePath();
 
         TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder( pathToDb );
         dbFactory.setFileSystem( fs );

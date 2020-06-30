@@ -141,7 +141,7 @@ public class UniqueIndexRecoveryTest
 
     private GraphDatabaseService newDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir.absolutePath() )
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir.homePath().toAbsolutePath() )
                 .setConfig( default_schema_provider, schemaIndex.providerName() )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );

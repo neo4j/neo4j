@@ -91,7 +91,7 @@ class BatchInsertIndexTest
     {
         configBuilder = Config.newBuilder()
                 .set( preallocate_logical_logs, false )
-                .set( neo4j_home, testDirectory.homeDir().toPath() );
+                .set( neo4j_home, testDirectory.homePath() );
     }
 
     @AfterEach
@@ -246,7 +246,7 @@ class BatchInsertIndexTest
 
     private GraphDatabaseService startGraphDatabaseService()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( fs )
                 .setConfig( configBuilder.build() )
                 .build();

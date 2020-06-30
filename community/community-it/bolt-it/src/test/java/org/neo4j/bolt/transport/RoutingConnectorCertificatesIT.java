@@ -25,8 +25,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -57,10 +58,10 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 @Neo4jWithSocketExtension
 public class RoutingConnectorCertificatesIT
 {
-    private static File externalKeyFile;
-    private static File externalCertFile;
-    private static File internalKeyFile;
-    private static File internalCertFile;
+    private static Path externalKeyFile;
+    private static Path externalCertFile;
+    private static Path internalKeyFile;
+    private static Path internalCertFile;
     private static SelfSignedCertificateFactory certFactory;
     private static TransportTestUtil util;
 
@@ -80,14 +81,14 @@ public class RoutingConnectorCertificatesIT
         {
             SslPolicyConfig externalPolicy = SslPolicyConfig.forScope( BOLT );
             settings.put( externalPolicy.enabled, true );
-            settings.put( externalPolicy.public_certificate, externalCertFile.toPath().toAbsolutePath() );
-            settings.put( externalPolicy.private_key, externalKeyFile.toPath().toAbsolutePath() );
+            settings.put( externalPolicy.public_certificate, externalCertFile.toAbsolutePath() );
+            settings.put( externalPolicy.private_key, externalKeyFile.toAbsolutePath() );
 
             SslPolicyConfig internalPolicy = SslPolicyConfig.forScope( CLUSTER );
             settings.put( internalPolicy.enabled, true );
             settings.put( internalPolicy.client_auth, ClientAuth.NONE );
-            settings.put( internalPolicy.public_certificate, internalCertFile.toPath().toAbsolutePath() );
-            settings.put( internalPolicy.private_key, internalKeyFile.toPath().toAbsolutePath() );
+            settings.put( internalPolicy.public_certificate, internalCertFile.toAbsolutePath() );
+            settings.put( internalPolicy.private_key, internalKeyFile.toAbsolutePath() );
 
             settings.put( BoltConnector.enabled, true );
             settings.put( BoltConnector.encryption_level, OPTIONAL );
@@ -128,7 +129,7 @@ public class RoutingConnectorCertificatesIT
         }
     }
 
-    private X509Certificate loadCertificateFromDisk( File certFile ) throws CertificateException, IOException
+    private X509Certificate loadCertificateFromDisk( Path certFile ) throws CertificateException, IOException
     {
         Certificate[] certificates = PkiUtils.loadCertificates( certFile );
         assertThat( certificates.length ).isEqualTo( 1 );
@@ -140,25 +141,21 @@ public class RoutingConnectorCertificatesIT
     public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
     {
         certFactory = new SelfSignedCertificateFactory();
-        externalKeyFile = File.createTempFile( "key", "pem" );
-        externalCertFile = File.createTempFile( "key", "pem" );
-        externalKeyFile.deleteOnExit();
-        externalCertFile.deleteOnExit();
+        externalKeyFile = Files.createTempFile( "key", "pem" );
+        externalCertFile = Files.createTempFile( "key", "pem" );
 
         // make sure files are not there
-        externalKeyFile.delete();
-        externalCertFile.delete();
+        Files.delete( externalKeyFile );
+        Files.delete( externalCertFile );
 
         certFactory.createSelfSignedCertificate( externalCertFile, externalKeyFile, "my.domain" );
 
-        internalKeyFile = File.createTempFile( "key", "pem" );
-        internalCertFile = File.createTempFile( "key", "pem" );
-        internalKeyFile.deleteOnExit();
-        internalCertFile.deleteOnExit();
+        internalKeyFile = Files.createTempFile( "key", "pem" );
+        internalCertFile = Files.createTempFile( "key", "pem" );
 
         // make sure files are not there
-        internalKeyFile.delete();
-        internalCertFile.delete();
+        Files.delete( internalKeyFile );
+        Files.delete( internalCertFile );
 
         certFactory.createSelfSignedCertificate( internalCertFile, internalKeyFile, "my.domain" );
 

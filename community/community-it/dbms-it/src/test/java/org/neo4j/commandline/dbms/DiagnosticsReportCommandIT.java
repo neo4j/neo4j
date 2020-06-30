@@ -74,7 +74,7 @@ class DiagnosticsReportCommandIT
         try
         {
             String[] args = {"threads", "--to=" + testDirectory.absolutePath().getAbsolutePath() + "/reports"};
-            Path homeDir = testDirectory.homeDir().toPath();
+            Path homeDir = testDirectory.homePath();
             var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
             CommandLine.populateCommand( diagnosticsReportCommand, args );

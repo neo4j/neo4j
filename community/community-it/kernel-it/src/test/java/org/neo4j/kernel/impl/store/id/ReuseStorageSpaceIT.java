@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +133,7 @@ class ReuseStorageSpaceIT
     private void shouldReuseStorageSpace( Operation initialState, Operation operation, Launcher launcher ) throws Exception
     {
         // given the data inserted into a db and knowledge about its size
-        File storeDirectory = directory.homeDir();
+        Path storeDirectory = directory.homePath();
         long seed = random.seed();
         Sizes initialStoreSizes = withDb( storeDirectory, db -> initialState.perform( db, seed ) );
 
@@ -152,7 +152,7 @@ class ReuseStorageSpaceIT
         }
     }
 
-    private static Pair<Integer,Sizes> sameProcess( File storeDirectory, long seed, Operation operation )
+    private static Pair<Integer,Sizes> sameProcess( Path storeDirectory, long seed, Operation operation )
     {
         enableStrictPrioritizationOfFreelist();
         try
@@ -165,11 +165,12 @@ class ReuseStorageSpaceIT
         }
     }
 
-    private static Pair<Integer,Sizes> crashingChildProcess( File storeDirectory, long seed, Operation operation ) throws Exception
+    private static Pair<Integer,Sizes> crashingChildProcess( Path storeDirectory, long seed, Operation operation ) throws Exception
     {
         // See "main" method in this class
         Process process = new ProcessBuilder( getJavaExecutable().toString(),
-                "-cp", getClassPath(), ReuseStorageSpaceIT.class.getCanonicalName(), storeDirectory.getPath(), String.valueOf( seed ), operation.name() )
+                "-cp", getClassPath(), ReuseStorageSpaceIT.class.getCanonicalName(), storeDirectory.toAbsolutePath().toString(), String.valueOf( seed ),
+                operation.name() )
                 .inheritIO()
                 .start();
 
@@ -187,7 +188,7 @@ class ReuseStorageSpaceIT
         // No need to restore this later because we exit the JVM anyway
         enableStrictPrioritizationOfFreelist();
 
-        File storeDirectory = new File( args[0] );
+        Path storeDirectory = Path.of( args[0] ).toAbsolutePath();
         long seed = Long.parseLong( args[1] );
         Operation operation = Operation.valueOf( args[2] );
         withDb( storeDirectory, db ->
@@ -197,7 +198,7 @@ class ReuseStorageSpaceIT
         } );
     }
 
-    private static Sizes withDb( File storeDir, ThrowingConsumer<GraphDatabaseService,Exception> transaction )
+    private static Sizes withDb( Path storeDir, ThrowingConsumer<GraphDatabaseService,Exception> transaction )
     {
         DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( storeDir )
                 // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
@@ -428,6 +429,6 @@ class ReuseStorageSpaceIT
 
     interface Launcher
     {
-        Pair<Integer,Sizes> launch( File storeDirectory, long seed, Operation operation ) throws Exception;
+        Pair<Integer,Sizes> launch( Path storeDirectory, long seed, Operation operation ) throws Exception;
     }
 }

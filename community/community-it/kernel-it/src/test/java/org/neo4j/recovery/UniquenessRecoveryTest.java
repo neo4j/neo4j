@@ -25,10 +25,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -111,13 +112,13 @@ public class UniquenessRecoveryTest
         assumeNotNull( PID ); // this test can only run on UNIX
 
         // given
-        File path = dir.homeDir().getAbsoluteFile();
+        Path path = dir.homePath().toAbsolutePath();
         System.out.println( "in path: " + path );
         ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true",
                 "-Dforce_create_constraint=" + config.force_create_constraint,
                 "-D" + param( "use_cypher" ) + "=" + USE_CYPHER,
                 "-cp", System.getProperty( "java.class.path" ),
-                getClass().getName(), path.getPath() );
+                getClass().getName(), path.toAbsolutePath().toString() );
         prototype.environment().put( "JAVA_HOME", System.getProperty( "java.home" ) );
 
         // when
@@ -163,8 +164,8 @@ public class UniquenessRecoveryTest
     public static void main( String... args ) throws Exception
     {
         System.out.println( "hello world" );
-        File path = new File( args[0] );
-        boolean createConstraint = getBoolean( "force_create_constraint" ) || !new File( path, "neostore" ).isFile();
+        Path path = Path.of( args[0] ).toAbsolutePath();
+        boolean createConstraint = getBoolean( "force_create_constraint" ) || !Files.isRegularFile( path.resolve( "neostore" ) );
         GraphDatabaseService db = graphdb( path );
         System.out.println( "database started" );
         System.out.println( "createConstraint = " + createConstraint );
@@ -288,7 +289,7 @@ public class UniquenessRecoveryTest
         }
     }
 
-    private static GraphDatabaseService graphdb( File path )
+    private static GraphDatabaseService graphdb( Path path )
     {
         managementService = new TestDatabaseManagementServiceBuilder( path ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );

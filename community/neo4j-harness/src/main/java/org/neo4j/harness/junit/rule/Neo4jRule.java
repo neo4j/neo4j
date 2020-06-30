@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -36,12 +37,11 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.harness.Neo4jBuilders;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
-
-import static org.neo4j.harness.Neo4jBuilders.newInProcessBuilder;
 
 /**
  * Community Neo4j JUnit {@link org.junit.Rule rule}.
@@ -66,12 +66,21 @@ public class Neo4jRule implements TestRule
 
     public Neo4jRule()
     {
-        this( newInProcessBuilder() );
+        this( Neo4jBuilders.newInProcessBuilder() );
     }
 
+    /**
+     * @deprecated Use {@link #Neo4jRule(Path)}.
+     */
+    @Deprecated( forRemoval = true )
     public Neo4jRule( File workingDirectory )
     {
-        this( newInProcessBuilder( workingDirectory ) );
+        this( workingDirectory.toPath() );
+    }
+
+    public Neo4jRule( Path workingDirectory )
+    {
+        this( Neo4jBuilders.newInProcessBuilder( workingDirectory ) );
     }
 
     @Override
@@ -172,8 +181,21 @@ public class Neo4jRule implements TestRule
      * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
+     * @deprecated Use {@link #withFixture(Path)}.
      */
+    @Deprecated( forRemoval = true )
     public Neo4jRule withFixture( File cypherFileOrDirectory )
+    {
+        return withFixture( cypherFileOrDirectory.toPath() );
+    }
+
+    /**
+     * Data fixtures to inject upon server build. This can be either a file with a plain-text cypher query
+     * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
+     * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
+     * @return this configurator instance
+     */
+    public Neo4jRule withFixture( Path cypherFileOrDirectory )
     {
         builder = builder.withFixture( cypherFileOrDirectory );
         return this;
@@ -207,8 +229,22 @@ public class Neo4jRule implements TestRule
      * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
+     * @deprecated Use {@link #copyFrom(Path)}.
      */
+    @Deprecated( forRemoval = true )
     public Neo4jRule copyFrom( File sourceDirectory )
+    {
+        builder = builder.copyFrom( sourceDirectory.toPath() );
+        return this;
+    }
+
+    /**
+     * Pre-populate the server with databases copied from the specified source directory.
+     * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
+     * @param sourceDirectory the directory to copy from
+     * @return this configurator instance
+     */
+    public Neo4jRule copyFrom( Path sourceDirectory )
     {
         builder = builder.copyFrom( sourceDirectory );
         return this;

@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -139,7 +140,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         @Rule
         public RuleChain ruleChain;
 
-        File graphDbDir;
+        Path graphDbDir;
         protected FileSystemAbstraction fs;
         protected IndexProvider indexProvider;
         private final IndexPrototype incompleteIndexPrototype;
@@ -153,9 +154,9 @@ public abstract class IndexProviderCompatibilityTestSuite
         public void setup() throws Exception
         {
             fs = pageCacheAndDependenciesRule.fileSystem();
-            graphDbDir = pageCacheAndDependenciesRule.directory().homeDir();
+            graphDbDir = pageCacheAndDependenciesRule.directory().homePath();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
-            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
+            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir.toFile() );
             descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
             jobScheduler.start();
         }

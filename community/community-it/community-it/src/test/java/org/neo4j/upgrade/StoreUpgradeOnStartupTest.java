@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -78,7 +79,7 @@ public class StoreUpgradeOnStartupTest
     private FileSystemAbstraction fileSystem;
     private DatabaseLayout workingDatabaseLayout;
     private StoreVersionCheck check;
-    private File workingHomeDir;
+    private Path workingHomeDir;
     private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
@@ -92,8 +93,8 @@ public class StoreUpgradeOnStartupTest
     {
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        workingHomeDir = testDir.homeDir( "working_" + version );
-        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir.toPath() ).databaseLayout( DEFAULT_DATABASE_NAME );
+        workingHomeDir = testDir.homePath( "working_" + version );
+        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         File prepareDirectory = testDir.directory( "prepare_" + version );

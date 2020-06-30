@@ -55,7 +55,7 @@ class CommunityGlobalTransactionStatsIT
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

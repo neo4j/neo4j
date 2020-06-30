@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.LongSupplier;
@@ -381,7 +382,7 @@ public class NeoStoresTest
     @Test
     void setVersion() throws Exception
     {
-        File storeDir = dir.homeDir();
+        Path storeDir = dir.homePath();
         createShutdownTestDatabase( fs, storeDir );
         assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 10, NULL ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 12, NULL ) );
@@ -706,7 +707,7 @@ public class NeoStoresTest
             managementService.shutdown();
         }
         managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).setExternalDependencies( dependencies )
-                .setDatabaseRootDirectory( databaseLayout.databaseDirectory().toFile() ).build();
+                .setDatabaseRootDirectory( databaseLayout.databaseDirectory() ).build();
         final GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
 
@@ -785,7 +786,7 @@ public class NeoStoresTest
         }
     }
 
-    private static void createShutdownTestDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    private static void createShutdownTestDatabase( FileSystemAbstraction fileSystem, Path storeDir )
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )

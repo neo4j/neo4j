@@ -19,7 +19,7 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
@@ -46,7 +46,7 @@ public final class AdversarialPageCacheGraphDatabaseFactory
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static DatabaseManagementServiceBuilder create( File homeDir, FileSystemAbstraction fs, Adversary adversary )
+    public static DatabaseManagementServiceBuilder create( Path homeDir, FileSystemAbstraction fs, Adversary adversary )
     {
         return new TestDatabaseManagementServiceBuilder( homeDir )
         {

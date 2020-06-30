@@ -168,7 +168,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
                 .setConfig( getConfig() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         return (GraphDatabaseAPI) database;

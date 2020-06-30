@@ -209,7 +209,7 @@ class RollbackIdLeakIT
             @Override
             public GraphDatabaseService start()
             {
-                dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+                dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
                 return dbms.database( DEFAULT_DATABASE_NAME );
             }
 
@@ -258,7 +258,7 @@ class RollbackIdLeakIT
 
             private GraphDatabaseService start( EphemeralFileSystemAbstraction fs )
             {
-                dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setFileSystem( fs ).build();
+                dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( fs ).build();
                 return dbms.database( DEFAULT_DATABASE_NAME );
             }
         };

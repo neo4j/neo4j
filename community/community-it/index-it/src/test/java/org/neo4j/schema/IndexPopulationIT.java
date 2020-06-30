@@ -23,7 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -78,7 +78,7 @@ class IndexPopulationIT
     void setUp()
     {
         logProvider = new AssertableLogProvider( true );
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
                 .setInternalLogProvider( logProvider )
                 .build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -211,7 +211,7 @@ class IndexPopulationIT
     void shutdownDatabaseDuringIndexPopulations()
     {
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
-        File storeDir = directory.directory( "shutdownDbTest" );
+        Path storeDir = directory.directoryPath( "shutdownDbTest" );
         Label testLabel = Label.label( "testLabel" );
         String propertyName = "testProperty";
         DatabaseManagementService managementService =
