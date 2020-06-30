@@ -420,9 +420,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "A lower number means lower IO pressure, and consequently longer checkpoint times. " +
             "Set this to -1 to disable the IOPS limit and remove the limitation entirely; " +
             "this will let the checkpointer flush data as fast as the hardware will go. "  +
-            "Removing the setting, or commenting it out, will set the default value of 300." )
+            "Removing the setting, or commenting it out, will set the default value of 600." )
     public static final Setting<Integer> check_point_iops_limit =
-            newBuilder( "dbms.checkpoint.iops.limit", INT, 300 ).dynamic().build();
+            newBuilder( "dbms.checkpoint.iops.limit", INT, 600 ).dynamic().build();
 
     // Index sampling
     @Description( "Enable or disable background index sampling" )
