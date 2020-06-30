@@ -212,9 +212,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Statement.SyntaxError,
-                        String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
-                                "\"QINVALID\"%n" +
-                                " ^" ) ),
+                        String.format( "line 1, column 1" ) ),
                 msgIgnored() ) );
 
         // When
