@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
@@ -1134,6 +1135,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolesPrivileges(List(util.Left("role1")))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
+
+    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(Parameter("user2", CTString)(pos))))(pos), List(), None, None, None), 1.0),
+      planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("USERS user1, $user2")), Set.empty))
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),
       planDescription(id, "CreateDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
