@@ -128,11 +128,6 @@
             <artifactId>scala-reflect</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.scala-lang</groupId>-->
-<!--            <artifactId>scalap</artifactId>-->
-<!--        </dependency>-->
-
         <!-- scala test dependencies -->
 
         <dependency>
