@@ -25,10 +25,13 @@ import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
+import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.scheduler.Group;
 
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
@@ -43,7 +46,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
                                                    CypherPlannerConfiguration plannerConfig,
                                                    CypherRuntimeConfiguration runtimeConfig )
     {
-        return new CommunityCompilerFactory( queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig );
+        return new CommunityCompilerFactory( queryService, spi.monitors(), makeCacheFactory(spi), spi.logProvider(), plannerConfig, runtimeConfig );
     }
 
     @Override
@@ -58,20 +61,26 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), isSystemDatabase );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
         CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig );
+        CaffeineCacheFactory cacheFactory = makeCacheFactory( spi );
         if ( isSystemDatabase )
         {
             CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), false );
             CommunityCompilerFactory innerCompilerFactory =
-                    new CommunityCompilerFactory( queryService,spi.monitors(), spi.logProvider(), innerPlannerConfig, runtimeConfig );
-            return new SystemExecutionEngine( queryService, spi.logProvider(), compilerFactory, innerCompilerFactory );
+                    new CommunityCompilerFactory( queryService,spi.monitors(), cacheFactory, spi.logProvider(), innerPlannerConfig, runtimeConfig );
+            return new SystemExecutionEngine( queryService, cacheFactory, spi.logProvider(), compilerFactory, innerCompilerFactory );
         }
         else if ( spi.config().get( GraphDatabaseInternalSettings.snapshot_query ) )
         {
-            return new SnapshotExecutionEngine( queryService, spi.config(), spi.logProvider(), compilerFactory );
+            return new SnapshotExecutionEngine( queryService, spi.config(), cacheFactory, spi.logProvider(), compilerFactory );
         }
         else
         {
-            return new ExecutionEngine( queryService, spi.logProvider(), compilerFactory );
+            return new ExecutionEngine( queryService, cacheFactory, spi.logProvider(), compilerFactory );
         }
+    }
+
+    private CaffeineCacheFactory makeCacheFactory( SPI spi )
+    {
+        return new ExecutorBasedCaffeineCacheFactory( spi.jobScheduler().executor( Group.CYPHER_CACHE ) );
     }
 }

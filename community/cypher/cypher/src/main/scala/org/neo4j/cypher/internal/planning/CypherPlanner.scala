@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -101,6 +102,8 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 import org.neo4j.monitoring
+import org.neo4j.scheduler.Group
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
@@ -122,19 +125,22 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          clock: Clock,
                          kernelMonitors: monitoring.Monitors,
                          log: Log,
+                         cacheFactory: CaffeineCacheFactory,
                          plannerOption: CypherPlannerOption,
                          updateStrategy: CypherUpdateStrategy,
                          txIdProvider: () => Long,
-                         compatibilityMode: CypherCompatibilityVersion) {
+                         compatibilityMode: CypherCompatibilityVersion
+    ) {
 
-  private val parsedQueries = new LFUCache[String, BaseState](config.queryCacheSize)
+  private val parsedQueries = new LFUCache[String, BaseState](cacheFactory, config.queryCacheSize)
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
   private val cacheTracer: CacheTracer[Pair[Statement, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[Statement, ParameterTypeMap]]]("cypher")
 
   private val planCache: AstLogicalPlanCache[Statement] =
-    new AstLogicalPlanCache(config.queryCacheSize,
+    new AstLogicalPlanCache(cacheFactory,
+      config.queryCacheSize,
       cacheTracer,
       clock,
       config.statsDivergenceCalculator,

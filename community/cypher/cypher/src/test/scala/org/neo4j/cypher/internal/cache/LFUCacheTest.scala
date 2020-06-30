@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.cache
 
+
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LFUCacheTest extends CypherFunSuite {
 
   test("testClear") {
-    val cache = new LFUCache[String, String](5)
+    val cache = new LFUCache[String, String](TestExecutorCaffeineCacheFactory, 5)
 
     cache.put("A","A")
     cache.put("B","B")

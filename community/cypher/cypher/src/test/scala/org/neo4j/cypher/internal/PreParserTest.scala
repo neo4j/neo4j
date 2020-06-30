@@ -26,6 +26,7 @@ import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
 
@@ -37,7 +38,8 @@ class PreParserTest extends CypherFunSuite {
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
     CypherInterpretedPipesFallbackOption.default,
-    0)
+    0,
+    TestExecutorCaffeineCacheFactory)
 
   test("should not allow inconsistent runtime options") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted runtime=interpreted RETURN 42"))

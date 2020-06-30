@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric
 
+import java.util.concurrent.Executors
+
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.PreParsedQuery
@@ -29,6 +31,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Condition
@@ -113,7 +116,8 @@ trait FragmentTestUtils {
   val cypherConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
   val monitors: Monitors = new Monitors
 
-  val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, signatures)
+  val cacheFactory = new ExecutorBasedCaffeineCacheFactory(Executors.newWorkStealingPool)
+  val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, signatures, cacheFactory)
 
   def pipeline(query: String): frontend.Pipeline =
     frontend.Pipeline(frontend.preParsing.preParse(query), params)

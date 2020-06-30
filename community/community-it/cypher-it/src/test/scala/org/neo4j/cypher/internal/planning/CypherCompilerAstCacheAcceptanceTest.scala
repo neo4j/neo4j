@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
@@ -69,6 +70,8 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
+  val cacheFactory = TestExecutorCaffeineCacheFactory
+
   private def plannerConfig(queryCacheSize: Int = 128,
                             statsDivergenceThreshold: Double = 0.5,
                             queryPlanTTL: Long = 1000): CypherPlannerConfiguration = {
@@ -86,6 +89,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       planSystemCommands = false,
       readPropertiesFromCursor = false
     )
+
   }
 
   private def createCompiler(config: CypherPlannerConfiguration,
@@ -95,6 +99,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       clock,
       kernelMonitors,
       log,
+      cacheFactory,
       cypher.CypherPlannerOption.default,
       CypherUpdateStrategy.default,
       () => 1,
@@ -147,7 +152,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherExpressionEngineOption.default,
       CypherOperatorEngineOption.default,
       CypherInterpretedPipesFallbackOption.default,
-      1)
+      1,
+      cacheFactory)
 
     val preParsedQuery = preParser.preParseQuery(query)
 
@@ -386,7 +392,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val config = resolver.resolveDependency(classOf[Config])
     val cypherConfig = CypherConfiguration.fromConfig(config)
     val compilerFactory =
-      new CommunityCompilerFactory(graph, monitors, nullLogProvider,
+      new CommunityCompilerFactory(graph, monitors, cacheFactory, nullLogProvider,
         cypherConfig.toCypherPlannerConfiguration(config, planSystemCommands = false), cypherConfig.toCypherRuntimeConfiguration)
     new CompilerLibrary(compilerFactory, () => null)
   }

@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.cache
 import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 
 /**
  * Simple thread-safe cache with a least-frequently-used eviction policy.
  */
-class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) {
+class LFUCache[K <: AnyRef, V <: AnyRef](cacheFactory: CaffeineCacheFactory, val size: Int) {
 
-  val inner: Cache[K, V] = Caffeine.newBuilder().maximumSize(size).build[K, V]()
+  val inner: Cache[K, V] = cacheFactory.createCache(size)
 
   def computeIfAbsent(key: K, f: => V): V = inner.get(key, new Function[K, V] {
     override def apply(t: K): V = f

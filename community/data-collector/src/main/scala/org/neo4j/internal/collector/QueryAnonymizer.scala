@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.CypherParser
@@ -56,7 +57,8 @@ object IdAnonymizer {
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
     CypherInterpretedPipesFallbackOption.default,
-    0)
+    0,
+    new ExecutorBasedCaffeineCacheFactory((_:Runnable).run()))
 }
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {

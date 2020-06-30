@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_1
@@ -33,12 +34,14 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.Log
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring
+import org.neo4j.scheduler.JobScheduler
 
 /**
  * Factory which creates cypher compilers.
  */
 class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                                kernelMonitors: monitoring.Monitors,
+                               cacheFactory: CaffeineCacheFactory,
                                logProvider: LogProvider,
                                plannerConfig: CypherPlannerConfiguration,
                                runtimeConfig: CypherRuntimeConfiguration
@@ -66,6 +69,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         MasterCompiler.CLOCK,
         kernelMonitors,
         log,
+        cacheFactory,
         cypherPlanner,
         cypherUpdateStrategy,
         LastCommittedTxIdProvider(graph),

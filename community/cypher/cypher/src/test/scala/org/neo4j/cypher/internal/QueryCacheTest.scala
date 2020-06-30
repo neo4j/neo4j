@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
@@ -371,10 +372,12 @@ object QueryCacheTest extends MockitoSugar {
   }
 
   val TC: TransactionalContext = mock[TransactionalContext]
+  private val RECOMPILE_LIMIT = 2
+  private val cacheFactory = TestExecutorCaffeineCacheFactory
+
   type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
   type Key = Pair[String, ParameterTypeMap]
 
-  private val RECOMPILE_LIMIT = 2
   def compilerWithExpressionCodeGenOption(key: Key): CompilerWithExpressionCodeGenOption[MyValue] = new CompilerWithExpressionCodeGenOption[MyValue] {
     override def compile(): MyValue = compiled(key)
 
@@ -388,7 +391,7 @@ object QueryCacheTest extends MockitoSugar {
   def newKey(string: String): Key = Pair.of(string, ParameterTypeMap.empty)
 
   def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(), size: Int = 10): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
-    new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](size, stalenessCaller, tracer)
+    new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](cacheFactory, size, stalenessCaller, tracer)
   }
 
   def newTracer(): Tracer = mock[Tracer]

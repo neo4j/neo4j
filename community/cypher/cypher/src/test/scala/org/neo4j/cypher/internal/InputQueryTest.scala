@@ -25,6 +25,7 @@ import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -43,7 +44,8 @@ class InputQueryTest extends CypherFunSuite {
       CypherExpressionEngineOption.default,
       CypherOperatorEngineOption.default,
       CypherInterpretedPipesFallbackOption.default,
-      0)
+      0,
+      TestExecutorCaffeineCacheFactory)
 
   private def parser =
     CompilationPhases.parsing(ParsingConfig(RewriterStepSequencer.newPlain, new GeneratingNamer))

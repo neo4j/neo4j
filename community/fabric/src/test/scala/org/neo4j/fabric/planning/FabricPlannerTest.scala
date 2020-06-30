@@ -83,7 +83,7 @@ class FabricPlannerTest
   }
 
   private val config = makeConfig("mega")
-  private val planner = FabricPlanner(config, cypherConfig, monitors, signatures)
+  private val planner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
   private def instance(query: String, params: MapValue = params, fabricContext: Boolean = false): planner.PlannerInstance =
     planner.instance(query, params, defaultGraphName).withForceFabricContext(fabricContext)
@@ -442,7 +442,7 @@ class FabricPlannerTest
   "Cache:" - {
 
     "cache hit on equal input" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """WITH 1 AS x
@@ -465,7 +465,7 @@ class FabricPlannerTest
     }
 
     "cache miss on different query" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q1 =
         """WITH 1 AS x
@@ -485,7 +485,7 @@ class FabricPlannerTest
     }
 
     "cache miss on different default graph" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """WITH 1 AS x
@@ -500,7 +500,7 @@ class FabricPlannerTest
     }
 
     "cache miss on options" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q1 =
         """WITH 1 AS x
@@ -521,7 +521,7 @@ class FabricPlannerTest
     }
 
     "cache miss on different param types" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """WITH 1 AS x
@@ -536,7 +536,7 @@ class FabricPlannerTest
     }
 
     "cache miss on new params" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """WITH 1 AS x
@@ -551,7 +551,7 @@ class FabricPlannerTest
     }
 
     "cache hit on different param values" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """WITH 1 AS x
@@ -566,7 +566,7 @@ class FabricPlannerTest
     }
 
     "sensitive statements are not cached" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
       val q =
         """CREATE USER foo SET PASSWORD 'secret'
@@ -1053,7 +1053,7 @@ class FabricPlannerTest
 
     def planAndStitch(sessionGraphName: String, fabricName: String, query: String, params: MapValue = params) = {
       val planner =
-        FabricPlanner(makeConfig(fabricName), cypherConfig, monitors, signatures)
+        FabricPlanner(makeConfig(fabricName), cypherConfig, monitors, cacheFactory, signatures)
           .instance(query, params, sessionGraphName)
       Try(planner.plan)
     }

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpressionsInViewInvocations
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
@@ -67,6 +68,7 @@ case class FabricFrontEnd(
   cypherConfig: CypherConfiguration,
   kernelMonitors: monitoring.Monitors,
   signatures: ProcedureSignatureResolver,
+  cacheFactory: CaffeineCacheFactory
 ) {
 
   val compilationTracer = new TimingCompilationTracer(
@@ -82,6 +84,7 @@ case class FabricFrontEnd(
       cypherConfig.operatorEngine,
       cypherConfig.interpretedPipesFallback,
       cypherConfig.queryCacheSize,
+      cacheFactory
     )
 
     def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.executionMode match {

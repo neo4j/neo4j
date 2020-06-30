@@ -29,6 +29,7 @@ import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.scalatest.matchers.MatchResult
@@ -48,7 +49,8 @@ object DataCollectorMatchers {
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
     CypherInterpretedPipesFallbackOption.default,
-    0)
+    0,
+    TestExecutorCaffeineCacheFactory)
 
   /**
    * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.

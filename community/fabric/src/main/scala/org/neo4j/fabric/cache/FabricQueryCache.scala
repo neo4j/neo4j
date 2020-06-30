@@ -21,11 +21,12 @@ package org.neo4j.fabric.cache
 
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.values.virtual.MapValue
 
-class FabricQueryCache(size: Int) {
+class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
 
   type Query = String
   type Params = MapValue
@@ -35,7 +36,7 @@ class FabricQueryCache(size: Int) {
   type Key = (Query, ParamTypes, DefaultContextName)
   type Value = FabricPlan
 
-  private val cache = new LFUCache[Key, Value](size)
+  private val cache = new LFUCache[Key, Value](cacheFactory, size)
 
   private var hits: Long = 0
   private var misses: Long = 0

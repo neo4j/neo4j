@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * This class is a specialized form of the ExecutionEngine containing two internal Cypher engines.
@@ -39,13 +41,13 @@ class SystemExecutionEngine extends ExecutionEngine
      * This is used for processing system database commands, where the outer Cypher engine will only understand administration commands
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
-    SystemExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory systemCompilerFactory,
-            CompilerFactory normalCompilerFactory )
+    SystemExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory, LogProvider logProvider,
+                           CompilerFactory systemCompilerFactory, CompilerFactory normalCompilerFactory )
     {
         innerCypherExecutionEngine =
-                makeExecutionEngine( queryService, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
+                makeExecutionEngine( queryService, cacheFactory, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
         cypherExecutionEngine = // only understands ddl
-                makeExecutionEngine( queryService, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
+                makeExecutionEngine( queryService, cacheFactory, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
     }
 
     org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine()

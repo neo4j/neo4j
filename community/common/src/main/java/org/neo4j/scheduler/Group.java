@@ -71,6 +71,7 @@ public enum Group
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */
     CYPHER_WORKER( "CypherWorker", ExecutorServiceFactory.workStealing() ),
+    CYPHER_CACHE( "CypherCache", ExecutorServiceFactory.workStealing() ),
 
     // DATA COLLECTOR
     DATA_COLLECTOR( "DataCollector" ),
@@ -104,6 +105,9 @@ public enum Group
     // FABRIC
     FABRIC_IDLE_DRIVER_MONITOR( "FabricIdleDriverMonitor" ),
     FABRIC_WORKER( "FabricWorker" ),
+
+    // SECURITY
+    AUTH_CACHE( "AuthCache", ExecutorServiceFactory.workStealing() ),
 
     //TESTING
     TESTING( "TestingGroup", ExecutorServiceFactory.callingThread() );

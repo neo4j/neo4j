@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory;
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory$;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
@@ -147,7 +149,7 @@ class SnapshotExecutionEngineTest
                                         CompilerFactory compilerFactory,
                                         boolean containsUpdates )
         {
-            super( queryService, config, logProvider, compilerFactory );
+            super( queryService, config, TestExecutorCaffeineCacheFactory$.MODULE$, logProvider, compilerFactory );
             this.containsUpdates = containsUpdates;
         }
 

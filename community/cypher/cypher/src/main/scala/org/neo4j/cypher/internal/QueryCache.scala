@@ -24,6 +24,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
@@ -126,11 +127,12 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
 class QueryCache[QUERY_REP <: AnyRef,
                  QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap],
                  EXECUTABLE_QUERY <: CacheabilityInfo](
+                                                       val cacheFactory: CaffeineCacheFactory,
                                                        val maximumSize: Int,
                                                        val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
                                                        val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
-  private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
+  private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 
   /*
     * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.PlanStalenessCaller
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.ReusabilityState
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -44,13 +45,15 @@ import org.neo4j.logging.Log
  * @param lastCommittedTxIdProvider Transation id provider used to compute logical plan staleness
  * @tparam STATEMENT Type of AST statement used as key
  */
-class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
+class AstLogicalPlanCache[STATEMENT <: AnyRef](override val cacheFactory: CaffeineCacheFactory,
+                                               override val maximumSize: Int,
                                                override val tracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]],
                                                clock: Clock,
                                                divergence: StatsDivergenceCalculator,
                                                lastCommittedTxIdProvider: () => Long,
                                                log: Log)
   extends QueryCache[STATEMENT, Pair[STATEMENT, ParameterTypeMap], CacheableLogicalPlan](
+    cacheFactory,
     maximumSize,
     AstLogicalPlanCache.stalenessCaller(clock,
       divergence,

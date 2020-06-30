@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.cache.FabricQueryCache
@@ -38,15 +39,16 @@ import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 case class FabricPlanner(
-  config: FabricConfig,
-  cypherConfig: CypherConfiguration,
-  monitors: Monitors,
-  signatures: ProcedureSignatureResolver
+                          config: FabricConfig,
+                          cypherConfig: CypherConfiguration,
+                          monitors: Monitors,
+                          cacheFactory: CaffeineCacheFactory,
+                          signatures: ProcedureSignatureResolver
 ) {
 
-  private[planning] val queryCache = new FabricQueryCache(cypherConfig.queryCacheSize)
+  private[planning] val queryCache = new FabricQueryCache(cacheFactory, cypherConfig.queryCacheSize)
 
-  private val frontend = FabricFrontEnd(cypherConfig, monitors, signatures)
+  private val frontend = FabricFrontEnd(cypherConfig, monitors, signatures, cacheFactory)
 
   private def fabricContextName: Option[String] = {
     val name = config.getFabricDatabaseName

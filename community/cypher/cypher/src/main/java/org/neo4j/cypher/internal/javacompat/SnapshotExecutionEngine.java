@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.FullyParsedQuery;
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -47,10 +48,10 @@ public class SnapshotExecutionEngine extends ExecutionEngine
 {
     private final int maxQueryExecutionAttempts;
 
-    SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, LogProvider logProvider,
+    SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, CaffeineCacheFactory cacheFactory, LogProvider logProvider,
                              CompilerFactory compilerFactory )
     {
-        super( queryService, logProvider, compilerFactory );
+        super( queryService, cacheFactory, logProvider, compilerFactory );
         this.maxQueryExecutionAttempts = config.get( GraphDatabaseInternalSettings.snapshot_query_retries );
     }
 

@@ -32,6 +32,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -67,6 +68,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.Group.FABRIC_WORKER;
 
 public abstract class FabricServicesBootstrap
@@ -130,7 +132,8 @@ public abstract class FabricServicesBootstrap
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
         var statementLifecycles = new FabricStatementLifecycles( databaseManager, monitors, config, systemNanoClock );
-        var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, signatureResolver ), FabricPlanner.class );
+        var cacheFactory = new ExecutorBasedCaffeineCacheFactory( jobScheduler.executor( CYPHER_CACHE ) );
+        var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, cacheFactory, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 
         register( new FabricReactorHooksService( errorReporter ), FabricReactorHooksService.class );

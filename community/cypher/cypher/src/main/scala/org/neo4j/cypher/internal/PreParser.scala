@@ -28,6 +28,7 @@ import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InvalidArgumentException
@@ -59,9 +60,10 @@ class PreParser(configuredVersion: CypherVersion,
                 configuredExpressionEngine: CypherExpressionEngineOption,
                 configuredOperatorEngine: CypherOperatorEngineOption,
                 configuredInterpretedPipesFallback: CypherInterpretedPipesFallbackOption,
-                planCacheSize: Int) {
+                planCacheSize: Int,
+                cacheFactory: CaffeineCacheFactory) {
 
-  private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
+  private val preParsedQueries = new LFUCache[String, PreParsedQuery](cacheFactory, planCacheSize)
 
   /**
    * Clear the pre-parser query cache.

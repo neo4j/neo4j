@@ -24,6 +24,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -60,6 +61,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val cacheTracer: CacheTracer[Pair[String, ParameterTypeMap]],
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
+                      val cacheFactory: CaffeineCacheFactory,
                       val logProvider: LogProvider,
                       val clock: Clock = Clock.systemUTC() ) {
 
@@ -74,7 +76,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     config.expressionEngineOption,
     config.operatorEngine,
     config.interpretedPipesFallback,
-    config.queryCacheSize)
+    config.queryCacheSize,
+    cacheFactory)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(executableQuery: ExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =
@@ -96,7 +99,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       log)
 
   private val queryCache: QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery] =
-    new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
+    new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 

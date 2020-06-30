@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
 import org.neo4j.cypher.internal.FullyParsedQuery;
+import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -61,9 +63,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     /**
      * Creates an execution engine around the given graph database
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory compilerFactory )
+    public ExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory, LogProvider logProvider,
+                            CompilerFactory compilerFactory )
     {
-        cypherExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
+        cypherExecutionEngine =
+                makeExecutionEngine( queryService, cacheFactory, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
     }
 
     /**
@@ -83,8 +87,8 @@ public class ExecutionEngine implements QueryExecutionEngine
         return cypherExecutionEngine;
     }
 
-    protected org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider,
-            CompilerLibrary compilerLibrary )
+    protected org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory,
+                                                                             LogProvider logProvider, CompilerLibrary compilerLibrary )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
@@ -99,6 +103,7 @@ public class ExecutionEngine implements QueryExecutionEngine
                 cacheTracer,
                 cypherConfiguration,
                 compilerLibrary,
+                cacheFactory,
                 logProvider,
                 Clock.systemUTC() );
     }
