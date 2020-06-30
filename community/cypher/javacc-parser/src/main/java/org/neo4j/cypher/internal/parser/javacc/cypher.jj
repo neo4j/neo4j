@@ -279,7 +279,6 @@ TOKEN [IGNORE_CASE] :
 | < KEY: "KEY" >
 | < UNIQUE: "UNIQUE" >
 | < ON: "ON" >
-| < FOR: "FOR" >
 | < AS: "AS" >
 | < OR: "OR" >
 | < XOR: "XOR" >
