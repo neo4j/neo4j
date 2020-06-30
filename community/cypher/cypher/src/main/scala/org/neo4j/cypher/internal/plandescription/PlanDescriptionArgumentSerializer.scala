@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
-import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
@@ -52,7 +51,6 @@ object PlanDescriptionArgumentSerializer {
       case GlobalMemory(value) => Long.box(value)
       case PageCacheHits(value) => Long.box(value)
       case PageCacheMisses(value) => Long.box(value)
-      case PageCacheHitRatio(value) => Double.box(value)
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)
       case EstimatedRows(value) => Double.box(value)

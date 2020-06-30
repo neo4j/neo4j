@@ -98,7 +98,6 @@ class ProfilingTracerTest extends CypherFunSuite {
     profile.rows() should equal(OperatorProfile.NO_DATA)
     profile.pageCacheHits() should equal(OperatorProfile.NO_DATA)
     profile.pageCacheMisses() should equal(OperatorProfile.NO_DATA)
-    profile.pageCacheHitRatio() should equal(OperatorProfile.NO_DATA)
   }
 
   test("shouldReportDbHitsOfQueryExecution") {

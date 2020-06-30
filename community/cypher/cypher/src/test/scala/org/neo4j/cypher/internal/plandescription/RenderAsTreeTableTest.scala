@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
-import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
@@ -180,63 +179,57 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       DbHits(33),
       PageCacheHits(1),
       PageCacheMisses(2),
-      PageCacheHitRatio(1.0/3),
       EstimatedRows(1)), Set())
     val leaf2 = planDescription(id, "LEAF2", NoChildren, Seq(
       Rows(9),
       DbHits(2),
       PageCacheHits(2),
       PageCacheMisses(3),
-      PageCacheHitRatio(2.0/5),
       EstimatedRows(1)), Set())
     val leaf3 = planDescription(id, "LEAF3", NoChildren, Seq(
       Rows(9),
       DbHits(2),
       PageCacheHits(3),
       PageCacheMisses(4),
-      PageCacheHitRatio(3.0/7),
       EstimatedRows(1)), Set())
     val pass = planDescription(id, "PASS", SingleChild(leaf2), Seq(
       Rows(4),
       DbHits(0),
       PageCacheHits(4),
       PageCacheMisses(1),
-      PageCacheHitRatio(4.0/5),
       EstimatedRows(4)), Set())
     val inner = planDescription(id, "INNER", TwoChildren(leaf1, pass), Seq(
       Rows(7),
       DbHits(42),
       PageCacheHits(5),
       PageCacheMisses(2),
-      PageCacheHitRatio(5.0/7),
       EstimatedRows(6)), Set())
     val plan = planDescription(id, "ROOT", TwoChildren(leaf3, inner), Seq(
       Rows(3),
       DbHits(0),
       PageCacheHits(7),
       PageCacheMisses(10),
-      PageCacheHitRatio(7.0/17),
       EstimatedRows(1)), Set())
     val parent = planDescription(id, "PARENT", SingleChild(plan), Seq(), Set())
 
     renderAsTreeTable(parent) should equal(
-      """+------------+----------------+------+---------+-----------------+-------------------+----------------------+
-        || Operator   | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio |
-        |+------------+----------------+------+---------+-----------------+-------------------+----------------------+
-        || +PARENT    |                |      |         |                 |                   |                      |
-        || |          +----------------+------+---------+-----------------+-------------------+----------------------+
-        || +ROOT      |              1 |    3 |       0 |               7 |                10 |               0.4118 |
-        || |\         +----------------+------+---------+-----------------+-------------------+----------------------+
-        || | +INNER   |              6 |    7 |      42 |               5 |                 2 |               0.7143 |
-        || | |\       +----------------+------+---------+-----------------+-------------------+----------------------+
-        || | | +PASS  |              4 |    4 |       0 |               4 |                 1 |               0.8000 |
-        || | | |      +----------------+------+---------+-----------------+-------------------+----------------------+
-        || | | +LEAF2 |              1 |    9 |       2 |               2 |                 3 |               0.4000 |
-        || | |        +----------------+------+---------+-----------------+-------------------+----------------------+
-        || | +LEAF1   |              1 |   42 |      33 |               1 |                 2 |               0.3333 |
-        || |          +----------------+------+---------+-----------------+-------------------+----------------------+
-        || +LEAF3     |              1 |    9 |       2 |               3 |                 4 |               0.4286 |
-        |+------------+----------------+------+---------+-----------------+-------------------+----------------------+
+      """+------------+----------------+------+---------+------------------------+
+        || Operator   | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses |
+        |+------------+----------------+------+---------+------------------------+
+        || +PARENT    |                |      |         |                        |
+        || |          +----------------+------+---------+------------------------+
+        || +ROOT      |              1 |    3 |       0 |                   7/10 |
+        || |\         +----------------+------+---------+------------------------+
+        || | +INNER   |              6 |    7 |      42 |                    5/2 |
+        || | |\       +----------------+------+---------+------------------------+
+        || | | +PASS  |              4 |    4 |       0 |                    4/1 |
+        || | | |      +----------------+------+---------+------------------------+
+        || | | +LEAF2 |              1 |    9 |       2 |                    2/3 |
+        || | |        +----------------+------+---------+------------------------+
+        || | +LEAF1   |              1 |   42 |      33 |                    1/2 |
+        || |          +----------------+------+---------+------------------------+
+        || +LEAF3     |              1 |    9 |       2 |                    3/4 |
+        |+------------+----------------+------+---------+------------------------+
         |""".stripMargin)
   }
 
@@ -355,7 +348,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------------+-------------+
-        || Operator     | Details            | Order       |
+        || Operator     | Details            | Ordered by  |
         |+--------------+--------------------+-------------+
         || +Expand(All) | (from)<-[rel]-(to) | anon_42 ASC |
         |+--------------+--------------------+-------------+

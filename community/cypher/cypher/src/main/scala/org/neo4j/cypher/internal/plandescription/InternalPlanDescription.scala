@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
-import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
@@ -267,14 +266,14 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
           case DbHits(v) => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
           case PageCacheHits(v) => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
           case PageCacheMisses(v) => pageCacheMisses = Some(pageCacheMisses.map(_ + v).getOrElse(v)); false
-          case PageCacheHitRatio(v) => pageCacheHitRatio = Some(pageCacheHitRatio.map(_ + v).getOrElse(v)); false
           case Time(v) => time = Some(time.map(_ + v).getOrElse(v)); false
           case Rows(v) => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
           case _ => true
         }
         acc ++ args
-    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++ pageCacheHits.map(PageCacheHits.apply) ++
-      pageCacheMisses.map(PageCacheMisses.apply) ++ pageCacheHitRatio.map(PageCacheHitRatio.apply) ++
+    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++
+      pageCacheHits.map(PageCacheHits.apply) ++
+      pageCacheMisses.map(PageCacheMisses.apply) ++
       time.map(Time.apply) ++ rows.map(Rows.apply)
   }
 

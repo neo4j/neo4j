@@ -62,7 +62,6 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .addArgument(Arguments.DbHits, data.dbHits)
           .addArgument(Arguments.PageCacheHits, data.pageCacheHits)
           .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
-          .addArgument(Arguments.PageCacheHitRatio, data.pageCacheHitRatio())
           .addArgument(Arguments.Time, data.time())
           .addArgument(Arguments.Memory, data.maxAllocatedMemory())
         .plan

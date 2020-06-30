@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
-import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHitRatio
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
@@ -54,14 +53,12 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val ROWS = "Rows"
   private val HITS = "DB Hits"
   private val MEMORY = "Memory (Bytes)"
-  private val PAGE_CACHE_HITS = "Page Cache Hits"
-  private val PAGE_CACHE_MISSES = "Page Cache Misses"
-  private val PAGE_CACHE_HIT_RATIO = "Page Cache Hit Ratio"
+  private val PAGE_CACHE = "Page Cache Hits/Misses"
   private val TIME = "Time (ms)"
-  private val ORDER = "Order"
+  private val ORDER = "Ordered by"
   val MAX_DETAILS_COLUMN_WIDTH = 100
   private val OTHER = "Other"
-  private val HEADERS = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
+  private val HEADERS = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME,
     ORDER, OTHER)
   private val newLine = System.lineSeparator()
   private val SEPARATOR = ","
@@ -173,9 +170,10 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case Rows(count) => mapping(ROWS, RightJustifiedCell(count.toString), columns)
     case DbHits(count) => mapping(HITS, RightJustifiedCell(count.toString), columns)
     case Memory(count) => mapping(MEMORY, RightJustifiedCell(count.toString), columns)
-    case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, RightJustifiedCell(count.toString), columns)
-    case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, RightJustifiedCell(count.toString), columns)
-    case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, RightJustifiedCell("%.4f".format(ratio)), columns)
+    case PageCacheHits(count) => mapping(PAGE_CACHE, RightJustifiedCell(
+      s"${count.toString}/${description.arguments.collectFirst {
+        case PageCacheMisses(count) => count
+      }.getOrElse(0L)}"), columns)
     case Time(nanos) => mapping(TIME, RightJustifiedCell("%.3f".format(nanos/1000000.0)), columns)
     case Order(providedOrder) => mapping(ORDER, LeftJustifiedCell(providedOrder.prettifiedString), columns)
     case Details(detailsList) =>
@@ -250,7 +248,6 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[GlobalMemory] &&
         !x.isInstanceOf[PageCacheHits] &&
         !x.isInstanceOf[PageCacheMisses] &&
-        !x.isInstanceOf[PageCacheHitRatio] &&
         !x.isInstanceOf[EstimatedRows] &&
         !x.isInstanceOf[Order] &&
         !x.isInstanceOf[Planner] &&

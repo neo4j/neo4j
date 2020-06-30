@@ -21,8 +21,6 @@ package org.neo4j.cypher.result;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.helpers.MathUtil;
-
 /**
  * Profile for a operator during a query execution.
  */
@@ -58,12 +56,6 @@ public interface OperatorProfile
      * The maximum amount of memory that this operator held onto while executing the query.
      */
     long maxAllocatedMemory();
-
-    default double pageCacheHitRatio()
-    {
-        return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA) ?
-               NO_DATA : MathUtil.portion( pageCacheHits(), pageCacheMisses() );
-    }
 
     long NO_DATA = -1L;
 
