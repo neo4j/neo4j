@@ -19,30 +19,35 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
+@ExtendWith( OtherThreadExtension.class )
 public class TransientErrorIT extends AbstractRestFunctionalTestBase
 {
-    @Rule
-    public final OtherThreadRule otherThread = new OtherThreadRule();
+    @Inject
+    public OtherThreadRule otherThread;
 
-    @Test( timeout = 60000 )
+    @Test
+    @Timeout( 60 )
     public void deadlockShouldRollbackTransaction() throws Exception
     {
         // Given

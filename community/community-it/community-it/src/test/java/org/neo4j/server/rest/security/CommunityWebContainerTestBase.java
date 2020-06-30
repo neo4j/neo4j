@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
 {
     protected TestWebContainer testWebContainer;
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( testWebContainer != null )

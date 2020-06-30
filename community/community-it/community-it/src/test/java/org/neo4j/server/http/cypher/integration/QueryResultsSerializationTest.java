@@ -21,9 +21,9 @@ package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.ZoneId;
@@ -41,8 +41,8 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.getJsonNodeWithName;
@@ -63,7 +63,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
     private String commitResource;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         // begin
@@ -82,7 +82,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( commitResource ).isEqualTo( begin.location() + "/commit" );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         // empty the database

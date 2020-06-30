@@ -19,29 +19,21 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.provider.Arguments;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.neo4j.test.server.HTTP;
 
-import static java.util.Arrays.asList;
-
-@RunWith( Parameterized.class )
 public abstract class ParameterizedTransactionEndpointsTestBase extends AbstractRestFunctionalTestBase
 {
     protected final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
     private static final String LEGACY_TX_ENDPOINT = "db/data/transaction";
     protected static final String TX_ENDPOINT = "db/neo4j/tx";
 
-    @Parameterized.Parameter
-    public String txUri;
-
-    @Parameterized.Parameters
-    public static Collection<String> uris()
+    protected static Stream<Arguments> argumentsProvider()
     {
-        return asList( LEGACY_TX_ENDPOINT, TX_ENDPOINT );
+        return Stream.of( Arguments.of( LEGACY_TX_ENDPOINT ), Arguments.of( TX_ENDPOINT ) );
     }
 
     public HTTP.Response POST( String uri )

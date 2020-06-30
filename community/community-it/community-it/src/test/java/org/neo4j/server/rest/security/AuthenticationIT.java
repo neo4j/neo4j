@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import javax.ws.rs.core.HttpHeaders;
@@ -36,12 +36,12 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AuthenticationIT extends CommunityWebContainerTestBase
 {
-    @Rule
+    @RegisterExtension
     public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @Test

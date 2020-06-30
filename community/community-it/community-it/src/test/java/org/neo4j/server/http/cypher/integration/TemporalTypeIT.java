@@ -20,19 +20,19 @@
 package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TemporalTypeIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldWorkWithDateTime() throws Throwable
+    public void shouldWorkWithDateTime() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN datetime({year: 1, month:10, day:2, timezone:\\\"+01:00\\\"})" );
 
@@ -43,7 +43,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldWorkWithTime() throws Throwable
+    public void shouldWorkWithTime() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN time({hour: 23, minute: 19, second: 55, timezone:\\\"-07:00\\\"})" );
 
@@ -54,7 +54,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldWorkWithLocalDateTime() throws Throwable
+    public void shouldWorkWithLocalDateTime() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})" );
 
@@ -65,7 +65,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldWorkWithDate() throws Throwable
+    public void shouldWorkWithDate() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN date({year: 1984, month: 10, day: 11})" );
 
@@ -76,7 +76,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldWorkWithLocalTime() throws Throwable
+    public void shouldWorkWithLocalTime() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN localtime({hour:12, minute:31, second:14, nanosecond: 645876123})" );
 
@@ -87,7 +87,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldWorkWithDuration() throws Throwable
+    public void shouldWorkWithDuration() throws Exception
     {
         HTTP.Response response = runQuery( "RETURN duration({weeks:2, days:3})" );
 
@@ -98,7 +98,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldOnlyGetNodeTypeInMetaAsNodeProperties() throws Throwable
+    public void shouldOnlyGetNodeTypeInMetaAsNodeProperties() throws Exception
     {
         HTTP.Response response = runQuery(
                 "CREATE (account {name: \\\"zhen\\\", creationTime: localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})}) RETURN account" );

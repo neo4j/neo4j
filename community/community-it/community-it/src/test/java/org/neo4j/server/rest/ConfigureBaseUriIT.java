@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,15 +32,15 @@ import static java.lang.Integer.parseInt;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofByteArray;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private static HttpClient httpClient;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( container() );

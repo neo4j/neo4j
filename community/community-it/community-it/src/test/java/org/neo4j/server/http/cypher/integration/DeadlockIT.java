@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -29,20 +29,23 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
+@ExtendWith( OtherThreadExtension.class )
 public class DeadlockIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
 
-    @Rule
-    public OtherThreadRule otherThread = new OtherThreadRule();
+    @Inject
+    public OtherThreadRule otherThread;
 
     private final CountDownLatch secondNodeLocked = new CountDownLatch( 1 );
 

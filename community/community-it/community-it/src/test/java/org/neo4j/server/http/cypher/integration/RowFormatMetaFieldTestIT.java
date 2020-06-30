@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,7 +31,7 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsAMetaListAtIndex;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.rowContainsMetaNodesAtIndex;
@@ -44,7 +44,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
 
     private String commitResource;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         // begin
@@ -63,7 +63,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         assertThat( commitResource ).isEqualTo( begin.location() + "/commit" );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         // empty the database

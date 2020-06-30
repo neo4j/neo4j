@@ -19,6 +19,9 @@
  */
 package org.neo4j.test;
 
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -31,7 +34,7 @@ import java.util.Objects;
 
 import org.neo4j.annotations.documented.Documented;
 
-public class TestData<T> implements TestRule
+public class TestData<T> implements TestRule, BeforeEachCallback, AfterEachCallback
 {
     @Target( ElementType.METHOD )
     @Retention( RetentionPolicy.RUNTIME )
@@ -138,6 +141,28 @@ public class TestData<T> implements TestRule
                 }
             }
         };
+    }
+
+    @Override
+    public void beforeEach( ExtensionContext context )
+    {
+        var method = context.getRequiredTestMethod();
+        final Title title = method.getAnnotation( Title.class );
+        final Documented doc = method.getAnnotation( Documented.class );
+        GraphDescription.Graph g = method.getAnnotation( GraphDescription.Graph.class );
+        if ( g == null )
+        {
+            g = context.getRequiredTestClass().getAnnotation( GraphDescription.Graph.class );
+        }
+        final GraphDescription graph = GraphDescription.create( g );
+        product.set( create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
+                method.getName() ) );
+    }
+
+    @Override
+    public void afterEach( ExtensionContext context )
+    {
+        product.set( null );
     }
 
     private T get( boolean create )

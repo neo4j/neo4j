@@ -20,8 +20,8 @@
 package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,8 +36,8 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -45,7 +45,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
 {
-    @After
+    @AfterEach
     public void tearDown()
     {
         // empty the database
