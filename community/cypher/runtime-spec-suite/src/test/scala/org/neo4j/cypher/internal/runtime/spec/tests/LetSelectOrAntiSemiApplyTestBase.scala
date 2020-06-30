@@ -31,7 +31,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
                                                                            val sizeHint: Int
                                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("idName should only be true when RHS is empty if expression is false") {
+  test("if predicate is false, idName should only be true when RHS is empty") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -52,7 +52,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
-  test("idName should always be true if rhs is empty and expression is false") {
+  test("idName should always be true if rhs is empty and predicate is false") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -73,7 +73,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
-  test("idName should always be false if rhs is nonEmpty and the expression is false") {
+  test("idName should always be false if rhs is nonEmpty and the predicate is false") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -94,7 +94,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
-  test("if lhs is empty, rhs should not be touched regardless the given expression") {
+  test("if lhs is empty, rhs should not be touched regardless the given predicate") {
     //when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "idName")
@@ -109,7 +109,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x", "idName").withNoRows()
   }
 
-  test("rhs should not be touched if the predicate in letSelectOrAntiSemiApply always is true") {
+  test("if the predicate is true, then rhs should not be touched") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -129,7 +129,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x").withRows(inputRows)
   }
 
-  test("idName should be true for the row which are satisfying the expression even if the rhs is non-empty") {
+  test("idName should be true for the row which are satisfying the predicate even if the rhs is non-empty") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -150,7 +150,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](editi
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
-  test("idName should be true for the one that matches and the one satisfying the expression") {
+  test("idName should be true for rows satisfying the predicate or where rhs is empty") {
     //given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
