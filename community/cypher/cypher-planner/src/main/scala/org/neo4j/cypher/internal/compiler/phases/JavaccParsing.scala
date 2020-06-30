@@ -36,8 +36,11 @@ import org.neo4j.exceptions.SyntaxException
 
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val FALLBACK_TRIGGERS = Seq("INDEX",
+  private val FALLBACK_TRIGGERS = Seq(
+                                      // Schema commands
+                                      "INDEX",
                                       "CONSTRAINT",
+                                      // System commands
                                       "DROP",
                                       "DATABASE",
                                       "ROLE",
@@ -46,6 +49,8 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
                                       "DENY",
                                       "ALTER",
                                       "USER",
+                                      "REVOKE",
+                                      // Graph commands
                                       "CONSTRUCT",
                                       "CATALOG",
                                       "~")

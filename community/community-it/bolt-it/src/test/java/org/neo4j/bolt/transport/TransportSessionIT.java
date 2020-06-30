@@ -160,9 +160,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
-                        String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
-                                       "\"QINVALID\"%n" +
-                                       " ^" ) ), msgIgnored() ) );
+                        String.format( "line 1, column 1" ) ), msgIgnored() ) );
 
         // When
         connection.send( util.defaultReset() ).send( util.defaultRunAutoCommitTx( "RETURN 1" ) );
