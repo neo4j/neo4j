@@ -132,8 +132,9 @@ TOKEN_MGR_DECLS :
 {
 	public void CommonTokenAction(Token t)
 	{
-		t.beginOffset = ((CypherCharStream)input_stream).getBeginOffset();
-		t.endOffset = t.beginOffset + t.image.length();
+	    CypherCharStream ccStream = (CypherCharStream)input_stream;
+		t.beginOffset = ccStream.getBeginOffset();
+		t.endOffset = ccStream.getEndOffset();
 	}
 }
 
@@ -1171,7 +1172,7 @@ RETURN_ITEM ReturnItem() :
   e=Expression() { eEnd = token; } ( <AS> v=Variable() )?
   {
     if (v != null) return astFactory.newReturnItem(pos(eStart), e, v);
-    else return astFactory.newReturnItem(pos(eStart), e, eStart.next.beginLine, eStart.next.beginColumn, eEnd.endLine, eEnd.endColumn );
+    else return astFactory.newReturnItem(pos(eStart), e, eStart.next.beginOffset, eEnd.endOffset );
   }
 }
 

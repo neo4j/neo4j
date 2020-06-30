@@ -78,7 +78,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public NULL newReturnItem( NULL p, Object e, int eStartLine, int eStartColumn, int eEndLine, int eEndColumn )
+    public NULL newReturnItem( NULL p, Object e, int eStartOffset, int eEndOffset )
     {
         throw new UnsupportedOperationException( "newReturnItem is not a literal" );
     }

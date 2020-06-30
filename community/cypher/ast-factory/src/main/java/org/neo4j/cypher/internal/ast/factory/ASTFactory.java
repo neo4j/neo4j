@@ -98,7 +98,7 @@ public interface ASTFactory<STATEMENT,
 
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, VARIABLE v );
 
-    RETURN_ITEM newReturnItem( POS p, EXPRESSION e, int eStartLine, int eStartColumn, int eEndLine, int eEndColumn );
+    RETURN_ITEM newReturnItem( POS p, EXPRESSION e, int eStartOffset, int eEndOffset );
 
     ORDER_ITEM orderDesc( EXPRESSION e );
 

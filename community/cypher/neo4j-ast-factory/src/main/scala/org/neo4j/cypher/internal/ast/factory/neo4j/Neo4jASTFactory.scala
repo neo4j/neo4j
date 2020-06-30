@@ -189,8 +189,6 @@ class Neo4jASTFactory(query: String)
                      MapProjectionElement,
                      InputPosition] {
 
-  private lazy val lines = query.split(System.lineSeparator())
-
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
     if (clauses.isEmpty) {
       throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
@@ -249,28 +247,12 @@ class Neo4jASTFactory(query: String)
   override def newReturnItem(p: InputPosition, e: Expression,
                              v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)
 
-  override def newReturnItem(p: InputPosition, e: Expression,
-                             eStartLine: Int,
-                             eStartColumn: Int,
-                             eEndLine: Int,
-                             eEndColumn: Int): ReturnItem = {
+  override def newReturnItem(p: InputPosition,
+                             e: Expression,
+                             eStartOffset: Int,
+                             eEndOffset: Int): ReturnItem = {
 
-    val name =
-      if (eStartLine == eEndLine) lines(eStartLine-1).substring(eStartColumn-1, eEndColumn)
-      else {
-        val sb = new StringBuilder
-        sb ++= lines(eStartLine-1).substring(eStartColumn-1)
-
-        var l = eStartLine + 1
-        while (l < eEndLine) {
-          sb ++= lines(l)
-          l += 1
-        }
-
-        sb ++= lines(eEndLine-1).substring(0, eEndColumn-1)
-        sb.result()
-      }
-
+    val name = query.substring(eStartOffset, eEndOffset+1)
     UnaliasedReturnItem(e, name)(p)
   }
 

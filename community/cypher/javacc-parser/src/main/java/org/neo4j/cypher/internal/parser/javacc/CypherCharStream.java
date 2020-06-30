@@ -233,6 +233,11 @@ public class CypherCharStream implements CharStream
         return lines[resultCursor];
     }
 
+    public int getEndOffset()
+    {
+        return offsets[resultCursor];
+    }
+
     @Override
     public char beginToken() throws IOException
     {
