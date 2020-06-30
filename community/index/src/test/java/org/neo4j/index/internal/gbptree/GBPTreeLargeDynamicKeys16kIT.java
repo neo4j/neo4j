@@ -31,7 +31,8 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 public class GBPTreeLargeDynamicKeys16kIT extends GBPTreeLargeDynamicKeysITBase
 {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) kibiBytes( 16 ) ) );
+    static PageCacheSupportExtension pageCacheExtension =
+            new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( (int) kibiBytes( 16 ) ).withMemory( "16MiB" ) );
     @Inject
     private PageCache pageCache;
 
