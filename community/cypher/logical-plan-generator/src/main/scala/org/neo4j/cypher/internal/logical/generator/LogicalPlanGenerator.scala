@@ -522,9 +522,10 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
 
   def union(state: State): Gen[WithState[Union]] = for {
     WithState(left, state) <- innerLogicalPlan(state)
+    WithState(right, state) <- genPlanWithSameAvailableSymbols(left, state)
   } yield {
     // use a copy of left plan as right hand side in order to have the same available symbols
-    val plan = Union(left, copyPlanTreeAndUpdateCardinalities(left, state))(state.idGen)
+    val plan = Union(left, right)(state.idGen)
     annotate(plan, state)
   }
 
@@ -589,19 +590,46 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       }
     }
 
-  private def copyPlanTreeAndUpdateCardinalities(plan: LogicalPlan, state: State): LogicalPlan = {
-    val ids = new mutable.ArrayBuffer[(Id, Id)]()
-    val rewriter = topDown(Rewriter.lift {
-      case l: LogicalPlan if state.cardinalities.isDefinedAt(l.id) =>
-        val right = l.copyPlanWithIdGen(state.idGen)
-        ids += ((l.id, right.id))
+  private def genPlanWithSameAvailableSymbols(plan: LogicalPlan, state: State) = for {
+    // We need to create a new state in order to be able to get the same variables as `plan`
+    rhsState <- Gen.delay(copyStateWithoutVariableInfo(state))
+    WithState(newPlan, newState) <- innerLogicalPlan(rhsState)
+      .suchThat {
+        case WithState(source, _) => (source.availableSymbols == plan.availableSymbols)
+      }
+  } yield {
+    newState.cardinalities.copyDefinedValuesTo(state.cardinalities)
 
-        right
-    })
-    val copy = rewriter.apply(plan).asInstanceOf[LogicalPlan]
-    ids.foreach { case (oldId, newId) => state.cardinalities.copy(oldId, newId) }
+    WithState(newPlan, state)
+  }
 
-    copy
+  /*
+  * Creates a new state, given another state.
+  *
+  * - will have the same arguments as `state`
+  * - will have the same leafCardinalityMultiplier as `state`
+  * - varCount will be arguments.size, since we can't override the arguments
+  * - will have the same id generator as state
+   */
+  private def copyStateWithoutVariableInfo(state: State) = {
+    val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
+    val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+    val arguments = state.arguments
+    val variables: Set[Expression] = arguments.map(varFor)
+    val semanticTable = new SemanticTable(
+      resolvedLabelNames = resolvedLabelTypes,
+      resolvedRelTypeNames = resolvedRelTypes,
+      types = ASTAnnotationMap(state.semanticTable.types.filterKeys(variables.contains).toList: _*))
+
+    State(
+      semanticTable,
+      arguments,
+      arguments.size,
+      state.parameters,
+      List(state.leafCardinalityMultiplier),
+      Map.empty.withDefaultValue(Set.empty),
+      new Cardinalities,
+      state.idGen)
   }
 
   /**

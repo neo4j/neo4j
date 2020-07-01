@@ -29,6 +29,12 @@ trait Attribute[KEY, VALUE] {
     to
   }
 
+  def copyDefinedValuesTo[T <: Attribute[KEY, VALUE]](to: T): Unit = {
+    iterator.foreach {
+      case (id, value) => to.set(id, value)
+    }
+  }
+
   def set(id: Id, t: VALUE): Unit = {
     val requiredSize = id.x + 1
     if (array.size < requiredSize)
