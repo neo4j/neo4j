@@ -397,12 +397,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, args, variables)
 
       case ShowDatabase(scope, _, _, where, _) =>
-        val (name, args) = scope match {
-          case NamedDatabaseScope(dbName) => ("ShowDatabase", showCommandDetails(where, escapeName(dbName)))
-          case _: AllDatabasesScope => ("ShowDatabases", showCommandDetails(where))
-          case _: DefaultDatabaseScope => ("ShowDefaultDatabase", showCommandDetails(where))
+        val args = scope match {
+          case NamedDatabaseScope(dbName) => showCommandDetails(where, escapeName(dbName))
+          case _: AllDatabasesScope => showCommandDetails(where)
+          case _: DefaultDatabaseScope => showCommandDetails(where)
         }
-        PlanDescriptionImpl(id, name, NoChildren, args, variables)
+        PlanDescriptionImpl(id, scope.showCommandName, NoChildren, args, variables)
 
       case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)

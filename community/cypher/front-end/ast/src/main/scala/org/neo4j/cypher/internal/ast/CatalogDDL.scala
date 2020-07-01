@@ -370,16 +370,24 @@ final case class NamedGraphScope(graph: Either[String, Parameter])(val position:
 
 final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
 
-sealed trait DatabaseScope extends GraphOrDatabaseScope
+sealed trait DatabaseScope extends GraphOrDatabaseScope {
+  val showCommandName: String
+}
 
 final case class NamedDatabaseScope(database: Either[String, Parameter])(val position: InputPosition) extends DatabaseScope {
   override def dup(children: Seq[AnyRef]): NamedDatabaseScope.this.type =
     this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+
+  override val showCommandName: String = "ShowDatabase"
 }
 
-final case class AllDatabasesScope()(val position: InputPosition) extends DatabaseScope
+final case class AllDatabasesScope()(val position: InputPosition) extends DatabaseScope {
+  override val showCommandName: String = "ShowDatabases"
+}
 
-final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope
+final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope {
+  override val showCommandName: String = "ShowDefaultDatabase"
+}
 
 sealed trait ShowPrivilegeScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this

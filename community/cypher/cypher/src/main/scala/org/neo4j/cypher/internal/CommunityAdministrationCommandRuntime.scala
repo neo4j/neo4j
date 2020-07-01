@@ -240,9 +240,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
     case ShowDatabase(scope, symbols, yields, where, returns) => (_, _) =>
       val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
-      val (extraFilter, params, paramConverter, name) = scope match {
+      val (extraFilter, params, paramConverter) = scope match {
         // show default database
-        case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDefaultDatabase")
+        case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
         // show database name
         case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
@@ -251,9 +251,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
             nameFields.nameConverter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
           }
-          (s"AND d.name = $$`${nameFields.nameKey}`", VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)), combinedConverter, "ShowDatabase")
+          (s"AND d.name = $$`${nameFields.nameKey}`", VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)), combinedConverter)
         // show all databases
-        case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter, "ShowDatabases")
+        case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
       }
       val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
       val filtering = AdministrationShowCommandUtils.generateWhereClause(where)
@@ -264,7 +264,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                      |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
                      |$filtering
                      |$returnClause""".stripMargin
-      SystemCommandExecutionPlan(name, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
+      SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 
     case DoNothingIfNotExists(source, label, name, valueMapper) => (context, parameterMapping) =>
       val nameFields = getNameFields("name", name, valueMapper = valueMapper)
