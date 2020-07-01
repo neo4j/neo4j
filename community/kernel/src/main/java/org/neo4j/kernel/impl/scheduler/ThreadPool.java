@@ -34,9 +34,11 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
+import org.neo4j.util.FeatureToggles;
 
 final class ThreadPool
 {
+    private static final int SHUTDOWN_TIMEOUT_SECONDS = FeatureToggles.getInteger( ThreadPool.class, "shutdownTimeout", 30 );
     private final SchedulerThreadFactory threadFactory;
     private final ExecutorService executor;
     private final ConcurrentHashMap<Object,Future<?>> registry;
@@ -135,7 +137,7 @@ final class ThreadPool
         executor.shutdown();
         try
         {
-            executor.awaitTermination( 30, TimeUnit.SECONDS );
+            executor.awaitTermination( SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS );
         }
         catch ( InterruptedException e )
         {
