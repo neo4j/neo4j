@@ -124,22 +124,17 @@ object PreParser {
   private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set.empty
   private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
     Set(
-      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.compiled),
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
   private final val ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
     Set(
-      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.compiled),
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted))
   private final val ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS: Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
     Set(
-      (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.compiled),
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.interpreted),
-      (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.compiled),
       (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.interpreted),
-      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.compiled),
       (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.interpreted)
     )

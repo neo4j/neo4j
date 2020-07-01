@@ -24,12 +24,10 @@ import java.io.PrintWriter
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
-import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.NormalMode
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.READ_WRITE
@@ -149,8 +147,6 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
   private def standardInternalExecutionResult(inner: RuntimeResult, queryType: InternalQueryType,
                                               subscriber: QuerySubscriber) =
     new StandardInternalExecutionResult(
-      mock[QueryContext],
-      InterpretedRuntimeName,
       inner,
       new TaskCloser,
       queryType,

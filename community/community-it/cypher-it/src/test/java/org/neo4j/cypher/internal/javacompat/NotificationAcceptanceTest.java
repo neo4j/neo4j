@@ -48,13 +48,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport
 {
 
     @Test
-    void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery()
-    {
-        shouldNotifyInStreamWithDetail( "EXPLAIN CYPHER runtime=legacy_compiled RETURN 1", InputPosition.empty, RUNTIME_UNSUPPORTED,
-                NotificationDetail.Factory.message( "Runtime unsupported", "This version of Neo4j does not " + "support requested runtime: legacy_compiled" ) );
-    }
-
-    @Test
     void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery()
     {
         shouldNotifyInStreamWithDetail( "EXPLAIN CYPHER runtime=slotted RETURN 1", InputPosition.empty, RUNTIME_UNSUPPORTED,

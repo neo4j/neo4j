@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
@@ -77,14 +76,6 @@ public class CachingExpandInto implements AutoCloseable
     private final Direction direction;
 
     private final MemoryTracker scopedMemoryTracker;
-
-    //NOTE: this constructor is here for legacy compiled runtime where we don't track memory
-    //when we remove the legacy_compiled this should go as well.
-    @Deprecated
-    public CachingExpandInto( Read read, Direction direction )
-    {
-        this( read, direction, EmptyMemoryTracker.INSTANCE );
-    }
 
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker )
     {

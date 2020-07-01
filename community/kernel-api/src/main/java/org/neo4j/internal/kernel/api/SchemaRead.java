@@ -46,25 +46,6 @@ public interface SchemaRead extends SchemaReadCore
     Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
-     * This method only exists to make the Cypher Compiled Runtime happy. It should be removed once the compiled runtime is removed.
-     */
-    @Deprecated
-    default IndexDescriptor indexGetForLabelAndPropertiesForCompiledRuntime( int labelId, int[] propertyIds )
-    {
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyIds );
-        Iterator<IndexDescriptor> indexes = index( schema );
-        while ( indexes.hasNext() )
-        {
-            IndexDescriptor index = indexes.next();
-            if ( index.getIndexType() == IndexType.BTREE )
-            {
-                return index;
-            }
-        }
-        return IndexDescriptor.NO_INDEX;
-    }
-
-    /**
      * Computes the selectivity of the unique values.
      *
      * @param index The index of interest

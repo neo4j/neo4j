@@ -349,8 +349,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
         taskCloser.addTask(_ => runtimeResult.close())
 
-        new StandardInternalExecutionResult(queryContext,
-          executionPlan.runtimeName,
+        new StandardInternalExecutionResult(
           runtimeResult,
           taskCloser,
           internalQueryType,

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
-import org.neo4j.cypher.internal.compiler.DeprecatedCompiledRuntimeNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
 import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
@@ -105,8 +104,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDropConstraintSyntax(pos) =>
       NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedCompiledRuntimeNotification =>
-      NotificationCode.DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>

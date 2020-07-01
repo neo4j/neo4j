@@ -56,7 +56,6 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
 
   def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
-      | option("runtime", "legacy_compiled") ~ push(CompiledRuntimeOption)
       | option("runtime", "slotted") ~ push(SlottedRuntimeOption)
       | option("runtime", "pipelined") ~ push(PipelinedRuntimeOption)
       | option("runtime", "parallel") ~ push(ParallelRuntimeOption)

@@ -113,16 +113,4 @@ class EagerQueryExecution extends EagerQuerySubscription implements QueryExecuti
             subscriber.onField( i, Values.of( currentRow.get( fieldNames.get( i ) ) ) );
         }
     }
-
-    @Override
-    public boolean isVisitable()
-    {
-        return false;
-    }
-
-    @Override
-    public <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
-    {
-        throw new IllegalStateException( "EagerQueryExecution is not visitable" );
-    }
 }

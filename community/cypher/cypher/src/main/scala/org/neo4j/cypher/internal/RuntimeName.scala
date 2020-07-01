@@ -36,10 +36,6 @@ case object PipelinedRuntimeName extends RuntimeName {
   override val name = "PIPELINED"
 }
 
-case object CompiledRuntimeName extends RuntimeName {
-  override val name = "LEGACY_COMPILED"
-}
-
 case object ParallelRuntimeName extends RuntimeName {
   override val name = "PARALLEL"
 }
@@ -58,7 +54,6 @@ object RuntimeName {
     case InterpretedRuntimeName.name => InterpretedRuntimeName
     case SlottedRuntimeName.name => SlottedRuntimeName
     case PipelinedRuntimeName.name => PipelinedRuntimeName
-    case CompiledRuntimeName.name => CompiledRuntimeName
     case ParallelRuntimeName.name => ParallelRuntimeName
     case SchemaRuntimeName.name => SchemaRuntimeName
     case SystemCommandRuntimeName.name => SystemCommandRuntimeName

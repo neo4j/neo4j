@@ -224,17 +224,5 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution
         {
             return hasMore;
         }
-
-        @Override
-        public boolean isVisitable()
-        {
-            return false;
-        }
-
-        @Override
-        public <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
-        {
-            throw new IllegalStateException( "Results are not visitable" );
-        }
     }
 }

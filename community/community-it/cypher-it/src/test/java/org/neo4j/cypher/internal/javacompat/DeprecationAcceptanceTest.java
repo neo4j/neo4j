@@ -28,36 +28,17 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.procedure.Procedure;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
 {
     private List<String> newerVersions = List.of("CYPHER 4.1 ", "CYPHER 4.2 ");
-
-    // DEPRECATED PRE-PARSER OPTIONS
-
-    @Test
-    void deprecatedCompiledRuntime()
-    {
-        // when
-        try ( Transaction transaction = db.beginTx() )
-        {
-            try ( Result result = transaction.execute( "EXPLAIN CYPHER runtime=legacy_compiled RETURN 1" ) )
-            {
-                // then
-                assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
-            }
-        }
-    }
 
     // DEPRECATED PROCEDURE THINGS
 
@@ -251,10 +232,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private Matcher<Notification> deprecatedFeatureWarning =
             deprecation( "The query used a deprecated function." );
-
-    private Matcher<Notification> deprecatedCompiledRuntime =
-            deprecation( "The compiled runtime, which was requested to execute this query, is deprecated " +
-                         "and will be removed in a future release." );
 
     private Matcher<Notification> deprecatedProcedureWarning =
             deprecation( "The query used a deprecated procedure." );

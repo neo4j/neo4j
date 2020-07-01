@@ -102,8 +102,6 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 import org.neo4j.monitoring
-import org.neo4j.scheduler.Group
-import org.neo4j.scheduler.JobScheduler
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 

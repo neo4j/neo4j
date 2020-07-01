@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compiler.DeprecatedCompiledRuntimeNotification
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
@@ -73,9 +71,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
     val logger = new RecordingNotificationLogger(Some(query.options.offset))
 
     def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
-
-    if (query.options.runtime == CypherRuntimeOption.compiled)
-      logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(

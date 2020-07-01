@@ -19,33 +19,22 @@
  */
 package org.neo4j.cypher.internal.result
 
-import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.util.TaskCloser
-import org.neo4j.cypher.result.QueryResult
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.VisitableRuntimeResult
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result.ResultRow
-import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class StandardInternalExecutionResult(context: QueryContext,
-                                      runtime: RuntimeName,
-                                      runtimeResult: RuntimeResult,
+class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
                                       taskCloser: TaskCloser,
                                       override val queryType: InternalQueryType,
                                       override val executionMode: ExecutionMode,
@@ -126,40 +115,6 @@ class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def notifications: Iterable[Notification] = Set.empty
-
-  protected def accept(body: ResultRow => Unit): Unit = {
-    accept(new ResultVisitor[RuntimeException] {
-      override def visit(row: ResultRow): Boolean = {
-        body(row)
-        true
-      }
-    })
-  }
-
-  override def isVisitable: Boolean = runtimeResult.isInstanceOf[VisitableRuntimeResult]
-
-  override def accept[E <: Exception](visitor: ResultVisitor[E]): QueryStatistics =  runtimeResult match {
-    case v: VisitableRuntimeResult =>
-      v.accept(new QueryResultVisitor[E] {
-        private val names = fieldNames()
-        override def visit(record: QueryResult.Record): Boolean = {
-          val fields = record.fields()
-          val length = names.length
-          //to avoid resize we do lenght/ loadfactor
-          val mapData = new java.util.HashMap[String, AnyRef]((length * 1.33).asInstanceOf[Int])
-
-          var i = 0
-          while (i < length) {
-            mapData.put(names(i), context.asObject(fields(i)))
-            i += 1
-          }
-          visitor.visit(new ResultRowImpl(mapData))
-        }
-      })
-      v.queryStatistics()
-    case _ => throw new IllegalStateException("Can't call accept on a non-visitable result")
-
-  }
 }
 
 

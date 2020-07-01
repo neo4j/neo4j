@@ -42,9 +42,4 @@ abstract class EmptyExecutionResult(val fieldNames: Array[String],
   override def executionMode: ExecutionMode = ExplainMode
 
   override def executionPlanDescription(): InternalPlanDescription = planDescription
-
-  override def isVisitable: Boolean = false
-
-  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): QueryStatistics =
-    throw new IllegalStateException("EmptyExecutionResult is not visitable")
 }

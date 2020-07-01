@@ -35,9 +35,6 @@ case object PipelinedTestConfig extends TestConfig(Some("pipelined-single-thread
 
 case object ParallelTestConfig extends TestConfig(Some("parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
-case object CompiledTestConfig extends TestConfig(Some("compiled.txt"),
-  "CYPHER planner=cost runtime=legacy_compiled debug=generate_java_source")
-
 case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
 
 case object PipelinedFullTestConfig extends TestConfig(

@@ -52,23 +52,4 @@ public interface QueryExecution extends QuerySubscription
      * @return an array of the field names of each record.
      */
     String[] fieldNames();
-
-    /**
-     * @return <code>true</code> if results should be consumed via a visitor, otherwise <code>false</code>
-     * @deprecated will be removed once the compiled runtime is removed.
-     */
-    @Deprecated
-    boolean isVisitable();
-
-    /**
-     * A backdoor for handling results that are more efficiently handled via a ResultVisitor than via a QuerySubscriber.
-     *
-     * Should only be called after first checking that {@link #isVisitable} returns <code>true</code>
-     * @param visitor the provided visitor
-     * @param <VisitationException> the exception type declared by the visitor
-     * @deprecated will be removed once the compiled runtime is removed.
-     */
-    @Deprecated
-    <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
-            throws VisitationException;
 }

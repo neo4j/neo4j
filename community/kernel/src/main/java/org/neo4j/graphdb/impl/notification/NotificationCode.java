@@ -41,11 +41,6 @@ public enum NotificationCode
        "use of this cross " +
        "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"
     ),
-    DEPRECATED_COMPILED_RUNTIME(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The compiled runtime, which was requested to execute this query, is deprecated and will be removed in a future release."
-    ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.RuntimeUnsupportedWarning,
