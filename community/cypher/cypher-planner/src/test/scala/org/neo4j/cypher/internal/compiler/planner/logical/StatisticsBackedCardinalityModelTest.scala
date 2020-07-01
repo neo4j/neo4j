@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelTestHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -40,7 +41,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(i, 10.0) * relCount / i
+        Math.max(MIN_INBOUND_CARDINALITY.amount, Math.min(i, 10.0)) * relCount / i
       )
   }
 
@@ -82,14 +83,6 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
       withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * relCount / personCount)
-  }
-
-  test("aggregations should never increase cardinality") {
-    givenPattern("MATCH (a:Person)-[:REL]->() WITH a, count(*) as c MATCH (a)-[:REL]->()").
-      withGraphNodes(allNodes).
-      withLabel('Person -> .1).
-      withRelationshipCardinality('Person -> 'REL -> 'Person -> .5).
-      shouldHavePlannerQueryCardinality(createCardinalityModel)(2.5)
   }
 
   test("query containing both SKIP and LIMIT") {
@@ -159,7 +152,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        DEFAULT_RANGE_SELECTIVITY
+        Math.max(DEFAULT_RANGE_SELECTIVITY, MIN_INBOUND_CARDINALITY.amount)
       )
   }
 
@@ -221,10 +214,10 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       .shouldHavePlannerQueryCardinality(createCardinalityModel)(DEFAULT_MULTIPLIER)
   }
 
-  test("UNWIND with empty list literal should have 0 cardinality") {
+  test("UNWIND with empty list literal should have min inbound cardinality") {
     givenPattern("UNWIND [] AS i")
       .withGraphNodes(allNodes)
-      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(MIN_INBOUND_CARDINALITY.amount)
   }
 
   test("UNWIND with non-empty list literal should have list size cardinality") {
@@ -242,19 +235,19 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
   test("UNWIND with empty range 1") {
     givenPattern("UNWIND range(0, -1) AS i")
       .withGraphNodes(allNodes)
-      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(MIN_INBOUND_CARDINALITY.amount)
   }
 
   test("UNWIND with empty range 2") {
     givenPattern("UNWIND range(10, 0, 1) AS i")
       .withGraphNodes(allNodes)
-      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(MIN_INBOUND_CARDINALITY.amount)
   }
 
   test("UNWIND with empty range 3") {
     givenPattern("UNWIND range(0, 10, -1) AS i")
       .withGraphNodes(allNodes)
-      .shouldHavePlannerQueryCardinality(createCardinalityModel)(0)
+      .shouldHavePlannerQueryCardinality(createCardinalityModel)(MIN_INBOUND_CARDINALITY.amount)
   }
 
   test("UNWIND with non-empty range") {

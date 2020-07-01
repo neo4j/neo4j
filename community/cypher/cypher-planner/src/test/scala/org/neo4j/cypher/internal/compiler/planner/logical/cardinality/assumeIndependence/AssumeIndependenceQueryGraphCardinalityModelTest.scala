@@ -239,59 +239,40 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
   // Tests for the cardinality factor c
 
-  test("input cardinality below 1.0 and no argument => 1.0 * scan cardinality") {
+  test("input cardinality <1.0 with no arguments => 1.0 * scan cardinality") {
     givenPattern("MATCH (a)").
+      withInboundCardinality(0.5).
+      withGraphNodes(500).
+      shouldHaveQueryGraphCardinality(500)
+  }
+
+  test("input cardinality >1.0 with no arguments => 1.0 * scan cardinality") {
+    givenPattern("MATCH (a)").
+      withInboundCardinality(1.5).
+      withGraphNodes(500).
+      shouldHaveQueryGraphCardinality(500)
+  }
+
+  test("input cardinality <1.0 with argument => 1.0 * scan cardinality") {
+    givenPattern("MATCH (a),(b)").
     withInboundCardinality(0.5).
+    withQueryGraphArgumentIds("b").
     withGraphNodes(500).
     shouldHaveQueryGraphCardinality(500)
   }
 
-  test("input cardinality above 1.0 and no argument => 1.0 * scan cardinality") {
-    givenPattern("MATCH (a)").
+  test("input cardinality >1.0 with argument => input cardinality * scan cardinality") {
+    givenPattern("MATCH (a),(b)").
     withInboundCardinality(1.5).
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(500)
-  }
-
-  test("input cardinality below 1.0 and same argument => input cardinality") {
-    givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds("a").
-    withInboundCardinality(0.5).
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(0.5)
-  }
-
-  test("input cardinality above 1.0 and same argument => input cardinality") {
-    givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds("a").
-    withInboundCardinality(1.5).
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(1.5)
-  }
-
-  test("input cardinality below 1.0 and different argument => 1.0 * scan cardinality") {
-    givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds("e").
-    withInboundCardinality(0.5).
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(250)
-  }
-
-  test("input cardinality above 1.0 and different argument => input cardinality * scan cardinality") {
-    givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds("e").
-    withInboundCardinality(1.5).
+    withQueryGraphArgumentIds("b").
     withGraphNodes(500).
     shouldHaveQueryGraphCardinality(750)
   }
 
-  // TODO: Add a test for a relpatterns where the number of matching nodes is zero
-
-
   test("varlength two steps out") {
 
-// The result includes all (:A)-[:T1]->(:B)
-// and all (:A)-[:T1]->()-[:T1]->(:B)
+    // The result includes all (:A)-[:T1]->(:B)
+    // and all (:A)-[:T1]->()-[:T1]->(:B)
 
     val maxRelCount = A * N * B
     val l1Selectivity = A_T1_B / maxRelCount

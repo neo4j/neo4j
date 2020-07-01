@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCard
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
@@ -84,7 +85,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
     val c = if (qg.argumentIds.nonEmpty) {
-      input.inboundCardinality
+      Cardinality.max(input.inboundCardinality, MIN_INBOUND_CARDINALITY)
     } else {
       Cardinality(1.0)
     }
@@ -121,4 +122,5 @@ object AssumeIndependenceQueryGraphCardinalityModel {
   //more combination diminishes with the number of combinations, we cap it at this threshold.
   //The value chosen is mostly arbitrary but having it at 8 means 256 combinations which is still reasonably fast.
   private val MAX_OPTIONAL_MATCH = 8
+  val MIN_INBOUND_CARDINALITY = Cardinality(1.0)
 }
