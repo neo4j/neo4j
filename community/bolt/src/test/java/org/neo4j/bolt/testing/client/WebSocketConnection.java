@@ -85,11 +85,11 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
         Session session;
         try
         {
-            session = client.connect( this, target ).get( 10, SECONDS );
+            session = client.connect( this, target ).get( 30, SECONDS );
         }
         catch ( Exception e )
         {
-            throw new IOException( "Failed to connect to the server within 10 seconds", e );
+            throw new IOException( "Failed to connect to the server within 30 seconds", e );
         }
 
         server = session.getRemote();
