@@ -144,10 +144,7 @@ public class DbmsSupportController
     {
         var testDir = getTestDirectory();
         var builder = createBuilder( testDir.homePath(), testDir.getFileSystem() );
-        for ( Object testInstance : testInstances.getAllInstances() )
-        {
-            maybeInvokeCallback( testInstance, builder, configurationCallback );
-        }
+        maybeInvokeCallback( testInstances.getInnermostInstance(), builder, configurationCallback );
         builder = callback.apply( builder );
         dbms = builder.build();
         ExtensionContext.Store store = getStore( context );
