@@ -70,21 +70,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
     GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
 
-  protected val sizeHintToUse = sizeHint
-
-  // TODO: FIXME Pipelined LHSAccumulatingRHSStreamingSource has a reference counting bug with empty continuations that
-  //             causes this test to fail for certain morsel sizes.
-  //             We work around this by avoiding such cases to get some test coverage anyway.
-  protected def sizeHintToUseWithWorkaroundForPipelined: Int = {
-    if (runtimeUsed == Pipelined && sizeHintToUse % edition.runtimeConfig().pipelinedBatchSizeBig == 0) {
-      // If morsel size is 1 this workaround will not work (and in some case even for morsel size 2), so just skip it for this test run
-      assume(edition.runtimeConfig().pipelinedBatchSizeBig > 2)
-      sizeHintToUse + 1
-    } else {
-      sizeHintToUse
-    }
-  }
-
   //-----------------------------------------------------------------
   // A little helper to collect dependencies on runtime name in one place
   sealed trait Runtime
@@ -120,7 +105,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = sizeHintToUse
+    val nRows = sizeHint
 
     // then
     compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, toleratedDeviation = 0.05) // Pipelined is not exact
@@ -146,7 +131,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = sizeHintToUse
+    val nRows = sizeHint
     val input1 = finiteInput(nRows, Some(_ => Array(0)))
     val input2 = finiteInput(nRows, Some(_ => Array(0)))
 
@@ -173,7 +158,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = sizeHintToUse
+    val nRows = sizeHint
 
     // then
     compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows)
@@ -197,14 +182,14 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = sizeHintToUse
+    val nRows = sizeHint
 
     // then
     compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows)
   }
 
   test("should deallocate memory between top") {
-    val nRows = sizeHintToUse
+    val nRows = sizeHint
 
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
@@ -228,7 +213,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between single node hash joins") {
-    val nNodes = sizeHintToUseWithWorkaroundForPipelined
+    val nNodes = sizeHint
 
     given {
       nodeGraph(nNodes)
@@ -261,7 +246,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between multi node hash joins") {
-    val nNodes = sizeHintToUseWithWorkaroundForPipelined
+    val nNodes = sizeHint
 
     val paths = given { chainGraphs(nNodes, "R") }
     val random = new Random(seed = 1337)
@@ -309,7 +294,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between left outer hash joins") {
     assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
 
-    val nNodes = sizeHintToUse
+    val nNodes = sizeHint
 
     val nodes = given { nodeGraph(nNodes/2) }
     val random = new Random(seed = 1337)
@@ -356,7 +341,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
     assume(runtimeUsed != Interpreted) // TODO: Interpreted tries to pre-populate returned node values from a transaction that is closed because of restarting
 
-    val nNodes = sizeHintToUse
+    val nNodes = sizeHint
 
     val nodes = given { nodeGraph(nNodes/2) }
     val random = new Random(seed = 1337)
@@ -400,7 +385,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between value hash joins") {
-    val nNodes = sizeHintToUseWithWorkaroundForPipelined
+    val nNodes = sizeHint
 
     given {
       val nodes = nodeGraph(nNodes)
