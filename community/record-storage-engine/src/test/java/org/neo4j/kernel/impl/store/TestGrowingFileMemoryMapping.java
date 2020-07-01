@@ -86,7 +86,7 @@ class TestGrowingFileMemoryMapping
             record.setId( startingId + i );
             nodeStore.getRecord( i, record, NORMAL, PageCursorTracer.NULL );
             assertTrue( record.inUse(), "record[" + i + "] should be in use" );
-            assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( (long) i );
+            assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
         }
 
         neoStores.close();

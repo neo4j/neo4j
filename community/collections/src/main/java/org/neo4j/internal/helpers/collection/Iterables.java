@@ -109,7 +109,7 @@ public final class Iterables
     @SuppressWarnings( "unchecked" )
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
-        return (Iterable<T>) Arrays.asList( items );
+        return Arrays.asList( items );
     }
 
     @SuppressWarnings( "unchecked" )

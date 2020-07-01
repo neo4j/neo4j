@@ -57,7 +57,6 @@ import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -2410,7 +2409,7 @@ public class PageListTest
         assertThat( recorder.swapper ).isSameAs( swapper );
         assertThat( recorder.evictionException ).isNull();
         assertThat( recorder.cachePageId ).isEqualTo( pageRef );
-        assertThat( recorder.bytesWritten ).isEqualTo( (long) filePageSize );
+        assertThat( recorder.bytesWritten ).isEqualTo( filePageSize );
         assertThat( recorder.flushDone ).isEqualTo( true );
         assertThat( recorder.flushException ).isNull();
         assertThat( recorder.pagesFlushed ).isEqualTo( 1 );

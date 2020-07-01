@@ -242,13 +242,13 @@ class UnsafeUtilTest
         long aDoubleOffset = getFieldOffset( Obj.class, "aDouble" );
         obj = new Obj();
         putDouble( obj, aDoubleOffset, 1 );
-        assertThat( obj.aDouble ).isEqualTo( (double) 1 );
-        assertThat( getDouble( obj, aDoubleOffset ) ).isEqualTo( (double) 1 );
+        assertThat( obj.aDouble ).isEqualTo( 1 );
+        assertThat( getDouble( obj, aDoubleOffset ) ).isEqualTo( 1 );
         obj.aDouble = 0;
         assertThat( obj ).isEqualTo( new Obj() );
         putDoubleVolatile( obj, aDoubleOffset, 2 );
-        assertThat( obj.aDouble ).isEqualTo( (double) 2 );
-        assertThat( getDoubleVolatile( obj, aDoubleOffset ) ).isEqualTo( (double) 2 );
+        assertThat( obj.aDouble ).isEqualTo( 2 );
+        assertThat( getDoubleVolatile( obj, aDoubleOffset ) ).isEqualTo( 2 );
         obj.aDouble = 0;
         assertThat( obj ).isEqualTo( new Obj() );
 
@@ -337,14 +337,14 @@ class UnsafeUtilTest
             assertThat( getLongVolatile( address ) ).isEqualTo( 0L );
 
             putDouble( address, 1 );
-            assertThat( getDouble( address ) ).isEqualTo( (double) 1 );
+            assertThat( getDouble( address ) ).isEqualTo( 1 );
             setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getDouble( address ) ).isEqualTo( (double) 0 );
+            assertThat( getDouble( address ) ).isEqualTo( 0 );
 
             putDoubleVolatile( address, 1 );
-            assertThat( getDoubleVolatile( address ) ).isEqualTo( (double) 1 );
+            assertThat( getDoubleVolatile( address ) ).isEqualTo( 1 );
             setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getDoubleVolatile( address ) ).isEqualTo( (double) 0 );
+            assertThat( getDoubleVolatile( address ) ).isEqualTo( 0 );
         }
         finally
         {
@@ -486,9 +486,9 @@ class UnsafeUtilTest
         scale = arrayIndexScale( doubles.getClass() );
         base = arrayBaseOffset( doubles.getClass() );
         putDouble( doubles, arrayOffset( 1, base, scale ), -1 );
-        assertThat( doubles[0] ).isEqualTo( (double) 0 );
-        assertThat( doubles[1] ).isEqualTo( (double) -1 );
-        assertThat( doubles[2] ).isEqualTo( (double) 0 );
+        assertThat( doubles[0] ).isEqualTo( 0 );
+        assertThat( doubles[1] ).isEqualTo( -1 );
+        assertThat( doubles[2] ).isEqualTo( 0 );
 
         Object[] objects = new Object[len];
         scale = arrayIndexScale( objects.getClass() );

@@ -424,7 +424,7 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
         c.putLong( 1 );
         c.setOffset( 0 );
-        assertThat( c.getLong() ).isEqualTo( (long) 1 );
+        assertThat( c.getLong() ).isEqualTo( 1 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -435,7 +435,7 @@ class CompositePageCursorTest
         c.putLong( 1 );
         c.putLong( 2 );
         c.setOffset( 8 );
-        assertThat( c.getLong() ).isEqualTo( (long) 2 );
+        assertThat( c.getLong() ).isEqualTo( 2 );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
 
@@ -445,7 +445,7 @@ class CompositePageCursorTest
         first.setOffset( 1 );
         PageCursor c = CompositePageCursor.compose( first, 8, second, 8 );
         c.putLong( 1 );
-        assertThat( first.getLong( 1 ) ).isEqualTo( (long) 1 );
+        assertThat( first.getLong( 1 ) ).isEqualTo( 1 );
         assertThat( c.getLong() ).isEqualTo( 0xB0B1B2B3B4B5B6B7L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
@@ -457,7 +457,7 @@ class CompositePageCursorTest
         PageCursor c = CompositePageCursor.compose( first, 8, second, PAGE_SIZE );
         c.putLong( 1 );
         c.putLong( 2 );
-        assertThat( second.getLong( 1 ) ).isEqualTo( (long) 2 );
+        assertThat( second.getLong( 1 ) ).isEqualTo( 2 );
         assertThat( c.getLong() ).isEqualTo( 0xB9BABBBCBDBEBFC0L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }
@@ -484,8 +484,8 @@ class CompositePageCursorTest
         c.putLong( 8, 1 );
         c.putLong( 8 + 8, 2 );
         assertThat( c.getLong() ).isEqualTo( 0xA1A2A3A4A5A6A7A8L );
-        assertThat( c.getLong() ).isEqualTo( (long) 1 );
-        assertThat( c.getLong() ).isEqualTo( (long) 2 );
+        assertThat( c.getLong() ).isEqualTo( 1 );
+        assertThat( c.getLong() ).isEqualTo( 2 );
         assertThat( c.getLong() ).isEqualTo( 0xCACBCCCDCECFD0D1L );
         assertFalse( c.checkAndClearBoundsFlag() );
     }

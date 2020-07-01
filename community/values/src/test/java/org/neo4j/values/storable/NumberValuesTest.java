@@ -83,7 +83,7 @@ class NumberValuesTest
         for ( int i = 0; i < 1_000_000; i++ )
         {
             int anInt = r.nextInt();
-            assertThat( anInt ).isEqualTo( hash( (long) anInt ) );
+            assertThat( anInt ).isEqualTo( hash( anInt ) );
         }
     }
 

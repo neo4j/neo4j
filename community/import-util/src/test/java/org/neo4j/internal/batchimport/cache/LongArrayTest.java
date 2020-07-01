@@ -105,7 +105,7 @@ class LongArrayTest extends NumberArrayPageCacheTestSupport
     {
         return stream( arrayFactories(), getNumberArrayFactoryName(), numberArrayFactory ->
         {
-            LongArray array = numberArrayFactory.newLongArray( 10, (long) -1, INSTANCE );
+            LongArray array = numberArrayFactory.newLongArray( 10, -1, INSTANCE );
 
             // WHEN
             array.close();

@@ -134,7 +134,7 @@ class MemoryAllocatorTest
         // We haven't allocated anything, so usedMemory should be zero, and the available memory should be the
         // initial capacity.
         assertThat( mman.usedMemory() ).isEqualTo( 0L );
-        assertThat( mman.availableMemory() ).isEqualTo( (long) PageCache.PAGE_SIZE );
+        assertThat( mman.availableMemory() ).isEqualTo( PageCache.PAGE_SIZE );
 
         // Allocate 32 bytes of unaligned memory. Ideally there would be no memory wasted on this allocation,
         // but in principle we cannot rule it out.

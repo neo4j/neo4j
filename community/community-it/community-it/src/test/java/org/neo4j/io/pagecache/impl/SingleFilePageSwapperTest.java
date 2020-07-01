@@ -549,7 +549,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 clear( page );
-                assertThat( swapper.read( 0, page ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.read( 0, page ) ).isEqualTo( bytesTotal );
                 assertThat( array( page ) ).isEqualTo( data );
             }
         }
@@ -583,7 +583,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 swapper.write( 0, zeroPage );
                 putBytes( page, data, 0, 0, data.length );
                 adversary.setProbabilityFactor( 1 );
-                assertThat( swapper.write( 0, page ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.write( 0, page ) ).isEqualTo( bytesTotal );
                 clear( page );
                 adversary.setProbabilityFactor( 0 );
                 swapper.read( 0, page );
@@ -639,7 +639,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 {
                     clear( page );
                 }
-                assertThat( swapper.read( 0, pages, pageLengths, pages.length ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.read( 0, pages, pageLengths, pages.length ) ).isEqualTo( bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
@@ -695,7 +695,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                     clear( readPage );
                 }
                 adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readPages, pageLengths, pageCount ) ).isEqualTo( (long) bytesTotal );
+                assertThat( swapper.read( 0, readPages, pageLengths, pageCount ) ).isEqualTo( bytesTotal );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     assertThat( array( readPages[j] ) ).containsExactly( array( writePages[j] ) );

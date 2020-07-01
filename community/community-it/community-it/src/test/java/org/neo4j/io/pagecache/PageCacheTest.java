@@ -132,7 +132,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustReportConfiguredMaxPages()
     {
         configureStandardPageCache();
-        assertThat( pageCache.maxCachedPages() ).isEqualTo( (long) maxPages );
+        assertThat( pageCache.maxCachedPages() ).isEqualTo( maxPages );
     }
 
     @Test
@@ -2427,7 +2427,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 0; i < file2sizeBytes; i++ )
                 {
                     int b = inputStream.read();
-                    assertThat( b ).isEqualTo( (int) 'b' );
+                    assertThat( b ).isEqualTo( 'b' );
                 }
                 assertThat( inputStream.read() ).isEqualTo( -1 );
             }

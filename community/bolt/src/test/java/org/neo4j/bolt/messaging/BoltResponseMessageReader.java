@@ -49,7 +49,7 @@ public class BoltResponseMessageReader
         try
         {
             unpacker.unpackStructHeader();
-            final int signature = (int) unpacker.unpackStructSignature();
+            final int signature = unpacker.unpackStructSignature();
             BoltResponseMessage message = BoltResponseMessage.withSignature( signature );
             try
             {

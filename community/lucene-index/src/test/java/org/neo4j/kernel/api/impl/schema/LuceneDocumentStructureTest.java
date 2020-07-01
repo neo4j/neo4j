@@ -47,7 +47,7 @@ class LuceneDocumentStructureTest
     void stringWithMaximumLengthShouldBeAllowed()
     {
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
-        Document document = documentRepresentingProperties( (long) 123, longestString );
+        Document document = documentRepresentingProperties( 123, longestString );
         assertEquals( longestString, document.getField( String.key( 0 ) ).stringValue() );
     }
 
@@ -55,7 +55,7 @@ class LuceneDocumentStructureTest
     void shouldBuildDocumentRepresentingStringProperty()
     {
         // given
-        Document document = documentRepresentingProperties( (long) 123, "hello" );
+        Document document = documentRepresentingProperties( 123, "hello" );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );

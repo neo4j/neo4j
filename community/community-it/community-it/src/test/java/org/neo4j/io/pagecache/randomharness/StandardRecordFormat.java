@@ -157,7 +157,7 @@ public class StandardRecordFormat extends RecordFormat
         @Override
         public int hashCode()
         {
-            int result = (int) type;
+            int result = type;
             result = 31 * result + (file != null ? file.hashCode() : 0);
             result = 31 * result + recordId;
             result = 31 * result + (int) fill1;

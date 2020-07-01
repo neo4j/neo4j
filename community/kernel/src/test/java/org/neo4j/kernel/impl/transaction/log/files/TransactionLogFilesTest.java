@@ -227,7 +227,7 @@ class TransactionLogFilesTest
         LogFiles logFiles = createLogFiles();
         try ( PhysicalLogVersionedStoreChannel channel = logFiles.createLogChannelForVersion( 1, () -> 1L ) )
         {
-            assertThat( channel.size() ).isGreaterThanOrEqualTo( (long) CURRENT_FORMAT_LOG_HEADER_SIZE );
+            assertThat( channel.size() ).isGreaterThanOrEqualTo( CURRENT_FORMAT_LOG_HEADER_SIZE );
             assertFalse( logFiles.hasAnyEntries( 1 ) );
         }
     }

@@ -99,7 +99,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
                     if ( performHandshake() )
                     {
                         // announce selected protocol to the client
-                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( (int)protocol.version().toInt() ) );
+                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( protocol.version().toInt() ) );
 
                         // install related protocol handlers into the pipeline
                         protocol.install();

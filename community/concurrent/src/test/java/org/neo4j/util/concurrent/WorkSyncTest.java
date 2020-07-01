@@ -318,8 +318,8 @@ class WorkSyncTest
 
         Futures.getAll( futureList );
 
-        assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
-        assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );
+        assertThat( count.sum() ).isLessThan( workers * iterations );
+        assertThat( sum.sum() ).isEqualTo( incrementValue * workers * iterations );
     }
 
     @Test
@@ -375,8 +375,8 @@ class WorkSyncTest
 
         Futures.getAll( futureList );
 
-        assertThat( count.sum() ).isLessThan( (long) (workers * iterations) );
-        assertThat( sum.sum() ).isEqualTo( (long) (incrementValue * workers * iterations) );
+        assertThat( count.sum() ).isLessThan( workers * iterations );
+        assertThat( sum.sum() ).isEqualTo( incrementValue * workers * iterations );
     }
 
     @Test
