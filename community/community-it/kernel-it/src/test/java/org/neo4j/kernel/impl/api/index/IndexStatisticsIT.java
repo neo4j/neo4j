@@ -155,7 +155,7 @@ class IndexStatisticsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
             tx.commit();
         }
     }
