@@ -60,6 +60,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -170,6 +171,7 @@ public class MuninnPageCache implements PageCache
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
     // accesses to take place without fear of segfaulting newly allocated cursors.
     final long victimPage;
+    private final MemoryTracker memoryTracker;
 
     // The freelist is a thread-safe linked-list of FreePage objects, or an AtomicInteger, or null.
     // Initially, the field is an AtomicInteger that counts from zero to the max page count, at which point all of the
@@ -270,6 +272,7 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
+        this.memoryTracker = memoryTracker;
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
@@ -633,7 +636,7 @@ public class MuninnPageCache implements PageCache
         try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
         {
             FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter, DISABLED_IO_BUFFER );
         }
     }
 

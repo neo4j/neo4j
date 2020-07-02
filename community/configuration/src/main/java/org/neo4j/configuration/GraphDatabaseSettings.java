@@ -554,6 +554,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> pagecache_scan_prefetch = newBuilder( "dbms.memory.pagecache.scan.prefetchers", INT, 4 )
             .addConstraint( range( 0, 255 ) ).build();
 
+    @Description( "Page cache can be configured to use temporal buffer for flushing purposes. It is used to combine, if possible, sequence of several " +
+            "cache pages into one bigger buffer to minimise number of individual IOPS performed and better utilisation of available " +
+            "I/O resources, especially when those are restricted." )
+    public static final Setting<Boolean> pagecache_buffered_flush_enabled =
+            newBuilder( "dbms.memory.pagecache.buffered.flush.enabled", BOOL, true ).dynamic().build();
+
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
             "warmup after a restart, reducing the mean time to performance. " +
             "This feature available in Neo4j Enterprise Edition." )
