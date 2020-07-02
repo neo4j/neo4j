@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -60,7 +61,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
-import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -171,7 +172,7 @@ public class MuninnPageCache implements PageCache
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
     // accesses to take place without fear of segfaulting newly allocated cursors.
     final long victimPage;
-    private final MemoryTracker memoryTracker;
+    private final IOBufferFactory bufferFactory;
 
     // The freelist is a thread-safe linked-list of FreePage objects, or an AtomicInteger, or null.
     // Initially, the field is an AtomicInteger that counts from zero to the max page count, at which point all of the
@@ -232,7 +233,7 @@ public class MuninnPageCache implements PageCache
                 pageCacheTracer, versionContextSupplier,
                 jobScheduler,
                 Clocks.nanoClock(),
-                EmptyMemoryTracker.INSTANCE );
+                EmptyMemoryTracker.INSTANCE, DISABLED_BUFFER_FACTORY );
     }
 
     /**
@@ -242,11 +243,13 @@ public class MuninnPageCache implements PageCache
      * @param pageCacheTracer global page cache tracer
      * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
      * @param memoryTracker underlying buffers allocation memory tracker
+     * @param bufferFactory temporal flush buffer factories
      */
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker,
+            IOBufferFactory bufferFactory )
     {
-        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock, memoryTracker );
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
     }
 
     /**
@@ -256,7 +259,8 @@ public class MuninnPageCache implements PageCache
     @SuppressWarnings( "DeprecatedIsStillUsed" )
     @Deprecated
     public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, int cachePageSize, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker,
+            IOBufferFactory bufferFactory )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -272,7 +276,7 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
-        this.memoryTracker = memoryTracker;
+        this.bufferFactory = bufferFactory;
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
@@ -633,10 +637,11 @@ public class MuninnPageCache implements PageCache
 
     private void flushFile( MuninnPagedFile muninnPagedFile, IOLimiter limiter ) throws IOException
     {
-        try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
+        try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper );
+              var buffer = bufferFactory.createBuffer() )
         {
             FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter, DISABLED_IO_BUFFER );
+            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter, buffer );
         }
     }
 
@@ -716,6 +721,11 @@ public class MuninnPageCache implements PageCache
     public VersionContextSupplier versionContextSupplier()
     {
         return versionContextSupplier;
+    }
+
+    public IOBufferFactory getBufferFactory()
+    {
+        return bufferFactory;
     }
 
     int getPageCacheId()

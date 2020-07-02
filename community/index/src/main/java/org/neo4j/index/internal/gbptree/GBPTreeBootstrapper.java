@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -43,6 +42,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.time.Clocks.nanoClock;
 
@@ -134,12 +134,13 @@ public class GBPTreeBootstrapper implements Closeable
             return;
         }
         closePageCache();
-        SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
-        EmptyMemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
+        var swapper = new SingleFilePageSwapperFactory( fs );
+        var memoryTracker = EmptyMemoryTracker.INSTANCE;
         long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3 * pageSize );
-        MemoryAllocator allocator = MemoryAllocator.createAllocator( expectedMemory, memoryTracker );
-        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
-        pageCache = new MuninnPageCache( swapper, allocator, pageSize, NULL, contextSupplier, jobScheduler, nanoClock(), memoryTracker );
+        var allocator = MemoryAllocator.createAllocator( expectedMemory, memoryTracker );
+        var contextSupplier = EmptyVersionContextSupplier.EMPTY;
+        pageCache = new MuninnPageCache( swapper, allocator, pageSize, NULL, contextSupplier, jobScheduler, nanoClock(), memoryTracker,
+                DISABLED_BUFFER_FACTORY );
     }
 
     private void closePageCache()

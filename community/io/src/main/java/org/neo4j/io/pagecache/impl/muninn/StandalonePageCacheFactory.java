@@ -32,6 +32,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.io.ByteUnit.MebiByte;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -74,6 +75,6 @@ public final class StandalonePageCacheFactory
         long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10 * pageSize );
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, memoryAllocator, pageSize, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock(),
-                EmptyMemoryTracker.INSTANCE );
+                EmptyMemoryTracker.INSTANCE, DISABLED_BUFFER_FACTORY );
     }
 }

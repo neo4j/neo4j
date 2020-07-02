@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -93,7 +94,8 @@ public class ConfiguringPageCacheFactory
         var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false, null );
         var memoryTracker = memoryPool.getPoolMemoryTracker();
         MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock, memoryTracker );
+        var bufferFactory = new ConfigurableIOBufferFactory( config, memoryTracker );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock, memoryTracker, bufferFactory );
     }
 
     private MemoryAllocator buildMemoryAllocator( long pageCacheMaxMemory, MemoryTracker memoryTracker )

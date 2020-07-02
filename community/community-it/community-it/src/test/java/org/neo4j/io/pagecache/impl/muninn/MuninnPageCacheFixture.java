@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -42,7 +44,8 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
         var memoryTracker = new LocalMemoryTracker();
         allocator = MemoryAllocator.createAllocator( memory, memoryTracker );
-        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock(), memoryTracker );
+        var bufferFactory = new ConfigurableIOBufferFactory( Config.defaults(), memoryTracker );
+        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock(), memoryTracker, bufferFactory );
     }
 
     @Override

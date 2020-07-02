@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.pagecache;
+package org.neo4j.configuration.pagecache;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.internal.unsafe.UnsafeUtil.allocateMemory;
 import static org.neo4j.internal.unsafe.UnsafeUtil.free;
@@ -44,22 +43,19 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     {
         this.memoryTracker = memoryTracker;
         this.bufferSize = PageCache.PAGE_SIZE * config.get( pagecache_flush_buffer_size_in_pages );
-        boolean ioBufferEnabled = config.get( pagecache_buffered_flush_enabled );
+        boolean ioBufferEnabled = true;
         long address = NOT_INITIALIZED;
-        if ( ioBufferEnabled )
+        try
         {
-            try
+            address = allocateMemory( bufferSize, memoryTracker );
+        }
+        catch ( Throwable t )
+        {
+            if ( PRINT_ALLOCATION_EXCEPTION )
             {
-                address = allocateMemory( bufferSize, memoryTracker );
+                t.printStackTrace();
             }
-            catch ( Throwable t )
-            {
-                if ( PRINT_ALLOCATION_EXCEPTION )
-                {
-                    t.printStackTrace();
-                }
-                ioBufferEnabled = false;
-            }
+            ioBufferEnabled = false;
         }
         this.bufferAddress = address;
         this.enabled = ioBufferEnabled;
@@ -88,7 +84,7 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         if ( enabled && !closed )
         {

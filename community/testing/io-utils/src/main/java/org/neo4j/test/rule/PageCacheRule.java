@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
@@ -106,6 +107,7 @@ public class PageCacheRule extends ExternalResource
         var memoryTracker = new LocalMemoryTracker();
         MemoryAllocator mman = MemoryAllocator.createAllocator( parse( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) ),
                 memoryTracker );
+        var bufferFactory = IOBufferFactory.DISABLED_BUFFER_FACTORY;
         initializeJobScheduler();
         if ( clock == null )
         {
@@ -113,11 +115,11 @@ public class PageCacheRule extends ExternalResource
         }
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

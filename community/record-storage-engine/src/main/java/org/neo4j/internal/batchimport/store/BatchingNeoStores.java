@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.Configuration;
@@ -310,7 +311,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         MemoryAllocator memoryAllocator = createAllocator( ByteUnit.parse( config.get( pagecache_memory ) ), memoryTracker );
         return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
-                memoryTracker );
+                memoryTracker, new ConfigurableIOBufferFactory( config, memoryTracker ) );
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,

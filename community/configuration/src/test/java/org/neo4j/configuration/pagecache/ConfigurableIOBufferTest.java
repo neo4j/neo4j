@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.pagecache;
+package org.neo4j.configuration.pagecache;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +28,6 @@ import org.neo4j.memory.ScopedMemoryTracker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -36,17 +35,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class ConfigurableIOBufferTest
 {
     @Test
-    void ioBufferCanBeDisabled() throws Exception
-    {
-        var config = Config.defaults( pagecache_buffered_flush_enabled, false );
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, INSTANCE ) )
-        {
-            assertFalse( ioBuffer.isEnabled() );
-        }
-    }
-
-    @Test
-    void ioBufferEnabledByDefault() throws Exception
+    void ioBufferEnabledByDefault()
     {
         var config = Config.defaults();
         try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, INSTANCE ) )
@@ -56,19 +45,7 @@ class ConfigurableIOBufferTest
     }
 
     @Test
-    void disabledBufferDoesNotConsumeMemory() throws Exception
-    {
-        var config = Config.defaults( pagecache_buffered_flush_enabled, false );
-        var memoryTracker = new ScopedMemoryTracker( INSTANCE );
-        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
-        {
-            assertFalse( ioBuffer.isEnabled() );
-            assertThat( memoryTracker.usedNativeMemory() ).isZero();
-        }
-    }
-
-    @Test
-    void bufferPoolMemoryRegisteredInMemoryPool() throws Exception
+    void bufferPoolMemoryRegisteredInMemoryPool()
     {
         var config = Config.defaults();
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
@@ -80,7 +57,7 @@ class ConfigurableIOBufferTest
     }
 
     @Test
-    void canTryToCloseBufferSeveralTimes() throws Exception
+    void canTryToCloseBufferSeveralTimes()
     {
         var config = Config.defaults();
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
@@ -98,7 +75,7 @@ class ConfigurableIOBufferTest
     }
 
     @Test
-    void bufferSizeCanBeConfigured() throws Exception
+    void bufferSizeCanBeConfigured()
     {
         int customPageSize = 2;
         var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );
@@ -110,7 +87,7 @@ class ConfigurableIOBufferTest
     }
 
     @Test
-    void bufferCapacityLimit() throws Exception
+    void bufferCapacityLimit()
     {
         int customPageSize = 5;
         var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );
@@ -133,7 +110,7 @@ class ConfigurableIOBufferTest
     }
 
     @Test
-    void allocationFailureMakesBufferDisabled() throws Exception
+    void allocationFailureMakesBufferDisabled()
     {
         int customPageSize = 5;
         var config = Config.defaults( pagecache_flush_buffer_size_in_pages, customPageSize );

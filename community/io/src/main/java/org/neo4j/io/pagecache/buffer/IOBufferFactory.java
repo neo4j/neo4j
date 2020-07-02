@@ -19,35 +19,18 @@
  */
 package org.neo4j.io.pagecache.buffer;
 
-public class DisabledIOBuffer implements NativeIOBuffer
+import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
+
+/**
+ * Factory to create per file buffers used during page cache flush
+ */
+@FunctionalInterface
+public interface IOBufferFactory
 {
-    static final NativeIOBuffer DISABLED_IO_BUFFER = new DisabledIOBuffer();
+    IOBufferFactory DISABLED_BUFFER_FACTORY = () -> DISABLED_IO_BUFFER;
 
-    private DisabledIOBuffer()
-    {
-    }
-
-    @Override
-    public boolean isEnabled()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean hasMoreCapacity( int bufferLength )
-    {
-        return false;
-    }
-
-    @Override
-    public long getAddress()
-    {
-        return -1;
-    }
-
-    @Override
-    public void close()
-    {
-        //nothing to close
-    }
+    /**
+     * @return Create new flush buffer
+     */
+    NativeIOBuffer createBuffer();
 }

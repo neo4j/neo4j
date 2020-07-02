@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -42,7 +43,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.util.Arrays.fill;
-import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -67,6 +67,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final MuninnPageCache pageCache;
     final int filePageSize;
     private final PageCacheTracer pageCacheTracer;
+    private final IOBufferFactory bufferFactory;
     final LatchMap pageFaultLatches;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
@@ -127,6 +128,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         this.cursorFactory = new CursorFactory( this, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
+        this.bufferFactory = pageCache.getBufferFactory();
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -285,9 +287,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         {
             throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
         }
-        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
+              var buffer = bufferFactory.createBuffer() )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter, DISABLED_IO_BUFFER );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter, buffer );
         }
         pageCache.clearEvictorException();
     }
@@ -302,9 +305,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             markAllDirtyPagesAsClean();
             return;
         }
-        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
+              var buffer = bufferFactory.createBuffer() )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.UNLIMITED, DISABLED_IO_BUFFER );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.UNLIMITED, buffer );
         }
         pageCache.clearEvictorException();
     }

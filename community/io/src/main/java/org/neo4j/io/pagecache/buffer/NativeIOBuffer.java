@@ -44,4 +44,7 @@ public interface NativeIOBuffer extends AutoCloseable
      * @return underlying buffer memory address
      */
     long getAddress();
+
+    @Override
+    void close();
 }
