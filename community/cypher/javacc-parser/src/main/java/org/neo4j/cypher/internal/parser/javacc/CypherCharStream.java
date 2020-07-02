@@ -295,7 +295,7 @@ public class CypherCharStream implements CharStream
         return true;
     }
 
-    static int hexval( final char c ) throws java.io.IOException
+    static int hexval( final char c ) throws IOException
     {
         switch ( c )
         {
@@ -340,6 +340,6 @@ public class CypherCharStream implements CharStream
         }
 
         // Should never come here
-        throw new java.io.IOException( "Invalid hex char '" + c + "' provided!" );
+        throw new IOException( "Invalid hex char '" + c + "' provided!" );
     }
 }

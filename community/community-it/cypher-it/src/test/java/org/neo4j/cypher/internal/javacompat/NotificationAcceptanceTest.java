@@ -67,7 +67,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         // when
         QueryExecutionException exception = assertThrows( QueryExecutionException.class,
                 () -> db.executeTransactionally( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" ) );
-        assertThat( exception.getMessage(), containsString( "CREATE UNIQUE is no longer supported. Please use MERGE instead" ) );
+        assertThat( exception.getStatusCode(), containsString( "SyntaxError" ) );
     }
 
     @Test

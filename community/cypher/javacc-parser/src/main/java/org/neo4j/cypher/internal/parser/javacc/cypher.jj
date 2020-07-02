@@ -1996,17 +1996,19 @@ EXPRESSION SingleExpression() :
 }
 
 EXPRESSION PatternExpression() :
-{ PATTERN p; }
+{ PATTERN p; Token t; }
 {
+  { t = token; }
   p=EveryPathPatternNonEmpty()
-  { return astFactory.patternExpression(p); }
+  { return astFactory.patternExpression(pos(t.next), p); }
 }
 
 EXPRESSION ShortestPathExpression() :
-{ PATTERN p; }
+{ PATTERN p; Token t; }
 {
+  { t = token; }
   p=ShortestPathPattern()
-  { return astFactory.patternExpression(p); }
+  { return astFactory.patternExpression(pos(t.next), p); }
 }
 
 EXPRESSION MapProjection() :

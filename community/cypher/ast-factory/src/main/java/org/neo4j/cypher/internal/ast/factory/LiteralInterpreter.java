@@ -653,7 +653,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public Object patternExpression( NULL aNull )
+    public Object patternExpression( NULL p, NULL aNull )
     {
         throw new UnsupportedOperationException( "patternExpression is not a literal" );
     }

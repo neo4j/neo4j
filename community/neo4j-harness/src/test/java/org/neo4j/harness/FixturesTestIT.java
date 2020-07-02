@@ -32,6 +32,7 @@ import java.nio.file.StandardOpenOption;
 
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -40,7 +41,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
@@ -181,11 +181,9 @@ class FixturesTestIT
         {
             fail( "Should have thrown exception" );
         }
-        catch ( RuntimeException e )
+        catch ( QueryExecutionException e )
         {
-            assertThat( e.getMessage() ).isEqualTo(
-                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() + "\"this is not a valid cypher statement\"" +
-                            lineSeparator() + " ^" );
+            assertThat( e.getStatusCode() ).isEqualTo( "Neo.ClientError.Statement.SyntaxError" );
         }
     }
 

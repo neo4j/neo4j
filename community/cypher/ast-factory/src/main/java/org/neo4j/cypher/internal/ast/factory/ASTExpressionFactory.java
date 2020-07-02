@@ -151,7 +151,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION singleExpression( POS p, VARIABLE v, EXPRESSION list, EXPRESSION where );
 
-    EXPRESSION patternExpression( PATTERN pattern );
+    EXPRESSION patternExpression( POS p, PATTERN pattern );
 
     EXPRESSION existsSubQuery( POS p, List<PATTERN> patterns, EXPRESSION where );
 

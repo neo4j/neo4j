@@ -219,7 +219,7 @@ class Neo4jASTFactory(query: String)
                                    batchSize: String,
                                    loadCsv: Clause,
                                    queryBody: util.List[Clause]): Query =
-    Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(p)))(p)),
+    Query(Some(PeriodicCommitHint(Option(batchSize).map(SignedDecimalIntegerLiteral(_)(p)))(p)),
       SingleQuery(loadCsv +: queryBody.asScala)(p)
     )(p)
 
@@ -694,12 +694,12 @@ class Neo4jASTFactory(query: String)
                                 where: Expression): Expression =
     SingleIterablePredicate(v, list, Option(where))(p)
 
-  override def patternExpression(pattern: PatternPart): Expression =
+  override def patternExpression(p: InputPosition, pattern: PatternPart): Expression =
     pattern match {
       case paths: ShortestPaths =>
         ShortestPathExpression(paths)
       case _ =>
-        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(pattern.position))
+        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))
     }
 
   override def existsSubQuery(p: InputPosition,
