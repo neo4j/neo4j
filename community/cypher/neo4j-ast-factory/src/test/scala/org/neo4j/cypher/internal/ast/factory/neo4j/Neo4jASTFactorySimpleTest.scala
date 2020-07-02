@@ -64,6 +64,23 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST(testName)
   }
 
+  test("keywords are allowed names") {
+    val keywords =
+      Seq("RETURN", "CREATE", "DELETE", "SET", "REMOVE", "DETACH", "MATCH", "WITH",
+          "UNWIND", "USE", "GRAPH", "CALL", "YIELD", "LOAD", "CSV", "PERIODIC", "COMMIT",
+          "HEADERS", "FROM", "FIELDTERMINATOR", "FOREACH", "WHERE", "DISTINCT", "MERGE",
+          "OPTIONAL", "USING", "ORDER", "BY", "ASC", "ASCENDING", "DESC", "DESCENDING",
+          "SKIP", "LIMIT", "UNION", "DROP", "INDEX", "SEEK", "SCAN", "JOIN", "CONSTRAINT",
+          "ASSERT", "IS", "NODE", "KEY", "UNIQUE", "ON", "AS", "OR", "XOR", "AND", "NOT",
+          "STARTS", "ENDS", "CONTAINS", "IN", "count", "FILTER", "EXTRACT", "REDUCE",
+          "EXISTS", "ALL", "ANY", "NONE", "SINGLE", "CASE", "ELSE", "WHEN", "THEN", "END",
+          "shortestPath", "allShortestPaths")
+
+    for (keyword <- keywords) {
+      assertSameAST(s"WITH $$$keyword AS x RETURN x AS $keyword")
+    }
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {

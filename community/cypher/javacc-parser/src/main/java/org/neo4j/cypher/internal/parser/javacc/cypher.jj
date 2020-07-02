@@ -1113,7 +1113,7 @@ CLAUSE FromClause() :
   EXPRESSION e;
 }
 {
-  t=<FROM> ( <GRAPH> )? e=Expression()
+  t=<FROM> ( LOOKAHEAD(2) <GRAPH> )? e=Expression()
   { return astFactory.fromClause(pos(t), e); }
 }
 
@@ -1123,7 +1123,7 @@ CLAUSE UseClause() :
   EXPRESSION e;
 }
 {
-  t=<USE> ( <GRAPH> )? e=Expression()
+  t=<USE> ( LOOKAHEAD(2) <GRAPH> )? e=Expression()
   { return astFactory.useClause(pos(t), e); }
 }
 
@@ -2233,22 +2233,49 @@ Token SymbolicNameString() :
   | t=<MATCH>
   | t=<WITH>
   | t=<UNWIND>
+  | t=<USE>
+  | t=<GRAPH>
   | t=<CALL>
   | t=<YIELD>
+  | t=<LOAD>
+  | t=<CSV>
+  | t=<PERIODIC>
+  | t=<COMMIT>
+  | t=<HEADERS>
+  | t=<FROM>
+  | t=<FIELDTERMINATOR>
+  | t=<FOREACH>
   | t=<WHERE>
   | t=<DISTINCT>
   | t=<MERGE>
   | t=<OPTIONAL>
+  | t=<USING>
   | t=<ORDER>
+  | t=<BY>
   | t=<DESC>
   | t=<ASC>
   | t=<SKIPROWS>
   | t=<LIMITROWS>
+  | t=<UNION>
+  | t=<DROP>
+  | t=<INDEX>
+  | t=<SEEK>
+  | t=<SCAN>
+  | t=<JOIN>
+  | t=<CONSTRAINT>
+  | t=<ASSERT>
+  | t=<IS>
+  | t=<NODE>
+  | t=<KEY>
+  | t=<UNIQUE>
+  | t=<ON>
   | t=<AS>
   | t=<OR>
   | t=<XOR>
   | t=<AND>
   | t=<NOT>
+  | t=<STARTS>
+  | t=<ENDS>
   | t=<CONTAINS>
   | t=<IN>
   | t=<COUNT>
@@ -2267,21 +2294,6 @@ Token SymbolicNameString() :
   | t=<END>
   | t=<SHORTEST_PATH>
   | t=<ALL_SHORTEST_PATH>
-  | t=<DROP>
-  | t=<INDEX>
-  | t=<CONSTRAINT>
-  | t=<ASSERT>
-  | t=<IS>
-  | t=<NODE>
-  | t=<KEY>
-  | t=<UNIQUE>
-  | t=<ON>
-  | t=<HEADERS>
-  | t=<FROM>
-  | t=<FIELDTERMINATOR>
-  | t=<FOREACH>
-  | t=<SEEK>
-  | t=<SCAN>
   | t=<NULL>
   ) { return t; }
 }
