@@ -64,7 +64,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
   nodeIdsExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val ctx = state.newExecutionContext(executionContextFactory)
+    val ctx = state.newExecutionContextWithInitialContext(executionContextFactory)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(
       ident,

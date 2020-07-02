@@ -30,7 +30,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
   relIdExpr.registerOwningPipe(this)
 
   protected override def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val ctx = state.newExecutionContext(executionContextFactory)
+    val ctx = state.newExecutionContextWithInitialContext(executionContextFactory)
     val relIds = relIdExpr.expressions(ctx, state).dropNoValues()
     new UndirectedRelationshipIdSeekIterator(
       ident,

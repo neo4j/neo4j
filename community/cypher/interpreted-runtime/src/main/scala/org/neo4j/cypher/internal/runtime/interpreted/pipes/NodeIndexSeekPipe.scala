@@ -45,7 +45,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = state.queryIndexes(queryIndexId)
-    val baseContext = state.newExecutionContext(executionContextFactory)
+    val baseContext = state.newExecutionContextWithInitialContext(executionContextFactory)
     new IndexIterator(state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
   }
 

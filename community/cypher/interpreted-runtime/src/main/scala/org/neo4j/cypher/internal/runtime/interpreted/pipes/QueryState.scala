@@ -51,6 +51,13 @@ class QueryState(val query: QueryContext,
     }
   }
 
+  def newExecutionContextWithInitialContext(factory: ExecutionContextFactory): ExecutionContext = {
+    initialContext match {
+      case Some(init) => factory.copyWithArgument(init)
+      case None => factory.newExecutionContext()
+    }
+  }
+
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
@@ -100,6 +107,8 @@ trait ExecutionContextFactory {
 
   def newExecutionContext(): ExecutionContext
 
+  def copyWithArgument(init: ExecutionContext): ExecutionContext
+
   def copyWith(init: ExecutionContext): ExecutionContext
 
   def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext
@@ -117,6 +126,8 @@ trait ExecutionContextFactory {
 case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
 
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
+
+  override def copyWithArgument(init: ExecutionContext): ExecutionContext = copyWith(init)
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
   override def copyWith(init: ExecutionContext): ExecutionContext = init match {

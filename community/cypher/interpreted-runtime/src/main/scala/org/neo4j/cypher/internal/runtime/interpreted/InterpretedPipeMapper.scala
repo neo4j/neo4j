@@ -21,24 +21,132 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan}
+import org.neo4j.cypher.internal.logical.plans.{LoadCSV => LoadCSVPlan}
+import org.neo4j.cypher.internal.logical.plans.{Skip => SkipPlan}
 import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ProcedureCallMode
+import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverters, InterpretedCommandProjection}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{GroupingAggTable, NonGroupingAggTable, OrderedGroupingAggTable, OrderedNonGroupingAggTable}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexRegistrator}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllOrderedDistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AntiSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConditionalApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DropResultPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateRelationshipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeCountFromCountStorePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexContainsScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexEndsWithScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedDistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1WithTiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallRowProcessing
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpointsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipCountFromCountStorePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RemoveLabelsPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RollUpApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SelectOrSemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipPropertyFromMapOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipPropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.GroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.NonGroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedGroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedNonGroupingAggTable
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.neo4j.cypher.internal.v4_0.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
+import org.neo4j.cypher.internal.v4_0.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.util.Eagerly
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
