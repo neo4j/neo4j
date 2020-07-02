@@ -19,22 +19,24 @@
  */
 package org.neo4j.scheduler;
 
+import org.neo4j.common.Subject;
+
 public class JobMonitoringParams
 {
     public static final JobMonitoringParams NOT_MONITORED = new JobMonitoringParams( null, null, null );
 
-    private final String submitter;
+    private final Subject submitter;
     private final String targetDatabaseName;
     private final String description;
 
-    public JobMonitoringParams( String submitter, String targetDatabaseName, String description )
+    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description )
     {
         this.submitter = submitter;
         this.targetDatabaseName = targetDatabaseName;
         this.description = description;
     }
 
-    public String getSubmitter()
+    public Subject getSubmitter()
     {
         return submitter;
     }
@@ -47,5 +49,15 @@ public class JobMonitoringParams
     public String getDescription()
     {
         return description;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "JobMonitoringParams{" +
+                "submitter=" + submitter +
+                ", targetDatabaseName='" + targetDatabaseName + '\'' +
+                ", description='" + description + '\'' +
+                '}';
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -30,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.UpdateMode;
@@ -159,8 +160,32 @@ public interface IndexPopulator extends MinimalIndexAccessor
         return scanProgress;
     }
 
-    default void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    default void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, PageCursorTracer cursorTracer )
+            throws IndexEntryConflictException
     {   // no-op by default
+    }
+
+    /**
+     * A scheduler for delegating index population related jobs to other threads.
+     */
+    interface PopulationWorkScheduler
+    {
+
+        <T> JobHandle<T> schedule( JobDescriptionSupplier descriptionSupplier, Callable<T> job );
+    }
+
+    /**
+     * Supplier of a description of the submitted job.
+     * <p>
+     * The description of what the job does needs to be provided
+     * for monitoring purposes.
+     * It accepts an index name in case the implementation might want to
+     * include that information in the created description.
+     */
+    interface JobDescriptionSupplier
+    {
+
+        String getJobDescription( String indexName );
     }
 
     class Adapter implements IndexPopulator
@@ -187,7 +212,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler, PageCursorTracer cursorTracer )
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
         {
         }
 
@@ -288,7 +313,8 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
+                throws IndexEntryConflictException
         {
             delegate.scanCompleted( phaseTracker, jobScheduler, cursorTracer );
         }

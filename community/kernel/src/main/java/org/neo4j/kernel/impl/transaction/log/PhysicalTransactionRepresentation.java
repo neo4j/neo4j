@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -35,6 +36,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private long timeStarted;
     private long latestCommittedTxWhenStarted;
     private long timeCommitted;
+    private AuthSubject subject;
 
     /**
      * This is a bit of a smell since it's only used for coordinating transactions in a cluster.
@@ -48,10 +50,10 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     public PhysicalTransactionRepresentation( Collection<StorageCommand> commands, byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted,
-            long timeCommitted, int leaseId )
+            long timeCommitted, int leaseId, AuthSubject subject )
     {
         this( commands );
-        setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId );
+        setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, subject );
     }
 
     public void setAdditionalHeader( byte[] additionalHeader )
@@ -59,13 +61,14 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.additionalHeader = additionalHeader;
     }
 
-    public void setHeader( byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int leaseId )
+    public void setHeader( byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int leaseId, AuthSubject subject )
     {
         this.additionalHeader = additionalHeader;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
         this.leaseId = leaseId;
+        this.subject = subject;
     }
 
     @Override
@@ -109,6 +112,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     public int getLeaseId()
     {
         return leaseId;
+    }
+
+    @Override
+    public AuthSubject getAuthSubject()
+    {
+        return subject;
     }
 
     @Override

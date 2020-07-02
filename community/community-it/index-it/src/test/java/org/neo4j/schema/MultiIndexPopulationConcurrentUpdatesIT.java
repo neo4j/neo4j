@@ -95,6 +95,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -335,14 +337,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, storeView, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, false );
+                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "", false );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
             schemaCache = new SchemaCache( new StandardConstraintSemantics(), providerMap );
             schemaCache.load( iterable( rules ) );
 
-            indexService.createIndexes( rules );
+            indexService.createIndexes( AUTH_DISABLED, rules );
             transaction.commit();
         }
     }

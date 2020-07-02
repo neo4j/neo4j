@@ -120,7 +120,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
-                    p.scanCompleted( PhaseTracker.nullInstance, jobScheduler, NULL );
+                    p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );

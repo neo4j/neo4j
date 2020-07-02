@@ -22,10 +22,12 @@ package org.neo4j.scheduler;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.neo4j.common.Subject;
+
 public class MonitoredJobInfo
 {
     private final Group group;
-    private final String submitter;
+    private final Subject submitter;
     private final String targetDatabaseName;
     private final Instant submitted;
     private final String description;
@@ -34,7 +36,7 @@ public class MonitoredJobInfo
     private final State state;
     private final JobType type;
 
-    public MonitoredJobInfo( Group group, Instant submitted, String submitter, String targetDatabaseName, String description,
+    public MonitoredJobInfo( Group group, Instant submitted, Subject submitter, String targetDatabaseName, String description,
             Instant nextDeadline, Duration period, State state, JobType type )
     {
         this.group = group;
@@ -53,7 +55,7 @@ public class MonitoredJobInfo
         return group;
     }
 
-    public String getSubmitter()
+    public Subject getSubmitter()
     {
         return submitter;
     }

@@ -48,6 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.Exceptions.contains;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -117,7 +118,7 @@ class TransactionRepresentationCommitProcessTest
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 appender, storageEngine );
         PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        noCommandTx.setHeader( new byte[0], -1, -1, -1, -1 );
+        noCommandTx.setHeader( new byte[0], -1, -1, -1, -1, ANONYMOUS );
 
         // WHEN
 

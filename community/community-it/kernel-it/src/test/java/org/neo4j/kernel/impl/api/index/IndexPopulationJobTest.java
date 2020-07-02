@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -51,6 +52,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -99,11 +101,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
@@ -147,7 +150,7 @@ class IndexPopulationJobTest
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
         jobScheduler = db.getDependencyResolver().resolveDependency( JobScheduler.class );
 
-        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
@@ -589,7 +592,7 @@ class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED );
 
         // when
         populationJob.run();
@@ -638,7 +641,7 @@ class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED  );
 
         // when
         populationJob.run();
@@ -856,8 +859,9 @@ class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE );
+                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE,
+                        "", AUTH_DISABLED );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED  );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
@@ -865,7 +869,7 @@ class IndexPopulationJobTest
 
     private IndexPrototype indexPrototype( Label label, String propertyKey, boolean constraint ) throws KernelException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
@@ -910,7 +914,7 @@ class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             int result = tx.tokenRead().propertyKey( name );
             tx.commit();
@@ -930,7 +934,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
                 IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED  );
         }
 
         @Override

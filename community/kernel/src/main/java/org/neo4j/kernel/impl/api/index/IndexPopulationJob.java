@@ -34,7 +34,9 @@ import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.common.Subject;
 import org.neo4j.util.concurrent.Runnables;
 
 import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseBlockSize;
@@ -56,6 +58,8 @@ public class IndexPopulationJob implements Runnable
     private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
+    private final String databaseName;
+    private final Subject subject;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean stopped;
@@ -66,7 +70,7 @@ public class IndexPopulationJob implements Runnable
     private volatile JobHandle<?> jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
@@ -75,6 +79,8 @@ public class IndexPopulationJob implements Runnable
         this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
         this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, parseBlockSize() );
+        this.databaseName = databaseName;
+        this.subject = subject;
     }
 
     /**
@@ -251,5 +257,10 @@ public class IndexPopulationJob implements Runnable
     public MemoryTracker getMemoryTracker()
     {
         return memoryTracker;
+    }
+
+    public JobMonitoringParams getMonitoringParams()
+    {
+        return new JobMonitoringParams( subject, databaseName, multiPopulator.getMonitoringDescription() );
     }
 }

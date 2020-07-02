@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.neo4j.common.Subject;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
@@ -82,6 +83,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -593,7 +596,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( indexingService ).createIndexes( rule );
+        verify( indexingService ).createIndexes( AUTH_DISABLED , rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -616,7 +619,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
-        verify( indexingService ).createIndexes( rule );
+        verify( indexingService ).createIndexes( AUTH_DISABLED , rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 

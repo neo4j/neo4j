@@ -44,6 +44,7 @@ import org.neo4j.test.extension.Inject;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -89,7 +90,7 @@ public class CommitProcessTracingIT
     @Test
     void tracePageCacheAccessOnEmptyTransactionApply() throws TransactionFailureException
     {
-        var transaction = new PhysicalTransactionRepresentation( emptyList(), EMPTY_BYTE_ARRAY, 0, 0, 0, 0 );
+        var transaction = new PhysicalTransactionRepresentation( emptyList(), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEmptyTransactionApply" ) )
         {
@@ -104,7 +105,7 @@ public class CommitProcessTracingIT
     @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException
     {
-        var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0 );
+        var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionApply" ) )
         {

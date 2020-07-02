@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.CommandStream;
@@ -55,4 +56,10 @@ public interface TransactionRepresentation extends CommandStream
      * This is only used for coordinating transaction validity in a cluster.
      */
     int getLeaseId();
+
+    /**
+     * @return the subject associated with the transaction.
+     * Typically an authenticated end user that created the transaction.
+     */
+    AuthSubject getAuthSubject();
 }

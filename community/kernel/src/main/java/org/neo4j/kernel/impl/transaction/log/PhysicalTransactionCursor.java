@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+
 public class PhysicalTransactionCursor implements TransactionCursor
 {
     private final ReadableClosablePositionAwareChecksumChannel channel;
@@ -100,7 +102,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
 
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
             transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getTimeWritten(),
-                    startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
+                    startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1, ANONYMOUS );
             current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
             channel.getCurrentPosition( lastGoodPositionMarker );
             return true;

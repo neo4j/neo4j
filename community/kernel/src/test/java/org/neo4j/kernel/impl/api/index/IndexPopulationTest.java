@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -52,6 +53,8 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class IndexPopulationTest
@@ -72,7 +75,7 @@ class IndexPopulationTest
 
         MultipleIndexPopulator multipleIndexPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                        JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE );
+                        JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );

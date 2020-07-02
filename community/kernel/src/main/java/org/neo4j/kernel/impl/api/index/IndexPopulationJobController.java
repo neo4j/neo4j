@@ -24,8 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+
+import static org.neo4j.scheduler.Group.INDEX_POPULATION;
 
 class IndexPopulationJobController
 {
@@ -65,7 +66,7 @@ class IndexPopulationJobController
     void startIndexPopulation( IndexPopulationJob job )
     {
         populationJobs.add( job );
-        job.setHandle( scheduler.schedule( Group.INDEX_POPULATION, new IndexPopulationJobWrapper( job, this ) ) );
+        job.setHandle( scheduler.schedule( INDEX_POPULATION, job.getMonitoringParams(), new IndexPopulationJobWrapper( job, this ) ) );
     }
 
     private void indexPopulationCompleted( IndexPopulationJob populationJob )

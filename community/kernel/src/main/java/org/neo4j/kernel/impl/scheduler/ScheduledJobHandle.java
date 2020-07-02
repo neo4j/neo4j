@@ -252,10 +252,10 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private MonitoredJobInfo.State getStatus()
     {
         var state = this.state.get();
-        switch ( state)
+        switch ( state )
         {
         case RUNNABLE:
-        case SUBMITTED:    
+        case SUBMITTED:
             return MonitoredJobInfo.State.SCHEDULED;
         case EXECUTING:
             // A job can be in failed state only for a glimpse between being marked

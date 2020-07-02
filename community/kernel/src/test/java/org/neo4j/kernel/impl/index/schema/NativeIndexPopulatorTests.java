@@ -169,7 +169,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // when
         populator.add( updates, NULL );
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
         // then
         populator.close( true, NULL );
@@ -184,7 +184,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // when
         populator.add( asList( updates ), NULL );
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
         // then
         populator.close( true, NULL );
@@ -207,7 +207,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         }
 
         // then
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
         verifyUpdates( updates );
     }
@@ -237,7 +237,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         applyInterleaved( updates, populator );
 
         // then
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
         verifyUpdates( updates );
     }
@@ -382,7 +382,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
 
         // then
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
         random.reset();
         verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );

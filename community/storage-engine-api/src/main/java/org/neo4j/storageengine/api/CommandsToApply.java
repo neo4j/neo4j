@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
@@ -31,6 +32,13 @@ public interface CommandsToApply extends CommandStream
      * @return transaction id representing this group of commands.
      */
     long transactionId();
+
+    /**
+     * Subject that triggered the commands.
+     * <p>
+     * This is used for monitoring purposes, so a unit of work can be linked to its initiator.
+     */
+    Subject subject();
 
     /**
      * Page cursor tracer to trace access to underlying page cache

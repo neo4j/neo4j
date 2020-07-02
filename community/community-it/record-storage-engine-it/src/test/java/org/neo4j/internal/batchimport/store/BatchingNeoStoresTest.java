@@ -109,6 +109,7 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELA
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
 import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipTypeScanStore;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
@@ -430,7 +431,7 @@ class BatchingNeoStoresTest
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, BASE_TX_ID, v -> v, NULL, INSTANCE );
-            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0 ), NULL );
+            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }

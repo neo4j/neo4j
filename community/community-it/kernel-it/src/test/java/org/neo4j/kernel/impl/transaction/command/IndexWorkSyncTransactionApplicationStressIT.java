@@ -68,6 +68,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
@@ -129,7 +130,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
     private static TransactionToApply tx( Collection<StorageCommand> commands )
     {
-        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1 );
+        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
         TransactionToApply tx = new TransactionToApply( txRepresentation, NULL );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;

@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -64,7 +65,7 @@ public class TransactionWriter
     {
         prepareForCommit();
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( allCommands() );
-        representation.setHeader( additionalHeader, startTime, lastCommittedTx, committedTime, -1 );
+        representation.setHeader( additionalHeader, startTime, lastCommittedTx, committedTime, -1, AuthSubject.ANONYMOUS );
         return representation;
     }
 

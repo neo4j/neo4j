@@ -21,12 +21,14 @@ package org.neo4j.scheduler;
 
 import java.time.Instant;
 
+import org.neo4j.common.Subject;
+
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class FailedJobRun
 {
     private final Group group;
-    private final String submitter;
+    private final Subject submitter;
     private final String targetDatabaseName;
     private final String description;
     private final JobType jobType;
@@ -35,7 +37,7 @@ public class FailedJobRun
     private final Instant failureTime;
     private final String failureDescription;
 
-    public FailedJobRun( Group group, String submitter, String targetDatabaseName, String description, JobType jobType, Instant submitted,
+    public FailedJobRun( Group group, Subject submitter, String targetDatabaseName, String description, JobType jobType, Instant submitted,
             Instant executionStart, Instant failureTime, Throwable failure )
     {
         this.group = group;
@@ -61,7 +63,7 @@ public class FailedJobRun
         return group;
     }
 
-    public String getSubmitter()
+    public Subject getSubmitter()
     {
         return submitter;
     }

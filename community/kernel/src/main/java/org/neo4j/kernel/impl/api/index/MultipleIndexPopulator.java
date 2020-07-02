@@ -39,6 +39,7 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
@@ -64,6 +65,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -148,6 +151,8 @@ public class MultipleIndexPopulator
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
     private final TokenNameLookup tokenNameLookup;
     private final PageCacheTracer cacheTracer;
+    private final String databaseName;
+    private final Subject subject;
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -160,7 +165,7 @@ public class MultipleIndexPopulator
      */
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, String databaseName, Subject subject )
     {
         this.storeView = storeView;
         this.cursorTracer = cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG );
@@ -175,6 +180,8 @@ public class MultipleIndexPopulator
         this.jobScheduler = jobScheduler;
         this.tokenNameLookup = tokenNameLookup;
         this.cacheTracer = cacheTracer;
+        this.databaseName = databaseName;
+        this.subject = subject;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
@@ -428,34 +435,37 @@ public class MultipleIndexPopulator
         activeTasks.incrementAndGet();
         List<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
 
-        jobScheduler.schedule( Group.INDEX_POPULATION_WORK, () ->
-        {
-            try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
-            {
-                String batchDescription = "EMPTY";
-                if ( PRINT_DEBUG )
+        jobScheduler.schedule( Group.INDEX_POPULATION_WORK,
+                new JobMonitoringParams( subject, databaseName, "Index scan batch for '" + population.indexDescriptor.getName() + "'" ),
+                () ->
                 {
-                    if ( !batch.isEmpty() )
+                    try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
                     {
-                        batchDescription = format( "[%d, %d - %d]", batch.size(), batch.get( 0 ).getEntityId(), batch.get( batch.size() - 1 ).getEntityId() );
+                        String batchDescription = "EMPTY";
+                        if ( PRINT_DEBUG )
+                        {
+                            if ( !batch.isEmpty() )
+                            {
+                                batchDescription =
+                                        format( "[%d, %d - %d]", batch.size(), batch.get( 0 ).getEntityId(), batch.get( batch.size() - 1 ).getEntityId() );
+                            }
+                            log.info( "Applying scan batch %s", batchDescription );
+                        }
+                        population.populator.add( batch, cursorTracer );
+                        if ( PRINT_DEBUG )
+                        {
+                            log.info( "Applied scan batch %s", batchDescription );
+                        }
                     }
-                    log.info( "Applying scan batch %s", batchDescription );
-                }
-                population.populator.add( batch, cursorTracer );
-                if ( PRINT_DEBUG )
-                {
-                    log.info( "Applied scan batch %s", batchDescription );
-                }
-            }
-            catch ( Throwable failure )
-            {
-                cancel( population, failure, cursorTracer );
-            }
-            finally
-            {
-                activeTasks.decrementAndGet();
-            }
-        } );
+                    catch ( Throwable failure )
+                    {
+                        cancel( population, failure, cursorTracer );
+                    }
+                    finally
+                    {
+                        activeTasks.decrementAndGet();
+                    }
+                } );
     }
 
     /**
@@ -567,6 +577,31 @@ public class MultipleIndexPopulator
 
         return "MultipleIndexPopulator{activeTasks=" + activeTasks + ", " +
                 "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
+    }
+
+    /**
+     * The description of what this index populator will do.
+     * This should be invoked only before the population starts.
+     */
+    public String getMonitoringDescription()
+    {
+        var populations = this.populations;
+
+        if ( populations.isEmpty() )
+        {
+            // this should not happen if this is really
+            // invoked only before the population starts,
+            // but it is better to show this over throwing an exception.
+            return "Empty index population";
+        }
+
+        if ( populations.size() == 1 )
+        {
+            var population = populations.get( 0 );
+            return "Population of Index '" + population.indexDescriptor.getName() + "'";
+        }
+
+        return "Population of " + populations.size() + " '" + type + "' indexes";
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater
@@ -803,7 +838,19 @@ public class MultipleIndexPopulator
 
         void scanCompleted( PageCursorTracer cursorTracer ) throws IndexEntryConflictException
         {
-            populator.scanCompleted( phaseTracker, jobScheduler, cursorTracer );
+            IndexPopulator.PopulationWorkScheduler populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
+            {
+
+                @Override
+                public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
+                {
+                    var description = descriptionSupplier.getJobDescription( indexDescriptor.getName() );
+                    var jobMonitoringParams = new JobMonitoringParams( subject, databaseName, description );
+                    return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, jobMonitoringParams, job );
+                }
+            };
+
+            populator.scanCompleted( phaseTracker, populationWorkScheduler, cursorTracer );
         }
 
         PopulationProgress progress( PopulationProgress storeScanProgress )

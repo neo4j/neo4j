@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.DefaultForceOperation;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -275,8 +276,8 @@ public final class Recovery
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, LogProvider logProvider, Monitors globalMonitors,
-            Iterable<ExtensionFactory<?>> extensionFactories,
-            Optional<LogTailScanner> providedLogScanner, RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker ) throws IOException
+            Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogTailScanner> providedLogScanner,
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker ) throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
         if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogScanner, memoryTracker ) )
@@ -326,7 +327,7 @@ public final class Recovery
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
-                tracers.getPageCacheTracer(), memoryTracker, false );
+                tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), false );
 
         TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();

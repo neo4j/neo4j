@@ -53,6 +53,7 @@ public final class IndexingServiceFactory
                                           IndexStatisticsStore indexStatisticsStore,
                                           PageCacheTracer pageCacheTracer,
                                           MemoryTracker memoryTracker,
+                                          String databaseName,
                                           boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
@@ -65,6 +66,6 @@ public final class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, readOnly );
+                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnly );
     }
 }

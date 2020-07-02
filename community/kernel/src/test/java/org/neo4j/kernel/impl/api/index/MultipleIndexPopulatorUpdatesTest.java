@@ -26,6 +26,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -59,6 +60,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class MultipleIndexPopulatorUpdatesTest
@@ -78,7 +81,7 @@ class MultipleIndexPopulatorUpdatesTest
         InMemoryTokens tokens = new InMemoryTokens();
         MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
                 storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE );
+                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 

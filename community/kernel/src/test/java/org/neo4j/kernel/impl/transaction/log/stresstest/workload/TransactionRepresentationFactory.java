@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class TransactionRepresentationFactory
@@ -39,7 +40,7 @@ class TransactionRepresentationFactory
     TransactionToApply nextTransaction( long txId )
     {
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( createRandomCommands() );
-        representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42 );
+        representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS );
         return new TransactionToApply( representation, NULL );
     }
 

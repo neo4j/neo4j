@@ -238,7 +238,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker, JobScheduler jobScheduler, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, PageCursorTracer cursorTracer )
+            throws IndexEntryConflictException
     {
         if ( !markMergeStarted() )
         {
@@ -252,7 +253,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
             if ( !allScanUpdates.isEmpty() )
             {
-                mergeScanUpdates( jobScheduler );
+                mergeScanUpdates( populationWorkScheduler );
             }
 
             externalUpdates.doneAdding();
@@ -318,7 +319,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void mergeScanUpdates( JobScheduler jobScheduler ) throws InterruptedException, ExecutionException, IOException
+    private void mergeScanUpdates(  PopulationWorkScheduler populationWorkScheduler ) throws InterruptedException, ExecutionException, IOException
     {
         List<JobHandle<?>> mergeFutures = new ArrayList<>();
         for ( ThreadLocalBlockStorage part : allScanUpdates )
@@ -326,11 +327,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
             // Call doneAdding here so that the buffer it allocates if it needs to flush something will be shared with other indexes
             scanUpdates.doneAdding();
-            mergeFutures.add( jobScheduler.schedule( Group.INDEX_POPULATION_WORK, () ->
-            {
-                scanUpdates.merge( mergeFactor, cancellation );
-                return null;
-            } ) );
+            mergeFutures.add( populationWorkScheduler.schedule(
+                    indexName -> "Block merging for '" + indexName + "'",
+                    () ->
+                    {
+                        scanUpdates.merge( mergeFactor, cancellation );
+                        return null;
+                    } )
+            );
         }
         // Wait for merge jobs to finish and let potential exceptions in the merge threads have a chance to propagate
         for ( JobHandle<?> mergeFuture : mergeFutures )

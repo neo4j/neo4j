@@ -180,6 +180,8 @@ import org.neo4j.values.storable.Value;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
@@ -582,12 +584,13 @@ public class BatchInserterImpl implements BatchInserter
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
-                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker, false );
+                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker, databaseLayout.getDatabaseName(),
+                        false );
         life.add( indexingService );
         try
         {
             IndexDescriptor[] descriptors = getIndexesNeedingPopulation( cursorTracer );
-            indexingService.createIndexes( true /*verify constraints before flipping over*/, descriptors );
+            indexingService.createIndexes( true /*verify constraints before flipping over*/, AUTH_DISABLED, descriptors );
             for ( IndexDescriptor descriptor : descriptors )
             {
                 IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );

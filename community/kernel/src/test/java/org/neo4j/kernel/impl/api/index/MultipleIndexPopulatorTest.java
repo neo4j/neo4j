@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -67,6 +68,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -91,7 +94,7 @@ class MultipleIndexPopulatorTest
         JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
-                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE );
+                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED  );
     }
 
     @Test

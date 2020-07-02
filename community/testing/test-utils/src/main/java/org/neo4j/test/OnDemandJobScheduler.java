@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
 public class OnDemandJobScheduler extends JobSchedulerAdapter
@@ -61,7 +62,19 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
     }
 
     @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
+    {
+        return schedule( job );
+    }
+
+    @Override
     public JobHandle<?> schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
+    {
+        return schedule( job );
+    }
+
+    @Override
+    public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
         return schedule( job );
     }
@@ -73,7 +86,20 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
     }
 
     @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams jobMonitoringParams, Runnable runnable, long period, TimeUnit timeUnit )
+    {
+        return schedule( runnable );
+    }
+
+    @Override
     public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay,
+            long period, TimeUnit timeUnit )
+    {
+        return schedule( runnable );
+    }
+
+    @Override
+    public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams jobMonitoringParams, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
     {
         return schedule( runnable );

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -34,10 +35,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
@@ -85,6 +90,7 @@ class GenericBlockBasedIndexPopulatorTest
     private IndexFiles indexFiles;
     private DatabaseIndexContext databaseIndexContext;
     private JobScheduler jobScheduler;
+    private IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     @BeforeEach
     void setup()
@@ -94,6 +100,15 @@ class GenericBlockBasedIndexPopulatorTest
         indexFiles = new IndexFiles( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
+        {
+
+            @Override
+            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
+            {
+                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+            }
+        };
     }
 
     @AfterEach
@@ -115,7 +130,7 @@ class GenericBlockBasedIndexPopulatorTest
             int hakunaId = 1;
             int matataId = 2;
             externalUpdate( populator, hakuna, hakunaId );
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             externalUpdate( populator, matata, matataId );
 
             // then
@@ -143,7 +158,7 @@ class GenericBlockBasedIndexPopulatorTest
             {
                 populator.add( singleton( firstScanUpdate ), NULL );
                 populator.add( singleton( secondScanUpdate ), NULL );
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             } );
         }
         finally
@@ -170,7 +185,7 @@ class GenericBlockBasedIndexPopulatorTest
                     updater.process( firstExternalUpdate );
                     updater.process( secondExternalUpdate );
                 }
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             } );
         }
         finally
@@ -197,7 +212,7 @@ class GenericBlockBasedIndexPopulatorTest
                     updater.process( externalUpdate );
                 }
                 populator.add( singleton( scanUpdate ), NULL );
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             } );
         }
         finally
@@ -225,7 +240,7 @@ class GenericBlockBasedIndexPopulatorTest
                 updater.process( externalUpdate );
             }
             populator.add( singleton( secondScanUpdate ), NULL );
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // then
             assertHasEntry( populator, unique, 1 );
@@ -251,7 +266,7 @@ class GenericBlockBasedIndexPopulatorTest
             // when
             Collection<IndexEntryUpdate<?>> updates = singleton( update );
             populator.add( updates, NULL );
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // then
             assertHasEntry( populator, update.values()[0], 1 );
@@ -276,7 +291,7 @@ class GenericBlockBasedIndexPopulatorTest
             {
                 Collection<IndexEntryUpdate<?>> updates = singleton( update );
                 populator.add( updates, NULL );
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
                 // if not
                 fail( "Expected to throw for value larger than max size." );

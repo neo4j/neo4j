@@ -102,6 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -860,7 +861,7 @@ class RecoveryCorruptedTransactionLogIT
             commands.add( new Command.PropertyCommand( new PropertyRecord( 1 ), new PropertyRecord( 2 ) ) );
             commands.add( new Command.NodeCommand( new NodeRecord( 2 ), new NodeRecord( 3 ) ) );
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-            transaction.setHeader( new byte[0], 0, 0, 0, 0 );
+            transaction.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
             writer.append( transaction, 1000, BASE_TX_CHECKSUM );
         }
     }

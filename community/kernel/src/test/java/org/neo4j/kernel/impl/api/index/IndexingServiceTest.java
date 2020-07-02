@@ -48,6 +48,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -128,6 +129,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -226,7 +229,7 @@ class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         waitForIndexesToComeOnline( indexingService, index );
@@ -258,8 +261,8 @@ class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( index );
-        indexingService.createIndexes( index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
 
         // We are asserting that the second call to createIndex does not throw an exception.
         waitForIndexesToComeOnline( indexingService, index );
@@ -304,7 +307,7 @@ class IndexingServiceTest
 
         // when
 
-        indexingService.createIndexes( index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
         IndexProxy proxy = indexingService.getIndexProxy( index );
         assertEquals( POPULATING, proxy.getState() );
         populationStartBarrier.await();
@@ -327,7 +330,8 @@ class IndexingServiceTest
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
-        order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( JobScheduler.class ), any( PageCursorTracer.class ) );
+        order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
+                any( PageCursorTracer.class ) );
         order.verify( populator, times( 2 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
         order.verify( updater ).close();
@@ -354,7 +358,7 @@ class IndexingServiceTest
 
         // when
         IndexDescriptor index = constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
-        indexingService.createIndexes( index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         // don't wait for index to come ONLINE here since we're testing that it doesn't
@@ -385,7 +389,7 @@ class IndexingServiceTest
 
         // when
         IndexDescriptor index = constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
-        indexingService.createIndexes( index );
+        indexingService.createIndexes( AUTH_DISABLED, index );
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         indexingService.activateIndex( index );
@@ -411,7 +415,8 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, false ) );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
+                false ) );
 
         when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
@@ -448,7 +453,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, false );
+                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", false );
 
         when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
@@ -507,7 +512,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 indexDescriptors, internalLogProvider, userLogProvider,
-                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, false );
+                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",false );
 
         // when starting IndexingService
         indexingService.init();
@@ -696,7 +701,7 @@ class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
 
-        indexing.createIndexes( index );
+        indexing.createIndexes( AUTH_DISABLED, index );
         waitForIndexesToComeOnline( indexing, index );
         verify( populator, timeout( 10000 ) ).close( true, NULL );
 
@@ -739,8 +744,8 @@ class IndexingServiceTest
 
         life.start();
 
-        indexing.createIndexes( index1 );
-        indexing.createIndexes( index2 );
+        indexing.createIndexes( AUTH_DISABLED, index1 );
+        indexing.createIndexes( AUTH_DISABLED, index2 );
 
         waitForIndexesToComeOnline( indexing, index1, index2 );
 
@@ -824,10 +829,10 @@ class IndexingServiceTest
 
         // WHEN dropping another index, which happens to have the same label/property... while recovering
         IndexDescriptor otherIndex = prototype.withName( "index_" + otherIndexId ).materialise( otherIndexId );
-        indexing.createIndexes( otherIndex );
+        indexing.createIndexes( AUTH_DISABLED, otherIndex );
         indexing.dropIndex( otherIndex );
         // and WHEN finally creating our index again (at a later point in recovery)
-        indexing.createIndexes( index );
+        indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
         indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL );
         // and WHEN starting, i.e. completing recovery
@@ -857,10 +862,10 @@ class IndexingServiceTest
         // WHEN dropping another index, which happens to be identical to the existing one except for different index config... while recovering
         IndexConfig indexConfig = index.getIndexConfig().withIfAbsent( "a", Values.booleanValue( true ) );
         IndexDescriptor otherIndex = index.withIndexConfig( indexConfig );
-        indexing.createIndexes( otherIndex );
+        indexing.createIndexes( AUTH_DISABLED, otherIndex );
         indexing.dropIndex( otherIndex );
         // and WHEN finally creating our index again (at a later point in recovery)
-        indexing.createIndexes( index );
+        indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
         indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL );
         // and WHEN starting, i.e. completing recovery
@@ -907,7 +912,7 @@ class IndexingServiceTest
         life.init();
         // simulating an index being created as part of applying recovered transactions
         long fakeOwningConstraintRuleId = 1;
-        indexing.createIndexes( constraintIndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
+        indexing.createIndexes( AUTH_DISABLED, constraintIndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
                 fakeOwningConstraintRuleId ) );
         // and then starting, i.e. considering recovery completed
         life.start();
@@ -930,7 +935,7 @@ class IndexingServiceTest
         IndexDescriptor index1 = storeIndex( 0, 0, 0, PROVIDER_DESCRIPTOR );
         IndexDescriptor index2 = storeIndex( 1, 0, 1, PROVIDER_DESCRIPTOR );
         IndexDescriptor index3 = storeIndex( 2, 1, 0, PROVIDER_DESCRIPTOR );
-        indexing.createIndexes( index1, index2, index3 );
+        indexing.createIndexes( AUTH_DISABLED, index1, index2, index3 );
 
         // THEN
         IndexPrototype prototype = forSchema( forLabel( 0, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR );
@@ -961,7 +966,7 @@ class IndexingServiceTest
         ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
 
         // when
-        indexing.createIndexes( index );
+        indexing.createIndexes( AUTH_DISABLED , index );
         waitForIndexesToGetIntoState( indexing, FAILED, index );
         verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture(), any() );
 
@@ -1127,7 +1132,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, false ) );
+                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", false ) );
 
         nameLookup.propertyKey( 1, "prop" );
 
@@ -1173,7 +1178,8 @@ class IndexingServiceTest
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup, indexes,
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, false );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
+                false );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 32, 32 ) );
         nameLookup.propertyKey( 1, "prop" );
 
@@ -1286,7 +1292,7 @@ class IndexingServiceTest
 
         // when
         indexing.dropIndex( index );
-        indexing.createIndexes( index );
+        indexing.createIndexes( AUTH_DISABLED , index );
         life.start();
 
         // then
@@ -1324,7 +1330,7 @@ class IndexingServiceTest
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
                         nameLookup, scheduler, null, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
-                        PageCacheTracer.NULL, INSTANCE, false );
+                        PageCacheTracer.NULL, INSTANCE, "", false );
         // and where index population starts
         indexingService.init();
 
@@ -1481,6 +1487,7 @@ class IndexingServiceTest
                         indexStatisticsStore,
                         PageCacheTracer.NULL,
                         INSTANCE,
+                        "",
                         false )
         );
     }
@@ -1628,7 +1635,8 @@ class IndexingServiceTest
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ),
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, false );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "",
+                false );
     }
 
     private static DependencyResolver buildIndexDependencies( IndexProvider... providers )

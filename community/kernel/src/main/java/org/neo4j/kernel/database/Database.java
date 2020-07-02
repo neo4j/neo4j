@@ -597,7 +597,7 @@ public class Database extends LifecycleAdapter
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
                 indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
-                pageCacheTracer, memoryTracker, readOnly ) );
+                pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnly ) );
     }
 
     /**
@@ -617,11 +617,12 @@ public class Database extends LifecycleAdapter
             IndexingService.Monitor indexingServiceMonitor,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
+            String databaseName,
             boolean readOnly )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
-                databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, readOnly );
+                databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnly );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }

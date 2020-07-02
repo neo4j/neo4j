@@ -86,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
@@ -424,7 +425,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     protected TransactionToApply tx()
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
-        tx.setHeader( new byte[0], 0, 0, 0, 0 );
+        tx.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
         return new TransactionToApply( tx, NULL );
     }
 

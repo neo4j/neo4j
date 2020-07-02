@@ -79,9 +79,13 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.common.Subject;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -118,6 +122,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexStatisticsStore indexStatisticsStore;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
+    private final String databaseName;
     private final boolean readOnly;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
@@ -217,6 +222,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             IndexStatisticsStore indexStatisticsStore,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
+            String databaseName,
             boolean readOnly )
     {
         this.indexProxyCreator = indexProxyCreator;
@@ -236,6 +242,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.indexStatisticsStore = indexStatisticsStore;
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
+        this.databaseName = databaseName;
         this.readOnly = readOnly;
     }
 
@@ -426,7 +433,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         for ( Map.Entry<EntityType,MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
         {
-            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), false );
+            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), false, SYSTEM );
             populate( descriptorToPopulate.getValue(), indexMap, populationJob );
         }
     }
@@ -614,11 +621,14 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      *
      * {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)} will not be called as part of populating these indexes,
      * instead that will be done by code that activates the indexes later.
+     *
+     * @param subject subject that triggered the index creation.
+     * This is used for monitoring purposes, so work related to index creation and population can be linked to its originator.
      */
     @Override
-    public void createIndexes( IndexDescriptor... rules )
+    public void createIndexes( Subject subject, IndexDescriptor... rules )
     {
-        createIndexes( false, rules );
+        createIndexes( false, subject, rules );
     }
 
     /**
@@ -631,9 +641,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * @param verifyBeforeFlipping whether or not to call {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)}
      * as part of population, before flipping to a successful state.
      */
-    public void createIndexes( boolean verifyBeforeFlipping, IndexDescriptor... rules )
+    public void createIndexes( boolean verifyBeforeFlipping, Subject subject, IndexDescriptor... rules )
     {
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, rules );
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, subject, rules );
         indexMapRef.modify( populationStarter );
         populationStarter.startPopulation();
     }
@@ -810,11 +820,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
+    private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
-                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker );
+                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )
@@ -884,13 +894,15 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final class IndexPopulationStarter implements UnaryOperator<IndexMap>
     {
         private final boolean verifyBeforeFlipping;
+        private final Subject subject;
         private final IndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;
         private IndexPopulationJob relationshipPopulationJob;
 
-        IndexPopulationStarter( boolean verifyBeforeFlipping, IndexDescriptor[] descriptors )
+        IndexPopulationStarter( boolean verifyBeforeFlipping, Subject subject, IndexDescriptor[] descriptors )
         {
             this.verifyBeforeFlipping = verifyBeforeFlipping;
+            this.subject = subject;
             this.descriptors = descriptors;
         }
 
@@ -914,16 +926,17 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 boolean flipToTentative = descriptor.isUnique();
                 if ( state == State.RUNNING )
                 {
-                    if ( descriptor.schema().entityType() == EntityType.NODE )
+                    if ( descriptor.schema().entityType() == NODE )
                     {
-                        nodePopulationJob = nodePopulationJob == null ? newIndexPopulationJob( EntityType.NODE, verifyBeforeFlipping ) : nodePopulationJob;
+                        nodePopulationJob =
+                                nodePopulationJob == null ? newIndexPopulationJob( NODE, verifyBeforeFlipping, subject ) : nodePopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 nodePopulationJob );
                         index.start();
                     }
                     else
                     {
-                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( EntityType.RELATIONSHIP, verifyBeforeFlipping )
+                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( RELATIONSHIP, verifyBeforeFlipping, subject )
                                                                                       : relationshipPopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 relationshipPopulationJob );

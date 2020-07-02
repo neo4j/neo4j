@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 
+import org.neo4j.common.Subject;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -29,9 +30,11 @@ public interface IndexUpdateListener
 {
     /**
      * One or more indexes were created. This listener should take care of managing initial population of it.
+     * @param subject subject that triggered the index creation.
+     * This is used for monitoring purposes, so work related to index creation and population can be linked to its originator.
      * @param indexes indexes that were created.
      */
-    void createIndexes( IndexDescriptor... indexes );
+    void createIndexes( Subject subject, IndexDescriptor... indexes );
 
     /**
      * Used when activating an index after it has been created and populated.
@@ -66,7 +69,7 @@ public interface IndexUpdateListener
     class Adapter implements IndexUpdateListener
     {
         @Override
-        public void createIndexes( IndexDescriptor... indexes )
+        public void createIndexes( Subject subject, IndexDescriptor... indexes )
         {
         }
 

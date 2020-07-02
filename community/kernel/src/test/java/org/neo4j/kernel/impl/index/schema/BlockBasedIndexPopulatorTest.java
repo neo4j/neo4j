@@ -52,6 +52,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
@@ -61,6 +62,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Barrier;
@@ -111,6 +113,7 @@ class BlockBasedIndexPopulatorTest
     private IndexFiles indexFiles;
     private DatabaseIndexContext databaseIndexContext;
     private JobScheduler jobScheduler;
+    private IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     @BeforeEach
     void setup()
@@ -120,12 +123,26 @@ class BlockBasedIndexPopulatorTest
         indexFiles = new IndexFiles( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+        populationWorkScheduler = wrapScheduler( jobScheduler );
     }
 
     @AfterEach
     void tearDown() throws Exception
     {
         jobScheduler.shutdown();
+    }
+
+    private IndexPopulator.PopulationWorkScheduler wrapScheduler( JobScheduler jobScheduler )
+    {
+        return new IndexPopulator.PopulationWorkScheduler()
+        {
+
+            @Override
+            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
+            {
+                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+            }
+        };
     }
 
     @Test
@@ -166,7 +183,7 @@ class BlockBasedIndexPopulatorTest
     {
         return () ->
         {
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             return null;
         };
     }
@@ -248,7 +265,7 @@ class BlockBasedIndexPopulatorTest
 
             // when
             Race race = new Race();
-            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, jobScheduler, NULL ) ) );
+            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, populationWorkScheduler, NULL ) ) );
             race.addContestant( throwing( () -> populator.close( false, NULL ) ) );
             race.go();
             closed = true;
@@ -322,7 +339,7 @@ class BlockBasedIndexPopulatorTest
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
@@ -360,7 +377,7 @@ class BlockBasedIndexPopulatorTest
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
@@ -391,7 +408,7 @@ class BlockBasedIndexPopulatorTest
         populator.add( populationUpdates, NULL );
 
         // when
-        populator.scanCompleted( nullInstance, jobScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         // Also a couple of updates afterwards
         int numberOfUpdatesAfterCompleted = 4;
         try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -431,7 +448,7 @@ class BlockBasedIndexPopulatorTest
         {
             // when
             int numberOfCheckPointsBeforeScanCompleted = checkpoints.get();
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // then
             assertEquals( numberOfCheckPointsBeforeScanCompleted + 1, checkpoints.get() );
@@ -464,7 +481,7 @@ class BlockBasedIndexPopulatorTest
                     return jobScheduler.schedule( group, job );
                 }
             };
-            populator.scanCompleted( nullInstance, trackingJobScheduler, NULL );
+            populator.scanCompleted( nullInstance, wrapScheduler( trackingJobScheduler ), NULL );
             assertTrue( called.booleanValue() );
             populator.close( true, NULL );
             closed = true;
@@ -491,7 +508,7 @@ class BlockBasedIndexPopulatorTest
             Value value = generateStringResultingInSize( layout, size );
             Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
             populator.add( data, NULL );
-            populator.scanCompleted( nullInstance, jobScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // when
             try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
@@ -549,11 +566,11 @@ class BlockBasedIndexPopulatorTest
             if ( updateBeforeScanCompleted )
             {
                 updateAction.run();
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             }
             else
             {
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
                 updateAction.run();
             }
 
@@ -584,7 +601,7 @@ class BlockBasedIndexPopulatorTest
             int size = populator.tree.keyValueSizeCap() + 1;
             if ( !updateBeforeScanCompleted )
             {
-                populator.scanCompleted( nullInstance, jobScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             }
             assertThrows( IllegalArgumentException.class, () ->
             {

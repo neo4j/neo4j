@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -64,6 +65,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final long txId;
+        private final Subject subject;
         private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
         private List<IndexDescriptor> createdIndexes;
         private final IndexActivator indexActivator;
@@ -72,6 +74,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         SingleTransactionApplier( CommandsToApply commands, BatchContext batchContext )
         {
             this.txId = commands.transactionId();
+            this.subject = commands.subject();
             this.indexActivator = batchContext.getIndexActivator();
             this.batchContext = batchContext;
         }
@@ -90,7 +93,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexUpdateListener.createIndexes( createdIndexes.toArray( new IndexDescriptor[0] ) );
+                indexUpdateListener.createIndexes( subject, createdIndexes.toArray( new IndexDescriptor[0] ) );
                 createdIndexes = null;
             }
         }

@@ -25,6 +25,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.common.Subject;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.internal.helpers.Format.date;
@@ -130,6 +132,22 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     public long transactionId()
     {
         return transactionId;
+    }
+
+    @Override
+    public Subject subject()
+    {
+        if ( transactionRepresentation.getAuthSubject() == AuthSubject.AUTH_DISABLED )
+        {
+            return Subject.AUTH_DISABLED;
+        }
+
+        if ( transactionRepresentation.getAuthSubject() == AuthSubject.ANONYMOUS )
+        {
+            return Subject.ANONYMOUS;
+        }
+
+        return new Subject( transactionRepresentation.getAuthSubject().username() );
     }
 
     @Override

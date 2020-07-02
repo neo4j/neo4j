@@ -752,7 +752,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             new PhysicalTransactionRepresentation( extractedCommands );
                     long timeCommitted = clocks.systemClock().millis();
                     transactionRepresentation.setHeader(
-                            EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, leaseClient.leaseId() );
+                            EMPTY_BYTE_ARRAY, startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, leaseClient.leaseId(), securityContext.subject() );
 
                     // Commit the transaction
                     success = true;
