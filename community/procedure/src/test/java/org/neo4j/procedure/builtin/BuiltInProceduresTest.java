@@ -476,7 +476,7 @@ class BuiltInProceduresTest
         constraints.add( constraint );
     }
 
-    private void givenNodeKeys( String label, String...props )
+    private void givenNodeKeys( String label, String... props )
     {
         int labelId = token( label, labels );
         int[] propIds = new int[props.length];

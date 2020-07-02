@@ -256,7 +256,7 @@ public class BoltV41TransportIT
 
         // execute query #2
         connection.send( util.chunk( new RunMessage( "UNWIND range(21, 30) AS x RETURN x" ) ) );
-        assertThat( connection ).satisfies(  util.eventuallyReceives(
+        assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message ).containsEntry( "qid", 2L ).containsKeys( "fields", "t_first" ) ) ) );
 
         // request 4 records for query #2

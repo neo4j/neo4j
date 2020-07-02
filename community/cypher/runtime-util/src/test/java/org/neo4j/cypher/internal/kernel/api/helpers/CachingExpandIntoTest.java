@@ -161,7 +161,7 @@ class CachingExpandIntoTest
         assertReleasesHeap( expandInto );
     }
 
-    private void findConnections( CachingExpandInto expandInto, NodeCursor cursor, long from, long to, int...types )
+    private void findConnections( CachingExpandInto expandInto, NodeCursor cursor, long from, long to, int... types )
     {
         RelationshipTraversalCursor relationships =
                 expandInto.connectingRelationships( cursor, mock( RelationshipTraversalCursor.class ), from,

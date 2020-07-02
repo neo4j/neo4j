@@ -96,7 +96,7 @@ class NodeValueClientFilter implements EntityValueClient, IndexProgressor
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         // First filter on these values, which come from the index. Some values will be NO_VALUE, because some indexed values cannot be read back.
         // Those values will have to be read from the store using the propertyCursor and is done in one pass after this loop, if needed.

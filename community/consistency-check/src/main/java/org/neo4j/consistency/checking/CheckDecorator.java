@@ -125,7 +125,7 @@ public interface CheckDecorator
     {
         private final CheckDecorator[] decorators;
 
-        public ChainCheckDecorator( CheckDecorator...decorators )
+        public ChainCheckDecorator( CheckDecorator... decorators )
         {
             this.decorators = decorators;
         }

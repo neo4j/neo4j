@@ -38,7 +38,7 @@ public class Labels implements TokenSet
         this.labelIds = labelIds;
     }
 
-    public static Labels from( long...labels )
+    public static Labels from( long... labels )
     {
         return new Labels( labels );
     }

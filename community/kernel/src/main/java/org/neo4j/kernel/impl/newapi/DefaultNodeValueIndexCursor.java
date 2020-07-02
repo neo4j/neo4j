@@ -224,7 +224,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         if ( isRemoved( reference ) || !allowed( reference ) )
         {

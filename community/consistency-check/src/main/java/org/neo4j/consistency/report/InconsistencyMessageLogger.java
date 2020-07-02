@@ -79,7 +79,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         return builder.toString();
     }
 
-    private static String buildMessage( String message, AbstractBaseRecord record, Object[] args )
+    private static String buildMessage( String message, AbstractBaseRecord record, Object... args )
     {
         StringBuilder builder = joinLines( message ).append( System.lineSeparator() ).append( TAB ).append( safeToString( record ) );
         appendArgs( builder, args );
@@ -98,7 +98,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         }
     }
 
-    private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object[] args )
+    private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object... args )
     {
         StringBuilder builder = joinLines( message );
         builder.append( System.lineSeparator() ).append( TAB ).append( "- " ).append( oldRecord );

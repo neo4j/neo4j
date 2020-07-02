@@ -338,9 +338,9 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             return args;
         }
 
-        protected abstract void logError( String message, Object[] args );
+        protected abstract void logError( String message, Object... args );
 
-        protected abstract void logWarning( String message, Object[] args );
+        protected abstract void logWarning( String message, Object... args );
 
         abstract void checkReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                       AbstractBaseRecord referenced, RecordAccess records, PageCursorTracer cursorTracer );
@@ -370,13 +370,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
 
         @Override
-        protected void logError( String message, Object[] args )
+        protected void logError( String message, Object... args )
         {
             report.error( type, record, message, args );
         }
 
         @Override
-        protected void logWarning( String message, Object[] args )
+        protected void logWarning( String message, Object... args )
         {
             report.warning( type, record, message, args );
         }

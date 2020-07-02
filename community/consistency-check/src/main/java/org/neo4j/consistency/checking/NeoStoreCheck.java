@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 class NeoStoreCheck extends PrimitiveRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>
 {
     @SafeVarargs
-    NeoStoreCheck( RecordField<NeoStoreRecord,NeoStoreConsistencyReport>...fields )
+    NeoStoreCheck( RecordField<NeoStoreRecord,NeoStoreConsistencyReport>... fields )
     {
         super( fields );
     }

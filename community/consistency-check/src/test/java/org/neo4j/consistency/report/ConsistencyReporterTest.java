@@ -73,6 +73,7 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -149,14 +150,14 @@ class ConsistencyReporterTest
             InconsistencyLogger logger = new InconsistencyLogger()
             {
                 @Override
-                public void error( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+                public void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
                 {
                     assertTrue( loggedError.compareAndSet( null, message ) );
                 }
 
                 @Override
                 public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                        String message, Object[] args )
+                        String message, Object... args )
                 {
                     assertTrue( loggedError.compareAndSet( null, message ) );
                 }
@@ -168,13 +169,13 @@ class ConsistencyReporterTest
                 }
 
                 @Override
-                public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+                public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
                 {
                 }
 
                 @Override
                 public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                        String message, Object[] args )
+                        String message, Object... args )
                 {
                 }
 
@@ -230,7 +231,7 @@ class ConsistencyReporterTest
                 else
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), argThat( expectedFormat() ), nullSafeAny() );
+                                            any( AbstractBaseRecord.class ), argThat( expectedFormat() ), anyVararg() );
                 }
             }
             else
@@ -245,7 +246,7 @@ class ConsistencyReporterTest
                 {
                     verify( report ).error( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ),
-                                              argThat( expectedFormat() ), nullSafeAny() );
+                                              argThat( expectedFormat() ), anyVararg() );
                 }
             }
         }

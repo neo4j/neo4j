@@ -118,7 +118,7 @@ class ApplyRecoveredTransactionsTest
         return relationship;
     }
 
-    private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
+    private void applyExternalTransaction( long transactionId, Command... commands ) throws Exception
     {
         LockService lockService = mock( LockService.class );
         when( lockService.acquireNodeLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
