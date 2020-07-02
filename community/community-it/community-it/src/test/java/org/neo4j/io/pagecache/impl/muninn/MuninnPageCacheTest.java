@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
@@ -1151,13 +1150,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private static class FlushInfoTracer extends DefaultPageCacheTracer
     {
-        private final AtomicLong flushedTables = new AtomicLong();
         private final CopyOnWriteArrayList<ChunkInfo> observedChunks = new CopyOnWriteArrayList<>();
-
-        public AtomicLong getFlushedTables()
-        {
-            return flushedTables;
-        }
 
         public CopyOnWriteArrayList<ChunkInfo> getObservedChunks()
         {
@@ -1198,7 +1191,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             @Override
             public void startFlush( int[][] translationTable )
             {
-                flushedTables.incrementAndGet();
             }
 
             @Override
