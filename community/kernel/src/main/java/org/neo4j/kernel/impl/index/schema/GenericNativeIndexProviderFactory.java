@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -55,13 +55,13 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     }
 
     @Override
-    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
+    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
             Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
-    public static GenericNativeIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+    public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );

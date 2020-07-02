@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
@@ -46,8 +46,8 @@ class FailureStorageTest
     @BeforeEach
     void before() throws Exception
     {
-        File rootDirectory = new File( "dir" );
-        fs.mkdirs( rootDirectory );
+        Path rootDirectory = Path.of( "dir" );
+        fs.mkdirs( rootDirectory.toFile() );
         indexFolderLayout = new IndexFolderLayout( rootDirectory );
     }
 
@@ -61,9 +61,9 @@ class FailureStorageTest
         storage.reserveForIndex();
 
         // THEN
-        File failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile ) );
-        assertTrue( fs.getFileSize( failureFile ) > 100 );
+        Path failureFile = storage.failureFile();
+        assertTrue( fs.fileExists( failureFile.toFile() ) );
+        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
     }
 
     @Test
@@ -78,9 +78,9 @@ class FailureStorageTest
         storage.storeIndexFailure( failure );
 
         // THEN
-        File failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile ) );
-        assertTrue( fs.getFileSize( failureFile ) > 100 );
+        Path failureFile = storage.failureFile();
+        assertTrue( fs.fileExists( failureFile.toFile() ) );
+        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
         assertEquals( failure, storage.loadIndexFailure() );
     }
 
@@ -92,15 +92,15 @@ class FailureStorageTest
         storage.reserveForIndex();
         String failure = format( "A failure message%nspanning%nmultiple lines." );
         storage.storeIndexFailure( failure );
-        File failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile ) );
-        assertTrue( fs.getFileSize( failureFile ) > 100 );
+        Path failureFile = storage.failureFile();
+        assertTrue( fs.fileExists( failureFile.toFile() ) );
+        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
 
         // WHEN
         storage.clearForIndex();
 
         // THEN
-        assertFalse( fs.fileExists( failureFile ) );
+        assertFalse( fs.fileExists( failureFile.toFile() ) );
     }
 
     @Test

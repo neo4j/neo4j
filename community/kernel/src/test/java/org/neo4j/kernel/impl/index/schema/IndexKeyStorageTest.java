@@ -23,8 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -135,41 +135,41 @@ class IndexKeyStorageTest
     void shouldNotCreateFileIfNoData() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        File makeSureImDeleted = directory.file( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
-            assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
+            assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
             keyStorage.doneAdding();
-            assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
+            assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
     }
 
     @Test
     void shouldDeleteFileOnCloseWithData() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        File makeSureImDeleted = directory.file( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
             keyStorage.doneAdding();
-            assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
+            assertTrue( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
     }
 
     @Test
     void shouldDeleteFileOnCloseWithDataBeforeDoneAdding() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        File makeSureImDeleted = directory.file( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
-            assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
+            assertTrue( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
     }
 
     @Test
@@ -177,17 +177,17 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
-        File file = directory.file( "file" );
+        Path file = directory.filePath( "file" );
         try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator();
               IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
             assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
-            assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
+            assertFalse( fs.fileExists( file.toFile() ), "Expected file to be created lazily" );
             keyStorage.add( randomKey( 1 ) );
             assertEquals( BLOCK_SIZE, allocationTracker.usedNativeMemory(), "Expected to have exactly one buffer allocated by now" );
-            assertTrue( fs.fileExists( file ), "Expected file to be created by now" );
+            assertTrue( fs.fileExists( file.toFile() ), "Expected file to be created by now" );
         }
-        assertFalse( fs.fileExists( file ), "Expected file to be deleted on close" );
+        assertFalse( fs.fileExists( file.toFile() ), "Expected file to be deleted on close" );
     }
 
     @Test
@@ -219,15 +219,15 @@ class IndexKeyStorageTest
 
     private IndexKeyStorage<GenericKey> keyStorage()
     {
-        return keyStorage( directory.file( "file" ) );
+        return keyStorage( directory.filePath( "file" ) );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file )
+    private IndexKeyStorage<GenericKey> keyStorage( Path file )
     {
         return keyStorage( file, heapBufferFactory( 0 ).newLocalAllocator(), INSTANCE );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
+    private IndexKeyStorage<GenericKey> keyStorage( Path file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
     {
         return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout, memoryTracker );
     }

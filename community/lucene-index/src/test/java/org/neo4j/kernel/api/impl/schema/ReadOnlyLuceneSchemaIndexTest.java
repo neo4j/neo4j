@@ -54,7 +54,7 @@ class ReadOnlyLuceneSchemaIndexTest
     @BeforeEach
     void setUp()
     {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, fileSystem, testDirectory.homeDir() );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, fileSystem, testDirectory.homePath() );
         Config config = Config.defaults();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );

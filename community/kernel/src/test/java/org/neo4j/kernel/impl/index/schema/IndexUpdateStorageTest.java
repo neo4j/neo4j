@@ -63,7 +63,7 @@ class IndexUpdateStorageTest
     void shouldAddZeroEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.filePath( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -80,7 +80,7 @@ class IndexUpdateStorageTest
     void shouldAddFewEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.filePath( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -97,7 +97,7 @@ class IndexUpdateStorageTest
     void shouldAddManyEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.filePath( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 10_000, layout, INSTANCE
         ) )
         {

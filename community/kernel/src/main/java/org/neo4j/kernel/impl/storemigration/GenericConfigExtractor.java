@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,11 +49,11 @@ final class GenericConfigExtractor
     private GenericConfigExtractor()
     {}
 
-    static IndexConfig indexConfigFromGenericFile( FileSystemAbstraction fs, PageCache pageCache, File genericFile,
+    static IndexConfig indexConfigFromGenericFile( FileSystemAbstraction fs, PageCache pageCache, Path genericFile,
             PageCursorTracer cursorTracer, Log log ) throws IOException
     {
         Map<String,Value> indexConfig = new HashMap<>();
-        if ( fs.fileExists( genericFile ) )
+        if ( fs.fileExists( genericFile.toFile() ) )
         {
             try
             {
@@ -77,10 +77,10 @@ final class GenericConfigExtractor
         private static final byte VERSION = 0;
         private static final byte BYTE_FAILED = 0;
         private final Map<String,Value> indexConfig;
-        private final File indexFile;
+        private final Path indexFile;
         private final Log log;
 
-        GenericConfig( Map<String,Value> indexConfig, File indexFile, Log log )
+        GenericConfig( Map<String,Value> indexConfig, Path indexFile, Log log )
         {
             this.indexConfig = indexConfig;
             this.indexFile = indexFile;

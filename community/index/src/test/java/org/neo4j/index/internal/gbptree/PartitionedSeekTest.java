@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -70,14 +70,14 @@ class PartitionedSeekTest
     @Inject
     private PageCache pageCache;
     private SimpleLongLayout layout;
-    private File treeFile;
+    private Path treeFile;
 
     @BeforeEach
     void setup()
     {
         // Make keys larger with padding so they fill up tree faster, but not beyond entry limit.
         layout = SimpleLongLayout.longLayout().build();
-        treeFile = testDirectory.file( "tree" );
+        treeFile = testDirectory.filePath( "tree" );
     }
 
     @Test

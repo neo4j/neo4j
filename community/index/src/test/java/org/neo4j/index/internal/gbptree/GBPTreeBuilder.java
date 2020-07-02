@@ -21,8 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
@@ -46,7 +46,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class GBPTreeBuilder<KEY,VALUE>
 {
     private PageCache pageCache;
-    private File file;
+    private Path path;
     private Monitor monitor = NO_MONITOR;
     private Header.Reader headerReader = NO_HEADER_READER;
     private Layout<KEY,VALUE> layout;
@@ -56,10 +56,10 @@ public class GBPTreeBuilder<KEY,VALUE>
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
 
-    public GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
+    public GBPTreeBuilder( PageCache pageCache, Path path, Layout<KEY,VALUE> layout )
     {
         with( pageCache );
-        with( file );
+        with( path );
         with( layout );
     }
 
@@ -69,9 +69,9 @@ public class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    public GBPTreeBuilder<KEY,VALUE> with( File file )
+    public GBPTreeBuilder<KEY,VALUE> with( Path file )
     {
-        this.file = file;
+        this.path = file;
         return this;
     }
 
@@ -125,7 +125,7 @@ public class GBPTreeBuilder<KEY,VALUE>
 
     public GBPTree<KEY,VALUE> build()
     {
-        return new GBPTree<>( pageCache, file, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
+        return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
                 openOptions, "test tree" );
     }
 }

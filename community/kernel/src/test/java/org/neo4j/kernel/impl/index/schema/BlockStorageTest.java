@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -70,14 +71,14 @@ class BlockStorageTest
     @Inject
     RandomRule random;
 
-    private File file;
+    private Path file;
     private FileSystemAbstraction fileSystem;
     private SimpleLongLayout layout;
 
     @BeforeEach
     void setup()
     {
-        file = directory.file( "block" );
+        file = directory.filePath( "block" );
         fileSystem = directory.getFileSystem();
         layout = SimpleLongLayout.longLayout()
                 .withFixedSize( random.nextBoolean() )
@@ -89,12 +90,12 @@ class BlockStorageTest
     void shouldCreateAndCloseTheBlockFile() throws IOException
     {
         // given
-        assertFalse( fileSystem.fileExists( file ) );
+        assertFalse( fileSystem.fileExists( file.toFile() ) );
         try ( BlockStorage<MutableLong,MutableLong> ignored = new BlockStorage<>( layout, heapBufferFactory( 100 ), fileSystem, file,
                 NO_MONITOR, INSTANCE ) )
         {
             // then
-            assertTrue( fileSystem.fileExists( file ) );
+            assertTrue( fileSystem.fileExists( file.toFile() ) );
         }
     }
 

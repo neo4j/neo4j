@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -36,7 +36,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( default_schema_provider, NATIVE30.providerName() );

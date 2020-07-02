@@ -19,8 +19,8 @@
  */
 package org.neo4j.storageengine.migration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,7 +40,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes;
-    private File schemaIndexDirectory;
+    private Path schemaIndexDirectory;
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
 
@@ -86,8 +86,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         // nop
     }
 
-    private void deleteIndexes( File indexRootDirectory ) throws IOException
+    private void deleteIndexes( Path indexRootDirectory ) throws IOException
     {
-        fileSystem.deleteRecursively( indexRootDirectory );
+        fileSystem.deleteRecursively( indexRootDirectory.toFile() );
     }
 }

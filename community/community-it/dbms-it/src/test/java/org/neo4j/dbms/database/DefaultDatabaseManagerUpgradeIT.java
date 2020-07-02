@@ -24,8 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -81,8 +81,8 @@ class DefaultDatabaseManagerUpgradeIT
         // Create store with standard format. This will be upgraded to high_limit in tests.
         userLogProvider = mock( LogProvider.class, RETURNS_MOCKS );
         databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
-        File prepareDirectory = testDirectory.directory( "prepare" );
-        File workingDirectory = databaseLayout.databaseDirectory().toFile();
+        Path prepareDirectory = testDirectory.directoryPath( "prepare" );
+        Path workingDirectory = databaseLayout.databaseDirectory();
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV3_4.STORE_VERSION, fs, workingDirectory, prepareDirectory );
     }
 

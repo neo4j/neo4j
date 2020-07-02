@@ -120,7 +120,7 @@ public class StoreUpgraderTest
     private JobScheduler jobScheduler;
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, true );
-    private File prepareDatabaseDirectory;
+    private Path prepareDatabaseDirectory;
 
     private static Collection<Arguments> versions()
     {
@@ -143,7 +143,7 @@ public class StoreUpgraderTest
     {
         String version = formats.storeVersion();
         databaseLayout = neo4jLayout.databaseLayout( "db-" + version );
-        prepareDatabaseDirectory = testDirectory.directory( "prepare_" + version );
+        prepareDatabaseDirectory = testDirectory.directoryPath( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }
 
@@ -193,15 +193,15 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        File comparisonDirectory = testDirectory.directory(
+        Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
-        fileSystem.deleteRecursively( comparisonDirectory );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
+        fileSystem.deleteRecursively( comparisonDirectory.toFile() );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
-        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
     @ParameterizedTest
@@ -209,15 +209,15 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        File comparisonDirectory = testDirectory.directory(
+        Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
-        fileSystem.deleteRecursively( comparisonDirectory );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory );
+        fileSystem.deleteRecursively( comparisonDirectory.toFile() );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
-        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory().toFile() );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
     @ParameterizedTest
@@ -398,13 +398,13 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        File txRoot = testDirectory.directory( "customTxRoot" );
+        Path txRoot = testDirectory.directoryPath( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
+                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toAbsolutePath() )
                 .set( default_database, databaseLayout.getDatabaseName() )
                 .build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( config );
@@ -414,8 +414,8 @@ public class StoreUpgraderTest
 
         assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
         assertThat( getLogFiles( migrationLayout.databaseDirectory().toFile() ) ).isEmpty();
-        File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
-        assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );
+        Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
+        assertTrue( fileSystem.fileExists( databaseTransactionLogsHome.toFile() ) );
 
         Set<String> logFileNames = getLogFileNames( databaseTransactionLogsHome );
         assertThat( logFileNames ).isNotEmpty();
@@ -477,9 +477,9 @@ public class StoreUpgraderTest
                 .logFiles();
     }
 
-    private Set<String> getLogFileNames( File directory ) throws IOException
+    private Set<String> getLogFileNames( Path directory ) throws IOException
     {
-        return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+        return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory.toFile(), fileSystem )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build()
                 .logFiles() )
@@ -487,9 +487,9 @@ public class StoreUpgraderTest
     }
 
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
-            File databaseDirectory ) throws IOException
+            Path databaseDirectory ) throws IOException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout.databaseDirectory().toFile(), databaseDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout.databaseDirectory(), databaseDirectory );
     }
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )

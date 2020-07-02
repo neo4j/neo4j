@@ -308,7 +308,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
     private GBPTree<RawBytes,RawBytes> createIndex()
     {
         // some random padding
-        return new GBPTreeBuilder<>( getPageCache(), testDirectory.file( "index" ), layout ).build();
+        return new GBPTreeBuilder<>( getPageCache(), testDirectory.filePath( "index" ), layout ).build();
     }
 
     private byte[] asBytes( int value )

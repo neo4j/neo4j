@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -64,7 +63,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private static final String INIT_TAG = "Initialize IndexStatisticsStore";
 
     private final PageCache pageCache;
-    private final File file;
+    private final Path path;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
@@ -74,11 +73,11 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     // It's assumed that the data in this map will be so small that everything can just be in it always.
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
-    public IndexStatisticsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
+    public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
             PageCacheTracer pageCacheTracer )
     {
         this.pageCache = pageCache;
-        this.file = file;
+        this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
@@ -88,7 +87,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly, PageCacheTracer pageCacheTracer )
     {
-        this( pageCache, databaseLayout.indexStatisticsStore().toFile(), recoveryCleanupWorkCollector, readOnly, pageCacheTracer );
+        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly, pageCacheTracer );
     }
 
     @Override
@@ -96,13 +95,13 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     {
         try
         {
-            tree = new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
+            tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
                     recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty(), "Statistics store" );
         }
         catch ( TreeFileNotFoundException e )
         {
             throw new IllegalStateException(
-                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + file, e );
+                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + path, e );
         }
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INIT_TAG ) )
         {
@@ -220,7 +219,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     public Path storeFile()
     {
-        return file.toPath();
+        return path;
     }
 
     @Override

@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -39,7 +42,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public class MigrationTestUtils
+public final class MigrationTestUtils
 {
     private MigrationTestUtils()
     {
@@ -57,19 +60,19 @@ public class MigrationTestUtils
     }
 
     public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction workingFs,
-            File workingDirectory, File prepareDirectory ) throws IOException
+            Path workingDirectory, Path prepareDirectory ) throws IOException
     {
-        if ( !prepareDirectory.exists() )
+        if ( Files.notExists( prepareDirectory ) )
         {
             throw new IllegalArgumentException( "bad prepare directory" );
         }
-        File resourceDirectory = findFormatStoreDirectoryForVersion( version, prepareDirectory );
-        workingFs.deleteRecursively( workingDirectory );
-        workingFs.mkdirs( workingDirectory );
-        workingFs.copyRecursively( resourceDirectory, workingDirectory );
+        Path resourceDirectory = findFormatStoreDirectoryForVersion( version, prepareDirectory );
+        workingFs.deleteRecursively( workingDirectory.toFile() );
+        workingFs.mkdirs( workingDirectory.toFile() );
+        workingFs.copyRecursively( resourceDirectory.toFile(), workingDirectory.toFile() );
     }
 
-    public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
+    public static Path findFormatStoreDirectoryForVersion( String version, Path targetDir ) throws IOException
     {
         if ( StandardV3_4.STORE_VERSION.equals( version ) )
         {
@@ -81,7 +84,7 @@ public class MigrationTestUtils
         }
     }
 
-    private static File find34FormatStoreDirectory( File targetDir ) throws IOException
+    private static Path find34FormatStoreDirectory( Path targetDir ) throws IOException
     {
         return Unzip.unzip( Legacy34Store.class, "upgradeTest34Db.zip", targetDir );
     }
@@ -99,18 +102,18 @@ public class MigrationTestUtils
         return false;
     }
 
-    public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )
+    public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, Path original, Path other )
             throws IOException
     {
         final int bufferBatchSize = 32 * 1024;
-        File[] files = fileSystem.listFiles( original );
-        for ( File originalFile : files )
+        Path[] files = Arrays.stream( fileSystem.listFiles( original.toFile() ) ).map( File::toPath ).toArray( Path[]::new );
+        for ( Path originalFile : files )
         {
-            File otherFile = new File( other, originalFile.getName() );
-            if ( !fileSystem.isDirectory( originalFile ) )
+            Path otherFile = other.resolve( originalFile.getFileName() );
+            if ( !fileSystem.isDirectory( originalFile.toFile() ) )
             {
-                try ( StoreChannel originalChannel = fileSystem.read( originalFile );
-                      StoreChannel otherChannel = fileSystem.read( otherFile ) )
+                try ( StoreChannel originalChannel = fileSystem.read( originalFile.toFile() );
+                      StoreChannel otherChannel = fileSystem.read( otherFile.toFile() ) )
                 {
                     ByteBuffer buffer = ByteBuffers.allocate( bufferBatchSize, INSTANCE );
                     while ( true )

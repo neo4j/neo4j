@@ -82,7 +82,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     @BeforeEach
     void setup()
     {
-        directoryFactory = directoriesByProvider( dir.homeDir() );
+        directoryFactory = directoriesByProvider( dir.homePath() );
     }
 
     /**

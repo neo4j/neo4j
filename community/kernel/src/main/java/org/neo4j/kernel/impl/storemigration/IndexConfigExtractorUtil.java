@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.logging.Log;
 
@@ -28,7 +28,7 @@ final class IndexConfigExtractorUtil
     private IndexConfigExtractorUtil()
     {}
 
-    static void logExtractionFailure( String reason, Log log, File indexFile )
+    static void logExtractionFailure( String reason, Log log, Path indexFile )
     {
         log.warn( String.format( "Could not extract index configuration from migrating index file. %s " +
                 "Index will be recreated with currently configured settings instead, indexFile=%s", reason, indexFile ) );

@@ -76,6 +76,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.nio.file.Files.exists;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -152,9 +153,9 @@ public class ConsistencyCheckServiceIntegrationTest
 
         assertFalse( result.isSuccessful() );
 
-        File reportFile = result.reportFile();
-        assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
-        assertThat( Files.readString( reportFile.toPath() ) ).as(
+        Path reportFile = result.reportFile();
+        assertTrue( exists( reportFile ), "Consistency check report file should be generated." );
+        assertThat( Files.readString( reportFile ) ).as(
                 "Expected to see report about not deleted relationship record present as part of a chain" ).contains(
                 "The relationship record is not in use, but referenced from relationships chain." );
     }
@@ -218,8 +219,8 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertTrue( result.isSuccessful() );
-        File reportFile = result.reportFile();
-        assertFalse( reportFile.exists(), "Unexpected generation of consistency check report file: " + reportFile );
+        Path reportFile = result.reportFile();
+        assertFalse( exists( reportFile ), "Unexpected generation of consistency check report file: " + reportFile );
     }
 
     @Test
@@ -242,8 +243,8 @@ public class ConsistencyCheckServiceIntegrationTest
         assertFalse( result.isSuccessful() );
         String reportFile = format( "inconsistencies-%s.report",
                 new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
-        assertEquals( new File( logsDir.toString(), reportFile ), result.reportFile() );
-        assertTrue( result.reportFile().exists(), "Inconsistency report file not generated" );
+        assertEquals( logsDir.resolve( reportFile ), result.reportFile() );
+        assertTrue( exists( result.reportFile() ), "Inconsistency report file not generated" );
     }
 
     @Test
@@ -300,9 +301,9 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertTrue( result.isSuccessful() );
-        File reportFile = result.reportFile();
-        assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
-        assertThat( Files.readString( reportFile.toPath() ) ).as( "Expected to see report about schema index not being online" ).contains(
+        Path reportFile = result.reportFile();
+        assertTrue( exists( reportFile ), "Consistency check report file should be generated." );
+        assertThat( Files.readString( reportFile ) ).as( "Expected to see report about schema index not being online" ).contains(
                 "schema rule" ).contains( "not online" );
     }
 

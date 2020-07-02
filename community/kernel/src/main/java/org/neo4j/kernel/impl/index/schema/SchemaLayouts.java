@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +61,7 @@ public class SchemaLayouts implements LayoutBootstrapper
     }
 
     @Override
-    public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta ) throws IOException
+    public Layout<?,?> create( Path indexFile, PageCache pageCache, Meta meta ) throws IOException
     {
         for ( LayoutBootstrapper factory : allSchemaLayout )
         {

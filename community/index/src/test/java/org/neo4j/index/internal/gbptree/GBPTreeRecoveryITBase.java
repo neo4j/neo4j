@@ -23,9 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,7 +100,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         // a tree with only small amount of data that has not yet seen checkpoint from outside
         KEY key = key( 1L );
         VALUE value = value( 10L );
-        File file = directory.file( "index" );
+        Path file = directory.filePath( "index" );
         {
             try ( PageCache pageCache = createPageCache();
                   GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
@@ -179,7 +179,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         assertInitialized();
         // GIVEN
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
-        File file = directory.file( "index" );
+        Path file = directory.filePath( "index" );
         List<Action> load = generateLoad();
         List<Action> shuffledLoad = randomCausalAwareShuffle( load );
         int lastCheckPointIndex = indexOfLastCheckpoint( load );
@@ -449,7 +449,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         return data;
     }
 
-    private GBPTree<KEY,VALUE> createIndex( PageCache pageCache, File file )
+    private GBPTree<KEY,VALUE> createIndex( PageCache pageCache, Path file )
     {
         return new GBPTreeBuilder<>( pageCache, file, layout ).build();
     }

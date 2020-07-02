@@ -96,7 +96,7 @@ class GenericBlockBasedIndexPopulatorTest
     void setup()
     {
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( directory.homeDir() ).forProvider( providerDescriptor );
+        IndexDirectoryStructure directoryStructure = directoriesByProvider( directory.homePath() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();

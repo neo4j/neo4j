@@ -89,7 +89,7 @@ class FreeIdScannerTest
     void beforeEach()
     {
         this.layout = new IdRangeLayout( IDS_PER_ENTRY );
-        this.tree = new GBPTreeBuilder<>( pageCache, directory.file( "file.id" ), layout ).build();
+        this.tree = new GBPTreeBuilder<>( pageCache, directory.filePath( "file.id" ), layout ).build();
     }
 
     @AfterEach

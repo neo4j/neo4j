@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,8 +128,7 @@ abstract class IndexPopulationStressTest
 
     IndexDirectoryStructure.Factory directory()
     {
-        File storeDir = testDirectory.homeDir();
-        return directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
+        return directoriesBySubProvider( directoriesByProvider( testDirectory.homePath() ).forProvider( PROVIDER ) );
     }
 
     @BeforeEach
@@ -139,7 +137,7 @@ abstract class IndexPopulationStressTest
         indexProvider = providerCreator.apply( this );
         descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withName( "index_0" ).materialise( 0 ) );
         descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
-        fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
+        fs.mkdirs( indexProvider.directoryStructure().rootDirectory().toFile() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( PageCursorTracer.class ) ) ).thenThrow(
                 UnsupportedOperationException.class );

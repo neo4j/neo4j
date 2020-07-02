@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -71,7 +71,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         super( ExtensionType.DATABASE, KEY );
     }
 
-    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path storeDir )
     {
         return directoriesByProvider( storeDir );
     }
@@ -86,7 +86,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
         JobScheduler scheduler = dependencies.scheduler();
-        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory().toFile() );
+        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory() );
         TokenHolders tokenHolders = dependencies.tokenHolders();
         Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
 

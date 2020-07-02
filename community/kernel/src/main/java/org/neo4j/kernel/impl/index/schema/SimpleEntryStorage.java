@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,7 +56,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     static final int TYPE_SIZE = Byte.BYTES;
     static final byte STOP_TYPE = -1;
     private static final byte[] NO_ENTRIES = {STOP_TYPE};
-    private final File file;
+    private final Path file;
     private final FileSystemAbstraction fs;
     private final int blockSize;
     private final MemoryTracker memoryTracker;
@@ -71,7 +71,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
 
     private final AtomicLong count = new AtomicLong();
 
-    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, MemoryTracker memoryTracker )
+    SimpleEntryStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.file = file;
@@ -96,7 +96,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         }
 
         // Reuse the existing buffer because we're not writing while reading anyway
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file.toFile() ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }
@@ -127,12 +127,12 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             runAll( "Failed while trying to close " + getClass().getSimpleName(),
                     () -> closeAllUnchecked( pageCursor, storeChannel, scopedBuffer ),
-                    () -> fs.deleteFile( file )
+                    () -> fs.deleteFile( file.toFile() )
             );
         }
         else
         {
-            fs.deleteFile( file );
+            fs.deleteFile( file.toFile() );
         }
     }
 
@@ -173,7 +173,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
             this.scopedBuffer = byteBufferFactory.allocate( blockSize, memoryTracker );
             this.buffer = scopedBuffer.getBuffer();
             this.pageCursor = new ByteArrayPageCursor( buffer );
-            this.storeChannel = fs.write( file );
+            this.storeChannel = fs.write( file.toFile() );
             this.allocated = true;
         }
     }

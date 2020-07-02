@@ -23,9 +23,9 @@ import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.impl.factory.Lists;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.function.IntConsumer;
 
@@ -67,13 +67,13 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final int blockSize;
     private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
-    private final File blockFile;
+    private final Path blockFile;
     private long numberOfBlocksInCurrentFile;
     private int currentBufferSize;
     private boolean doneAdding;
     private long entryCount;
 
-    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor,
+    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, Path blockFile, Monitor monitor,
             MemoryTracker memoryTracker ) throws IOException
     {
         this.layout = layout;
@@ -85,7 +85,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         this.bufferedEntries = Lists.mutable.empty();
         this.bufferFactory = bufferFactory;
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
-        this.storeChannel = fs.write( blockFile );
+        this.storeChannel = fs.write( blockFile.toFile() );
         resetBufferedEntries();
     }
 
@@ -162,9 +162,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
     public void merge( int mergeFactor, Cancellation cancellation ) throws IOException
     {
         monitor.mergeStarted( entryCount, calculateNumberOfEntriesWrittenDuringMerges( entryCount, numberOfBlocksInCurrentFile, mergeFactor ) );
-        File sourceFile = blockFile;
-        File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
-        File targetFile = tempFile;
+        Path sourceFile = blockFile;
+        Path tempFile = blockFile.resolveSibling( blockFile.getFileName() + ".b" );
+        Path targetFile = tempFile;
         int bufferSize = bufferFactory.bufferSize();
 
         try ( var mergeBufferAllocator = bufferFactory.newLocalAllocator();
@@ -176,7 +176,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 // Perform one complete merge iteration, merging all blocks from source into target.
                 // After this step, target will contain fewer blocks than source, but may need another merge iteration.
                 try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
-                      StoreChannel targetChannel = fs.write( targetFile ) )
+                      StoreChannel targetChannel = fs.write( targetFile.toFile() ) )
                 {
                     long blocksMergedSoFar = 0;
                     long blocksInMergedFile = 0;
@@ -191,7 +191,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 }
 
                 // Flip and restore the channels
-                File tmpSourceFile = sourceFile;
+                Path tmpSourceFile = sourceFile;
                 sourceFile = targetFile;
                 targetFile = tmpSourceFile;
             }
@@ -200,12 +200,12 @@ class BlockStorage<KEY, VALUE> implements Closeable
         {
             if ( sourceFile == blockFile )
             {
-                fs.deleteFile( tempFile );
+                fs.deleteFile( tempFile.toFile() );
             }
             else
             {
-                fs.deleteFile( blockFile );
-                fs.renameFile( tempFile, blockFile );
+                fs.deleteFile( blockFile.toFile() );
+                fs.renameFile( tempFile.toFile(), blockFile.toFile() );
             }
         }
     }
@@ -361,7 +361,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     public void close() throws IOException
     {
         IOUtils.closeAll( storeChannel );
-        fs.deleteFile( blockFile );
+        fs.deleteFile( blockFile.toFile() );
     }
 
     BlockReader<KEY,VALUE> reader() throws IOException
@@ -369,7 +369,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         return reader( blockFile );
     }
 
-    private BlockReader<KEY,VALUE> reader( File file ) throws IOException
+    private BlockReader<KEY,VALUE> reader( Path file ) throws IOException
     {
         return new BlockReader<>( fs, file, layout );
     }

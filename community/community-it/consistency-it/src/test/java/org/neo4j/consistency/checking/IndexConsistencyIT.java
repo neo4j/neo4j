@@ -22,10 +22,10 @@ package org.neo4j.consistency.checking;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -92,9 +92,9 @@ class IndexConsistencyIT
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = databaseLayout.file( "indexesCopy" ).toFile();
-        File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
-        copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
+        Path indexesCopy = databaseLayout.file( "indexesCopy" );
+        Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
+        copyRecursively( indexSources.toFile(), indexesCopy.toFile(), SOURCE_COPY_FILE_FILTER );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -104,7 +104,7 @@ class IndexConsistencyIT
 
         managementService.shutdown();
 
-        copyRecursively( indexesCopy, indexSources );
+        copyRecursively( indexesCopy.toFile(), indexSources.toFile() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
@@ -118,13 +118,13 @@ class IndexConsistencyIT
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = databaseLayout.file( "indexesCopy" ).toFile();
-        File indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
-        copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
+        Path indexesCopy = databaseLayout.file( "indexesCopy" );
+        Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
+        copyRecursively( indexSources.toFile(), indexesCopy.toFile(), SOURCE_COPY_FILE_FILTER );
 
         managementService.shutdown();
 
-        copyRecursively( indexesCopy, indexSources );
+        copyRecursively( indexesCopy.toFile(), indexSources.toFile() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
@@ -134,7 +134,7 @@ class IndexConsistencyIT
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException
     {
-        return Files.readString( result.reportFile().toPath() );
+        return Files.readString( result.reportFile() );
     }
 
     void someData()

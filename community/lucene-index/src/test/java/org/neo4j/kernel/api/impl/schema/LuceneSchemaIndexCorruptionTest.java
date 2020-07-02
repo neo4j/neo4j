@@ -23,10 +23,10 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.junit.jupiter.api.Test;
 
 import java.io.EOFException;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
@@ -125,7 +125,7 @@ class LuceneSchemaIndexCorruptionTest
     private LuceneIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
-        File indexRootFolder = testDirectory.homeDir();
+        Path indexRootFolder = testDirectory.homePath();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitor,
                 Config.defaults(), true )
@@ -165,7 +165,7 @@ class LuceneSchemaIndexCorruptionTest
             try
             {
                 PartitionedIndexStorage storage = mock( PartitionedIndexStorage.class );
-                when( storage.listFolders() ).thenReturn( singletonList( new File( "/some/path/somewhere/1" ) ) );
+                when( storage.listFolders() ).thenReturn( singletonList( Path.of( "/some/path/somewhere/1" ) ) );
                 when( storage.openDirectory( any() ) ).thenThrow( error );
                 return storage;
             }

@@ -275,7 +275,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
         StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
-                GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore().toFile(), fileSystem, immediate(),
+                GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker ), false, cacheTracer,
                         GBPTreeCountsStore.NO_MONITOR ) )
         {

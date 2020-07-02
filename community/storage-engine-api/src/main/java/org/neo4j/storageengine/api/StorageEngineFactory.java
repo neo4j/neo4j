@@ -19,10 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
@@ -87,10 +86,10 @@ public interface StorageEngineFactory
      * Lists files of a specific storage location.
      * @param fileSystem {@link FileSystemAbstraction} this storage is on.
      * @param databaseLayout {@link DatabaseLayout} pointing out its location.
-     * @return a {@link Stream} of {@link File} instances for the storage files.
+     * @return a {@link List} of {@link Path} instances for the storage files.
      * @throws IOException if there was no storage in this location.
      */
-    List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
+    List<Path> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
 
     /**
      * Check if a store described by provided database layout exists in provided file system

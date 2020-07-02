@@ -37,8 +37,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -97,7 +98,7 @@ class DatabaseIndexIntegrationTest
     void setUp() throws IOException
     {
         directoryFactory = new SyncNotifierDirectoryFactory( raceSignal );
-        luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.homeDir() );
+        luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.homePath() );
     }
 
     @AfterEach
@@ -136,7 +137,7 @@ class DatabaseIndexIntegrationTest
         } );
     }
 
-    private WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
+    private WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, Path folder ) throws IOException
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(
                 dirFactory, fileSystem, folder );
@@ -270,17 +271,17 @@ class DatabaseIndexIntegrationTest
             this.signal = signal;
         }
 
-        public Directory open( File dir, CountDownLatch signal ) throws IOException
+        public Directory open( Path dir, CountDownLatch signal ) throws IOException
         {
             Directory directory = open( dir );
             return new SyncNotifierDirectory( directory, signal );
         }
 
         @Override
-        public Directory open( File dir ) throws IOException
+        public Directory open( Path dir ) throws IOException
         {
-            dir.mkdirs();
-            FSDirectory fsDir = FSDirectory.open( dir.toPath() );
+            Files.createDirectories( dir );
+            FSDirectory fsDir = FSDirectory.open( dir );
             return new SyncNotifierDirectory( fsDir, signal );
         }
 

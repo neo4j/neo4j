@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -66,9 +66,9 @@ public class FailureStorage
      */
     public synchronized void reserveForIndex() throws IOException
     {
-        fs.mkdirs( folderLayout.getIndexFolder() );
-        File failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile ) )
+        fs.mkdirs( folderLayout.getIndexFolder().toFile() );
+        Path failureFile = failureFile();
+        try ( StoreChannel channel = fs.write( failureFile.toFile() ) )
         {
             channel.writeAll( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
             channel.force( true );
@@ -81,7 +81,7 @@ public class FailureStorage
      */
     public synchronized void clearForIndex()
     {
-        fs.deleteFile( failureFile() );
+        fs.deleteFile( failureFile().toFile() );
     }
 
     /**
@@ -89,10 +89,10 @@ public class FailureStorage
      */
     public synchronized String loadIndexFailure()
     {
-        File failureFile = failureFile();
+        Path failureFile = failureFile();
         try
         {
-            if ( !fs.fileExists( failureFile ) || !isFailed( failureFile ) )
+            if ( !fs.fileExists( failureFile.toFile() ) || !isFailed( failureFile ) )
             {
                 return null;
             }
@@ -112,8 +112,8 @@ public class FailureStorage
      */
     public synchronized void storeIndexFailure( String failure ) throws IOException
     {
-        File failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile ) )
+        Path failureFile = failureFile();
+        try ( StoreChannel channel = fs.write( failureFile.toFile() ) )
         {
             byte[] existingData = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( existingData ) );
@@ -126,15 +126,14 @@ public class FailureStorage
         }
     }
 
-    File failureFile()
+    Path failureFile()
     {
-        File folder = folderLayout.getIndexFolder();
-        return new File( folder, failureFileName );
+        return folderLayout.getIndexFolder().resolve( failureFileName );
     }
 
-    private String readFailure( File failureFile ) throws IOException
+    private String readFailure( Path failureFile ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( failureFile ) )
+        try ( StoreChannel channel = fs.read( failureFile.toFile() ) )
         {
             byte[] data = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( data ) );
@@ -161,9 +160,9 @@ public class FailureStorage
         return data.length;
     }
 
-    private boolean isFailed( File failureFile ) throws IOException
+    private boolean isFailed( Path failureFile ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( failureFile ) )
+        try ( StoreChannel channel = fs.read( failureFile.toFile() ) )
         {
             byte[] data = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( data ) );

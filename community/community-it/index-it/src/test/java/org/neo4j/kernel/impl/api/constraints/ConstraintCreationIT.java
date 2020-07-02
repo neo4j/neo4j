@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api.constraints;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -68,9 +69,9 @@ class ConstraintCreationIT
 
         // then
         IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
-        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
+        Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertFalse( indexDir.exists() );
+        assertFalse( Files.exists( indexDir ) );
     }
 
     @Test
@@ -81,9 +82,9 @@ class ConstraintCreationIT
 
         // then
         IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
-        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
+        Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertFalse( indexDir.exists() );
+        assertFalse( Files.exists( indexDir ) );
     }
 
     private void attemptAndFailConstraintCreation()

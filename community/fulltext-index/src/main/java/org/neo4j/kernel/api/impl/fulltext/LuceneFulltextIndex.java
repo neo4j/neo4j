@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -39,7 +39,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final Analyzer analyzer;
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
-    private final File transactionsFolder;
+    private final Path transactionsFolder;
     private final IndexDescriptor descriptor;
 
     LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor,
@@ -50,8 +50,8 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        File indexFolder = storage.getIndexFolder();
-        transactionsFolder = new File( indexFolder, indexFolder.getName() + ".tx" );
+        Path indexFolder = storage.getIndexFolder();
+        transactionsFolder = indexFolder.resolve( indexFolder.getFileName() + ".tx" );
     }
 
     @Override

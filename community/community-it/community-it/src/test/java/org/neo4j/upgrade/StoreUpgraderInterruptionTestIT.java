@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -112,7 +111,7 @@ public class StoreUpgraderInterruptionTestIT
     private JobScheduler jobScheduler;
     private Neo4jLayout neo4jLayout;
     private DatabaseLayout workingDatabaseLayout;
-    private File prepareDirectory;
+    private Path prepareDirectory;
     private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
     private PageCache pageCache;
     private RecordFormats baselineFormat;
@@ -124,7 +123,7 @@ public class StoreUpgraderInterruptionTestIT
         jobScheduler = new ThreadPoolJobScheduler();
         neo4jLayout = Neo4jLayout.of( directory.homePath() );
         workingDatabaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
-        prepareDirectory = directory.directory( "prepare" );
+        prepareDirectory = directory.directoryPath( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheRule.getPageCache( fs );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
@@ -141,7 +140,7 @@ public class StoreUpgraderInterruptionTestIT
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
             throws IOException, ConsistencyCheckIncompleteException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
@@ -193,7 +192,7 @@ public class StoreUpgraderInterruptionTestIT
     @Test
     public void tracePageCacheAccessOnIdStoreUpgrade() throws IOException, ConsistencyCheckIncompleteException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
@@ -227,7 +226,7 @@ public class StoreUpgraderInterruptionTestIT
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles()
             throws IOException, ConsistencyCheckIncompleteException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;

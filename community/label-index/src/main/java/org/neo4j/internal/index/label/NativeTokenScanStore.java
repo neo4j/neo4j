@@ -22,7 +22,6 @@ package org.neo4j.internal.index.label;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -123,7 +122,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     /**
      * Store file {@link PageCache#map(Path, int, ImmutableSet)}.
      */
-    private final File storeFile;
+    private final Path storeFile;
 
     /**
      * Used in {@link #start()} if the store is empty, where this will provide all data for fully populating
@@ -202,7 +201,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         this.cacheTracer = cacheTracer;
         this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
-        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore().toFile() : directoryStructure.relationshipTypeScanStore().toFile();
+        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
         String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
@@ -358,7 +357,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     @Override
     public ResourceIterator<Path> snapshotStoreFiles()
     {
-        return Iterators.asResourceIterator( Iterators.iterator( storeFile.toPath() ) );
+        return Iterators.asResourceIterator( Iterators.iterator( storeFile ) );
     }
 
     @Override
@@ -412,7 +411,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private boolean hasStore()
     {
-        return fileSystem.fileExists( storeFile );
+        return fileSystem.fileExists( storeFile.toFile() );
     }
 
     /**
@@ -464,7 +463,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             index.close();
             index = null;
         }
-        fileSystem.deleteFileOrThrow( storeFile );
+        fileSystem.deleteFileOrThrow( storeFile.toFile() );
     }
 
     /**

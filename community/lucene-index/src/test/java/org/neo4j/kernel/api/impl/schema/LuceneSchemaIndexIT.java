@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -130,7 +129,7 @@ class LuceneSchemaIndexIT
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
+                .withIndexRootFolder( testDir.directoryPath( "partitionedIndexForUpdates" ) )
                 .build() )
         {
             index.create();
@@ -149,10 +148,10 @@ class LuceneSchemaIndexIT
     @Test
     void createPopulateDropIndex() throws Exception
     {
-        File crudOperation = testDir.directory( "indexCRUDOperation" );
+        Path crudOperation = testDir.directoryPath( "indexCRUDOperation" );
         try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( new File( crudOperation, "crudIndex" ) )
+                .withIndexRootFolder( crudOperation.resolve( "crudIndex" ) )
                 .build() )
         {
             crudIndex.open();
@@ -166,7 +165,7 @@ class LuceneSchemaIndexIT
             crudIndex.drop();
 
             assertFalse( crudIndex.isOpen() );
-            assertEquals( 0, crudOperation.list().length );
+            assertEquals( 0, crudOperation.toFile().list().length );
         }
     }
 
@@ -175,7 +174,7 @@ class LuceneSchemaIndexIT
     {
         try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( new File( testDir.directory( "failedIndexFolder" ), "failedIndex" ) )
+                .withIndexRootFolder( testDir.directoryPath( "failedIndexFolder" ).resolve( "failedIndex" ) )
                 .build() )
         {
             failedIndex.open();
@@ -194,7 +193,7 @@ class LuceneSchemaIndexIT
     @Test
     void openClosePartitionedIndex() throws IOException
     {
-        File indexRootFolder = new File( testDir.directory( "reopenIndexFolder" ), "reopenIndex" );
+        Path indexRootFolder = testDir.directoryPath( "reopenIndexFolder" ).resolve( "reopenIndex" );
         LuceneSchemaIndexBuilder luceneSchemaIndexBuilder =
                 LuceneSchemaIndexBuilder.create( descriptor, config ).withFileSystem( fileSystem ).withIndexRootFolder( indexRootFolder );
         try ( SchemaIndex reopenIndex = luceneSchemaIndexBuilder.build() )
@@ -243,7 +242,7 @@ class LuceneSchemaIndexIT
     {
         SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directory( "testIndex" ) )
+                .withIndexRootFolder( testDir.directoryPath( "testIndex" ) )
                 .build();
         index.create();
         index.open();

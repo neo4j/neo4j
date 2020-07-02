@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -107,7 +107,7 @@ abstract class FusionIndexPopulatorTest
         SlotSelector slotSelector = fusionVersion.slotSelector();
         InstanceSelector<IndexPopulator> instanceSelector = new InstanceSelector<>( populators );
         fs = mock( FileSystemAbstraction.class );
-        directoryStructure = directoriesByProvider( new File( "storeDir" ) ).forProvider( UNDECIDED );
+        directoryStructure = directoriesByProvider( Path.of( "storeDir" ) ).forProvider( UNDECIDED );
         IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexId );
         fusionIndexPopulator = new FusionIndexPopulator( slotSelector, instanceSelector, indexFiles, false );
     }
@@ -132,7 +132,7 @@ abstract class FusionIndexPopulatorTest
     {
         fusionIndexPopulator.create();
 
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
     }
 
     @Test
@@ -168,7 +168,7 @@ abstract class FusionIndexPopulatorTest
         {
             verify( alivePopulator ).drop();
         }
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
     }
 
     @Test

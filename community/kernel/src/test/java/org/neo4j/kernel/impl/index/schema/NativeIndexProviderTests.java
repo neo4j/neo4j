@@ -23,8 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -92,8 +92,8 @@ abstract class NativeIndexProviderTests
     @BeforeEach
     void setup() throws IOException
     {
-        File nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        fs.mkdirs( nativeSchemaIndexStoreDirectory );
+        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
+        fs.mkdirs( nativeSchemaIndexStoreDirectory.toFile() );
     }
 
     /* getPopulator */
@@ -320,7 +320,7 @@ abstract class NativeIndexProviderTests
 
     private IndexProvider newProvider( boolean readOnly )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitor, immediate(), readOnly );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.homePath().toAbsolutePath() ), monitor, immediate(), readOnly );
     }
 
     private IndexProvider newProvider()

@@ -236,7 +236,7 @@ class DatabaseStartupTest
     @Test
     void startTestDatabaseOnProvidedNonAbsoluteFile()
     {
-        Path directory = Path.of( "notAbsoluteDirectory" );
+        Path directory = Path.of( "target/notAbsoluteDirectory" );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory ).impermanent().build();
         managementService.shutdown();
     }
@@ -244,7 +244,7 @@ class DatabaseStartupTest
     @Test
     void startCommunityDatabaseOnProvidedNonAbsoluteFile()
     {
-        Path directory = Path.of( "notAbsoluteDirectory" );
+        Path directory = Path.of( "target/notAbsoluteDirectory" );
         EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
         DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
         DatabaseManagementService managementService = databaseFactory.build();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
@@ -152,7 +152,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    GenericLayout layout( IndexDescriptor descriptor, File storeFile )
+    GenericLayout layout( IndexDescriptor descriptor, Path storeFile )
     {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         IndexConfig indexConfig = descriptor.getIndexConfig();

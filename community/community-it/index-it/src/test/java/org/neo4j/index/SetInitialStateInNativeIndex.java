@@ -21,6 +21,7 @@ package org.neo4j.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -55,17 +56,17 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         assertThat( filesChanged ).as( "couldn't find any index to set state on" ).isGreaterThanOrEqualTo( 1 );
     }
 
-    private int setInitialState( FileSystemAbstraction fs, File fileOrDir, PageCache pageCache ) throws IOException
+    private int setInitialState( FileSystemAbstraction fs, Path fileOrDir, PageCache pageCache ) throws IOException
     {
-        if ( fs.isDirectory( fileOrDir ) )
+        if ( fs.isDirectory( fileOrDir.toFile() ) )
         {
             int count = 0;
-            File[] children = fs.listFiles( fileOrDir );
+            File[] children = fs.listFiles( fileOrDir.toFile() );
             if ( children != null )
             {
                 for ( File child : children )
                 {
-                    count += setInitialState( fs, child, pageCache );
+                    count += setInitialState( fs, child.toPath(), pageCache );
                 }
             }
             return count;
@@ -80,7 +81,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         }
     }
 
-    private boolean isNativeIndexFile( File fileOrDir, PageCache pageCache )
+    private boolean isNativeIndexFile( Path fileOrDir, PageCache pageCache )
     {
         try
         {
@@ -95,7 +96,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         }
     }
 
-    private static void overwriteState( PageCache pageCache, File indexFile, byte state ) throws IOException
+    private static void overwriteState( PageCache pageCache, Path indexFile, byte state ) throws IOException
     {
         NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter( state, NO_HEADER_WRITER );
         GBPTree.overwriteHeader( pageCache, indexFile, stateWriter, NULL );

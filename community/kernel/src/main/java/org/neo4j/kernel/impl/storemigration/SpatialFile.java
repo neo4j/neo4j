@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class SpatialFile
 {
-    private final File indexFile;
+    private final Path indexFile;
     private final CoordinateReferenceSystem crs;
 
-    SpatialFile( CoordinateReferenceSystem crs, File indexFile )
+    SpatialFile( CoordinateReferenceSystem crs, Path indexFile )
     {
         this.crs = crs;
         this.indexFile = indexFile;
     }
 
-    File getIndexFile()
+    Path getIndexFile()
     {
         return indexFile;
     }

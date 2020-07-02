@@ -230,7 +230,7 @@ class CheckConsistencyCommandIT
                 .runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
+                .thenReturn( ConsistencyCheckService.Result.failure( Path.of( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
 
         CommandFailedException commandFailed =
                 assertThrows( CommandFailedException.class, () ->
@@ -260,7 +260,7 @@ class CheckConsistencyCommandIT
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        eq( new File( "." ).getCanonicalFile() ), any( ConsistencyFlags.class ) );
+                        eq( Path.of( "" ) ), any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -282,7 +282,7 @@ class CheckConsistencyCommandIT
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                        anyBoolean(), eq( new File( "some-dir-or-other" ).getCanonicalFile() ),
+                        anyBoolean(), eq( Path.of( "some-dir-or-other" ) ),
                         any( ConsistencyFlags.class ) );
     }
 
@@ -304,7 +304,7 @@ class CheckConsistencyCommandIT
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                        anyBoolean(), eq( new File( "../bar" ).getCanonicalFile() ),
+                        anyBoolean(), eq( Path.of( "../bar" ) ),
                         any( ConsistencyFlags.class ) );
     }
 

@@ -107,7 +107,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     @Override
     public ResourceIterator<Path> snapshotFiles()
     {
-        return asResourceIterator( iterator( indexFiles.getStoreFile().toPath() ) );
+        return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
     }
 
     @Override

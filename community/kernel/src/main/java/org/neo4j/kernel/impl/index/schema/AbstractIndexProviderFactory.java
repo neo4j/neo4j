@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -49,7 +49,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
     public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
-        File databaseDir = context.directory().toFile();
+        Path databaseDir = context.directory();
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( loggingClass() );
         Monitors monitors = dependencies.monitors();
@@ -66,7 +66,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
 
     public abstract IndexProviderDescriptor descriptor();
 
-    protected abstract IndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+    protected abstract IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs,
             IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector );
 

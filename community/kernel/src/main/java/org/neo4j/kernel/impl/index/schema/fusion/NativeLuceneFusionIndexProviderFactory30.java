@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -66,14 +66,14 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @Override
-    protected IndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+    protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
     @VisibleForTesting
-    public static FusionIndexProvider create( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
+    public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
             IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
@@ -93,13 +93,13 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @VisibleForTesting
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path databaseDirectory )
     {
         return subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
     }
 
     @VisibleForTesting
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProviderDescriptor descriptor )
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path databaseDirectory, IndexProviderDescriptor descriptor )
     {
         IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
         return directoriesBySubProvider( parentDirectoryStructure );

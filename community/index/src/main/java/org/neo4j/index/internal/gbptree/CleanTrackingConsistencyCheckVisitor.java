@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
-import java.io.File;
+import java.nio.file.Path;
 
 class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
 {
@@ -39,14 +39,14 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    public void notATreeNode( long pageId, File file )
+    public void notATreeNode( long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.notATreeNode( pageId, file );
     }
 
     @Override
-    public void unknownTreeNodeType( long pageId, byte treeNodeType, File file )
+    public void unknownTreeNodeType( long pageId, byte treeNodeType, Path file )
     {
         isConsistent.setFalse();
         delegate.unknownTreeNodeType( pageId, treeNodeType, file );
@@ -54,7 +54,7 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration, File file )
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration, Path file )
     {
         isConsistent.setFalse();
         delegate.siblingsDontPointToEachOther( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer,
@@ -63,14 +63,14 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
+    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, Path file )
     {
         isConsistent.setFalse();
         delegate.rightmostNodeHasRightSibling( rightSiblingPointer, rightmostNode, file );
     }
 
     @Override
-    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, File file )
+    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, Path file )
     {
         isConsistent.setFalse();
         delegate.pointerToOldVersionOfTreeNode( pageId, successorPointer, file );
@@ -78,49 +78,49 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
-            long targetNodeGeneration, File file )
+            long targetNodeGeneration, Path file )
     {
         isConsistent.setFalse();
         delegate.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration, file );
     }
 
     @Override
-    public void keysOutOfOrderInNode( long pageId, File file )
+    public void keysOutOfOrderInNode( long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.keysOutOfOrderInNode( pageId, file );
     }
 
     @Override
-    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, File file )
+    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.keysLocatedInWrongNode( range, key, pos, keyCount, pageId, file );
     }
 
     @Override
-    public void unusedPage( long pageId, File file )
+    public void unusedPage( long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.unusedPage( pageId, file );
     }
 
     @Override
-    public void pageIdExceedLastId( long lastId, long pageId, File file )
+    public void pageIdExceedLastId( long lastId, long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.pageIdExceedLastId( lastId, pageId, file );
     }
 
     @Override
-    public void nodeMetaInconsistency( long pageId, String message, File file )
+    public void nodeMetaInconsistency( long pageId, String message, Path file )
     {
         isConsistent.setFalse();
         delegate.nodeMetaInconsistency( pageId, message, file );
     }
 
     @Override
-    public void pageIdSeenMultipleTimes( long pageId, File file )
+    public void pageIdSeenMultipleTimes( long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.pageIdSeenMultipleTimes( pageId, file );
@@ -128,7 +128,7 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
-            long readPointerB, long pointerB, byte stateB, File file )
+            long readPointerB, long pointerB, byte stateB, Path file )
     {
         isConsistent.setFalse();
         delegate.crashedPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB, file );
@@ -136,21 +136,21 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
-            long readPointerB, long pointerB, byte stateB, File file )
+            long readPointerB, long pointerB, byte stateB, Path file )
     {
         isConsistent.setFalse();
         delegate.brokenPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB, file );
     }
 
     @Override
-    public void unreasonableKeyCount( long pageId, int keyCount, File file )
+    public void unreasonableKeyCount( long pageId, int keyCount, Path file )
     {
         isConsistent.setFalse();
         delegate.unreasonableKeyCount( pageId, keyCount, file );
     }
 
     @Override
-    public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file )
+    public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, Path file )
     {
         isConsistent.setFalse();
         delegate.childNodeFoundAmongParentNodes( superRange, level, pageId, file );
@@ -164,7 +164,7 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    public void dirtyOnStartup( File file )
+    public void dirtyOnStartup( Path file )
     {
         // This does not count as an inconsistency
         delegate.dirtyOnStartup( file );

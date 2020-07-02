@@ -88,7 +88,7 @@ class GenericAccessorPointsTest
     @BeforeEach
     void setup()
     {
-        IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( directory.homeDir() ).forProvider( DESCRIPTOR );
+        IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( directory.homePath() ).forProvider( DESCRIPTOR );
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
         IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, descriptor.getId() );
         GenericLayout layout = new GenericLayout( 1, indexSettings );

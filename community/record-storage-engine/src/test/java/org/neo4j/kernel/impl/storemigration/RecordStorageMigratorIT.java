@@ -28,7 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -157,9 +156,9 @@ class RecordStorageMigratorIT
         throws Exception
     {
         // GIVEN a legacy database
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -187,9 +186,9 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         LogService logService = new SimpleLogService( logProvider, logProvider );
@@ -219,9 +218,9 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -251,9 +250,9 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -277,9 +276,9 @@ class RecordStorageMigratorIT
     {
         // given
 
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -302,9 +301,9 @@ class RecordStorageMigratorIT
     {
         // Given we have an old store full of random schema rules.
 
-        File prepare = testDirectory.directory( "prepare" );
+        Path prepare = testDirectory.directoryPath( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory().toFile(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
 

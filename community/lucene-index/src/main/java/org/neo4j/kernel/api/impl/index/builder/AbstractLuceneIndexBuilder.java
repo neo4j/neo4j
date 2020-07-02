@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.builder;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.neo4j.configuration.Config;
@@ -87,7 +87,7 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      * @param indexRootFolder root folder
      * @return index builder
      */
-    public T withIndexRootFolder( File indexRootFolder )
+    public T withIndexRootFolder( Path indexRootFolder )
     {
         storageBuilder.withIndexFolder( indexRootFolder );
         return (T) this;

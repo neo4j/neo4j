@@ -360,10 +360,10 @@ class MemoryRecommendationsCommandTest
             pageCacheTotal.add( length );
         }
 
-        File indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory().toFile() );
-        if ( indexFolder.exists() )
+        Path indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
+        if ( Files.exists( indexFolder ) )
         {
-            Files.walkFileTree( indexFolder.toPath(), new SimpleFileVisitor<>()
+            Files.walkFileTree( indexFolder, new SimpleFileVisitor<>()
             {
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )

@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -177,8 +177,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             indexFiles.archiveIndex();
         }
         super.create();
-        File storeFile = indexFiles.getStoreFile();
-        File externalUpdatesFile = new File( storeFile.getParent(), storeFile.getName() + ".ext" );
+        Path storeFile = indexFiles.getStoreFile();
+        Path externalUpdatesFile = storeFile.resolveSibling( storeFile.getFileName() + ".ext" );
         validator = instantiateValueValidator();
         externalUpdates = new IndexUpdateStorage<>( fileSystem, externalUpdatesFile, bufferFactory.globalAllocator(), smallerBufferSize(), layout,
                 memoryTracker );
@@ -266,8 +266,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 return;
             }
             phaseTracker.enterPhase( PhaseTracker.Phase.BUILD );
-            File storeFile = indexFiles.getStoreFile();
-            File duplicatesFile = new File( storeFile.getParentFile(), storeFile.getName() + ".dup" );
+            Path storeFile = indexFiles.getStoreFile();
+            Path duplicatesFile = storeFile.resolveSibling( storeFile.getFileName() + ".dup" );
             int readBufferSize = smallerBufferSize();
             try ( var allocator = bufferFactory.newLocalAllocator();
                   var indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker ) )
@@ -669,8 +669,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         ThreadLocalBlockStorage( int id ) throws IOException
         {
             super( blockStorageMonitor );
-            File storeFile = indexFiles.getStoreFile();
-            File blockFile = new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id );
+            Path storeFile = indexFiles.getStoreFile();
+            Path blockFile = storeFile.resolveSibling( storeFile.getFileName() + ".scan-" + id );
             this.blockStorage = new BlockStorage<>( layout, bufferFactory, fileSystem, blockFile, this, memoryTracker );
         }
 

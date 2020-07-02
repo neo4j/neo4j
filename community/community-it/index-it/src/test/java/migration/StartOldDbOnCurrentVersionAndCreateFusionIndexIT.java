@@ -22,7 +22,6 @@ package migration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -175,7 +174,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
     {
         // given
-        File targetDirectory = databaseLayout.databaseDirectory().toFile();
+        Path targetDirectory = databaseLayout.databaseDirectory();
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when

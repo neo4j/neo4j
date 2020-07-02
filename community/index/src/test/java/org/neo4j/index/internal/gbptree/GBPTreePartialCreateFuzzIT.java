@@ -21,8 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -65,9 +65,9 @@ class GBPTreePartialCreateFuzzIT
     void shouldDetectAndThrowIOExceptionOnPartiallyCreatedFile() throws Exception
     {
         // given a crashed-on-open index
-        File file = testDirectory.file( "index" );
+        Path file = testDirectory.filePath( "index" );
         Process process = new ProcessBuilder( asList( "java", "-cp", System.getProperty( "java.class.path" ), getClass().getName(),
-                file.getAbsolutePath() ) ).redirectError( INHERIT ).redirectOutput( INHERIT ).start();
+                file.toAbsolutePath().toString() ) ).redirectError( INHERIT ).redirectOutput( INHERIT ).start();
         Thread.sleep( ThreadLocalRandom.current().nextInt( 1_000 ) );
         int exitCode = process.destroyForcibly().waitFor();
 
@@ -100,14 +100,14 @@ class GBPTreePartialCreateFuzzIT
     static void main( String[] args ) throws Exception
     {
         // Just start and immediately close. The process spawning this subprocess will kill it in the middle of all this
-        File file = new File( args[0] );
+        Path file = Path.of( args[0] );
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {
-                fs.deleteFile( file );
+                fs.deleteFile( file.toFile() );
                 new GBPTreeBuilder<>( pageCache, file, longLayout().build() ).build().close();
             }
         }

@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -112,44 +112,44 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
             }
 
             @Override
-            public void recoveryCleanupRegistered( File indexFile, IndexDescriptor index )
+            public void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupStarted( File indexFile, IndexDescriptor index )
+            public void recoveryCleanupStarted( Path indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFinished( File indexFile, IndexDescriptor index,
+            public void recoveryCleanupFinished( Path indexFile, IndexDescriptor index,
                     long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupClosed( File indexFile, IndexDescriptor index )
+            public void recoveryCleanupClosed( Path indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFailed( File indexFile, IndexDescriptor index, Throwable throwable )
+            public void recoveryCleanupFailed( Path indexFile, IndexDescriptor index, Throwable throwable )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( IndexDescriptor index, String action, Exception cause );
 
-        void recoveryCleanupRegistered( File indexFile, IndexDescriptor index );
+        void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index );
 
-        void recoveryCleanupStarted( File indexFile, IndexDescriptor index );
+        void recoveryCleanupStarted( Path indexFile, IndexDescriptor index );
 
-        void recoveryCleanupFinished( File indexFile, IndexDescriptor index,
+        void recoveryCleanupFinished( Path indexFile, IndexDescriptor index,
                 long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
 
-        void recoveryCleanupClosed( File indexFile, IndexDescriptor index );
+        void recoveryCleanupClosed( Path indexFile, IndexDescriptor index );
 
-        void recoveryCleanupFailed( File indexFile, IndexDescriptor index, Throwable throwable );
+        void recoveryCleanupFailed( Path indexFile, IndexDescriptor index, Throwable throwable );
     }
 
     public static final IndexProvider EMPTY =

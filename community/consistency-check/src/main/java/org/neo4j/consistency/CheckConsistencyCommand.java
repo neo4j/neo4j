@@ -140,7 +140,7 @@ public class CheckConsistencyCommand extends AbstractCommand
                 LogProvider logProvider = Util.configuredLogProvider( config, System.out );
                 ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                         .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
-                            verbose, options.getReportDir().toFile().getCanonicalFile(),
+                            verbose, options.getReportDir().normalize(),
                                 new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
                                         options.isCheckLabelScanStore(), options.isCheckRelationshipTypeScanStore(), options.isCheckPropertyOwners() ) );
 

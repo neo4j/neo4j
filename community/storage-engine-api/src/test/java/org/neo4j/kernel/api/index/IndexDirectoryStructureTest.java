@@ -21,12 +21,11 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.fs.FileUtils.path;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
@@ -34,16 +33,16 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 class IndexDirectoryStructureTest
 {
     private final IndexProviderDescriptor provider = new IndexProviderDescriptor( "test", "0.5" );
-    private final File databaseStoreDir = new File( "db" ).getAbsoluteFile();
-    private final File baseIndexDirectory = baseSchemaIndexFolder( databaseStoreDir );
+    private final Path databaseStoreDir = Path.of( "db" ).toAbsolutePath();
+    private final Path baseIndexDirectory = baseSchemaIndexFolder( databaseStoreDir );
     private final long indexId = 15;
 
     @Test
     void shouldSeeCorrectDirectoriesForProvider()
     {
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
-                path( baseIndexDirectory, provider.getKey() + "-" +  provider.getVersion(), String.valueOf( indexId ) ) );
+                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() ),
+                baseIndexDirectory.resolve( provider.getKey() + "-" +  provider.getVersion() ).resolve( String.valueOf( indexId ) ) );
     }
 
     @Test
@@ -52,9 +51,10 @@ class IndexDirectoryStructureTest
         IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
         IndexProviderDescriptor subProvider = new IndexProviderDescriptor( "sub", "0.3" );
         assertCorrectDirectories( directoriesBySubProvider( parentStructure ).forProvider( subProvider ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
-                path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion(),
-                        String.valueOf( indexId ), subProvider.getKey() + "-" + subProvider.getVersion() ) );
+                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() ),
+                baseIndexDirectory.resolve( provider.getKey() + "-" + provider.getVersion() )
+                        .resolve( String.valueOf( indexId ) )
+                        .resolve( subProvider.getKey() + "-" + subProvider.getVersion() ) );
     }
 
     @Test
@@ -62,16 +62,16 @@ class IndexDirectoryStructureTest
     {
         IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor( "native+lucene", "1.0" );
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),
-                path( baseIndexDirectory, "native_lucene-1.0" ),
-                path( baseIndexDirectory, "native_lucene-1.0", String.valueOf( indexId ) ) );
+                baseIndexDirectory.resolve( "native_lucene-1.0" ),
+                baseIndexDirectory.resolve( "native_lucene-1.0" ).resolve( String.valueOf( indexId ) ) );
     }
 
     private void assertCorrectDirectories( IndexDirectoryStructure directoryStructure,
-            File expectedRootDirectory, File expectedIndexDirectory )
+            Path expectedRootDirectory, Path expectedIndexDirectory )
     {
         // when
-        File rootDirectory = directoryStructure.rootDirectory();
-        File indexDirectory = directoryStructure.directoryForIndex( indexId );
+        Path rootDirectory = directoryStructure.rootDirectory();
+        Path indexDirectory = directoryStructure.directoryForIndex( indexId );
 
         // then
         assertEquals( expectedRootDirectory, rootDirectory );

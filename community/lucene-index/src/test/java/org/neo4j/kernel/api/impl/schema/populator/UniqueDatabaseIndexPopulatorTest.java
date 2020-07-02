@@ -24,8 +24,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -96,7 +96,7 @@ class UniqueDatabaseIndexPopulatorTest
     @BeforeEach
     void setUp()
     {
-        File folder = testDir.directory( "folder" );
+        Path folder = testDir.directoryPath( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )
@@ -136,7 +136,7 @@ class UniqueDatabaseIndexPopulatorTest
 
     private Directory getDirectory() throws IOException
     {
-        File partitionFolder = indexStorage.getPartitionFolder( 1 );
+        Path partitionFolder = indexStorage.getPartitionFolder( 1 );
         return indexStorage.openDirectory( partitionFolder );
     }
 

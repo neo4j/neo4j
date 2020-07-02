@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -37,11 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -2785,7 +2786,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                         layout, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.nullLogProvider(), false, ConsistencyFlags.DEFAULT );
                 if ( !result.isSuccessful() )
                 {
-                    Files.lines( result.reportFile().toPath() ).forEach( System.out::println );
+                    Files.lines( result.reportFile() ).forEach( System.out::println );
                 }
                 assertTrue( result.isSuccessful() );
             }

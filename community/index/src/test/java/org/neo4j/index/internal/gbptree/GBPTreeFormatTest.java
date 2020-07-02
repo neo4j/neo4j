@@ -141,7 +141,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     protected void createStoreFile( Path storeFile ) throws IOException
     {
         List<Long> initialKeys = initialKeys();
-        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
@@ -161,7 +161,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     protected void verifyFormat( Path storeFile ) throws IOException, FormatViolationException
     {
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
         }
         catch ( MetadataMismatchException e )
@@ -173,7 +173,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     public void verifyContent( Path storeFile ) throws IOException
     {
-        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             {
                 // WHEN reading from the tree

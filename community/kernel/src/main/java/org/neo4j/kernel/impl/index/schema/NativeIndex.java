@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -70,7 +70,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        File storeFile = indexFiles.getStoreFile();
+        Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
                 readOnly, NULL, immutable.empty(), descriptor.getName() );
         afterTreeInstantiation( tree );

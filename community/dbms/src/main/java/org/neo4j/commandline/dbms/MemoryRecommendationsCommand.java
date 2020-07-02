@@ -23,10 +23,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import org.neo4j.cli.AbstractCommand;
@@ -214,7 +215,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         {
             memory = OsBeanUtil.getTotalPhysicalMemory();
         }
-        File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        Path configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
         Config config = getConfig( configFile );
 
         final long offHeapMemory = recommendTxStateMemory( config, memory );
@@ -223,7 +224,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         String pagecache = bytesToString( recommendPageCacheMemory( memory, offHeapMemory ) );
         String txState = bytesToString( offHeapMemory );
 
-        File databasesRoot = config.get( databases_root_path ).toFile();
+        Path databasesRoot = config.get( databases_root_path );
         Neo4jLayout storeLayout = Neo4jLayout.of( config );
         Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
         long pageCacheSize = pageCacheSize( layouts );
@@ -283,8 +284,8 @@ class MemoryRecommendationsCommand extends AbstractCommand
     private long getDatabasePageCacheSize( DatabaseLayout layout )
     {
         return sumStoreFiles( layout ) +
-                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory().toFile() ), getNativeIndexFileFilter(
-                        layout.databaseDirectory().toFile(), false ) );
+                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory() ), getNativeIndexFileFilter(
+                        layout.databaseDirectory(), false ) );
     }
 
     private long luceneSize( Collection<DatabaseLayout> layouts )
@@ -294,13 +295,13 @@ class MemoryRecommendationsCommand extends AbstractCommand
 
     private long getDatabaseLuceneSize( DatabaseLayout databaseLayout )
     {
-        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
+        Path databaseDirectory = databaseLayout.databaseDirectory();
         return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
     }
 
-    private FilenameFilter getNativeIndexFileFilter( File storeDir, boolean inverse )
+    private FilenameFilter getNativeIndexFileFilter( Path storeDir, boolean inverse )
     {
-        FileFilter nativeIndexFilter = new NativeIndexFileFilter( storeDir );
+        Predicate<Path> nativeIndexFilter = new NativeIndexFileFilter( storeDir );
         return ( dir, name ) ->
         {
             File file = new File( dir, name );
@@ -315,7 +316,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
                 return false;
             }
 
-            return inverse != nativeIndexFilter.accept( file );
+            return inverse != nativeIndexFilter.test( file.toPath() );
         };
     }
 
@@ -325,10 +326,11 @@ class MemoryRecommendationsCommand extends AbstractCommand
         FileSystemAbstraction fileSystem = ctx.fs();
         try
         {
-            long total = storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
+            long total =
+                    storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().map( Path::toFile ).mapToLong( fileSystem::getFileSize ).sum();
 
             // Include label index
-            total += sizeOfFileIfExists( databaseLayout.labelScanStore().toFile() );
+            total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
             return total;
         }
         catch ( IOException e )
@@ -337,43 +339,43 @@ class MemoryRecommendationsCommand extends AbstractCommand
         }
     }
 
-    private long sizeOfFileIfExists( File file )
+    private long sizeOfFileIfExists( Path file )
     {
         FileSystemAbstraction fileSystem = ctx.fs();
-        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
+        return fileSystem.fileExists( file.toFile() ) ? fileSystem.getFileSize( file.toFile() ) : 0;
     }
 
-    private long sumIndexFiles( File file, FilenameFilter filter )
+    private long sumIndexFiles( Path file, FilenameFilter filter )
     {
         long total = 0;
-        if ( ctx.fs().isDirectory( file ) )
+        if ( ctx.fs().isDirectory( file.toFile() ) )
         {
-            File[] children = ctx.fs().listFiles( file, filter );
+            File[] children = ctx.fs().listFiles( file.toFile(), filter );
             if ( children != null )
             {
                 for ( File child : children )
                 {
-                    total += sumIndexFiles( child, filter );
+                    total += sumIndexFiles( child.toPath(), filter );
                 }
             }
         }
         else
         {
-            total += ctx.fs().getFileSize( file );
+            total += ctx.fs().getFileSize( file.toFile() );
         }
         return total;
     }
 
-    private Config getConfig( File configFile )
+    private Config getConfig( Path configFile )
     {
-        if ( !ctx.fs().fileExists( configFile ) )
+        if ( !ctx.fs().fileExists( configFile.toFile() ) )
         {
-            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }
         try
         {
             Config config = Config.newBuilder()
-                    .fromFile( configFile )
+                    .fromFile( configFile.toFile() )
                     .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
                     .build();
             ConfigUtils.disableAllConnectors( config );
@@ -381,7 +383,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailedException( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+            throw new CommandFailedException( "Failed to read config file: " + configFile.toAbsolutePath(), e );
         }
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.batchinsert.internal;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -583,7 +582,7 @@ public class BatchInserterImpl implements BatchInserter
         var cacheTracer = PageCacheTracer.NULL;
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeIndex,
                 NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore().toFile(),
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
@@ -629,8 +628,8 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
-        File countsStoreFile = databaseLayout.countStore().toFile();
-        fileSystem.deleteRecursively( countsStoreFile );
+        Path countsStoreFile = databaseLayout.countStore();
+        fileSystem.deleteRecursively( countsStoreFile.toFile() );
         CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile, fileSystem, immediate(), initialCountsBuilder,
                 false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )

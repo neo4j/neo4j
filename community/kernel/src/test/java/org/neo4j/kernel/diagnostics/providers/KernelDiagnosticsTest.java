@@ -95,7 +95,7 @@ class KernelDiagnosticsTest
         file( indexDir, "indexFile", (int) kibiBytes( 1 ) );
         file( storeDir, layout.metadataStore().getFileName().toString(), (int) kibiBytes( 3 ) );
         StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
-        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( singletonList( layout.metadataStore().toFile() ) );
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( singletonList( layout.metadataStore() ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );

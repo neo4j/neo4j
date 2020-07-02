@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -128,9 +128,9 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         {
             for ( IndexMigration indexMigration : IndexMigration.nonRetired() )
             {
-                for ( File nonRetiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+                for ( Path nonRetiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
                 {
-                    fs.deleteRecursively( nonRetiredRootDirectory );
+                    fs.deleteRecursively( nonRetiredRootDirectory.toFile() );
                 }
             }
         }

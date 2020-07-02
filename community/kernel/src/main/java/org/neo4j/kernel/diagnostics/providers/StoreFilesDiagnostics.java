@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.time.Instant;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -30,10 +30,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -63,19 +65,19 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         logger.log( "Storage files stored on file store: " + getFileStoreType( databaseLayout.databaseDirectory() ) );
         logger.log( "Storage files: (filename : modification date - size)" );
         MappedFileCounter mappedCounter = new MappedFileCounter();
-        long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory().toFile(), mappedCounter );
+        long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
         logger.log( "Storage summary: " );
         logger.log( "  Total size of store: " + bytesToString( totalSize ) );
         logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
     }
 
-    private long logStoreFiles( DiagnosticsLogger logger, String prefix, File dir, MappedFileCounter mappedCounter )
+    private long logStoreFiles( DiagnosticsLogger logger, String prefix, Path dir, MappedFileCounter mappedCounter )
     {
-        if ( !dir.isDirectory() )
+        if ( !Files.isDirectory( dir ) )
         {
             return 0;
         }
-        File[] files = dir.listFiles();
+        Path[] files = FileUtils.listPaths( dir );
         if ( files == null )
         {
             logger.log( prefix + "<INACCESSIBLE>" );
@@ -84,14 +86,14 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         long total = 0;
 
         // Sort by name
-        List<File> fileList = Arrays.asList( files );
-        fileList.sort( Comparator.comparing( File::getName ) );
+        List<Path> fileList = Arrays.asList( files );
+        fileList.sort( Comparator.comparing( Path::getFileName ) );
 
-        for ( File file : fileList )
+        for ( Path file : fileList )
         {
-            long size;
-            String filename = file.getName();
-            if ( file.isDirectory() )
+            long size = 0;
+            String filename = file.getFileName().toString();
+            if ( Files.isDirectory( file ) )
             {
                 logger.log( prefix + filename + ":" );
                 size = logStoreFiles( logger, prefix + "  ", file, mappedCounter );
@@ -99,7 +101,14 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             }
             else
             {
-                size = file.length();
+                try
+                {
+                    size = Files.size( file );
+                }
+                catch ( IOException ignored )
+                {
+                    // Preserve behaviour of File.length()
+                }
                 mappedCounter.addFile( file );
             }
 
@@ -113,28 +122,43 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         return total;
     }
 
-    private static String getFileModificationDate( File file )
+    private static String getFileModificationDate( Path file )
     {
-        ZonedDateTime modifiedDate = Instant.ofEpochMilli( file.lastModified() )
-                .atZone( ZoneId.systemDefault() )
-                .withNano( 0 ); // truncate milliseconds
-        return ISO_OFFSET_DATE_TIME.format( modifiedDate );
+        try
+        {
+            ZonedDateTime modifiedDate = Files.getLastModifiedTime( file ).toInstant()
+                    .atZone( ZoneId.systemDefault() )
+                    .withNano( 0 ); // truncate milliseconds
+            return ISO_OFFSET_DATE_TIME.format( modifiedDate );
+        }
+        catch ( IOException e )
+        {
+            return "<UNKNOWN>";
+        }
     }
 
     private static String getDiskSpace( DatabaseLayout databaseLayout )
     {
-        File directory = databaseLayout.databaseDirectory().toFile();
-        long free = directory.getFreeSpace();
-        long total = directory.getTotalSpace();
-        long percentage = total != 0 ? (free * 100 / total) : 0;
-        return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
+        try
+        {
+            Path directory = databaseLayout.databaseDirectory();
+            FileStore fileStore = Files.getFileStore( directory );
+            long free = fileStore.getUnallocatedSpace();
+            long total = fileStore.getTotalSpace();
+            long percentage = total != 0 ? (free * 100 / total) : 0;
+            return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
+        }
+        catch ( IOException e )
+        {
+            return "Unable to determine disk space on the partition";
+        }
     }
 
     private class MappedFileCounter
     {
-        private final Set<File> mappedCandidates = new HashSet<>();
+        private final Set<Path> mappedCandidates = new HashSet<>();
         private long size;
-        private final FileFilter mappedIndexFilter;
+        private final Predicate<Path> mappedIndexFilter;
 
         MappedFileCounter()
         {
@@ -146,14 +170,21 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             {
                 // Hmm, there was no storage here
             }
-            mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory().toFile() );
+            mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory() );
         }
 
-        void addFile( File file )
+        void addFile( Path file )
         {
-            if ( canBeManagedByPageCache( file ) || mappedIndexFilter.accept( file ) )
+            if ( canBeManagedByPageCache( file ) || mappedIndexFilter.test( file ) )
             {
-                size += file.length();
+                try
+                {
+                    size += Files.size( file );
+                }
+                catch ( IOException ignored )
+                {
+                    // Preserve behaviour of File.length()
+                }
             }
         }
 
@@ -168,9 +199,9 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
          * @param storeFile file of the store file to check.
          * @return Returns whether or not store file by given file name should be managed by the page cache.
          */
-        boolean canBeManagedByPageCache( File storeFile )
+        boolean canBeManagedByPageCache( Path storeFile )
         {
-            boolean isLabelScanStore = databaseLayout.labelScanStore().toFile().equals( storeFile );
+            boolean isLabelScanStore = databaseLayout.labelScanStore().equals( storeFile );
             return isLabelScanStore || mappedCandidates.contains( storeFile );
         }
     }

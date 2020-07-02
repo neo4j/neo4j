@@ -26,7 +26,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -106,11 +105,11 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      */
     public void open() throws IOException
     {
-        Set<Map.Entry<File,Directory>> indexDirectories = indexStorage.openIndexDirectories().entrySet();
+        Set<Map.Entry<Path,Directory>> indexDirectories = indexStorage.openIndexDirectories().entrySet();
         List<AbstractIndexPartition> list = new ArrayList<>( indexDirectories.size() );
-        for ( Map.Entry<File,Directory> entry : indexDirectories )
+        for ( Map.Entry<Path,Directory> entry : indexDirectories )
         {
-            list.add( partitionFactory.createPartition( entry.getKey().toPath(), entry.getValue() ) );
+            list.add( partitionFactory.createPartition( entry.getKey(), entry.getValue() ) );
         }
         partitions.addAll( list );
         open = true;
@@ -129,12 +128,12 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
      */
     public boolean exists() throws IOException
     {
-        List<File> folders = indexStorage.listFolders();
+        List<Path> folders = indexStorage.listFolders();
         if ( folders.isEmpty() )
         {
             return false;
         }
-        for ( File folder : folders )
+        for ( Path folder : folders )
         {
             if ( !luceneDirectoryExists( folder ) )
             {
@@ -374,9 +373,9 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     AbstractIndexPartition addNewPartition() throws IOException
     {
         ensureOpen();
-        File partitionFolder = createNewPartitionFolder();
+        Path partitionFolder = createNewPartitionFolder();
         Directory directory = indexStorage.openDirectory( partitionFolder );
-        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder.toPath(), directory );
+        AbstractIndexPartition indexPartition = partitionFactory.createPartition( partitionFolder, directory );
         partitions.add( indexPartition );
         return indexPartition;
     }
@@ -416,7 +415,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         }
     }
 
-    private boolean luceneDirectoryExists( File folder ) throws IOException
+    private boolean luceneDirectoryExists( Path folder ) throws IOException
     {
         try ( Directory directory = indexStorage.openDirectory( folder ) )
         {
@@ -424,9 +423,9 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         }
     }
 
-    private File createNewPartitionFolder() throws IOException
+    private Path createNewPartitionFolder() throws IOException
     {
-        File partitionFolder = indexStorage.getPartitionFolder( partitions.size() + 1 );
+        Path partitionFolder = indexStorage.getPartitionFolder( partitions.size() + 1 );
         indexStorage.prepareFolder( partitionFolder );
         return partitionFolder;
     }

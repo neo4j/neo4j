@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -47,13 +47,13 @@ class FulltextConfigExtractor
     private static final String INDEX_CONFIG_ANALYZER = "analyzer";
     private static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    static IndexConfig indexConfigFromFulltextDirectory( FileSystemAbstraction fs, File fulltextIndexDirectory )
+    static IndexConfig indexConfigFromFulltextDirectory( FileSystemAbstraction fs, Path fulltextIndexDirectory )
     {
-        File settingsFile = new File( fulltextIndexDirectory, INDEX_CONFIG_FILE );
+        Path settingsFile = fulltextIndexDirectory.resolve( INDEX_CONFIG_FILE );
         Properties settings = new Properties();
-        if ( fs.fileExists( settingsFile ) )
+        if ( fs.fileExists( settingsFile.toFile() ) )
         {
-            try ( Reader reader = fs.openAsReader( settingsFile, UTF_8 ) )
+            try ( Reader reader = fs.openAsReader( settingsFile.toFile(), UTF_8 ) )
             {
                 settings.load( reader );
             }

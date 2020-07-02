@@ -22,7 +22,6 @@ package migration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,11 +29,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -211,7 +210,7 @@ class IndexConfigMigrationIT
     @Test
     void shouldHaveCorrectDataAndIndexConfiguration() throws IOException, IndexNotFoundKernelException
     {
-        File databaseDir = databaseLayout.databaseDirectory().toFile();
+        Path databaseDir = databaseLayout.databaseDirectory();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
@@ -245,17 +244,19 @@ class IndexConfigMigrationIT
         }
 
         // Assert old index files has been removed
-        File baseSchemaIndexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir );
-        Set<File> retiredIndexProviderDirectories = Set.of(
-                new File( baseSchemaIndexFolder, "lucene" ),
-                new File( baseSchemaIndexFolder, "lucene-1.0" ),
-                new File( baseSchemaIndexFolder, "lucene_native-1.0" ),
-                new File( baseSchemaIndexFolder, "lucene_native-2.0" )
+        Path baseSchemaIndexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir );
+        Set<Path> retiredIndexProviderDirectories = Set.of(
+                baseSchemaIndexFolder.resolve( "lucene" ),
+                baseSchemaIndexFolder.resolve( "lucene-1.0" ),
+                baseSchemaIndexFolder.resolve( "lucene_native-1.0" ),
+                baseSchemaIndexFolder.resolve( "lucene_native-2.0" )
         );
-        for ( File indexProviderDirectory : Objects.requireNonNull( baseSchemaIndexFolder.listFiles() ) )
+        try ( Stream<Path> list = Files.list( baseSchemaIndexFolder ) )
         {
-            assertFalse( retiredIndexProviderDirectories.contains( indexProviderDirectory ),
-                    "Expected old index provider directories to be deleted during migration but store still had directory " + indexProviderDirectory );
+            list.forEach( indexProviderDirectory ->
+                    assertFalse( retiredIndexProviderDirectories.contains( indexProviderDirectory ),
+                            "Expected old index provider directories to be deleted during migration but store still had directory " +
+                                    indexProviderDirectory ) );
         }
     }
 

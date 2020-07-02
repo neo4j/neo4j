@@ -236,7 +236,7 @@ class AllNodesInStoreExistInLabelIndexTest
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException
     {
-        return Files.readString( result.reportFile().toPath() );
+        return Files.readString( result.reportFile() );
     }
 
     private void removeExistingNode( Transaction transaction, List<Pair<Long,Label[]>> nodesInStore )

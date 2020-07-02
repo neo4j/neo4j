@@ -233,7 +233,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
         try
         {
-            return new GBPTreeCountsStore( pageCache, layout.countStore().toFile(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
+            return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 

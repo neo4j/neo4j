@@ -272,7 +272,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         {
             if ( counts == null )
             {
-                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore().toFile(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
+                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
                         new CountsBuilder()
                         {
                             @Override

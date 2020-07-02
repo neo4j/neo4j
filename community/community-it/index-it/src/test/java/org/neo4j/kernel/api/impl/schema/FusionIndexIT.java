@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -139,9 +140,9 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
     {
-        File databaseDirectory = db.databaseLayout().databaseDirectory().toFile();
-        File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
-        File[] files = fs.listFiles( rootDirectory );
+        Path databaseDirectory = db.databaseLayout().databaseDirectory();
+        Path rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
+        File[] files = fs.listFiles( rootDirectory.toFile() );
         for ( File indexFile : files )
         {
             fs.deleteFile( indexFile );

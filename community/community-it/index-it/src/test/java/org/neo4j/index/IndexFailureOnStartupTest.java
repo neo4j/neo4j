@@ -23,9 +23,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -120,7 +122,7 @@ public class IndexFailureOnStartupTest
         }
 
         @Test
-        void shouldArchiveFailedIndex()
+        void shouldArchiveFailedIndex() throws IOException
         {
             // given
             try ( Transaction tx = db.beginTx() )
@@ -167,11 +169,16 @@ public class IndexFailureOnStartupTest
         } );
     }
 
-    private File archiveFile()
+    private Path archiveFile() throws IOException
     {
-        File indexDir = nativeIndexDirectoryStructure( db.databaseLayout() ).rootDirectory();
-        File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
-        if ( files == null || files.length == 0 )
+        Path indexDir = nativeIndexDirectoryStructure( db.databaseLayout() ).rootDirectory();
+        Path[] files;
+        try ( Stream<Path> list = Files.list( indexDir ) )
+        {
+            files = list.filter( path -> Files.isRegularFile( path ) && path.getFileName().toString().startsWith( "archive-" ) )
+                        .toArray( Path[]::new );
+        }
+        if ( files.length == 0 )
         {
             return null;
         }

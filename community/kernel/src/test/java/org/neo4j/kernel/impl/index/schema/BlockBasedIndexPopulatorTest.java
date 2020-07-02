@@ -119,7 +119,7 @@ class BlockBasedIndexPopulatorTest
     void setup()
     {
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homeDir() ).forProvider( providerDescriptor );
+        IndexDirectoryStructure directoryStructure = directoriesByProvider( testDir.homePath() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
         databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -299,9 +299,9 @@ class BlockBasedIndexPopulatorTest
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
             // calling drop here should wait for the merge future and then delete index directory
-            assertTrue( fs.fileExists( indexFiles.getBase() ) );
-            assertTrue( fs.isDirectory( indexFiles.getBase() ) );
-            assertTrue( fs.listFiles( indexFiles.getBase() ).length > 0 );
+            assertTrue( fs.fileExists( indexFiles.getBase().toFile() ) );
+            assertTrue( fs.isDirectory( indexFiles.getBase().toFile() ) );
+            assertTrue( fs.listFiles( indexFiles.getBase().toFile() ).length > 0 );
 
             Future<Void> dropFuture = closer.submit( populator::drop );
             closer.untilWaiting();
@@ -311,7 +311,7 @@ class BlockBasedIndexPopulatorTest
 
             // then
             assertTrue( mergeFuture.isDone() );
-            assertFalse( fs.fileExists( indexFiles.getBase() ) );
+            assertFalse( fs.fileExists( indexFiles.getBase().toFile() ) );
         }
         finally
         {

@@ -21,8 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -60,13 +60,13 @@ public class GBPTreeStructure<KEY, VALUE>
      * Visit the meta page of the tree present in the given {@code file}.
      *
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
-     * @param file {@link File} containing the tree to visit meta page for.
+     * @param file {@link Path} containing the tree to visit meta page for.
      * @param visitor {@link GBPTreeVisitor} that shall visit meta.
      * @throws IOException on I/O error.
      */
-    public static void visitMeta( PageCache pageCache,File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file.toPath(), pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
@@ -79,13 +79,13 @@ public class GBPTreeStructure<KEY, VALUE>
      * Visit the state of the tree present in the given {@code file}.
      *
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
-     * @param file {@link File} containing the tree to visit state for.
+     * @param file {@link Path} containing the tree to visit state for.
      * @param visitor {@link GBPTreeVisitor} that shall visit state.
      * @throws IOException on I/O error.
      */
-    public static void visitState( PageCache pageCache, File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file.toPath(), pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {

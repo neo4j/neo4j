@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -53,7 +53,7 @@ class GenericNativeIndexAccessorTest
     void dropShouldDeleteEntireIndexFolder()
     {
         // given
-        File root = testDirectory.directory( "root" );
+        Path root = testDirectory.directoryPath( "root" );
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );
@@ -68,6 +68,6 @@ class GenericNativeIndexAccessorTest
         accessor.drop();
 
         // then
-        assertFalse( fs.fileExists( indexFiles.getBase() ) );
+        assertFalse( fs.fileExists( indexFiles.getBase().toFile() ) );
     }
 }

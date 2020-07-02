@@ -20,22 +20,22 @@
 package org.neo4j.test;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class Unzip
+public final class Unzip
 {
     private Unzip()
     {
     }
 
-    public static File unzip( Class<?> testClass, String resource, File targetDirectory ) throws IOException
+    public static Path unzip( Class<?> testClass, String resource, Path targetDirectory ) throws IOException
     {
         InputStream source = testClass.getResourceAsStream( resource );
         if ( source == null )
@@ -51,11 +51,11 @@ public class Unzip
             {
                 if ( entry.isDirectory() )
                 {
-                    new File( targetDirectory, entry.getName() ).mkdirs();
+                    Files.createDirectories( targetDirectory.resolve( entry.getName() ) );
                 }
                 else
                 {
-                    try ( OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
+                    try ( OutputStream file = new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( entry.getName() ) ) ) )
                     {
                         int read;
                         while ( ( read = zipStream.read( scratch ) ) != -1 )

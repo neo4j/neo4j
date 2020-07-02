@@ -49,7 +49,7 @@ class IndexPartitionFactoryTest
     @BeforeEach
     void setUp() throws IOException
     {
-        directory = DirectoryFactory.PERSISTENT.open( testDirectory.homeDir() );
+        directory = DirectoryFactory.PERSISTENT.open( testDirectory.homePath() );
     }
 
     @Test
@@ -89,7 +89,7 @@ class IndexPartitionFactoryTest
         Path location = testDirectory.homePath();
         try ( AbstractIndexPartition ignored =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
-                              .createPartition( location, DirectoryFactory.PERSISTENT.open( location.toFile() ) ) )
+                              .createPartition( location, DirectoryFactory.PERSISTENT.open( location ) ) )
         {
             // empty
         }

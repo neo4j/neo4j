@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import org.neo4j.io.ByteUnit;
@@ -73,8 +74,8 @@ class GBPTreeBootstrapperTest
     private JobScheduler scheduler;
     private PageCache pageCache;
     private String zipName;
-    private File storeFile;
-    private File zipFile;
+    private Path storeFile;
+    private Path zipFile;
 
     @AfterEach
     void tearDown() throws Exception
@@ -102,9 +103,9 @@ class GBPTreeBootstrapperTest
         {
             tree.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         }
-        ZipUtils.zip( dir.getFileSystem(), storeFile.toPath(), zipFile.toPath() );
+        ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
         fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",
-                zipFile.getAbsolutePath(),
+                zipFile.toAbsolutePath(),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) + pathify( getClass().getPackage().getName() + "." ) + zipName ) );
     }
 
@@ -114,7 +115,7 @@ class GBPTreeBootstrapperTest
     {
         setupTest( testSetup );
 
-        ZipUtils.unzipResource( getClass(), zipName, storeFile.toPath() );
+        ZipUtils.unzipResource( getClass(), zipName, storeFile );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
@@ -135,8 +136,8 @@ class GBPTreeBootstrapperTest
         this.scheduler = new ThreadPoolJobScheduler();
         this.pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, testSetup.pageSize );
         this.zipName = testSetup.zipName;
-        this.storeFile = dir.file( STORE );
-        this.zipFile = dir.file( zipName );
+        this.storeFile = dir.filePath( STORE );
+        this.zipFile = dir.filePath( zipName );
     }
 
     private static String pathify( String name )

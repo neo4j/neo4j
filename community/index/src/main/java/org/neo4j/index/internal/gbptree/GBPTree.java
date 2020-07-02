@@ -24,7 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -357,9 +356,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final PagedFile pagedFile;
 
     /**
-     * {@link File} to map in {@link PageCache} for storing this tree.
+     * {@link Path} to map in {@link PageCache} for storing this tree.
      */
-    private final File indexFile;
+    private final Path indexFile;
 
     /**
      * User-provided layout of key/value as well as custom additional meta information.
@@ -558,7 +557,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * </ul>
      *
      * @param pageCache {@link PageCache} to use to map index file
-     * @param indexFile {@link File} containing the actual index
+     * @param indexFile {@link Path} containing the actual index
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
@@ -571,7 +570,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
-    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
+    public GBPTree( PageCache pageCache, Path indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
             Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions, String name ) throws MetadataMismatchException
     {
@@ -687,7 +686,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer,
+    private PagedFile openOrCreate( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer,
             ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         try
@@ -704,10 +703,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+    private static PagedFile openExistingIndexFile( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             throws IOException, MetadataMismatchException
     {
-        PagedFile pagedFile = pageCache.map( indexFile.toPath(), pageCache.pageSize(), openOptions );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
         // This index already exists, verify meta data aligns with expectations
 
         MutableBoolean pagedFileOpen = new MutableBoolean( true );
@@ -738,12 +737,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private PagedFile createNewIndexFile( PageCache pageCache, File indexFile ) throws IOException
+    private PagedFile createNewIndexFile( PageCache pageCache, Path indexFile ) throws IOException
     {
         // First time
         monitor.noStoreFile();
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile.toPath(), pageCache.pageSize(), openOptions.newWith( CREATE ) );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions.newWith( CREATE ) );
         created = true;
         return pagedFile;
     }
@@ -774,13 +773,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Useful when reading header and the demands on matching layout can be relaxed a bit.
      *
      * @param pageCache {@link PageCache} to use to map index file
-     * @param indexFile {@link File} containing the actual index
+     * @param indexFile {@link Path} containing the actual index
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer, PageCursorTracer)}
      * or {@link #close()}
      * @throws IOException On page cache error
      * @throws MetadataMismatchException if some meta page is missing (tree not fully initialized)
      */
-    public static void readHeader( PageCache pageCache, File indexFile, Header.Reader headerReader, PageCursorTracer cursorTracer )
+    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, PageCursorTracer cursorTracer )
             throws IOException, MetadataMismatchException
     {
         try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, immutable.empty() ) )
@@ -881,7 +880,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     @VisibleForTesting
-    public static void overwriteHeader( PageCache pageCache, File indexFile, Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
+    public static void overwriteHeader( PageCache pageCache, Path indexFile, Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
             throws IOException
     {
         Header.Writer writer = replace( headerWriter );
@@ -1578,7 +1577,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         long generation = this.generation;
         return format( "GB+Tree[file:%s, layout:%s, generation:%d/%d]",
-                indexFile.getAbsolutePath(), layout,
+                indexFile.toAbsolutePath(), layout,
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 

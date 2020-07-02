@@ -22,14 +22,14 @@ package org.neo4j.files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -37,8 +37,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 
 @TestDirectoryExtension
 class NativeIndexFileFilterTest
@@ -50,7 +50,7 @@ class NativeIndexFileFilterTest
     @Inject
     private TestDirectory directory;
 
-    private File storeDir;
+    private Path storeDir;
     private NativeIndexFileFilter filter;
     private static final IndexProviderDescriptor[] REMOVED_SUB_PROVIDERS = new IndexProviderDescriptor[]{
             new IndexProviderDescriptor( "string", "1.0" ),
@@ -68,7 +68,7 @@ class NativeIndexFileFilterTest
     @BeforeEach
     void before()
     {
-        storeDir = directory.homeDir();
+        storeDir = directory.homePath();
         filter = new NativeIndexFileFilter( storeDir );
     }
 
@@ -76,7 +76,7 @@ class NativeIndexFileFilterTest
     void shouldNotAcceptLuceneFileFromFusionProvider() throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
+        Path dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
         shouldNotAcceptFileInDirectory( dir );
     }
 
@@ -107,14 +107,14 @@ class NativeIndexFileFilterTest
     private void shouldAcceptNativeIndexFilePure( IndexProviderDescriptor provider ) throws IOException
     {
         // given
-        File dir = directoriesByProvider( storeDir ).forProvider( provider ).directoryForIndex( 1 );
+        Path dir = directoriesByProvider( storeDir ).forProvider( provider ).directoryForIndex( 1 );
         shouldAcceptFileInDirectory( dir );
     }
 
     private void shouldAcceptNativeIndexFileFromFusionProvider( IndexProviderDescriptor fusionProvider, IndexProviderDescriptor subProvider ) throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
+        Path dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
         shouldAcceptFileInDirectory( dir );
     }
 
@@ -122,37 +122,37 @@ class NativeIndexFileFilterTest
             throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
+        Path dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
         shouldNotAcceptFileInDirectory( dir );
     }
 
-    private void shouldAcceptFileInDirectory( File dir ) throws IOException
+    private void shouldAcceptFileInDirectory( Path dir ) throws IOException
     {
-        File file = new File( dir, "some-file" );
+        Path file = dir.resolve( "some-file" );
         createFile( file );
 
         // when
-        boolean accepted = filter.accept( file );
+        boolean accepted = filter.test( file );
 
         // then
         assertTrue( accepted, "Expected to accept file " + file );
     }
 
-    private void shouldNotAcceptFileInDirectory( File dir ) throws IOException
+    private void shouldNotAcceptFileInDirectory( Path dir ) throws IOException
     {
-        File file = new File( dir, "some-file" );
+        Path file = dir.resolve( "some-file" );
         createFile( file );
 
         // when
-        boolean accepted = filter.accept( file );
+        boolean accepted = filter.test( file );
 
         // then
         assertFalse( accepted, "Did not expect to accept file " + file );
     }
 
-    private void createFile( File file ) throws IOException
+    private void createFile( Path file ) throws IOException
     {
-        fs.mkdirs( file.getParentFile() );
-        fs.write( file ).close();
+        fs.mkdirs( file.getParent().toFile() );
+        fs.write( file.toFile() ).close();
     }
 }

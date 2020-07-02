@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import org.eclipse.collections.api.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,8 +101,8 @@ class GenericConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        File genericFile = directory.file( "genericFile" );
-        assertFalse( fs.fileExists( genericFile ) );
+        Path genericFile = directory.filePath( "genericFile" );
+        assertFalse( fs.fileExists( genericFile.toFile() ) );
 
         // when
         GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
@@ -116,13 +116,13 @@ class GenericConfigExtractorTest
     void shouldLogFailureToExtractIndexConfigFromGenericBecauseOfIndexInFailedState() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_FAILED_GENERIC_35_FILE, directory.homeDir() );
-        File genericFile = directory.file( FAILED_GENERIC_35_FILE );
+        unzip( getClass(), ZIP_FAILED_GENERIC_35_FILE, directory.homePath() );
+        Path genericFile = directory.filePath( FAILED_GENERIC_35_FILE );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
 
         // and
-        assertTrue( fs.fileExists( genericFile ) );
+        assertTrue( fs.fileExists( genericFile.toFile() ) );
 
         // when
         GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
@@ -138,7 +138,7 @@ class GenericConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        File genericFile = directory.file( "genericFile" );
+        Path genericFile = directory.filePath( "genericFile" );
         corruptFile( fs, genericFile );
 
         // when
@@ -153,11 +153,11 @@ class GenericConfigExtractorTest
     void shouldBeAbleToExtractConfigFromHealthy35File() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_HEALTHY_GENERIC_35_FILE, directory.homeDir() );
-        File genericFile = directory.file( HEALTHY_GENERIC_35_FILE );
+        unzip( getClass(), ZIP_HEALTHY_GENERIC_35_FILE, directory.homePath() );
+        Path genericFile = directory.filePath( HEALTHY_GENERIC_35_FILE );
 
         // and
-        assertTrue( fs.fileExists( genericFile ) );
+        assertTrue( fs.fileExists( genericFile.toFile() ) );
 
         // when
         IndexConfig indexConfig = GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, NullLog.getInstance() );
@@ -166,16 +166,16 @@ class GenericConfigExtractorTest
         assertExpectedIndexConfig( indexConfig );
     }
 
-    private void assertContainsLogEntry( AssertableLogProvider logProvider, File genericFile, String reason )
+    private void assertContainsLogEntry( AssertableLogProvider logProvider, Path genericFile, String reason )
     {
         assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
                 .containsMessages( "Could not extract index configuration from migrating index file. " + reason +
-                        " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.getAbsolutePath() );
+                        " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.toAbsolutePath() );
     }
 
-    private static void corruptFile( FileSystemAbstraction fs, File genericFile ) throws IOException
+    private static void corruptFile( FileSystemAbstraction fs, Path genericFile ) throws IOException
     {
-        try ( StoreChannel write = fs.write( genericFile ) )
+        try ( StoreChannel write = fs.write( genericFile.toFile() ) )
         {
             int size = 100;
             byte[] bytes = new byte[size];
@@ -184,7 +184,7 @@ class GenericConfigExtractorTest
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }
-        assertTrue( fs.fileExists( genericFile ) );
+        assertTrue( fs.fileExists( genericFile.toFile() ) );
     }
 
     private static void assertExpectedIndexConfig( IndexConfig indexConfig )

@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -101,14 +101,14 @@ public class DatabaseIndexAccessorTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> implementations()
     {
-        final File dir = new File( "dir" );
+        final Path dir = Path.of( "dir" );
         return Arrays.asList(
                 arg( GENERAL_INDEX, dirFactory1 ->
                 {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX, CONFIG )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "1" ) )
+                            .withIndexRootFolder( dir.resolve( "1" ) )
                             .build();
 
                     index.create();
@@ -120,7 +120,7 @@ public class DatabaseIndexAccessorTest
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX, CONFIG )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "testIndex" ) )
+                            .withIndexRootFolder( dir.resolve( "testIndex" ) )
                             .build();
 
                     index.create();

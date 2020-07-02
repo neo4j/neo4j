@@ -46,9 +46,7 @@ class DiagnosticsLoggingTest
         try
         {
             // THEN we should have logged
-            assertThat( logProvider ).containsMessages( "Network information", "Disk space on partition",
-                                                        "Local timezone",
-                                                        "Page cache: 4M" );
+            assertThat( logProvider ).containsMessages( "Network information", "Local timezone", "Page cache: 4M" );
             // neostore records
             for ( MetaDataStore.Position position : MetaDataStore.Position.values() )
             {

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -101,14 +102,14 @@ class SpatialConfigExtractorTest
     void shouldLogFailureToExtractIndexConfigFromGenericBecauseOfIndexInFailedState() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_FAILED_SPATIAL_35_DIR, directory.homeDir() );
+        unzip( getClass(), ZIP_FAILED_SPATIAL_35_DIR, directory.homePath() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
 
         // and
-        File spatialDirectory = new File( directory.homeDir(), FAILED_SPATIAL_35_DIR );
-        assertTrue( fs.fileExists( spatialDirectory ) );
-        assertTrue( fs.isDirectory( spatialDirectory ) );
+        Path spatialDirectory = directory.homePath().resolve( FAILED_SPATIAL_35_DIR );
+        assertTrue( fs.fileExists( spatialDirectory.toFile() ) );
+        assertTrue( fs.isDirectory( spatialDirectory.toFile() ) );
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDirectory );
@@ -125,8 +126,8 @@ class SpatialConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        SpatialFile spatialFile = new SpatialFile( CoordinateReferenceSystem.WGS84, directory.file( "spatialFile" ) );
-        corruptFile( fs, spatialFile.getIndexFile() );
+        SpatialFile spatialFile = new SpatialFile( CoordinateReferenceSystem.WGS84, directory.filePath( "spatialFile" ) );
+        corruptFile( fs, spatialFile.getIndexFile().toFile() );
 
         // when
         SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, singletonList( spatialFile ), NULL, myLog );
@@ -140,11 +141,11 @@ class SpatialConfigExtractorTest
     void shouldBeAbleToExtractConfigFromHealthy35File() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_HEALTHY_SPATIAL_35_DIR, directory.homeDir() );
-        File spatialDir = directory.file( HEALTHY_SPATIAL_35_DIR );
+        unzip( getClass(), ZIP_HEALTHY_SPATIAL_35_DIR, directory.homePath() );
+        Path spatialDir = directory.filePath( HEALTHY_SPATIAL_35_DIR );
 
         // and
-        assertTrue( fs.fileExists( spatialDir ) );
+        assertTrue( fs.fileExists( spatialDir.toFile() ) );
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDir );
@@ -154,11 +155,11 @@ class SpatialConfigExtractorTest
         assertExpectedIndexConfig( indexConfig );
     }
 
-    private void assertContainsLogEntry( AssertableLogProvider logProvider, File genericFile, String reason )
+    private void assertContainsLogEntry( AssertableLogProvider logProvider, Path genericFile, String reason )
     {
         assertThat( logProvider ).forClass( getClass() ).forLevel( WARN )
                 .containsMessages( "Could not extract index configuration from migrating index file. " + reason +
-                        " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.getAbsolutePath() );
+                        " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.toAbsolutePath() );
     }
 
     private static void corruptFile( FileSystemAbstraction fs, File spatialFile ) throws IOException

@@ -45,11 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.internal.index.label.TokenScanReader.NO_ID;
-import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.flipRandom;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.getLabels;
 import static org.neo4j.internal.index.label.LabelScanStoreIT.nodesWithLabel;
+import static org.neo4j.internal.index.label.TokenScanReader.NO_ID;
+import static org.neo4j.internal.index.label.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
@@ -71,7 +71,7 @@ class NativeTokenScanWriterTest
     @BeforeEach
     void openTree()
     {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new TokenScanLayout() ).build();
+        tree = new GBPTreeBuilder<>( pageCache, directory.filePath( "file" ), new TokenScanLayout() ).build();
     }
 
     @AfterEach

@@ -44,7 +44,7 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
     @Override
     protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException
     {
-        int files = scrambleIndexFiles( fs, indexDirectoryStructure.rootDirectory() );
+        int files = scrambleIndexFiles( fs, indexDirectoryStructure.rootDirectory().toFile() );
         assertThat( files ).as( "there is no index to sabotage" ).isGreaterThanOrEqualTo( 1 );
     }
 

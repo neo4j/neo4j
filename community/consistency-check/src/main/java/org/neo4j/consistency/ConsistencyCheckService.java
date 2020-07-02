@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -154,7 +154,7 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
-            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
+            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, Path reportDir,
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
@@ -202,7 +202,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            final boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
@@ -220,10 +220,10 @@ public class ConsistencyCheckService
         life.add( countsManager );
 
         ConsistencySummaryStatistics summary;
-        final File reportFile = chooseReportPath( reportDir );
+        final Path reportFile = chooseReportPath( reportDir );
 
         Log4jLogProvider reportLogProvider = new Log4jLogProvider(
-                LogConfig.createBuilder( reportFile.toPath(), Level.INFO ).createOnDemand().withCategory( false ).build() );
+                LogConfig.createBuilder( reportFile, Level.INFO ).createOnDemand().withCategory( false ).build() );
         Log reportLog = reportLogProvider.getLog( getClass() );
 
         // Bootstrap kernel extensions
@@ -288,7 +288,7 @@ public class ConsistencyCheckService
 
         if ( !summary.isConsistent() )
         {
-            log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
+            log.warn( "See '%s' for a detailed consistency report.", reportFile );
             return Result.failure( reportFile, summary );
         }
         return Result.success( reportFile, summary );
@@ -312,29 +312,14 @@ public class ConsistencyCheckService
         }
     }
 
-    private static Suppliers.Lazy<PrintWriter> getReportWriterSupplier( FileSystemAbstraction fileSystem, File reportFile )
+    private Path chooseReportPath( Path reportDir )
     {
-        return Suppliers.lazySingleton( () ->
-        {
-            try
-            {
-                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } );
+        return reportDir.resolve( defaultLogFileName( timestamp ) );
     }
 
-    private File chooseReportPath( File reportDir )
+    private static Path defaultReportDir( Config tuningConfiguration )
     {
-        return new File( reportDir, defaultLogFileName( timestamp ) );
-    }
-
-    private static File defaultReportDir( Config tuningConfiguration )
-    {
-        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory ).toFile();
+        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
     }
 
     private static String defaultLogFileName( Date date )
@@ -345,20 +330,20 @@ public class ConsistencyCheckService
     public static class Result
     {
         private final boolean successful;
-        private final File reportFile;
+        private final Path reportFile;
         private final ConsistencySummaryStatistics summary;
 
-        public static Result failure( File reportFile, ConsistencySummaryStatistics summary )
+        public static Result failure( Path reportFile, ConsistencySummaryStatistics summary )
         {
             return new Result( false, reportFile, summary );
         }
 
-        public static Result success( File reportFile, ConsistencySummaryStatistics summary )
+        public static Result success( Path reportFile, ConsistencySummaryStatistics summary )
         {
             return new Result( true, reportFile, summary );
         }
 
-        private Result( boolean successful, File reportFile, ConsistencySummaryStatistics summary )
+        private Result( boolean successful, Path reportFile, ConsistencySummaryStatistics summary )
         {
             this.successful = successful;
             this.reportFile = reportFile;
@@ -370,7 +355,7 @@ public class ConsistencyCheckService
             return successful;
         }
 
-        public File reportFile()
+        public Path reportFile()
         {
             return reportFile;
         }
@@ -428,7 +413,7 @@ public class ConsistencyCheckService
         @Override
         public CountsStore get() throws IOException
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore().toFile(), fileSystem,
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
             counts.start( NULL, memoryTracker );
             return counts;

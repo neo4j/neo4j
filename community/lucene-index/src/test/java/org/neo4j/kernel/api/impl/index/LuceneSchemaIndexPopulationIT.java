@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
@@ -83,7 +83,7 @@ class LuceneSchemaIndexPopulationIT
     @ValueSource( ints = {7, 11, 14, 20, 35, 58} )
     void partitionedIndexPopulation( int affectedNodes ) throws Exception
     {
-        File rootFolder = new File( testDir.directory( "partitionIndex" + affectedNodes ), "uniqueIndex" + affectedNodes );
+        Path rootFolder = testDir.directoryPath( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
         try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( rootFolder ).build() )

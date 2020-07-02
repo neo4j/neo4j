@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -101,9 +101,9 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             // All retired indexes need to be deleted because they have had there provider migrated.
             for ( IndexMigration indexMigration : IndexMigration.retired() )
             {
-                for ( File retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+                for ( Path retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
                 {
-                    fs.deleteRecursively( retiredRootDirectory );
+                    fs.deleteRecursively( retiredRootDirectory.toFile() );
                 }
             }
         }

@@ -770,6 +770,6 @@ class FulltextIndexConsistencyCheckIT
 
     private static void printReport( ConsistencyCheckService.Result result ) throws IOException
     {
-        Files.readAllLines( result.reportFile().toPath() ).forEach( System.err::println );
+        Files.readAllLines( result.reportFile() ).forEach( System.err::println );
     }
 }

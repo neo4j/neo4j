@@ -156,7 +156,7 @@ class AccessUniqueDatabaseIndexTest
     private PartitionedIndexStorage getIndexStorage()
     {
         IndexProviderDescriptor descriptor = new IndexProviderDescriptor( NATIVE30.providerKey(), NATIVE30.providerVersion() );
-        IndexDirectoryStructure parent = directoriesByProvider( databaseLayout.databaseDirectory().toFile() ).forProvider( descriptor );
+        IndexDirectoryStructure parent = directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( descriptor );
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystem,
                 directoriesBySubProvider( parent ).forProvider( LuceneIndexProvider.DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1 );

@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Random;
 import java.util.Set;
@@ -127,7 +127,7 @@ class GBPTreeCountsStoreTest
     void tracePageCacheAccessOnCountStoreOpen() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var file = directory.file( "another.file" );
+        var file = directory.filePath( "another.file" );
 
         assertZeroGlobalTracer( pageCacheTracer );
 
@@ -481,7 +481,7 @@ class GBPTreeCountsStoreTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        final File file = directory.file( "non-existing" );
+        final Path file = directory.filePath( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
@@ -570,13 +570,13 @@ class GBPTreeCountsStoreTest
     void shouldNotCreateFileOnDumpingNonExistentCountsStore()
     {
         // given
-        File file = directory.file( "abcd" );
+        Path file = directory.filePath( "abcd" );
 
         // when
         assertThrows( NoSuchFileException.class, () -> GBPTreeCountsStore.dump( pageCache, file, System.out, NULL ) );
 
         // then
-        assertFalse( fs.fileExists( file ) );
+        assertFalse( fs.fileExists( file.toFile() ) );
     }
 
     @Test
@@ -588,7 +588,7 @@ class GBPTreeCountsStoreTest
             updater.incrementNodeCount( LABEL_ID_1, 9 );
         }
         closeCountsStore();
-        try ( StoreChannel channel = fs.open( countsStoreFile(), Set.of( StandardOpenOption.WRITE ) ) )
+        try ( StoreChannel channel = fs.open( countsStoreFile().toFile(), Set.of( StandardOpenOption.WRITE ) ) )
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[8192] );
             for ( int i = 0; buffer.hasRemaining(); i++ )
@@ -725,12 +725,12 @@ class GBPTreeCountsStoreTest
 
     private void deleteCountsStore()
     {
-        directory.getFileSystem().deleteFile( countsStoreFile() );
+        directory.getFileSystem().deleteFile( countsStoreFile().toFile() );
     }
 
-    private File countsStoreFile()
+    private Path countsStoreFile()
     {
-        return directory.file( "counts.db" );
+        return directory.filePath( "counts.db" );
     }
 
     private void openCountsStore( CountsBuilder builder ) throws IOException

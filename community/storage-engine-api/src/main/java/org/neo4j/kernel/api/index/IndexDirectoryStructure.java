@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-
-import static org.neo4j.io.fs.FileUtils.path;
 
 /**
  * Dictates how directory structure looks for an IndexProvider and its indexes. Generally there's a
@@ -46,23 +44,23 @@ public abstract class IndexDirectoryStructure
 
     private static class SubDirectoryByIndexId extends IndexDirectoryStructure
     {
-        private final File providerRootFolder;
+        private final Path providerRootFolder;
 
-        private SubDirectoryByIndexId( File providerRootFolder )
+        private SubDirectoryByIndexId( Path providerRootFolder )
         {
             this.providerRootFolder = providerRootFolder;
         }
 
         @Override
-        public File rootDirectory()
+        public Path rootDirectory()
         {
             return providerRootFolder;
         }
 
         @Override
-        public File directoryForIndex( long indexId )
+        public Path directoryForIndex( long indexId )
         {
-            return path( providerRootFolder, String.valueOf( indexId ) );
+            return providerRootFolder.resolve( String.valueOf( indexId ) );
         }
     }
 
@@ -76,9 +74,9 @@ public abstract class IndexDirectoryStructure
      * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
      * @return the base directory of schema indexing.
      */
-    public static File baseSchemaIndexFolder( File databaseStoreDir )
+    public static Path baseSchemaIndexFolder( Path databaseStoreDir )
     {
-        return path( databaseStoreDir, "schema", "index" );
+        return databaseStoreDir.resolve( "schema" ).resolve( "index" );
     }
 
     /**
@@ -89,10 +87,9 @@ public abstract class IndexDirectoryStructure
      * &lt;db&gt;/schema/index/&lt;providerKey&gt;-&lt;providerVersion&gt;/&lt;indexId&gt;/
      * </pre>
      */
-    public static Factory directoriesByProvider( File databaseStoreDir )
+    public static Factory directoriesByProvider( Path databaseStoreDir )
     {
-        return descriptor -> new SubDirectoryByIndexId(
-                path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( descriptor ) ) );
+        return descriptor -> new SubDirectoryByIndexId( baseSchemaIndexFolder( databaseStoreDir ).resolve( fileNameFriendly( descriptor ) ) );
     }
 
     /**
@@ -119,15 +116,15 @@ public abstract class IndexDirectoryStructure
         return descriptor -> new IndexDirectoryStructure()
         {
             @Override
-            public File rootDirectory()
+            public Path rootDirectory()
             {
                 return parentStructure.rootDirectory();
             }
 
             @Override
-            public File directoryForIndex( long indexId )
+            public Path directoryForIndex( long indexId )
             {
-                return path( parentStructure.directoryForIndex( indexId ), fileNameFriendly( descriptor ) );
+                return parentStructure.directoryForIndex( indexId ).resolve( fileNameFriendly( descriptor ) );
             }
         };
     }
@@ -145,13 +142,13 @@ public abstract class IndexDirectoryStructure
     private static final IndexDirectoryStructure NO_DIRECTORY_STRUCTURE = new IndexDirectoryStructure()
     {
         @Override
-        public File rootDirectory()
+        public Path rootDirectory()
         {
             return null; // meaning there's no persistent storage
         }
 
         @Override
-        public File directoryForIndex( long indexId )
+        public Path directoryForIndex( long indexId )
         {
             return null; // meaning there's no persistent storage
         }
@@ -170,10 +167,10 @@ public abstract class IndexDirectoryStructure
      * &lt;db&gt;/schema/index/&lt;provider&gt;/
      * </pre>
      *
-     * @return {@link File} denoting root directory for this provider.
+     * @return {@link Path} denoting root directory for this provider.
      * May return {@code null} if there's no root directory, i.e. no persistent storage at all.
      */
-    public abstract File rootDirectory();
+    public abstract Path rootDirectory();
 
     /**
      * Returns a sub-directory (somewhere under {@link #rootDirectory()}) for a specific index id, looking something equivalent to:
@@ -185,8 +182,8 @@ public abstract class IndexDirectoryStructure
      * I.e. the root of the schema indexes for this specific provider.
      *
      * @param indexId index id to return directory for.
-     * @return {@link File} denoting directory for the specific {@code indexId} for this provider.
+     * @return {@link Path} denoting directory for the specific {@code indexId} for this provider.
      * May return {@code null} if there's no root directory, i.e. no persistent storage at all.
      */
-    public abstract File directoryForIndex( long indexId );
+    public abstract Path directoryForIndex( long indexId );
 }

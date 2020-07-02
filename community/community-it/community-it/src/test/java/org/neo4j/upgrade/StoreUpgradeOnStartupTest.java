@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -101,8 +100,8 @@ public class StoreUpgradeOnStartupTest
         workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
-        File prepareDirectory = testDir.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory().toFile(), prepareDirectory );
+        Path prepareDirectory = testDir.directoryPath( "prepare_" + version );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findSuccessor( baselineFormat ).orElse( baselineFormat );
     }

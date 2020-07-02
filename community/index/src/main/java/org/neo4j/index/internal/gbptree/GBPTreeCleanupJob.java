@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.StringJoiner;
 
 class GBPTreeCleanupJob implements CleanupJob
@@ -27,7 +27,7 @@ class GBPTreeCleanupJob implements CleanupJob
     private final CrashGenerationCleaner crashGenerationCleaner;
     private final GBPTreeLock gbpTreeLock;
     private final GBPTree.Monitor monitor;
-    private final File indexFile;
+    private final Path indexFile;
     private volatile boolean needed;
     private volatile Throwable failure;
 
@@ -37,7 +37,7 @@ class GBPTreeCleanupJob implements CleanupJob
      * @param monitor {@link GBPTree.Monitor} to report to
      * @param indexFile Target file
      */
-    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor, File indexFile )
+    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor, Path indexFile )
     {
         this.crashGenerationCleaner = crashGenerationCleaner;
         this.gbpTreeLock = gbpTreeLock;
@@ -91,7 +91,7 @@ class GBPTreeCleanupJob implements CleanupJob
     public String toString()
     {
         StringJoiner joiner = new StringJoiner( ", ", "CleanupJob(", ")" );
-        joiner.add( "file=" + indexFile.getAbsolutePath() );
+        joiner.add( "file=" + indexFile.toAbsolutePath() );
         joiner.add( "needed=" + needed );
         joiner.add( "failure=" + failure );
         return joiner.toString();

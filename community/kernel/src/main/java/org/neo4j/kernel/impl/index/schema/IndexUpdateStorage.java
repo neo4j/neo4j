@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,7 +44,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
     private final KEY key2;
     private final VALUE value;
 
-    IndexUpdateStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,VALUE> layout,
+    IndexUpdateStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,VALUE> layout,
             MemoryTracker memoryTracker )
     {
         super( fs, file, byteBufferFactory, blockSize, memoryTracker );

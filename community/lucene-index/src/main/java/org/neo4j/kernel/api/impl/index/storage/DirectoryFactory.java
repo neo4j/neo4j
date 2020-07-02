@@ -26,8 +26,9 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +42,7 @@ public interface DirectoryFactory extends AutoCloseable
         return ephemeral ? new DirectoryFactory.InMemoryDirectoryFactory() : DirectoryFactory.PERSISTENT;
     }
 
-    Directory open( File dir ) throws IOException;
+    Directory open( Path dir ) throws IOException;
 
     DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
@@ -54,10 +55,10 @@ public interface DirectoryFactory extends AutoCloseable
 
         @SuppressWarnings( "ResultOfMethodCallIgnored" )
         @Override
-        public Directory open( File dir ) throws IOException
+        public Directory open( Path dir ) throws IOException
         {
-            dir.mkdirs();
-            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open( dir.toPath() ) : new NIOFSDirectory( dir.toPath() );
+            Files.createDirectories( dir );
+            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open( dir ) : new NIOFSDirectory( dir );
             return new NRTCachingDirectory( directory, MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
         }
 
@@ -71,10 +72,10 @@ public interface DirectoryFactory extends AutoCloseable
 
     final class InMemoryDirectoryFactory implements DirectoryFactory
     {
-        private final Map<File, Directory> directories = new HashMap<>();
+        private final Map<Path, Directory> directories = new HashMap<>();
 
         @Override
-        public synchronized Directory open( File dir )
+        public synchronized Directory open( Path dir )
         {
             if ( !directories.containsKey( dir ) )
             {
@@ -101,7 +102,7 @@ public interface DirectoryFactory extends AutoCloseable
         }
 
         @Override
-        public Directory open( File dir )
+        public Directory open( Path dir )
         {
             return directory;
         }

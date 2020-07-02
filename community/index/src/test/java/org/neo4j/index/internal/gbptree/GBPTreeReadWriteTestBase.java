@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -65,7 +65,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
     private PageCache pageCache;
     private TestLayout<KEY,VALUE> layout;
-    private File indexFile;
+    private Path indexFile;
 
     @AfterEach
     private void tearDown()
@@ -195,7 +195,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
     private void setupTest( int pageSize )
     {
-        indexFile = testDirectory.file( "index" );
+        indexFile = testDirectory.filePath( "index" );
         pageCache = StandalonePageCacheFactory.createPageCache( fs, new ThreadPoolJobScheduler(), pageSize );
         layout = getLayout( random, pageCache.pageSize() );
     }

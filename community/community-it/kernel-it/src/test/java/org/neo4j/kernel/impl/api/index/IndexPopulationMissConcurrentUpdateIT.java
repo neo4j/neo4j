@@ -23,7 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -203,7 +203,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, Supplier noDependencies )
         {
-            return new IndexProvider.Adaptor( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
+            return new IndexProvider.Adaptor( INDEX_PROVIDER, directoriesByProvider( Path.of( "not-even-persistent" ) ) )
             {
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,

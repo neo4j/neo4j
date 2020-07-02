@@ -650,7 +650,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         assertTrue( files.hasNext() );
-        assertEquals( indexFiles.getStoreFile().toPath(), files.next() );
+        assertEquals( indexFiles.getStoreFile(), files.next() );
         assertFalse( files.hasNext() );
     }
 

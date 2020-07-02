@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +35,7 @@ class IndexKeyStorage<KEY extends NativeIndexKey<KEY>> extends SimpleEntryStorag
     private static final byte KEY_TYPE = 1;
     private final Layout<KEY,?> layout;
 
-    IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout,
+    IndexKeyStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout,
             MemoryTracker memoryTracker )
     {
         super( fs, file, byteBufferFactory, blockSize, memoryTracker );

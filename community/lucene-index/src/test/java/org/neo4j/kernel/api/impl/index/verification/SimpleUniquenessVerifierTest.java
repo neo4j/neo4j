@@ -70,7 +70,7 @@ class SimpleUniquenessVerifierTest
     void initLuceneResources() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        Directory dir = dirFactory.open( testDir.directory( "test" ) );
+        Directory dir = dirFactory.open( testDir.directoryPath( "test" ) );
         writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
         searcherManager = new SearcherManager( writer, new Neo4jSearcherFactory() );
     }

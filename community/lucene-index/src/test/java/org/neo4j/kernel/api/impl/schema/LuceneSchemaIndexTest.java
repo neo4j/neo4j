@@ -25,7 +25,6 @@ import org.apache.lucene.document.StringField;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -143,7 +142,7 @@ class LuceneSchemaIndexTest
     {
         LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() );
         return builder
-                .withIndexRootFolder( new File( testDir.directory( "index" ), "testIndex" ) )
+                .withIndexRootFolder( testDir.directoryPath( "index" ).resolve( "testIndex" ) )
                 .withDirectoryFactory( dirFactory )
                 .withFileSystem( fs )
                 .build();

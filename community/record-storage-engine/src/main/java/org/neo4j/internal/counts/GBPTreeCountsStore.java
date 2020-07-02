@@ -22,10 +22,10 @@ package org.neo4j.internal.counts;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +96,7 @@ public class GBPTreeCountsStore implements CountsStore
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
 
-    public GBPTreeCountsStore( PageCache pageCache, File file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
+    public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
         this.readOnly = readOnly;
@@ -112,7 +112,7 @@ public class GBPTreeCountsStore implements CountsStore
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
-            fileSystem.deleteFileOrThrow( file );
+            fileSystem.deleteFileOrThrow( file.toFile() );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
             instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header, pageCacheTracer );
         }
@@ -138,7 +138,7 @@ public class GBPTreeCountsStore implements CountsStore
         }
     }
 
-    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector, boolean readOnly,
+    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector, boolean readOnly,
             CountsHeader header, PageCacheTracer pageCacheTracer )
     {
         try
@@ -421,11 +421,11 @@ public class GBPTreeCountsStore implements CountsStore
      * Dumps the contents of a counts store.
      *
      * @param pageCache {@link PageCache} to use to map the counts store file into.
-     * @param file {@link File} pointing out the counts store.
+     * @param file {@link Path} pointing out the counts store.
      * @param out to print to.
      * @throws IOException on missing file or I/O error.
      */
-    public static void dump( PageCache pageCache, File file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );

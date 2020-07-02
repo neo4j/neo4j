@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.StringJoiner;
 
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -52,19 +52,19 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCleanupRegistered( File indexFile, IndexDescriptor index )
+    public void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index )
     {
         log.info( "Schema index cleanup job registered: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupStarted( File indexFile, IndexDescriptor index )
+    public void recoveryCleanupStarted( Path indexFile, IndexDescriptor index )
     {
         log.info( "Schema index cleanup job started: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupFinished( File indexFile, IndexDescriptor index,
+    public void recoveryCleanupFinished( Path indexFile, IndexDescriptor index,
             long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
     {
         StringJoiner joiner =
@@ -77,20 +77,20 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCleanupClosed( File indexFile, IndexDescriptor index )
+    public void recoveryCleanupClosed( Path indexFile, IndexDescriptor index )
     {
         log.info( "Schema index cleanup job closed: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupFailed( File indexFile, IndexDescriptor index, Throwable throwable )
+    public void recoveryCleanupFailed( Path indexFile, IndexDescriptor index, Throwable throwable )
     {
         log.info( String.format( "Schema index cleanup job failed: %s.%nCaused by: %s",
                 indexDescription( indexFile, index ), ExceptionUtils.getStackTrace( throwable ) ) );
     }
 
-    private static String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
+    private static String indexDescription( Path indexFile, IndexDescriptor indexDescriptor )
     {
-        return "descriptor=" + indexDescriptor + ", indexFile=" + indexFile.getAbsolutePath();
+        return "descriptor=" + indexDescriptor + ", indexFile=" + indexFile.toAbsolutePath();
     }
 }

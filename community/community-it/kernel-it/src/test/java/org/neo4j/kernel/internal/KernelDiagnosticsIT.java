@@ -23,7 +23,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,7 +81,7 @@ class KernelDiagnosticsIT
             assertNotNull( capture.size );
 
             // then
-            long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory().toFile() );
+            long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory() );
             assertEquals( bytesToString( expected ), capture.size );
         }
     }
@@ -119,7 +121,7 @@ class KernelDiagnosticsIT
         }
     }
 
-    private static long manuallyCountTotalMappedFileSize( File dbDir )
+    private static long manuallyCountTotalMappedFileSize( Path dbDir )
     {
         MutableLong result = new MutableLong();
         NativeIndexFileFilter nativeIndexFilter = new NativeIndexFileFilter( dbDir );
@@ -127,20 +129,34 @@ class KernelDiagnosticsIT
         return result.getValue();
     }
 
-    private static void manuallyCountTotalMappedFileSize( File dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter )
+    private static void manuallyCountTotalMappedFileSize( Path dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter )
     {
         Set<String> storeFiles = Stream.of( StoreType.values() ).map( type -> type.getDatabaseFile().getName() ).collect( Collectors.toSet() );
-        for ( File file : dir.listFiles() )
+        try ( Stream<Path> list = Files.list( dir ) )
         {
-            if ( file.isDirectory() )
+            list.forEach( path ->
             {
-                manuallyCountTotalMappedFileSize( file, result, nativeIndexFilter );
-            }
-            else if ( storeFiles.contains( file.getName() ) || file.getName().equals( DatabaseFile.LABEL_SCAN_STORE.getName() ) ||
-                    nativeIndexFilter.accept( file ) )
-            {
-                result.add( file.length() );
-            }
+                if ( Files.isDirectory( path ) )
+                {
+                    manuallyCountTotalMappedFileSize( path, result, nativeIndexFilter );
+                }
+                else if ( storeFiles.contains( path.getFileName().toString() ) ||
+                        path.getFileName().toString().equals( DatabaseFile.LABEL_SCAN_STORE.getName() ) || nativeIndexFilter.test( path ) )
+                {
+                    try
+                    {
+                        result.add( Files.size( path ) );
+                    }
+                    catch ( IOException ignored )
+                    {
+                        // Preserve behaviour of File.length()
+                    }
+                }
+            });
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

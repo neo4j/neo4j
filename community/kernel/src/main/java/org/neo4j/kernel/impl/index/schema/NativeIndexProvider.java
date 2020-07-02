@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -76,7 +76,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
      * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout( IndexDescriptor descriptor, File storeFile );
+    abstract LAYOUT layout( IndexDescriptor descriptor, Path storeFile );
 
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
@@ -146,7 +146,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private File storeFile( IndexDescriptor descriptor )
+    private Path storeFile( IndexDescriptor descriptor )
     {
         IndexFiles indexFiles = indexFiles( descriptor );
         return indexFiles.getStoreFile();

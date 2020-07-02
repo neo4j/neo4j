@@ -397,7 +397,7 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
-            return new GBPTree<>( pageCache, path.toFile(), layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
+            return new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
                     readOnly, NULL, openOptions, "Indexed ID generator" );
         }
         catch ( TreeFileNotFoundException e )
@@ -646,7 +646,7 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             HeaderReader headerReader = new HeaderReader();
-            GBPTree.readHeader( pageCache, path.toFile(), headerReader, cursorTracer );
+            GBPTree.readHeader( pageCache, path, headerReader, cursorTracer );
             return Optional.of( headerReader );
         }
         catch ( NoSuchFileException e )
@@ -674,7 +674,7 @@ public class IndexedIdGenerator implements IdGenerator
         {
             HeaderReader header = readHeader( pageCache, path, cursorTracer ).orElseThrow( () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
             IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
-            try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path.toFile(), layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
+            try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
                     immediate(), true, cacheTracer, immutable.empty(), "Indexed ID generator" ) )
             {
                 tree.visit( new GBPTreeVisitor.Adaptor<>()

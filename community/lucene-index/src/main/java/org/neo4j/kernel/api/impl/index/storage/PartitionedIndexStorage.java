@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -55,7 +56,7 @@ public class PartitionedIndexStorage
     private final FolderLayout folderLayout;
     private final FailureStorage failureStorage;
 
-    public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem, File rootFolder )
+    public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem, Path rootFolder )
     {
         this.fileSystem = fileSystem;
         this.folderLayout = new IndexFolderLayout( rootFolder );
@@ -70,7 +71,7 @@ public class PartitionedIndexStorage
      * @return the lucene directory denoted by the given folder.
      * @throws IOException if directory can't be opened.
      */
-    public Directory openDirectory( File folder ) throws IOException
+    public Directory openDirectory( Path folder ) throws IOException
     {
         return directoryFactory.open( folder );
     }
@@ -81,7 +82,7 @@ public class PartitionedIndexStorage
      * @param partition the partition index.
      * @return the folder where partition's lucene directory should be located.
      */
-    public File getPartitionFolder( int partition )
+    public Path getPartitionFolder( int partition )
     {
         return folderLayout.getPartitionFolder( partition );
     }
@@ -91,7 +92,7 @@ public class PartitionedIndexStorage
      *
      * @return the folder containing index partition folders.
      */
-    public File getIndexFolder()
+    public Path getIndexFolder()
     {
         return folderLayout.getIndexFolder();
     }
@@ -137,10 +138,10 @@ public class PartitionedIndexStorage
      * @param folder the folder to clean up.
      * @throws IOException if some removal operation fails.
      */
-    public void prepareFolder( File folder ) throws IOException
+    public void prepareFolder( Path folder ) throws IOException
     {
         cleanupFolder( folder );
-        fileSystem.mkdirs( folder );
+        fileSystem.mkdirs( folder.toFile() );
     }
 
     /**
@@ -150,31 +151,31 @@ public class PartitionedIndexStorage
      * @param folder the folder to remove.
      * @throws IOException if some removal operation fails.
      */
-    public void cleanupFolder( File folder ) throws IOException
+    public void cleanupFolder( Path folder ) throws IOException
     {
-        List<File> partitionFolders = listFolders( folder );
+        List<Path> partitionFolders = listFolders( folder );
         if ( !partitionFolders.isEmpty() )
         {
-            for ( File partitionFolder : partitionFolders )
+            for ( Path partitionFolder : partitionFolders )
             {
                 cleanupLuceneDirectory( partitionFolder );
             }
         }
-        fileSystem.deleteRecursively( folder );
+        fileSystem.deleteRecursively( folder.toFile() );
     }
 
     /**
      * Opens all {@link Directory lucene directories} contained in the {@link #getIndexFolder() index folder}.
      *
      * @return the map from file system  {@link File directory} to the corresponding {@link Directory lucene directory}.
-     * @throws IOException if opening of some lucene directory (via {@link DirectoryFactory#open(File)}) fails.
+     * @throws IOException if opening of some lucene directory (via {@link DirectoryFactory#open(Path)}) fails.
      */
-    public Map<File,Directory> openIndexDirectories() throws IOException
+    public Map<Path,Directory> openIndexDirectories() throws IOException
     {
-        Map<File,Directory> directories = new LinkedHashMap<>();
+        Map<Path,Directory> directories = new LinkedHashMap<>();
         try
         {
-            for ( File dir : listFolders() )
+            for ( Path dir : listFolders() )
             {
                 directories.put( dir, directoryFactory.open( dir ) );
             }
@@ -200,18 +201,19 @@ public class PartitionedIndexStorage
      * @return the list of index partition folders or {@link Collections#emptyList() empty list} if index folder is
      * empty.
      */
-    public List<File> listFolders()
+    public List<Path> listFolders()
     {
         return listFolders( getIndexFolder() );
     }
 
-    private List<File> listFolders( File rootFolder )
+    private List<Path> listFolders( Path rootFolder )
     {
-        File[] files = fileSystem.listFiles( rootFolder );
+        File[] files = fileSystem.listFiles( rootFolder.toFile() );
         return files == null ? Collections.emptyList()
                              : Stream.of( files )
                                .filter( f -> fileSystem.isDirectory( f ) && StringUtils.isNumeric( f.getName() ) )
                                .sorted( FILE_COMPARATOR )
+                               .map( File::toPath )
                                .collect( toList() );
 
     }
@@ -226,7 +228,7 @@ public class PartitionedIndexStorage
      * @param folder the path to the directory to cleanup.
      * @throws IOException if removal operation fails.
      */
-    private void cleanupLuceneDirectory( File folder ) throws IOException
+    private void cleanupLuceneDirectory( Path folder ) throws IOException
     {
         try ( Directory dir = directoryFactory.open( folder ) )
         {

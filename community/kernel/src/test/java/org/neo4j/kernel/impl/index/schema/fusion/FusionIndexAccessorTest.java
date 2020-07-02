@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,7 +129,7 @@ abstract class FusionIndexAccessorTest
         SlotSelector slotSelector = fusionVersion.slotSelector();
         InstanceSelector<IndexAccessor> instanceSelector = new InstanceSelector<>( accessors );
         fs = mock( FileSystemAbstraction.class );
-        directoryStructure = directoriesByProvider( new File( "storeDir" ) ).forProvider( UNDECIDED );
+        directoryStructure = directoriesByProvider( Path.of( "storeDir" ) ).forProvider( UNDECIDED );
         IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexDescriptor.getId() );
         fusionIndexAccessor = new FusionIndexAccessor( slotSelector, instanceSelector, indexDescriptor, indexFiles );
     }
@@ -156,7 +156,7 @@ abstract class FusionIndexAccessorTest
         {
             verify( accessor ).drop();
         }
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
     }
 
     @Test

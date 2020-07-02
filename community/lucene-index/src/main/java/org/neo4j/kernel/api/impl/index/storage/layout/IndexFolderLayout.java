@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.layout;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Default implementation of {@link FolderLayout} for partitioned lucene index.
@@ -28,22 +28,22 @@ import java.io.File;
  */
 public class IndexFolderLayout implements FolderLayout
 {
-    private final File indexFolder;
+    private final Path indexFolder;
 
-    public IndexFolderLayout( File rootDirectory )
+    public IndexFolderLayout( Path rootDirectory )
     {
         this.indexFolder = rootDirectory;
     }
 
     @Override
-    public File getIndexFolder()
+    public Path getIndexFolder()
     {
         return indexFolder;
     }
 
     @Override
-    public File getPartitionFolder( int partition )
+    public Path getPartitionFolder( int partition )
     {
-        return new File( indexFolder, String.valueOf( partition ) );
+        return indexFolder.resolve( String.valueOf( partition ) );
     }
 }

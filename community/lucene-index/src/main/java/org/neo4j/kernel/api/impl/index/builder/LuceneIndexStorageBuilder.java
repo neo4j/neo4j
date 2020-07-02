@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.builder;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +35,7 @@ public class LuceneIndexStorageBuilder
 {
     private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
     private FileSystemAbstraction fileSystem;
-    private File indexRootFolder;
+    private Path indexRootFolder;
     private PartitionedIndexStorage indexStorage;
 
     private LuceneIndexStorageBuilder()
@@ -99,7 +99,7 @@ public class LuceneIndexStorageBuilder
      * @param indexRootFolder root folder
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withIndexFolder( File indexRootFolder )
+    public LuceneIndexStorageBuilder withIndexFolder( Path indexRootFolder )
     {
         this.indexRootFolder = indexRootFolder;
         return this;

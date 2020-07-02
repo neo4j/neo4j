@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.impl.schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -58,12 +58,12 @@ class LuceneIndexProviderTest
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDir;
-    private File graphDbDir;
+    private Path graphDbDir;
 
     @BeforeEach
     void setup()
     {
-        graphDbDir = testDir.homeDir();
+        graphDbDir = testDir.homePath();
     }
 
     @Test
@@ -131,7 +131,7 @@ class LuceneIndexProviderTest
     }
 
     private LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
-                                                        FileSystemAbstraction fs, File graphDbDir )
+                                                        FileSystemAbstraction fs, Path graphDbDir )
     {
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
                 IndexProvider.Monitor.EMPTY, config, true );

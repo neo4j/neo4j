@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -42,7 +41,7 @@ public class IndexFiles
     public IndexFiles( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId )
     {
         this.fs = fs;
-        this.directory = directoryStructure.directoryForIndex( indexId ).toPath();
+        this.directory = directoryStructure.directoryForIndex( indexId );
         this.storeFile = directory.resolve( indexFileName( indexId ) );
     }
 
@@ -51,14 +50,14 @@ public class IndexFiles
         return "index-" + indexId;
     }
 
-    public File getStoreFile()
+    public Path getStoreFile()
     {
-        return storeFile.toFile();
+        return storeFile;
     }
 
-    public File getBase()
+    public Path getBase()
     {
-        return directory.toFile();
+        return directory;
     }
 
     public void clear()

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -134,7 +133,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
+    public List<Path> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
         if ( !fileSystem.fileExists( databaseLayout.metadataStore().toFile() ) )
         {
@@ -142,8 +141,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         }
 
         return Arrays.stream( StoreType.values() )
-                .map( t -> databaseLayout.file( t.getDatabaseFile() ).toFile() )
-                .filter( fileSystem::fileExists ).collect( toList() );
+                .map( t -> databaseLayout.file( t.getDatabaseFile() ) )
+                .filter( path -> fileSystem.fileExists( path.toFile() ) ).collect( toList() );
     }
 
     @Override

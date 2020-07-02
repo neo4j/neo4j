@@ -694,6 +694,28 @@ public final class FileUtils
         }
     }
 
+    /**
+     * List {@link Path}s in a directory the same way as {@link File#listFiles()} where {@link IOException}s are ignored.
+     *
+     * @param dir path to the directory to list files in.
+     * @return an array of paths. The array will be empty if the directory is empty. Returns {@code null} if the directory does not denote an actual
+     * directory, or if an I/O error occurs.
+     */
+    public static Path[] listPaths( Path dir )
+    {
+        try
+        {
+            try ( Stream<Path> list = Files.list( dir ) )
+            {
+                return list.toArray( Path[]::new );
+            }
+        }
+        catch ( IOException ignored )
+        {
+            return null; // Preserve behaviour of File.listFiles()
+        }
+    }
+
     private static class DeletingFileVisitor extends SimpleFileVisitor<Path>
     {
         private final Predicate<Path> removeFilePredicate;

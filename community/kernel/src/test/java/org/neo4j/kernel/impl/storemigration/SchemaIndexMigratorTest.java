@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -76,7 +77,7 @@ class SchemaIndexMigratorTest
         when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
         when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
-        File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" ).toFile();
+        Path indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, directoryStructure, storageEngineFactory );
         when( indexProvider.getProviderDescriptor() )
@@ -85,6 +86,6 @@ class SchemaIndexMigratorTest
         migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
-        verify( fs ).deleteRecursively( indexProviderRootDirectory );
+        verify( fs ).deleteRecursively( indexProviderRootDirectory.toFile() );
     }
 }

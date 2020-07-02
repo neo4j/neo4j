@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -163,8 +163,8 @@ class TestReadOnlyNeo4j
 
     private void deleteIndexFolder()
     {
-        File databaseDir = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory().toFile();
-        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
+        Path databaseDir = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory();
+        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ).toFile() );
     }
 
     private DbRepresentation createSomeData()

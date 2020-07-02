@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,15 +39,15 @@ public class BlockReader<KEY,VALUE> implements Closeable
 {
     private final StoreChannel channel;
     private final FileSystemAbstraction fs;
-    private final File file;
+    private final Path path;
     private final Layout<KEY,VALUE> layout;
 
-    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout ) throws IOException
+    BlockReader( FileSystemAbstraction fs, Path path, Layout<KEY,VALUE> layout ) throws IOException
     {
         this.fs = fs;
-        this.file = file;
+        this.path = path;
         this.layout = layout;
-        this.channel = fs.read( file );
+        this.channel = fs.read( path.toFile() );
     }
 
     BlockEntryReader<KEY,VALUE> nextBlock( ScopedBuffer blockBuffer ) throws IOException
@@ -57,7 +57,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         {
             return null;
         }
-        StoreChannel blockChannel = fs.read( file );
+        StoreChannel blockChannel = fs.read( path.toFile() );
         blockChannel.position( position );
         PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer.getBuffer() ) );
         BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );

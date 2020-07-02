@@ -24,6 +24,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
@@ -65,15 +66,15 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     public void indexDropperMustDropIndex()
     {
         // given
-        File rootDirectory = indexProvider.directoryStructure().rootDirectory();
-        File[] files = fs.listFiles( rootDirectory );
+        Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
+        File[] files = fs.listFiles( rootDirectory.toFile() );
         assertEquals( 1, files.length );
 
         // when
         minimalIndexAccessor.drop();
 
         // then
-        files = fs.listFiles( rootDirectory );
+        files = fs.listFiles( rootDirectory.toFile() );
         assertEquals( 0, files.length );
     }
 

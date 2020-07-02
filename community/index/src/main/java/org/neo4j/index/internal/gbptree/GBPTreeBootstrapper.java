@@ -23,8 +23,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -66,7 +66,7 @@ public class GBPTreeBootstrapper implements Closeable
         this.pageCacheTracer = pageCacheTracer;
     }
 
-    public Bootstrap bootstrapTree( File file )
+    public Bootstrap bootstrapTree( Path file )
     {
         try
         {
@@ -92,7 +92,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
-                    pageCacheTracer, Sets.immutable.empty(), file.getName() );
+                    pageCacheTracer, Sets.immutable.empty(), file.getFileName().toString() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )
@@ -107,7 +107,7 @@ public class GBPTreeBootstrapper implements Closeable
         closePageCache();
     }
 
-    private MetaVisitor<?,?> visitMeta( File file ) throws IOException
+    private MetaVisitor<?,?> visitMeta( Path file ) throws IOException
     {
         MetaVisitor<?,?> metaVisitor = new MetaVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
@@ -117,7 +117,7 @@ public class GBPTreeBootstrapper implements Closeable
         return metaVisitor;
     }
 
-    private StateVisitor<?,?> visitState( File file ) throws IOException
+    private StateVisitor<?,?> visitState( Path file ) throws IOException
     {
         StateVisitor<?,?> stateVisitor = new StateVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )

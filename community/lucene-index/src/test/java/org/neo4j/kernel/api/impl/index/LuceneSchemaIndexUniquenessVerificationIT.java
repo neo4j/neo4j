@@ -27,7 +27,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,7 +82,7 @@ class LuceneSchemaIndexUniquenessVerificationIT
         Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( new File( testDir.directory( "uniquenessVerification" ), "index" ) )
+                .withIndexRootFolder( testDir.directoryPath( "uniquenessVerification" ).resolve( "index" ) )
                 .withWriterConfig( configFactory )
                 .withDirectoryFactory( DirectoryFactory.PERSISTENT )
                 .build();

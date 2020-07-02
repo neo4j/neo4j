@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,26 +38,24 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.neo4j.io.fs.FileUtils.path;
-
 enum IndexMigration
 {
     LUCENE( "lucene", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
-                File[] providerRootDirectories( DatabaseLayout layout )
+                Path[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneDir = directoryRootByProviderKey( layout.databaseDirectory().toFile(), providerKey );
-                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    return new File[]{luceneDir, lucene10Dir};
+                    Path luceneDir = directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
+                    Path lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new Path[]{luceneDir, lucene10Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
                         PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
-                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    File spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
+                    Path lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    Path spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
@@ -65,18 +64,18 @@ enum IndexMigration
     NATIVE10( "lucene+native", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
-                File[] providerRootDirectories( DatabaseLayout layout )
+                Path[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneNative10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    return new File[]{luceneNative10Dir};
+                    Path luceneNative10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new Path[]{luceneNative10Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
                         PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
-                    File providerRootDirectory = providerRootDirectories( layout )[0];
-                    File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
+                    Path providerRootDirectory = providerRootDirectories( layout )[0];
+                    Path spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
@@ -85,18 +84,18 @@ enum IndexMigration
     NATIVE20( "lucene+native", "2.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), true )
             {
                 @Override
-                File[] providerRootDirectories( DatabaseLayout layout )
+                Path[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File luceneNative20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    return new File[]{luceneNative20Dir};
+                    Path luceneNative20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new Path[]{luceneNative20Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
                         PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
-                    File providerRootDirectory = providerRootDirectories( layout )[0];
-                    File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
+                    Path providerRootDirectory = providerRootDirectories( layout )[0];
+                    Path spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
                 }
@@ -106,18 +105,18 @@ enum IndexMigration
             asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), false )
             {
                 @Override
-                File[] providerRootDirectories( DatabaseLayout layout )
+                Path[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File nativeBtree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    return new File[]{nativeBtree10Dir};
+                    Path nativeBtree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new Path[]{nativeBtree10Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
                         PageCursorTracer cursorTracer, Log log ) throws IOException
                 {
-                    File rootDir = providerRootDirectories( layout )[0];
-                    File genericFile = path( rootDir, String.valueOf( indexId ), "index-" + indexId );
+                    Path rootDir = providerRootDirectories( layout )[0];
+                    Path genericFile = rootDir.resolve( String.valueOf( indexId ) ).resolve( "index-" + indexId );
                     return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, cursorTracer, log );
                 }
 
@@ -125,10 +124,10 @@ enum IndexMigration
     FULLTEXT10( "fulltext", "1.0", new IndexProviderDescriptor( "fulltext", "1.0" ), false )
             {
                 @Override
-                File[] providerRootDirectories( DatabaseLayout layout )
+                Path[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File fulltext10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory().toFile(), providerKey, providerVersion );
-                    return new File[]{fulltext10Dir};
+                    Path fulltext10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new Path[]{fulltext10Dir};
                 }
 
                 @Override
@@ -147,9 +146,9 @@ enum IndexMigration
                     //                │   ├── failure-message
                     //                │   └── fulltext-index.properties <- Fulltext index settings
                     //                └── fulltext-1.0.tx               <- Transaction folder
-                    File fulltext10Dir = providerRootDirectories( layout )[0];
-                    File directoryForIndex = path( fulltext10Dir, String.valueOf( indexId ) );
-                    File fulltextIndexDirectory = directoryBySubProvider( directoryForIndex, providerKey, providerVersion );
+                    Path fulltext10Dir = providerRootDirectories( layout )[0];
+                    Path directoryForIndex = fulltext10Dir.resolve( String.valueOf( indexId ) );
+                    Path fulltextIndexDirectory = directoryBySubProvider( directoryForIndex, providerKey, providerVersion );
                     return FulltextConfigExtractor.indexConfigFromFulltextDirectory( fs, fulltextIndexDirectory );
                 }
 
@@ -171,7 +170,7 @@ enum IndexMigration
         this.retired = retired;
     }
 
-    abstract File[] providerRootDirectories( DatabaseLayout layout );
+    abstract Path[] providerRootDirectories( DatabaseLayout layout );
 
     abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId,
             PageCursorTracer cursorTracer, Log log ) throws IOException;
@@ -186,32 +185,32 @@ enum IndexMigration
      * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
      * @return the base directory of schema indexing.
      */
-    private static File baseSchemaIndexFolder( File databaseStoreDir )
+    private static Path baseSchemaIndexFolder( Path databaseStoreDir )
     {
-        return path( databaseStoreDir, "schema", "index" );
+        return databaseStoreDir.resolve( "schema" ).resolve( "index" );
     }
 
     /**
      * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
      * @return The index provider root directory
      */
-    private static File directoryRootByProviderKey( File databaseStoreDir, String providerKey )
+    private static Path directoryRootByProviderKey( Path databaseStoreDir, String providerKey )
     {
-        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey ) );
+        return baseSchemaIndexFolder( databaseStoreDir ).resolve( fileNameFriendly( providerKey ) );
     }
 
     /**
      * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
      * @return The index provider root directory
      */
-    private static File directoryRootByProviderKeyAndVersion( File databaseStoreDir, String providerKey, String providerVersion )
+    private static Path directoryRootByProviderKeyAndVersion( Path databaseStoreDir, String providerKey, String providerVersion )
     {
-        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey + "-" + providerVersion ) );
+        return baseSchemaIndexFolder( databaseStoreDir ).resolve( fileNameFriendly( providerKey + "-" + providerVersion ) );
     }
 
-    private static File directoryBySubProvider( File parentProviderDir, String providerKey, String providerVersion )
+    private static Path directoryBySubProvider( Path parentProviderDir, String providerKey, String providerVersion )
     {
-        return path( parentProviderDir, fileNameFriendly( providerKey + "-" + providerVersion ) );
+        return parentProviderDir.resolve( fileNameFriendly( providerKey + "-" + providerVersion ) );
     }
 
     private static String fileNameFriendly( String name )
@@ -245,27 +244,27 @@ enum IndexMigration
                 .toArray( IndexMigration[]::new );
     }
 
-    private static File getSpatialSubDirectory( long indexId, File baseProviderDir )
+    private static Path getSpatialSubDirectory( long indexId, Path baseProviderDir )
     {
-        return path( baseProviderDir, String.valueOf( indexId ), SPATIAL_DIRECTORY_NAME );
+        return baseProviderDir.resolve( String.valueOf( indexId ) ).resolve( SPATIAL_DIRECTORY_NAME );
     }
 
-    public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, File spatialDirectory )
+    public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, Path spatialDirectory )
     {
         List<SpatialFile> spatialFiles = new ArrayList<>();
-        File[] files = fs.listFiles( spatialDirectory );
+        File[] files = fs.listFiles( spatialDirectory.toFile() );
         if ( files != null )
         {
             for ( File file : files )
             {
-                String name = file.getName();
+                String name = file.toPath().getFileName().toString();
                 Matcher matcher = CRS_FILE_PATTERN.matcher( name );
                 if ( matcher.matches() )
                 {
                     int tableId = Integer.parseInt( matcher.group( 1 ) );
                     int code = Integer.parseInt( matcher.group( 2 ) );
                     CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                    spatialFiles.add( new SpatialFile( crs, file ) );
+                    spatialFiles.add( new SpatialFile( crs, file.toPath() ) );
                 }
             }
         }

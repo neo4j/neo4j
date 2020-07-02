@@ -522,7 +522,7 @@ class GBPTreeTest
 
         byte[] newHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( newHeader );
-        GBPTree.overwriteHeader( pageCache, indexFile.toFile(), pc -> pc.putBytes( newHeader ), NULL );
+        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), NULL );
 
         Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
 
@@ -599,7 +599,7 @@ class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile.toFile(), headerReader, NULL );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -609,14 +609,14 @@ class GBPTreeTest
     void readHeaderMustThrowIfFileDoesNotExist()
     {
         // given
-        File doesNotExist = new File( "Does not exist" );
+        Path doesNotExist = Path.of( "Does not exist" );
         assertThrows( NoSuchFileException.class, () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, NULL ) );
     }
 
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -638,7 +638,7 @@ class GBPTreeTest
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -661,7 +661,7 @@ class GBPTreeTest
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -705,7 +705,7 @@ class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile.toFile(), headerReader, NULL );
+            GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );
@@ -867,7 +867,7 @@ class GBPTreeTest
             index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<>()
             {
                 @Override
-                public void dirtyOnStartup( File file )
+                public void dirtyOnStartup( Path file )
                 {
                     cleanOnStartup.setFalse();
                 }
@@ -1931,7 +1931,7 @@ class GBPTreeTest
 
     private GBPTreeBuilder<MutableLong,MutableLong> index( PageCache pageCache )
     {
-        return new GBPTreeBuilder<>( pageCache, indexFile.toFile(), layout );
+        return new GBPTreeBuilder<>( pageCache, indexFile, layout );
     }
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )

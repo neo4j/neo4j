@@ -23,7 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,7 +71,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     @BeforeEach
     void setUp()
     {
-        File folder = testDir.directory( "folder" );
+        Path folder = testDir.directoryPath( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
         IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).withName( "index" ).materialise( 13 );

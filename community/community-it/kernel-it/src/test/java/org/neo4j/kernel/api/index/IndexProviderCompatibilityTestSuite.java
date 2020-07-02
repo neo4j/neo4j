@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -89,7 +88,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir );
 
     public abstract boolean supportsSpatial();
 
@@ -161,7 +160,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             fs = pageCacheAndDependenciesRule.fileSystem();
             graphDbDir = pageCacheAndDependenciesRule.directory().homePath();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
-            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir.toFile() );
+            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
             descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
             jobScheduler.start();
         }
