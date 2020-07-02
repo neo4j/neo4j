@@ -26,6 +26,7 @@ import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
@@ -39,13 +40,18 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
 
     @Override
     public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
-            JobScheduler jobScheduler )
+            JobScheduler jobScheduler, IOBufferFactory bufferFactory )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
         var memoryTracker = new LocalMemoryTracker();
         allocator = MemoryAllocator.createAllocator( memory, memoryTracker );
-        var bufferFactory = new ConfigurableIOBufferFactory( Config.defaults(), memoryTracker );
-        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock(), memoryTracker, bufferFactory );
+        var usedBufferFactory = selectBufferFactory( bufferFactory, memoryTracker );
+        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock(), memoryTracker, usedBufferFactory );
+    }
+
+    private static IOBufferFactory selectBufferFactory( IOBufferFactory bufferFactory, LocalMemoryTracker memoryTracker )
+    {
+        return bufferFactory != null ? bufferFactory : new ConfigurableIOBufferFactory( Config.defaults(), memoryTracker );
     }
 
     @Override

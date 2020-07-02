@@ -39,6 +39,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -113,7 +114,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier versionContextSupplier )
     {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier, jobScheduler );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier, jobScheduler, fixture.getBufferFactory() );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
@@ -333,17 +334,23 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     public abstract static class Fixture<T extends PageCache>
     {
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
-                JobScheduler jobScheduler );
-
-        public abstract void tearDownPageCache( T pageCache );
-
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,Path> fileConstructor = Path::of;
+        private IOBufferFactory bufferFactory;
+
+        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
+                JobScheduler jobScheduler, IOBufferFactory bufferFactory );
+
+        public abstract void tearDownPageCache( T pageCache );
 
         public final FileSystemAbstraction getFileSystemAbstraction()
         {
             return fileSystemAbstractionSupplier.get();
+        }
+
+        public IOBufferFactory getBufferFactory()
+        {
+            return bufferFactory;
         }
 
         public final Fixture<T> withFileSystemAbstraction(
@@ -356,6 +363,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public final Path file( String pathname )
         {
             return fileConstructor.apply( pathname ).toAbsolutePath().normalize();
+        }
+
+        public final Fixture<T> withBufferFactory( IOBufferFactory bufferFactory )
+        {
+            this.bufferFactory = bufferFactory;
+            return this;
         }
 
         public final Fixture<T> withFileConstructor( Function<String,Path> fileConstructor )
