@@ -95,41 +95,46 @@ public class ProfilerExtension extends StatefulFieldExtension<Profiler> implemen
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        getStoredValue( context ).reset();
+        for ( var value : getStoredValues( context ) )
+        {
+            value.reset();
+        }
     }
 
     @Override
     public void afterEach( ExtensionContext context )
     {
-        Profiler profiler = getStoredValue( context );
-        try
+        for ( var profiler : getStoredValues( context ) )
         {
-            profiler.finish();
-            if ( context.getExecutionException().isPresent() )
+            try
             {
-                String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                profiler.printProfile( new PrintStream( buffer, false, StandardCharsets.UTF_8 ), displayName );
-                buffer.writeTo( System.err );
-
-                ExtensionContext.Store testDirStore = getStore( context, TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE );
-                TestDirectory testDir = testDirStore.get( TestDirectorySupportExtension.TEST_DIRECTORY, TestDirectory.class );
-
-                if ( testDir != null && testDir.isInitialised() )
+                profiler.finish();
+                if ( context.getExecutionException().isPresent() )
                 {
-                    File profileOutputFile = testDir.createFile( "profiler-output.txt" );
-                    FileSystemAbstraction fs = testDir.getFileSystem();
+                    String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                    profiler.printProfile( new PrintStream( buffer, false, StandardCharsets.UTF_8 ), displayName );
+                    buffer.writeTo( System.err );
 
-                    try ( OutputStream out = fs.openAsOutputStream( profileOutputFile, false ) )
+                    ExtensionContext.Store testDirStore = getStore( context, TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE );
+                    TestDirectory testDir = testDirStore.get( TestDirectorySupportExtension.TEST_DIRECTORY, TestDirectory.class );
+
+                    if ( testDir != null && testDir.isInitialised() )
                     {
-                        buffer.writeTo( out );
+                        File profileOutputFile = testDir.createFile( "profiler-output.txt" );
+                        FileSystemAbstraction fs = testDir.getFileSystem();
+
+                        try ( OutputStream out = fs.openAsOutputStream( profileOutputFile, false ) )
+                        {
+                            buffer.writeTo( out );
+                        }
                     }
                 }
             }
-        }
-        catch ( Exception e )
-        {
-            throw new JUnitException( "Failed to finish profiling and/or produce profiling output.", e );
+            catch ( Exception e )
+            {
+                throw new JUnitException( "Failed to finish profiling and/or produce profiling output.", e );
+            }
         }
     }
 }

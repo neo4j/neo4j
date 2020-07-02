@@ -99,10 +99,13 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
     @Override
     public void afterAll( ExtensionContext context ) throws Exception
     {
-        PageCache storedValue = getStoredValue( context );
-        if ( storedValue != null )
+        var storedValues = getStoredValues( context );
+        if ( storedValues != null )
         {
-            storedValue.close();
+            for ( var value : storedValues )
+            {
+                value.close();
+            }
         }
         super.afterAll( context );
     }

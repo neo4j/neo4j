@@ -27,7 +27,9 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RandomRule.Seed;
@@ -70,13 +72,18 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
     public void beforeEach( ExtensionContext extensionContext )
     {
         Optional<Seed> optionalSeed = findAnnotation( extensionContext.getElement(), Seed.class );
-        optionalSeed.map( Seed::value ).ifPresent( seed -> getStoredValue( extensionContext ).setSeed( seed ) );
+        optionalSeed.map( Seed::value ).ifPresent( seed -> {
+            for ( var value : getStoredValues( extensionContext ) )
+            {
+                value.setSeed( seed );
+            }
+        } );
     }
 
     @Override
     public void afterEach( ExtensionContext context )
     {
-        removeStoredValue( context );
+        removeStoredValues( context );
     }
 
     @Override
@@ -87,11 +94,12 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
             return;
         }
 
-        final long seed = getStoredValue( context ).seed();
+        var seeds = getStoredValues( context ).stream().map( RandomRule::seed ).collect( Collectors.toList() );
 
         // The reason we throw a new exception wrapping the actual exception here, instead of simply enhancing the message is:
         // - AssertionFailedError has its own 'message' field, in addition to Throwable's 'detailedMessage' field
         // - Even if 'message' field is updated the test doesn't seem to print the updated message on assertion failure
-        throw new AssertionFailedError( format( "%s [ random seed used: %dL ]", t.getMessage(), seed ), t );
+        throw new AssertionFailedError( format( "%s [ random seeds used: %s ]", t.getMessage(), seeds ), t );
     }
+
 }

@@ -76,6 +76,9 @@ public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4
     @Override
     public void afterEach( ExtensionContext context )
     {
-        getStoredValue( context ).shutdownDatabase();
+        for ( var value : getStoredValues( context ) )
+        {
+            value.shutdownDatabase();
+        }
     }
 }

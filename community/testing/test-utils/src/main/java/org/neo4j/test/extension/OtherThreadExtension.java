@@ -58,14 +58,18 @@ public class OtherThreadExtension extends StatefulFieldExtension<OtherThreadRule
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        var otherThread = getStoredValue( context );
-        otherThread.beforeEach( context );
+        for ( var otherThread : getStoredValues( context ) )
+        {
+            otherThread.beforeEach( context );
+        }
     }
 
     @Override
     public void afterEach( ExtensionContext context )
     {
-        var otherThread = getStoredValue( context );
-        otherThread.afterEach();
+        for ( var otherThread : getStoredValues( context ) )
+        {
+            otherThread.afterEach();
+        }
     }
 }

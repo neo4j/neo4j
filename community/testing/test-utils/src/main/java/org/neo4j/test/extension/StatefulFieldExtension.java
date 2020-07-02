@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -45,14 +46,13 @@ public abstract class StatefulFieldExtension<T> implements TestInstancePostProce
     @Override
     public void afterAll( ExtensionContext context ) throws Exception
     {
-        removeStoredValue( context );
+        removeStoredValues( context );
     }
 
     @Override
     public void postProcessTestInstance( Object testInstance, ExtensionContext context ) throws Exception
     {
         Class<?> clazz = testInstance.getClass();
-        Object instance = createInstance( context );
         List<Field> declaredFields = getAllFields( clazz );
         for ( Field declaredField : declaredFields )
         {
@@ -65,31 +65,31 @@ public abstract class StatefulFieldExtension<T> implements TestInstancePostProce
                             format( "Field %s that is marked for injection in class %s is managed by extension container " +
                                             "and should not have any manually assigned value.", declaredField.getName(), clazz.getName() ) );
                 }
-                declaredField.set( testInstance, instance );
+                declaredField.set( testInstance, createInstance( context ) );
             }
         }
     }
 
-    protected T getStoredValue( ExtensionContext context )
+    protected List<T> getStoredValues( ExtensionContext context )
     {
-        return getLocalStore( context ).get( getFieldKey(), getFieldType() );
+        return getLocalStore( context ).get( getFieldKey(), List.class );
     }
 
-    protected T removeStoredValue( ExtensionContext context )
+    protected List<T> removeStoredValues( ExtensionContext context )
     {
-        return getLocalStore( context ).remove( getFieldKey(), getFieldType() );
+        return getLocalStore( context ).remove( getFieldKey(), List.class );
     }
 
-    protected T deepRemoveStoredValue( ExtensionContext context )
+    protected List<T> deepRemoveStoredValues( ExtensionContext context )
     {
-        T removedValue = null;
+        List<T> removedValues = null;
         ExtensionContext valueContext = context;
-        while ( removedValue == null && valueContext != null )
+        while ( removedValues == null && valueContext != null )
         {
-            removedValue = removeStoredValue( valueContext );
+            removedValues = removeStoredValues( valueContext );
             valueContext = valueContext.getParent().orElse( null );
         }
-        return removedValue;
+        return removedValues;
     }
 
     protected static Store getStore( ExtensionContext extensionContext, Namespace namespace )
@@ -102,14 +102,16 @@ public abstract class StatefulFieldExtension<T> implements TestInstancePostProce
         return getStore( extensionContext, getNameSpace() );
     }
 
-    private Object createInstance( ExtensionContext extensionContext )
+    private T createInstance( ExtensionContext extensionContext )
     {
-        Object value = getStoredValue( extensionContext );
-        if ( value == null )
+        List<T> values = getStoredValues( extensionContext );
+        if ( values == null )
         {
-            value = createField( extensionContext );
-            getLocalStore( extensionContext ).put( getFieldKey(), value );
+            values = new ArrayList<>();
+            getLocalStore( extensionContext ).put( getFieldKey(), values );
         }
+        T value = createField( extensionContext );
+        values.add( value );
         return value;
     }
 }

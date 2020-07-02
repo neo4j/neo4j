@@ -22,6 +22,8 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
+import java.util.List;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefulFieldExtension<T>
@@ -32,10 +34,13 @@ public abstract class FileSystemExtension<T extends FileSystemAbstraction> exten
     @Override
     public void afterAll( ExtensionContext context ) throws Exception
     {
-        T storedValue = getStoredValue( context );
-        if ( storedValue != null )
+        List<T> storedValues = getStoredValues( context );
+        if ( storedValues != null )
         {
-            storedValue.close();
+            for ( var value : storedValues )
+            {
+                value.close();
+            }
         }
         super.afterAll( context );
     }

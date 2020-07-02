@@ -19,10 +19,10 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -33,34 +33,39 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( OtherThreadExtension.class )
 public class GraphDatabaseShutdownTest
 {
     private GraphDatabaseAPI db;
 
-    @Rule
-    public final OtherThreadRule t2 = new OtherThreadRule( "T2" );
-    @Rule
-    public final OtherThreadRule t3 = new OtherThreadRule( "T3" );
+    @Inject
+    public OtherThreadRule t2;
+    @Inject
+    public OtherThreadRule t3;
     private DatabaseManagementService managementService;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         db = newDb();
+        t2.set( "T2", 60, SECONDS );
+        t3.set( "T3", 60, SECONDS );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         managementService.shutdown();
@@ -98,7 +103,7 @@ public class GraphDatabaseShutdownTest
     }
 
     @Test
-    public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks() throws Exception
+    public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks()
     {
         // GIVEN
         final Node node;

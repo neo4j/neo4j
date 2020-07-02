@@ -58,13 +58,19 @@ public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutp
     @Override
     public void afterEach( ExtensionContext context )
     {
-        getStoredValue( context ).releaseVoices( context.getExecutionException().isPresent() );
-        removeStoredValue( context );
+        for ( var value : getStoredValues( context ) )
+        {
+            value.releaseVoices( context.getExecutionException().isPresent() );
+        }
+        removeStoredValues( context );
     }
 
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        getStoredValue( context ).captureVoices();
+        for ( var value : getStoredValues( context ) )
+        {
+            value.captureVoices();
+        }
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.test.extension.testdirectory;
 
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDirectory>
-        implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback, TestExecutionExceptionHandler
+        implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, TestExecutionExceptionHandler
 {
     public static final String TEST_DIRECTORY = "testDirectory";
     private static final String FAILURE_MARKER = "failureMarker";
@@ -94,21 +93,25 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     {
         String name = context.getTestMethod().map( method -> method.getName().concat( context.getDisplayName() ) )
                 .orElseGet( () -> context.getRequiredTestClass().getSimpleName() );
-        TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
+        for ( var testDirectory : getStoredValues( context ) )
+        {
+            testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
+        }
     }
 
     private void cleanUp( ExtensionContext context )
     {
-        TestDirectory testDirectory = getStoredValue( context );
-        try
+        for ( var testDirectory : getStoredValues( context ) )
         {
-            testDirectory.complete( context.getExecutionException().isEmpty() &&
-                                    !hasFailureMarker( context ) );
-        }
-        catch ( Exception e )
-        {
-            throw new JUnitException( format( "Fail to cleanup test directory for %s test.", context.getDisplayName() ), e );
+            try
+            {
+                testDirectory.complete( context.getExecutionException().isEmpty() &&
+                        !hasFailureMarker( context ) );
+            }
+            catch ( Exception e )
+            {
+                throw new JUnitException( format( "Fail to cleanup test directory for %s test.", context.getDisplayName() ), e );
+            }
         }
     }
 

@@ -31,18 +31,23 @@ public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
 {
     private static final String THREADING = "threading";
     private static final ExtensionContext.Namespace THREADING_NAMESPACE = ExtensionContext.Namespace.create( THREADING );
+
     @Override
     public void afterEach( ExtensionContext extensionContext )
     {
-        ThreadingRule threadingRule = getStoredValue( extensionContext );
-        threadingRule.after();
+        for ( var threadingRule : getStoredValues( extensionContext ) )
+        {
+            threadingRule.after();
+        }
     }
 
     @Override
     public void beforeEach( ExtensionContext extensionContext )
     {
-        ThreadingRule threadingRule = getStoredValue( extensionContext );
-        threadingRule.before();
+        for ( var threadingRule : getStoredValues( extensionContext ) )
+        {
+            threadingRule.before();
+        }
     }
 
     @Override

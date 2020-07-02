@@ -58,13 +58,18 @@ public class LifeExtension extends StatefulFieldExtension<LifeSupport> implement
     @Override
     public void afterEach( ExtensionContext context )
     {
-        deepRemoveStoredValue( context ).shutdown();
+        for ( var value : deepRemoveStoredValues( context ) )
+        {
+            value.shutdown();
+        }
     }
 
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        LifeSupport value = getStoredValue( context );
-        value.start();
+        for ( var value : getStoredValues( context ) )
+        {
+            value.start();
+        }
     }
 }
