@@ -103,18 +103,18 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
 
     private boolean hasDatabaseNode( Transaction tx )
     {
-        ResourceIterator<Node> nodes = tx.findNodes( SystemGraphDbmsModel.DATABASE_LABEL );
-        boolean result = nodes.hasNext();
-        nodes.close();
-        return result;
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL ) )
+        {
+            return nodes.hasNext();
+        }
     }
 
     private boolean hasSystemDatabaseNode( Transaction tx )
     {
-        ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME );
-        boolean result = nodes.hasNext();
-        nodes.close();
-        return result;
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME ) )
+        {
+            return nodes.hasNext();
+        }
     }
 
     private void updateDefaultDatabase( GraphDatabaseService system ) throws InvalidArgumentsException
@@ -140,14 +140,19 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                         maybeStopDatabase( oldDb );
                     }
                 }
-                nodes.close();
                 return correctDefaultFound;
             };
             // First find current default, and if it does not have the name defined as default, unset it
-            defaultFound = unsetOldNode.apply( tx.findNodes( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
+            try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) )
+            {
+                defaultFound = unsetOldNode.apply( nodes );
+            }
 
             // If the current default is deleted, unset it, but do not record that we found a valid default
-            unsetOldNode.apply( tx.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
+            try ( ResourceIterator<Node> nodes = tx.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) )
+            {
+                unsetOldNode.apply( nodes );
+            }
 
             // If the old default was not the correct one, find the correct one and set the default flag
             if ( !defaultFound )
