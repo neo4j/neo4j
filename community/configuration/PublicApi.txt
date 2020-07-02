@@ -131,6 +131,7 @@ org.neo4j.configuration.GraphDatabaseSettings::mode org.neo4j.graphdb.config.Set
 org.neo4j.configuration.GraphDatabaseSettings::neo4j_home org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_buffered_flush_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_direct_io org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::pagecache_flush_buffer_size_in_pages org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_memory org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_scan_prefetch org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_swapper org.neo4j.graphdb.config.Setting<java.lang.String> public static final

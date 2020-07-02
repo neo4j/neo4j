@@ -464,7 +464,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                     // Reset of accumulated effective length of temp buffer happens after intermediate vectored flush if any
                                     UnsafeUtil.copyMemory( address, bufferAddresses[0] + bufferLengths[0], filePageSize );
                                     bufferLengths[0] += filePageSize;
-                                    if ( ioBuffer.isFull() )
+                                    if ( ioBuffer.hasMoreCapacity( bufferLengths[0] ) )
                                     {
                                         break;
                                     }

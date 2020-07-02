@@ -19,35 +19,25 @@
  */
 package org.neo4j.io.pagecache.buffer;
 
-public class DisabledIOBuffer implements NativeIOBuffer
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.io.pagecache.buffer.DisabledIOBuffer.DISABLED_IO_BUFFER;
+
+class DisabledIOBufferTest
 {
-    public static final NativeIOBuffer DISABLED_IO_BUFFER = new DisabledIOBuffer();
-
-    private DisabledIOBuffer()
+    @Test
+    void disabledBufferDoesNotHaveAnyCapacity()
     {
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 0 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( -1 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 1 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 42 ) );
     }
 
-    @Override
-    public boolean isEnabled()
+    @Test
+    void disabledBufferIsNotEnabled()
     {
-        return false;
-    }
-
-    @Override
-    public boolean hasMoreCapacity( int bufferLength )
-    {
-        return false;
-    }
-
-    @Override
-    public long getAddress()
-    {
-        return -1;
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        //nothing to close
+        assertFalse( DISABLED_IO_BUFFER.isEnabled() );
     }
 }

@@ -558,7 +558,15 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "cache pages into one bigger buffer to minimise number of individual IOPS performed and better utilisation of available " +
             "I/O resources, especially when those are restricted." )
     public static final Setting<Boolean> pagecache_buffered_flush_enabled =
-            newBuilder( "dbms.memory.pagecache.buffered.flush.enabled", BOOL, true ).dynamic().build();
+            newBuilder( "dbms.memory.pagecache.flush.buffer.enabled", BOOL, true ).dynamic().build();
+
+    @Description( "Page cache can be configured to use temporal buffer for flushing purposes. It is used to combine, if possible, sequence of several " +
+            "cache pages into one bigger buffer to minimise number of individual IOPS performed and better utilisation of available " +
+            "I/O resources, especially when those are restricted. " +
+            "Use this setting to configure individual file flush buffer size in pages (8KiB). " +
+            "To be able to utilize this buffer during page cacke flushing, buffered flush should be enabled." )
+    public static final Setting<Integer> pagecache_flush_buffer_size_in_pages =
+            newBuilder( "dbms.memory.pagecache.flush.buffer.size_in_pages", INT, 128 ).addConstraint( range( 1, 512 ) ).dynamic().build();
 
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
             "warmup after a restart, reducing the mean time to performance. " +
