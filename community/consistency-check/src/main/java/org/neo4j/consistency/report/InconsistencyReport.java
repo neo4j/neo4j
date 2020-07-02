@@ -34,14 +34,14 @@ public class InconsistencyReport implements InconsistencyLogger
     }
 
     @Override
-    public void error( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+    public void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
     {
         logger.error( recordType, record, message, args );
     }
 
     @Override
     public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                       String message, Object[] args )
+                       String message, Object... args )
     {
         logger.error( recordType, oldRecord, newRecord, message, args );
     }
@@ -53,14 +53,14 @@ public class InconsistencyReport implements InconsistencyLogger
     }
 
     @Override
-    public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+    public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
     {
         logger.warning( recordType, record, message, args );
     }
 
     @Override
     public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                         String message, Object[] args )
+                         String message, Object... args )
     {
         logger.warning( recordType, oldRecord, newRecord, message, args );
     }

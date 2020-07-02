@@ -254,7 +254,7 @@ class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         events.add( new Event.Node( reference, score, values ) );
         return true;

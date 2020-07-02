@@ -127,7 +127,7 @@ public class StubCursorFactory implements CursorFactory
         return poll( relationshipTypeIndexCursors );
     }
 
-    public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )
+    public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor... cursors )
     {
         relationshipTraversalCursors.addAll( Arrays.asList( cursors ) );
         return this;

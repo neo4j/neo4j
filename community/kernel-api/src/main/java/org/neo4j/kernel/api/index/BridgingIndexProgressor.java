@@ -103,7 +103,7 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         return client.acceptEntity( reference, score, values );
     }

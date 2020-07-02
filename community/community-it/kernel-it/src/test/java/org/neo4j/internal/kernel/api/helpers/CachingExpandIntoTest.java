@@ -455,7 +455,7 @@ class CachingExpandIntoTest
         }
     }
 
-    private LongSet connections( long start, Direction direction, long end, String...types )
+    private LongSet connections( long start, Direction direction, long end, String... types )
             throws TransactionFailureException
     {
         try ( KernelTransaction tx = transaction();

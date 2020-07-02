@@ -52,7 +52,7 @@ class JavaSourceGenerator extends CodeGenerator
     }
 
     @Override
-    protected ClassWriter generate( TypeReference type, TypeReference base, TypeReference[] interfaces )
+    protected ClassWriter generate( TypeReference type, TypeReference base, TypeReference... interfaces )
     {
         StringBuilder target = new StringBuilder();
         synchronized ( this )

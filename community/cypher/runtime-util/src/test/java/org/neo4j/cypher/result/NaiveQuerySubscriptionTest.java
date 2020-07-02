@@ -176,7 +176,7 @@ class NaiveQuerySubscriptionTest
         }
     }
 
-    ResultRecord record( AnyValue...fields )
+    ResultRecord record( AnyValue... fields )
     {
         return new ResultRecord( fields );
     }

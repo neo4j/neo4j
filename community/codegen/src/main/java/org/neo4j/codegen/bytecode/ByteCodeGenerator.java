@@ -45,7 +45,7 @@ class ByteCodeGenerator extends CodeGenerator
     }
 
     @Override
-    protected ClassWriter generate( TypeReference type, TypeReference base, TypeReference[] interfaces )
+    protected ClassWriter generate( TypeReference type, TypeReference base, TypeReference... interfaces )
     {
         ByteCodeClassWriter codeWriter = new ByteCodeClassWriter( type, base, interfaces );
         synchronized ( this )

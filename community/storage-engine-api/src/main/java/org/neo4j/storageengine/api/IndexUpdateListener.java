@@ -66,7 +66,7 @@ public interface IndexUpdateListener
     class Adapter implements IndexUpdateListener
     {
         @Override
-        public void createIndexes( IndexDescriptor[] indexes )
+        public void createIndexes( IndexDescriptor... indexes )
         {
         }
 

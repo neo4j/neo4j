@@ -863,7 +863,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "Hence, this parameter tunes a balance between the likelihood of experiencing connection problems and performance\n" +
             "Normally, this parameter should not need tuning.\n" +
             "Value 0 means connections will always be tested for validity" )
-    @DocumentedDefaultValue(  "No connection liveliness check is done by default." )
+    @DocumentedDefaultValue( "No connection liveliness check is done by default." )
     public static final Setting<Duration> routing_driver_idle_time_before_connection_test =
             newBuilder( "dbms.routing.driver.connection.pool.idle_test", DURATION, null ).build();
 

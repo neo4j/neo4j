@@ -129,7 +129,7 @@ public class Args
         return new ArgsParser( flags );
     }
 
-    public static Args parse( String...args )
+    public static Args parse( String... args )
     {
         return withFlags().parse( args );
     }

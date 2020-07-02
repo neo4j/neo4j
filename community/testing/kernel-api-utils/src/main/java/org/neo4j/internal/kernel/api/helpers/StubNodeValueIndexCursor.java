@@ -35,9 +35,9 @@ public class StubNodeValueIndexCursor extends DefaultCloseListenable implements 
 {
     private int position = -1;
     private final List<NodeData> nodes = new ArrayList<>();
-    private List<Value[]> values = new ArrayList<>(  );
+    private List<Value[]> values = new ArrayList<>();
 
-    public StubNodeValueIndexCursor withNode( long id, Value...vs )
+    public StubNodeValueIndexCursor withNode( long id, Value... vs )
     {
         nodes.add( new NodeData( id, new long[]{}, Collections.emptyMap() ) );
         values.add( vs );

@@ -157,37 +157,37 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     }
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> noHeader =
-            error(  401,
+            error( 401,
                     map( "errors", singletonList( map(
                             "code", Status.Security.Unauthorized.code().serialize(),
                             "message", "No authentication header supplied." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> badHeader =
-            error(  400,
+            error( 400,
                     map( "errors", singletonList( map(
                             "code", Status.Request.InvalidFormat.code().serialize(),
                             "message", "Invalid authentication header." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> invalidCredential =
-            error(  401,
+            error( 401,
                     map( "errors", singletonList( map(
                             "code", Status.Security.Unauthorized.code().serialize(),
                             "message", "Invalid username or password." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> tooManyAttempts =
-            error(  429,
+            error( 429,
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthenticationRateLimit.code().serialize(),
                             "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> authProviderFailed =
-            error(  502,
+            error( 502,
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthProviderFailed.code().serialize(),
                             "message", "An auth provider request failed." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> authProviderTimeout =
-            error(  504,
+            error( 504,
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthProviderTimeout.code().serialize(),
                             "message", "An auth provider request timed out." ) ) ) );
