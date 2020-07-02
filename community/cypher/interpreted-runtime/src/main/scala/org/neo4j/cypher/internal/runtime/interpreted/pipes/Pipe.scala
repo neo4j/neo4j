@@ -58,7 +58,7 @@ trait Pipe {
 case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
-    Iterator(state.newExecutionContext(executionContextFactory))
+    Iterator(state.newExecutionContextWithInitialContext(executionContextFactory))
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {

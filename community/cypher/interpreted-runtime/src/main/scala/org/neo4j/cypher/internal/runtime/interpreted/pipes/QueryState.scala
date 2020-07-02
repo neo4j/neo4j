@@ -60,6 +60,13 @@ class QueryState(val query: QueryContext,
     }
   }
 
+  def newExecutionContextWithInitialContext(factory: ExecutionContextFactory): CypherRow = {
+    initialContext match {
+      case Some(init) => factory.copyWithArgument(init)
+      case None => factory.newExecutionContext()
+    }
+  }
+
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
@@ -109,6 +116,8 @@ trait ExecutionContextFactory {
 
   def newExecutionContext(): CypherRow
 
+  def copyWithArgument(init: ReadableRow): CypherRow
+
   def copyWith(init: ReadableRow): CypherRow
 
   def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow
@@ -126,6 +135,8 @@ trait ExecutionContextFactory {
 case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
 
   override def newExecutionContext(): CypherRow = CypherRow.empty
+
+  override def copyWithArgument(init: ReadableRow): CypherRow = copyWith(init)
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
   override def copyWith(init: ReadableRow): CypherRow = init match {

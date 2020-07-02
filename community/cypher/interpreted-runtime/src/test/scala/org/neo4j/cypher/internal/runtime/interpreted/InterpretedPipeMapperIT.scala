@@ -75,7 +75,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport  {
+class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport {
   private implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   val planContext: PlanContext = mock[PlanContext]
@@ -86,7 +86,6 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-
   private val pipeMapper =
     InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator])(semanticTable)
 

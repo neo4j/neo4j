@@ -28,7 +28,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
                                              (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected override def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    val ctx = state.newExecutionContext(executionContextFactory)
+    val ctx = state.newExecutionContextWithInitialContext(executionContextFactory)
     val relIds = relIdExpr.expressions(ctx, state)
     new UndirectedRelationshipIdSeekIterator(
       ident,

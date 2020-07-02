@@ -532,4 +532,25 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val result = execute(logicalQuery, runtime)
     result should beColumns("s").withSingleRow(0)
   }
+
+  test("with column introduced after apply") {
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+    val nodeId = nodes.head.getId
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "extra")
+      .projection("1 AS extra")
+      .antiSemiApply()
+      .|.nodeByIdSeek("n", Set("x"), nodeId)
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "extra").withNoRows()
+  }
+
 }

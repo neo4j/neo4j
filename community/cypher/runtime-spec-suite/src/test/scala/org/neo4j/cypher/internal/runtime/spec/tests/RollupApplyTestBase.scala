@@ -227,4 +227,24 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x", "list").withRows(expectedRows)
   }
+
+  test("with column introduced after apply") {
+    val (nodes, rels) = given {
+      circleGraph(sizeHint)
+    }
+    val relId = rels.head.getId
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "list", "extra")
+      .projection("1 AS extra")
+      .rollUpApply("list", "r")
+      .|.directedRelationshipByIdSeek("r", "from", "too", Set("x"), relId)
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "list", "extra").withRows(rowCount(nodes.size))
+  }
 }
