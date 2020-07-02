@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CypherCharStreamTest
 {
@@ -68,15 +70,17 @@ public class CypherCharStreamTest
     }
 
     @Test
-    void convertEscapedBackslash() throws IOException
+    void doNodeConvertBackslash() throws IOException
     {
         CypherCharStream x = new CypherCharStream( "\\\\ \\a \\\\" );
 
+        assertEquals( '\\', x.readChar() );
         assertEquals( '\\', x.readChar() );
         assertEquals( ' ', x.readChar() );
         assertEquals( '\\', x.readChar() );
         assertEquals( 'a', x.readChar() );
         assertEquals( ' ', x.readChar() );
+        assertEquals( '\\', x.readChar() );
         assertEquals( '\\', x.readChar() );
         assertThrows( IOException.class, x::readChar );
     }
@@ -86,7 +90,7 @@ public class CypherCharStreamTest
     {
         CypherCharStream x = new CypherCharStream( "\\\\uaa3a \\\\\\uaa3a \\\\\\\\uaa3a \\\\\\\\\\uaa3a" );
 
-        char[] expected = "\\uaa3a \\\uaa3a \\\\uaa3a \\\\\uaa3a".toCharArray();
+        char[] expected = "\\\\uaa3a \\\\\uaa3a \\\\\\\\uaa3a \\\\\\\\\uaa3a".toCharArray();
 
         for ( char c : expected )
         {

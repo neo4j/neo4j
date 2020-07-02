@@ -94,20 +94,14 @@ public class CypherCharStream implements CharStream
         if ( c == BACKSLASH )
         {
             char c2 = nextQueryChar();
-            switch ( c2 )
+            if ( c2 == 'u' )
             {
-            case BACKSLASH:
-                c = BACKSLASH;
-                break;
-
-            case 'u':
                 c = convertUnicode( c2 );
-                break;
-
-            default:
+            }
+            else
+            {
                 appendToResult( c );
                 c = c2;
-                break;
             }
         }
 

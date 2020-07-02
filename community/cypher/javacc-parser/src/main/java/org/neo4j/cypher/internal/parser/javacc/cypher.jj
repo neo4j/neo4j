@@ -198,29 +198,29 @@ TOKEN :
 }
 
 MORE : { < STRING1_OPEN: "'" > : STRING1 }
-<STRING1> MORE: { "\\\\" }
+<STRING1> MORE: { "\\\\" { image.delete(image.length()-2, image.length()); image.append("\\"); } }
 <STRING1> MORE: { "\\\'" { image.delete(image.length()-2, image.length()); image.append("'"); } }
-<STRING1> MORE: { "\\\"" }
+<STRING1> MORE: { "\\\"" { image.delete(image.length()-2, image.length()); image.append("\""); } }
 <STRING1> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
 <STRING1> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
 <STRING1> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
 <STRING1> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
-<STRING1> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
+<STRING1> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\t"); } }
 <STRING1> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
-<STRING1> MORE: { < ~["'","\\","\n","\r"] > }
+<STRING1> MORE: { < ~["'"] > }
 <STRING1> TOKEN: { <STRING_LITERAL1: "'"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
 MORE : { < STRING2_OPEN: "\"" > : STRING2 }
-<STRING2> MORE: { "\\\\" }
-<STRING2> MORE: { "\\\'" }
-<STRING2> MORE: { "\\\"" }
+<STRING2> MORE: { "\\\\" { image.delete(image.length()-2, image.length()); image.append("\\"); } }
+<STRING2> MORE: { "\\\'" { image.delete(image.length()-2, image.length()); image.append("'"); } }
+<STRING2> MORE: { "\\\"" { image.delete(image.length()-2, image.length()); image.append("\""); } }
 <STRING2> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
 <STRING2> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
 <STRING2> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
 <STRING2> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
-<STRING2> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\u0009"); } }
+<STRING2> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\t"); } }
 <STRING2> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
-<STRING2> MORE: { < ~["\"","\\","\n","\r"] > }
+<STRING2> MORE: { < ~["\""] > }
 <STRING2> TOKEN: { <STRING_LITERAL2: "\""> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
 MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
