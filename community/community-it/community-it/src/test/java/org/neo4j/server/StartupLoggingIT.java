@@ -23,8 +23,8 @@ import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         CommunityBootstrapper bootstrapper = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        bootstrapper.start( testDir.homeDir(), new File( "nonexistent-file.conf" ), propertyPairs );
+        bootstrapper.start( testDir.homePath(), Path.of( "nonexistent-file.conf" ), propertyPairs );
         var resolver = getDependencyResolver( bootstrapper.getDatabaseManagementService() );
         URI uri = resolver.resolveDependency( AbstractNeoWebServer.class ).getBaseUri();
         bootstrapper.stop();

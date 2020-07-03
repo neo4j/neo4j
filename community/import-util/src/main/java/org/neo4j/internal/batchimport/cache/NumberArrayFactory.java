@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -144,7 +144,7 @@ public interface NumberArrayFactory
      * and lastly falls back to allocating inside the given {@code pageCache}.
      */
     static NumberArrayFactory auto( PageCache pageCache, PageCacheTracer pageCacheTracer,
-            File dir, boolean allowHeapAllocation, Monitor monitor )
+            Path dir, boolean allowHeapAllocation, Monitor monitor )
     {
         PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir );
         ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,

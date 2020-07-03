@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -45,9 +45,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( File file )
+    public void mappedFile( Path path )
     {
-        delegate.mappedFile( file );
+        delegate.mappedFile( path );
     }
 
     @Override
@@ -105,9 +105,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void unmappedFile( File file )
+    public void unmappedFile( Path path )
     {
-        delegate.unmappedFile( file );
+        delegate.unmappedFile( path );
     }
 
     @Override

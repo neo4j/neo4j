@@ -23,8 +23,8 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -135,7 +135,7 @@ public class ImportLogic implements Closeable
         }
     };
 
-    private final File databaseDirectory;
+    private final Path databaseDirectory;
     private final BatchingNeoStores neoStore;
     private final Configuration config;
     private final Config dbConfig;
@@ -181,7 +181,7 @@ public class ImportLogic implements Closeable
             ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        this.databaseDirectory = databaseLayout.databaseDirectory().toFile();
+        this.databaseDirectory = databaseLayout.databaseDirectory();
         this.neoStore = neoStore;
         this.config = config;
         this.dbConfig = dbConfig;

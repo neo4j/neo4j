@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -152,7 +152,7 @@ public interface PagedFile extends AutoCloseable
     /**
      * Get the filename that is mapped by this {@code PagedFile}.
      */
-    File file();
+    Path path();
 
     /**
      * Flush all dirty pages into the file channel, and force the file channel to disk.

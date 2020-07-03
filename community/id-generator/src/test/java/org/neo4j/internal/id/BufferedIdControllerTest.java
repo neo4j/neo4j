@@ -68,7 +68,7 @@ class BufferedIdControllerTest
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
 
-        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), IdType.NODE, 100L, true, 1000L, false,
+        try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.filePath( "foo" ), IdType.NODE, 100L, true, 1000L, false,
                 NULL, immutable.empty() ) )
         {
             idGenerator.marker( NULL ).markDeleted( 1L );

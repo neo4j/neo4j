@@ -22,10 +22,11 @@ package org.neo4j.internal.id.indexed;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,7 +72,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
     private final FileSystemAbstraction fs;
-    private final File file;
+    private final Path path;
     private final SystemNanoClock clock;
     private FlushableChannel channel;
     private final AtomicLong position = new AtomicLong();
@@ -81,28 +82,28 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     /**
      * Looks at feature toggle and instantiates a LoggingMonitor if enabled, otherwise a no-op monitor.
      */
-    public static IndexedIdGenerator.Monitor defaultIdMonitor( FileSystemAbstraction fs, File idFile )
+    public static IndexedIdGenerator.Monitor defaultIdMonitor( FileSystemAbstraction fs, Path idFile )
     {
         if ( LOG_ENABLED )
         {
-            return new LoggingIndexedIdGeneratorMonitor( fs, new File( idFile.getAbsolutePath() + ".log" ), Clocks.nanoClock(),
+            return new LoggingIndexedIdGeneratorMonitor( fs, idFile.resolveSibling( idFile.getFileName() + ".log" ), Clocks.nanoClock(),
                     LOG_ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, LOG_PRUNE_THRESHOLD, TimeUnit.MILLISECONDS );
         }
         return NO_MONITOR;
     }
 
-    LoggingIndexedIdGeneratorMonitor( FileSystemAbstraction fs, File file, SystemNanoClock clock,
+    LoggingIndexedIdGeneratorMonitor( FileSystemAbstraction fs, Path path, SystemNanoClock clock,
             long rotationThreshold, ByteUnit rotationThresholdUnit,
             long pruneThreshold, TimeUnit pruneThresholdUnit )
     {
         this.fs = fs;
-        this.file = file;
+        this.path = path;
         this.clock = clock;
         this.rotationThreshold = rotationThresholdUnit.toBytes( rotationThreshold );
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
         try
         {
-            if ( fs.fileExists( file ) )
+            if ( fs.fileExists( path.toFile() ) )
             {
                 moveAwayFile();
             }
@@ -260,7 +261,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             // Prune
             long time = clock.millis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( file.getParentFile(), ( dir, name ) -> name.startsWith( file.getName() + "-" ) ) )
+            for ( File file : fs.listFiles( path.getParent().toFile(), ( dir, name ) -> name.startsWith( path.getFileName() + "-" ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -314,24 +315,24 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
     private void moveAwayFile() throws IOException
     {
-        File to;
+        Path to;
         do
         {
 
             to = timestampedFile();
         }
-        while ( fs.fileExists( to ) );
-        fs.renameFile( file, to );
+        while ( fs.fileExists( to.toFile() ) );
+        fs.renameFile( path.toFile(), to.toFile() );
     }
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( file ), INSTANCE );
+        return new PhysicalFlushableChannel( fs.write( path.toFile() ), INSTANCE );
     }
 
-    private File timestampedFile()
+    private Path timestampedFile()
     {
-        return new File( file.getParentFile(), file.getName() + "-" + clock.millis() );
+        return path.resolveSibling( path.getFileName() + "-" + clock.millis() );
     }
 
     static long millisOf( File file )
@@ -357,7 +358,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             return;
         }
 
-        File file = new File( arguments.orphans().get( 0 ) );
+        Path path = Path.of( arguments.orphans().get( 0 ) );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String filterArg = arguments.get( ARG_FILTER, null );
         LongPredicate filter = filterArg != null ? parseFilter( filterArg ) : NO_FILTER;
@@ -365,32 +366,32 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         boolean redirectsToFile = arguments.getBoolean( ARG_TOFILE );
         if ( redirectsToFile )
         {
-            File outFile = new File( file.getAbsolutePath() + ".txt" );
+            Path outFile = path.resolveSibling( path.getFileName() + ".txt"  );
             System.out.println( "Redirecting output to " + outFile );
-            out = new PrintStream( new BufferedOutputStream( new FileOutputStream( outFile ) ) );
+            out = new PrintStream( new BufferedOutputStream( Files.newOutputStream( outFile ) ) );
         }
-        dump( fs, file, new Printer( out, filter ) );
+        dump( fs, path, new Printer( out, filter ) );
         if ( redirectsToFile )
         {
             out.close();
         }
     }
 
-    static void dump( FileSystemAbstraction fs, File baseFile, Dumper dumper ) throws IOException
+    static void dump( FileSystemAbstraction fs, Path baseFile, Dumper dumper ) throws IOException
     {
-        File[] files = fs.listFiles( baseFile.getParentFile(),
-                ( dir, name ) -> name.startsWith( baseFile.getName() ) && !name.endsWith( ".txt" ) );
+        File[] files = fs.listFiles( baseFile.getParent().toFile(),
+                ( dir, name ) -> name.startsWith( baseFile.getFileName().toString() ) && !name.endsWith( ".txt" ) );
         Arrays.sort( files, comparing( LoggingIndexedIdGeneratorMonitor::millisOf ) );
         for ( File file : files )
         {
-            dumpFile( fs, file, dumper );
+            dumpFile( fs, file.toPath(), dumper );
         }
     }
 
-    private static void dumpFile( FileSystemAbstraction fs, File file, Dumper dumper ) throws IOException
+    private static void dumpFile( FileSystemAbstraction fs, Path path, Dumper dumper ) throws IOException
     {
-        dumper.file( file );
-        try ( var channel = new ReadAheadChannel<>( fs.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
+        dumper.path( path );
+        try ( var channel = new ReadAheadChannel<>( fs.read( path.toFile() ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
         {
             while ( true )
             {
@@ -475,7 +476,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
     interface Dumper
     {
-        void file( File file );
+        void path( Path path );
 
         void type( Type type, long time );
 
@@ -496,9 +497,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
 
         @Override
-        public void file( File file )
+        public void path( Path path )
         {
-            out.printf( "=== %s ===%n", file.getAbsolutePath() );
+            out.printf( "=== %s ===%n", path.toAbsolutePath() );
         }
 
         @Override

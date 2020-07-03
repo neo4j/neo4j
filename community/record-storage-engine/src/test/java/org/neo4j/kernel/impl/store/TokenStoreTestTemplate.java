@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -78,10 +78,10 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     @BeforeEach
     void setUp() throws IOException
     {
-        File file = dir.file( "label-tokens.db" );
-        File idFile = dir.file( "label-tokens.db.id" );
-        File namesFile = dir.file( "label-tokens.db.names" );
-        File namesIdFile = dir.file( "label-tokens.db.names.id" );
+        Path file = dir.filePath( "label-tokens.db" );
+        Path idFile = dir.filePath( "label-tokens.db.id" );
+        Path namesFile = dir.filePath( "label-tokens.db.names" );
+        Path namesIdFile = dir.filePath( "label-tokens.db.names.id" );
 
         IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();
@@ -97,7 +97,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         store.start( NULL );
     }
 
-    protected abstract TokenStore<R> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected abstract TokenStore<R> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
 
     @AfterEach

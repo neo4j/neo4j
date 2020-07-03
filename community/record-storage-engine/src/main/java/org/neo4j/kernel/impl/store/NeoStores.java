@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -185,7 +185,7 @@ public class NeoStores implements AutoCloseable
             // if we have createIfNotExists set, but don't have the meta data store in the list of stores to open
             try
             {
-                existingFormat = MetaDataStore.getRecord( pageCache, layout.metadataStore().toFile(), STORE_VERSION, cursorTracer );
+                existingFormat = MetaDataStore.getRecord( pageCache, layout.metadataStore(), STORE_VERSION, cursorTracer );
             }
             catch ( NoSuchFileException e )
             {
@@ -428,32 +428,32 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createNodeStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new NodeStore( layout.nodeStore().toFile(), layout.idNodeStore().toFile(), config, idGeneratorFactory, pageCache, logProvider,
+                new NodeStore( layout.nodeStore(), layout.idNodeStore(), config, idGeneratorFactory, pageCache, logProvider,
                         (DynamicArrayStore) getOrOpenStore( StoreType.NODE_LABEL, cursorTracer ), recordFormats, openOptions ), cursorTracer );
     }
 
     CommonAbstractStore createNodeLabelStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicArrayStore( layout.nodeLabelStore().toFile(), layout.idNodeLabelStore().toFile(), IdType.NODE_LABELS,
+        return createDynamicArrayStore( layout.nodeLabelStore(), layout.idNodeLabelStore(), IdType.NODE_LABELS,
                 GraphDatabaseInternalSettings.label_block_size, cursorTracer );
     }
 
     CommonAbstractStore createPropertyKeyTokenStore( PageCursorTracer cursorTracer )
     {
-        return initialize( new PropertyKeyTokenStore( layout.propertyKeyTokenStore().toFile(), layout.idPropertyKeyTokenStore().toFile(), config,
+        return initialize( new PropertyKeyTokenStore( layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
                 idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN_NAME, cursorTracer ),
                 recordFormats, openOptions ), cursorTracer );
     }
 
     CommonAbstractStore createPropertyKeyTokenNamesStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicStringStore( layout.propertyKeyTokenNamesStore().toFile(), layout.idPropertyKeyTokenNamesStore().toFile(),
+        return createDynamicStringStore( layout.propertyKeyTokenNamesStore(), layout.idPropertyKeyTokenNamesStore(),
                 IdType.PROPERTY_KEY_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorTracer );
     }
 
     CommonAbstractStore createPropertyStore( PageCursorTracer cursorTracer )
     {
-        return initialize( new PropertyStore( layout.propertyStore().toFile(), layout.idPropertyStore().toFile(), config, idGeneratorFactory, pageCache,
+        return initialize( new PropertyStore( layout.propertyStore(), layout.idPropertyStore(), config, idGeneratorFactory, pageCache,
                 logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_STRING, cursorTracer ),
                 (PropertyKeyTokenStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN, cursorTracer ),
                 (DynamicArrayStore) getOrOpenStore( StoreType.PROPERTY_ARRAY, cursorTracer ), recordFormats, openOptions ), cursorTracer );
@@ -461,26 +461,26 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyStringStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicStringStore( layout.propertyStringStore().toFile(), layout.idPropertyStringStore().toFile(), cursorTracer );
+        return createDynamicStringStore( layout.propertyStringStore(), layout.idPropertyStringStore(), cursorTracer );
     }
 
     CommonAbstractStore createPropertyArrayStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicArrayStore( layout.propertyArrayStore().toFile(), layout.idPropertyArrayStore().toFile(), IdType.ARRAY_BLOCK,
+        return createDynamicArrayStore( layout.propertyArrayStore(), layout.idPropertyArrayStore(), IdType.ARRAY_BLOCK,
                 GraphDatabaseInternalSettings.array_block_size, cursorTracer );
     }
 
     CommonAbstractStore createRelationshipStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new RelationshipStore( layout.relationshipStore().toFile(), layout.idRelationshipStore().toFile(), config, idGeneratorFactory,
+                new RelationshipStore( layout.relationshipStore(), layout.idRelationshipStore(), config, idGeneratorFactory,
                         pageCache, logProvider, recordFormats, openOptions ), cursorTracer );
     }
 
     CommonAbstractStore createRelationshipTypeTokenStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new RelationshipTypeTokenStore( layout.relationshipTypeTokenStore().toFile(), layout.idRelationshipTypeTokenStore().toFile(), config,
+                new RelationshipTypeTokenStore( layout.relationshipTypeTokenStore(), layout.idRelationshipTypeTokenStore(), config,
                         idGeneratorFactory,
                         pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME, cursorTracer ),
                         recordFormats, openOptions ), cursorTracer );
@@ -488,14 +488,14 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createRelationshipTypeTokenNamesStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicStringStore( layout.relationshipTypeTokenNamesStore().toFile(), layout.idRelationshipTypeTokenNamesStore().toFile(),
+        return createDynamicStringStore( layout.relationshipTypeTokenNamesStore(), layout.idRelationshipTypeTokenNamesStore(),
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorTracer );
     }
 
     CommonAbstractStore createLabelTokenStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new LabelTokenStore( layout.labelTokenStore().toFile(), layout.idLabelTokenStore().toFile(), config, idGeneratorFactory, pageCache,
+                new LabelTokenStore( layout.labelTokenStore(), layout.idLabelTokenStore(), config, idGeneratorFactory, pageCache,
                         logProvider, (DynamicStringStore) getOrOpenStore( StoreType.LABEL_TOKEN_NAME, cursorTracer ), recordFormats, openOptions ),
                 cursorTracer );
     }
@@ -503,7 +503,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createSchemaStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new SchemaStore( layout.schemaStore().toFile(), layout.idSchemaStore().toFile(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
+                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
                         logProvider,
                         (PropertyStore) getOrOpenStore( StoreType.PROPERTY, cursorTracer ),
                         recordFormats, openOptions ), cursorTracer );
@@ -511,42 +511,42 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createRelationshipGroupStore( PageCursorTracer cursorTracer )
     {
-        return initialize( new RelationshipGroupStore( layout.relationshipGroupStore().toFile(), layout.idRelationshipGroupStore().toFile(), config,
+        return initialize( new RelationshipGroupStore( layout.relationshipGroupStore(), layout.idRelationshipGroupStore(), config,
                 idGeneratorFactory, pageCache, logProvider, recordFormats, openOptions ), cursorTracer );
     }
 
     CommonAbstractStore createLabelTokenNamesStore( PageCursorTracer cursorTracer )
     {
-        return createDynamicStringStore( layout.labelTokenNamesStore().toFile(), layout.idLabelTokenNamesStore().toFile(), IdType.LABEL_TOKEN_NAME,
+        return createDynamicStringStore( layout.labelTokenNamesStore(), layout.idLabelTokenNamesStore(), IdType.LABEL_TOKEN_NAME,
                 TokenStore.NAME_STORE_BLOCK_SIZE, cursorTracer );
     }
 
     CommonAbstractStore createMetadataStore( PageCursorTracer cursorTracer )
     {
         return initialize(
-                new MetaDataStore( layout.metadataStore().toFile(), layout.idMetadataStore().toFile(), config, idGeneratorFactory, pageCache, logProvider,
+                new MetaDataStore( layout.metadataStore(), layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
                         recordFormats.metaData(), recordFormats.storeVersion(), pageCacheTracer, openOptions ), cursorTracer );
     }
 
-    private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, PageCursorTracer cursorTracer )
+    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, PageCursorTracer cursorTracer )
     {
         return createDynamicStringStore( storeFile, idFile, IdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ), cursorTracer );
     }
 
-    private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, IdType idType, int blockSize, PageCursorTracer cursorTracer )
+    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, IdType idType, int blockSize, PageCursorTracer cursorTracer )
     {
         return initialize( new DynamicStringStore( storeFile, idFile, config, idType, idGeneratorFactory,
                 pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(),
                 openOptions ), cursorTracer );
     }
 
-    private CommonAbstractStore createDynamicArrayStore( File storeFile, File idFile, IdType idType, Setting<Integer> blockSizeProperty,
+    private CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, IdType idType, Setting<Integer> blockSizeProperty,
             PageCursorTracer cursorTracer )
     {
         return createDynamicArrayStore( storeFile, idFile, idType, config.get( blockSizeProperty ), cursorTracer );
     }
 
-    CommonAbstractStore createDynamicArrayStore( File storeFile, File idFile, IdType idType, int blockSize, PageCursorTracer cursorTracer )
+    CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, IdType idType, int blockSize, PageCursorTracer cursorTracer )
     {
         if ( blockSize <= 0 )
         {
@@ -569,7 +569,6 @@ public class NeoStores implements AutoCloseable
 
     public static boolean isStorePresent( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
-        File metaDataStore = databaseLayout.metadataStore().toFile();
-        return fs.fileExists( metaDataStore );
+        return fs.fileExists( databaseLayout.metadataStore().toFile() );
     }
 }

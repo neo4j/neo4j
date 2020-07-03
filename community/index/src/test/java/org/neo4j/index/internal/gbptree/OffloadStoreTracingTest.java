@@ -55,7 +55,7 @@ class OffloadStoreTracingTest
     void setUp() throws IOException
     {
         cursorTracer = pageCacheTracer.createPageCursorTracer( "testCursorTracer" );
-        pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize() );
+        pagedFile = pageCache.map( testDirectory.createFilePath( "file" ), pageCache.pageSize() );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
         var idProvider = new FreeListIdProvider( pagedFile, 10 );
         offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize() );

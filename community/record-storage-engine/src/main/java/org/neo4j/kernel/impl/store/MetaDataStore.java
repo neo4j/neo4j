@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -165,7 +166,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private volatile boolean closed;
 
-    MetaDataStore( File file, File idFile, Config conf,
+    MetaDataStore( Path file, Path idFile, Config conf,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
             String storeVersion, PageCacheTracer pageCacheTracer,
@@ -238,7 +239,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * @return the previous value before writing.
      * @throws IOException if any I/O related error occurs.
      */
-    public static long setRecord( PageCache pageCache, File neoStore, Position position, long value, PageCursorTracer cursorTracer ) throws IOException
+    public static long setRecord( PageCache pageCache, Path neoStore, Position position, long value, PageCursorTracer cursorTracer ) throws IOException
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
@@ -268,7 +269,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         MetaDataRecord neoStoreRecord = new MetaDataRecord();
                         neoStoreRecord.setId( position.id );
                         throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
-                                neoStoreRecord, 0, offset, RECORD_SIZE, pageSize, neoStore.getAbsolutePath() ) );
+                                neoStoreRecord, 0, offset, RECORD_SIZE, pageSize, neoStore.toAbsolutePath().toString() ) );
                     }
                 }
             }
@@ -297,7 +298,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * @param cursorTracer underlying page cursor tracer.
      * @return the read record value specified by {@link Position}.
      */
-    public static long getRecord( PageCache pageCache, File neoStore, Position position, PageCursorTracer cursorTracer ) throws IOException
+    public static long getRecord( PageCache pageCache, Path neoStore, Position position, PageCursorTracer cursorTracer ) throws IOException
     {
         var recordFormat = new MetaDataRecordFormat();
         int pageSize = pageCache.pageSize();
@@ -329,7 +330,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         {
                             int offset = offset( position );
                             throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
-                                    record, 0, offset, RECORD_SIZE, pageSize, neoStore.getAbsolutePath() ) );
+                                    record, 0, offset, RECORD_SIZE, pageSize, neoStore.toAbsolutePath().toString() ) );
                         }
                     }
                 }
@@ -338,7 +339,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return value;
     }
 
-    public static void setStoreId( PageCache pageCache, File neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp,
+    public static void setStoreId( PageCache pageCache, Path neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp,
             PageCursorTracer cursorTracer ) throws IOException
     {
         setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime(), cursorTracer );
@@ -365,7 +366,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return isNotInitialisedExternalUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
-    public static StoreId getStoreId( PageCache pageCache, File neoStore, PageCursorTracer cursorTracer ) throws IOException
+    public static StoreId getStoreId( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer ) throws IOException
     {
         return new StoreId(
                 getRecord( pageCache, neoStore, Position.TIME, cursorTracer ),
@@ -591,7 +592,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new UnderlyingStorageException(
                     "Out of page bounds when reading all meta-data fields. The page in question is page " +
-                    cursor.getCurrentPageId() + " of file " + storageFile.getAbsolutePath() + ", which is " +
+                    cursor.getCurrentPageId() + " of file " + storageFile.toAbsolutePath() + ", which is " +
                     cursor.getCurrentPageSize() + " bytes in size" );
         }
     }

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.storemigration.legacy;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
@@ -50,8 +50,8 @@ public class SchemaStore35 extends AbstractDynamicStore
     private static final int BLOCK_SIZE = 56;
 
     public SchemaStore35(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -60,7 +60,7 @@ public class SchemaStore35 extends AbstractDynamicStore
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
+        super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
                 recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
     }
 

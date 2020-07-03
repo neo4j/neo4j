@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * A PageSwapper that delegates all calls to a wrapped PageSwapper instance.
@@ -67,9 +67,9 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return delegate.file();
+        return delegate.path();
     }
 
     @Override

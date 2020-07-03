@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.test.rule.TestDirectory;
@@ -52,7 +53,7 @@ public abstract class FormatCompatibilityVerifier
     @Test
     public void shouldDetectFormatChange() throws Throwable
     {
-        File storeFile = globalDir.file( storeFileName() );
+        Path storeFile = globalDir.filePath( storeFileName() );
         doShouldDetectFormatChange( zipName(), storeFile );
     }
 
@@ -60,13 +61,13 @@ public abstract class FormatCompatibilityVerifier
 
     protected abstract String storeFileName();
 
-    protected abstract void createStoreFile( File storeFile ) throws IOException;
+    protected abstract void createStoreFile( Path storeFile ) throws IOException;
 
-    protected abstract void verifyFormat( File storeFile ) throws IOException, FormatViolationException;
+    protected abstract void verifyFormat( Path storeFile ) throws IOException, FormatViolationException;
 
-    protected abstract void verifyContent( File storeFile ) throws IOException;
+    protected abstract void verifyContent( Path storeFile ) throws IOException;
 
-    private void doShouldDetectFormatChange( String zipName, File storeFile ) throws Throwable
+    private void doShouldDetectFormatChange( String zipName, Path storeFile ) throws Throwable
     {
         try
         {
@@ -76,10 +77,10 @@ public abstract class FormatCompatibilityVerifier
         {
             // First time this test is run, eh?
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
+            ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
             tellDeveloperToCommitThisFormatVersion( zipName );
         }
-        assertTrue( zipName + " seems to be missing from resources directory", globalFs.get().fileExists( storeFile ) );
+        assertTrue( zipName + " seems to be missing from resources directory", globalFs.get().fileExists( storeFile.toFile() ) );
 
         // Verify format
         try
@@ -91,9 +92,9 @@ public abstract class FormatCompatibilityVerifier
             // Good actually, or?
             assertThat( e.getMessage() ).contains( "format version" );
 
-            globalFs.get().deleteFile( storeFile );
+            globalFs.get().deleteFile( storeFile.toFile() );
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
+            ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
 
             tellDeveloperToCommitThisFormatVersion( zipName );
         }

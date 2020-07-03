@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class SchemaAndIndexingFileIndexListing
 {
-    private static final Function<Path,StoreFileMetadata> toStoreFileMetadata = file -> new StoreFileMetadata( file.toFile(), 1 );
+    private static final Function<Path,StoreFileMetadata> toStoreFileMetadata = path -> new StoreFileMetadata( path, 1 );
 
     private final LabelScanStore labelScanStore;
     private final RelationshipTypeScanStore relationshipTypeScanStore;

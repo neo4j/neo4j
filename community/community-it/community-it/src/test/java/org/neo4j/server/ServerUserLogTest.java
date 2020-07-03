@@ -24,11 +24,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,7 +70,7 @@ class ServerUserLogTest
     {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
-        File dir = homeDir.homeDir();
+        Path dir = homeDir.homePath();
         Log logBeforeStart = neoBootstrapper.getLog();
 
         // when
@@ -105,7 +103,7 @@ class ServerUserLogTest
     {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
-        File dir = homeDir.homeDir();
+        Path dir = homeDir.homePath();
         Log logBeforeStart = neoBootstrapper.getLog();
 
         // when
@@ -136,7 +134,7 @@ class ServerUserLogTest
     {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
-        File dir = homeDir.homeDir();
+        Path dir = homeDir.homePath();
         Log logBeforeStart = neoBootstrapper.getLog();
         int maxArchives = 4;
 
@@ -199,23 +197,24 @@ class ServerUserLogTest
         return new CommunityBootstrapper();
     }
 
-    private static List<String> readUserLogFile( File homeDir ) throws IOException
+    private static List<String> readUserLogFile( Path homeDir ) throws IOException
     {
         return Files.readAllLines( getUserLogFileLocation( homeDir ) ).stream().filter( line -> !line.equals( "" ) ).collect( Collectors.toList() );
     }
 
-    private static Path getUserLogFileLocation( File homeDir )
+    private static Path getUserLogFileLocation( Path homeDir )
     {
-        return Paths.get( homeDir.getAbsolutePath(), "logs", "neo4j.log" );
+        return homeDir.resolve( "logs" ).resolve( "neo4j.log" );
     }
 
-    private static List<String> allUserLogFiles( File homeDir ) throws IOException
+    private static List<String> allUserLogFiles( Path homeDir ) throws IOException
     {
-        try ( Stream<String> stream = Files.list( Paths.get( homeDir.getAbsolutePath(), "logs" ) )
-                .map( x -> x.getFileName().toString() )
-                .filter( x -> x.contains( "neo4j.log" ) ) )
+        try ( Stream<Path> stream = Files.list( homeDir.resolve( "logs" ) ) )
         {
-            return stream.collect( Collectors.toList() );
+            return stream
+                    .map( x -> x.getFileName().toString() )
+                    .filter( x -> x.contains( "neo4j.log" ) )
+                    .collect( Collectors.toList() );
         }
     }
 }

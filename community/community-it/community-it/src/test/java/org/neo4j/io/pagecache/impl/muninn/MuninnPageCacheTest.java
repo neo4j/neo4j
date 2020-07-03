@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -112,7 +113,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped() throws IOException
     {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
-        File fileForDeletion = file( "fileForDeletion" );
+        Path fileForDeletion = file( "fileForDeletion" );
         writeInitialDataTo( fileForDeletion );
         long initialFlushes = defaultPageCacheTracer.flushes();
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, defaultPageCacheTracer ) )
@@ -127,7 +128,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
                 pagedFile.setDeleteOnClose( true );
             }
-            assertFalse( fs.fileExists( fileForDeletion ) );
+            assertFalse( fs.fileExists( fileForDeletion.toFile() ) );
             assertEquals( 0, defaultPageCacheTracer.flushes() - initialFlushes );
         }
     }
@@ -944,7 +945,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
-            File file = file( "a" );
+            Path file = file( "a" );
             writeInitialDataTo( file );
             try ( MuninnPageCache pageCache = createPageCache( fs, 30, PageCacheTracer.NULL ) )
             {
@@ -987,13 +988,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
-            List<File> mappedFiles = new ArrayList<>();
+            List<Path> mappedFiles = new ArrayList<>();
             mappedFiles.add( existingFile( "a" ) );
             mappedFiles.add( existingFile( "b" ) );
             getPageCache( fs, maxPages, new FlushRendezvousTracer( mappedFiles.size() ) );
 
             List<PagedFile> mappedPagedFiles = new ArrayList<>();
-            for ( File mappedFile : mappedFiles )
+            for ( Path mappedFile : mappedFiles )
             {
                 PagedFile pagedFile = map( pageCache, mappedFile, filePageSize );
                 mappedPagedFiles.add( pagedFile );
@@ -1053,9 +1054,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
-    private void writeInitialDataTo( File file ) throws IOException
+    private void writeInitialDataTo( Path path ) throws IOException
     {
-        try ( StoreChannel channel = fs.write( file ) )
+        try ( StoreChannel channel = fs.write( path.toFile() ) )
         {
             ByteBuffer buf = ByteBuffers.allocate( 16, INSTANCE );
             buf.putLong( x );
@@ -1068,7 +1069,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffers.allocate( 16, INSTANCE );
-        try ( StoreChannel channel = fs.read( file( fileName ) ) )
+        try ( StoreChannel channel = fs.read( file( fileName ).toFile() ) )
         {
             channel.readAll( buffer );
         }

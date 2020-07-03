@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -80,7 +81,7 @@ class RecordStoreVersionCheckTest
     @Test
     void tracePageCacheAccessOnCheckUpgradable() throws IOException
     {
-        File neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
@@ -100,7 +101,7 @@ class RecordStoreVersionCheckTest
     void tracePageCacheAccessOnConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        File neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
@@ -117,7 +118,7 @@ class RecordStoreVersionCheckTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreVersionAccessConstruction" );
 
-        File neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
@@ -150,7 +151,7 @@ class RecordStoreVersionCheckTest
     void shouldReportFileWithIncorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
@@ -168,7 +169,7 @@ class RecordStoreVersionCheckTest
     void shouldReportFileWithCorrectVersion() throws IOException
     {
         // given
-        File neoStore = emptyFile( fileSystem );
+        Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, NULL );
@@ -183,11 +184,11 @@ class RecordStoreVersionCheckTest
         assertEquals( storeVersion, result.actualVersion );
     }
 
-    private File emptyFile( FileSystemAbstraction fs ) throws IOException
+    private Path emptyFile( FileSystemAbstraction fs ) throws IOException
     {
-        File shortFile = databaseLayout.metadataStore().toFile();
-        fs.deleteFile( shortFile );
-        fs.write( shortFile ).close();
+        Path shortFile = databaseLayout.metadataStore();
+        fs.deleteFile( shortFile.toFile() );
+        fs.write( shortFile.toFile() ).close();
         return shortFile;
     }
 

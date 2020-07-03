@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.randomharness;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,11 +43,11 @@ class CommandPrimer
 {
     private final Random rng;
     private final MuninnPageCache cache;
-    private final File[] files;
-    private final Map<File,PagedFile> fileMap;
-    private final Map<File,List<Integer>> recordsWrittenTo;
-    private final List<File> mappedFiles;
-    private final Set<File> filesTouched;
+    private final Path[] files;
+    private final Map<Path,PagedFile> fileMap;
+    private final Map<Path,List<Integer>> recordsWrittenTo;
+    private final List<Path> mappedFiles;
+    private final Set<Path> filesTouched;
     private final int filePageCount;
     private final int filePageSize;
     private final RecordFormat recordFormat;
@@ -56,7 +56,7 @@ class CommandPrimer
     // Entity-locks that protect the individual records, since page write locks are not exclusive.
     private final TinyLockManager recordLocks;
 
-    CommandPrimer( Random rng, MuninnPageCache cache, File[] files, Map<File,PagedFile> fileMap, int filePageCount,
+    CommandPrimer( Random rng, MuninnPageCache cache, Path[] files, Map<Path,PagedFile> fileMap, int filePageCount,
             int filePageSize, RecordFormat recordFormat )
     {
         this.rng = rng;
@@ -75,18 +75,18 @@ class CommandPrimer
         maxRecordCount = filePageCount * recordsPerPage;
         recordLocks = new TinyLockManager();
 
-        for ( File file : files )
+        for ( Path file : files )
         {
             recordsWrittenTo.put( file, new ArrayList<>() );
         }
     }
 
-    public List<File> getMappedFiles()
+    public List<Path> getMappedFiles()
     {
         return mappedFiles;
     }
 
-    public Set<File> getFilesTouched()
+    public Set<Path> getFilesTouched()
     {
         return filesTouched;
     }
@@ -123,8 +123,8 @@ class CommandPrimer
     {
         if ( mappedFiles.size() > 0 )
         {
-            final File file = mappedFiles.get( rng.nextInt( mappedFiles.size() ) );
-            return new Action( Command.FlushFile, "[file=%s]", file.getName() )
+            final Path file = mappedFiles.get( rng.nextInt( mappedFiles.size() ) );
+            return new Action( Command.FlushFile, "[file=%s]", file.getFileName() )
             {
                 @Override
                 public void perform() throws Exception
@@ -148,7 +148,7 @@ class CommandPrimer
 
     private Action mapFile()
     {
-        final File file = files[rng.nextInt( files.length )];
+        final Path file = files[rng.nextInt( files.length )];
         mappedFiles.add( file );
         filesTouched.add( file );
         return new Action( Command.MapFile, "[file=%s]", file )
@@ -165,11 +165,11 @@ class CommandPrimer
     {
         if ( mappedFiles.size() > 0 )
         {
-            final File file = mappedFiles.remove( rng.nextInt( mappedFiles.size() ) );
+            final Path file = mappedFiles.remove( rng.nextInt( mappedFiles.size() ) );
             return new Action( Command.UnmapFile, "[file=%s]", file )
             {
                 @Override
-                public void perform() throws Exception
+                public void perform()
                 {
                     fileMap.get( file ).close();
                 }
@@ -217,7 +217,7 @@ class CommandPrimer
         {
             return innerAction;
         }
-        final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
+        final Path file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         List<Integer> recordsWritten = recordsWrittenTo.get( file );
         final int recordId = recordsWritten.isEmpty() ? rng.nextInt( maxRecordCount )
                                                       : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
@@ -234,7 +234,7 @@ class CommandPrimer
         {
             return innerAction;
         }
-        final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
+        final Path file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         filesTouched.add( file );
         int recordId;
         do
@@ -251,12 +251,12 @@ class CommandPrimer
 
     private class ReadAction extends Action
     {
-        private final File file;
+        private final Path file;
         private final int pageId;
         private final int pageOffset;
         private final Record expectedRecord;
 
-        ReadAction( File file, int recordId, int pageId, int pageOffset, Record expectedRecord, Action innerAction )
+        ReadAction( Path file, int recordId, int pageId, int pageOffset, Record expectedRecord, Action innerAction )
         {
             super( Command.ReadRecord, innerAction,
                     "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, expectedRecord=%s]", file, recordId, pageId,
@@ -289,17 +289,17 @@ class CommandPrimer
 
     private class WriteAction extends Action
     {
-        private final File file;
+        private final Path file;
         private final int recordId;
         private final int pageId;
         private final int pageOffset;
         private final Record record;
 
-        WriteAction( File file, int recordId, int pageId, int pageOffset, Record record, Action innerAction )
+        WriteAction( Path path, int recordId, int pageId, int pageOffset, Record record, Action innerAction )
         {
             super( Command.WriteRecord, innerAction, "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, record=%s]",
-                    file, recordId, pageId, pageOffset, record );
-            this.file = file;
+                    path, recordId, pageId, pageOffset, record );
+            this.file = path;
             this.recordId = recordId;
             this.pageId = pageId;
             this.pageOffset = pageOffset;

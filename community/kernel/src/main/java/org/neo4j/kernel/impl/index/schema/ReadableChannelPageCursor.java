@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.pagecache.CursorException;
@@ -241,7 +241,7 @@ class ReadableChannelPageCursor extends PageCursor
     }
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
         return null;
     }

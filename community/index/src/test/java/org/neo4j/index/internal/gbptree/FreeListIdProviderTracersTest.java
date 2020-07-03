@@ -49,7 +49,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnInitialize" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "init" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFilePath( "init" ), pageCache.pageSize() ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initializeAfterCreation( cursorTracer );
@@ -64,7 +64,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnNewIdGeneration" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFilePath( "newId" ), pageCache.pageSize() ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.acquireNewId( 1, 1, cursorTracer );
@@ -79,7 +79,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnTheSamePage" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFilePath( "releaseId" ), pageCache.pageSize() ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.releaseId( 1, 1,42,  cursorTracer );
@@ -94,7 +94,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnDifferentPage" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "differentReleaseId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFilePath( "differentReleaseId" ), pageCache.pageSize() ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 0, 1, 0, listIdProvider.entriesPerPage() - 1, 0 );
@@ -114,7 +114,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnFreeListTraversal" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "traversal" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFilePath( "traversal" ), pageCache.pageSize() ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 100, 0, 1, listIdProvider.entriesPerPage() - 1, 0 );

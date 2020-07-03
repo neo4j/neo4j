@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,14 +36,14 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 public class IndexFiles
 {
     private final FileSystemAbstraction fs;
-    private final File directory;
-    private final File storeFile;
+    private final Path directory;
+    private final Path storeFile;
 
     public IndexFiles( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId )
     {
         this.fs = fs;
-        this.directory = directoryStructure.directoryForIndex( indexId );
-        this.storeFile = new File( directory, indexFileName( indexId ) );
+        this.directory = directoryStructure.directoryForIndex( indexId ).toPath();
+        this.storeFile = directory.resolve( indexFileName( indexId ) );
     }
 
     private static String indexFileName( long indexId )
@@ -52,19 +53,19 @@ public class IndexFiles
 
     public File getStoreFile()
     {
-        return storeFile;
+        return storeFile.toFile();
     }
 
     public File getBase()
     {
-        return directory;
+        return directory.toFile();
     }
 
     public void clear()
     {
         try
         {
-            fs.deleteRecursively( directory );
+            fs.deleteRecursively( directory.toFile() );
         }
         catch ( IOException e )
         {
@@ -74,11 +75,12 @@ public class IndexFiles
 
     public void archiveIndex()
     {
-        if ( fs.isDirectory( directory ) && fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
+        if ( fs.isDirectory( directory.toFile() ) && fs.fileExists( directory.toFile() ) && fs.listFiles( directory.toFile() ).length > 0 )
         {
             try
             {
-                ZipUtils.zip( fs, directory, new File( directory.getParent(), "archive-" + directory.getName() + "-" + System.currentTimeMillis() + ".zip" ) );
+                ZipUtils.zip( fs, directory,
+                        directory.getParent().resolve( "archive-" + directory.getFileName() + "-" + System.currentTimeMillis() + ".zip" ) );
             }
             catch ( IOException e )
             {
@@ -91,7 +93,7 @@ public class IndexFiles
     {
         try
         {
-            fs.mkdirs( directory );
+            fs.mkdirs( directory.toFile() );
         }
         catch ( IOException e )
         {

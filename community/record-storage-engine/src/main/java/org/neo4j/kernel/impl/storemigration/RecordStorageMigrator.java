@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -192,7 +193,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
     {
         // Extract information about the last transaction from legacy neostore
-        File neoStore = directoryLayout.metadataStore().toFile();
+        Path neoStore = directoryLayout.metadataStore();
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) )
         {
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
@@ -357,7 +358,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return migrationStructure.file( "lastxlogposition" ).toFile();
     }
 
-    TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
+    TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
             throws IOException
     {
         int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
@@ -393,7 +394,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                           : new TransactionId( lastTransactionId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
     }
 
-    LogPosition extractTransactionLogPosition( File neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId,
+    LogPosition extractTransactionLogPosition( Path neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId,
             PageCursorTracer cursorTracer ) throws IOException
     {
         long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
@@ -658,8 +659,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition, PageCursorTracer cursorTracer ) throws IOException
     {
-        final File storeDirNeoStore = sourceDirectoryStructure.metadataStore().toFile();
-        final File migrationDirNeoStore = migrationStructure.metadataStore().toFile();
+        final Path storeDirNeoStore = sourceDirectoryStructure.metadataStore();
+        final Path migrationDirNeoStore = migrationStructure.metadataStore();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure,
                 migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
                 ExistingTargetStrategy.SKIP );
@@ -722,8 +723,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
             try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
                   SchemaStore35 srcSchema = new SchemaStore35(
-                          directoryLayout.schemaStore().toFile(),
-                          directoryLayout.idSchemaStore().toFile(),
+                          directoryLayout.schemaStore(),
+                          directoryLayout.idSchemaStore(),
                           config,
                           org.neo4j.internal.id.IdType.SCHEMA,
                           srcIdGeneratorFactory,

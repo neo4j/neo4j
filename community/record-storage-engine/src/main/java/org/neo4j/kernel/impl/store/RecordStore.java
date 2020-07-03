@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
@@ -67,7 +68,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     /**
      * @return the {@link File} that backs this store.
      */
-    File getStorageFile();
+    Path getStorageFile();
 
     /**
      * @return high id of this store, i.e an id higher than any in use record.
@@ -410,7 +411,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public File getStorageFile()
+        public Path getStorageFile()
         {
             return actual.getStorageFile();
         }

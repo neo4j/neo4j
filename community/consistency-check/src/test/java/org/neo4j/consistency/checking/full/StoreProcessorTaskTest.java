@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
@@ -48,7 +48,7 @@ class StoreProcessorTaskTest
         when( singlePassProcessor.getStage() ).thenReturn( Stage.SEQUENTIAL_FORWARD );
 
         NodeStore store = mock( NodeStore.class );
-        when( store.getStorageFile() ).thenReturn( new File( "node-store" ) );
+        when( store.getStorageFile() ).thenReturn( Path.of( "node-store" ) );
 
         StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<>( "nodes", Statistics.NONE, 1,
                 store, null, "nodes", ProgressMonitorFactory.NONE.multipleParts( "check" ),

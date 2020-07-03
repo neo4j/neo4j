@@ -19,29 +19,29 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class StoreFileMetadata
 {
-    private final File file;
+    private final Path path;
     private final int recordSize;
     private final boolean isLogFile;
 
-    public StoreFileMetadata( File file, int recordSize )
+    public StoreFileMetadata( Path path, int recordSize )
     {
-        this( file, recordSize, false );
+        this( path, recordSize, false );
     }
 
-    public StoreFileMetadata( File file, int recordSize, boolean isLogFile )
+    public StoreFileMetadata( Path path, int recordSize, boolean isLogFile )
     {
-        this.file = file;
+        this.path = path;
         this.recordSize = recordSize;
         this.isLogFile = isLogFile;
     }
 
-    public File file()
+    public Path path()
     {
-        return file;
+        return path;
     }
 
     public int recordSize()

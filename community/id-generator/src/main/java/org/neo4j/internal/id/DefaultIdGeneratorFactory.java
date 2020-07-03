@@ -21,8 +21,8 @@ package org.neo4j.internal.id;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.function.Consumer;
@@ -71,7 +71,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         IndexedIdGenerator generator =
@@ -81,7 +81,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+            Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
             ImmutableSet<OpenOption> openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
@@ -96,12 +96,12 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+    public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
             boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
-        fs.deleteFile( fileName );
+        fs.deleteFile( fileName.toFile() );
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
@@ -124,8 +124,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public Collection<File> listIdFiles()
+    public Collection<Path> listIdFiles()
     {
-        return generators.values().stream().map( IndexedIdGenerator::file ).collect( Collectors.toList() );
+        return generators.values().stream().map( IndexedIdGenerator::path ).collect( Collectors.toList() );
     }
 }

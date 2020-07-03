@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * <strong>Implementation note:</strong> These methods must NEVER swallow a thread-interrupt.
@@ -133,7 +133,7 @@ public interface PageSwapper
     /**
      * Get the file that this PageSwapper represents.
      */
-    File file();
+    Path path();
 
     /**
      * Close and release all resources associated with the file underlying this PageSwapper.

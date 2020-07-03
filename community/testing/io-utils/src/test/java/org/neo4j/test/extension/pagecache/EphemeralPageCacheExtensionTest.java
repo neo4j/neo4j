@@ -22,8 +22,8 @@ package org.neo4j.test.extension.pagecache;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -64,7 +64,7 @@ class EphemeralPageCacheExtensionTest
     @Test
     void pageCacheCanFindFileCreatedByTestDirectory() throws IOException
     {
-        File testFile = testDirectory.createFile( "testFile" );
+        Path testFile = testDirectory.createFilePath( "testFile" );
         try ( PagedFile map = pageCache.map( testFile, 4096 ) )
         {
             assertNotNull( map );

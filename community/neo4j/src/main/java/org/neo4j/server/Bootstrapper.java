@@ -19,12 +19,12 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
 public interface Bootstrapper
 {
-    int start( File homeDir, File configFile, Map<String, String> configOverrides );
+    int start( Path homeDir, Path configFile, Map<String, String> configOverrides );
 
     int stop();
 }

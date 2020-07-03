@@ -26,8 +26,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,10 +138,10 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     }
 
     @Override
-    protected void createStoreFile( File storeFile ) throws IOException
+    protected void createStoreFile( Path storeFile ) throws IOException
     {
         List<Long> initialKeys = initialKeys();
-        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
         {
             try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
             {
@@ -159,9 +159,9 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
      */
     @SuppressWarnings( "EmptyTryBlock" )
     @Override
-    protected void verifyFormat( File storeFile ) throws IOException, FormatViolationException
+    protected void verifyFormat( Path storeFile ) throws IOException, FormatViolationException
     {
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
         {
         }
         catch ( MetadataMismatchException e )
@@ -171,9 +171,9 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     }
 
     @Override
-    public void verifyContent( File storeFile ) throws IOException
+    public void verifyContent( Path storeFile ) throws IOException
     {
-        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile.toFile(), layout ).build() )
         {
             {
                 // WHEN reading from the tree

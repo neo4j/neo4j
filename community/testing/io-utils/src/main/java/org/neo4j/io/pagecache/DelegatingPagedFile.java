@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -64,9 +64,9 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return delegate.file();
+        return delegate.path();
     }
 
     @Override

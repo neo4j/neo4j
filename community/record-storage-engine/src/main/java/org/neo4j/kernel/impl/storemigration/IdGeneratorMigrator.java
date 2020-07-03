@@ -181,7 +181,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile.toFile(), storeType.getIdType(), highId, true, Long.MAX_VALUE,
+                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
                             readOnly, cursorTracer, immutable.empty() );
                   Marker marker = idGenerator.marker( cursorTracer ) )
             {

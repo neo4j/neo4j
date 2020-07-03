@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.cache;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageCache;
 
@@ -34,7 +34,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class PageCacheArrayFactoryMonitorTest
 {
-    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), NULL, new File( "storeDir" ) );
+    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), NULL, Path.of( "storeDir" ) );
     private final PageCacheArrayFactoryMonitor monitor = new PageCacheArrayFactoryMonitor();
 
     @Test

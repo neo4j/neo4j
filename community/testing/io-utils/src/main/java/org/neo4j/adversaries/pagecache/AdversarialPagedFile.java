@@ -19,9 +19,9 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
@@ -75,9 +75,9 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return delegate.file();
+        return delegate.path();
     }
 
     @Override

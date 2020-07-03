@@ -22,9 +22,9 @@ package org.neo4j.server;
 import sun.misc.Signal;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -88,13 +88,13 @@ public abstract class NeoBootstrapper implements Bootstrapper
     }
 
     @VisibleForTesting
-    public final int start( File homeDir, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Map<String, String> configOverrides )
     {
         return start( homeDir, null, configOverrides );
     }
 
     @Override
-    public final int start( File homeDir, File configFile, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
     {
         addShutdownHook();
         installSignalHandlers();
@@ -102,7 +102,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .fromFileNoThrow( configFile )
                 .setRaw( configOverrides )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .build();
         try
         {
@@ -263,18 +263,18 @@ public abstract class NeoBootstrapper implements Bootstrapper
         dependencies = dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION );
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File destination = config.get( GraphDatabaseSettings.store_user_log_path ).toFile();
+        Path destination = config.get( GraphDatabaseSettings.store_user_log_path );
         Long rotationThreshold = config.get( GraphDatabaseSettings.store_user_log_rotation_threshold );
         try
         {
             if ( rotationThreshold == 0L )
             {
-                OutputStream userLog = createOrOpenAsOutputStream( fs, destination, true );
+                OutputStream userLog = createOrOpenAsOutputStream( fs, destination.toFile(), true );
                 // Assign it to the server instance so that it gets closed when the server closes
                 this.userLogFileStream = userLog;
                 return builder.toOutputStream( userLog );
             }
-            RotatingFileOutputStreamSupplier rotatingUserLogSupplier = new RotatingFileOutputStreamSupplier( fs, destination, rotationThreshold,
+            RotatingFileOutputStreamSupplier rotatingUserLogSupplier = new RotatingFileOutputStreamSupplier( fs, destination.toFile(), rotationThreshold,
                     config.get( GraphDatabaseSettings.store_user_log_rotation_delay ).toMillis(),
                     config.get( GraphDatabaseSettings.store_user_log_max_archives ), deferredExecutor );
             // Assign it to the server instance so that it gets closed when the server closes

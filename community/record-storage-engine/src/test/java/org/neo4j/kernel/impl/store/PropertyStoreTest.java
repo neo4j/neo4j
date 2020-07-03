@@ -23,8 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -63,14 +63,14 @@ class PropertyStoreTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private File storeFile;
-    private File idFile;
+    private Path storeFile;
+    private Path idFile;
 
     @BeforeEach
     void setup()
     {
-        storeFile = databaseLayout.propertyStore().toFile();
-        idFile = databaseLayout.idPropertyStore().toFile();
+        storeFile = databaseLayout.propertyStore();
+        idFile = databaseLayout.idPropertyStore();
     }
 
     @Test

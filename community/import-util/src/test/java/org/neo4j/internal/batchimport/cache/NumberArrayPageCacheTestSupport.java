@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,7 +36,7 @@ public class NumberArrayPageCacheTestSupport
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
-        File dir = testDirectory.prepareDirectoryForTest( "test" );
+        Path dir = testDirectory.prepareDirectoryForTest( "test" ).toPath();
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
         PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler, PageCacheTracer.NULL );
         return new Fixture( pageCache, fileSystem, dir, scheduler );
@@ -46,10 +46,10 @@ public class NumberArrayPageCacheTestSupport
     {
         public final PageCache pageCache;
         public final FileSystemAbstraction fileSystem;
-        public final File directory;
+        public final Path directory;
         private final ThreadPoolJobScheduler scheduler;
 
-        private Fixture( PageCache pageCache, FileSystemAbstraction fileSystem, File directory, ThreadPoolJobScheduler scheduler )
+        private Fixture( PageCache pageCache, FileSystemAbstraction fileSystem, Path directory, ThreadPoolJobScheduler scheduler )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;

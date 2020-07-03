@@ -22,8 +22,8 @@ package org.neo4j.io.pagecache.tracing;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -114,11 +114,11 @@ public class DefaultPageCacheTracerTest
     @Test
     void mustCountFileMappingAndUnmapping()
     {
-        tracer.mappedFile( new File( "a" ) );
+        tracer.mappedFile( Path.of( "a" ) );
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
 
-        tracer.unmappedFile( new File( "a" ) );
+        tracer.unmappedFile( Path.of( "a" ) );
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
     }

@@ -161,14 +161,14 @@ class DatabaseFileListingTest
     void shouldListMetaDataStoreLast() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( false ) );
-        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore().toFile() );
+        assertEquals( fileMetadata.path(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
     void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( true ) );
-        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore().toFile() );
+        assertEquals( fileMetadata.path(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
@@ -182,7 +182,7 @@ class DatabaseFileListingTest
     void shouldListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( true ).stream()
-                .map( metaData -> metaData.file().getName() )
+                .map( metaData -> metaData.path().getFileName().toString() )
                 .anyMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
@@ -190,7 +190,7 @@ class DatabaseFileListingTest
     void shouldNotListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( false ).stream()
-                .map( metaData -> metaData.file().getName() )
+                .map( metaData -> metaData.path().getFileName().toString() )
                 .noneMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
@@ -206,8 +206,7 @@ class DatabaseFileListingTest
         // there was no rotation
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<Path> listedStoreFiles = storeFiles.stream()
-                .map( StoreFileMetadata::file )
-                .map( File::toPath )
+                .map( StoreFileMetadata::path )
                 .collect( Collectors.toSet() );
         assertEquals( expectedFiles, listedStoreFiles );
     }
@@ -220,7 +219,7 @@ class DatabaseFileListingTest
         databaseFileListing.registerStoreFileProvider( provider );
         databaseFileListing.registerStoreFileProvider( provider );
         ResourceIterator<StoreFileMetadata> metadataResourceIterator = databaseFileListing.builder().build();
-        assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.file().getName() ) ).count() );
+        assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.path().getFileName().toString() ) ).count() );
     }
 
     private void verifyLogFilesWithCustomPathListing( Path path ) throws IOException
@@ -232,7 +231,7 @@ class DatabaseFileListingTest
         Database database = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
         assertTrue( database.listStoreFiles( true ).stream()
-                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
+                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.path().toFile() ) ) );
         assertEquals( path.getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
         managementService.shutdown();
     }
@@ -298,7 +297,7 @@ class DatabaseFileListingTest
         @Override
         public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection )
         {
-            fileMetadataCollection.add( new StoreFileMetadata( new File( "marker" ), 0 ) );
+            fileMetadataCollection.add( new StoreFileMetadata( Path.of( "marker" ), 0 ) );
             return Resource.EMPTY;
         }
     }

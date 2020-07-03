@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -34,13 +34,13 @@ public class BlockingBootstrapper implements Bootstrapper
         this.latch = new CountDownLatch( 1 );
     }
 
-    public final int start( File homeDir, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Map<String, String> configOverrides )
     {
         return start( homeDir, null, configOverrides );
     }
 
     @Override
-    public final int start( File homeDir, File configFile, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
     {
         int status = wrapped.start( homeDir, configFile, configOverrides );
         if ( status != NeoBootstrapper.OK )

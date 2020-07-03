@@ -26,8 +26,8 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -123,8 +123,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private final PropertyStore propertyStore;
 
     public SchemaStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -134,7 +134,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
+        super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
                 getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), openOptions );
         this.propertyStore = propertyStore;
     }

@@ -186,7 +186,7 @@ public class NeoStoresTest
         {
             try ( NeoStores neoStores = sf.openNeoStores( true ) )
             {
-                neoStores.createDynamicArrayStore( new File( "someStore" ), new File( "someIdFile" ), IdType.ARRAY_BLOCK, -2, NULL );
+                neoStores.createDynamicArrayStore( Path.of( "someStore" ), Path.of( "someIdFile" ), IdType.ARRAY_BLOCK, -2, NULL );
             }
         } );
         assertEquals( "Block size of dynamic array store should be positive integer.", e.getMessage() );
@@ -384,8 +384,8 @@ public class NeoStoresTest
     {
         Path storeDir = dir.homePath();
         createShutdownTestDatabase( fs, storeDir );
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 10, NULL ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), Position.LOG_VERSION, 12, NULL ) );
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, NULL ) );
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, NULL ) );
 
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, LOG_PROVIDER );
@@ -412,8 +412,8 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
-        File file = databaseLayout.metadataStore().toFile();
-        try ( StoreChannel channel = fs.write( file ) )
+        Path file = databaseLayout.metadataStore();
+        try ( StoreChannel channel = fs.write( file.toFile() ) )
         {
             channel.position( 0 );
             channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
@@ -521,7 +521,7 @@ public class NeoStoresTest
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
         }
 
-        File file = databaseLayout.metadataStore().toFile();
+        Path file = databaseLayout.metadataStore();
 
         assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, NULL ) );
         assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, NULL ) );
@@ -833,7 +833,7 @@ public class NeoStoresTest
 
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
                 ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )

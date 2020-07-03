@@ -21,7 +21,7 @@ package org.neo4j.server;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +33,9 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.FALSE;
 import static org.neo4j.test.conditions.Conditions.TRUE;
-import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @Neo4jLayoutExtension
 class BlockingBootstrapperTest
@@ -53,7 +53,7 @@ class BlockingBootstrapperTest
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
             @Override
-            public int start( File homeDir, File configFile, Map<String, String> configOverrides )
+            public int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
             {
                 running.set( true );
                 return 0;
@@ -69,7 +69,7 @@ class BlockingBootstrapperTest
 
         new Thread( () ->
         {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), Collections.emptyMap() ) );
+            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), Collections.emptyMap() ) );
             exited.set( true );
         } ).start();
 
@@ -92,7 +92,7 @@ class BlockingBootstrapperTest
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
             @Override
-            public int start( File homeDir, File configFile, Map<String, String> configOverrides )
+            public int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
             {
                 return 1;
             }
@@ -106,7 +106,7 @@ class BlockingBootstrapperTest
 
         new Thread( () ->
         {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null, Collections.emptyMap() ) );
+            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), null, Collections.emptyMap() ) );
             exited.set( true );
         } ).start();
 

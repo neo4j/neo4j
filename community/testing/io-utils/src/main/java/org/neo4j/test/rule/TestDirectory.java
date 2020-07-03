@@ -232,6 +232,13 @@ public class TestDirectory extends ExternalResource
         return file;
     }
 
+    public Path createFilePath( String name, String... path )
+    {
+        Path file = filePath( name, path );
+        ensureFileExists( file.toFile() );
+        return file;
+    }
+
     public void cleanup() throws IOException
     {
         clean( fileSystem, testClassBaseFolder );
@@ -247,6 +254,11 @@ public class TestDirectory extends ExternalResource
     public File cleanDirectory( String name ) throws IOException
     {
         return clean( fileSystem, new File( ensureBase(), name ) );
+    }
+
+    public Path cleanDirectoryPath( String name ) throws IOException
+    {
+        return cleanPath( fileSystem, ensureBase().toPath().resolve( name ) );
     }
 
     public void complete( boolean success ) throws IOException
@@ -344,6 +356,16 @@ public class TestDirectory extends ExternalResource
             fs.deleteRecursively( dir );
         }
         fs.mkdirs( dir );
+        return dir;
+    }
+
+    private static Path cleanPath( FileSystemAbstraction fs, Path dir ) throws IOException
+    {
+        if ( fs.fileExists( dir.toFile() ) )
+        {
+            fs.deleteRecursively( dir.toFile() );
+        }
+        fs.mkdirs( dir.toFile() );
         return dir;
     }
 

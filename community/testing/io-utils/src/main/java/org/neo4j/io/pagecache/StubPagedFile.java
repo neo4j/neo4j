@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -65,9 +65,9 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return new File( "stub" );
+        return Path.of( "stub" );
     }
 
     @Override

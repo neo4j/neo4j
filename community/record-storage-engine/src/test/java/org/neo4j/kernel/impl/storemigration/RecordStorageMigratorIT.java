@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -326,8 +327,8 @@ class RecordStorageMigratorIT
         stores.close();
 
         // Prepare the legacy schema store we'll migrate.
-        File storeFile = databaseLayout.schemaStore().toFile();
-        File idFile = databaseLayout.idSchemaStore().toFile();
+        Path storeFile = databaseLayout.schemaStore();
+        Path idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
                 immutable.empty() );
         schemaStore35.initialise( false, NULL );

@@ -21,8 +21,8 @@ package org.neo4j.internal.id;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -57,7 +57,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
@@ -67,7 +67,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+    public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
             boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnly, cursorTracer, openOptions );
@@ -94,7 +94,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public Collection<File> listIdFiles()
+    public Collection<Path> listIdFiles()
     {
         return delegate.listIdFiles();
     }

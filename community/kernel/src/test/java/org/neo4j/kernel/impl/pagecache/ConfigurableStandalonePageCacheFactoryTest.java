@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.pagecache;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,8 +50,8 @@ class ConfigurableStandalonePageCacheFactoryTest
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            File file = new File( testDirectory.homeDir(), "a" ).getCanonicalFile();
-            fs.write( file ).close();
+            Path file = testDirectory.homePath().resolve( "a" ).normalize();
+            fs.write( file.toFile() ).close();
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
                     PagedFile pf = cache.map( file, 4096 );

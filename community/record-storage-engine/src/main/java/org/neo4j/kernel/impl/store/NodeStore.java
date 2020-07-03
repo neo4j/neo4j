@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
@@ -65,8 +65,8 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     public NodeStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -75,7 +75,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
+        super( path, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
                 NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }

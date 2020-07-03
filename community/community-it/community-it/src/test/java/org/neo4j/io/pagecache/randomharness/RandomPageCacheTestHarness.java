@@ -20,10 +20,11 @@
 package org.neo4j.io.pagecache.randomharness;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -371,7 +372,7 @@ public class RandomPageCacheTestHarness implements Closeable
         }
 
         FileSystemAbstraction fs = this.fs;
-        File[] files = buildFileNames();
+        Path[] files = buildFileNames();
 
         RandomAdversary adversary = new RandomAdversary( mischiefRate, failureRate, errorRate );
         adversary.setProbabilityFactor( 0.0 );
@@ -389,10 +390,10 @@ public class RandomPageCacheTestHarness implements Closeable
             filePageSize = cache.pageSize();
         }
         cache.setPrintExceptionsOnClose( false );
-        Map<File,PagedFile> fileMap = new HashMap<>( files.length );
+        Map<Path,PagedFile> fileMap = new HashMap<>( files.length );
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )
         {
-            File file = files[i];
+            Path file = files[i];
             fileMap.put( file, cache.map( file, filePageSize ) );
         }
 
@@ -464,9 +465,9 @@ public class RandomPageCacheTestHarness implements Closeable
                 }
                 else
                 {
-                    for ( File file : files )
+                    for ( Path file : files )
                     {
-                        file.delete();
+                        Files.delete( file );
                     }
                 }
             }
@@ -486,24 +487,24 @@ public class RandomPageCacheTestHarness implements Closeable
         }
     }
 
-    private File[] buildFileNames() throws IOException
+    private Path[] buildFileNames() throws IOException
     {
         String s = "abcdefghijklmnopqrstuvwxyz";
-        File[] files = new File[s.length()];
+        Path[] files = new Path[s.length()];
         TestDirectory testDirectory = TestDirectory.testDirectory( RandomPageCacheTestHarness.class, fs );
-        File base = testDirectory.prepareDirectoryForTest( "random-pagecache-test-harness" );
+        Path base = testDirectory.prepareDirectoryForTest( "random-pagecache-test-harness" ).toPath();
         for ( int i = 0; i < s.length(); i++ )
         {
-            files[i] = new File( base, s.substring( i, i + 1 ) ).getCanonicalFile();
-            fs.mkdirs( files[i].getParentFile() );
-            StoreChannel channel = fs.write( files[i] );
+            files[i] = base.resolve( s.substring( i, i + 1 ) ).normalize();
+            fs.mkdirs( files[i].getParent().toFile() );
+            StoreChannel channel = fs.write( files[i].toFile() );
             channel.truncate( 0 );
             channel.close();
         }
         return files;
     }
 
-    private Plan plan( MuninnPageCache cache, File[] files, Map<File,PagedFile> fileMap )
+    private Plan plan( MuninnPageCache cache, Path[] files, Map<Path,PagedFile> fileMap )
     {
         Action[] plan = new Action[commandCount];
 

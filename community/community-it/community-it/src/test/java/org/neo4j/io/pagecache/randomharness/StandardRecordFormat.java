@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
@@ -35,9 +35,9 @@ public class StandardRecordFormat extends RecordFormat
     }
 
     @Override
-    public Record createRecord( File file, int recordId )
+    public Record createRecord( Path path, int recordId )
     {
-        return new StandardRecord( file, recordId );
+        return new StandardRecord( path, recordId );
     }
 
     @Override
@@ -76,7 +76,7 @@ public class StandardRecordFormat extends RecordFormat
     public void write( Record record, PageCursor cursor )
     {
         StandardRecord r = (StandardRecord) record;
-        byte[] pathBytes = r.file.getPath().getBytes( StandardCharsets.UTF_8 );
+        byte[] pathBytes = r.path.toString().getBytes( StandardCharsets.UTF_8 );
         byte fileByte = pathBytes[pathBytes.length - 1];
         cursor.putByte( r.type );
         cursor.putByte( fileByte );
@@ -88,17 +88,17 @@ public class StandardRecordFormat extends RecordFormat
     static final class StandardRecord implements Record
     {
         final byte type;
-        final File file;
+        final Path path;
         final int recordId;
         final short fill1;
         final long fill2;
 
-        StandardRecord( File file, int recordId )
+        StandardRecord( Path path, int recordId )
         {
             this.type = 42;
-            this.file = file;
+            this.path = path;
             this.recordId = recordId;
-            int fileHash = file.hashCode();
+            int fileHash = path.hashCode();
 
             int a = xorshift( fileHash ^ xorshift( recordId ) );
             int b = xorshift( a );
@@ -113,7 +113,7 @@ public class StandardRecordFormat extends RecordFormat
         StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
         {
             this.type = type;
-            this.file = fileName == 0 ? null : new File( new String( new byte[]{fileName} ) );
+            this.path = fileName == 0 ? null : Path.of( new String( new byte[]{fileName} ) );
             this.fill1 = fill1;
             this.recordId = recordId;
             this.fill2 = fill2;
@@ -140,17 +140,17 @@ public class StandardRecordFormat extends RecordFormat
 
         private boolean filesEqual( StandardRecord record )
         {
-            if ( file == record.file )
+            if ( path == record.path )
             {
                 return true;
             }
-            if ( file == null || record.file == null )
+            if ( path == null || record.path == null )
             {
                 return false;
             }
             // We only look at the last letter of the path, because that's all that we can store in the record.
-            byte[] thisPath = file.getPath().getBytes( StandardCharsets.UTF_8 );
-            byte[] thatPath = record.file.getPath().getBytes( StandardCharsets.UTF_8 );
+            byte[] thisPath = path.toString().getBytes( StandardCharsets.UTF_8 );
+            byte[] thatPath = record.path.toString().getBytes( StandardCharsets.UTF_8 );
             return thisPath[thisPath.length - 1] == thatPath[thatPath.length - 1];
         }
 
@@ -158,7 +158,7 @@ public class StandardRecordFormat extends RecordFormat
         public int hashCode()
         {
             int result = type;
-            result = 31 * result + (file != null ? file.hashCode() : 0);
+            result = 31 * result + (path != null ? path.hashCode() : 0);
             result = 31 * result + recordId;
             result = 31 * result + (int) fill1;
             result = 31 * result + (int) (fill2 ^ (fill2 >>> 32));
@@ -175,14 +175,14 @@ public class StandardRecordFormat extends RecordFormat
         @Override
         public String toString()
         {
-            return format( type, file, recordId, fill1, fill2 );
+            return format( type, path, recordId, fill1, fill2 );
         }
 
-        public String format( byte type, File file, int recordId, short fill1, long fill2 )
+        public String format( byte type, Path path, int recordId, short fill1, long fill2 )
         {
             return String.format(
                     "Record%s[file=%s, recordId=%s; %04x %016x]",
-                    type, file, recordId, fill1, fill2 );
+                    type, path, recordId, fill1, fill2 );
         }
     }
 }

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -74,8 +74,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         implements DynamicRecordAllocator
 {
     public AbstractDynamicStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -87,7 +87,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String storeVersion,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+        super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
                 storeVersion, openOptions );
     }
@@ -218,7 +218,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     @Override
     public String toString()
     {
-        return super.toString() + "[fileName:" + storageFile.getName() +
+        return super.toString() + "[fileName:" + storageFile.getFileName() +
                 ", blockSize:" + getRecordDataSize() + "]";
     }
 

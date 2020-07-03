@@ -25,8 +25,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
@@ -118,7 +118,7 @@ class LongArrayTest extends NumberArrayPageCacheTestSupport
     private static Iterator<NumberArrayFactory> arrayFactories()
     {
         PageCache pageCache = fixture.pageCache;
-        File dir = fixture.directory;
+        Path dir = fixture.directory;
         NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir );
         return Iterators.iterator( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );

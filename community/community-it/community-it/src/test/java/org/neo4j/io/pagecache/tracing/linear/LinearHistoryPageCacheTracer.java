@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.tracing.linear;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -56,15 +56,15 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( File file )
+    public void mappedFile( Path path )
     {
-        tracer.add( new MappedFileHEvent( file ) );
+        tracer.add( new MappedFileHEvent( path ) );
     }
 
     @Override
-    public void unmappedFile( File file )
+    public void unmappedFile( Path path )
     {
-        tracer.add( new UnmappedFileHEvent( file ) );
+        tracer.add( new UnmappedFileHEvent( path ) );
     }
 
     @Override
@@ -76,7 +76,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     @Override
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
     {
-        return tracer.add( new MajorFlushHEvent( tracer, swapper.file() ) );
+        return tracer.add( new MajorFlushHEvent( tracer, swapper.path() ) );
     }
 
     @Override

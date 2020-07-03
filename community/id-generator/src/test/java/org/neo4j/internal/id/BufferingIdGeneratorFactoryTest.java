@@ -24,8 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -70,7 +70,7 @@ class BufferingIdGeneratorFactoryTest
         pageCache = mock( PageCache.class );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false,
+        idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false,
                 NULL, immutable.empty() );
     }
 
@@ -144,7 +144,7 @@ class BufferingIdGeneratorFactoryTest
         private final Marker[] markers = new Marker[IdType.values().length];
 
         @Override
-        public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+        public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
                 PageCursorTracer pageCursorTracer, ImmutableSet<OpenOption> openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
@@ -157,7 +157,7 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+        public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
                 boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
         {
             return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
@@ -182,7 +182,7 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public Collection<File> listIdFiles()
+        public Collection<Path> listIdFiles()
         {
             return Collections.emptyList();
         }

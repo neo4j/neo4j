@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.impl;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -61,7 +61,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ProcedureCompiler compiler;
     private final ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> builtin;
-    private final File proceduresDirectory;
+    private final Path proceduresDirectory;
     private final Log log;
 
     @VisibleForTesting
@@ -72,7 +72,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
     public GlobalProceduresRegistry(
             ThrowingConsumer<GlobalProceduresRegistry,ProcedureException> builtin,
-            File proceduresDirectory,
+            Path proceduresDirectory,
             Log log,
             ProcedureConfig config )
     {

@@ -22,13 +22,13 @@ package org.neo4j.io.pagecache.impl;
 import com.sun.nio.file.ExtendedOpenOption;
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -87,7 +87,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     private final FileSystemAbstraction fs;
-    private final File file;
+    private final Path path;
     private final int filePageSize;
     private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
@@ -101,15 +101,15 @@ public class SingleFilePageSwapper implements PageSwapper
     @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
-    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO ) throws IOException
+    SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO ) throws IOException
     {
         this.fs = fs;
-        this.file = file;
+        this.path = path;
 
         var options = new ArrayList<>( WRITE_OPTIONS );
         if ( useDirectIO )
         {
-            validateDirectIOPossibility( file, filePageSize );
+            validateDirectIOPossibility( path, filePageSize );
             options.add( ExtendedOpenOption.DIRECT );
         }
         openOptions = Set.copyOf( options );
@@ -140,18 +140,18 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private StoreChannel createStoreChannel() throws IOException
     {
-        var storeChannel = fs.open( file, openOptions );
+        var storeChannel = fs.open( path.toFile(), openOptions );
         storeChannel.tryMakeUninterruptible();
         return storeChannel;
     }
 
-    private void validateDirectIOPossibility( File file, int filePageSize ) throws IOException
+    private void validateDirectIOPossibility( Path file, int filePageSize ) throws IOException
     {
         if ( !IS_OS_LINUX )
         {
             throw new IllegalArgumentException( "DirectIO support is available only on Linux." );
         }
-        final long blockSize = fs.getBlockSize( file );
+        final long blockSize = fs.getBlockSize( file.toFile() );
         long value = filePageSize / blockSize;
         if ( value * blockSize != filePageSize )
         {
@@ -195,12 +195,12 @@ public class SingleFilePageSwapper implements PageSwapper
             fileLock = channel.tryLock();
             if ( fileLock == null )
             {
-                throw new FileLockException( file );
+                throw new FileLockException( path );
             }
         }
         catch ( OverlappingFileLockException e )
         {
-            throw new FileLockException( file, e );
+            throw new FileLockException( path, e );
         }
     }
 
@@ -552,9 +552,9 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return file;
+        return path;
     }
 
     private long pageIdToPosition( long pageId )
@@ -576,13 +576,13 @@ public class SingleFilePageSwapper implements PageSwapper
 
         SingleFilePageSwapper that = (SingleFilePageSwapper) o;
 
-        return file.equals( that.file );
+        return path.equals( that.path );
     }
 
     @Override
     public int hashCode()
     {
-        return file.hashCode();
+        return path.hashCode();
     }
 
     /**
@@ -648,7 +648,7 @@ public class SingleFilePageSwapper implements PageSwapper
     public synchronized void closeAndDelete() throws IOException
     {
         close();
-        fs.deleteFile( file );
+        fs.deleteFile( path.toFile() );
     }
 
     @Override
@@ -730,7 +730,7 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         return "SingleFilePageSwapper{" +
                 "filePageSize=" + filePageSize +
-                ", file=" + file +
+                ", file=" + path +
                 '}';
     }
 

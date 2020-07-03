@@ -23,8 +23,8 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -395,7 +395,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             // Conversely, we don't have to go to the same lengths for read locked
             // pages, because those are never changed. Not by us, anyway.
 
-            File file = file( "a" );
+            Path file = file( "a" );
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
@@ -649,7 +649,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         configureStandardPageCache();
         profiler.profile();
 
-        File file = file( "a" );
+        Path file = file( "a" );
         int iterations = Short.MAX_VALUE * 3;
         for ( int i = 0; i < iterations; i++ )
         {

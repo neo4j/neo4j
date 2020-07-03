@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -52,7 +52,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
         long byteOffset = 0;
         if ( NeoStores.isStorePresent( fs, databaseLayout ) )
         {
-            File neoStore = databaseLayout.metadataStore().toFile();
+            Path neoStore = databaseLayout.metadataStore();
             id = getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
             checksum = (int) getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
             logVersion = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );

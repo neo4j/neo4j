@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -39,8 +39,8 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
     public RelationshipGroupStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -48,7 +48,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+        super( path, idFile, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
                 recordFormats.storeVersion(), openOptions );
     }

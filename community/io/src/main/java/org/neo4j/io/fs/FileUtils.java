@@ -337,6 +337,10 @@ public final class FileUtils
         checkArgument( isDirectory( from ), "From is not a directory" );
         checkArgument( !from.normalize().equals( to.normalize() ), "From and to directories are the same" );
 
+        if ( Files.notExists( to.getParent() ) )
+        {
+            Files.createDirectories( to.getParent() );
+        }
         walkFileTree( from, new CopyingFileVisitor( from, to, REPLACE_EXISTING, COPY_ATTRIBUTES ) );
     }
 

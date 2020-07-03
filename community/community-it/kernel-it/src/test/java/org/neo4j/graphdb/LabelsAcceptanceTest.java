@@ -22,9 +22,9 @@ package org.neo4j.graphdb;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -829,14 +829,14 @@ class LabelsAcceptanceTest
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override
-                    public IdGenerator open( PageCache pageCache, File fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
+                    public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
                             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
                     {
                         return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, cursorTracer, openOptions );
                     }
 
                     @Override
-                    public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+                    public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
                             boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
                     {
                         return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly,

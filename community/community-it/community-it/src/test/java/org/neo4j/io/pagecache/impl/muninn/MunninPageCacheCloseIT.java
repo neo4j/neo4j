@@ -22,10 +22,10 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,8 +58,8 @@ class MunninPageCacheCloseIT
         @Test
         void shouldBeAbleToShutDownWhenInterrupted() throws Exception
         {
-            File file = directory.file( "file" );
-            try ( StoreChannel channel = fs.write( file ) )
+            Path file = directory.filePath( "file" );
+            try ( StoreChannel channel = fs.write( file.toFile() ) )
             {
                 channel.writeAll( ByteBuffer.wrap( new byte[100] ) );
             }

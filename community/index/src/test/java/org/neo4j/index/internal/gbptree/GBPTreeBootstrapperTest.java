@@ -102,7 +102,7 @@ class GBPTreeBootstrapperTest
         {
             tree.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         }
-        ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
+        ZipUtils.zip( dir.getFileSystem(), storeFile.toPath(), zipFile.toPath() );
         fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",
                 zipFile.getAbsolutePath(),
                 "<corresponding-module>" + pathify( ".src.test.resources." ) + pathify( getClass().getPackage().getName() + "." ) + zipName ) );
@@ -114,7 +114,7 @@ class GBPTreeBootstrapperTest
     {
         setupTest( testSetup );
 
-        ZipUtils.unzipResource( getClass(), zipName, storeFile );
+        ZipUtils.unzipResource( getClass(), zipName, storeFile.toPath() );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();

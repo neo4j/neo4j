@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -178,7 +179,7 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( testDirectory.homeDir() ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( testDirectory.homePath() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -279,9 +280,9 @@ public class ProcedureJarLoaderTest
         return buildContext( dependencyResolver, valueMapper ).context();
     }
 
-    private File parentDir( URL jar ) throws URISyntaxException
+    private Path parentDir( URL jar ) throws URISyntaxException
     {
-        return new File( jar.toURI() ).getParentFile();
+        return Path.of( jar.toURI() ).getParent();
     }
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException

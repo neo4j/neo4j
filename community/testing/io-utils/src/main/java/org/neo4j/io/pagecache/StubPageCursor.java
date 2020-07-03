@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -73,9 +73,9 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
-        return new File( "" );
+        return Path.of( "" );
     }
 
     @Override

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -55,8 +55,8 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     private final DynamicStringStore nameStore;
 
     public TokenStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -68,7 +68,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String storeVersion,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+        super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.nameStore = nameStore;
     }

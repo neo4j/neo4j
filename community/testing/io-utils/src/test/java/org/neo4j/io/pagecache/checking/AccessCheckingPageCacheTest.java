@@ -22,8 +22,8 @@ package org.neo4j.io.pagecache.checking;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -50,9 +50,9 @@ class AccessCheckingPageCacheTest
         PagedFile mockedPagedFile = mock( PagedFile.class );
         PageCursor mockedCursor = mock( PageCursor.class );
         when( mockedPagedFile.io( anyLong(), anyInt(), any() ) ).thenReturn( mockedCursor );
-        when( mockedPageCache.map( any( File.class ), any(), anyInt(), any() ) ).thenReturn( mockedPagedFile );
+        when( mockedPageCache.map( any( Path.class ), any(), anyInt(), any() ) ).thenReturn( mockedPagedFile );
         pageCache = new AccessCheckingPageCache( mockedPageCache );
-        PagedFile file = pageCache.map( new File( "some file" ), 512 );
+        PagedFile file = pageCache.map( Path.of( "some file" ), 512 );
         cursor = file.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL );
     }
 

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -100,8 +99,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = databaseLayout.metadataStore().toFile();
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 
     @Test
@@ -141,8 +139,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = databaseLayout.metadataStore().toFile();
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, NULL ) );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, NULL ) );
     }
 
 }

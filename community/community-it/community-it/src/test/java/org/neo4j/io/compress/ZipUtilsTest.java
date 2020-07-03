@@ -22,9 +22,9 @@ package org.neo4j.io.compress;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.ZipInputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -48,77 +48,77 @@ class ZipUtilsTest
     @Test
     void doNotCreateZipArchiveForNonExistentSource() throws IOException
     {
-        File archiveFile = testDirectory.file( "archive.zip" );
-        ZipUtils.zip( fileSystem, testDirectory.file( "doesNotExist" ), archiveFile );
-        assertFalse( fileSystem.fileExists( archiveFile ) );
+        Path archiveFile = testDirectory.filePath( "archive.zip" );
+        ZipUtils.zip( fileSystem, testDirectory.filePath( "doesNotExist" ), archiveFile );
+        assertFalse( fileSystem.fileExists( archiveFile.toFile() ) );
     }
 
     @Test
     void doNotCreateZipArchiveForEmptyDirectory() throws IOException
     {
-        File archiveFile = testDirectory.file( "archive.zip" );
-        File emptyDirectory = testDirectory.directory( "emptyDirectory" );
+        Path archiveFile = testDirectory.filePath( "archive.zip" );
+        Path emptyDirectory = testDirectory.directoryPath( "emptyDirectory" );
         ZipUtils.zip( fileSystem, emptyDirectory, archiveFile );
-        assertFalse( fileSystem.fileExists( archiveFile ) );
+        assertFalse( fileSystem.fileExists( archiveFile.toFile() ) );
     }
 
     @Test
     void archiveDirectory() throws IOException
     {
-        File archiveFile = testDirectory.file( "directoryArchive.zip" );
-        File directory = testDirectory.directory( "directory" );
-        fileSystem.write( new File( directory, "a" ) ).close();
-        fileSystem.write( new File( directory, "b" ) ).close();
+        Path archiveFile = testDirectory.filePath( "directoryArchive.zip" );
+        Path directory = testDirectory.directoryPath( "directory" );
+        fileSystem.write( directory.resolve( "a" ).toFile() ).close();
+        fileSystem.write( directory.resolve( "b" ).toFile() ).close();
         ZipUtils.zip( fileSystem, directory, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile ) );
+        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
         assertEquals( 2, countArchiveEntries( archiveFile ) );
     }
 
     @Test
     void archiveDirectoryWithSubdirectories() throws IOException
     {
-        File archiveFile = testDirectory.file( "directoryWithSubdirectoriesArchive.zip" );
-        File directoryArchive = testDirectory.directory( "directoryWithSubdirs" );
-        File subdir1 = new File( directoryArchive, "subdir1" );
-        File subdir2 = new File( directoryArchive, "subdir" );
-        fileSystem.mkdir( subdir1 );
-        fileSystem.mkdir( subdir2 );
-        fileSystem.write( new File( directoryArchive, "a" ) ).close();
-        fileSystem.write( new File( directoryArchive, "b" ) ).close();
-        fileSystem.write( new File( subdir1, "c" ) ).close();
-        fileSystem.write( new File( subdir2, "d" ) ).close();
+        Path archiveFile = testDirectory.filePath( "directoryWithSubdirectoriesArchive.zip" );
+        Path directoryArchive = testDirectory.directoryPath( "directoryWithSubdirs" );
+        Path subdir1 = directoryArchive.resolve( "subdir1" );
+        Path subdir2 = directoryArchive.resolve( "subdir" );
+        fileSystem.mkdir( subdir1.toFile() );
+        fileSystem.mkdir( subdir2.toFile() );
+        fileSystem.write( directoryArchive.resolve( "a" ).toFile() ).close();
+        fileSystem.write( directoryArchive.resolve( "b" ).toFile() ).close();
+        fileSystem.write( subdir1.resolve( "c" ).toFile() ).close();
+        fileSystem.write( subdir2.resolve( "d" ).toFile() ).close();
 
         ZipUtils.zip( fileSystem, directoryArchive, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile ) );
+        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
         assertEquals( 6, countArchiveEntries( archiveFile ) );
     }
 
     @Test
     void archiveFile() throws IOException
     {
-        File archiveFile = testDirectory.file( "fileArchive.zip" );
-        File aFile = testDirectory.file( "a" );
-        fileSystem.write( aFile ).close();
+        Path archiveFile = testDirectory.filePath( "fileArchive.zip" );
+        Path aFile = testDirectory.filePath( "a" );
+        fileSystem.write( aFile.toFile() ).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile ) );
+        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
         assertEquals( 1, countArchiveEntries( archiveFile ) );
     }
 
     @Test
     public void supportSpacesInDestinationPath() throws IOException
     {
-        File archiveFile = testDirectory.file( "file archive.zip" );
-        File aFile = testDirectory.file( "a" );
-        fileSystem.write( aFile ).close();
+        Path archiveFile = testDirectory.filePath( "file archive.zip" );
+        Path aFile = testDirectory.filePath( "a" );
+        fileSystem.write( aFile.toFile() ).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
     }
 
-    private int countArchiveEntries( File archiveFile ) throws IOException
+    private int countArchiveEntries( Path archiveFile ) throws IOException
     {
-        try ( ZipInputStream zipInputStream = new ZipInputStream( new BufferedInputStream( new FileInputStream( archiveFile ) ) ) )
+        try ( ZipInputStream zipInputStream = new ZipInputStream( new BufferedInputStream( Files.newInputStream( archiveFile ) ) ) )
         {
             int entries = 0;
             while ( zipInputStream.getNextEntry() != null )

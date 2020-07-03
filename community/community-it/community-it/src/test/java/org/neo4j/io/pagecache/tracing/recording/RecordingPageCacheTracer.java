@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing.recording;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
@@ -49,13 +49,13 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public void mappedFile( File file )
+    public void mappedFile( Path path )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unmappedFile( File file )
+    public void unmappedFile( Path path )
     {
         // we currently do not record these
     }

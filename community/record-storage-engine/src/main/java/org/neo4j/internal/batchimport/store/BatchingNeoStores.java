@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
@@ -161,7 +162,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean databaseExistsAndContainsData()
     {
-        File metaDataFile = databaseLayout.metadataStore().toFile();
+        Path metaDataFile = databaseLayout.metadataStore();
         try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), immutable.of( READ ) ) )
         {
             // OK so the db probably exists

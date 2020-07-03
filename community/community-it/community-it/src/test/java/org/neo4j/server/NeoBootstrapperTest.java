@@ -25,8 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.test.extension.Inject;
@@ -63,8 +63,7 @@ class NeoBootstrapperTest
         // given
         neoBootstrapper = new CommunityBootstrapper();
 
-        File dir = Files.createTempDirectory( "test-server-bootstrapper" ).toFile();
-        dir.deleteOnExit();
+        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
 
         // when
         neoBootstrapper.start( dir, MapUtil.stringMap() );

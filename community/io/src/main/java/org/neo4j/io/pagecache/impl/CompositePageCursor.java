@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -407,7 +407,7 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
         return null;
     }

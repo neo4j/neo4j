@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
@@ -434,7 +435,7 @@ class CommonAbstractStoreBehaviourTest
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
-            super( new File( STORE_FILENAME ), new File( ID_FILENAME ), config, IdType.NODE,
+            super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, IdType.NODE,
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ", immutable.empty() );
         }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -104,7 +104,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     /**
      * Create muninn page file
-     * @param file original file
+     * @param path original file
      * @param pageCache page cache
      * @param filePageSize file page size
      * @param swapperFactory page cache swapper factory
@@ -115,7 +115,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param truncateExisting should truncate file if it exists
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
-    MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
+    MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
             VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo )
             throws IOException
     {
@@ -143,7 +143,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists, useDirectIo );
+        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo );
         if ( truncateExisting )
         {
             swapper.truncate();
@@ -165,7 +165,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + swapper.file() + ", reference count = " + getRefCount() + "]";
+        return getClass().getSimpleName() + "[" + swapper.path() + ", reference count = " + getRefCount() + "]";
     }
 
     @Override
@@ -226,9 +226,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public File file()
+    public Path path()
     {
-        return swapper.file();
+        return swapper.path();
     }
 
     @Override
@@ -597,7 +597,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     private FileIsNotMappedException fileIsNotMappedException()
     {
-        FileIsNotMappedException exception = new FileIsNotMappedException( file() );
+        FileIsNotMappedException exception = new FileIsNotMappedException( path() );
         Exception closedBy = closeStackTrace;
         if ( closedBy != null )
         {
@@ -662,7 +662,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             {
                 throw new IllegalStateException( "Cannot map file because reference counter would overflow. " +
                                                  "Maximum reference count is " + headerStateRefCountMax + ". " +
-                                                 "File is " + swapper.file().getAbsolutePath() );
+                                                 "File is " + swapper.path().toAbsolutePath() );
             }
             update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
         }

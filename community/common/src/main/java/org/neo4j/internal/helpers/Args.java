@@ -485,52 +485,6 @@ public class Args
         return usage.toString();
     }
 
-    /**
-     * Useful for printing usage where the description itself shouldn't have knowledge about the width
-     * of the window where it's printed. Existing new-line characters in the text are honored.
-     *
-     * @param description text to split, if needed.
-     * @param maxLength line length to split at, actually closest previous white space.
-     * @return description split into multiple lines if need be.
-     */
-    public static String[] splitLongLine( String description, int maxLength )
-    {
-        List<String> lines = new ArrayList<>();
-        while ( !description.isEmpty() )
-        {
-            String line = description.substring( 0, Math.min( maxLength, description.length() ) );
-            int position = line.indexOf( '\n' );
-            if ( position > -1 )
-            {
-                line = description.substring( 0, position );
-                lines.add( line );
-                description = description.substring( position );
-                if ( !description.isEmpty() )
-                {
-                    description = description.substring( 1 );
-                }
-            }
-            else
-            {
-                position = description.length() > maxLength ?
-                        findSpaceBefore( description, maxLength ) : description.length();
-                line = description.substring( 0, position );
-                lines.add( line );
-                description = description.substring( position );
-            }
-        }
-        return lines.toArray( new String[0] );
-    }
-
-    private static int findSpaceBefore( String description, int position )
-    {
-        while ( !Character.isWhitespace( description.charAt( position ) ) )
-        {
-            position--;
-        }
-        return position + 1;
-    }
-
     @SafeVarargs
     public final <T> T interpretOption( String key, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
@@ -631,7 +585,7 @@ public class Args
     }
 
     @SafeVarargs
-    private final <T> T validated( T value, Validator<T>... validators )
+    private <T> T validated( T value, Validator<T>... validators )
     {
         if ( value != null )
         {

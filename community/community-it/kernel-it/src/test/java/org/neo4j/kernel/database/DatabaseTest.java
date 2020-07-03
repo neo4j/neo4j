@@ -27,6 +27,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -190,14 +191,14 @@ public class DatabaseTest
         database.start();
         database.truncate();
 
-        List<File> removedFiles = pageCache.getPagedFiles().stream().filter( PagedFile::isDeleteOnClose )
-                .map( PagedFile::file )
+        List<Path> removedFiles = pageCache.getPagedFiles().stream().filter( PagedFile::isDeleteOnClose )
+                .map( PagedFile::path )
                 .collect( Collectors.toList() );
 
         DatabaseLayout databaseLayout = database.getDatabaseLayout();
         Set<Path> files = databaseLayout.storeFiles();
         files.removeAll( filesToKeepOnTruncation( databaseLayout ) );
-        File[] filesShouldBeDeleted = files.stream().map( Path::toFile ).filter( File::exists ).toArray( File[]::new );
+        Path[] filesShouldBeDeleted = files.stream().filter( path -> Files.exists( path ) ).toArray( Path[]::new );
         assertThat( removedFiles ).contains( filesShouldBeDeleted );
     }
 
@@ -298,14 +299,14 @@ public class DatabaseTest
         PageCache pageCache = spy( realPageCache );
         doAnswer( (Answer<PagedFile>) invocation ->
         {
-            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, Path.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
                                                      invocation.getArgument( 2, Integer.class ),
                                                      invocation.getArgument( 3, ImmutableSet.class ) ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt(), any() );
+        .when( pageCache ).map( any( Path.class ), any( VersionContextSupplier.class ), anyInt(), any() );
 
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
@@ -331,14 +332,14 @@ public class DatabaseTest
         PageCache pageCache = spy( realPageCache );
         doAnswer( (Answer<PagedFile>) invocation ->
         {
-            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, Path.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
                                                      invocation.getArgument( 2, Integer.class ),
                                                      invocation.getArgument( 3, ImmutableSet.class ) ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt(), any() );
+        .when( pageCache ).map( any( Path.class ), any( VersionContextSupplier.class ), anyInt(), any() );
 
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
@@ -380,7 +381,7 @@ public class DatabaseTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory )
-                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), any(), any() );
+                .create( any(), any( Path.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), any(), any() );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
@@ -465,9 +466,9 @@ public class DatabaseTest
         }
 
         @Override
-        public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
         {
-            PagedFile pagedFile = super.map( file, versionContextSupplier, pageSize, openOptions );
+            PagedFile pagedFile = super.map( path, versionContextSupplier, pageSize, openOptions );
             pagedFiles.add( pagedFile );
             return pagedFile;
         }

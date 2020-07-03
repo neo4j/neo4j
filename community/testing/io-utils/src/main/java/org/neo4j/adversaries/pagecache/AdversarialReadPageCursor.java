@@ -19,11 +19,11 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -351,7 +351,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
         return delegate.getCurrentFile();
     }

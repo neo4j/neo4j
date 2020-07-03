@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.checking;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,8 +42,8 @@ public class AccessCheckingPageCache extends DelegatingPageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize ) throws IOException
+    public PagedFile map( Path path, int pageSize ) throws IOException
     {
-        return new AccessCheckingPagedFile( super.map( file, pageSize ) );
+        return new AccessCheckingPagedFile( super.map( path, pageSize ) );
     }
 }

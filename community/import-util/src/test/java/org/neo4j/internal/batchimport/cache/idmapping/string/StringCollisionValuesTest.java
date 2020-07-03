@@ -65,7 +65,7 @@ public class StringCollisionValuesTest
                 storage -> NumberArrayFactory.OFF_HEAP,
                 storage -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
                 storage -> NumberArrayFactory.CHUNKED_FIXED_SIZE,
-                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homeDir() ) );
+                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homePath() ) );
     }
 
     @Parameter( 0 )

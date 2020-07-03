@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 /**
  * A PageCursor is returned from {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)},
@@ -228,7 +228,7 @@ public abstract class PageCursor implements AutoCloseable
      * cursor, or returned false.
      * A call to rewind() will make the cursor unbound as well, until next() is called.
      */
-    public abstract File getCurrentFile();
+    public abstract Path getCurrentFile();
 
     /**
      * Rewinds the cursor to its initial condition, as if freshly returned from

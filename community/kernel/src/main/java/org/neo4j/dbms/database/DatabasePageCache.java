@@ -21,9 +21,9 @@ package org.neo4j.dbms.database;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -61,20 +61,20 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        PagedFile pagedFile = globalPageCache.map( file, versionContextSupplier, pageSize, openOptions );
+        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, openOptions );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
         databasePagedFiles.add( databasePageFile );
         return databasePageFile;
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping( File file ) throws IOException
+    public Optional<PagedFile> getExistingMapping( Path path ) throws IOException
     {
-        File canonicalFile = file.getCanonicalFile();
+        Path canonicalFile = path.normalize();
 
-        return databasePagedFiles.stream().filter( pagedFile -> pagedFile.file().equals( canonicalFile ) ).findFirst();
+        return databasePagedFiles.stream().filter( pagedFile -> pagedFile.path().equals( canonicalFile ) ).findFirst();
     }
 
     @Override
@@ -164,9 +164,9 @@ public class DatabasePageCache implements PageCache
         }
 
         @Override
-        public File file()
+        public Path path()
         {
-            return delegate.file();
+            return delegate.path();
         }
 
         @Override

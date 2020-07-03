@@ -21,10 +21,10 @@ package org.neo4j.adversaries.pagecache;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,7 +57,7 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         if ( openOptions.contains( CREATE ) )
         {
@@ -67,15 +67,15 @@ public class AdversarialPageCache implements PageCache
         {
             adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         }
-        PagedFile pagedFile = delegate.map( file, versionContextSupplier, pageSize, openOptions );
+        PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, openOptions );
         return new AdversarialPagedFile( pagedFile, adversary );
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping( File file ) throws IOException
+    public Optional<PagedFile> getExistingMapping( Path path ) throws IOException
     {
         adversary.injectFailure( IOException.class, SecurityException.class );
-        final Optional<PagedFile> optional = delegate.getExistingMapping( file );
+        final Optional<PagedFile> optional = delegate.getExistingMapping( path );
         return optional.map( pagedFile -> new AdversarialPagedFile( pagedFile, adversary ) );
     }
 

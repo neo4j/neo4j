@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
@@ -120,8 +121,8 @@ class StoreMigratorTest
 
         // ... and files
 
-        File neoStore = databaseLayout.metadataStore().toFile();
-        neoStore.createNewFile();
+        Path neoStore = databaseLayout.metadataStore();
+        Files.createFile( neoStore );
 
         // ... and mocks
         Config config = mock( Config.class );
@@ -148,8 +149,8 @@ class StoreMigratorTest
         // given
         long txId = 42;
 
-        File neoStore = databaseLayout.metadataStore().toFile();
-        neoStore.createNewFile();
+        Path neoStore = databaseLayout.metadataStore();
+        Files.createFile( neoStore );
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
 
@@ -182,8 +183,8 @@ class StoreMigratorTest
         // given
         long txId = 1;
 
-        File neoStore = databaseLayout.metadataStore().toFile();
-        neoStore.createNewFile();
+        Path neoStore = databaseLayout.metadataStore();
+        Files.createFile( neoStore );
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
 
@@ -269,7 +270,7 @@ class StoreMigratorTest
             }
         }
         DatabaseLayout databaseLayout = database.databaseLayout();
-        File neoStore = databaseLayout.metadataStore().toFile();
+        Path neoStore = databaseLayout.metadataStore();
         managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,

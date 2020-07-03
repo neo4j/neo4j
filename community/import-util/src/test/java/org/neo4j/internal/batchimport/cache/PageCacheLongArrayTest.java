@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -55,7 +55,7 @@ class PageCacheLongArrayTest
     @Test
     void verifyPageCacheLongArray() throws Exception
     {
-        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
+        PagedFile file = pageCache.map( testDirectory.filePath( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
 
         try ( LongArray array = new PageCacheLongArray( file, NULL, COUNT, 0, 0 ) )
         {
@@ -66,7 +66,7 @@ class PageCacheLongArrayTest
     @Test
     void verifyChunkingArrayWithPageCacheLongArray()
     {
-        File directory = testDirectory.homeDir();
+        Path directory = testDirectory.homePath();
         NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, NULL, directory, false, NO_MONITOR );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0, INSTANCE ) )
         {

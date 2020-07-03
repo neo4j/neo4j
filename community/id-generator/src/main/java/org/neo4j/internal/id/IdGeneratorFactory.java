@@ -21,8 +21,8 @@ package org.neo4j.internal.id;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -32,10 +32,10 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface IdGeneratorFactory
 {
-    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions );
 
-    IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
+    IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions );
 
     IdGenerator get( IdType idType );
@@ -44,5 +44,5 @@ public interface IdGeneratorFactory
 
     void clearCache( PageCursorTracer cursorTracer );
 
-    Collection<File> listIdFiles();
+    Collection<Path> listIdFiles();
 }

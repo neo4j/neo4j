@@ -22,9 +22,9 @@ package org.neo4j.io.pagecache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.SplittableRandom;
 import java.util.function.Consumer;
@@ -54,14 +54,14 @@ class PageCachePrefetchingTest
     FileSystemAbstraction fs;
     @Inject
     PageCache pageCache;
-    private File file;
+    private Path file;
     private DefaultPageCursorTracer tracer;
     private Consumer<PageCursor> scanner;
 
     @BeforeEach
     void setUp()
     {
-        file = dir.createFile( "file" );
+        file = dir.createFilePath( "file" );
         tracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
     }
 
@@ -111,7 +111,7 @@ class PageCachePrefetchingTest
         assertThat( faultsWithPreFetch ).as( "faults" ).isLessThan( faultsWithoutPreFetch );
     }
 
-    private long runScan( File file, DefaultPageCursorTracer tracer, String threadName, int additionalPfFlags ) throws InterruptedException
+    private long runScan( Path file, DefaultPageCursorTracer tracer, String threadName, int additionalPfFlags ) throws InterruptedException
     {
         long faultsWith;
         RunnerThread thread = new RunnerThread( threadName );
@@ -127,7 +127,7 @@ class PageCachePrefetchingTest
     private class RunnerThread extends Thread
     {
         private int additionalPfFlags;
-        private File file;
+        private Path file;
         private DefaultPageCursorTracer tracer;
         private long faults;
 
@@ -152,7 +152,7 @@ class PageCachePrefetchingTest
         }
     }
 
-    private void writeToFile( File file, DefaultPageCursorTracer tracer, int additionalPfFlags ) throws IOException
+    private void writeToFile( Path file, DefaultPageCursorTracer tracer, int additionalPfFlags ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE,
                 immutable.of( StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) ) )

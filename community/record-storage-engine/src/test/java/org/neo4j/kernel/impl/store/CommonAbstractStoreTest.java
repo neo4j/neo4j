@@ -24,9 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
@@ -91,8 +91,8 @@ class CommonAbstractStoreTest
     private final PagedFile pageFile = mock( PagedFile.class );
     private final PageCache mockedPageCache = mock( PageCache.class );
     private final Config config = Config.defaults();
-    private final File storeFile = new File( "store" );
-    private final File idStoreFile = new File( "isStore" );
+    private final Path storeFile = Path.of( "store" );
+    private final Path idStoreFile = Path.of( "isStore" );
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
@@ -112,7 +112,7 @@ class CommonAbstractStoreTest
     void setUpMocks() throws IOException
     {
         when( recordFormat.getPageSize( anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
-        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any(), any() ) )
+        when( idGeneratorFactory.open( any(), any( Path.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any(), any() ) )
                 .thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
@@ -137,8 +137,8 @@ class CommonAbstractStoreTest
     @Test
     void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
     {
-        File storeFile = dir.file( "a" );
-        File idFile = dir.file( "idFile" );
+        Path storeFile = dir.filePath( "a" );
+        Path idFile = dir.filePath( "idFile" );
         PageCache pageCache = mock( PageCache.class );
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );
@@ -153,7 +153,7 @@ class CommonAbstractStoreTest
                 NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, immutable.empty() ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
-            assertEquals( "Fail to read header record of store file: " + storeFile.getAbsolutePath(), storeNotFoundException.getMessage() );
+            assertEquals( "Fail to read header record of store file: " + storeFile.toAbsolutePath(), storeNotFoundException.getMessage() );
         }
     }
 
@@ -191,23 +191,23 @@ class CommonAbstractStoreTest
     void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws IOException
     {
         // GIVEN
-        File nodeStore = databaseLayout.nodeStore().toFile();
-        File idFile =
-                databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) ).toFile();
+        Path nodeStore = databaseLayout.nodeStore();
+        Path idFile =
+                databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
         TheStore store =
-                new TheStore( nodeStore, databaseLayout.idNodeStore().toFile(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
+                new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                         NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
         store.initialise( true, NULL );
         store.start( NULL );
-        assertTrue( fs.fileExists( nodeStore ) );
-        assertTrue( fs.fileExists( idFile ) );
+        assertTrue( fs.fileExists( nodeStore.toFile() ) );
+        assertTrue( fs.fileExists( idFile.toFile() ) );
 
         // WHEN
         store.close();
 
         // THEN
-        assertFalse( fs.fileExists( nodeStore ) );
-        assertFalse( fs.fileExists( idFile ) );
+        assertFalse( fs.fileExists( nodeStore.toFile() ) );
+        assertFalse( fs.fileExists( idFile.toFile() ) );
     }
 
     @Test
@@ -221,7 +221,7 @@ class CommonAbstractStoreTest
         store.logIdUsage( logProvider.getLog( TheStore.class ).infoLogger(), NULL );
 
         // then
-        LogAssertions.assertThat( logProvider ).containsMessages( format( "%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getName() ) );
+        LogAssertions.assertThat( logProvider ).containsMessages( format( "%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName() ) );
     }
 
     @Test
@@ -236,7 +236,7 @@ class CommonAbstractStoreTest
 
         // then
         LogAssertions.assertThat( logProvider ).containsMessages(
-                format( "%s[%s] %s", TheStore.TYPE_DESCRIPTOR, storeFile.getName(), TheStore.STORE_VERSION ) );
+                format( "%s[%s] %s", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName(), TheStore.STORE_VERSION ) );
     }
 
     private TheStore newStore()
@@ -257,7 +257,7 @@ class CommonAbstractStoreTest
         static final String TYPE_DESCRIPTOR = "TheType";
         static final String STORE_VERSION = "v1";
 
-        TheStore( File file, File idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+        TheStore( Path file, Path idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
                 LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,

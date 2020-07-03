@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -35,7 +35,7 @@ public class PageCountRecordFormat extends RecordFormat
     }
 
     @Override
-    public Record createRecord( File file, int recordId )
+    public Record createRecord( Path path, int recordId )
     {
         return new PageCountRecord( recordId, getRecordSize() );
     }

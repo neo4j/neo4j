@@ -22,8 +22,8 @@ package org.neo4j.io.pagecache;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.internal.helpers.Exceptions;
@@ -252,7 +252,7 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
         throw new UnsupportedOperationException();
     }

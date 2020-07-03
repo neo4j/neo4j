@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -36,8 +36,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
 
     public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
     {
-        File neoStore = databaseLayout.metadataStore().toFile();
-        this.logVersion = readLogVersion( pageCache, neoStore, cursorTracer );
+        this.logVersion = readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer );
     }
 
     @Override
@@ -72,7 +71,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return logVersion;
     }
 
-    private static long readLogVersion( PageCache pageCache, File neoStore, PageCursorTracer cursorTracer ) throws IOException
+    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer ) throws IOException
     {
         try
         {

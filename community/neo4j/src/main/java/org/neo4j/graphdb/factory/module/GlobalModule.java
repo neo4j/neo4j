@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -351,15 +353,22 @@ public class GlobalModule
                .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
                .withFormat( globalConfig.get( GraphDatabaseInternalSettings.log_format ) );
 
-        File logFile = globalConfig.get( store_internal_log_path ).toFile();
-        if ( !logFile.getParentFile().exists() )
+        Path logFile = globalConfig.get( store_internal_log_path );
+        if ( Files.notExists( logFile.getParent() ) )
         {
-            logFile.getParentFile().mkdirs();
+            try
+            {
+                Files.createDirectories( logFile.getParent() );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( "Failed to create logging directory", e );
+            }
         }
         StoreLogService logService;
         try
         {
-            logService = builder.withInternalLog( logFile ).build( fileSystem );
+            logService = builder.withInternalLog( logFile.toFile() ).build( fileSystem );
         }
         catch ( IOException ex )
         {

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -61,8 +61,8 @@ class DynamicArrayStoreTest
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
-    private final File storeFile = new File( "store" );
-    private final File idFile = new File( "idStore" );
+    private final Path storeFile = Path.of( "store" );
+    private final Path idFile = Path.of( "idStore" );
 
     private static Stream<Supplier<Object>> data()
     {

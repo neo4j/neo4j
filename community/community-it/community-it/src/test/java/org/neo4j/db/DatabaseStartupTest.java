@@ -91,7 +91,7 @@ class DatabaseStartupTest
               ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(),
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), NULL );
         }
 
@@ -134,7 +134,7 @@ class DatabaseStartupTest
               ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), MetaDataStore.Position.STORE_VERSION,
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
                     MetaDataStore.versionStringToLong( badStoreVersion ), NULL );
         }
 
@@ -177,7 +177,7 @@ class DatabaseStartupTest
                 PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore().toFile(), MetaDataStore.Position.TIME, newTime, NULL );
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, NULL );
         }
 
         // Try to start

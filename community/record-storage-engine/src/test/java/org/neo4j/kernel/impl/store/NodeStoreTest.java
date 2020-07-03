@@ -27,9 +27,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
@@ -280,15 +280,15 @@ class NodeStoreTest
                 PageCache customPageCache = new DelegatingPageCache( pageCache )
                 {
                     @Override
-                    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize,
+                    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize,
                             ImmutableSet<OpenOption> openOptions ) throws IOException
                     {
-                        if ( file.getName().endsWith( ".id" ) )
+                        if ( path.getFileName().toString().toLowerCase().endsWith( ".id" ) )
                         {
                             fired.setTrue();
                             throw new IOException( "Proving a point here" );
                         }
-                        return super.map( file, versionContextSupplier, pageSize, openOptions );
+                        return super.map( path, versionContextSupplier, pageSize, openOptions );
                     }
                 };
 
@@ -421,7 +421,7 @@ class NodeStoreTest
         {
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                    Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
                     ImmutableSet<OpenOption> openOptions )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,

@@ -26,8 +26,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -119,7 +119,7 @@ class RecordStoreVersionTest
             // doesn't matter which version we pick we are changing it to the wrong one...
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory().toFile() );
             changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore().toFile(), version );
-            File metadataStore = databaseLayout.metadataStore().toFile();
+            Path metadataStore = databaseLayout.metadataStore();
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
         }
 

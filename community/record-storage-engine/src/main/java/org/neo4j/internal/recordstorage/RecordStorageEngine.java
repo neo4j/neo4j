@@ -455,7 +455,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public Collection<StoreFileMetadata> listStorageFiles()
     {
         List<StoreFileMetadata> files = new ArrayList<>();
-        files.add( new StoreFileMetadata( databaseLayout.countStore().toFile(), RecordFormat.NO_RECORD_SIZE ) );
+        files.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
         for ( StoreType type : StoreType.values() )
         {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );

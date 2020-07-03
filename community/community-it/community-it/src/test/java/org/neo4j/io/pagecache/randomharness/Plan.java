@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -33,14 +33,14 @@ import org.neo4j.io.pagecache.PagedFile;
 class Plan
 {
     private final Action[] plan;
-    private final Map<File,PagedFile> fileMap;
-    private final List<File> mappedFiles;
-    private final Set<File> filesTouched;
+    private final Map<Path,PagedFile> fileMap;
+    private final List<Path> mappedFiles;
+    private final Set<Path> filesTouched;
     private final long[] executedByThread;
     private final AtomicInteger actionCounter;
     private final CountDownLatch startLatch;
 
-    Plan( Action[] plan, Map<File,PagedFile> fileMap, List<File> mappedFiles, Set<File> filesTouched )
+    Plan( Action[] plan, Map<Path,PagedFile> fileMap, List<Path> mappedFiles, Set<Path> filesTouched )
     {
         this.plan = plan;
         this.fileMap = fileMap;
@@ -71,7 +71,7 @@ class Plan
 
     public void close()
     {
-        for ( File mappedFile : mappedFiles )
+        for ( Path mappedFile : mappedFiles )
         {
             PagedFile pagedFile = fileMap.get( mappedFile );
             if ( pagedFile != null )
@@ -95,7 +95,7 @@ class Plan
         }
     }
 
-    public Set<File> getFilesTouched()
+    public Set<Path> getFilesTouched()
     {
         return filesTouched;
     }

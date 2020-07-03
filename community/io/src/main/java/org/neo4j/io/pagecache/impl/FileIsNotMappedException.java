@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Thrown when accessing a {@link org.neo4j.io.pagecache.PageCursor} of a {@link org.neo4j.io.pagecache.PagedFile} that
@@ -28,7 +28,7 @@ import java.io.IOException;
  */
 public class FileIsNotMappedException extends IOException
 {
-    public FileIsNotMappedException( File file )
+    public FileIsNotMappedException( Path file )
     {
         super( "File has been unmapped: " + file );
     }

@@ -53,7 +53,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
         this.distribution = distribution;
         this.pageCacheTracer = pageCacheTracer;
         this.progressListener = builder.progressForPart( name +
-                indexedPartName( store.getStorageFile().getName(), builderPrefix ), store.getHighId() );
+                indexedPartName( store.getStorageFile().getFileName().toString(), builderPrefix ), store.getHighId() );
     }
 
     private String indexedPartName( String storeFileName, String prefix )

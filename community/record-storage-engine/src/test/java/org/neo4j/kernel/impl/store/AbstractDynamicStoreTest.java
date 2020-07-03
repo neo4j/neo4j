@@ -23,9 +23,9 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -66,14 +66,14 @@ class AbstractDynamicStoreTest
     @Inject
     private PageCache pageCache;
 
-    private final File storeFile = new File( "store" );
-    private final File idFile = new File( "idStore" );
+    private final Path storeFile = Path.of( "store" );
+    private final Path idFile = Path.of( "idStore" );
     private final RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
 
     @BeforeEach
     void before() throws IOException
     {
-        try ( StoreChannel channel = fs.write( storeFile ) )
+        try ( StoreChannel channel = fs.write( storeFile.toFile() ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 4, INSTANCE );
             buffer.putInt( BLOCK_SIZE );

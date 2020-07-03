@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +51,7 @@ public class DatabaseFileListing
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
     private final IdGeneratorFactory idGeneratorFactory;
-    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true );
+    private static final Function<Path,StoreFileMetadata> logFileMapper = path -> new StoreFileMetadata( path, 1, true );
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
@@ -92,7 +93,7 @@ public class DatabaseFileListing
         int index = 0;
         for ( StoreFileMetadata file : files )
         {
-            if ( databaseLayout.metadataStore().equals( file.file().toPath() ) )
+            if ( databaseLayout.metadataStore().equals( file.path() ) )
             {
                 break;
             }
@@ -110,7 +111,7 @@ public class DatabaseFileListing
         File[] list = this.logFiles.logFiles();
         for ( File logFile : list )
         {
-            files.add( logFileMapper.apply( logFile ) );
+            files.add( logFileMapper.apply( logFile.toPath() ) );
         }
     }
 

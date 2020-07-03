@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -173,15 +172,15 @@ class StoreInfoCommandTest
 
     private void prepareNeoStoreFile( String storeVersion ) throws IOException
     {
-        File neoStoreFile = createNeoStoreFile();
+        Path neoStoreFile = createNeoStoreFile();
         long value = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value, NULL );
     }
 
-    private File createNeoStoreFile() throws IOException
+    private Path createNeoStoreFile() throws IOException
     {
-        File neoStoreFile = databaseLayout.metadataStore().toFile();
-        fileSystem.write( neoStoreFile ).close();
+        Path neoStoreFile = databaseLayout.metadataStore();
+        fileSystem.write( neoStoreFile.toFile() ).close();
         return neoStoreFile;
     }
 }

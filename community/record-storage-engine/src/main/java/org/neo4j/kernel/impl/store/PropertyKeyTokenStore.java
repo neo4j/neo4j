@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -42,8 +42,8 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
     public PropertyKeyTokenStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -52,7 +52,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
+        super( path, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(), recordFormats.storeVersion(), openOptions );
     }
 

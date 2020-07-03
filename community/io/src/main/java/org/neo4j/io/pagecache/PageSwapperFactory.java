@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.service.Service;
 
@@ -41,7 +41,7 @@ public interface PageSwapperFactory
     /**
      * Create a PageSwapper for the given file.
      *
-     * @param file The file that the PageSwapper will move file pages in and
+     * @param path The file that the PageSwapper will move file pages in and
      * out of.
      * @param filePageSize The size of the pages in the file. Presumably a
      * multiple of some record size.
@@ -57,7 +57,7 @@ public interface PageSwapperFactory
      * false.
      */
     PageSwapper createPageSwapper(
-            File file,
+            Path path,
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,

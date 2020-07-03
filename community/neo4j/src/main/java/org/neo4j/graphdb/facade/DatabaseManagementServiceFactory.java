@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.facade;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,7 +45,6 @@ import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -254,7 +253,7 @@ public class DatabaseManagementServiceFactory
         Supplier<GlobalProcedures> procedureInitializer = () ->
         {
             Config globalConfig = globalModule.getGlobalConfig();
-            File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
+            Path proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
             LogService logService = globalModule.getLogService();
             Log internalLog = logService.getInternalLog( GlobalProcedures.class );
             Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
@@ -268,7 +267,7 @@ public class DatabaseManagementServiceFactory
             globalProcedures.registerType( NodeValue.class, NTNode );
             globalProcedures.registerType( Relationship.class, NTRelationship );
             globalProcedures.registerType( RelationshipValue.class, NTRelationship );
-            globalProcedures.registerType( Path.class, NTPath );
+            globalProcedures.registerType( org.neo4j.graphdb.Path.class, NTPath );
             globalProcedures.registerType( PathValue.class, NTPath );
             globalProcedures.registerType( Geometry.class, NTGeometry );
             globalProcedures.registerType( Point.class, NTPoint );

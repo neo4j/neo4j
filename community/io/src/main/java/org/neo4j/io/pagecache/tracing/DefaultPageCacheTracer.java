@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -172,13 +172,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( File file )
+    public void mappedFile( Path path )
     {
         filesMapped.increment();
     }
 
     @Override
-    public void unmappedFile( File file )
+    public void unmappedFile( Path path )
     {
         filesUnmapped.increment();
     }

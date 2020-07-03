@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurato
 public class RecordStoreVersionCheck implements StoreVersionCheck
 {
     private final PageCache pageCache;
-    private final File metaDataFile;
+    private final Path metaDataFile;
     private final RecordFormats configuredFormat;
     private final Config config;
 
@@ -57,7 +57,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     RecordStoreVersionCheck( PageCache pageCache, DatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
     {
         this.pageCache = pageCache;
-        this.metaDataFile = databaseLayout.metadataStore().toFile();
+        this.metaDataFile = databaseLayout.metadataStore();
         this.configuredFormat = configuredFormat;
         this.config = config;
     }
@@ -110,17 +110,17 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         catch ( IllegalStateException e )
         {
             // somehow a corrupt neostore file
-            return new Result( Outcome.storeVersionNotFound, null, metaDataFile.getName() );
+            return new Result( Outcome.storeVersionNotFound, null, metaDataFile.getFileName().toString() );
         }
         catch ( IOException e )
         {
             // since we cannot read let's assume the file is not there
-            return new Result( Outcome.missingStoreFile, null, metaDataFile.getName() );
+            return new Result( Outcome.missingStoreFile, null, metaDataFile.getFileName().toString() );
         }
 
         if ( desiredVersion.equals( version ) )
         {
-            return new Result( Outcome.ok, version, metaDataFile.getName() );
+            return new Result( Outcome.ok, version, metaDataFile.getFileName().toString() );
         }
         else
         {
@@ -134,22 +134,22 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
                 // of the config setting to change since downgrades aren't possible but the store can still be opened.
                 if ( FormatFamily.isLowerFamilyFormat( format, fromFormat ) )
                 {
-                    return new Result( Outcome.unexpectedUpgradingVersion, version, metaDataFile.getAbsolutePath() );
+                    return new Result( Outcome.unexpectedUpgradingVersion, version, metaDataFile.toAbsolutePath().toString() );
                 }
 
                 if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
                 {
                     // Tried to downgrade, that isn't supported
-                    return new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), metaDataFile.getAbsolutePath() );
+                    return new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), metaDataFile.toAbsolutePath().toString() );
                 }
                 else
                 {
-                    return new Result( Outcome.ok, version, metaDataFile.getAbsolutePath() );
+                    return new Result( Outcome.ok, version, metaDataFile.toAbsolutePath().toString() );
                 }
             }
             catch ( IllegalArgumentException e )
             {
-                return new Result( Outcome.unexpectedStoreVersion, version, metaDataFile.getAbsolutePath() );
+                return new Result( Outcome.unexpectedStoreVersion, version, metaDataFile.toAbsolutePath().toString() );
             }
         }
     }

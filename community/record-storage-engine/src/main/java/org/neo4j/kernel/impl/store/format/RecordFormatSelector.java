@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
@@ -149,8 +149,8 @@ public class RecordFormatSelector
     public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
             PageCacheTracer pageCacheTracer )
     {
-        File neoStoreFile = databaseLayout.metadataStore().toFile();
-        if ( fs.fileExists( neoStoreFile ) )
+        Path neoStoreFile = databaseLayout.metadataStore();
+        if ( fs.fileExists( neoStoreFile.toFile() ) )
         {
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )
             {

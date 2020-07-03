@@ -187,8 +187,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
     {
-        File neoStoreFile = databaseLayout.metadataStore().toFile();
-        return MetaDataStore.getStoreId( pageCache, neoStoreFile, cursorTracer );
+        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), cursorTracer );
     }
 
     @Override

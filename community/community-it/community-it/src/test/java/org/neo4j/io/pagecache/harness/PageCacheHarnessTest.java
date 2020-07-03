@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -104,7 +104,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
             harness.setPreparation( ( cache, fs, filesTouched ) ->
             {
-                File file = filesTouched.iterator().next();
+                Path file = filesTouched.iterator().next();
                 try ( PagedFile pf = cache.map( file, cache.pageSize() );
                       PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
@@ -193,7 +193,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     {
         return ( cache, fs1, filesTouched ) ->
         {
-            for ( File file : filesTouched )
+            for ( Path file : filesTouched )
             {
                 try ( PagedFile pf = cache.map( file, cache.pageSize() );
                       PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
@@ -211,7 +211,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                 }
-                try ( StoreChannel channel = fs1.read( file ) )
+                try ( StoreChannel channel = fs1.read( file.toFile() ) )
                 {
                     recordFormat.assertRecordsWrittenCorrectly( file, channel );
                 }

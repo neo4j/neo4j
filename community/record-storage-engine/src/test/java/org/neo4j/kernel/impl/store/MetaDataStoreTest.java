@@ -24,9 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,10 +103,10 @@ class MetaDataStoreTest
         pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
         {
             @Override
-            public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize,
+            public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize,
                     ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( file, versionContextSupplier, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -561,10 +561,10 @@ class MetaDataStoreTest
         assertThat( actualValues ).isEqualTo( expectedValues );
     }
 
-    private File createMetaDataFile() throws IOException
+    private Path createMetaDataFile() throws IOException
     {
-        File file = databaseLayout.metadataStore().toFile();
-        fs.write( file ).close();
+        Path file = databaseLayout.metadataStore();
+        fs.write( file.toFile() ).close();
         return file;
     }
 
@@ -640,7 +640,7 @@ class MetaDataStoreTest
     @Test
     void staticGetRecordMustThrowOnPageOverflow() throws Exception
     {
-        File metaDataFile = createMetaDataFile();
+        Path metaDataFile = createMetaDataFile();
         MetaDataStore.setRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, 4242, NULL );
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,

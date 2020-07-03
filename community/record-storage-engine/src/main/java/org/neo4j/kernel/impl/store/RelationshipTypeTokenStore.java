@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -42,8 +42,8 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     public RelationshipTypeTokenStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -52,7 +52,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
+        super( path, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
                 recordFormats.storeVersion(), openOptions );
     }

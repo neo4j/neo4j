@@ -19,16 +19,16 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwapperTest
 {
     @Override
-    protected File getFile()
+    protected Path getPath()
     {
-        return testDir.file( super.getFile().getName() );
+        return testDir.filePath( super.getPath().getFileName().toString() );
     }
 
     @Override

@@ -50,9 +50,9 @@ public class ZipUtils
      * @param destinationZip zip file compress source to
      * @throws IOException when underlying file system access produce IOException
      */
-    public static void zip( FileSystemAbstraction fileSystem, File sourceToCompress, File destinationZip ) throws IOException
+    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip ) throws IOException
     {
-        if ( !fileSystem.fileExists( sourceToCompress ) )
+        if ( !fileSystem.fileExists( sourceToCompress.toFile() ) )
         {
             return;
         }
@@ -61,16 +61,15 @@ public class ZipUtils
             return;
         }
         Map<String,String> env = Map.of( "create", "true" );
-        Path rootPath = sourceToCompress.toPath();
-        URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toURI().getRawPath() );
+        URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toUri().getRawPath() );
 
         try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
         {
-            List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress ).collect( toList() );
+            List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress.toFile() ).collect( toList() );
             for ( FileHandle fileHandle : fileHandles )
             {
                 Path sourcePath = fileHandle.getFile().toPath();
-                Path zipFsPath = fileSystem.isDirectory( sourceToCompress ) ? zipFs.getPath( rootPath.relativize( sourcePath ).toString() )
+                Path zipFsPath = fileSystem.isDirectory( sourceToCompress.toFile() ) ? zipFs.getPath( sourceToCompress.relativize( sourcePath ).toString() )
                                                                             : zipFs.getPath( sourcePath.getFileName().toString() );
                 if ( zipFsPath.getParent() != null )
                 {
@@ -91,7 +90,7 @@ public class ZipUtils
      * @param targetFile Target file to which content will be unzipped, must align with content of zip file.
      * @throws IOException if something goes wrong.
      */
-    public static void unzipResource( Class<?> klass, String zipName, File targetFile ) throws IOException
+    public static void unzipResource( Class<?> klass, String zipName, Path targetFile ) throws IOException
     {
         URL resource = klass.getResource( zipName );
         if ( resource == null )
@@ -108,7 +107,7 @@ public class ZipUtils
      * @param targetFile {@link File} defining the target file to extract.
      * @throws IOException if something goes wrong.
      */
-    public static void unzip( String sourceZip, File targetFile ) throws IOException
+    public static void unzip( String sourceZip, Path targetFile ) throws IOException
     {
         try ( ZipFile zipFile = new ZipFile( sourceZip ) )
         {
@@ -118,19 +117,19 @@ public class ZipUtils
                 throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain any elements." );
             }
             ZipEntry entry = entries.nextElement();
-            if ( !targetFile.getName().equals( entry.getName() ) )
+            if ( !targetFile.getFileName().toString().equals( entry.getName() ) )
             {
-                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain target file '" + targetFile.getName() + "'." );
+                throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain target file '" + targetFile.getFileName() + "'." );
             }
-            Files.copy( zipFile.getInputStream( entry ), targetFile.toPath() );
+            Files.copy( zipFile.getInputStream( entry ), targetFile );
         }
     }
 
-    private static boolean isEmptyDirectory( FileSystemAbstraction fileSystem, File sourceToCompress )
+    private static boolean isEmptyDirectory( FileSystemAbstraction fileSystem, Path sourceToCompress )
     {
-        if ( fileSystem.isDirectory( sourceToCompress ) )
+        if ( fileSystem.isDirectory( sourceToCompress.toFile() ) )
         {
-            File[] files = fileSystem.listFiles( sourceToCompress );
+            File[] files = fileSystem.listFiles( sourceToCompress.toFile() );
             return files == null || files.length == 0;
         }
         return false;

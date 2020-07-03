@@ -161,7 +161,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         } );
 
         Path zipFile = storeDir.resolveSibling( storeDir.getFileName().toString() + ".zip" );
-        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir.toFile(), zipFile.toFile() );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
         System.out.println( "Db created in " + zipFile.toAbsolutePath() );
     }
 

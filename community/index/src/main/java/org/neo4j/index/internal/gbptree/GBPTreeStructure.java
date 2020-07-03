@@ -66,7 +66,7 @@ public class GBPTreeStructure<KEY, VALUE>
      */
     public static void visitMeta( PageCache pageCache,File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file.toPath(), pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
@@ -85,7 +85,7 @@ public class GBPTreeStructure<KEY, VALUE>
      */
     public static void visitState( PageCache pageCache, File file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file.toPath(), pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {

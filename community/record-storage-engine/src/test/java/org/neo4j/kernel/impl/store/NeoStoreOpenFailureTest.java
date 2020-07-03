@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -72,12 +72,12 @@ class NeoStoreOpenFailureTest
         ImmutableSet<OpenOption> openOptions = immutable.empty();
         NeoStores neoStores = new NeoStores(
                 fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, storeTypes, openOptions );
-        File schemaStore = neoStores.getSchemaStore().getStorageFile();
+        Path schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.
-        assumeTrue( schemaStore.setReadable( false ) );
-        assumeTrue( schemaStore.setWritable( false ) );
+        assumeTrue( schemaStore.toFile().setReadable( false ) );
+        assumeTrue( schemaStore.toFile().setWritable( false ) );
 
         assertThrows( RuntimeException.class, () ->
                 // This should fail due to the permissions we changed above.

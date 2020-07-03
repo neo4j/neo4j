@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -178,7 +177,7 @@ class RecordStorageEngineTest
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
-        Set<Path> currentFiles = files.stream().map( StoreFileMetadata::file ).map( File::toPath ).collect( Collectors.toSet() );
+        Set<Path> currentFiles = files.stream().map( StoreFileMetadata::path ).collect( Collectors.toSet() );
         Set<Path> allPossibleFiles = databaseLayout.storeFiles();
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
         allPossibleFiles.remove( databaseLayout.relationshipTypeScanStore() );

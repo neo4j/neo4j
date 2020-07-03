@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,7 +124,7 @@ class GBPTreeTest
     @Inject
     private RandomRule random;
 
-    private File indexFile;
+    private Path indexFile;
     private ExecutorService executor;
     private int defaultPageSize;
 
@@ -131,7 +132,7 @@ class GBPTreeTest
     void setUp() throws IOException
     {
         executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        indexFile = testDirectory.file( "index" );
+        indexFile = testDirectory.filePath( "index" );
         defaultPageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
     }
 
@@ -255,10 +256,7 @@ class GBPTreeTest
             newMeta.write( cursor, layout );
         }
 
-        MetadataMismatchException e = assertThrows( MetadataMismatchException.class, () ->
-        {
-            index( pageCache ).build();
-        } );
+        MetadataMismatchException e = assertThrows( MetadataMismatchException.class, () -> index( pageCache ).build() );
         assertThat( e.getMessage() ).contains(
                 format( "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
                         pageSize, unreasonablePageSize ) );
@@ -296,11 +294,11 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( immutable.of( DELETE_ON_CLOSE ) ).build() )
         {
             // when just closing it with the deletion flag
-            assertTrue( fileSystem.fileExists( indexFile ) );
+            assertTrue( fileSystem.fileExists( indexFile.toFile() ) );
         }
 
         // then
-        assertFalse( fileSystem.fileExists( indexFile ) );
+        assertFalse( fileSystem.fileExists( indexFile.toFile() ) );
     }
 
     /* Lifecycle tests */
@@ -333,7 +331,7 @@ class GBPTreeTest
             writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             writer.close();
 
-            IllegalStateException e = assertThrows( IllegalStateException.class, () -> writer.close() );
+            IllegalStateException e = assertThrows( IllegalStateException.class, writer::close );
             assertThat( e.getMessage() ).contains( "already closed" );
         }
     }
@@ -524,7 +522,7 @@ class GBPTreeTest
 
         byte[] newHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( newHeader );
-        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), NULL );
+        GBPTree.overwriteHeader( pageCache, indexFile.toFile(), pc -> pc.putBytes( newHeader ), NULL );
 
         Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
 
@@ -601,14 +599,14 @@ class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
+        GBPTree.readHeader( pageCache, indexFile.toFile(), headerReader, NULL );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
     }
 
     @Test
-    void readHeaderMustThrowIfFileDoesNotExist() throws Exception
+    void readHeaderMustThrowIfFileDoesNotExist()
     {
         // given
         File doesNotExist = new File( "Does not exist" );
@@ -618,7 +616,7 @@ class GBPTreeTest
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -640,7 +638,7 @@ class GBPTreeTest
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -654,7 +652,7 @@ class GBPTreeTest
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile, defaultPageSize /*truncate right after the first page*/ );
+        fileSystem.truncate( indexFile.toFile(), defaultPageSize /*truncate right after the first page*/ );
 
         assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
@@ -663,7 +661,7 @@ class GBPTreeTest
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile.toFile(), NO_HEADER_READER, NULL ) );
     }
 
     @Test
@@ -677,8 +675,8 @@ class GBPTreeTest
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile, defaultPageSize /*truncate right after the first page*/ );
-        try ( OutputStream out = fileSystem.openAsOutputStream( indexFile, true ) )
+        fileSystem.truncate( indexFile.toFile(), defaultPageSize /*truncate right after the first page*/ );
+        try ( OutputStream out = fileSystem.openAsOutputStream( indexFile.toFile(), true ) )
         {
             byte[] allZeroPage = new byte[defaultPageSize];
             out.write( allZeroPage ); // page A
@@ -707,7 +705,7 @@ class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
+            GBPTree.readHeader( pageCache, indexFile.toFile(), headerReader, NULL );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );
@@ -1226,7 +1224,7 @@ class GBPTreeTest
     void indexMustBeCleanOnFirstInitialization() throws Exception
     {
         // GIVEN
-        assertFalse( fileSystem.fileExists( indexFile ) );
+        assertFalse( fileSystem.fileExists( indexFile.toFile() ) );
         MonitorDirty monitorDirty = new MonitorDirty();
 
         // WHEN
@@ -1294,7 +1292,7 @@ class GBPTreeTest
         // GIVEN
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            ephemeralFs.mkdirs( indexFile.getParentFile() );
+            ephemeralFs.mkdirs( indexFile.toFile().getParentFile() );
             PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
             EphemeralFileSystemAbstraction snapshot;
             try ( GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
@@ -1589,7 +1587,7 @@ class GBPTreeTest
                 tree.checkpoint( UNLIMITED, NULL );
             }
         }
-        byte[] before = fileContent( indexFile );
+        byte[] before = fileContent( indexFile.toFile() );
 
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
         {
@@ -1603,7 +1601,7 @@ class GBPTreeTest
             }, NULL );
             assertFalse( ioLimitChecked.getValue(), "Expected checkpoint to be a no-op in read only mode." );
         }
-        byte[] after = fileContent( indexFile );
+        byte[] after = fileContent( indexFile.toFile() );
         assertArrayEquals( before, after, "Expected file content to be identical before and after opening GBPTree in read only mode." );
     }
 
@@ -1614,7 +1612,7 @@ class GBPTreeTest
         PageCache pageCache = createPageCache( defaultPageSize );
         TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
         assertThat( e.getMessage() ).contains( "Can not create new tree file in read only mode" );
-        assertThat( e.getMessage() ).contains( indexFile.getAbsolutePath() );
+        assertThat( e.getMessage() ).contains( indexFile.toFile().getAbsolutePath() );
     }
 
     @Test
@@ -1809,9 +1807,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -1846,9 +1844,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -1891,7 +1889,7 @@ class GBPTreeTest
         }
     }
 
-    private void shouldWait( Future<?> future ) throws InterruptedException, ExecutionException
+    private void shouldWait( Future<?> future )
     {
         assertThrows( TimeoutException.class, () -> future.get( 200, TimeUnit.MILLISECONDS ), "Expected timeout" );
     }
@@ -1925,7 +1923,7 @@ class GBPTreeTest
 
     private GBPTreeBuilder<MutableLong,MutableLong> index( PageCache pageCache )
     {
-        return new GBPTreeBuilder<>( pageCache, indexFile, layout );
+        return new GBPTreeBuilder<>( pageCache, indexFile.toFile(), layout );
     }
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
@@ -1933,9 +1931,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize * 4 ) )
         {
             @Override
-            public PagedFile map( File file, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
                 {
                     @Override
                     public void close()

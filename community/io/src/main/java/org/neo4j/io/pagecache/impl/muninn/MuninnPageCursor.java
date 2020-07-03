@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -281,9 +281,9 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final File getCurrentFile()
+    public final Path getCurrentFile()
     {
-        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : pagedFile.file();
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : pagedFile.path();
     }
 
     /**

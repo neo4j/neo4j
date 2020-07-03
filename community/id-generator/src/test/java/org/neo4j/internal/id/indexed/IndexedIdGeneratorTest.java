@@ -29,9 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -92,12 +93,12 @@ class IndexedIdGeneratorTest
     private RandomRule random;
 
     private IndexedIdGenerator idGenerator;
-    private File file;
+    private Path file;
 
     @BeforeEach
     void open()
     {
-        file = directory.file( "file" );
+        file = directory.filePath( "file" );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
     }
 
@@ -426,11 +427,11 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldUseHighIdSupplierOnCreatingNewFile()
+    void shouldUseHighIdSupplierOnCreatingNewFile() throws IOException
     {
         // given
         stop();
-        assertTrue( file.delete() );
+        Files.delete( file );
 
         // when
         long highId = 101L;
@@ -465,7 +466,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        File file = directory.file( "non-existing" );
+        Path file = directory.filePath( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, NULL ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
@@ -476,7 +477,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotRebuildIfReadOnly()
     {
-        File file = directory.file( "existing" );
+        Path file = directory.filePath( "existing" );
         new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL ).close();
         // Never start id generator means it will need rebuild on next start
 
@@ -492,7 +493,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldStartInReadOnlyModeIfEmpty() throws IOException
     {
-        File file = directory.file( "existing" );
+        Path file = directory.filePath( "existing" );
         var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
@@ -765,7 +766,7 @@ class IndexedIdGeneratorTest
 
     private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
     {
-        File file = directory.file( "existing" );
+        Path file = directory.filePath( "existing" );
         var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();

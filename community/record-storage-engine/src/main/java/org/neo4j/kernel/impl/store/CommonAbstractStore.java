@@ -23,10 +23,10 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongPredicate;
@@ -85,8 +85,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final Log log;
     protected final String storeVersion;
     protected final RecordFormat<RECORD> recordFormat;
-    final File storageFile;
-    private final File idFile;
+    final Path storageFile;
+    private final Path idFile;
     private final String typeDescriptor;
     protected PagedFile pagedFile;
     protected int recordSize;
@@ -117,8 +117,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @param idType The Id used to index into this store
      */
     public CommonAbstractStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -130,7 +130,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             String storeVersion,
             ImmutableSet<OpenOption> openOptions )
     {
-        this.storageFile = file;
+        this.storageFile = path;
         this.idFile = idFile;
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -597,7 +597,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @return The name of this store
      */
     @Override
-    public File getStorageFile()
+    public Path getStorageFile()
     {
         return storageFile;
     }
@@ -824,12 +824,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     void logVersions( Logger logger )
     {
-        logger.log( String.format( "%s[%s] %s", getTypeDescriptor(), getStorageFile().getName(), storeVersion ) );
+        logger.log( String.format( "%s[%s] %s", getTypeDescriptor(), getStorageFile().getFileName(), storeVersion ) );
     }
 
     void logIdUsage( Logger logger, PageCursorTracer cursorTracer )
     {
-        logger.log( format( "%s[%s]: used=%s high=%s", getTypeDescriptor(), getStorageFile().getName(), getNumberOfIdsInUse(),
+        logger.log( format( "%s[%s]: used=%s high=%s", getTypeDescriptor(), getStorageFile().getFileName(), getNumberOfIdsInUse(),
                 getHighestPossibleIdInUse( cursorTracer ) ) );
     }
 
@@ -1094,7 +1094,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         long pageId = pageIdForRecord( recordId );
         int offset = offsetForId( recordId );
         throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
-                record, pageId, offset, recordSize, pagedFile.pageSize(), storageFile.getAbsolutePath() ) );
+                record, pageId, offset, recordSize, pagedFile.pageSize(), storageFile.toAbsolutePath().toString() ) );
     }
 
     static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset, int recordSize,

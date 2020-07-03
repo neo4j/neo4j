@@ -856,7 +856,7 @@ public class Database extends LifecycleAdapter
         final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).map( File::toPath ).toArray( Path[]::new );
         if ( truncateStartedDatabase )
         {
-            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.file().toPath() ) );
+            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.path() ) );
             stop();
         }
 

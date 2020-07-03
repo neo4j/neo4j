@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class StoreFileClosedException extends RuntimeException
 {
-    StoreFileClosedException( CommonAbstractStore store, File storageFile )
+    StoreFileClosedException( CommonAbstractStore<?,?> store, Path storageFile )
     {
         super( store + " for file '" + storageFile + "' is closed" );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -33,7 +33,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
     @Override
-    protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, immutable.empty() );

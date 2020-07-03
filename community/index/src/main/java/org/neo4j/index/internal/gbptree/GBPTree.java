@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -472,7 +473,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final PageCacheTracer pageCacheTracer;
 
     /**
-     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(File, int, ImmutableSet)}
+     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(Path, int, ImmutableSet)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
      * concatenated with the contents of this array is passed into the map call.
      */
@@ -705,7 +706,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             throws IOException, MetadataMismatchException
     {
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
+        PagedFile pagedFile = pageCache.map( indexFile.toPath(), pageCache.pageSize(), openOptions );
         // This index already exists, verify meta data aligns with expectations
 
         MutableBoolean pagedFileOpen = new MutableBoolean( true );
@@ -741,7 +742,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         // First time
         monitor.noStoreFile();
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions.newWith( CREATE ) );
+        PagedFile pagedFile = pageCache.map( indexFile.toPath(), pageCache.pageSize(), openOptions.newWith( CREATE ) );
         created = true;
         return pagedFile;
     }

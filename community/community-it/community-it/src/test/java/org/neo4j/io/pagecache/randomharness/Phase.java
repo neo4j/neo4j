@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -27,5 +27,5 @@ import org.neo4j.io.pagecache.PageCache;
 
 public interface Phase
 {
-    void run( PageCache pageCache, FileSystemAbstraction fs, Set<File> filesTouched ) throws Exception;
+    void run( PageCache pageCache, FileSystemAbstraction fs, Set<Path> filesTouched ) throws Exception;
 }

@@ -247,7 +247,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile().toPath() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -261,7 +261,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         populator.close( true, NULL );
 
         // then
-        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
+        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile().toPath() );
         assertFalse( existingMapping.isPresent() );
     }
 
@@ -293,7 +293,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile().toPath() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -307,7 +307,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         populator.close( false, NULL );
 
         // then
-        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
+        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile().toPath() );
         assertFalse( existingMapping.isPresent() );
     }
 

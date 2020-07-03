@@ -23,9 +23,9 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.Before;
 import org.junit.Rule;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -177,7 +177,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     }
 
     @Override
-    protected void createStoreFile( File storeFile ) throws IOException
+    protected void createStoreFile( Path storeFile ) throws IOException
     {
         withCursor( storeFile, true, c -> {
             putFormatVersion( c );
@@ -186,7 +186,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     }
 
     @Override
-    protected void verifyFormat( File storeFile ) throws FormatViolationException, IOException
+    protected void verifyFormat( Path storeFile ) throws FormatViolationException, IOException
     {
         AtomicReference<FormatViolationException> exception = new AtomicReference<>();
         withCursor( storeFile, false, c ->
@@ -207,7 +207,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     }
 
     @Override
-    protected void verifyContent( File storeFile ) throws IOException
+    protected void verifyContent( Path storeFile ) throws IOException
     {
         withCursor( storeFile, false, c ->
         {
@@ -283,7 +283,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         return new GenericLayout( NUMBER_OF_SLOTS, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
     }
 
-    private void withCursor( File storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
+    private void withCursor( Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
     {
         ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE) : immutable.of( WRITE );
         try ( PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );

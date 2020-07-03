@@ -27,10 +27,10 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -78,7 +78,7 @@ public abstract class PageSwapperTest
 
     protected abstract PageSwapperFactory swapperFactory( FileSystemAbstraction fileSystem );
 
-    protected abstract void mkdirs( File dir ) throws IOException;
+    protected abstract void mkdirs( Path dir ) throws IOException;
 
     @BeforeEach
     @AfterEach
@@ -143,7 +143,7 @@ public abstract class PageSwapperTest
     @Test
     void readMustNotSwallowInterrupts() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         putInt( page, 0, 1 );
@@ -166,7 +166,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredReadMustNotSwallowInterrupts() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         putInt( page, 0, 1 );
@@ -189,7 +189,7 @@ public abstract class PageSwapperTest
     @Test
     void writeMustNotSwallowInterrupts() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         putInt( page, 0, 1 );
@@ -216,7 +216,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredWriteMustNotSwallowInterrupts() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         putInt( page, 0, 1 );
@@ -243,7 +243,7 @@ public abstract class PageSwapperTest
     @Test
     void forcingMustNotSwallowInterrupts() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
@@ -256,7 +256,7 @@ public abstract class PageSwapperTest
     @Test
     void mustReopenChannelWhenReadFailsWithAsynchronousCloseException() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
 
@@ -284,7 +284,7 @@ public abstract class PageSwapperTest
     @Test
     void mustReopenChannelWhenVectoredReadFailsWithAsynchronousCloseException() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
 
@@ -316,7 +316,7 @@ public abstract class PageSwapperTest
         putLong( page, 0, X );
         putLong( page, 8, Y );
         putInt( page, 16, Z );
-        File file = file( "a" );
+        Path file = file( "a" );
 
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
@@ -345,7 +345,7 @@ public abstract class PageSwapperTest
         putLong( page, 0, X );
         putLong( page, 8, Y );
         putInt( page, 16, Z );
-        File file = file( "a" );
+        Path file = file( "a" );
 
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
@@ -370,7 +370,7 @@ public abstract class PageSwapperTest
     @Test
     void mustReopenChannelWhenForceFailsWithAsynchronousCloseException() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
@@ -391,7 +391,7 @@ public abstract class PageSwapperTest
     void readMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         String filename = "a";
-        File file = file( filename );
+        Path file = file( filename );
 
         long page = createPage();
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
@@ -406,7 +406,7 @@ public abstract class PageSwapperTest
     void vectoredReadMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         String filename = "a";
-        File file = file( filename );
+        Path file = file( filename );
 
         long page = createPage();
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
@@ -420,7 +420,7 @@ public abstract class PageSwapperTest
     @Test
     void writeMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
@@ -433,7 +433,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredWriteMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         long page = createPage();
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
@@ -446,7 +446,7 @@ public abstract class PageSwapperTest
     @Test
     void forceMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = file( "a" );
+        Path file = file( "a" );
 
         PageSwapperFactory swapperFactory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( swapperFactory, file );
@@ -458,8 +458,8 @@ public abstract class PageSwapperTest
     @Test
     void mustNotOverwriteDataInOtherFiles() throws Exception
     {
-        File fileA = file( "a" );
-        File fileB = file( "b" );
+        Path fileA = file( "a" );
+        Path fileB = file( "b" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapperA =
                 createSwapperAndFile( factory, fileA );
@@ -488,7 +488,7 @@ public abstract class PageSwapperTest
     {
         final AtomicLong callbackFilePageId = new AtomicLong();
         PageEvictionCallback callback = callbackFilePageId::set;
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapper( factory, file, cachePageSize(), callback, true, false );
         swapper.evicted( 42 );
@@ -500,7 +500,7 @@ public abstract class PageSwapperTest
     {
         final AtomicBoolean gotCallback = new AtomicBoolean();
         PageEvictionCallback callback = filePageId -> gotCallback.set( true );
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapper( factory, file, cachePageSize(), callback, true, false );
         swapper.close();
@@ -535,7 +535,7 @@ public abstract class PageSwapperTest
     @Test
     void truncatedFilesMustBeEmpty() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file );
 
@@ -575,7 +575,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredWriteMustFlushAllBuffersInOrder() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -615,7 +615,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredWriteMustFlushAllBuffersOfDifferentSizeInOrder() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -656,7 +656,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadMustFillAllBuffersOfDifferentSizesInOrder() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -693,7 +693,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadMustFillAllBuffersInOrder() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -725,7 +725,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadFromEmptyFileMustFillPagesWithZeros() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -738,7 +738,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadBeyondEndOfFileMustFillPagesWithZeros() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -758,7 +758,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadBeyondEndOfFileMustFillPagesWithZerosForBuffersWithDifferentSizes() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -787,7 +787,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -818,7 +818,7 @@ public abstract class PageSwapperTest
     @Test
     void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveRestZeroFilled() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -849,7 +849,7 @@ public abstract class PageSwapperTest
     @Test
     void concurrentPositionedVectoredReadsAndWritesMustNotInterfere() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         final PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
         final int pageCount = 100;
@@ -936,7 +936,7 @@ public abstract class PageSwapperTest
     @Test
     void mustThrowNullPointerExceptionFromReadWhenPageArrayIsNull() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -953,7 +953,7 @@ public abstract class PageSwapperTest
     @Test
     void mustThrowNullPointerExceptionFromWriteWhenPageArrayIsNull() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -965,7 +965,7 @@ public abstract class PageSwapperTest
     @Test
     void readMustThrowForNegativeFilePageIds() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -977,7 +977,7 @@ public abstract class PageSwapperTest
     void directIOAllowedOnlyOnLinux() throws IOException
     {
         PageSwapperFactory factory = createSwapperFactory( getFs() );
-        File file = file( "file" );
+        Path file = file( "file" );
         var e = assertThrows( IllegalArgumentException.class, () -> createSwapperAndFile( factory, file, true ) );
         assertThat( e.getMessage() ).contains( "Linux" );
     }
@@ -987,7 +987,7 @@ public abstract class PageSwapperTest
     void doNotAllowDirectIOForPagesNotMultipleOfBlockSize() throws IOException
     {
         PageSwapperFactory factory = createSwapperFactory( getFs() );
-        File file = file( "file" );
+        Path file = file( "file" );
         checkUnsupportedPageSize( factory, file, 17 );
         checkUnsupportedPageSize( factory, file, 115 );
         checkUnsupportedPageSize( factory, file, 218 );
@@ -997,16 +997,16 @@ public abstract class PageSwapperTest
         checkUnsupportedPageSize( factory, file, 4097 );
     }
 
-    private void checkUnsupportedPageSize( PageSwapperFactory factory, File file, int pageSize )
+    private void checkUnsupportedPageSize( PageSwapperFactory factory, Path path, int pageSize )
     {
-        var e = assertThrows( IllegalArgumentException.class, () -> createSwapperAndFile( factory, file, pageSize, true ) );
+        var e = assertThrows( IllegalArgumentException.class, () -> createSwapperAndFile( factory, path, pageSize, true ) );
         assertThat( e.getMessage() ).contains( "block" );
     }
 
     @Test
     void writeMustThrowForNegativeFilePageIds() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -1016,7 +1016,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredReadMustThrowForNegativeFilePageIds() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -1026,7 +1026,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredWriteMustThrowForNegativeFilePageIds() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -1036,7 +1036,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredReadMustReadNothingWhenLengthIsZero() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -1059,7 +1059,7 @@ public abstract class PageSwapperTest
     @Test
     void vectoredWriteMustWriteNothingWhenLengthIsZero() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
 
@@ -1083,7 +1083,7 @@ public abstract class PageSwapperTest
     @Test
     void mustDeleteFileIfClosedWithCloseAndDelete() throws Exception
     {
-        File file = file( "file" );
+        Path file = file( "file" );
         PageSwapperFactory factory = createSwapperFactory( getFs() );
         PageSwapper swapper = createSwapperAndFile( factory, file, 4 );
         swapper.closeAndDelete();
@@ -1117,23 +1117,23 @@ public abstract class PageSwapperTest
 
     protected PageSwapper createSwapper(
             PageSwapperFactory factory,
-            File file,
+            Path path,
             int filePageSize,
             PageEvictionCallback callback,
             boolean createIfNotExist ) throws IOException
     {
-        return createSwapper( factory, file, filePageSize, callback, createIfNotExist, false );
+        return createSwapper( factory, path, filePageSize, callback, createIfNotExist, false );
     }
 
     protected PageSwapper createSwapper(
             PageSwapperFactory factory,
-            File file,
+            Path path,
             int filePageSize,
             PageEvictionCallback callback,
             boolean createIfNotExist,
             boolean useDirectIO ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( file, filePageSize, callback, createIfNotExist, useDirectIO );
+        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO );
         openedSwappers.add( swapper );
         return swapper;
     }
@@ -1208,31 +1208,31 @@ public abstract class PageSwapperTest
         return createPage( cachePageSize() );
     }
 
-    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file ) throws IOException
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, Path path ) throws IOException
     {
-        return createSwapperAndFile( factory, file, cachePageSize() );
+        return createSwapperAndFile( factory, path, cachePageSize() );
     }
 
-    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, boolean useDirectIO ) throws IOException
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, Path path, boolean useDirectIO ) throws IOException
     {
-        return createSwapper( factory, file, cachePageSize(), NO_CALLBACK, true, useDirectIO );
+        return createSwapper( factory, path, cachePageSize(), NO_CALLBACK, true, useDirectIO );
     }
 
-    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize, boolean useDirectIO ) throws IOException
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, Path path, int filePageSize, boolean useDirectIO ) throws IOException
     {
-        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, useDirectIO );
+        return createSwapper( factory, path, filePageSize, NO_CALLBACK, true, useDirectIO );
     }
 
-    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, File file, int filePageSize )
+    private PageSwapper createSwapperAndFile( PageSwapperFactory factory, Path path, int filePageSize )
             throws IOException
     {
-        return createSwapper( factory, file, filePageSize, NO_CALLBACK, true, false );
+        return createSwapper( factory, path, filePageSize, NO_CALLBACK, true, false );
     }
 
-    private File file( String filename ) throws IOException
+    private Path file( String filename ) throws IOException
     {
-        File file = testDir.file( filename );
-        mkdirs( file.getParentFile() );
+        Path file = testDir.filePath( filename );
+        mkdirs( file.getParent() );
         return file;
     }
 

@@ -25,8 +25,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -114,7 +114,7 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
     public static Collection<NumberArrayTestData> arrays()
     {
         PageCache pageCache = fixture.pageCache;
-        File dir = fixture.directory;
+        Path dir = fixture.directory;
         Collection<NumberArrayTestData> list = new ArrayList<>();
         Map<String,NumberArrayFactory> factories = new HashMap<>();
         factories.put( "HEAP", NumberArrayFactory.HEAP );

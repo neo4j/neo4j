@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -35,7 +35,7 @@ public abstract class RecordFormat
 {
     public abstract int getRecordSize();
 
-    public abstract Record createRecord( File file, int recordId );
+    public abstract Record createRecord( Path file, int recordId );
 
     public abstract Record readRecord( PageCursor cursor ) throws IOException;
 
@@ -85,7 +85,7 @@ public abstract class RecordFormat
         }
     }
 
-    public final void assertRecordsWrittenCorrectly( File file, StoreChannel channel ) throws IOException
+    public final void assertRecordsWrittenCorrectly( Path file, StoreChannel channel ) throws IOException
     {
         int recordSize = getRecordSize();
         long recordsInFile = channel.size() / recordSize;

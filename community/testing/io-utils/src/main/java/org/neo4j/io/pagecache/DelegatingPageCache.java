@@ -21,9 +21,9 @@ package org.neo4j.io.pagecache;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,15 +39,15 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return delegate.map( file, versionContextSupplier, pageSize, openOptions );
+        return delegate.map( path, versionContextSupplier, pageSize, openOptions );
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping( File file ) throws IOException
+    public Optional<PagedFile> getExistingMapping( Path path ) throws IOException
     {
-        return delegate.getExistingMapping( file );
+        return delegate.getExistingMapping( path );
     }
 
     @Override

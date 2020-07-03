@@ -21,10 +21,10 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -309,7 +309,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( File file, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions )
+    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions )
             throws IOException
     {
         assertHealthy();
@@ -320,7 +320,7 @@ public class MuninnPageCache implements PageCache
                     "Cannot map files with a filePageSize (" + filePageSize + ") that is greater than the " +
                     "cachePageSize (" + cachePageSize + ")" );
         }
-        file = file.getCanonicalFile();
+        path = path.normalize();
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
@@ -359,12 +359,12 @@ public class MuninnPageCache implements PageCache
         // find an existing mapping
         while ( current != null )
         {
-            if ( current.file.equals( file ) )
+            if ( current.path.equals( path ) )
             {
                 MuninnPagedFile pagedFile = current.pagedFile;
                 if ( pagedFile.pageSize() != filePageSize && !anyPageSize )
                 {
-                    String msg = "Cannot map file " + file + " with " +
+                    String msg = "Cannot map file " + path + " with " +
                             "filePageSize " + filePageSize + " bytes, " +
                             "because it has already been mapped with a " +
                             "filePageSize of " + pagedFile.pageSize() +
@@ -391,7 +391,7 @@ public class MuninnPageCache implements PageCache
 
         // there was no existing mapping
         MuninnPagedFile pagedFile = new MuninnPagedFile(
-                file,
+                path,
                 this,
                 filePageSize,
                 swapperFactory,
@@ -400,21 +400,21 @@ public class MuninnPageCache implements PageCache
                 truncateExisting, useDirectIO );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
-        current = new FileMapping( file, pagedFile );
+        current = new FileMapping( path, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
-        pageCacheTracer.mappedFile( file );
+        pageCacheTracer.mappedFile( path );
         return pagedFile;
     }
 
     @Override
-    public synchronized Optional<PagedFile> getExistingMapping( File file ) throws IOException
+    public synchronized Optional<PagedFile> getExistingMapping( Path path ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
 
-        file = file.getCanonicalFile();
-        MuninnPagedFile pagedFile = tryGetMappingOrNull( file );
+        path = path.normalize();
+        MuninnPagedFile pagedFile = tryGetMappingOrNull( path );
         if ( pagedFile != null )
         {
             pagedFile.incrementRefCount();
@@ -423,14 +423,14 @@ public class MuninnPageCache implements PageCache
         return Optional.empty();
     }
 
-    private MuninnPagedFile tryGetMappingOrNull( File file )
+    private MuninnPagedFile tryGetMappingOrNull( Path path )
     {
         FileMapping current = mappedFiles;
 
         // find an existing mapping
         while ( current != null )
         {
-            if ( current.file.equals( file ) )
+            if ( current.path.equals( path ) )
             {
                 return current.pagedFile;
             }
@@ -512,7 +512,7 @@ public class MuninnPageCache implements PageCache
                     {
                         prev.next = current.next;
                     }
-                    pageCacheTracer.unmappedFile( current.file );
+                    pageCacheTracer.unmappedFile( current.path );
                     flushAndCloseWithoutFail( file );
                     break;
                 }
@@ -654,7 +654,7 @@ public class MuninnPageCache implements PageCache
             {
                 int refCount = files.pagedFile.getRefCount();
                 msg.append( "\n\t" );
-                msg.append( files.file );
+                msg.append( files.path );
                 msg.append( " (" ).append( refCount );
                 msg.append( refCount == 1 ? " mapping)" : " mappings)" );
                 files = files.next;

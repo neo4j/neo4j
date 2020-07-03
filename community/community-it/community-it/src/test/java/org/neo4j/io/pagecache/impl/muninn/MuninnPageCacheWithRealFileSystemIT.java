@@ -42,6 +42,6 @@ class MuninnPageCacheWithRealFileSystemIT extends MuninnPageCacheTest
     {
         return super.createFixture()
                     .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                    .withFileConstructor( pathname -> directory.file( pathname ) );
+                    .withFileConstructor( directory::filePath );
     }
 }

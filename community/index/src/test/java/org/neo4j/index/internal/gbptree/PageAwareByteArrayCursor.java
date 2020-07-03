@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -179,7 +179,7 @@ class PageAwareByteArrayCursor extends PageCursor
     /* DELEGATE METHODS */
 
     @Override
-    public File getCurrentFile()
+    public Path getCurrentFile()
     {
         return current.getCurrentFile();
     }

@@ -21,7 +21,7 @@ package org.neo4j.server;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 
@@ -35,8 +35,8 @@ public class CommandLineArgsTest
     @Test
     void shouldPickUpSpecifiedConfigFile()
     {
-        File dir = new File( "/some-dir" ).getAbsoluteFile();
-        File expectedFile = new File( dir, Config.DEFAULT_CONFIG_FILE_NAME );
+        Path dir = Path.of( "/some-dir" ).toAbsolutePath();
+        Path expectedFile = dir.resolve( Config.DEFAULT_CONFIG_FILE_NAME );
         assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
     }
@@ -44,7 +44,7 @@ public class CommandLineArgsTest
     @Test
     void shouldResolveConfigFileRelativeToWorkingDirectory()
     {
-        File expectedFile = new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME );
+        Path expectedFile = Path.of( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
@@ -52,13 +52,13 @@ public class CommandLineArgsTest
     @Test
     void shouldReturnNullIfConfigDirIsNotSpecified()
     {
-        assertEquals( null, parse().configFile() );
+        assertNull( parse().configFile() );
     }
 
     @Test
     void shouldPickUpSpecifiedHomeDir()
     {
-        File homeDir = new File( "/some/absolute/homedir" ).getAbsoluteFile();
+        Path homeDir = Path.of( "/some/absolute/homedir" ).toAbsolutePath();
 
         assertEquals( homeDir, parse( "--home-dir", homeDir.toString() ).homeDir() );
         assertEquals( homeDir, parse( "--home-dir=" + homeDir ).homeDir() );

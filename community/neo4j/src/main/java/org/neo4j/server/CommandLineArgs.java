@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
@@ -67,10 +67,10 @@ public class CommandLineArgs
         return configOverrides;
     }
 
-    public File configFile()
+    public Path configFile()
     {
         String configDirectory = args.get( CONFIG_DIR_ARG );
-        return configDirectory == null ? null : new File( configDirectory, Config.DEFAULT_CONFIG_FILE_NAME );
+        return configDirectory == null ? null : Path.of( configDirectory, Config.DEFAULT_CONFIG_FILE_NAME );
     }
 
     private static Map<String, String> parseConfigOverrides( Args arguments )
@@ -93,14 +93,14 @@ public class CommandLineArgs
         return ret;
     }
 
-    public File homeDir()
+    public Path homeDir()
     {
         if ( args.get( HOME_DIR_ARG ) == null )
         {
             return null;
         }
 
-        return new File( args.get( HOME_DIR_ARG ) );
+        return Path.of( args.get( HOME_DIR_ARG ) );
     }
 
     public boolean version()

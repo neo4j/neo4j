@@ -25,11 +25,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -158,20 +158,20 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return fixture.getFileSystemAbstraction();
     }
 
-    protected final File file( String pathname ) throws IOException
+    protected final Path file( String pathname ) throws IOException
     {
         return fixture.file( pathname );
     }
 
-    protected void ensureExists( File file ) throws IOException
+    protected void ensureExists( Path file ) throws IOException
     {
-        fs.mkdirs( file.getParentFile() );
-        fs.write( file ).close();
+        fs.mkdirs( file.getParent().toFile() );
+        fs.write( file.toFile() ).close();
     }
 
-    protected File existingFile( String name ) throws IOException
+    protected Path existingFile( String name ) throws IOException
     {
-        File file = file( name );
+        Path file = file( name );
         ensureExists( file );
         return file;
     }
@@ -252,7 +252,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     /**
      * Fill the page bound by the cursor with records that can be verified with
-     * {@link #verifyRecordsMatchExpected(PageCursor)} or {@link #verifyRecordsInFile(java.io.File, int)}.
+     * {@link #verifyRecordsMatchExpected(PageCursor)} or {@link #verifyRecordsInFile(Path, int)}.
      */
     protected void writeRecords( PageCursor cursor )
     {
@@ -266,11 +266,11 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     protected void generateFileWithRecords(
-            File file,
+            Path file,
             int recordCount,
             int recordSize ) throws IOException
     {
-        try ( StoreChannel channel = fs.write( file ) )
+        try ( StoreChannel channel = fs.write( file.toFile() ) )
         {
             generateFileWithRecords( channel, recordCount, recordSize );
         }
@@ -305,9 +305,9 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         buf.position( 0 );
     }
 
-    protected void verifyRecordsInFile( File file, int recordCount ) throws IOException
+    protected void verifyRecordsInFile( Path file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( file ) )
+        try ( StoreChannel channel = fs.read( file.toFile() ) )
         {
             verifyRecordsInFile( channel, recordCount );
         }
@@ -339,7 +339,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public abstract void tearDownPageCache( T pageCache );
 
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
-        private Function<String,File> fileConstructor = File::new;
+        private Function<String,Path> fileConstructor = Path::of;
 
         public final FileSystemAbstraction getFileSystemAbstraction()
         {
@@ -353,12 +353,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             return this;
         }
 
-        public final File file( String pathname ) throws IOException
+        public final Path file( String pathname )
         {
-            return fileConstructor.apply( pathname ).getCanonicalFile();
+            return fileConstructor.apply( pathname ).toAbsolutePath().normalize();
         }
 
-        public final Fixture<T> withFileConstructor( Function<String,File> fileConstructor )
+        public final Fixture<T> withFileConstructor( Function<String,Path> fileConstructor )
         {
             this.fileConstructor = fileConstructor;
             return this;

@@ -19,14 +19,15 @@
  */
 package org.neo4j.procedure.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -55,31 +56,38 @@ class ProcedureJarLoader
         this.log = log;
     }
 
-    Callables loadProceduresFromDir( File root ) throws IOException, KernelException
+    Callables loadProceduresFromDir( Path root ) throws IOException, KernelException
     {
-        if ( root == null || !root.exists() )
+        if ( root == null || Files.notExists( root ) )
         {
             return Callables.empty();
         }
 
-        Callables out = new Callables();
-
-        File[] dirListing = root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) );
-
-        if ( dirListing == null )
+        List<Path> jarFiles = new ArrayList<>();
+        boolean error = false;
+        try ( DirectoryStream<Path> list = Files.newDirectoryStream( root, "*.jar" ) )
         {
-            return Callables.empty();
+            for ( Path path : list )
+            {
+                error |= isInvalidJarFile( path );
+                jarFiles.add( path );
+            }
         }
 
-        if ( !allJarFilesAreValidZipFiles( Stream.of( dirListing ) ) )
+        if ( error )
         {
             throw new ZipException( "Some jar procedure files are invalid, see log for details." );
         }
 
-        URL[] jarFilesURLs = Stream.of( dirListing ).map( this::toURL ).toArray( URL[]::new );
+        if ( jarFiles.size() == 0 )
+        {
+            return Callables.empty();
+        }
 
+        URL[] jarFilesURLs = jarFiles.stream().map( this::toURL ).toArray( URL[]::new );
         URLClassLoader loader = new URLClassLoader( jarFilesURLs, this.getClass().getClassLoader() );
 
+        Callables out = new Callables();
         for ( URL jarFile : jarFilesURLs )
         {
             loadProcedures( jarFile, loader, out );
@@ -87,21 +95,18 @@ class ProcedureJarLoader
         return out;
     }
 
-    private boolean allJarFilesAreValidZipFiles( Stream<File> jarFiles )
+    private boolean isInvalidJarFile( Path jarFile )
     {
-        return jarFiles.allMatch( jarFile ->
+        try
         {
-            try
-            {
-                new ZipFile( jarFile ).close();
-                return true;
-            }
-            catch ( IOException e )
-            {
-                log.error( String.format( "Plugin jar file: %s corrupted.", jarFile ) );
-                return false;
-            }
-        } );
+            new ZipFile( jarFile.toFile() ).close();
+            return false;
+        }
+        catch ( IOException e )
+        {
+            log.error( String.format( "Plugin jar file: %s corrupted.", jarFile ) );
+            return true;
+        }
     }
 
     private Callables loadProcedures( URL jar, ClassLoader loader, Callables target )
@@ -118,11 +123,11 @@ class ProcedureJarLoader
         return target;
     }
 
-    private URL toURL( File f )
+    private URL toURL( Path f )
     {
         try
         {
-            return f.toURI().toURL();
+            return f.toUri().toURL();
         }
         catch ( MalformedURLException e )
         {

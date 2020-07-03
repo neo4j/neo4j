@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -107,8 +107,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
     private final boolean allowStorePointsAndTemporal;
 
     public DynamicArrayStore(
-            File file,
-            File idFile,
+            Path path,
+            Path idFile,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
@@ -118,7 +118,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             RecordFormats recordFormats,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, configuration, idType, idGeneratorFactory, pageCache,
+        super( path, idFile, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
         allowStorePointsAndTemporal = recordFormats.hasCapability( RecordStorageCapability.POINT_PROPERTIES )
                 && recordFormats.hasCapability( RecordStorageCapability.TEMPORAL_PROPERTIES );

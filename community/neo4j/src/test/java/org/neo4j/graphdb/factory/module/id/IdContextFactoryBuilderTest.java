@@ -21,7 +21,7 @@ package org.neo4j.graphdb.factory.module.id;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -87,7 +87,7 @@ class IdContextFactoryBuilderTest
         assertThat( bufferedGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
 
         ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ) );
-        File file = testDirectory.file( "a" );
+        Path file = testDirectory.filePath( "a" );
         IdType idType = IdType.NODE;
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
@@ -122,7 +122,7 @@ class IdContextFactoryBuilderTest
         var idController = idContext.getIdController();
         idController.initialize( () -> () -> true );
 
-        File file = testDirectory.file( "b" );
+        Path file = testDirectory.filePath( "b" );
         IdType idType = IdType.NODE;
 
         try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, false, NULL,

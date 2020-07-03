@@ -21,10 +21,10 @@ package org.neo4j.io.pagecache.tracing.linear;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -83,33 +83,33 @@ class HEvents
 
     static class MappedFileHEvent extends HEvent
     {
-        File file;
+        Path path;
 
-        MappedFileHEvent( File file )
+        MappedFileHEvent( Path path )
         {
-            this.file = file;
+            this.path = path;
         }
 
         @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
-            print( out, file );
+            print( out, path );
         }
     }
 
     static class UnmappedFileHEvent extends HEvent
     {
-        File file;
+        Path path;
 
-        UnmappedFileHEvent( File file )
+        UnmappedFileHEvent( Path path )
         {
-            this.file = file;
+            this.path = path;
         }
 
         @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
-            print( out, file );
+            print( out, path );
         }
     }
 
@@ -144,7 +144,7 @@ class HEvents
         private final int pagesToFlush;
         private int pageMerged;
         private int pageCount;
-        private final File file;
+        private final Path path;
         private int bytesWritten;
         private IOException exception;
 
@@ -156,7 +156,7 @@ class HEvents
             this.pagesToFlush = pagesToFlush;
             this.pageMerged = pageMerged;
             this.pageCount = 1;
-            this.file = swapper.file();
+            this.path = swapper.path();
         }
 
         @Override
@@ -199,7 +199,7 @@ class HEvents
             out.print( cachePageId );
             out.print( ", pageCount:" );
             out.print( pageCount );
-            print( out, file );
+            print( out, path );
             out.print( ", bytesWritten:" );
             out.print( bytesWritten );
             out.print( ", pagesToFlush:" );
@@ -212,12 +212,12 @@ class HEvents
 
     public static class MajorFlushHEvent extends IntervalHEvent implements MajorFlushEvent, FlushEventOpportunity
     {
-        private final File file;
+        private final Path path;
 
-        MajorFlushHEvent( LinearHistoryTracer tracer, File file )
+        MajorFlushHEvent( LinearHistoryTracer tracer, Path path )
         {
             super( tracer );
-            this.file = file;
+            this.path = path;
         }
 
         @Override
@@ -247,7 +247,7 @@ class HEvents
         @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
-            print( out, file );
+            print( out, path );
         }
     }
 
@@ -255,7 +255,7 @@ class HEvents
     {
         private final boolean exclusiveLock;
         private final long filePageId;
-        private final File file;
+        private final Path path;
         private long cachePageId;
         private boolean hit;
 
@@ -265,7 +265,7 @@ class HEvents
             this.exclusiveLock = exclusiveLock;
             this.filePageId = filePageId;
             this.hit = true;
-            this.file = swapper.file();
+            this.path = swapper.path();
         }
 
         @Override
@@ -301,7 +301,7 @@ class HEvents
             out.print( cachePageId );
             out.print( ", hit:" );
             out.print( hit );
-            print( out, file );
+            print( out, path );
             out.append( ", exclusiveLock:" );
             out.print( exclusiveLock );
         }
@@ -367,7 +367,7 @@ class HEvents
     public static class EvictionHEvent extends IntervalHEvent implements EvictionEvent, FlushEventOpportunity
     {
         private long filePageId;
-        private File file;
+        private Path path;
         private IOException exception;
         private long cachePageId;
 
@@ -385,7 +385,7 @@ class HEvents
         @Override
         public void setSwapper( PageSwapper swapper )
         {
-            file = swapper == null ? null : swapper.file();
+            path = swapper == null ? null : swapper.path();
         }
 
         @Override
@@ -431,7 +431,7 @@ class HEvents
             out.print( filePageId );
             out.print( ", cachePageId:" );
             out.print( cachePageId );
-            print( out, file );
+            print( out, path );
             print( out, exception, exceptionLinePrefix );
         }
     }
@@ -495,10 +495,10 @@ class HEvents
 
         abstract void printBody( PrintStream out, String exceptionLinePrefix );
 
-        protected final void print( PrintStream out, File file )
+        protected final void print( PrintStream out, Path file )
         {
             out.print( ", file:" );
-            out.print( file == null ? "<null>" : file.getPath() );
+            out.print( file == null ? "<null>" : file );
         }
 
         protected final void print( PrintStream out, Throwable exception, String linePrefix )
