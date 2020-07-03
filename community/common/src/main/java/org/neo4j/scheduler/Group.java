@@ -90,7 +90,7 @@ public enum Group
     RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
     LEADER_TRANSFER_SERVICE( "LeaderTransferService" ),
     CORE_STATE_APPLIER( "CoreStateApplier" ),
-    AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealingAsync() ),
+    AKKA_HELPER( "AkkaActorSystemRestarter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_SERVER( "CatchupServer" ),
