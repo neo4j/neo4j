@@ -145,6 +145,8 @@ abstract case class FunctionInfo(f: Function){
 abstract class Function {
   def name: String
 
+  private val functionName = asFunctionName(InputPosition.NONE)
+
   def asFunctionName(implicit position: InputPosition): FunctionName = FunctionName(name)(position)
 
   def asInvocation(argument: Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation =
@@ -152,6 +154,16 @@ abstract class Function {
 
   def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation =
     FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+
+  // Default apply and unapply methods which are valid for functions taking exactly one argument
+  def apply(arg: Expression)(pos: InputPosition): FunctionInvocation =
+    FunctionInvocation(asFunctionName(pos), arg)(pos)
+
+  def unapply(arg: Expression): Option[Expression] =
+    arg match {
+      case FunctionInvocation(_, `functionName`, _, args) => Some(args.head)
+      case _ => None
+    }
 }
 
 trait FunctionWithInfo {
