@@ -42,6 +42,11 @@ public class Subject
         {
             return "SYSTEM";
         }
+
+        public String describe()
+        {
+            return "";
+        }
     };
 
     /**
@@ -60,6 +65,11 @@ public class Subject
         {
             return "AUTH_DISABLED";
         }
+
+        public String describe()
+        {
+            return "";
+        }
     };
 
     public static final Subject ANONYMOUS = new Subject( null )
@@ -74,6 +84,11 @@ public class Subject
         {
             return "ANONYMOUS";
         }
+
+        public String describe()
+        {
+            return "";
+        }
     };
 
     private final String username;
@@ -84,6 +99,18 @@ public class Subject
     }
 
     public String getUsername()
+    {
+        return username;
+    }
+
+    /**
+     * A user-facing description of the subject.
+     * <p>
+     * The representation returned from this method will be used
+     * when displaying the subject for instance
+     * in the result of administration commands and functions.
+     */
+    public String describe()
     {
         return username;
     }

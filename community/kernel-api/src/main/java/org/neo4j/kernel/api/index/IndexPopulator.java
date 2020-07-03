@@ -168,6 +168,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
     /**
      * A scheduler for delegating index population related jobs to other threads.
      */
+    @FunctionalInterface
     interface PopulationWorkScheduler
     {
 
@@ -182,6 +183,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * It accepts an index name in case the implementation might want to
      * include that information in the created description.
      */
+    @FunctionalInterface
     interface JobDescriptionSupplier
     {
 
