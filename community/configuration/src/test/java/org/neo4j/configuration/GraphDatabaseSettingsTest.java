@@ -306,7 +306,7 @@ class GraphDatabaseSettingsTest
     {
         assertThrows( IllegalArgumentException.class, () -> Config.newBuilder()
                 .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.CORE )
-                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 2 ) ).build() );
+                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build() );
     }
 
     @Test
@@ -314,6 +314,6 @@ class GraphDatabaseSettingsTest
     {
         Config.newBuilder()
                 .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.SINGLE )
-                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 2 ) ).build();
+                .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build();
     }
 }
