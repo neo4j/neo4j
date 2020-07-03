@@ -723,6 +723,7 @@ public class MuninnPageCache implements PageCache
         return versionContextSupplier;
     }
 
+    @Override
     public IOBufferFactory getBufferFactory()
     {
         return bufferFactory;

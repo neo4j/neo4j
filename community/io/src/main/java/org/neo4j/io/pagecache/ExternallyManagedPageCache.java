@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 /**
@@ -102,5 +103,11 @@ public class ExternallyManagedPageCache implements PageCache
     public VersionContextSupplier versionContextSupplier()
     {
         return delegate.versionContextSupplier();
+    }
+
+    @Override
+    public IOBufferFactory getBufferFactory()
+    {
+        return delegate.getBufferFactory();
     }
 }

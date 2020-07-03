@@ -28,6 +28,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
@@ -190,4 +191,10 @@ public interface PageCache extends AutoCloseable
      * @return page cache specific version context supplier.
      */
     VersionContextSupplier versionContextSupplier();
+
+    /**
+     * Factory for file local buffers that are used on page cache mapped files
+     * @return temporary flush buffer factory
+     */
+    IOBufferFactory getBufferFactory();
 }

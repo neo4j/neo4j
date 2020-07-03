@@ -68,13 +68,13 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     }
 
     @Override
-    public boolean hasMoreCapacity( int used )
+    public boolean hasMoreCapacity( int used, int requestSize )
     {
         if ( !enabled )
         {
             return false;
         }
-        return used < bufferSize;
+        return used + requestSize <= bufferSize;
     }
 
     @Override

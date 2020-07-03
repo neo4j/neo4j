@@ -34,7 +34,7 @@ public class DisabledIOBuffer implements NativeIOBuffer
     }
 
     @Override
-    public boolean hasMoreCapacity( int bufferLength )
+    public boolean hasMoreCapacity( int bufferLength, int requestSize )
     {
         return false;
     }

@@ -96,16 +96,17 @@ class ConfigurableIOBufferTest
         {
             assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize );
 
-            assertTrue( ioBuffer.hasMoreCapacity( 0 ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 2 ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 3 ) );
-            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 4 ) );
+            assertTrue( ioBuffer.hasMoreCapacity( 0, 1 ) );
+            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE, PAGE_SIZE ) );
+            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 2, PAGE_SIZE ) );
+            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 3, PAGE_SIZE ) );
+            assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE * 4, PAGE_SIZE ) );
 
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 5 ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 6 ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 7 ) );
-            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 8 ) );
+            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 4, PAGE_SIZE + 1 ) );
+            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 5, PAGE_SIZE ) );
+            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 6, PAGE_SIZE ) );
+            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 7, PAGE_SIZE ) );
+            assertFalse( ioBuffer.hasMoreCapacity( PAGE_SIZE * 8, PAGE_SIZE ) );
         }
     }
 

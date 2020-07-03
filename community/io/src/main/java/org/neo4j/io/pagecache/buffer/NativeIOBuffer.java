@@ -36,8 +36,9 @@ public interface NativeIOBuffer extends AutoCloseable
     /**
      * @return when buffer is full and there is no more capacity to hold more data. Disabled buffer does not have any capacity.
      * @param used number of bytes already used
+     * @param requestSize size of memory request to expect
      */
-    boolean hasMoreCapacity( int used );
+    boolean hasMoreCapacity( int used, int requestSize );
 
     /**
      * Access to this method should always be guarded by enable check. In case of buffer is disabled any number can be returned.

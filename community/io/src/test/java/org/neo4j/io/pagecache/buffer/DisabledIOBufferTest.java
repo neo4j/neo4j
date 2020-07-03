@@ -29,10 +29,10 @@ class DisabledIOBufferTest
     @Test
     void disabledBufferDoesNotHaveAnyCapacity()
     {
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 0 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( -1 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 1 ) );
-        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 42 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 0, 1 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( -1, 2 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 1, 3 ) );
+        assertFalse( DISABLED_IO_BUFFER.hasMoreCapacity( 42, 4 ) );
     }
 
     @Test

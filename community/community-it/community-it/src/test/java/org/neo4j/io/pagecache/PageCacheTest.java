@@ -87,7 +87,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
@@ -96,6 +98,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.ThreadTestUtils.fork;
@@ -331,6 +334,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( 2 * pagesToDirty ), PageCacheTracer.NULL );
+        int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
         PagedFile pfA = cache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = cache.map( existingFile( "b" ), filePageSize );
 
@@ -341,7 +345,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger ioCounter = new AtomicInteger();
         cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
         {
-            ioCounter.addAndGet( recentlyCompletedIOs );
+            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             return callbackCounter.getAndIncrement();
         } );
         pfA.close();
@@ -356,6 +360,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( pagesToDirty ), PageCacheTracer.NULL );
+        int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
+
         PagedFile pf = cache.map( file( "a" ), filePageSize );
 
         // Dirty a bunch of data
@@ -365,7 +371,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger ioCounter = new AtomicInteger();
         pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
         {
-            ioCounter.addAndGet( recentlyCompletedIOs );
+            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             return callbackCounter.getAndIncrement();
         } );
         pf.close();
@@ -592,13 +598,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void channelMustBeForcedAfterPagedFileFlushAndForce() throws Exception
+    void channelMustBeForcedAfterPagedFileFlushAndForceWithNoBuffers() throws Exception
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         final AtomicInteger forceCounter = new AtomicInteger();
         FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
 
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( pageCache.getBufferFactory() ) );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
@@ -618,13 +625,41 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void channelsMustBeForcedAfterPageCacheFlushAndForce() throws Exception
+    void channelMustBeForcedAfterPagedFileFlushAndForceWithBuffers() throws Exception
     {
         final AtomicInteger writeCounter = new AtomicInteger();
         final AtomicInteger forceCounter = new AtomicInteger();
         FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
 
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( pageCache.getBufferFactory() ) );
+
+        try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+
+            pagedFile.flushAndForce();
+
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 1 ); // We might race with background flushing.
+            assertThat( forceCounter.get() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    void channelsMustBeForcedAfterPageCacheFlushAndForceWithNoBuffers() throws Exception
+    {
+        final AtomicInteger writeCounter = new AtomicInteger();
+        final AtomicInteger forceCounter = new AtomicInteger();
+        FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
+
+        getPageCache( fs, maxPages, PageCacheTracer.NULL );
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( pageCache.getBufferFactory() ) );
 
         try ( PagedFile pagedFileA = map( existingFile( "a" ), filePageSize );
                 PagedFile pagedFileB = map( existingFile( "b" ), filePageSize ) )
@@ -645,6 +680,39 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache.flushAndForce();
 
             assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 3 ); // We might race with background flushing.
+            assertThat( forceCounter.get() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
+    void channelsMustBeForcedAfterPageCacheFlushAndForceWithBuffers() throws Exception
+    {
+        final AtomicInteger writeCounter = new AtomicInteger();
+        final AtomicInteger forceCounter = new AtomicInteger();
+        FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
+
+        getPageCache( fs, maxPages, PageCacheTracer.NULL );
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( pageCache.getBufferFactory() ) );
+
+        try ( PagedFile pagedFileA = map( existingFile( "a" ), filePageSize );
+                PagedFile pagedFileB = map( existingFile( "b" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+            try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+
+            pageCache.flushAndForce();
+
+            assertThat( writeCounter.get() ).isGreaterThanOrEqualTo( 2 ); // We might race with background flushing.
             assertThat( forceCounter.get() ).isEqualTo( 2 );
         }
     }

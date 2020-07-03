@@ -69,9 +69,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -301,8 +304,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void countNotModifiedPagesPerChunk() throws IOException
+    void countNotModifiedPagesPerChunkWithNoBuffers() throws IOException
     {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new FlushInfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -343,8 +347,53 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void countFlushesPerChunk() throws IOException
+    void countNotModifiedPagesPerChunkWithBuffers() throws IOException
     {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new FlushInfoTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < 4; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+            }
+            pagedFile.flushAndForce();
+
+            var observedChunks = pageCacheTracer.getObservedChunks();
+            assertThat( observedChunks ).hasSize( 1 );
+            var chunkInfo = observedChunks.get( 0 );
+            assertThat( chunkInfo.getNotModifiedPages() ).isEqualTo( 0 );
+            observedChunks.clear();
+
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            var secondFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( secondFlushChunks ).hasSize( 1 );
+            var partialChunkInfo = secondFlushChunks.get( 0 );
+            // all the rest went to buffer as dirty so we do not count those as nnon modified
+            assertThat( partialChunkInfo.getNotModifiedPages() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    void countFlushesPerChunkWithNoBuffers() throws IOException
+    {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new FlushInfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -405,8 +454,72 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void countMergesPerChunk() throws IOException
+    void countFlushesPerChunkWithBuffers() throws IOException
     {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new FlushInfoTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < 4; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+            }
+            pagedFile.flushAndForce();
+
+            // we flushed one big region
+            var observedChunks = pageCacheTracer.getObservedChunks();
+            assertThat( observedChunks ).hasSize( 1 );
+            var chunkInfo = observedChunks.get( 0 );
+            assertThat( chunkInfo.getFlushPerChunk() ).isEqualTo( 1 );
+            observedChunks.clear();
+
+            // we flush one smaller region in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            var secondFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( secondFlushChunks ).hasSize( 1 );
+            var partialChunkInfo = secondFlushChunks.get( 0 );
+            assertThat( partialChunkInfo.getFlushPerChunk() ).isEqualTo( 1 );
+            observedChunks.clear();
+
+            // we flush 2 regions in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 3, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+            var thirdFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( thirdFlushChunks ).hasSize( 1 );
+            var thirdChunkInfo = thirdFlushChunks.get( 0 );
+            assertThat( thirdChunkInfo.getFlushPerChunk() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    void countMergesPerChunkWithNoBuffers() throws IOException
+    {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new FlushInfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -467,8 +580,72 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void countUsedBuffersPerChunk() throws IOException
+    void countMergesPerChunkWithBuffers() throws IOException
     {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new FlushInfoTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < 4; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+            }
+            pagedFile.flushAndForce();
+
+            // we flushed one big region
+            var observedChunks = pageCacheTracer.getObservedChunks();
+            assertThat( observedChunks ).hasSize( 1 );
+            var chunkInfo = observedChunks.get( 0 );
+            assertThat( chunkInfo.getMergesPerChunk() ).isEqualTo( 0 );
+            observedChunks.clear();
+
+            // we flush one smaller region in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            var secondFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( secondFlushChunks ).hasSize( 1 );
+            var partialChunkInfo = secondFlushChunks.get( 0 );
+            assertThat( partialChunkInfo.getMergesPerChunk() ).isEqualTo( 0 );
+            observedChunks.clear();
+
+            // we flush 2 regions in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 3, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+            var thirdFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( thirdFlushChunks ).hasSize( 1 );
+            var thirdChunkInfo = thirdFlushChunks.get( 0 );
+            assertThat( thirdChunkInfo.getMergesPerChunk() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    void countUsedBuffersPerChunkWithNoBuffers() throws IOException
+    {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new FlushInfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -529,8 +706,72 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void flushSequentialPagesOnPageFileFlush() throws IOException
+    void usedBuffersPerChunkIsAlwaysOneWithBuffers() throws IOException
     {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new FlushInfoTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < 4; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+            }
+            pagedFile.flushAndForce();
+
+            // we flushed one big region
+            var observedChunks = pageCacheTracer.getObservedChunks();
+            assertThat( observedChunks ).hasSize( 1 );
+            var chunkInfo = observedChunks.get( 0 );
+            assertThat( chunkInfo.getBuffersPerChunk() ).isEqualTo( 1 );
+            observedChunks.clear();
+
+            // we flush one smaller region in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            var secondFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( secondFlushChunks ).hasSize( 1 );
+            var partialChunkInfo = secondFlushChunks.get( 0 );
+            assertThat( partialChunkInfo.getBuffersPerChunk() ).isEqualTo( 1 );
+            observedChunks.clear();
+
+            // we flush 2 regions in the middle
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 3, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+            var thirdFlushChunks = pageCacheTracer.getObservedChunks();
+            assertThat( thirdFlushChunks ).hasSize( 1 );
+            var thirdChunkInfo = thirdFlushChunks.get( 0 );
+            assertThat( thirdChunkInfo.getBuffersPerChunk() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    void flushSequentialPagesOnPageFileFlushWithNoBuffers() throws IOException
+    {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -549,6 +790,31 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
             assertEquals( 2, pageCacheTracer.flushes() );
             assertEquals( 1, pageCacheTracer.merges() );
+        }
+    }
+
+    @Test
+    void flushSequentialPagesOnPageFileFlushWithBuffers() throws IOException
+    {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFile.flushAndForce();
+
+            assertEquals( 2, pageCacheTracer.flushes() );
+            assertEquals( 0, pageCacheTracer.merges() );
         }
     }
 

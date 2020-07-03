@@ -33,6 +33,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -128,5 +129,11 @@ public class AdversarialPageCache implements PageCache
     public VersionContextSupplier versionContextSupplier()
     {
         return delegate.versionContextSupplier();
+    }
+
+    @Override
+    public IOBufferFactory getBufferFactory()
+    {
+        return delegate.getBufferFactory();
     }
 }
