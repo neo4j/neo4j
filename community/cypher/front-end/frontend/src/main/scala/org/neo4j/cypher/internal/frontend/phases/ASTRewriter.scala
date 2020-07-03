@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
-import org.neo4j.cypher.internal.rewriting.rewriters.addImplicitExistToPatternExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
@@ -46,6 +45,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.namePatternComprehensionPat
 import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
@@ -91,7 +91,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       namePatternComprehensionPatternElements,
       enableCondition(noUnnamedPatternElementsInPatternComprehension),
       inlineNamedPathsInPatternComprehensions,
-      addImplicitExistToPatternExpressions(semanticState)
+      normalizeExistsPatternExpressions(semanticState),
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)
