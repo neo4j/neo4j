@@ -45,13 +45,23 @@ class ConfigurableIOBufferTest
     }
 
     @Test
+    void allocatedBufferShouldHavePageAlignedAddress()
+    {
+        var config = Config.defaults();
+        try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, INSTANCE ) )
+        {
+            assertThat( ioBuffer.getAddress() % PAGE_SIZE ).isZero();
+        }
+    }
+
+    @Test
     void bufferPoolMemoryRegisteredInMemoryPool()
     {
         var config = Config.defaults();
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
         try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
         {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() );
+            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE );
         }
         assertThat( memoryTracker.usedNativeMemory() ).isZero();
     }
@@ -62,7 +72,7 @@ class ConfigurableIOBufferTest
         var config = Config.defaults();
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
         ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker );
-        assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() );
+        assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * pagecache_flush_buffer_size_in_pages.defaultValue() + PAGE_SIZE );
 
         ioBuffer.close();
         assertThat( memoryTracker.usedNativeMemory() ).isZero();
@@ -82,7 +92,7 @@ class ConfigurableIOBufferTest
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
         try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
         {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize );
+            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize + PAGE_SIZE );
         }
     }
 
@@ -94,7 +104,7 @@ class ConfigurableIOBufferTest
         var memoryTracker = new ScopedMemoryTracker( INSTANCE );
         try ( ConfigurableIOBuffer ioBuffer = new ConfigurableIOBuffer( config, memoryTracker ) )
         {
-            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize );
+            assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( PAGE_SIZE * customPageSize + PAGE_SIZE );
 
             assertTrue( ioBuffer.hasMoreCapacity( 0, 1 ) );
             assertTrue( ioBuffer.hasMoreCapacity( PAGE_SIZE, PAGE_SIZE ) );

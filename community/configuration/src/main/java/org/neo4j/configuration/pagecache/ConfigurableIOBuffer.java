@@ -20,13 +20,13 @@
 package org.neo4j.configuration.pagecache;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.internal.unsafe.UnsafeUtil.allocateMemory;
 import static org.neo4j.internal.unsafe.UnsafeUtil.free;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.util.FeatureToggles.flag;
 
 public class ConfigurableIOBuffer implements NativeIOBuffer
@@ -37,17 +37,20 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     private final MemoryTracker memoryTracker;
     private final long bufferSize;
     private final long bufferAddress;
+    private final long alignedAddress;
+    private final long allocatedBytes;
     private boolean closed;
 
     public ConfigurableIOBuffer( Config config, MemoryTracker memoryTracker )
     {
         this.memoryTracker = memoryTracker;
-        this.bufferSize = PageCache.PAGE_SIZE * config.get( pagecache_flush_buffer_size_in_pages );
+        this.bufferSize = PAGE_SIZE * config.get( pagecache_flush_buffer_size_in_pages );
+        this.allocatedBytes = bufferSize + PAGE_SIZE;
         boolean ioBufferEnabled = true;
         long address = NOT_INITIALIZED;
         try
         {
-            address = allocateMemory( bufferSize, memoryTracker );
+            address = allocateMemory( allocatedBytes, memoryTracker );
         }
         catch ( Throwable t )
         {
@@ -58,6 +61,7 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
             ioBufferEnabled = false;
         }
         this.bufferAddress = address;
+        this.alignedAddress = address + PAGE_SIZE - (address % PAGE_SIZE);
         this.enabled = ioBufferEnabled;
     }
 
@@ -80,7 +84,7 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     @Override
     public long getAddress()
     {
-        return bufferAddress;
+        return alignedAddress;
     }
 
     @Override
@@ -88,7 +92,7 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
     {
         if ( enabled && !closed )
         {
-            free( bufferAddress, bufferSize, memoryTracker );
+            free( bufferAddress, allocatedBytes, memoryTracker );
             closed = true;
         }
     }
