@@ -36,7 +36,7 @@ import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.HostnamePort;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class WebSocketConnection implements TransportConnection, WebSocketListener
 {
@@ -85,7 +85,7 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
         Session session;
         try
         {
-            session = client.connect( this, target ).get( 30, SECONDS );
+            session = client.connect( this, target ).get( 5, MINUTES );
         }
         catch ( Exception e )
         {

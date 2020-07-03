@@ -29,6 +29,8 @@ import java.net.SocketTimeoutException;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.HostnamePort;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 public class SocketConnection implements TransportConnection
 {
     private Socket socket;
@@ -53,7 +55,7 @@ public class SocketConnection implements TransportConnection
     @Override
     public TransportConnection connect( HostnamePort address ) throws IOException
     {
-        socket.setSoTimeout( 30000 * 1000 ); // TODO
+        socket.setSoTimeout( (int) MINUTES.toMillis( 5 ) );
 
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
         in = socket.getInputStream();
