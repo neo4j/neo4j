@@ -133,7 +133,7 @@ class BatchInserterImplTest
         assertThat( pageCacheTracer.unpins() ).isEqualTo( pins );
         assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
         assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
-        assertThat( pageCacheTracer.flushes() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat( pageCacheTracer.flushes() ).isGreaterThan( 0 );
     }
 
     @Test
