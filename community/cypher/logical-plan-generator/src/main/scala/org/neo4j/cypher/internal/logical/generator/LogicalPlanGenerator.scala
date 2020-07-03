@@ -595,18 +595,14 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
         case WithState(source, _) => (source.availableSymbols == plan.availableSymbols)
       }
   } yield {
-    newState.cardinalities.copyDefinedValuesTo(state.cardinalities)
-
     WithState(newPlan, state)
   }
 
   /*
-  * Creates a new state, given another state.
+  * Creates copy of state, without variable information.
   *
-  * - will have the same arguments as `state`
-  * - will have the same leafCardinalityMultiplier as `state`
-  * - varCount will be arguments.size, since we can't override the arguments
-  * - will have the same id generator as state
+  * - Shares cardinalities with state
+  * - Shares idGen with state
    */
   private def copyStateWithoutVariableInfo(state: State) = {
     val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
@@ -625,7 +621,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       state.parameters,
       List(state.leafCardinalityMultiplier),
       Map.empty.withDefaultValue(Set.empty),
-      new Cardinalities,
+      state.cardinalities,
       state.idGen)
   }
 
