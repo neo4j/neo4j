@@ -60,6 +60,9 @@ class QueryState(val query: QueryContext,
     }
   }
 
+  /**
+   * When running on the RHS of an Apply, this method will fill the new row with argument data
+   */
   def newExecutionContextWithInitialContext(factory: ExecutionContextFactory): CypherRow = {
     initialContext match {
       case Some(init) => factory.copyWithArgument(init)
@@ -89,6 +92,9 @@ class QueryState(val query: QueryContext,
    *
    * @param ctx ExecutionContext to fill with data
    */
+    // TODO REVIEWER:
+    //       * could completely remove this now, but not sure about performance implication
+    //       * could also remove some special case Slotted operators now
   def copyArgumentStateTo(ctx: CypherRow, nLongs: Int, nRefs: Int): Unit = initialContext
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
