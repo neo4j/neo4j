@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -51,6 +52,9 @@ class QueryState(val query: QueryContext,
     }
   }
 
+  /**
+   * When running on the RHS of an Apply, this method will fill the new row with argument data
+   */
   def newExecutionContextWithInitialContext(factory: ExecutionContextFactory): ExecutionContext = {
     initialContext match {
       case Some(init) => factory.copyWithArgument(init)
@@ -80,6 +84,9 @@ class QueryState(val query: QueryContext,
     *
     * @param ctx ExecutionContext to fill with data
     */
+    // TODO REVIEWER:
+    //       * could completely remove this now, but not sure about performance implication
+    //       * could also remove some special case Slotted operators now
   def copyArgumentStateTo(ctx: ExecutionContext, nLongs: Int, nRefs: Int): Unit = initialContext
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
