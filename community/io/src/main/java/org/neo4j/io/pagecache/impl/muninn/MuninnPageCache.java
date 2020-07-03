@@ -167,12 +167,12 @@ public class MuninnPageCache implements PageCache
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
     private final VersionContextSupplier versionContextSupplier;
+    private final IOBufferFactory bufferFactory;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
     // accesses to take place without fear of segfaulting newly allocated cursors.
     final long victimPage;
-    private final IOBufferFactory bufferFactory;
 
     // The freelist is a thread-safe linked-list of FreePage objects, or an AtomicInteger, or null.
     // Initially, the field is an AtomicInteger that counts from zero to the max page count, at which point all of the

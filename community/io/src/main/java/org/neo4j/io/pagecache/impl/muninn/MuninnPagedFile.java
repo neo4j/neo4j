@@ -425,89 +425,93 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             chunkLoop:
             for ( int i = 0; i < chunk.length; i++ )
             {
-                    filePageId++;
-                    long offset = computeChunkOffset( filePageId );
+                filePageId++;
+                long offset = computeChunkOffset( filePageId );
 
-                    // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
-                    // in getting a lock on all available pages.
-                    for ( ; ; )
+                // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                // in getting a lock on all available pages.
+                for ( ; ; )
+                {
+                    int pageId = UnsafeUtil.getIntVolatile( chunk, offset );
+                    if ( pageId != UNMAPPED_TTE )
                     {
-                        int pageId = UnsafeUtil.getIntVolatile( chunk, offset );
-                        if ( pageId != UNMAPPED_TTE )
+                        long pageRef = deref( pageId );
+                        long stamp = tryOptimisticReadLock( pageRef );
+                        if ( (!isModified( pageRef ) && !fillingDirtyBuffer) && validateReadLock( pageRef, stamp ) )
                         {
-                            long pageRef = deref( pageId );
-                            long stamp = tryOptimisticReadLock( pageRef );
-                            if ( (!isModified( pageRef ) && !fillingDirtyBuffer) && validateReadLock( pageRef, stamp ) )
-                            {
-                                notModifiedPages++;
-                                break;
-                            }
+                            notModifiedPages++;
+                            break; // not modified, continue with the chunk
+                        }
 
-                            long flushStamp = 0;
-                            if ( !(forClosing ? tryExclusiveLock( pageRef ) : ((flushStamp = tryFlushLock( pageRef )) != 0)) )
+                        long flushStamp = 0;
+                        if ( !(forClosing ? tryExclusiveLock( pageRef ) : ((flushStamp = tryFlushLock( pageRef )) != 0)) )
+                        {
+                            continue; // retry lock
+                        }
+                        if ( isBoundTo( pageRef, swapperId, filePageId ) && (isModified( pageRef ) || fillingDirtyBuffer) )
+                        {
+                            // we should try to merge pages into buffer even if they are not modified only when we using intermediate temporary buffer
+                            fillingDirtyBuffer = useTemporaryBuffer;
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            // So we add it to our IO vector.
+                            pages[pagesGrabbed] = pageRef;
+                            if ( !forClosing )
                             {
-                                continue;
+                                flushStamps[pagesGrabbed] = flushStamp;
                             }
-                            if ( isBoundTo( pageRef, swapperId, filePageId ) && (isModified( pageRef ) || fillingDirtyBuffer) )
+                            pagesGrabbed++;
+                            long address = getAddress( pageRef );
+                            if ( useTemporaryBuffer )
                             {
-                                // we should try to merge pages into buffer even if they are not modified only when we using intermediate temporary buffer
-                                fillingDirtyBuffer = useTemporaryBuffer;
-                                // The page is still bound to the expected file and file page id after we locked it,
-                                // so we didn't race with eviction and faulting, and the page is dirty.
-                                // So we add it to our IO vector.
-                                pages[pagesGrabbed] = pageRef;
-                                if ( !forClosing )
+                                // in case we use temp buffer to combine pages address and buffer lengths are located in corresponding arrays and have
+                                // index 0.
+                                // Reset of accumulated effective length of temp buffer happens after intermediate vectored flush if any
+                                UnsafeUtil.copyMemory( address, bufferAddresses[0] + bufferLengths[0], filePageSize );
+                                bufferLengths[0] += filePageSize;
+                                numberOfBuffers = 1;
+                                if ( !ioBuffer.hasMoreCapacity( bufferLengths[0], filePageSize ) )
                                 {
-                                    flushStamps[pagesGrabbed] = flushStamp;
-                                }
-                                pagesGrabbed++;
-                                long address = getAddress( pageRef );
-                                if ( useTemporaryBuffer )
-                                {
-                                    // in case we use temp buffer to combine pages address and buffer lengths are located in corresponding arrays and have
-                                    // index 0.
-                                    // Reset of accumulated effective length of temp buffer happens after intermediate vectored flush if any
-                                    UnsafeUtil.copyMemory( address, bufferAddresses[0] + bufferLengths[0], filePageSize );
-                                    bufferLengths[0] += filePageSize;
-                                    numberOfBuffers = 1;
-                                    if ( !ioBuffer.hasMoreCapacity( bufferLengths[0], filePageSize ) )
-                                    {
-                                        break;
-                                    }
+                                    break; // continue to flush
                                 }
                                 else
                                 {
-                                    if ( mergePagesOnFlush && nextSequentialAddress == address )
-                                    {
-                                        // do not add new address, only bump length of previous buffer
-                                        bufferLengths[lastBufferIndex] += filePageSize;
-                                        mergedPages++;
-                                        mergesPerChunk++;
-                                    }
-                                    else
-                                    {
-                                        // add new address
-                                        bufferAddresses[numberOfBuffers] = address;
-                                        lastBufferIndex = numberOfBuffers;
-                                        bufferLengths[numberOfBuffers] = filePageSize;
-                                        numberOfBuffers++;
-                                        buffersPerChunk++;
-                                    }
-                                    nextSequentialAddress = address + filePageSize;
+                                    continue chunkLoop; // go to next page
                                 }
-                                continue chunkLoop;
-                            }
-                            else if ( forClosing )
-                            {
-                                unlockExclusive( pageRef );
                             }
                             else
                             {
-                                unlockFlush( pageRef, flushStamp, false );
+                                if ( mergePagesOnFlush && nextSequentialAddress == address )
+                                {
+                                    // do not add new address, only bump length of previous buffer
+                                    bufferLengths[lastBufferIndex] += filePageSize;
+                                    mergedPages++;
+                                    mergesPerChunk++;
+                                }
+                                else
+                                {
+                                    // add new address
+                                    bufferAddresses[numberOfBuffers] = address;
+                                    lastBufferIndex = numberOfBuffers;
+                                    bufferLengths[numberOfBuffers] = filePageSize;
+                                    numberOfBuffers++;
+                                    buffersPerChunk++;
+                                }
+                                nextSequentialAddress = address + filePageSize;
+                                continue chunkLoop; // go to next page
                             }
                         }
-                        break;
+                        else if ( forClosing )
+                        {
+                            unlockExclusive( pageRef );
+                        }
+                        else
+                        {
+                            unlockFlush( pageRef, flushStamp, false );
+                        }
                     }
+                    break;
+                }
                 if ( pagesGrabbed > 0 )
                 {
                     vectoredFlush( pages, bufferAddresses, flushStamps, bufferLengths, numberOfBuffers, pagesGrabbed, mergedPages, flushes, forClosing );
