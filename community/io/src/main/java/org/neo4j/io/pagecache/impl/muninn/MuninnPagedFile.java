@@ -418,7 +418,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             if ( useTemporaryBuffer )
             {
                 // in case when we use temp intermediate buffer we have only buffer and its address and length are always stored in arrays with index 0
-                numberOfBuffers = 1;
                 bufferAddresses[0] = ioBuffer.getAddress();
             }
 
@@ -468,7 +467,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                     // Reset of accumulated effective length of temp buffer happens after intermediate vectored flush if any
                                     UnsafeUtil.copyMemory( address, bufferAddresses[0] + bufferLengths[0], filePageSize );
                                     bufferLengths[0] += filePageSize;
-                                    if ( ioBuffer.hasMoreCapacity( bufferLengths[0] ) )
+                                    numberOfBuffers = 1;
+                                    if ( !ioBuffer.hasMoreCapacity( bufferLengths[0] ) )
                                     {
                                         break;
                                     }
