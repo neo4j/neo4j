@@ -54,7 +54,6 @@ import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -93,6 +92,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private Phase verification;
     private RecordFormat recordFormat;
     private Profiler profiler;
+    private Path basePath;
 
     public RandomPageCacheTestHarness()
     {
@@ -117,6 +117,7 @@ public class RandomPageCacheTestHarness implements Closeable
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
         profiler = Profiler.nullProfiler();
+        basePath = Path.of( "random-harness-default-path" );
     }
 
     /**
@@ -276,6 +277,11 @@ public class RandomPageCacheTestHarness implements Closeable
     public void setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fs = fileSystem;
+    }
+
+    public void setBasePath( Path basePath )
+    {
+        this.basePath = basePath;
     }
 
     public void useProfiler( Profiler profiler )
@@ -491,11 +497,9 @@ public class RandomPageCacheTestHarness implements Closeable
     {
         String s = "abcdefghijklmnopqrstuvwxyz";
         Path[] files = new Path[s.length()];
-        TestDirectory testDirectory = TestDirectory.testDirectory( RandomPageCacheTestHarness.class, fs );
-        Path base = testDirectory.prepareDirectoryForTest( "random-pagecache-test-harness" ).toPath();
         for ( int i = 0; i < s.length(); i++ )
         {
-            files[i] = base.resolve( s.substring( i, i + 1 ) ).normalize();
+            files[i] = basePath.resolve( s.substring( i, i + 1 ) ).normalize();
             fs.mkdirs( files[i].getParent().toFile() );
             StoreChannel channel = fs.write( files[i].toFile() );
             channel.truncate( 0 );

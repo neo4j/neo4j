@@ -81,6 +81,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setFilePageCount( filePageCount );
             harness.setInitialMappedFiles( 1 );
             harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
+            harness.setBasePath( directory.directory( "readsAndWritesMustBeMutuallyConsistent" ).toPath() );
             harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
         }
     }
@@ -100,6 +101,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCommandCount( 10000 );
             harness.setRecordFormat( recordFormat );
             harness.setFileSystem( fs );
+            harness.setBasePath( directory.directory(   "concurrentPageFaultingMustNotPutInterleavedDataIntoPages" ).toPath() );
             harness.useProfiler( profiler );
             harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
             harness.setPreparation( ( cache, fs, filesTouched ) ->
@@ -134,6 +136,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
+            harness.setBasePath( directory.directory( "concurrentFlushingMustNotPutInterleavedDataIntoFile" ).toPath() );
             harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
             harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
@@ -158,6 +161,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
+            harness.setBasePath( directory.directory( "concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile" ).toPath() );
             harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
             harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
@@ -182,6 +186,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setInitialMappedFiles( 3 );
             harness.setCommandCount( 15_000 );
             harness.setFileSystem( fs );
+            harness.setBasePath( directory.directory( "concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile" ).toPath() );
             harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
             harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 

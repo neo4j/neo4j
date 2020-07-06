@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.randomharness;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -81,8 +82,25 @@ public abstract class RecordFormat
             Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId );
             Record actualRecord;
             actualRecord = readRecord( cursor );
-            assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
+            try
+            {
+                assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
+            }
+            catch ( Throwable t )
+            {
+                throw new RuntimeException( dumpPageContent( cursor ), t );
+            }
         }
+    }
+
+    protected String dumpPageContent( PageCursor cursor )
+    {
+        int initialOffset = cursor.getOffset();
+        byte[] bytes = new byte[cursor.getCurrentPageSize()];
+        cursor.setOffset( 0 );
+        cursor.getBytes( bytes );
+        cursor.setOffset( initialOffset );
+        return "Offset: " + initialOffset + ", data: " + Arrays.toString( bytes );
     }
 
     public final void assertRecordsWrittenCorrectly( Path file, StoreChannel channel ) throws IOException

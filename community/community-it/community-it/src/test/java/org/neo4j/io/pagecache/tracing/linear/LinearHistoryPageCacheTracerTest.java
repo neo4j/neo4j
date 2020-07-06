@@ -25,9 +25,16 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
+@TestDirectoryExtension
 public class LinearHistoryPageCacheTracerTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     @Disabled( "This test is only here for checking that the output from the LinearHistoryPageCacheTracer looks good. " +
              "This is pretty subjective and requires manual inspection. Therefore there's no point in running it " +
              "automatically in all our builds. Instead, run it as needed when you make changes to the printout code." )
@@ -38,6 +45,7 @@ public class LinearHistoryPageCacheTracerTest
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setUseAdversarialIO( true );
+            harness.setBasePath( testDirectory.directoryPath( "makeSomeTestOutput" ) );
             harness.setTracer( linearTracers.getPageCacheTracer() );
             harness.setCommandCount( 100 );
             harness.setConcurrencyLevel( 2 );
