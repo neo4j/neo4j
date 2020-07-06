@@ -22,6 +22,7 @@ package org.neo4j.test.server;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.concurrent.Callable;
 
@@ -33,11 +34,13 @@ import org.neo4j.server.helpers.WebContainerHelper;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 import static org.neo4j.test.server.WebContainerHolder.release;
 import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderProperty;
 
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( SHARED_RESOURCE )
 public class SharedWebContainerTestBase
 {
     protected static TestWebContainer container()
