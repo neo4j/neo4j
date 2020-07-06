@@ -193,9 +193,7 @@ object Neo4jExceptionToExecutionFailed {
       msg.matches(semanticError("Exactly one relationship type must be specified for ((CREATE)|(MERGE))\\. " +
         "Did you forget to prefix your relationship type with a \\'\\:\\'\\?")))
       NO_SINGLE_RELATIONSHIP_TYPE
-    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
-      INVALID_RELATIONSHIP_PATTERN
-    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected .*\\].* \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       INVALID_RELATIONSHIP_PATTERN
     else if (msg.matches(semanticError("invalid literal number")))
       INVALID_NUMBER_LITERAL

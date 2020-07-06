@@ -188,7 +188,7 @@ public class CypherCharStream implements CharStream
         }
         catch ( final IOException e )
         {
-            throw new InvalidUnicodeLiteral( e, queryCursor, queryCursorLine, queryCursorColumn );
+            throw new InvalidUnicodeLiteral( e.getMessage(), queryCursor, queryCursorLine, queryCursorColumn );
         }
     }
 
@@ -334,6 +334,6 @@ public class CypherCharStream implements CharStream
         }
 
         // Should never come here
-        throw new IOException( "Invalid hex char '" + c + "' provided!" );
+        throw new IOException( "Invalid input '" + c + "': expected four hexadecimal digits specifying a unicode character" );
     }
 }
