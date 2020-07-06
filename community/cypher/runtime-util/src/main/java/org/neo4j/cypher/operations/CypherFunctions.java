@@ -21,6 +21,7 @@ package org.neo4j.cypher.operations;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
@@ -371,6 +372,11 @@ public final class CypherFunctions
     public static DoubleValue rand()
     {
         return doubleValue( ThreadLocalRandom.current().nextDouble() );
+    }
+
+    public static TextValue randomUuid()
+    {
+        return stringValue( UUID.randomUUID().toString() );
     }
 
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae

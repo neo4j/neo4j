@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.functions.Rand
+import org.neo4j.cypher.internal.expressions.functions.RandomUUID
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.StrictnessMode
@@ -91,7 +92,7 @@ trait ExpressionEvaluator {
   }
 
   def isDeterministic(expr: Expression): Boolean = expr.inputs.forall {
-    case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => false
+    case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand || func.function == RandomUUID => false
     //for UDFs we don't know but the result might be non-deterministic
     case (_:ResolvedFunctionInvocation, _) => false
     case _ => true

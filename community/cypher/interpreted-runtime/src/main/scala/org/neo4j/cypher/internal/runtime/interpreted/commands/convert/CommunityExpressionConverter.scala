@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.expressions.functions.RTrim
 import org.neo4j.cypher.internal.expressions.functions.Radians
 import org.neo4j.cypher.internal.expressions.functions.Rand
+import org.neo4j.cypher.internal.expressions.functions.RandomUUID
 import org.neo4j.cypher.internal.expressions.functions.Relationships
 import org.neo4j.cypher.internal.expressions.functions.Replace
 import org.neo4j.cypher.internal.expressions.functions.Reverse
@@ -407,6 +408,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Point => commands.expressions.PointFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Radians => commands.expressions.RadiansFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Rand => commands.expressions.RandFunction()
+      case RandomUUID => commands.expressions.RandomUUIDFunction()
       case functions.Range =>
         commands.expressions.RangeFunction(
           self.toCommandExpression(id, invocation.arguments.head),

@@ -55,6 +55,7 @@ abstract class Expression extends AstNode[Expression] {
 
   val isDeterministic: Boolean = ! exists {
     case RandFunction() => true
+    case RandomUUIDFunction() => true
     case _              => false
   }
 }

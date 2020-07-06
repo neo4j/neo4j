@@ -26,20 +26,15 @@ import java.util.List;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.logging.NullLog;
-import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -48,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
@@ -179,21 +173,6 @@ class ProceduresTest
 
         // Then
         assertThat( asList( result ) ).contains( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } );
-    }
-
-    @Test
-    public void shouldRegisterNonWhitelistedBuiltinFunctions() throws KernelException
-    {
-        GlobalProceduresRegistry procedures = new GlobalProceduresRegistry( null, null, NullLog.getInstance(),
-                                                                            new ProcedureConfig( Config.defaults( procedure_whitelist, List.of( "" ) ) ) );
-
-        QualifiedName functionName = new QualifiedName( new String[0], "randomUUID" );
-
-        assertNull( procedures.function( functionName ) );
-
-        procedures.registerBuiltInFunctions( BuiltInFunctions.class );
-
-        assertNotNull( procedures.function( functionName ) );
     }
 
     private Context prepareContext()

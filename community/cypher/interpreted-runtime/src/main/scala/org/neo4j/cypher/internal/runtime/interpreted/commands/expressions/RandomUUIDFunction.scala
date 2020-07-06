@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin;
+package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.util.UUID;
+import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
+import org.neo4j.values.AnyValue
 
-import org.neo4j.procedure.Description;
-import org.neo4j.procedure.UserFunction;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
+case class RandomUUIDFunction() extends Expression {
 
-public class BuiltInFunctions
-{
-    @Description( "Generates a random UUID." )
-    @UserFunction( name = "randomUUID" )
-    public TextValue randomUUID()
-    {
-        return Values.stringValue( UUID.randomUUID().toString() );
-    }
+    override def apply(row: ReadableRow, state: QueryState): AnyValue = CypherFunctions.randomUuid()
+
+    override def arguments: Seq[Expression] = Seq.empty
+
+    override def children: Seq[AstNode[_]] = Seq.empty
+
+    override def rewrite(f: Expression => Expression): Expression = f(RandomUUIDFunction())
 }

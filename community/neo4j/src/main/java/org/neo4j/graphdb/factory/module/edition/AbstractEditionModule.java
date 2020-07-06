@@ -58,7 +58,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
-import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
@@ -100,7 +99,6 @@ public abstract class AbstractEditionModule
         globalProcedures.registerProcedure( BuiltInDbmsProcedures.class );
         globalProcedures.registerProcedure( FulltextProcedures.class );
         globalProcedures.registerProcedure( DataCollectorProcedures.class );
-        globalProcedures.registerBuiltInFunctions( BuiltInFunctions.class );
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
