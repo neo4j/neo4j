@@ -28,8 +28,6 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 }
 
 object Ands {
-  def apply(exprs: Seq[Expression])(position: InputPosition): Ands =
-    new Ands(exprs.distinct)(position)
 
   def create(exprs: Seq[Expression]): Expression = {
     val size = exprs.size
@@ -42,9 +40,25 @@ object Ands {
   }
 }
 
+/**
+ * Conjunction of multiple expressions.
+ * The order of expressions is retained as a Seq (was previously a Set),
+ * but equals and hashCode are overridden to get set semantics for comparison
+ * (we assume set semantics when tracking solved expressions during planing)
+ */
 case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
-
   override def canonicalOperatorSymbol = "AND"
+
+  private val exprSet = exprs.toSet
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: Ands => (that canEqual this) && (exprSet == that.exprSet)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    31 * exprSet.hashCode()
 }
 
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
@@ -53,13 +67,25 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
   )
 }
 
-object Ors {
-  def apply(exprs: Seq[Expression])(position: InputPosition): Ors =
-    new Ors(exprs.distinct)(position)
-}
-
+/**
+ * Disjunction of multiple expressions.
+ * The order of expressions is retained as a Seq (was previously a Set),
+ * but equals and hashCode are overridden to get set semantics for comparison
+ * (we assume set semantics when tracking solved expressions during planing)
+ */
 case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "OR"
+
+  private val exprSet = exprs.toSet
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: Ors => (that canEqual this) && (exprSet == that.exprSet)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    31 * exprSet.hashCode()
 }
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
