@@ -319,7 +319,7 @@ public class Database extends LifecycleAdapter
         try
         {
             databaseDependencies = new Dependencies( globalDependencies );
-            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier );
+            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier, namedDatabaseId.name() );
             databaseMonitors = new Monitors( parentMonitors );
 
             life = new LifeSupport();

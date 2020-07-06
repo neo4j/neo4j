@@ -51,20 +51,25 @@ public class DatabasePageCache implements PageCache
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
     private final VersionContextSupplier versionContextSupplier;
+    private final String databaseName;
     private boolean closed;
 
-    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier )
+    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier, String databaseName )
     {
         requireNonNull( globalPageCache );
         requireNonNull( versionContextSupplier );
         this.globalPageCache = globalPageCache;
         this.versionContextSupplier = versionContextSupplier;
+        this.databaseName = databaseName;
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions,
+            String emptyDatabaseName ) throws IOException
     {
-        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, openOptions );
+        // no one should call this version of map method with emptyDatabaseName != null,
+        // since it is this class that is decorating map calls with the name of the database
+        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, openOptions, databaseName );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
         databasePagedFiles.add( databasePageFile );
         return databasePageFile;

@@ -77,6 +77,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final PageSwapper swapper;
     final int swapperId;
     private final CursorFactory cursorFactory;
+    final String databaseName;
 
     private volatile boolean deleteOnClose;
 
@@ -116,10 +117,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
+     * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
+     * This information is currently used only for monitoring purposes.
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo )
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName )
             throws IOException
     {
         super( pageCache.pages );
@@ -129,6 +132,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
         this.bufferFactory = pageCache.getBufferFactory();
+        this.databaseName = databaseName;
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This

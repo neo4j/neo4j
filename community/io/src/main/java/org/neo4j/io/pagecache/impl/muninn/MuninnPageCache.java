@@ -55,11 +55,13 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -316,8 +318,8 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions )
-            throws IOException
+    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions,
+            String databaseName ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
@@ -404,7 +406,8 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 pageCacheTracer, versionContextSupplier,
                 createIfNotExists,
-                truncateExisting, useDirectIO );
+                truncateExisting, useDirectIO,
+                databaseName );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( path, pagedFile );
@@ -481,7 +484,8 @@ public class MuninnPageCache implements PageCache
 
         try
         {
-            scheduler.schedule( Group.PAGE_CACHE_EVICTION, new EvictionTask( this ) );
+            var monitoringParams = new JobMonitoringParams( SYSTEM, null, "Eviction of pages from the page cache" );
+            scheduler.schedule( Group.PAGE_CACHE_EVICTION, monitoringParams, new EvictionTask( this ) );
         }
         catch ( Exception e )
         {
@@ -1073,7 +1077,10 @@ public class MuninnPageCache implements PageCache
     void startPreFetching( MuninnPageCursor cursor, CursorFactory cursorFactory )
     {
         PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
-        cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, preFetcher );
+        var pagedFile = cursor.pagedFile;
+        var fileName = pagedFile.swapper.path().getFileName();
+        var monitoringParams = new JobMonitoringParams( SYSTEM, pagedFile.databaseName, "Prefetching of file '" + fileName + "'" );
+        cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
     }
 
     void allocateFileAsync( PageSwapper swapper, long newFileSize )
