@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 
 object MinimumGraphStatistics {
   val MIN_NODES_ALL: Int = 10
@@ -31,6 +32,7 @@ object MinimumGraphStatistics {
   val MIN_NODES_ALL_CARDINALITY = Cardinality(MIN_NODES_ALL)
   val MIN_NODES_WITH_LABEL_CARDINALITY = Cardinality(MIN_NODES_WITH_LABEL)
   val MIN_PATTERN_STEP_CARDINALITY = Cardinality(MIN_PATTERN_STEP)
+  val MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(0.1d)
 }
 
 /**
@@ -48,6 +50,13 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
   override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality = {
     atLeast(delegate.nodesWithLabelCardinality(maybeLabelId), MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY)
   }
+
+  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    nodesWithLabelCardinality(Some(index.label)) match {
+      case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
+      case _ => delegate.indexPropertyExistsSelectivity(index)
+    }
+
 
   override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
     val emulatedCompleteCardinality =
