@@ -43,11 +43,15 @@ import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -71,11 +75,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -343,6 +349,54 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertThat( secondFlushChunks ).hasSize( 1 );
             var partialChunkInfo = secondFlushChunks.get( 0 );
             assertThat( partialChunkInfo.getNotModifiedPages() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
+    void flushFilwWithSeveralChunks() throws IOException
+    {
+        assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        var pageCacheTracer = new FlushInfoTracer();
+        int maxPages = 4096 /* chunk size*/ + 10;
+        PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory();
+        try ( MuninnPageCache pageCache = createPageCache( swapperFactory, maxPages, pageCacheTracer, EMPTY );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < maxPages; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+            }
+            pagedFile.flushAndForce();
+
+            var observedChunks = pageCacheTracer.getObservedChunks();
+            assertThat( observedChunks ).hasSize( 2 );
+            var chunkInfo = observedChunks.get( 0 );
+            assertThat( chunkInfo.getFlushPerChunk() ).isEqualTo( 4096 / pagecache_flush_buffer_size_in_pages.defaultValue() );
+            var chunkInfo2 = observedChunks.get( 1 );
+            assertThat( chunkInfo2.getFlushPerChunk() ).isEqualTo( 1 );
+            observedChunks.clear();
+
+//            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+//            {
+//                assertTrue( cursor.next() );
+//                cursor.putLong( 1 );
+//            }
+//            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+//            {
+//                assertTrue( cursor.next() );
+//                cursor.putLong( 1 );
+//            }
+//            pagedFile.flushAndForce();
+//
+//            var secondFlushChunks = pageCacheTracer.getObservedChunks();
+//            assertThat( secondFlushChunks ).hasSize( 1 );
+//            var partialChunkInfo = secondFlushChunks.get( 0 );
+//            // all the rest went to buffer as dirty so we do not count those as nnon modified
+//            assertThat( partialChunkInfo.getNotModifiedPages() ).isEqualTo( 1 );
         }
     }
 
@@ -1511,6 +1565,37 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 this.buffersPerChunk = buffersPerChunk;
                 this.mergesPerChunk = mergesPerChunk;
             }
+        }
+    }
+
+    private class MultiChunkSwapperFilePageSwapperFactory extends SingleFilePageSwapperFactory
+    {
+        MultiChunkSwapperFilePageSwapperFactory()
+        {
+            super( MuninnPageCacheTest.this.fs );
+        }
+
+        @Override
+        public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO )
+                throws IOException
+        {
+            PageSwapper swapper = new DelegatingPageSwapper( super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, useDirectIO ) )
+            {
+                @Override
+                public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages ) throws IOException
+                {
+                    int flushedDataSize = 0;
+                    for ( int i = 0; i < length; i++ )
+                    {
+                        flushedDataSize += bufferLengths[i];
+                    }
+                    assertThat( totalAffectedPages * filePageSize )
+                            .describedAs( "Number of affected pages multiplied by page size should be equal to size of buffers we want to flush" )
+                            .isEqualTo( flushedDataSize );
+                    return super.write( startFilePageId, bufferAddresses, bufferLengths, length, totalAffectedPages );
+                }
+            };
+            return swapper;
         }
     }
 }

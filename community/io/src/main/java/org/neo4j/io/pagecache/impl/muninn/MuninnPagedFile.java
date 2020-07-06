@@ -419,6 +419,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             {
                 // in case when we use temp intermediate buffer we have only buffer and its address and length are always stored in arrays with index 0
                 bufferAddresses[0] = ioBuffer.getAddress();
+                bufferLengths[0] = 0;
                 buffersPerChunk = 1;
             }
 
@@ -501,13 +502,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                                 continue chunkLoop; // go to next page
                             }
                         }
-                        else if ( forClosing )
-                        {
-                            unlockExclusive( pageRef );
-                        }
                         else
                         {
-                            unlockFlush( pageRef, flushStamp, false );
+                            if ( forClosing )
+                            {
+                                unlockExclusive( pageRef );
+                            }
+                            else
+                            {
+                                unlockFlush( pageRef, flushStamp, false );
+                            }
+                            if ( useTemporaryBuffer && pagesGrabbed > 0 )
+                            {
+                                // flush previous grabbed region
+                                break;
+                            }
                         }
                     }
                     break;
@@ -523,7 +532,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                     mergedPages = 0;
                     fillingDirtyBuffer = false;
                     flushPerChunk++;
-                    fill( bufferLengths, 0 );
+                    bufferLengths[0] = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
