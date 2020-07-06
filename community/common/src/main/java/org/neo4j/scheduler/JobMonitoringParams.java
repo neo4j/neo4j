@@ -19,7 +19,11 @@
  */
 package org.neo4j.scheduler;
 
+import java.util.Objects;
+
 import org.neo4j.common.Subject;
+
+import static org.neo4j.common.Subject.AUTH_DISABLED;
 
 public class JobMonitoringParams
 {
@@ -31,7 +35,7 @@ public class JobMonitoringParams
 
     public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description )
     {
-        this.submitter = submitter;
+        this.submitter = Objects.requireNonNullElse( submitter, AUTH_DISABLED );
         this.targetDatabaseName = targetDatabaseName;
         this.description = description;
     }

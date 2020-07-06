@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.neo4j.common.Subject;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
@@ -83,7 +82,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -143,6 +141,7 @@ class NeoStoreTransactionApplierTest
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
         when( transactionToApply.cursorTracer() ).thenReturn( NULL );
+        when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
 
     private <T extends CommonAbstractStore> T mockedStore( Class<T> cls, IdType idType )

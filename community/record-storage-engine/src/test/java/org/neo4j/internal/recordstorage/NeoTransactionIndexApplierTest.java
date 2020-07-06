@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.common.Subject;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -39,8 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class NeoTransactionIndexApplierTest
@@ -103,7 +101,7 @@ class NeoTransactionIndexApplierTest
 
         // Then
         assertFalse( result );
-        verify( indexingService ).createIndexes( AUTH_DISABLED , indexRule );
+        verify( indexingService ).createIndexes( SYSTEM , indexRule );
     }
 
     private IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )

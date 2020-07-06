@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -47,6 +46,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -67,7 +67,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -274,11 +273,11 @@ public class BatchingMultipleIndexPopulatorTest
         JobScheduler jobScheduler = new JobSchedulerAdapter()
         {
             @Override
-            public JobHandle<?> schedule( Group group, Runnable job )
+            public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
             {
                 scheduleCount.incrementAndGet();
                 job.run();
-                return super.schedule( group, job );
+                return super.schedule( group, jobMonitoringParams, job );
             }
         };
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,

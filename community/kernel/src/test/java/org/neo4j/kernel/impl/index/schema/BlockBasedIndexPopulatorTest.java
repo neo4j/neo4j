@@ -474,11 +474,11 @@ class BlockBasedIndexPopulatorTest
             JobScheduler trackingJobScheduler = new JobSchedulerAdapter()
             {
                 @Override
-                public <T> JobHandle<T> schedule( Group group, Callable<T> job )
+                public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
                 {
                     called.setTrue();
                     assertThat( group ).isSameAs( Group.INDEX_POPULATION_WORK );
-                    return jobScheduler.schedule( group, job );
+                    return jobScheduler.schedule( group, jobMonitoringParams, job );
                 }
             };
             populator.scanCompleted( nullInstance, wrapScheduler( trackingJobScheduler ), NULL );

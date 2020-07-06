@@ -27,7 +27,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import org.neo4j.common.Subject;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
@@ -59,8 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -130,7 +128,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( indexUpdateListener ).createIndexes( AUTH_DISABLED , rule );
+        verify( indexUpdateListener ).createIndexes( SYSTEM , rule );
     }
 
     @Test

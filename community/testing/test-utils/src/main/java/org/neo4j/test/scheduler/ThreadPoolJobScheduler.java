@@ -107,7 +107,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     @Override
     public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
     {
-        throw new UnsupportedOperationException();
+        return new FutureJobHandle<>( executor.submit( job ) );
     }
 
     @Override
@@ -119,7 +119,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     @Override
     public JobHandle<?> schedule( Group group, JobMonitoringParams monitoredJobParams, Runnable job )
     {
-        throw new UnsupportedOperationException();
+        return new FutureJobHandle<>( executor.submit( job ) );
     }
 
     @Override
