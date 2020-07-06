@@ -44,16 +44,18 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("bad node variable") {
-    expectError(
+    expectSyntaxError(
       "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
-      "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 49 (offset: 48))"
+      "Invalid input ',': expected ",
+      48
     )
   }
 
   test("badStart") {
-    expectError(
+    expectSyntaxError(
       "starta = node(0) return a",
-      "Invalid input 'a' (line 1, column 6 (offset: 5))"
+      "Invalid input 'starta'",
+      0
     )
   }
 
@@ -103,79 +105,42 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("noIndexName") {
-    expectSyntaxError(
-      "start a = node(name=\"sebastian\") match (a)-[:WORKED_ON]-b return b",
-      "Invalid input 'n': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 16 (offset: 15))",
-      15
-    )
-  }
-
   test("badMatch2") {
     expectSyntaxError(
-      "match (p) where id(p) = 2 match p-[:IS_A]>dude return dude.name",
-      "Invalid input '>': expected whitespace or '-' (line 1, column 42 (offset: 41))",
-      41
+      "match (p) where id(p) = 2 match (p)-[:IS_A]>dude return dude.name",
+      "Invalid input '>'",
+      43
     )
   }
 
   test("badMatch3") {
     expectSyntaxError(
-      "match (p) where id(p) = 2 match p-[:IS_A->dude return dude.name",
-      "Invalid input '-': expected an identifier character, whitespace, '|', a length specification, a property map or ']' (line 1, column 41 (offset: 40))",
-      40
+      "match (p) where id(p) = 2 match (p)-[:IS_A->dude return dude.name",
+      "Invalid input '-'",
+      42
     )
   }
 
   test("badMatch4") {
     expectSyntaxError(
-      "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, a variable, relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
-      35
+      "match (p) where id(p) = 2 match (p)-[!]->dude return dude.name",
+      "Invalid input '!'",
+      37
     )
   }
 
   test("badMatch5") {
     expectSyntaxError(
-      "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
-      "Invalid input '[': expected an identifier character, whitespace, '='," +
-        " node labels, a property map, a relationship pattern, ',', USING, WHERE, FROM GRAPH, USE GRAPH," +
-        " CONSTRUCT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE UNIQUE, CREATE, SET, DELETE," +
-        " REMOVE, FOREACH, WITH, CALL, RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
-      33
+      "match (p) where id(p) = 2 match (p)[:likes]->dude return dude.name",
+      "Invalid input '['",
+      35
     )
   }
 
   test("invalidLabel") {
-    expectSyntaxError(
+    expectError(
       "match (p) where id(p) = 2 match (p:super-man) return p.name",
-      "Invalid input 'm': expected whitespace, [ or '-' (line 1, column 42 (offset: 41))",
-      41
-    )
-  }
-
-  test("noEqualsSignInStart") {
-    expectSyntaxError(
-      "start r:relationship:relationships() return r",
-      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 8 (offset: 7))",
-      7
-    )
-  }
-
-  test("relTypeInsteadOfRelIdInStart") {
-    expectSyntaxError(
-      "start r = relationship(:WORKED_ON) return r",
-      "Invalid input ':': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 24 (offset: " +
-        "23))",
-      23
-    )
-  }
-
-  test("noNodeIdInStart") {
-    expectSyntaxError(
-      "start r = node() return r",
-      "Invalid input ')': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 16 (offset: 15))",
-      15
+      "Invalid input"
     )
   }
 
@@ -262,14 +227,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   test("should render caret correctly in parser errors for queries without prefix") {
     testSyntaxErrorWithCaret(
-      "Invalid input '1': expected whitespace, comment or a pattern (line 1, column 7 (offset: 6))",
+      "Invalid input '1",
       "MATCH 123",
       "      ^")
   }
 
   test("should render caret correctly in parser errors for queries with prefix") {
     testSyntaxErrorWithCaret(
-      "Invalid input '1': expected whitespace, comment or a pattern (line 1, column 15 (offset: 14))",
+      "Invalid input '1",
       "EXPLAIN MATCH 123",
       "              ^")
   }
@@ -301,8 +266,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String) {
     val error = intercept[SyntaxException](executeQuery(query))
-    val expected = String.format("%s\n\"%s\"\n %s", expectedError, query, expectedCaret)
-    error.getMessage.linesIterator.mkString("\n") should equal(expected)
+    val expected = String.format("\"%s\"\n %s", query, expectedCaret)
+    val got = error.getMessage.linesIterator
+    got.next() should startWith(expectedError)
+    got.mkString("\n") should equal(expected)
   }
 
   private def executeQuery(query: String) {

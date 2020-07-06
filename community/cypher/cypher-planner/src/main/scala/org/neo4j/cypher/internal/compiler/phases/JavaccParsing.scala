@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTFactory
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -63,15 +62,14 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val charStream = new CypherCharStream(in.queryText)
     val astFactory = new Neo4jASTFactory(in.queryText)
-    val neo4jExceptionFactory = Neo4jCypherExceptionFactory(in.queryText, in.startPosition)
-    val astExceptionFactory = new Neo4jASTExceptionFactory(neo4jExceptionFactory)
+    val astExceptionFactory = new Neo4jASTExceptionFactory(context.cypherExceptionFactory)
 
     try {
       val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()
       if (statements.size() == 1) {
         in.withStatement(statements.get(0))
       } else {
-        throw neo4jExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
+        throw context.cypherExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
       }
     } catch {
       case e: SyntaxException if shouldFallBack(e.getMessage) =>

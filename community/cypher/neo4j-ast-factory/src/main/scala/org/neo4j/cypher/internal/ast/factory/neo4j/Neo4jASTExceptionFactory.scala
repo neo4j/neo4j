@@ -19,11 +19,41 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import java.util
+
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 
-class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExceptionFactory {
+import scala.collection.convert.AsScalaConverters
+
+
+
+class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExceptionFactory with AsScalaConverters {
+
+  override def syntaxException(got: String,
+                               expected: util.List[String],
+                               source: Exception,
+                               offset: Int,
+                               line: Int,
+                               column: Int): Exception = {
+    val exp: Seq[String] = asScalaBuffer(expected).distinct
+
+    val message =
+      new StringBuilder("Invalid input '")
+        .append(got)
+        .append("':")
+        .append(" expected ").append(
+          if (exp.size == 1)
+            exp.head
+          else if (exp.size < 5)
+            exp.init.mkString(", ") + " or " + exp.last
+          else
+            System.lineSeparator() + exp.map("  " + _).mkString(System.lineSeparator())
+        ).result()
+
+    inner.syntaxException(message, new InputPosition(offset, line, column))
+  }
 
   override def syntaxException(source: Exception, offset: Int, line: Int, column: Int): Exception =
     inner.syntaxException(source.getMessage, new InputPosition(offset, line, column))

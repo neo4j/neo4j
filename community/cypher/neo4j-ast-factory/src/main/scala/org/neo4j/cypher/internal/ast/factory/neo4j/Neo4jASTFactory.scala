@@ -103,6 +103,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -565,7 +566,7 @@ class Neo4jASTFactory(query: String)
 
   override def neq(p: InputPosition,
                    lhs: Expression,
-                   rhs: Expression): Expression = NotEquals(lhs, rhs)(p)
+                   rhs: Expression): Expression = InvalidNotEquals(lhs, rhs)(p)
 
   override def neq2(p: InputPosition,
                     lhs: Expression,

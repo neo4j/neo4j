@@ -984,6 +984,7 @@ TOKEN :
 | < ARROW_RIGHT_HEAD: ["\u27e9", "\u3009", "\ufe65", "\uff1e"] >
 }
 
+<*> TOKEN : { <UNKNOWN: ~["$", ",", ":", ";"]> }
 
 /** Root production. */
 List<STATEMENT> Statements() throws Exception :
@@ -998,7 +999,8 @@ List<STATEMENT> Statements() throws Exception :
     { return stmts; }
   } catch (ParseException e) {
     Token t = e.currentToken.next;
-    throw exceptionFactory.syntaxException(e, t.beginOffset, t.beginLine, t.beginColumn);
+    throw exceptionFactory.syntaxException(t.image, ParseExceptions.expected(e.expectedTokenSequences, e.tokenImage), e,
+                                           t.beginOffset, t.beginLine, t.beginColumn);
   } catch (InvalidUnicodeLiteral e) {
     throw exceptionFactory.syntaxException(e, e.offset, e.line, e.column);
   }

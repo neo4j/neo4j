@@ -17,13 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.javacc;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public interface ASTExceptionFactory
+public class ParseExceptions extends RuntimeException
 {
-    Exception syntaxException( String got, List<String> expected, Exception source, int offset, int line, int column );
+    private ParseExceptions()
+    {
+    }
 
-    Exception syntaxException( Exception source, int offset, int line, int column );
+    public static List<String> expected(final int[][] expectedTokenSequences,
+                                        final String[] tokenImage)
+    {
+        List<String> expected = new ArrayList<>();
+        for ( int[] expectedTokenSequence : expectedTokenSequences )
+        {
+            for ( int i : expectedTokenSequence )
+            {
+                expected.add( tokenImage[i] );
+            }
+        }
+        return expected;
+    }
 }
