@@ -245,6 +245,10 @@ class Neo4jASTFactory(query: String)
       Option(limit).map(e => Limit(e)(p)))(p)
   }
 
+  override def newReturnGraphClause(p: InputPosition): Return = {
+    throw new UnsupportedOperationException("The `RETURN GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs.")
+  }
+
   override def newReturnItem(p: InputPosition, e: Expression,
                              v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)
 

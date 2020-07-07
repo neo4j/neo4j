@@ -1137,8 +1137,11 @@ CLAUSE ReturnClause() :
   CLAUSE clause;
 }
 {
-  t=<RETURN> clause=ReturnBody(t)
-  { return clause; }
+  t=<RETURN>
+  (
+    t=<GRAPH> { return astFactory.newReturnGraphClause(pos(t)); }
+  | clause=ReturnBody(t) { return clause; }
+  )
 }
 
 RETURN_CLAUSE ReturnBody(Token t) :

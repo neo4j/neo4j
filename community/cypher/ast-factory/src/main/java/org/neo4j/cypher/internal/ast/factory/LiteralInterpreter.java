@@ -72,6 +72,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
+    public NULL newReturnGraphClause( NULL p )
+    {
+        throw new UnsupportedOperationException( "newReturnGraphClause is not a literal" );
+    }
+
+    @Override
     public NULL newReturnItem( NULL p, Object e, Object v )
     {
         throw new UnsupportedOperationException( "newReturnItem is not a literal" );

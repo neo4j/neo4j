@@ -96,6 +96,8 @@ public interface ASTFactory<STATEMENT,
                                    EXPRESSION skip,
                                    EXPRESSION limit );
 
+    RETURN_CLAUSE newReturnGraphClause( POS p );
+
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, VARIABLE v );
 
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, int eStartOffset, int eEndOffset );
