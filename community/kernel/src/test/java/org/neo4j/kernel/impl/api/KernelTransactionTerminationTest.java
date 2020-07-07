@@ -58,6 +58,8 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -71,7 +73,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
 class KernelTransactionTerminationTest
 {
@@ -341,6 +342,14 @@ class KernelTransactionTerminationTest
         {
             assertFalse( getReasonIfTerminated().isPresent() );
             assertFalse( monitor.terminated );
+        }
+
+        private static TokenHolders mockedTokenHolders()
+        {
+            return new TokenHolders(
+                    mock( TokenHolder.class ),
+                    mock( TokenHolder.class ),
+                    mock( TokenHolder.class ) );
         }
     }
 

@@ -23,6 +23,8 @@ import java.util.function.UnaryOperator;
 
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 /**
  * Implementations of this interface can be {@link Inject injected} into {@link DbmsExtension} based tests, to allow them to restart the DBMS or the database
  * the test is operating on.
@@ -31,20 +33,38 @@ public interface DbmsController
 {
     /**
      * Restart the DBMS while applying the given changes to the builder.
+     * @param databaseName name of the database used to re inject dependencies from after restart
      * @param callback The callback that will apply changes to the DBMS builder.
      */
-    void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback );
+    void restartDbms( String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback );
 
     /**
      * Restart the DBMS without changing anything.
+     * @param databaseName name of the database used to re inject dependencies from after restart
      */
-    default void restartDbms()
+    default void restartDbms( String databaseName )
     {
-        restartDbms( UnaryOperator.identity() );
+        restartDbms( databaseName, UnaryOperator.identity() );
     }
 
     /**
      * Restart the database without changing anything.
+     * @param databaseName name of the database to restart
      */
-    void restartDatabase();
+    void restartDatabase( String databaseName );
+
+    default void restartDbms()
+    {
+        restartDbms( DEFAULT_DATABASE_NAME, UnaryOperator.identity() );
+    }
+
+    default void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
+    {
+        restartDbms( DEFAULT_DATABASE_NAME, callback );
+    }
+
+    default void restartDatabase()
+    {
+        restartDbms( DEFAULT_DATABASE_NAME );
+    }
 }

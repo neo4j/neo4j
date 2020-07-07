@@ -71,7 +71,7 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
-    public Optional<PagedFile> getExistingMapping( Path path ) throws IOException
+    public Optional<PagedFile> getExistingMapping( Path path )
     {
         Path canonicalFile = path.normalize();
 

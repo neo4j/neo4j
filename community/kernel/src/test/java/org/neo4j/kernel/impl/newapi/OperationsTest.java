@@ -92,6 +92,7 @@ import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -123,12 +124,11 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.DetachingRelationshipDeleterTest.returnRelationships;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class OperationsTest
 {
-    private KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+    private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private Operations operations;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final Write write = mock( Write.class );
@@ -1370,5 +1370,13 @@ class OperationsTest
         when( relationshipCursor.sourceNodeReference() ).thenReturn( sourceNode );
         when( relationshipCursor.targetNodeReference() ).thenReturn( targetNode );
         when( relationshipCursor.type() ).thenReturn( relationshipLabel );
+    }
+
+    private static TokenHolders mockedTokenHolders()
+    {
+        return new TokenHolders(
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ) );
     }
 }

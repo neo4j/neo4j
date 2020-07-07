@@ -27,7 +27,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -43,6 +42,5 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @ExtendWith( DbmsSupportExtension.class )
 public @interface ImpermanentDbmsExtension
 {
-    String injectableDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
     String configurationCallback() default "";
 }

@@ -77,6 +77,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -90,7 +92,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
 class KernelTransactionTestBase
 {
@@ -195,6 +196,14 @@ class KernelTransactionTestBase
             transactions.add( batch.transactionRepresentation() );
             return ++txId;
         }
+    }
+
+    private static TokenHolders mockedTokenHolders()
+    {
+        return new TokenHolders(
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ) );
     }
 
     private static class TestCollectionsFactory implements CollectionsFactory

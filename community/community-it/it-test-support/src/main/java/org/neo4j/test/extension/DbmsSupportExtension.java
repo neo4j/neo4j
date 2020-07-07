@@ -19,8 +19,6 @@
  */
 package org.neo4j.test.extension;
 
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -28,13 +26,14 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 
 public class DbmsSupportExtension implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
 
     @Override
-    public void beforeAll( ExtensionContext context ) throws Exception
+    public void beforeAll( ExtensionContext context )
     {
         if ( getLifecycle( context ) == PER_CLASS )
         {
@@ -44,7 +43,7 @@ public class DbmsSupportExtension implements BeforeEachCallback, BeforeAllCallba
     }
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
+    public void beforeEach( ExtensionContext context )
     {
         if ( getLifecycle( context ) == PER_METHOD )
         {
@@ -63,7 +62,7 @@ public class DbmsSupportExtension implements BeforeEachCallback, BeforeAllCallba
     }
 
     @Override
-    public void afterAll( ExtensionContext context ) throws Exception
+    public void afterAll( ExtensionContext context )
     {
         if ( getLifecycle( context ) == PER_CLASS )
         {

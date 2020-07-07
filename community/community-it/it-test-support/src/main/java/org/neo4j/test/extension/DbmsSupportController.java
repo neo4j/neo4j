@@ -58,7 +58,6 @@ public class DbmsSupportController
     private final ExtensionContext context;
     private final TestInstances testInstances;
     private DatabaseManagementService dbms;
-    private String databaseName;
 
     public DbmsSupportController( ExtensionContext context )
     {
@@ -79,10 +78,10 @@ public class DbmsSupportController
 
     public final void startDbms()
     {
-        startDbms( UnaryOperator.identity() );
+        startDbms( DEFAULT_DATABASE_NAME, UnaryOperator.identity() );
     }
 
-    public void startDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
+    public void startDbms( String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
     {
         // Find closest configuration
         TestConfiguration configuration = getConfigurationFromAnnotations(
@@ -91,12 +90,11 @@ public class DbmsSupportController
 
         // Make service
         buildDbms( configuration.configurationCallback, callback );
-        startDatabase( configuration.injectableDatabase );
+        startDatabase( databaseName );
     }
 
     public void startDatabase( String databaseName )
     {
-        this.databaseName = databaseName;
         if ( !dbms.listDatabases().contains( databaseName ) )
         {
             dbms.createDatabase( databaseName );
@@ -111,14 +109,14 @@ public class DbmsSupportController
         injectDependencies( deps );
     }
 
-    public void stopDatabase()
+    public void stopDatabase( String databaseName )
     {
         dbms.shutdownDatabase( databaseName );
     }
 
-    public void restartDatabase()
+    public void restartDatabase( String databaseName )
     {
-        stopDatabase();
+        stopDatabase( databaseName );
         startDatabase( databaseName );
     }
 
@@ -177,12 +175,12 @@ public class DbmsSupportController
         return new DbmsController()
         {
             @Override
-            public void restartDbms( UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
+            public void restartDbms( String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
             {
                 shutdown();
                 try
                 {
-                    startDbms( callback );
+                    startDbms( databaseName, callback );
                 }
                 catch ( Exception e )
                 {
@@ -191,9 +189,9 @@ public class DbmsSupportController
             }
 
             @Override
-            public void restartDatabase()
+            public void restartDatabase( String databaseName )
             {
-                restartDbms();
+                restartDbms( databaseName );
             }
         };
     }
@@ -321,18 +319,18 @@ public class DbmsSupportController
             if ( annotations[0] instanceof DbmsExtension )
             {
                 DbmsExtension annotation = (DbmsExtension) annotations[0];
-                return new TestConfiguration( annotation.injectableDatabase(), annotation.configurationCallback() );
+                return new TestConfiguration( annotation.configurationCallback() );
             }
             if ( annotations[0] instanceof ImpermanentDbmsExtension )
             {
                 ImpermanentDbmsExtension annotation = (ImpermanentDbmsExtension) annotations[0];
-                return new TestConfiguration( annotation.injectableDatabase(), annotation.configurationCallback() );
+                return new TestConfiguration( annotation.configurationCallback() );
             }
         }
 
         // Either we don't recognise the annotation type, or no special configuration was requested.
         // In any case, go with the defaults.
-        return new TestConfiguration( DEFAULT_DATABASE_NAME, null );
+        return new TestConfiguration( null );
     }
 
     /**
@@ -340,12 +338,10 @@ public class DbmsSupportController
      */
     private static class TestConfiguration
     {
-        private final String injectableDatabase;
         private final String configurationCallback;
 
-        private TestConfiguration( String injectableDatabase, String configurationCallback )
+        private TestConfiguration( String configurationCallback )
         {
-            this.injectableDatabase = injectableDatabase;
             this.configurationCallback = configurationCallback;
         }
     }

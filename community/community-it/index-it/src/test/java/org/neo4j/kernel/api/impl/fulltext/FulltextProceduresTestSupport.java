@@ -95,7 +95,7 @@ class FulltextProceduresTestSupport
 
     void restartDatabase()
     {
-        controller.restartDbms();
+        controller.restartDbms( db.databaseName() );
     }
 
     void awaitIndexesOnline()
