@@ -118,19 +118,16 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     public void replaceStats( long indexId, IndexSample sample )
     {
-        assertNotReadOnly();
         cache.put( indexId, new ImmutableIndexStatistics( sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize() ) );
     }
 
     public void removeIndex( long indexId )
     {
-        assertNotReadOnly();
         cache.remove( indexId );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
     {
-        assertNotReadOnly();
         cache.computeIfPresent( indexId, ( id, existing ) ->
                 new ImmutableIndexStatistics( existing.sampleUniqueValues, existing.sampleSize, existing.updatesCount + delta, existing.indexSize ) );
     }
@@ -218,14 +215,6 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
                 writer.put( new IndexStatisticsKey( entry.getKey() ),
                         new IndexStatisticsValue( stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize ) );
             }
-        }
-    }
-
-    private void assertNotReadOnly()
-    {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can not write to index statistics store while in read only mode." );
         }
     }
 
