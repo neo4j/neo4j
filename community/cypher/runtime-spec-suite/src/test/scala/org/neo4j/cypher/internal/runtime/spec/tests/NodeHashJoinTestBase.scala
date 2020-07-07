@@ -107,9 +107,35 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
-      .|.injectNulls("x")
+      .|.injectValue("x", "null")
       .|.allNodeScan("x")
-      .injectNulls("x")
+      .injectValue("x", "null")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // because graph contains no relationships, the expand will return no rows
+    runtimeResult should beColumns("x").withSingleRow(nodes.head)
+  }
+
+  test("should join with nodes in ref slots") {
+    // given
+    val nodes = given { nodeGraph(1) }
+    val lhsRows = inputValues()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      // Adding in a string and then filtering it out should cause
+      // the nodes to be passed in a ref slot
+      .|.filter("x <> 'foo'")
+      .|.injectValue("x", "'foo'")
+      .|.allNodeScan("x")
+      .filter("x <> 'foo'")
+      .injectValue("x", "'foo'")
       .allNodeScan("x")
       .build()
 

@@ -702,7 +702,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
   testPlan("injectNulls",
     new TestPlanBuilder()
       .produceResults("x")
-      .injectNulls("x")
+      .injectValue("x", "null")
       .argument()
       .build())
 
