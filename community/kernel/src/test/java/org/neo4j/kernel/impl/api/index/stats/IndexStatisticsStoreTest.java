@@ -22,26 +22,33 @@ package org.neo4j.kernel.impl.api.index.stats;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.function.Function;
 
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +57,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
+@ExtendWith( RandomExtension.class )
 class IndexStatisticsStoreTest
 {
     private LifeSupport lifeSupport = new LifeSupport();
@@ -58,6 +66,10 @@ class IndexStatisticsStoreTest
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private RandomRule randomRule;
 
     private IndexStatisticsStore store;
 
@@ -237,50 +249,78 @@ class IndexStatisticsStoreTest
     }
 
     @Test
-    void shouldNotReplaceStatsIfReadOnly() throws IOException
-    {
-        assertOperationThrowInReadOnlyMode( iss -> () -> iss.replaceStats( 1, 1, 1, 1 ) );
-    }
-
-    @Test
-    void shouldNotRemoveIndexIfReadOnly() throws IOException
-    {
-        assertOperationThrowInReadOnlyMode( iss -> () -> iss.removeIndex( 1 ) );
-    }
-
-    @Test
-    void shouldNotIncrementIndexUpdatesIfReadOnly() throws IOException
-    {
-        assertOperationThrowInReadOnlyMode( iss -> () -> iss.incrementIndexUpdates( 1, 1 ) );
-    }
-
-    private void assertOperationThrowInReadOnlyMode( Function<IndexStatisticsStore,Executable> operation ) throws IOException
+    void shouldNotWriteAnythingInReadOnlyMode() throws IOException
     {
         final File file = testDirectory.file( "existing" );
 
         // Create store
         IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false );
+        randomActions( store, 1000 );
+        byte[] data = readAll( file );
+
+        // Start in readOnly mode
+        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true );
+        randomActions( readOnlyStore, 10000 );
+
+        assertArrayEquals( data, readAll( file ) );
+    }
+
+    void randomActions( IndexStatisticsStore store, int numActions ) throws IOException
+    {
         try
         {
             store.init();
+            for ( int i = 0; i < numActions; i++ )
+            {
+                randomAction( store );
+            }
+            store.checkpoint( IOLimiter.UNLIMITED );
         }
         finally
         {
             store.shutdown();
         }
+    }
 
-        // Start in readOnly mode
-        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true );
-        try
+    void randomAction( IndexStatisticsStore store ) throws IOException
+    {
+        long indexId = randomRule.nextLong( 5 );
+        switch ( randomRule.nextInt( 7 ) )
         {
-            readOnlyStore.init();
-            final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, operation.apply( readOnlyStore ) );
-            assertEquals( "Can not write to index statistics store while in read only mode.", e.getMessage() );
+        case 0:
+            store.checkpoint( IOLimiter.UNLIMITED );
+            break;
+        case 1:
+            store.indexSample( indexId, Registers.newDoubleLongRegister() );
+            break;
+        case 2:
+            store.indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
+            break;
+        case 3:
+            store.replaceStats( indexId, randomRule.nextLong( 100 ), randomRule.nextLong( 100 ), randomRule.nextLong( 100 ) );
+            break;
+        case 4:
+            store.replaceStats( indexId, randomRule.nextLong( 100 ), randomRule.nextLong( 100 ), randomRule.nextLong( 100 ), randomRule.nextLong( 100 ) );
+            break;
+        case 5:
+            store.incrementIndexUpdates( indexId, randomRule.nextLong( 100 ) );
+            break;
+        case 6:
+            store.removeIndex( indexId );
+            break;
+        default:
+            throw new UnsupportedOperationException( "Unknown Action" );
         }
-        finally
+    }
+
+    byte[] readAll( File file ) throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.wrap( new byte[(int) (fs.getFileSize( file ) + ByteUnit.mebiBytes( 1 ))] );
+        try ( StoreChannel channel = fs.read( file ) )
         {
-            readOnlyStore.shutdown();
+            channel.read( buffer );
         }
+        return buffer.array();
     }
 
     private static void assertRegister( long first, long second, DoubleLongRegister register )
