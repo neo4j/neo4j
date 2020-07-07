@@ -26,6 +26,8 @@ import picocli.CommandLine.HelpCommand;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.service.Services;
@@ -64,9 +66,9 @@ public final class AdminTool
     public static int execute( ExecutionContext ctx, String... args )
     {
         final var cmd = new CommandLine( new AdminTool() )
-            .setUsageHelpWidth( 120 )
-            .setCaseInsensitiveEnumValuesAllowed( true );
-        registerCommands( cmd, ctx );
+                .setUsageHelpWidth( 120 )
+                .setCaseInsensitiveEnumValuesAllowed( true );
+        registerCommands( cmd, ctx, Services.loadAll( CommandProvider.class ) );
 
         if ( args.length == 0 )
         {
@@ -77,14 +79,28 @@ public final class AdminTool
         return cmd.execute( args );
     }
 
-    private static void registerCommands( CommandLine cmd, ExecutionContext ctx )
+    private static void registerCommands( CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders )
     {
         cmd.addSubcommand( HelpCommand.class );
-        final var providers = Services.loadAll( CommandProvider.class );
-        for ( final CommandProvider provider : providers )
-        {
-            cmd.addSubcommand( provider.createCommand( ctx ) );
-        }
+        filterCommandProviders( commandProviders )
+                .forEach( commandProvider -> cmd.addSubcommand( commandProvider.createCommand( ctx ) ) );
+    }
+
+    protected static Collection<CommandProvider> filterCommandProviders( Collection<CommandProvider> commandProviders )
+    {
+        return commandProviders
+                .stream()
+                .collect( Collectors.toMap( k -> k.commandType(), v -> v, ( cp1, cp2 ) ->
+                {
+                    if ( cp1.getPriority() == cp2.getPriority() )
+                    {
+                        throw new IllegalArgumentException(
+                                String.format( "Command providers %s and %s create commands with the same priority", cp1.getClass(), cp2.getClass() ) );
+                    }
+
+                    return cp1.getPriority() > cp2.getPriority() ? cp1 : cp2;
+                } ) )
+                .values();
     }
 
     private static Path getDirOrExit( String envVar )

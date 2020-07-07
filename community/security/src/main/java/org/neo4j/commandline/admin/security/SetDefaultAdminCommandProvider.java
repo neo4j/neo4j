@@ -20,8 +20,11 @@
 package org.neo4j.commandline.admin.security;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
+
+import static org.neo4j.cli.Command.CommandType.SET_DEFAULT_ADMIN;
 
 @ServiceProvider
 public class SetDefaultAdminCommandProvider implements CommandProvider<SetDefaultAdminCommand>
@@ -30,5 +33,11 @@ public class SetDefaultAdminCommandProvider implements CommandProvider<SetDefaul
     public SetDefaultAdminCommand createCommand( ExecutionContext ctx )
     {
         return new SetDefaultAdminCommand( ctx );
+    }
+
+    @Override
+    public Command.CommandType commandType()
+    {
+        return SET_DEFAULT_ADMIN;
     }
 }

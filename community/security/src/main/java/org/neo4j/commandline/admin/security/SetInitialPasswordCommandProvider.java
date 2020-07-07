@@ -20,8 +20,11 @@
 package org.neo4j.commandline.admin.security;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
+
+import static org.neo4j.cli.Command.CommandType.SET_INITIAL_PASSWORD;
 
 @ServiceProvider
 public class SetInitialPasswordCommandProvider implements CommandProvider<SetInitialPasswordCommand>
@@ -30,5 +33,11 @@ public class SetInitialPasswordCommandProvider implements CommandProvider<SetIni
     public SetInitialPasswordCommand createCommand( ExecutionContext ctx )
     {
         return new SetInitialPasswordCommand( ctx );
+    }
+
+    @Override
+    public Command.CommandType commandType()
+    {
+        return SET_INITIAL_PASSWORD;
     }
 }

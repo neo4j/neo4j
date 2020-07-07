@@ -20,6 +20,7 @@
 package org.neo4j.consistency;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
 
@@ -30,5 +31,11 @@ public class CheckConsistencyCommandProvider implements CommandProvider<CheckCon
     public CheckConsistencyCommand createCommand( ExecutionContext ctx )
     {
         return new CheckConsistencyCommand( ctx );
+    }
+
+    @Override
+    public CommandType commandType()
+    {
+        return null;
     }
 }

@@ -20,9 +20,12 @@
 package org.neo4j.commandline.dbms;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command.CommandType;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Dumper;
+
+import static org.neo4j.cli.Command.CommandType.DUMP;
 
 @ServiceProvider
 public class DumpCommandProvider implements CommandProvider<DumpCommand>
@@ -31,5 +34,11 @@ public class DumpCommandProvider implements CommandProvider<DumpCommand>
     public DumpCommand createCommand( ExecutionContext ctx )
     {
         return new DumpCommand( ctx, new Dumper( ctx.err() ) );
+    }
+
+    @Override
+    public CommandType commandType()
+    {
+        return DUMP;
     }
 }

@@ -23,4 +23,21 @@ import java.util.concurrent.Callable;
 
 public interface Command extends Callable<Integer>
 {
+    enum CommandType
+    {
+        ONLINE_BACKUP,
+        RESTORE_DB,
+        LOAD,
+        UNBIND,
+        CHECK_CONSISTENCY,
+        DIAGNOSTICS_REPORT,
+        MEMORY_RECOMMENDATION,
+        STORE_INFO,
+        STORE_COPY,
+        IMPORT,
+        PUSH_TO_CLOUD,
+        SET_DEFAULT_ADMIN,
+        SET_INITIAL_PASSWORD,
+        DUMP
+    }
 }

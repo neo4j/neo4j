@@ -17,8 +17,11 @@
 package org.neo4j.pushtocloud;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
+
+import static org.neo4j.cli.Command.CommandType.PUSH_TO_CLOUD;
 
 @ServiceProvider
 public class PushToCloudCommandProvider implements CommandProvider<PushToCloudCommand>
@@ -28,5 +31,11 @@ public class PushToCloudCommandProvider implements CommandProvider<PushToCloudCo
     {
         return new PushToCloudCommand( ctx, new HttpCopier( ctx ),
                                        new RealDumpCreator( ctx ), PushToCloudConsole.realConsole() );
+    }
+
+    @Override
+    public Command.CommandType commandType()
+    {
+        return PUSH_TO_CLOUD;
     }
 }

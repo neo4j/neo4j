@@ -20,8 +20,11 @@
 package org.neo4j.importer;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.Command;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.ExecutionContext;
+
+import static org.neo4j.cli.Command.CommandType.IMPORT;
 
 @ServiceProvider
 public class ImportCommandProvider implements CommandProvider<ImportCommand>
@@ -30,5 +33,11 @@ public class ImportCommandProvider implements CommandProvider<ImportCommand>
     public ImportCommand createCommand( ExecutionContext ctx )
     {
         return new ImportCommand( ctx );
+    }
+
+    @Override
+    public Command.CommandType commandType()
+    {
+        return IMPORT;
     }
 }

@@ -53,10 +53,10 @@ import static picocli.CommandLine.Option;
         name = "load",
         header = "Load a database from an archive created with the dump command.",
         description = "Load a database from an archive. <archive-path> must be an archive created with the dump " +
-                "command. <database> is the name of the database to create. Existing databases can be replaced " +
-                "by specifying --force. It is not possible to replace a database that is mounted in a running " +
-                "Neo4j server. If --info is specified, then the database is not loaded, but information " +
-                "(i.e. file count, byte count, and format of load file) about the archive is printed instead."
+                      "command. <database> is the name of the database to create. Existing databases can be replaced " +
+                      "by specifying --force. It is not possible to replace a database that is mounted in a running " +
+                      "Neo4j server. If --info is specified, then the database is not loaded, but information " +
+                      "(i.e. file count, byte count, and format of load file) about the archive is printed instead."
 
 )
 public class LoadCommand extends AbstractCommand
@@ -65,7 +65,7 @@ public class LoadCommand extends AbstractCommand
     private Path from;
     @Option( names = "--database", description = "Name of the database to load.", defaultValue = DEFAULT_DATABASE_NAME,
             converter = Converters.DatabaseNameConverter.class )
-    private NormalizedDatabaseName database;
+    protected NormalizedDatabaseName database;
     @Option( names = "--force", arity = "0", description = "If an existing database should be replaced." )
     private boolean force;
     @Option( names = "--info", description = "Print meta-data information about the archive file, instead of loading the contained database." )
@@ -107,7 +107,7 @@ public class LoadCommand extends AbstractCommand
         }
     }
 
-    private void loadDump()
+    protected void loadDump()
     {
         Config config = buildConfig();
 
@@ -132,7 +132,7 @@ public class LoadCommand extends AbstractCommand
         }
     }
 
-    private Config buildConfig()
+    protected Config buildConfig()
     {
         Config cfg = Config.newBuilder()
                 .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
