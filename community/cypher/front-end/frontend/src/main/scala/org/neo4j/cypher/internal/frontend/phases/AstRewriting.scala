@@ -32,12 +32,11 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer,
                         literalExtraction: LiteralExtraction,
-                        getDegreeRewriting: Boolean = true, // This does not really belong in the front end. Should move to a planner rewriter,
                         innerVariableNamer: InnerVariableNamer,
                         parameterTypeMapping : Map[String, CypherType] = Map.empty
 ) extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val astRewriter = new ASTRewriter(sequencer, literalExtraction, getDegreeRewriting, innerVariableNamer)
+  private val astRewriter = new ASTRewriter(sequencer, literalExtraction, innerVariableNamer)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
 

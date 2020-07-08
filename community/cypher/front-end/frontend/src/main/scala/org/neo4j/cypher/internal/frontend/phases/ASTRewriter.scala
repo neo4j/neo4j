@@ -58,7 +58,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   literalExtraction: LiteralExtraction,
-                  getDegreeRewriting: Boolean,
                   innerVariableNamer: InnerVariableNamer) {
 
   def rewrite(statement: Statement,
@@ -80,7 +79,8 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       nameMatchPatternElements,
       nameUpdatingClauses,
       enableCondition(noUnnamedPatternElementsInMatch),
-      normalizeMatchPredicates(getDegreeRewriting),
+      normalizeExistsPatternExpressions(semanticState),
+      normalizeMatchPredicates,
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
       normalizeArgumentOrder,
@@ -90,8 +90,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       replaceLiteralDynamicPropertyLookups,
       namePatternComprehensionPatternElements,
       enableCondition(noUnnamedPatternElementsInPatternComprehension),
-      inlineNamedPathsInPatternComprehensions,
-      normalizeExistsPatternExpressions(semanticState),
+      inlineNamedPathsInPatternComprehensions
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)

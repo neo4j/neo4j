@@ -124,7 +124,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val innerVariableNamer = new GeneratingNamer
-  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
+  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {

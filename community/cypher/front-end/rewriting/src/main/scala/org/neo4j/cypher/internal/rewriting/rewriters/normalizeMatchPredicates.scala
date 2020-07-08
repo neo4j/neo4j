@@ -16,5 +16,5 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-case class normalizeMatchPredicates(getDegreeRewriting: Boolean)
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer), getDegreeRewriting)
+case object normalizeMatchPredicates
+  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))

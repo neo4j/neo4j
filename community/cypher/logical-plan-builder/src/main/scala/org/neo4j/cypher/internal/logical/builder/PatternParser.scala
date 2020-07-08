@@ -64,7 +64,7 @@ class PatternParser
           if (relName.isEmpty) {
             nextUnnamed()
           } else {
-           relName
+            VariableParser.unescaped(relName)
           }
         Pattern(VariableParser.unescaped(from), dir, relTypes, relNameOrUnnamed, VariableParser.unescaped(to), length)
       case _ => throw new IllegalArgumentException(s"'$pattern' cannot be parsed as a pattern")

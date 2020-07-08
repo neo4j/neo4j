@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
 
-  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer, getDegreeRewriting = true)
+  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
 
-  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer, getDegreeRewriting = true)
+  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
 
   def rewriterUnderTest: Rewriter = inSequence(
     PropertyPredicateNormalization,
@@ -170,21 +170,20 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
   }
 
   test("rewrite outgoing pattern to getDegree call") {
-    rewrite(parseForRewriting("MATCH (a) WHERE (a)-[:R]->() RETURN a.prop")) should matchPattern {
+    rewrite(parseForRewriting("MATCH (a) WHERE EXISTS((a)-[:R]->()) RETURN a.prop")) should matchPattern {
       case Query(_, SingleQuery(Seq(Match(_, _, _, Some(Where(GreaterThan(_: GetDegree, _)))), _: Return))) =>
     }
   }
 
   test("rewrite incoming pattern to getDegree call") {
-    val rewrite1 = rewrite(parseForRewriting("MATCH (a) WHERE ()-[:R]->(a) RETURN a.prop"))
-    rewrite1 should matchPattern {
+    rewrite(parseForRewriting("MATCH (a) WHERE EXISTS(()-[:R]->(a)) RETURN a.prop")) should matchPattern {
       case Query(_, SingleQuery(Seq(Match(_, _, _, Some(Where(GreaterThan(_: GetDegree, _)))), _: Return))) =>
     }
   }
 
   test("does not rewrite getDegree if turned off") {
-    val rewriter1 = new MatchPredicateNormalization(PropertyPredicateNormalizer, getDegreeRewriting = false) {}
-    val rewriter2 = new MatchPredicateNormalization(LabelPredicateNormalizer, getDegreeRewriting = false) {}
+    val rewriter1 = new MatchPredicateNormalization(PropertyPredicateNormalizer) {}
+    val rewriter2 = new MatchPredicateNormalization(LabelPredicateNormalizer) {}
 
     val rewriterUnderTest: Rewriter = inSequence(
       rewriter1,

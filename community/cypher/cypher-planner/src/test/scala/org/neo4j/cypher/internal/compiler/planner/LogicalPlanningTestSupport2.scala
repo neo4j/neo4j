@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val parser = new CypherParser
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   val innerVariableNamer = new GeneratingNamer
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner
   var queryGraphSolver: QueryGraphSolver = createQueryGraphSolver()
   val cypherCompilerConfig = CypherPlannerConfiguration(

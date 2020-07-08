@@ -48,32 +48,12 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
 
   testRewrite(
-    "MATCH (n) WHERE length((n)--(m))>0 RETURN n",
-    "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE 0<length((n)--(m)) RETURN n",
-    "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
     "MATCH (n) WHERE NOT size((n)--(m))=0 RETURN n",
     "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
 
   testRewrite(
     "MATCH (n) WHERE NOT 0=size((n)--(m)) RETURN n",
     "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE NOT length((n)--(m))=0 RETURN n",
-    "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE NOT 0=length((n)--(m)) RETURN n",
-    "MATCH (n) WHERE EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE NOT length((n)--(m))=0 AND (n)--(p) RETURN n",
-    "MATCH (n) WHERE EXISTS((n)--(m)) AND EXISTS((n)--(p)) RETURN n")
 
   testRewrite(
     "MATCH (n) WHERE NOT (n)--(m) RETURN n",
@@ -88,27 +68,11 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
 
   testRewrite(
-    "MATCH (n) WHERE length((n)--(m))=0 RETURN n",
-    "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE 0=length((n)--(m)) RETURN n",
-    "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
     "MATCH (n) WHERE NOT size((n)--(m))>0 RETURN n",
     "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
 
   testRewrite(
     "MATCH (n) WHERE NOT 0<size((n)--(m)) RETURN n",
-    "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE NOT length((n)--(m))>0 RETURN n",
-    "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
-
-  testRewrite(
-    "MATCH (n) WHERE NOT 0<length((n)--(m)) RETURN n",
     "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
 
   testNoRewrite("RETURN (n)--(m)")
@@ -117,11 +81,7 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
 
   testNoRewrite("MATCH (n) WHERE 2 IN [(n)--(m) | n.prop] RETURN n")
 
-  testNoRewrite("MATCH (n) WHERE length((n)--(m))>1 RETURN n")
-
   testNoRewrite("MATCH (n) WHERE size((n)--(m))>1 RETURN n")
-
-  testNoRewrite("MATCH (n) WHERE NOT length((n)--(m))>1 RETURN n")
 
   testNoRewrite("MATCH (n) WHERE NOT size((n)--(m))>1 RETURN n")
 

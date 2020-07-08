@@ -54,7 +54,7 @@ trait RewritePhaseTest {
     override def version: String = "fake"
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, getDegreeRewriting = true, innerVariableNamer = SameNameNamer)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, innerVariableNamer = SameNameNamer)
 
   def assertNotRewritten(from: String): Unit = assertRewritten(from, from)
 

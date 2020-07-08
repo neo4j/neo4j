@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
@@ -539,8 +541,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() return a")
 
     // Then inner pattern query graph
-    val exp = greaterThan(GetDegree(varFor("a"),None,OUTGOING)_, literalInt(0))
-    val predicate= Predicate(Set("a"), exp)
+    val relName = "  REL20"
+    val nodeName = "  NODE23"
+    val exp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
+    ) _) _))_
+    val predicate= Predicate(Set("a", relName, nodeName), exp)
     val selections = Selections(Set(predicate))
 
     query.queryGraph.selections should equal(selections)
@@ -579,9 +587,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val exp1 = greaterThan(GetDegree(varFor("a"),None,OUTGOING)_, literalInt(0))
+    val relName = "  REL35"
+    val nodeName = "  NODE38"
+    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
+    ) _) _))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
-    val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
+    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
@@ -593,9 +607,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val exp1 = greaterThan(GetDegree(varFor("a"),None,OUTGOING)_, literalInt(0))
+    val relName = "  REL20"
+    val nodeName = "  NODE23"
+    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
+    ) _) _))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
-    val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
+    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
@@ -607,10 +627,16 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val exp1 = greaterThan(GetDegree(varFor("a"),None,OUTGOING)_, literalInt(0))
+    val relName = "  REL36"
+    val nodeName = "  NODE39"
+    val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
+    ) _) _))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
-    val orPredicate = Predicate(Set("a"), ors(exp1, exp3, exp2))
+    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp3, exp2))
 
     val selections = Selections(Set(orPredicate))
 

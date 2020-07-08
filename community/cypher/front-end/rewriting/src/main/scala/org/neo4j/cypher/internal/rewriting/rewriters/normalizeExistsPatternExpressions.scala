@@ -17,10 +17,16 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
@@ -44,19 +50,11 @@ case class normalizeExistsPatternExpressions(semanticState: SemanticState) exten
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
       Exists(p)(p.position)
-    case GreaterThan(Length(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Exists(p)(p.position)
     case GreaterThan(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Exists(p)(p.position)
-    case LessThan(SignedDecimalIntegerLiteral("0"), Length(p: PatternExpression)) =>
       Exists(p)(p.position)
     case LessThan(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
       Exists(p)(p.position)
-    case Equals(Length(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Not(Exists(p)(p.position))(p.position)
     case Equals(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Not(Exists(p)(p.position))(p.position)
-    case Equals(SignedDecimalIntegerLiteral("0"), Length(p: PatternExpression)) =>
       Not(Exists(p)(p.position))(p.position)
     case Equals(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
       Not(Exists(p)(p.position))(p.position)

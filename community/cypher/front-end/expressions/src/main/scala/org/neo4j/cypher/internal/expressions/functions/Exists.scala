@@ -16,10 +16,6 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.util.InputPosition
-
 case object Exists extends Function with FunctionWithInfo {
   def name = "exists"
 

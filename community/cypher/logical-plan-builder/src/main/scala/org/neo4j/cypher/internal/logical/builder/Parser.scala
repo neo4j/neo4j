@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.parser.ProcedureCalls
+import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 import org.parboiled.scala.ParsingResult
 import org.parboiled.scala.ReportingParseRunner
@@ -48,8 +50,12 @@ object Parser {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
-  def cleanup[T <: ASTNode](in: T): T =
-    injectCachedProperties.andThen(invalidateInputPositions)(in).asInstanceOf[T]
+  def cleanup[T <: ASTNode](in: T): T = inSequence(
+    injectCachedProperties,
+    invalidateInputPositions,
+    flattenBooleanOperators // It is otherwise impossible to create instances of Ands / Ors
+  )(in).asInstanceOf[T]
+
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r
   private val parser = new Parser
