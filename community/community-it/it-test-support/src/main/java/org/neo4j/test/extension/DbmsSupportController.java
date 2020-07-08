@@ -20,6 +20,7 @@
 package org.neo4j.test.extension;
 
 import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstances;
 
@@ -44,8 +45,9 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.addAll;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;
 
@@ -78,7 +80,7 @@ public class DbmsSupportController
 
     public final void startDbms()
     {
-        startDbms( DEFAULT_DATABASE_NAME, UnaryOperator.identity() );
+        startDbms( StringUtils.EMPTY, UnaryOperator.identity() );
     }
 
     public void startDbms( String databaseName, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
@@ -89,8 +91,16 @@ public class DbmsSupportController
                 getTestAnnotation( ImpermanentDbmsExtension.class ) );
 
         // Make service
-        buildDbms( configuration.configurationCallback, callback );
-        startDatabase( databaseName );
+        var dbms = buildDbms( configuration.configurationCallback, callback );
+        var databaseToStart = isNotEmpty( databaseName ) ? databaseName : getDatabaseName( dbms );
+        startDatabase( databaseToStart );
+    }
+
+    private String getDatabaseName( DatabaseManagementService dbms )
+    {
+        var databases = new ArrayList<>( dbms.listDatabases() );
+        databases.remove( SYSTEM_DATABASE_NAME );
+        return databases.get( 0 );
     }
 
     public void startDatabase( String databaseName )

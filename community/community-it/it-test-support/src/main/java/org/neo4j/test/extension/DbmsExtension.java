@@ -28,7 +28,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,8 +45,8 @@ import org.neo4j.test.rule.TestDirectory;
  *     <li>{@link FileSystemAbstraction} as {@link DefaultFileSystemExtension}.</li>
  *     <li>{@link TestDirectory}.</li>
  *     <li>{@link DatabaseManagementService}.</li>
- *     <li>{@link GraphDatabaseService}, as specified by {@link #injectableDatabase()}.</li>
- *     <li>{@link GraphDatabaseAPI}, as specified by {@link #injectableDatabase()}.</li>
+ *     <li>{@link GraphDatabaseService}.</li>
+ *     <li>{@link GraphDatabaseAPI}</li>
  * </ul>
  *
  * <p>You can specify a callback with {@link #configurationCallback()}, this callback is invoked just before
@@ -66,12 +65,6 @@ import org.neo4j.test.rule.TestDirectory;
 @ExtendWith( DbmsSupportExtension.class )
 public @interface DbmsExtension
 {
-    /**
-     * The name of the database to inject into the {@link GraphDatabaseService} and {@link GraphDatabaseAPI} fields.
-     * A typical use case is to specify {@link GraphDatabaseSettings#SYSTEM_DATABASE_NAME} to execute your test
-     * against the system database.
-     */
-    String injectableDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
     /**
      * Name of a void method that takes a {@link TestDatabaseManagementServiceBuilder} as parameter. The method

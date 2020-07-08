@@ -28,7 +28,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
-@DbmsExtension( injectableDatabase = "global", configurationCallback = "configureGlobal" )
+@DbmsExtension( configurationCallback = "configureGlobal" )
 class DbmsExtensionConfigurationTest
 {
     @Inject
@@ -53,7 +53,7 @@ class DbmsExtensionConfigurationTest
     }
 
     @Test
-    @DbmsExtension( injectableDatabase = "local", configurationCallback = "configureLocal" )
+    @DbmsExtension( configurationCallback = "configureLocal" )
     void localConfig()
     {
         dbms.database( "local" );
