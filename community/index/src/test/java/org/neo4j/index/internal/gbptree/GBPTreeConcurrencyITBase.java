@@ -522,6 +522,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         private final AtomicBoolean failHalt;
         private final AtomicReference<Throwable> readerError;
         private final TestCoordinator testCoordinator;
+        private final boolean useReusableSeeker;
 
         RunnableReader( TestCoordinator testCoordinator, CountDownLatch readerReadySignal,
                 CountDownLatch readerStartSignal, AtomicBoolean endSignal,
@@ -533,19 +534,20 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             this.failHalt = failHalt;
             this.readerError = readerError;
             this.testCoordinator = testCoordinator;
+            this.useReusableSeeker = random.nextBoolean();
         }
 
         @Override
         public void run()
         {
-            try
+            try ( Seeker<KEY,VALUE> reusableSeeker = useReusableSeeker ? index.allocateSeeker( NULL ) : null )
             {
                 readerReadySignal.countDown(); // Ready, set...
                 readerStartSignal.await(); // GO!
 
                 while ( !endSignal.get() && !failHalt.get() )
                 {
-                    doRead();
+                    doRead( reusableSeeker );
                 }
             }
             catch ( Throwable e )
@@ -555,15 +557,17 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             }
         }
 
-        private void doRead() throws IOException
+        private void doRead( Seeker<KEY,VALUE> reusableSeeker ) throws IOException
         {
             ReaderInstruction readerInstruction = testCoordinator.get();
             Iterator<Long> expectToSee = readerInstruction.expectToSee().iterator();
             long start = readerInstruction.start();
             long end = readerInstruction.end();
             boolean forward = start <= end;
-            try ( Seeker<KEY,VALUE> cursor = readerInstruction.seek( index ) )
+            Seeker<KEY,VALUE> cursor = null;
+            try
             {
+                cursor = readerInstruction.seek( index, reusableSeeker );
                 if ( expectToSee.hasNext() )
                 {
                     long nextToSee = expectToSee.next();
@@ -609,6 +613,12 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
                         }
                     }
                 }
+            }
+            finally
+            {
+                // If we're using a reusable seeker then don't close it now (we'll reuse it for next seek),
+                // instead it will be closed when this thread is done
+                IOUtils.closeAll( useReusableSeeker ? null : cursor );
             }
         }
     }
@@ -665,7 +675,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             return expectToSee;
         }
 
-        Seeker<KEY,VALUE> seek( GBPTree<KEY,VALUE> tree ) throws IOException
+        Seeker<KEY,VALUE> seek( GBPTree<KEY,VALUE> tree, Seeker<KEY,VALUE> reusableSeeker ) throws IOException
         {
             KEY from = key( start() );
             KEY to = key( end() );
@@ -679,6 +689,10 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
                 return new PartitionBridgingSeeker<>( partitions );
             }
 
+            if ( reusableSeeker != null )
+            {
+                return tree.seek( reusableSeeker, from, to );
+            }
             return tree.seek( from, to, NULL );
         }
     }

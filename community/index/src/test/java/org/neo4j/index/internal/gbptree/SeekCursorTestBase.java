@@ -1303,8 +1303,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
-                node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
+                node, layout, generationSupplier, rootInitializer( unstableGeneration ), failingRootCatchup,
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1948,9 +1948,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
         // when
         //noinspection EmptyTryBlock
-        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
+        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( generation - 1 ), rootCatchup,
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( key( 0 ), key( 1 ), 1, LEAF_LEVEL ) )
         {
             // do nothing
         }
@@ -1999,9 +1998,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         KEY from = key( 1L );
         KEY to = key( 2L );
         //noinspection EmptyTryBlock
-        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
+        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), rootCatchup,
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
         {
             // do nothing
         }
@@ -2048,9 +2046,9 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // when
         KEY from = key( 1L );
         KEY to = key( 20L );
-        try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator, 1, LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL ) )
+        LongSupplier firstOlderThenCurrentGenerationSupplier = firstCustomThenCurrentGenerationSupplier( stableGeneration - 1, unstableGeneration - 1 );
+        try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, layout, firstOlderThenCurrentGenerationSupplier,
+                rootInitializer( unstableGeneration ), rootCatchup, exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
         {
             while ( seek.next() )
             {
@@ -2060,6 +2058,22 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
         // then
         assertTrue( triggered.getValue() );
+    }
+
+    private LongSupplier firstCustomThenCurrentGenerationSupplier( long firstStableGeneration, long firstUnstableGeneration )
+    {
+        return new LongSupplier()
+        {
+            private boolean first = true;
+
+            @Override
+            public long getAsLong()
+            {
+                long generation = first ? Generation.generation( firstStableGeneration, firstUnstableGeneration ) : generationSupplier.getAsLong();
+                first = false;
+                return generation;
+            }
+        };
     }
 
     @Test
@@ -2414,9 +2428,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
     private SeekCursor<KEY,VALUE> seekCursorOnLevel( int level, long fromInclusive, long toExclusive ) throws IOException
     {
-        return new SeekCursor<>( cursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, failingRootCatchup, unstableGeneration, exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), level,
-                SeekCursor.NO_MONITOR, NULL );
+        return new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), failingRootCatchup, exceptionDecorator,
+                SeekCursor.NO_MONITOR, NULL ).initialize( key( fromInclusive ), key( toExclusive ), random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), level );
     }
 
     private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive ) throws IOException
@@ -2439,9 +2452,10 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive,
             PageCursor pageCursor, long stableGeneration, long unstableGeneration, RootCatchup rootCatchup ) throws IOException
     {
-        return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, rootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ),
-                LEAF_LEVEL, SeekCursor.NO_MONITOR, NULL );
+        LongSupplier generationSupplier = firstCustomThenCurrentGenerationSupplier( stableGeneration, unstableGeneration );
+        return new SeekCursor<>( pageCursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), rootCatchup,
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( key( fromInclusive ), key( toExclusive ),
+                random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), LEAF_LEVEL );
     }
 
     /**
@@ -2591,5 +2605,10 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
         new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL );
         cursor.next( currentPageId );
+    }
+
+    private RootInitializer rootInitializer( long generation )
+    {
+        return c -> generation;
     }
 }

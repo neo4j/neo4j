@@ -161,6 +161,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                         else
                         {
                             // remove exhausted cursor so we never try to read from it again
+                            cursor.close();
                             iterator.remove();
                         }
                     }

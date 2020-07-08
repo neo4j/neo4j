@@ -25,6 +25,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -187,12 +188,12 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     /**
      * Key instances to use for reading keys from current node.
      */
-    private final KEY[] mutableKeys;
+    private KEY[] mutableKeys;
 
     /**
      * Value instances to use for reading values from current node.
      */
-    private final VALUE[] mutableValues;
+    private VALUE[] mutableValues;
 
     /**
      * Index into {@link #mutableKeys}/{@link #mutableValues}, i.e. which key/value to consider as result next.
@@ -215,18 +216,18 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      * Provided when constructing the {@link SeekCursor}, marks the start (inclusive) of the key range to seek.
      * Comparison with {@link #toExclusive} decide if seeking forwards or backwards.
      */
-    private final KEY fromInclusive;
+    private KEY fromInclusive;
 
     /**
      * Provided when constructing the {@link SeekCursor}, marks the end (exclusive) of the key range to seek.
      * Comparison with {@link #fromInclusive} decide if seeking forwards or backwards.
      */
-    private final KEY toExclusive;
+    private KEY toExclusive;
 
     /**
      * True if seeker is performing an exact match lookup, {@link #toExclusive} will then be treated as inclusive.
      */
-    private final boolean exactMatch;
+    private boolean exactMatch;
 
     /**
      * {@link Layout} instance used to perform some functions around keys, like copying and comparing.
@@ -249,6 +250,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private final LongSupplier generationSupplier;
 
     /**
+     * Capable to initialize a cursor at the root of the tree.
+     */
+    private final RootInitializer rootInitializer;
+
+    /**
      * Retrieves latest root id and generation, moving the {@link PageCursor} to the root id and returning
      * the root generation. This is used when a query is re-traversing from the root, due to e.g. ending up
      * on a reused tree node and not knowing how to proceed from there.
@@ -258,7 +264,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     /**
      * What level of the tree to search, {@link #LEAF_LEVEL} indicate always seek the leaves.
      */
-    private final int searchLevel;
+    private int searchLevel;
 
     /**
      * Whether or not some result has been found, i.e. if {@code true} if there have been no call to
@@ -320,12 +326,12 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      * <p>
      * {@code true} if {@code layout.compare(fromInclusive, toExclusive) <= 0}, otherwise false.
      */
-    private final boolean seekForward;
+    private boolean seekForward;
 
     /**
      * Add to {@link #pos} to move this {@code SeekCursor} forward in the seek direction.
      */
-    private final int stride;
+    private int stride;
 
     /**
      * Set within should retry loop.
@@ -413,7 +419,14 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private boolean verifyExpectedFirstAfterGoToNext;
 
     /**
+     * Whether or not this seeker has come to the end of its result set and will not attempt to continue.
+     * This will be reset to {@code false} in each {@link #initialize(Object, Object, int, int)}.
+     */
+    private boolean ended;
+
+    /**
      * Whether or not this seeker has been closed.
+     * This will be set to {@code true} in {@link #close()} and cannot be reset to {@code false} after that point.
      */
     private boolean closed;
 
@@ -439,37 +452,66 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private final GenerationKeeper generationKeeper = new GenerationKeeper();
 
-    @SuppressWarnings( "unchecked" )
-    SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
-            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, int searchLevel,
-            Monitor monitor, CursorContext cursorContext ) throws IOException
+    SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, LongSupplier generationSupplier,
+            RootInitializer rootInitializer, RootCatchup rootCatchup, Consumer<Throwable> exceptionDecorator, Monitor monitor, CursorContext cursorContext )
     {
         this.cursor = cursor;
+        this.rootInitializer = rootInitializer;
         this.cursorContext = cursorContext;
-        this.fromInclusive = fromInclusive;
-        this.toExclusive = toExclusive;
         this.layout = layout;
         this.exceptionDecorator = exceptionDecorator;
         this.monitor = monitor;
-        this.exactMatch = layout.compare( fromInclusive, toExclusive ) == 0;
-        this.stableGeneration = stableGeneration;
-        this.unstableGeneration = unstableGeneration;
         this.generationSupplier = generationSupplier;
         this.bTreeNode = bTreeNode;
         this.rootCatchup = rootCatchup;
-        this.lastFollowedPointerGeneration = lastFollowedPointerGeneration;
-        int batchSize = exactMatch ? 1 : maxReadAhead;
-        this.mutableKeys = (KEY[]) new Object[batchSize];
-        this.mutableValues = (VALUE[]) new Object[batchSize];
-        this.mutableKeys[0] = layout.newKey();
-        this.mutableValues[0] = layout.newValue();
         this.prevKey = layout.newKey();
-        this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
-        this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    SeekCursor<KEY,VALUE> initialize( KEY fromInclusive, KEY toExclusive, int maxReadAhead, int searchLevel ) throws IOException
+    {
+        Preconditions.checkState( !closed, "Seeker already closed" );
+        this.lastFollowedPointerGeneration = rootInitializer.goToRoot( cursor );
+        long generation = generationSupplier.getAsLong();
+        this.stableGeneration = Generation.stableGeneration( generation );
+        this.unstableGeneration = Generation.unstableGeneration( generation );
+        this.cachedIndex = 0;
+        this.cachedLength = 0;
+        this.resultOnTrack = false;
+        this.expectedCurrentNodeGeneration = 0;
+        this.verifyExpectedFirstAfterGoToNext = false;
+        this.forceReadHeader = false;
+        this.fromInclusive = fromInclusive;
+        this.toExclusive = toExclusive;
+        this.exactMatch = layout.compare( fromInclusive, toExclusive ) == 0;
+        this.first = true;
+        this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
+        this.stride = seekForward ? 1 : -1;
         this.searchLevel = searchLevel;
+        int batchSize = exactMatch ? 1 : maxReadAhead;
+        if ( mutableKeys == null || batchSize > mutableKeys.length )
+        {
+            this.mutableKeys = (KEY[]) new Object[batchSize];
+            this.mutableValues = (VALUE[]) new Object[batchSize];
+            this.mutableKeys[0] = layout.newKey();
+            this.mutableValues[0] = layout.newValue();
+        }
+        this.ended = false;
+        this.pos = 0;
+        this.keyCount = 0;
+        this.concurrentWriteHappened = false;
+        this.currentNodeGeneration = 0;
+        this.nodeType = 0;
+        this.successor = 0;
+        this.successorGeneration = 0;
+        this.isInternal = false;
+        this.pointerId = 0;
+        this.pointerGeneration = 0;
+        this.searchResult = 0;
+        this.prevSiblingId = 0;
+        this.prevSiblingGeneration = 0;
 
         try
         {
@@ -480,6 +522,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             exceptionDecorator.accept( e );
             throw e;
         }
+        return this;
     }
 
     /**
@@ -588,13 +631,9 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     @Override
     public boolean next() throws IOException
     {
-        if ( closed )
-        {
-            return false;
-        }
         try
         {
-            while ( true )
+            while ( !ended )
             {
                 pos += stride;
 
@@ -606,7 +645,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 //   are made only once per batch instead of once per key/value.
                 // - (FAST) there are keys/values read and validated and ready to simply be returned to the user.
 
-                if ( cachedIndex + 1 < cachedLength && !closed && !(concurrentWriteHappened = cursor.shouldRetry()) )
+                if ( cachedIndex + 1 < cachedLength && !(concurrentWriteHappened = cursor.shouldRetry()) )
                 {   // FAST, key/value is readily available
                     cachedIndex++;
                     if ( resultOnTrack )
@@ -661,7 +700,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 }
 
                 // We've come too far and so this means the end of the result set
-                close();
+                ended = true;
                 return false;
             }
         }
@@ -670,6 +709,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             exceptionDecorator.accept( e );
             throw e;
         }
+        return false;
     }
 
     private boolean readAndValidateNextKeyValueBatch() throws IOException
@@ -802,10 +842,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         {
             // Only check the closed status here when we get an out of bounds to avoid making
             // this check for every call to next.
-            if ( closed )
-            {
-                throw new IllegalStateException( "Tried to use seeker after it was closed" );
-            }
+            Preconditions.checkState( !closed, "Tried to use seeker after it was closed" );
             throw e;
         }
     }
@@ -1292,6 +1329,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         {
             cursor.close();
             closed = true;
+            ended = true;
         }
     }
 

@@ -95,6 +95,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             {
                 if ( !cursor.next() )
                 {
+                    close();
                     return false;
                 }
             }

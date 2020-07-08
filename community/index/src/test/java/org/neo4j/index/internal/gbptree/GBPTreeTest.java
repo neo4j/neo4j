@@ -87,6 +87,7 @@ import org.neo4j.test.utils.PageCacheConfig;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
+import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -1909,6 +1910,40 @@ class GBPTreeTest
                 assertTrue( seeker.next() );
                 assertEquals( 1, seeker.key().longValue() );
                 assertEquals( 42, seeker.value().longValue() );
+            }
+        }
+    }
+
+    @Test
+    void shouldReuseSeekCursorInstancesForMultipleSeeks() throws IOException
+    {
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                var tree = index( pageCache ).build() )
+        {
+            // given
+            int count = 1_000;
+            for ( int i = 0; i < count; i++ )
+            {
+                insert( tree, i, i * 100 );
+            }
+
+            // when
+            try ( var seeker = tree.allocateSeeker( NULL ) )
+            {
+                long from = 0;
+                while ( from < count )
+                {
+                    long to = min( count, from + random.nextInt( 1, count / 10 ) );
+                    tree.seek( seeker, new MutableLong( from ), new MutableLong( to ) );
+                    for ( long expected = from; expected < to; expected++ )
+                    {
+                        assertThat( seeker.next() ).isTrue();
+                        assertThat( seeker.key().longValue() ).isEqualTo( expected );
+                        assertThat( seeker.value().longValue() ).isEqualTo( expected * 100 );
+                    }
+                    assertThat( seeker.next() ).isFalse();
+                    from = to;
+                }
             }
         }
     }

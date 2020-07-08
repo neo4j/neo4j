@@ -441,6 +441,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     private volatile Root root;
 
+    private final RootInitializer rootInitializer = cursor -> root.goTo( cursor );
+
     /**
      * Catchup for {@link SeekCursor} to become aware of new roots since it started.
      */
@@ -1004,25 +1006,28 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     @Override
-    public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext ) throws IOException
+    public Seeker<KEY,VALUE> allocateSeeker( CursorContext cursorContext ) throws IOException
     {
-        return seekInternal( fromInclusive, toExclusive, cursorContext, DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR, LEAF_LEVEL );
+        return internalAllocateSeeker( cursorContext, SeekCursor.NO_MONITOR );
     }
 
-    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext, int readAheadLength, SeekCursor.Monitor monitor,
-            int searchLevel ) throws IOException
+    private SeekCursor<KEY,VALUE> internalAllocateSeeker( CursorContext cursorContext, SeekCursor.Monitor monitor ) throws IOException
     {
-        long generation = this.generation;
-        long stableGeneration = stableGeneration( generation );
-        long unstableGeneration = unstableGeneration( generation );
-
         PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext );
-        long rootGeneration = root.goTo( cursor );
+        return new SeekCursor<>( cursor, bTreeNode, layout, generationSupplier, rootInitializer, rootCatchupSupplier.get(), exceptionDecorator, monitor,
+                cursorContext );
+    }
 
-        // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchupSupplier.get(), rootGeneration,
-                exceptionDecorator, readAheadLength, searchLevel, monitor, cursorContext );
+    @Override
+    public Seeker<KEY,VALUE> seek( Seeker<KEY,VALUE> seeker, KEY fromInclusive, KEY toExclusive ) throws IOException
+    {
+        return initializeSeeker( seeker, fromInclusive, toExclusive, DEFAULT_MAX_READ_AHEAD, LEAF_LEVEL );
+    }
+
+    private Seeker<KEY,VALUE> initializeSeeker( Seeker<KEY,VALUE> seeker, KEY fromInclusive, KEY toExclusive, int readAheadLength, int searchLevel )
+            throws IOException
+    {
+        return ((SeekCursor<KEY,VALUE>) seeker).initialize( fromInclusive, toExclusive, readAheadLength, searchLevel );
     }
 
     /**
@@ -1107,7 +1112,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             SeekDepthMonitor depthMonitor = new SeekDepthMonitor();
             KEY localFrom = layout.copyKey( fromInclusive, layout.newKey() );
             KEY localTo = layout.copyKey( toExclusive, layout.newKey() );
-            try ( Seeker<KEY,VALUE> seek = seekInternal( localFrom, localTo, cursorContext, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
+            try ( Seeker<KEY,VALUE> seek = initializeSeeker( internalAllocateSeeker( cursorContext, depthMonitor ), localFrom, localTo, DEFAULT_MAX_READ_AHEAD,
+                    searchLevel ) )
             {
                 if ( depthMonitor.reachedLeafLevel )
                 {
@@ -1150,8 +1156,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         do
         {
             monitor.clear();
-            Seeker.Factory<KEY,VALUE> monitoredSeeks =
-                    ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor, LEAF_LEVEL );
+            Seeker.Factory<KEY,VALUE> monitoredSeeks = new Seeker.Factory<>()
+            {
+                @Override
+                public Seeker<KEY,VALUE> allocateSeeker( CursorContext cursorContext ) throws IOException
+                {
+                    return internalAllocateSeeker( cursorContext, monitor );
+                }
+
+                @Override
+                public Seeker<KEY,VALUE> seek( Seeker<KEY,VALUE> seeker, KEY fromInclusive, KEY toExclusive ) throws IOException
+                {
+                    return initializeSeeker( seeker, fromInclusive, toExclusive, 1, LEAF_LEVEL );
+                }
+            };
             Collection<Seeker.WithContext<KEY,VALUE>> seekersWithContext = partitionedSeekInternal( low, high, sampleSize, cursorContext, monitoredSeeks );
             for ( Seeker.WithContext<KEY,VALUE> seeker : seekersWithContext )
             {
