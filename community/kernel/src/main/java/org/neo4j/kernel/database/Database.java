@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.database;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -416,10 +418,7 @@ public class Database extends LifecycleAdapter
                     internalLogProvider, otherDatabaseMemoryTracker );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
-            if ( storageExists )
-            {
-                checkStoreId( pageCacheTracer, tailScanner );
-            }
+            validateStoreAndTxLogs( logFiles, pageCacheTracer, tailScanner, storageExists );
 
             performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
                     extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
@@ -528,6 +527,28 @@ public class Database extends LifecycleAdapter
         catch ( Throwable e )
         {
             handleStartupFailure( e );
+        }
+    }
+
+    private void validateStoreAndTxLogs( LogFiles logFiles, PageCacheTracer pageCacheTracer, LogTailScanner tailScanner, boolean storageExists )
+            throws IOException
+    {
+        if ( storageExists )
+        {
+            checkStoreId( pageCacheTracer, tailScanner );
+        }
+        else
+        {
+            validateLogsAndStoreAbsence( logFiles );
+        }
+    }
+
+    private void validateLogsAndStoreAbsence( LogFiles logFiles )
+    {
+        if ( ArrayUtils.isNotEmpty( logFiles.logFiles() ) )
+        {
+            throw new RuntimeException( format( "Fail to start database '%s' since transaction logs were found, while database " +
+                    "files are missing.", namedDatabaseId.name() ) );
         }
     }
 
