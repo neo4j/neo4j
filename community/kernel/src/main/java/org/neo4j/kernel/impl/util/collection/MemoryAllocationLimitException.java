@@ -29,7 +29,7 @@ class MemoryAllocationLimitException extends RuntimeException implements Status.
 
     MemoryAllocationLimitException( long request, long currentlyUsed, long maxMemory )
     {
-        super( format( "Can't allocate %d bytes due to exceeding memory limit; used=%d, max=%d", request, currentlyUsed, maxMemory ) );
+        super( format( "Can't allocate extra %d bytes due to exceeding memory limit; used=%d, max=%d", request, currentlyUsed, maxMemory ) );
     }
 
     @Override

@@ -80,7 +80,7 @@ class LocalMemoryTrackerTest
     void throwsOnLimit()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "settingName" );
-        MemoryLimitExceeded memoryLimitExceeded = assertThrows( MemoryLimitExceeded.class, () -> memoryTracker.allocateHeap( 100 ) );
-        assertThat( memoryLimitExceeded.getMessage() ).contains( "settingName" );
+        MemoryLimitExceededException memoryLimitExceededException = assertThrows( MemoryLimitExceededException.class, () -> memoryTracker.allocateHeap( 100 ) );
+        assertThat( memoryLimitExceededException.getMessage() ).contains( "settingName" );
     }
 }

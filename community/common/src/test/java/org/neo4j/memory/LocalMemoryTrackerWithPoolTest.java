@@ -88,7 +88,7 @@ class LocalMemoryTrackerWithPoolTest
     @Test
     void respectsLocalLimit()
     {
-        assertThrows( MemoryLimitExceeded.class, () -> memoryTracker.allocateHeap( LOCAL_LIMIT + 1 ) );
+        assertThrows( MemoryLimitExceededException.class, () -> memoryTracker.allocateHeap( LOCAL_LIMIT + 1 ) );
     }
 
     @Test

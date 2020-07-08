@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.memory.MemoryLimitExceeded;
+import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -748,7 +748,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         try ( KernelTransactionImplementation transaction = newTransaction( 1000 ) )
         {
             // Limit should prevent this from succeeding
-            assertThrows( MemoryLimitExceeded.class, () -> transaction.memoryTracker().allocateHeap( mebiBytes( 3 ) ) );
+            assertThrows( MemoryLimitExceededException.class, () -> transaction.memoryTracker().allocateHeap( mebiBytes( 3 ) ) );
             transaction.closeTransaction();
 
             // Increase limit and try again

@@ -35,7 +35,7 @@ public interface MemoryPool
      * Grab a chunk of memory. This method might throw if there is no available memory.
      *
      * @param bytes number of bytes to reserve
-     * @throws MemoryLimitExceeded if the are not enough free memory to fulfill the reservation
+     * @throws MemoryLimitExceededException if the are not enough free memory to fulfill the reservation
      */
     void reserveHeap( long bytes );
 
@@ -43,7 +43,7 @@ public interface MemoryPool
      * Grab a chunk of native memory. This method might throw if there is no available memory.
      *
      * @param bytes number of bytes to reserve
-     * @throws MemoryLimitExceeded if the are not enough free memory to fulfill the reservation
+     * @throws MemoryLimitExceededException if the are not enough free memory to fulfill the reservation
      */
     void reserveNative( long bytes );
 
