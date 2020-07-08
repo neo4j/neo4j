@@ -224,7 +224,7 @@ MORE : { < STRING2_OPEN: "\"" > : STRING2 }
 <STRING2> TOKEN: { <STRING_LITERAL2: "\""> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
 MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
-<ESC_SYMB_NAME> MORE: { < ~["`","\\"] > }
+<ESC_SYMB_NAME> MORE: { < ~["`"] > }
 <ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
 

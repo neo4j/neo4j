@@ -88,6 +88,13 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     }
   }
 
+  test("allow backslash in escaped symbolic name") {
+    assertSameAST(
+    """MATCH (`This isn\'t a common variable`)
+      |WHERE `This isn\'t a common variable`.name = 'A'
+      |RETURN `This isn\'t a common variable`.happy""".stripMargin)
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
