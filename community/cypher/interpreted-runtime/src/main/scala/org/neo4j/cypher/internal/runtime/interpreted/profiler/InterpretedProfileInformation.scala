@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import java.util
 
-import org.neo4j.cypher.internal.runtime.NoMemoryTracker
+import org.neo4j.cypher.internal.runtime.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
@@ -61,7 +61,7 @@ class InterpretedProfileInformation extends QueryProfile {
   val rowMap: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
 
   // Intended to be overridden by `setMemoryTracker`
-  private var memoryTracker: QueryMemoryTracker = NoMemoryTracker
+  private var memoryTracker: QueryMemoryTracker = NoOpQueryMemoryTracker
 
   def setMemoryTracker(memoryTracker: QueryMemoryTracker): Unit = this.memoryTracker = memoryTracker
 
