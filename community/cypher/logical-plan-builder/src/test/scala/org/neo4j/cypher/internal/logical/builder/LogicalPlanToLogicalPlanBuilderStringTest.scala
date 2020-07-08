@@ -699,7 +699,7 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
                                  _.indexSeek("m:Label(prop=6)"))
      .build())
 
-  testPlan("injectNulls",
+  testPlan("injectValue",
     new TestPlanBuilder()
       .produceResults("x")
       .injectValue("x", "null")
