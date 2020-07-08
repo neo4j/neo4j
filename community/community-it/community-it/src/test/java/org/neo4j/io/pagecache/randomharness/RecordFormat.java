@@ -100,7 +100,8 @@ public abstract class RecordFormat
         cursor.setOffset( 0 );
         cursor.getBytes( bytes );
         cursor.setOffset( initialOffset );
-        return "Offset: " + initialOffset + ", data: " + Arrays.toString( bytes );
+        return "Current page: " + cursor.getCurrentPageId() + ", pageSize: " + cursor.getCurrentPageSize() + " Offset: " + initialOffset + ", data: " +
+                Arrays.toString( bytes );
     }
 
     public final void assertRecordsWrittenCorrectly( Path file, StoreChannel channel ) throws IOException
