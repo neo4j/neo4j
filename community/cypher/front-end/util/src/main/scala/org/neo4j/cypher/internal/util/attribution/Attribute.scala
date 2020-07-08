@@ -19,12 +19,18 @@ package org.neo4j.cypher.internal.util.attribution
 import org.neo4j.cypher.internal.util.Unchangeable
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 trait Attribute[KEY, VALUE] {
 
   private val array: ArrayBuffer[Unchangeable[VALUE]] = new ArrayBuffer[Unchangeable[VALUE]]()
 
-  def copyTo[T <: Attribute[KEY, VALUE]](to: T): T = {
+  /**
+   * Create a clone of this attribute, holding the same data initially.
+   * The clone can subsequently be modified without changing the original, and vice versa.
+   */
+  def clone[T <: Attribute[KEY, VALUE]](implicit tag: ClassTag[T]): T = {
+    val to = tag.runtimeClass.getConstructor().newInstance().asInstanceOf[T]
     array.copyToBuffer(to.array)
     to
   }

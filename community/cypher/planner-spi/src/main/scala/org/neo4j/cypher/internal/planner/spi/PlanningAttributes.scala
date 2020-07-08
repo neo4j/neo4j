@@ -47,10 +47,10 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, pr
   def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, attributes: _*)
 
   def copy() : PlanningAttributes =
-    PlanningAttributes(solveds.copyTo(new Solveds()),
-      cardinalities.copyTo(new Cardinalities()),
-      providedOrders.copyTo(new ProvidedOrders()),
-      leveragedOrders.copyTo(new LeveragedOrders())
+    PlanningAttributes(solveds.clone[Solveds],
+      cardinalities.clone[Cardinalities],
+      providedOrders.clone[ProvidedOrders],
+      leveragedOrders.clone[LeveragedOrders]
     )
 
   def hasEqualSizeAttributes: Boolean = {
