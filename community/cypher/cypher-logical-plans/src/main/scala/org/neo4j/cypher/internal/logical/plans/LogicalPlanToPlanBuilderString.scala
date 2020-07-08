@@ -304,7 +304,7 @@ object LogicalPlanToPlanBuilderString {
       case CompositeQueryExpression(inner) => inner.zip(propNames).map {
         case (qe, propName) => queryExpressionStr(qe, Seq(propName))
       }.mkString(", ")
-      case x =>println(x); ""
+      case x => ""
     }
   }
 
