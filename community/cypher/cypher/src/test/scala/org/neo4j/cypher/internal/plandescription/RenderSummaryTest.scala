@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
+import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -83,5 +84,17 @@ class RenderSummaryTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(id, "NAME", NoChildren, arguments, Set())
 
     renderSummary(plan) should equal("Total database accesses: ?")
+  }
+
+  test("should show total allocated memory") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      GlobalMemory(1234L)
+    )
+
+    val plan = PlanDescriptionImpl(id, "NAME", NoChildren, arguments, Set())
+
+    renderSummary(plan) should equal("Total database accesses: 33, total allocated memory: 1234")
   }
 }

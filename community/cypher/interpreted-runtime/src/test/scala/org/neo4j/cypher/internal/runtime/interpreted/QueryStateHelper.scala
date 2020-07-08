@@ -24,7 +24,7 @@ import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
-import org.neo4j.cypher.internal.runtime.NoMemoryTracker
+import org.neo4j.cypher.internal.runtime.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -64,7 +64,7 @@ object QueryStateHelper extends MockitoSugar {
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[CypherRow] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoMemoryTracker,
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoOpQueryMemoryTracker,
       decorator, initialContext = initialContext)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
