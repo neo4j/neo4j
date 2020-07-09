@@ -79,17 +79,6 @@ class QueryState(val query: QueryContext,
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
-  /**
-    * When running on the RHS of an Apply, this method will fill an execution context with argument data
-    *
-    * @param ctx ExecutionContext to fill with data
-    */
-    // TODO REVIEWER:
-    //       * could completely remove this now, but not sure about performance implication
-    //       * could also remove some special case Slotted operators now
-  def copyArgumentStateTo(ctx: ExecutionContext, nLongs: Int, nRefs: Int): Unit = initialContext
-    .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
-
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
@@ -114,9 +103,9 @@ trait ExecutionContextFactory {
 
   def newExecutionContext(): ExecutionContext
 
-  def copyWithArgument(init: ExecutionContext): ExecutionContext
+  def copyWithArgument(row: ExecutionContext): ExecutionContext
 
-  def copyWith(init: ExecutionContext): ExecutionContext
+  def copyWith(row: ExecutionContext): ExecutionContext
 
   def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext
 
@@ -134,30 +123,24 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
 
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
 
-  override def copyWithArgument(init: ExecutionContext): ExecutionContext = copyWith(init)
+  override def copyWithArgument(row: ExecutionContext): ExecutionContext = copyWith(row)
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(init: ExecutionContext): ExecutionContext = init match {
+  override def copyWith(row: ExecutionContext): ExecutionContext = row match {
     case context: MapExecutionContext =>
       context.createClone()
-    case _ =>
-      init.createClone()
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
   override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext = row match {
     case context: MapExecutionContext =>
       context.copyWith(newEntries)
-    case _ =>
-      row.copyWith(newEntries)
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
   override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext = row match {
     case context: MapExecutionContext =>
       context.copyWith(key, value)
-    case _ =>
-      row.copyWith(key, value)
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
@@ -166,8 +149,6 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
                         key2: String, value2: AnyValue): ExecutionContext = row match {
     case context: MapExecutionContext =>
       context.copyWith(key1, value1, key2, value2)
-    case _ =>
-      row.copyWith(key1, value1, key2, value2)
     }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
@@ -177,7 +158,5 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
                         key3: String, value3: AnyValue): ExecutionContext = row match {
     case context: MapExecutionContext =>
       context.copyWith(key1, value1, key2, value2, key3, value3)
-    case _ =>
-      row.copyWith(key1, value1, key2, value2, key3, value3)
   }
 }
