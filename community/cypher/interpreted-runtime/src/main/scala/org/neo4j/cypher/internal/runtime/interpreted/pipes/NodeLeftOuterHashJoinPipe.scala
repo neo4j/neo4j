@@ -51,7 +51,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
           val lhsRows = probeTable(joinKey)
           rhsKeys.add(joinKey)
           lhsRows.asScala.map { lhsRow =>
-            val outputRow = executionContextFactory.copyWith(lhsRow)
+            val outputRow = rowFactory.copyWith(lhsRow)
             outputRow.mergeWith(rhsRow, state.query)
             outputRow
           }

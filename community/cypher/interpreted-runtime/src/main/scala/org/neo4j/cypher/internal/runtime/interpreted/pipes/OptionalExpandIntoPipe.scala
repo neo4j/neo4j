@@ -71,7 +71,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                   val relationships = relationshipIterator(selectionCursor, query)
                   val filteredRows = ListBuffer.empty[CypherRow]
                   while (relationships.hasNext) {
-                    val candidateRow = executionContextFactory.copyWith(row, relName, relationships.next())
+                    val candidateRow = rowFactory.copyWith(row, relName, relationships.next())
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
                       filteredRows.append(candidateRow)
                     }

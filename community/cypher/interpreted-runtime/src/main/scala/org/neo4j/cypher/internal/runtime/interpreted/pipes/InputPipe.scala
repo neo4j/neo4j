@@ -50,7 +50,7 @@ case class InputPipe(variables: Array[String])
 
       override def next(): CypherRow = {
         if (hasNext) {
-          val ctx = executionContextFactory.newExecutionContext()
+          val ctx = rowFactory.newRow()
           var i = 0
           while (i < variables.length) {
             ctx.set(variables(i), cursor.value(i))

@@ -46,7 +46,7 @@ abstract class NestedPipeExpression(pipe: Pipe,
   }
 
   protected def createInitialContext(row: ReadableRow, state: QueryState): CypherRow = {
-    val initialContext = pipe.executionContextFactory.copyWith(row)
+    val initialContext = pipe.rowFactory.copyWith(row)
     availableExpressionVariables.foreach { expVar =>
       initialContext.set(expVar.name, state.expressionVariables(expVar.offset))
     }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedChunkReceiver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -43,9 +43,9 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState
                                  orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                                  aggregations: Array[AggregationPipe.AggregatingCol],
                                  state: QueryState,
-                                 executionContextFactory: ExecutionContextFactory,
+                                 rowFactory: CypherRowFactory,
                                  operatorId: Id)
-  extends NonGroupingAggTable(aggregations, state, executionContextFactory, operatorId) with OrderedChunkReceiver {
+  extends NonGroupingAggTable(aggregations, state, rowFactory, operatorId) with OrderedChunkReceiver {
 
   private var currentGroupKey: AnyValue = _
 
@@ -75,7 +75,7 @@ object OrderedNonGroupingAggTable {
   case class Factory(orderedGroupingFunction: (CypherRow, QueryState) => AnyValue,
                      orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
                      aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =
-      new OrderedNonGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, aggregations, state, executionContextFactory, operatorId)
+    override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver =
+      new OrderedNonGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, aggregations, state, rowFactory, operatorId)
   }
 }

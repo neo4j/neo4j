@@ -188,7 +188,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
           in.flatMap { m =>
             if (ValueUtils.of(m(keys(0))) == context.getByName(keys(0))) {
               val stringToProxy: mutable.Map[String, AnyValue] = collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)
-              val outRow = state.newExecutionContext(CommunityExecutionContextFactory())
+              val outRow = state.newRow(CommunityCypherRowFactory())
               outRow.mergeWith(CypherRow(stringToProxy), null)
               Some(outRow)
             }

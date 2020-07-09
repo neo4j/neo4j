@@ -57,7 +57,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     private def prefetch() {
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
-        nextItem = executionContextFactory.copyWith(context, variable, unwindIterator.next())
+        nextItem = rowFactory.copyWith(context, variable, unwindIterator.next())
       } else {
         if (input.hasNext) {
           context = input.next()

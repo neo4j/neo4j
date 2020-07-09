@@ -312,7 +312,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         inputRow = null
         null
       }
-      else executionContextFactory.copyWith(inputRow, self.toName, endNode)
+      else rowFactory.copyWith(inputRow, self.toName, endNode)
     }
 
     def pushStartNode(node: NodeValue): VirtualNodeValue = {

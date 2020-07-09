@@ -43,7 +43,7 @@ trait IndexPipeWithValues extends Pipe {
 
     override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {
-        val newContext = executionContextFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
+        val newContext = rowFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
         var i = 0
         while (i < indexPropertyIndices.length) {
           newContext.setCachedProperty(indexCachedProperties(i), cursor.propertyValue(indexPropertyIndices(i)))

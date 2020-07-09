@@ -58,12 +58,12 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    val ctx = state.newExecutionContextWithInitialContext(executionContextFactory)
+    val ctx = state.newRowWithArgument(rowFactory)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(
       ident,
       ctx,
-      executionContextFactory,
+      rowFactory,
       state.query.nodeOps,
       nodeIds.iterator().asScala
     )

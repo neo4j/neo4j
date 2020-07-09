@@ -38,7 +38,7 @@ trait Pipe {
 
   def createResults(state: QueryState) : Iterator[CypherRow] = {
     val decoratedState = state.decorator.decorate(self.id, state)
-    decoratedState.setExecutionContextFactory(executionContextFactory)
+    decoratedState.setExecutionContextFactory(rowFactory)
     val innerResult = internalCreateResults(decoratedState)
     state.decorator.afterCreateResults(self.id, decoratedState)
     state.decorator.decorate(self.id, innerResult, () => state.initialContext)
@@ -52,13 +52,13 @@ trait Pipe {
   // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
   // SlotConfigurations map to get the slot configuration needed for the context creation,
   // but then we would get an extra map lookup at runtime every time we create a new context.
-  var executionContextFactory: ExecutionContextFactory = CommunityExecutionContextFactory()
+  var rowFactory: CypherRowFactory = CommunityCypherRowFactory()
 }
 
 case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
-    Iterator(state.newExecutionContextWithInitialContext(executionContextFactory))
+    Iterator(state.newRowWithArgument(rowFactory))
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
@@ -66,7 +66,7 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this.id, state)
-    decoratedState.setExecutionContextFactory(executionContextFactory)
+    decoratedState.setExecutionContextFactory(rowFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
     state.decorator.afterCreateResults(this.id, decoratedState)
     state.decorator.decorate(this.id, result, sourceResult)

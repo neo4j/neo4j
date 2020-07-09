@@ -43,7 +43,7 @@ case class ExpandAllPipe(source: Pipe,
             val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
                 val other = r.otherNode(n)
-                executionContextFactory.copyWith(row, relName, r, toName, other)
+                rowFactory.copyWith(row, relName, r, toName, other)
             }
           case IsNoValue() => None
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.computeNewAggregatorsFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedAppendMap
@@ -45,7 +45,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        groupingFunction: (CypherRow, QueryState) => AnyValue,
                        aggregations: Array[AggregatingCol],
                        state: QueryState,
-                       executionContextFactory: ExecutionContextFactory,
+                       rowFactory: CypherRowFactory,
                        operatorId: Id) extends AggregationTable {
 
   private[this] var resultMap: HeapTrackingOrderedAppendMap[AnyValue, Array[AggregationFunction]] = _
@@ -80,7 +80,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
         val entry = innerIterator.next() // NOTE: This entry is transient and only valid until we call next() again
         val unorderedGroupingValue = entry.getKey
         val aggregateFunctions = entry.getValue
-        val row = state.newExecutionContext(executionContextFactory)
+        val row = state.newRow(rowFactory)
         addKeys(row, unorderedGroupingValue)
         var i = 0
         while (i < aggregateFunctions.length) {
@@ -100,8 +100,8 @@ object GroupingAggTable {
   case class Factory(groupingColumns: Array[GroupingCol],
                      groupingFunction: (CypherRow, QueryState) => AnyValue,
                      aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
-      new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, executionContextFactory, operatorId)
+    override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable =
+      new GroupingAggTable(groupingColumns, groupingFunction, aggregations, state, rowFactory, operatorId)
   }
 
 }

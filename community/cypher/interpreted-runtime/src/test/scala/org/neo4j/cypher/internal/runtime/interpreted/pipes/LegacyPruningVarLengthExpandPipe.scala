@@ -116,7 +116,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
       }
 
       if (pathLength >= self.min)
-        (whenEmptied, executionContextFactory.copyWith(row, self.toName, node))
+        (whenEmptied, rowFactory.copyWith(row, self.toName, node))
       else
         whenEmptied.next()
     }
@@ -226,7 +226,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
 
       updateMinFullExpandDepth(currentFullExpandDepth)
 
-      (whenEmptied, executionContextFactory.copyWith(row, self.toName, node))
+      (whenEmptied, rowFactory.copyWith(row, self.toName, node))
     }
 
     private def hasRelationships = idx < fullExpandDepths.rels.length

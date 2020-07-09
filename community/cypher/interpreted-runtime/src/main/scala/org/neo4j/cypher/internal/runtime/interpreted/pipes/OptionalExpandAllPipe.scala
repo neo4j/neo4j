@@ -103,7 +103,7 @@ case class NonFilteringOptionalExpandAllPipe(source: Pipe,
                                  n: NodeValue): Iterator[CypherRow] = {
     relationships.map { r =>
       val other = r.otherNode(n)
-      executionContextFactory.copyWith(row, relName, r, toName, other)
+      rowFactory.copyWith(row, relName, r, toName, other)
     }
   }
 }
@@ -124,7 +124,7 @@ case class FilteringOptionalExpandAllPipe(source: Pipe,
                                  n: NodeValue): Iterator[CypherRow] = {
     relationships.map { r =>
       val other = r.otherNode(n)
-      executionContextFactory.copyWith(row, relName, r, toName, other)
+      rowFactory.copyWith(row, relName, r, toName, other)
     }.filter(ctx => predicate(ctx, state) eq Values.TRUE)
   }
 }

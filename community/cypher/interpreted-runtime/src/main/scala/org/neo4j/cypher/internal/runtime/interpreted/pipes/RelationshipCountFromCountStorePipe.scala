@@ -41,7 +41,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
         0
     }
 
-    val baseContext = state.newExecutionContextWithInitialContext(executionContextFactory)
+    val baseContext = state.newRowWithArgument(rowFactory)
     baseContext.set(ident, Values.longValue(count))
     Seq(baseContext).iterator
   }

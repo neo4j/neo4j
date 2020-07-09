@@ -51,22 +51,22 @@ class QueryState(val query: QueryContext,
                  val input: InputDataStream = NoInput) extends AutoCloseable {
 
   private var _pathValueBuilder: PathValueBuilder = _
-  private var _exFactory: ExecutionContextFactory = _
+  private var _rowFactory: CypherRowFactory = _
 
-  def newExecutionContext(factory: ExecutionContextFactory): CypherRow = {
+  def newRow(rowFactory: CypherRowFactory): CypherRow = {
     initialContext match {
-      case Some(init) => factory.copyWith(init)
-      case None => factory.newExecutionContext()
+      case Some(init) => rowFactory.copyWith(init)
+      case None => rowFactory.newRow()
     }
   }
 
   /**
    * When running on the RHS of an Apply, this method will fill the new row with argument data
    */
-  def newExecutionContextWithInitialContext(factory: ExecutionContextFactory): CypherRow = {
+  def newRowWithArgument(rowFactory: CypherRowFactory): CypherRow = {
     initialContext match {
-      case Some(init) => factory.copyWithArgument(init)
-      case None => factory.newExecutionContext()
+      case Some(init) => rowFactory.copyArgumentOf(init)
+      case None => rowFactory.newRow()
     }
   }
 
@@ -91,11 +91,11 @@ class QueryState(val query: QueryContext,
     new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
       cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
-  def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {
-    _exFactory = exFactory
+  def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
+    _rowFactory = rowFactory
   }
 
-  def executionContextFactory: ExecutionContextFactory = _exFactory
+  def rowFactory: CypherRowFactory = _rowFactory
 
   override def close(): Unit = {
     cursors.close()
@@ -107,11 +107,11 @@ object QueryState {
   val defaultStatistics = QueryStatistics()
 }
 
-trait ExecutionContextFactory {
+trait CypherRowFactory {
 
-  def newExecutionContext(): CypherRow
+  def newRow(): CypherRow
 
-  def copyWithArgument(row: ReadableRow): CypherRow
+  def copyArgumentOf(row: ReadableRow): CypherRow
 
   def copyWith(row: ReadableRow): CypherRow
 
@@ -127,11 +127,11 @@ trait ExecutionContextFactory {
                key3: String, value3: AnyValue): CypherRow
 }
 
-case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
+case class CommunityCypherRowFactory() extends CypherRowFactory {
 
-  override def newExecutionContext(): CypherRow = CypherRow.empty
+  override def newRow(): CypherRow = CypherRow.empty
 
-  override def copyWithArgument(row: ReadableRow): CypherRow = copyWith(row)
+  override def copyArgumentOf(row: ReadableRow): CypherRow = copyWith(row)
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
   override def copyWith(row: ReadableRow): CypherRow = row match {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -32,7 +32,7 @@ trait QueryStateTestSupport {
     val tx = graph.beginTransaction(Type.EXPLICIT, AUTH_DISABLED)
     try {
       QueryStateHelper.withQueryState(graph, tx, Array.empty, queryState => {
-        queryState.setExecutionContextFactory(CommunityExecutionContextFactory())
+        queryState.setExecutionContextFactory(CommunityCypherRowFactory())
         f(queryState)
       })
     } finally {
@@ -46,7 +46,7 @@ trait QueryStateTestSupport {
       QueryStateHelper.withQueryState(graph, tx, Array.empty, queryState =>
         {
           val state = QueryStateHelper.countStats(queryState)
-          state.setExecutionContextFactory(CommunityExecutionContextFactory())
+          state.setExecutionContextFactory(CommunityCypherRowFactory())
           f(state)
         })
     } finally {

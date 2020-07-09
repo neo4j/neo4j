@@ -32,9 +32,9 @@ case class OrderedAggregationPipe(source: Pipe,
                                   tableFactory: OrderedAggregationTableFactory)
                                  (val id: Id = Id.INVALID_ID)
   extends AggregationPipe(source, tableFactory) with OrderedInputPipe {
-  override def getReceiver(state: QueryState): OrderedChunkReceiver = tableFactory.table(state, executionContextFactory, id)
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = tableFactory.table(state, rowFactory, id)
 }
 
 trait OrderedAggregationTableFactory extends AggregationTableFactory {
-  override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver
+  override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable with OrderedChunkReceiver
 }

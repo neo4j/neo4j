@@ -64,7 +64,7 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   private def copyWithLinenumber(filename: String, linenumber: Long, last: Boolean, row: CypherRow, key: String, value: AnyValue): CypherRow = {
-    val newCtx = executionContextFactory.copyWith(row, key, value)
+    val newCtx = rowFactory.copyWith(row, key, value)
     newCtx.setLinenumber(filename, linenumber, last)
     newCtx
   }

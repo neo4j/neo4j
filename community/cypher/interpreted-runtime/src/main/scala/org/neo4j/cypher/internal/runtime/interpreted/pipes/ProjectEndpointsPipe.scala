@@ -51,8 +51,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         Iterator(context)
       case Some((NotInScope(startNode, endNode), rels)) if !directed =>
         Iterator(
-          executionContextFactory.copyWith(context, start, startNode, end, endNode),
-          executionContextFactory.copyWith(context, start, endNode, end, startNode, relName, rels.reverse())
+          rowFactory.copyWith(context, start, startNode, end, endNode),
+          rowFactory.copyWith(context, start, endNode, end, startNode, relName, rels.reverse())
         )
       case Some((startAndEnd, rels)) =>
         context.set(start, startAndEnd.start, end, startAndEnd.end)
@@ -69,8 +69,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         Iterator(context)
       case Some(NotInScope(startNode, endNode)) if !directed =>
         Iterator(
-          executionContextFactory.copyWith(context, start, startNode, end, endNode),
-          executionContextFactory.copyWith(context, start, endNode, end, startNode)
+          rowFactory.copyWith(context, start, startNode, end, endNode),
+          rowFactory.copyWith(context, start, endNode, end, startNode)
         )
       case Some(startAndEnd) =>
         context.set(start, startAndEnd.start, end, startAndEnd.end)

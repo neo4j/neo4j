@@ -58,7 +58,7 @@ object AggregationPipe {
    * A Factory to obtain [[AggregationTable]]s at runtime.
    */
   trait AggregationTableFactory {
-    def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable
+    def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable
   }
 
   case class AggregatingCol(key: String, expression: AggregationExpression)

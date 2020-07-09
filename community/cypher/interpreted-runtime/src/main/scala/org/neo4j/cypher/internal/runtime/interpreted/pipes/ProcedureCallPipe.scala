@@ -76,7 +76,7 @@ case class ProcedureCallPipe(source: Pipe,
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value
         }
         val rowEntries = builder.result()
-        val output = executionContextFactory.copyWith(input, rowEntries)
+        val output = rowFactory.copyWith(input, rowEntries)
         builder.clear()
         output
       }

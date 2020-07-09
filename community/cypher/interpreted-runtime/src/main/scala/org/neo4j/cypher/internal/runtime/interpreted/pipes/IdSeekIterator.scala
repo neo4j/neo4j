@@ -67,7 +67,7 @@ abstract class IdSeekIterator[T, CURSOR]
 
 final class NodeIdSeekIterator(ident: String,
                                baseContext: CypherRow,
-                               executionContextFactory: ExecutionContextFactory,
+                               rowFactory: CypherRowFactory,
                                protected val operations: Operations[NodeValue, NodeCursor],
                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[NodeValue, NodeCursor] {
@@ -75,14 +75,14 @@ final class NodeIdSeekIterator(ident: String,
   def hasNext: Boolean = hasNextEntity
 
   def next(): CypherRow =
-    executionContextFactory.copyWith(baseContext, ident, nextEntity())
+    rowFactory.copyWith(baseContext, ident, nextEntity())
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
                                                fromNode: String,
                                                toNode: String,
                                                baseContext: CypherRow,
-                                               executionContextFactory: ExecutionContextFactory,
+                                               rowFactory: CypherRowFactory,
                                                protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
@@ -91,7 +91,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def next(): CypherRow = {
     val rel = nextEntity()
-    executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
+    rowFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
   }
 }
 
@@ -99,7 +99,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  fromNode: String,
                                                  toNode: String,
                                                  baseContext: CypherRow,
-                                                 executionContextFactory: ExecutionContextFactory,
+                                                 rowFactory: CypherRowFactory,
                                                  protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                  protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
@@ -114,13 +114,13 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): CypherRow = {
     if (emitSibling) {
       emitSibling = false
-      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
+      rowFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.startNode()
       lastEnd = lastEntity.endNode()
-      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
+      rowFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
 }

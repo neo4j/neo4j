@@ -28,14 +28,14 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
                                            (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    val ctx = state.newExecutionContextWithInitialContext(executionContextFactory)
+    val ctx = state.newRowWithArgument(rowFactory)
     val relIds = relIdExpr.expressions(ctx, state)
     new DirectedRelationshipIdSeekIterator(
       ident,
       fromNode,
       toNode,
       ctx,
-      executionContextFactory,
+      rowFactory,
       state.query.relationshipOps,
       relIds.iterator().asScala
     )

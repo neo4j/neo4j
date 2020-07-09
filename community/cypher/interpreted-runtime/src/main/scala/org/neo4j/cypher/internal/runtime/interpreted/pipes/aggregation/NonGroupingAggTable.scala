@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.MemoryTracker
@@ -35,7 +35,7 @@ import org.neo4j.memory.MemoryTracker
  */
 class NonGroupingAggTable(aggregations: Array[AggregatingCol],
                           state: QueryState,
-                          executionContextFactory: ExecutionContextFactory,
+                          rowFactory: CypherRowFactory,
                           operatorId: Id) extends AggregationTable {
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
   private val scopedMemoryTracker: MemoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
@@ -64,7 +64,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
   }
 
   protected def resultRow(): CypherRow = {
-    val row = state.newExecutionContext(executionContextFactory)
+    val row = state.newRow(rowFactory)
     var i = 0
     while (i < aggregationFunctions.length) {
       row.set(aggregations(i).key, aggregationFunctions(i).result(state))
@@ -76,7 +76,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
 
 object NonGroupingAggTable {
   case class Factory(aggregations: Array[AggregatingCol]) extends AggregationTableFactory {
-    override def table(state: QueryState, executionContextFactory: ExecutionContextFactory, operatorId: Id): AggregationTable =
-      new NonGroupingAggTable(aggregations, state, executionContextFactory, operatorId)
+    override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable =
+      new NonGroupingAggTable(aggregations, state, rowFactory, operatorId)
   }
 }

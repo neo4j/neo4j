@@ -56,7 +56,7 @@ case class ShortestPathPipe(source: Pipe,
           result.iterator().asScala.map {
             case path: PathValue =>
               val relations = VirtualValues.list(path.relationships(): _*)
-              executionContextFactory.copyWith(ctx, pathName, path, relName, relations)
+              rowFactory.copyWith(ctx, pathName, path, relName, relations)
 
             case value =>
               throw new InternalException(s"Expected path, got '$value'")
@@ -64,7 +64,7 @@ case class ShortestPathPipe(source: Pipe,
         case None =>
           result.iterator().asScala.map {
             case path: PathValue =>
-              executionContextFactory.copyWith(ctx, pathName, path)
+              rowFactory.copyWith(ctx, pathName, path)
 
             case value =>
               throw new InternalException(s"Expected path, got '$value'")

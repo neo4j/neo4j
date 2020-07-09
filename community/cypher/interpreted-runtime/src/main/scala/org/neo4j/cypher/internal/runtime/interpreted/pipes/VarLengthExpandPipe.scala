@@ -100,7 +100,7 @@ case class VarLengthExpandPipe(source: Pipe,
         val paths = varLengthExpand(n, state, max, row)
         paths.collect {
           case (node, rels) if rels.size >= min && isToNodeValid(row, state, node) =>
-            executionContextFactory.copyWith(row, relName, rels.asList, toName, node)
+            rowFactory.copyWith(row, relName, rels.asList, toName, node)
         }
       } else {
         Iterator.empty

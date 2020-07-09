@@ -43,7 +43,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
   protected val needsValues = indexPropertyIndices.nonEmpty
 
   override protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    val baseContext = state.newExecutionContextWithInitialContext(executionContextFactory)
+    val baseContext = state.newRowWithArgument(rowFactory)
     val value = valueExpr(baseContext, state)
 
     val resultNodes = value match {

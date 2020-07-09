@@ -32,7 +32,7 @@ case class EagerAggregationPipe(source: Pipe,
   extends AggregationPipe(source, tableFactory) {
 
   protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    val table = tableFactory.table(state, executionContextFactory, id)
+    val table = tableFactory.table(state, rowFactory, id)
     table.clear()
     while (input.hasNext) {
       table.processRow(input.next())

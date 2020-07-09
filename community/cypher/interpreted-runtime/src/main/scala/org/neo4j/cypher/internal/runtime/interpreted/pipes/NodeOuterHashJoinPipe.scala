@@ -52,7 +52,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   }
 
   protected def addNulls(in: CypherRow): CypherRow = {
-    val withNulls = executionContextFactory.copyWith(in)
+    val withNulls = rowFactory.copyWith(in)
     withNulls.set(nullVariables)
     withNulls
   }

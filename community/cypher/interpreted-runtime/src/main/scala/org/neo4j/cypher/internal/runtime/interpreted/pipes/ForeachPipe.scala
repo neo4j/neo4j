@@ -33,7 +33,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
       outerContext =>
         val values = makeTraversable(expression(outerContext, state)).iterator()
         while (values.hasNext) {
-          val innerState = state.withInitialContext(executionContextFactory.copyWith(outerContext, variable, values.next()))
+          val innerState = state.withInitialContext(rowFactory.copyWith(outerContext, variable, values.next()))
           inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
         }
         outerContext

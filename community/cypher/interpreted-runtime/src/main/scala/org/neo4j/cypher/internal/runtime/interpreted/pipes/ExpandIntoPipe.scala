@@ -86,7 +86,7 @@ case class ExpandIntoPipe(source: Pipe,
                   query.resources.trace(selectionCursor)
                   val relationships = relationshipIterator(selectionCursor, query)
                   if (relationships.isEmpty) Iterator.empty
-                  else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
+                  else relationships.map(r => rowFactory.copyWith(row, relName, r))
                 } finally {
                   nodeCursor.close()
                 }
