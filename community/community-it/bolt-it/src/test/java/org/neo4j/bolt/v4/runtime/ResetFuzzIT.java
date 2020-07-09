@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.IOException;
 import java.util.List;
@@ -60,6 +62,7 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 public class ResetFuzzIT
 {
     private static final int TEST_EXECUTION_TIME = 2000;

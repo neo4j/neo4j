@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.concurrent.Callable;
 
@@ -41,6 +42,7 @@ import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderPro
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( SHARED_RESOURCE )
+@ResourceLock( Resources.SYSTEM_OUT )
 public class SharedWebContainerTestBase
 {
     protected static TestWebContainer container()

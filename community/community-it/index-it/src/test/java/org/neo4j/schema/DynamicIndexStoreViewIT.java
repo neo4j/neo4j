@@ -21,6 +21,8 @@ package org.neo4j.schema;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -52,6 +54,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 class DynamicIndexStoreViewIT
 {
     @Inject

@@ -22,6 +22,8 @@ package org.neo4j.tooling.procedure;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +41,7 @@ import org.neo4j.tooling.procedure.procedures.valid.Procedures;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 class ProcedureTest
 {
     private static final Class<?> PROCEDURES_CLASS = Procedures.class;
