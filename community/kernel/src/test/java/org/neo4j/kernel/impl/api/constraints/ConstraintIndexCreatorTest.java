@@ -65,6 +65,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -326,9 +327,10 @@ class ConstraintIndexCreatorTest
 
         creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
-        assertThat( logProvider ).containsMessages( "Starting constraint creation: %s.",
-                                                    "Constraint %s populated, starting verification.",
-                                                    "Constraint %s verified." );
+        String constraintString = constraint.userDescription( tokenRead );
+        assertThat( logProvider ).containsMessages( format( "Starting constraint creation: %s.", constraintString ),
+                                                    format( "Constraint %s populated, starting verification.", constraintString ),
+                                                    format( "Constraint %s verified.", constraintString ) );
     }
 
     private class StubKernel implements Kernel

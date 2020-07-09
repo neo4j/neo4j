@@ -1325,7 +1325,7 @@ class OperationsTest
         }
     }
 
-    private void assertAuthorized( Executable executable ) throws Exception
+    private void assertAuthorized( Executable executable )
     {
         try
         {
