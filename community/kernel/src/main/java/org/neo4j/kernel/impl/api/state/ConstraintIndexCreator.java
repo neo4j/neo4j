@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -53,6 +52,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -95,9 +95,8 @@ public class ConstraintIndexCreator
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
-
-        SchemaDescriptor schema = constraint.schema();
-        log.info( "Starting constraint creation: %s.", constraint );
+        String constraintString = constraint.userDescription( transaction.tokenRead() );
+        log.info( "Starting constraint creation: %s.", constraintString );
 
         IndexDescriptor index;
         SchemaRead schemaRead = transaction.schemaRead();
@@ -117,8 +116,8 @@ public class ConstraintIndexCreator
         boolean success = false;
         boolean reacquiredLabelLock = false;
         Client locks = transaction.statementLocks().pessimistic();
-        ResourceType keyType = schema.keyType();
-        long[] lockingKeys = schema.lockingKeys();
+        ResourceType keyType = constraint.schema().keyType();
+        long[] lockingKeys = constraint.schema().lockingKeys();
         try
         {
             locks.acquireShared( transaction.lockTracer(), keyType, lockingKeys );
@@ -131,7 +130,7 @@ public class ConstraintIndexCreator
             locks.releaseExclusive( keyType, lockingKeys );
 
             awaitConstraintIndexPopulation( constraint, proxy, transaction );
-            log.info( "Constraint %s populated, starting verification.", constraint.schema() );
+            log.info( "Constraint %s populated, starting verification.", constraintString );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -145,14 +144,14 @@ public class ConstraintIndexCreator
             {
                 indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
             }
-            log.info( "Constraint %s verified.", constraint.schema() );
+            log.info( "Constraint %s verified.", constraintString );
             success = true;
             return index;
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new TransactionFailureException(
-                    String.format( "Index (%s) that we just created does not exist.", schema ), e );
+            String indexString = index.userDescription( transaction.tokenRead() );
+            throw new TransactionFailureException( format( "Index (%s) that we just created does not exist.", indexString ), e );
         }
         catch ( IndexEntryConflictException e )
         {
