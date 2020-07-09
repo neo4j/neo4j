@@ -133,7 +133,7 @@ class DatabaseMemoryGroupTrackerTest
     void respectLocalLimit( AllocationFacade methods )
     {
         ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 10, null );
-        assertThrows( MemoryLimitExceeded.class, () -> methods.reserve( subPool, 11 ) );
+        assertThrows( MemoryLimitExceededException.class, () -> methods.reserve( subPool, 11 ) );
         subPool.close();
     }
 
@@ -142,7 +142,7 @@ class DatabaseMemoryGroupTrackerTest
     void respectParentLimit( AllocationFacade methods )
     {
         ScopedMemoryPool subPool = globalPool.newDatabasePool( "pool1", 102, null );
-        assertThrows( MemoryLimitExceeded.class, () -> methods.reserve( subPool, 101 ) );
+        assertThrows( MemoryLimitExceededException.class, () -> methods.reserve( subPool, 101 ) );
         subPool.close();
     }
 

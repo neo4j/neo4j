@@ -73,7 +73,7 @@ class MemoryPoolImplTest
     {
         var memoryPool = new MemoryPoolImpl( 100, true, null );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
-        assertThrows( MemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 100 ) );
+        assertThrows( MemoryLimitExceededException.class, () -> memoryPool.reserveHeap( 100 ) );
         assertDoesNotThrow( () -> memoryPool.reserveHeap( 10 ) );
 
         assertEquals( 20, memoryPool.totalUsed() );
@@ -93,9 +93,10 @@ class MemoryPoolImplTest
         memoryPool.reserveHeap( halfLimit );
         assertState( limit, 0, limit, memoryPool );
 
-        MemoryLimitExceeded memoryLimitExceeded = assertThrows( MemoryLimitExceeded.class, () -> memoryPool.reserveHeap( 1 ) );
-        assertThat( memoryLimitExceeded.getMessage() ).contains( "The allocation of 1 B would use more than the limit 10 B. Currently using " + limit + " B" );
-        assertThat( memoryLimitExceeded.getMessage() ).contains( "mySetting" );
+        MemoryLimitExceededException memoryLimitExceededException = assertThrows( MemoryLimitExceededException.class, () -> memoryPool.reserveHeap( 1 ) );
+        assertThat( memoryLimitExceededException.getMessage() ).contains( "The allocation of an extra 1 B would use more than the limit 10 B. " +
+                "Currently using " + limit + " B" );
+        assertThat( memoryLimitExceededException.getMessage() ).contains( "mySetting" );
 
         memoryPool.releaseHeap( halfLimit );
         assertState( limit, halfLimit, halfLimit, memoryPool );

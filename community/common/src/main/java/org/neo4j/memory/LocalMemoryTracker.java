@@ -113,7 +113,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         if ( allocatedBytesHeap + allocatedBytesNative > localBytesLimit )
         {
             allocatedBytesNative -= bytes;
-            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
+            throw new MemoryLimitExceededException( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
                     limitSettingName );
         }
 
@@ -141,7 +141,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         if ( allocatedBytesHeap + allocatedBytesNative > localBytesLimit )
         {
             allocatedBytesHeap -= bytes;
-            throw new MemoryLimitExceeded( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
+            throw new MemoryLimitExceededException( bytes, localBytesLimit, allocatedBytesHeap + allocatedBytesNative, TransactionOutOfMemoryError,
                     limitSettingName );
         }
 
@@ -210,7 +210,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
      * Will reserve heap in the provided pool.
      *
      * @param size heap space to reserve for the local pool
-     * @throws MemoryLimitExceeded if not enough free memory
+     * @throws MemoryLimitExceededException if not enough free memory
      */
     private void reserveHeapFromPool( long size )
     {

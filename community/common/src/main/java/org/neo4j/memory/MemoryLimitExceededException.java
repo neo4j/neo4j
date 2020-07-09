@@ -28,11 +28,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
-public class MemoryLimitExceeded extends RuntimeException implements Status.HasStatus
+public class MemoryLimitExceededException extends RuntimeException implements Status.HasStatus
 {
     private final Status status;
 
-    public MemoryLimitExceeded( long allocation, long limit, long current, Status status, String settingName )
+    public MemoryLimitExceededException( long allocation, long limit, long current, Status status, String settingName )
     {
         super( getMessage( allocation, limit, current, settingName ) );
         this.status = status;
@@ -48,11 +48,11 @@ public class MemoryLimitExceeded extends RuntimeException implements Status.HasS
     {
         if ( StringUtils.isEmpty( settingName ) )
         {
-            return format( "The allocation of %s would use more than the limit %s. Currently using %s.",
+            return format( "The allocation of an extra %s would use more than the limit %s. Currently using %s.",
                     humanReadableByteCountBin( allocation ), humanReadableByteCountBin( limit ), humanReadableByteCountBin( current ) );
         }
 
-        return format( "The allocation of %s would use more than the limit %s. Currently using %s. %s threshold reached",
+        return format( "The allocation of an extra %s would use more than the limit %s. Currently using %s. %s threshold reached",
                 humanReadableByteCountBin( allocation ), humanReadableByteCountBin( limit ), humanReadableByteCountBin( current ), settingName );
     }
 

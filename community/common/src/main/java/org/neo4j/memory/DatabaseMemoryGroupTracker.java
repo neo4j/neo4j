@@ -69,7 +69,7 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
         {
             super.reserveHeap( bytes );
         }
-        catch ( MemoryLimitExceeded e )
+        catch ( MemoryLimitExceededException e )
         {
             parent.releaseHeap( bytes );
             throw e;
@@ -91,7 +91,7 @@ public class DatabaseMemoryGroupTracker extends DelegatingMemoryPool implements 
         {
             super.reserveNative( bytes );
         }
-        catch ( MemoryLimitExceeded e )
+        catch ( MemoryLimitExceededException e )
         {
             parent.releaseNative( bytes );
             throw e;

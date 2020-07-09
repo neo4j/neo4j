@@ -98,7 +98,7 @@ class MemoryPoolImpl implements MemoryPool
             usedMemoryBefore = counter.get();
             if ( strict && totalUsed() + bytes > max )
             {
-                throw new MemoryLimitExceeded( bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName );
+                throw new MemoryLimitExceededException( bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName );
             }
         }
         while ( !counter.weakCompareAndSetVolatile( usedMemoryBefore, usedMemoryBefore + bytes ) );
