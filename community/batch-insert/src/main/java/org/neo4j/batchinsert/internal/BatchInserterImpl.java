@@ -623,13 +623,13 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
-        File countsStoreFile = databaseLayout.countStore();
-        fileSystem.deleteRecursively( countsStoreFile );
+        fileSystem.deleteFile( databaseLayout.countStore() );
         CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile, fileSystem, immediate(), initialCountsBuilder,
-                false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
+                initialCountsBuilder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
+            countsStore.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         }
     }
 
