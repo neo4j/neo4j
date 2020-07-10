@@ -75,6 +75,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -133,6 +134,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -571,6 +573,20 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private void rebuildCounts()
     {
         CountsTracker counts = neoStores.getCounts();
+        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
+        {
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                // Don't, we instead manually do it below
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+            }
+        } );
         try
         {
             counts.start();

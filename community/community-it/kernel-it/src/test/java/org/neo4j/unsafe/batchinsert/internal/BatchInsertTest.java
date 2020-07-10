@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -85,12 +86,15 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -1459,6 +1463,46 @@ public class BatchInsertTest
         finally
         {
             dbAfterInsert.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldBuildCorrectCountsStoreOnIncrementalImport() throws Exception
+    {
+        // given
+        Label label = Label.label( "Person" );
+        BatchInserter inserter = newBatchInserter();
+        try
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                inserter.createNode( null, label );
+            }
+        }
+        finally
+        {
+            inserter.shutdown();
+        }
+
+        // when
+        inserter = newBatchInserter();
+        for ( int i = 0; i < 10; i++ )
+        {
+            inserter.createNode( null, label );
+        }
+
+        // then
+        GraphDatabaseAPI db = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            CountsTracker countsTracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class,
+                    DependencyResolver.SelectionStrategy.ONLY ).testAccessNeoStores().getCounts();
+            Register.DoubleLongRegister nodeCount = countsTracker.nodeCount( 0, Registers.newDoubleLongRegister() );
+            assertEquals( 110, nodeCount.readSecond() );
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 
