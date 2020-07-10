@@ -39,16 +39,6 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable 
     }
 
     @Override
-    public void close()
-    {
-        CloseListener closeListener = getCloseListener();
-        if ( closeListener != null )
-        {
-            getCloseListener().onClosed( this );
-        }
-    }
-
-    @Override
     public boolean isClosed()
     {
         return false;

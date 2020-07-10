@@ -64,14 +64,8 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
     cursors.foreach(_.removeTracer())
   }
 
-  override def close(): Unit = {
-    closed = true
-    closeInternal()
-    val listener = closeListener
-    if (listener != null) listener.onClosed(this)
-  }
-
   override def closeInternal(): Unit = {
+    closed = true
     IOUtils.closeAll(cursors:_*)
   }
 

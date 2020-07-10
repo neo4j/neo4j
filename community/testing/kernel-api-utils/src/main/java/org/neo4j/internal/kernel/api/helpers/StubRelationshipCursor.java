@@ -147,16 +147,6 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     }
 
     @Override
-    public void close()
-    {
-        closeInternal();
-        if ( closeListener != null )
-        {
-            closeListener.onClosed( this );
-        }
-    }
-
-    @Override
     public void closeInternal()
     {
         isClosed = true;

@@ -44,12 +44,6 @@ class ExpressionCursors(cursorFactory: CursorFactory, cursorTracer: PageCursorTr
     nodeCursor.isClosed && relationshipScanCursor.isClosed && propertyCursor.isClosed
   }
 
-  override def close(): Unit = {
-    closeInternal()
-    val listener = closeListener
-    if (listener != null) listener.onClosed(this)
-  }
-
   override def closeInternal(): Unit = {
     if (!isClosed) {
       IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)

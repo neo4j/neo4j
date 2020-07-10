@@ -97,7 +97,7 @@ trait ResourcePool {
 /**
  * Similar to an ArrayList[AutoCloseablePlus] but does faster removes since it simply set the element to null and
  * does not reorder the backing array.
- * @param capacity the intial capacity of the pool
+ * @param capacity the initial capacity of the pool
  * @param monitor the monitor to call on close
  */
 class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extends ResourcePool {

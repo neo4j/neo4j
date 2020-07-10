@@ -268,7 +268,7 @@ class ResourceManagerTest extends CypherFunSuite {
     override def setCloseListener(closeListener: CloseListener): Unit = {
       this.listener = closeListener
     }
-    override def getCloseListener: CloseListener = listener
+    def getCloseListener: CloseListener = listener
     override def setToken(token: Int): Unit = {
       this.token = token
     }

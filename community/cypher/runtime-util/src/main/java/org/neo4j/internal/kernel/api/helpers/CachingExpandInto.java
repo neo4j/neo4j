@@ -319,12 +319,6 @@ public class CachingExpandInto implements AutoCloseable
         }
 
         @Override
-        public CloseListener getCloseListener()
-        {
-            return null;
-        }
-
-        @Override
         public void setToken( int token )
         {
             this.token = token;
@@ -440,16 +434,6 @@ public class CachingExpandInto implements AutoCloseable
         public void removeTracer()
         {
             allRelationships.removeTracer();
-        }
-
-        @Override
-        public void close()
-        {
-            closeInternal();
-            if ( closeListener != null )
-            {
-                closeListener.onClosed( this );
-            }
         }
 
         @Override

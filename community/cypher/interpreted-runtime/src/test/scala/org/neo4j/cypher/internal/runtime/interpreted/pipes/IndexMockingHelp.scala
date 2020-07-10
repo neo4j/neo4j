@@ -125,9 +125,6 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
       }
     }
 
-    override def close(): Unit = {
-      if (getCloseListener != null) getCloseListener.onClosed(this)
-    }
     override def closeInternal(): Unit = {}
 
     override def isClosed: Boolean = current != null

@@ -39,6 +39,7 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     private int offset = -1;
     private boolean dense;
     private List<NodeData> nodes = new ArrayList<>();
+    private int degree;
 
     public StubNodeCursor()
     {
@@ -185,16 +186,6 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
             return false;
         }
         return ++offset < nodes.size();
-    }
-
-    @Override
-    public void close()
-    {
-        closeInternal();
-        if ( closeListener != null )
-        {
-            closeListener.onClosed( this );
-        }
     }
 
     @Override

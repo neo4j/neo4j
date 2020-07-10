@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
-import org.neo4j.internal.kernel.api.CloseListener
 import org.neo4j.internal.kernel.api.Cursor
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
@@ -229,33 +229,19 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
     inner
   }
 
-  abstract class ProfilingCursor(inner: Cursor) extends Cursor {
-
+  abstract class ProfilingCursor(inner: Cursor) extends DefaultCloseListenable with Cursor {
     override def next(): Boolean = {
       increment()
       inner.next()
     }
 
-    override def close(): Unit = {
-      closeInternal()
-      // We do not call getCloseListener.onClosed(inner) here since
-      // that will already happen in closeInternal.
-    }
     override def closeInternal(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
 
     override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
 
-    override def setCloseListener(closeListener: CloseListener): Unit = inner.setCloseListener(closeListener)
-
     override def removeTracer(): Unit = inner.removeTracer()
-
-    override def getCloseListener: CloseListener = inner.getCloseListener
-
-    override def setToken(token: Int): Unit = inner.setToken(token)
-
-    override def getToken: Int = inner.getToken
   }
 
   class PipeTracer() extends OperatorProfileEvent {

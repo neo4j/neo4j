@@ -97,12 +97,6 @@ public interface RelationshipTraversalCursor extends RelationshipDataAccessor, C
         }
 
         @Override
-        public CloseListener getCloseListener()
-        {
-            return null;
-        }
-
-        @Override
         public void setToken( int token )
         {
         }
