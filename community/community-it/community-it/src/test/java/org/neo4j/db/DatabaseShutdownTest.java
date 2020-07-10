@@ -125,9 +125,9 @@ class DatabaseShutdownTest
                             {
                                 @Override
                                 public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize,
-                                        ImmutableSet<OpenOption> openOptions ) throws IOException
+                                        ImmutableSet<OpenOption> openOptions, String databaseName ) throws IOException
                                 {
-                                    PagedFile pagedFile = super.map( path, versionContextSupplier, pageSize, openOptions );
+                                    PagedFile pagedFile = super.map( path, versionContextSupplier, pageSize, openOptions, databaseName );
                                     return new DelegatingPagedFile( pagedFile )
                                     {
                                         @Override
