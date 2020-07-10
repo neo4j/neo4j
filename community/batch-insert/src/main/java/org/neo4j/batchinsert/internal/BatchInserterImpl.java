@@ -599,8 +599,13 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts() throws IOException
     {
-        new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
-                new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ).close();
+        fileSystem.deleteFile( databaseLayout.countStore() );
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
+                new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ) )
+        {
+            countsStore.start();
+            countsStore.checkpoint( IOLimiter.UNLIMITED );
+        }
     }
 
     private void createEmptyTransactionLog()

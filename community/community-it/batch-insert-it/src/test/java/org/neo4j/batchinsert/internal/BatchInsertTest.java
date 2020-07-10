@@ -46,6 +46,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -60,6 +61,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -125,6 +128,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
@@ -1459,6 +1463,51 @@ class BatchInsertTest
         finally
         {
             managementService.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldBuildCorrectCountsStoreOnIncrementalImport() throws Exception
+    {
+        // given
+        Label label = Label.label( "Person" );
+        int denseNodeThreshold = dense_node_threshold.defaultValue();
+        for ( int r = 0; r < 3; r++ )
+        {
+            // when
+            BatchInserter inserter = newBatchInserter( denseNodeThreshold );
+            try
+            {
+                for ( int i = 0; i < 100; i++ )
+                {
+                    inserter.createNode( null, label );
+                }
+            }
+            finally
+            {
+                inserter.shutdown();
+            }
+
+            // then
+            try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fs, RecoveryCleanupWorkCollector.immediate(),
+                    new CountsBuilder()
+                    {
+                        @Override
+                        public void initialize( CountsAccessor.Updater updater )
+                        {
+                            throw new UnsupportedOperationException( "Should not be required" );
+                        }
+
+                        @Override
+                        public long lastCommittedTxId()
+                        {
+                            return 0;
+                        }
+                    }, true, GBPTreeCountsStore.NO_MONITOR ) )
+            {
+                countsStore.start();
+                assertEquals( (r + 1) * 100, countsStore.nodeCount( 0 ) );
+            }
         }
     }
 
