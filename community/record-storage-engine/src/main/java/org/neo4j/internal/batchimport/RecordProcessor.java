@@ -38,6 +38,8 @@ public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoClose
 
     void done();
 
+    void mergeResultsFrom( RecordProcessor<T> other );
+
     @Override
     void close();
 }

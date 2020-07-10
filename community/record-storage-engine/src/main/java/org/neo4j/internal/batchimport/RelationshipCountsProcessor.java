@@ -103,16 +103,18 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     }
 
     @Override
+    public void mergeResultsFrom( RecordProcessor<RelationshipRecord> other )
+    {
+        RelationshipCountsProcessor o = (RelationshipCountsProcessor) other;
+        mergeCounts( labelsCounts, o.labelsCounts );
+        mergeCounts( wildcardCounts, o.wildcardCounts );
+    }
+
+    @Override
     public void close()
     {
         labelsCounts.close();
         wildcardCounts.close();
-    }
-
-    public void addCountsFrom( RelationshipCountsProcessor from )
-    {
-        mergeCounts( labelsCounts, from.labelsCounts );
-        mergeCounts( wildcardCounts, from.wildcardCounts );
     }
 
     private void mergeCounts( LongArray destination, LongArray part )

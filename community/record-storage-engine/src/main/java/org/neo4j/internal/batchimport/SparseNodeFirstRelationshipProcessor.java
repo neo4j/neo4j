@@ -55,6 +55,12 @@ public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<Nod
     }
 
     @Override
+    public void mergeResultsFrom( RecordProcessor<NodeRecord> other )
+    {
+        throw new UnsupportedOperationException( "Should not be called, since it's single-threaded" );
+    }
+
+    @Override
     public void close()
     {   // Nothing to do here
     }

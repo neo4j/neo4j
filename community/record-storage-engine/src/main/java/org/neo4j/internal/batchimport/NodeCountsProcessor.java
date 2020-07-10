@@ -41,6 +41,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     private final NodeLabelsCache cache;
     private final CountsAccessor.Updater counts;
     private final int anyLabel;
+    private final NodeLabelsCache.Client cacheClient;
 
     NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
             CountsAccessor.Updater counts, ProgressReporter progressReporter )
@@ -52,6 +53,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
         // Instantiate with high id + 1 since we need that extra slot for the ANY count
         this.labelCounts = new long[highLabelId + 1];
         this.progressReporter = progressReporter;
+        this.cacheClient = cache.newClient();
     }
 
     @Override
@@ -64,13 +66,23 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
             {
                 labelCounts[(int) labelId]++;
             }
-            cache.put( node.getId(), labels );
+            cache.put( cacheClient, node.getId(), labels );
         }
         labelCounts[anyLabel]++;
         progressReporter.progress( 1 );
 
         // No need to update the store, we're just reading things here
         return false;
+    }
+
+    @Override
+    public void mergeResultsFrom( RecordProcessor<NodeRecord> other )
+    {
+        NodeCountsProcessor o = (NodeCountsProcessor) other;
+        for ( int i = 0; i < o.labelCounts.length; i++ )
+        {
+            labelCounts[i] += o.labelCounts[i];
+        }
     }
 
     @Override

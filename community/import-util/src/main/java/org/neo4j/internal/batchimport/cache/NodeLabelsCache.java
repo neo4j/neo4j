@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Bits;
 
@@ -48,7 +50,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
 
     private final LongArray cache;
     private final LongArray spillOver;
-    private long spillOverIndex;
+    private final AtomicLong spillOverIndex = new AtomicLong();
     private final int bitsPerLabel;
     private final int worstCaseLongsNeeded;
     private final Client putClient;
@@ -114,6 +116,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
             // So create the reference
             putClient.fieldBits.clear( true );
             putClient.fieldBits.put( labelIds.length, bitsPerLabel );
+            long spillOverIndex = this.spillOverIndex.getAndAdd( longsInUse );
             putClient.fieldBits.put( spillOverIndex, Long.SIZE - bitsPerLabel );
             cache.set( nodeId, putClient.fieldBits.getLongs()[0] );
 

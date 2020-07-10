@@ -19,19 +19,13 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
-import org.neo4j.internal.batchimport.staging.BatchSender;
-import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
@@ -42,30 +36,16 @@ import static java.lang.Math.toIntExact;
  * Processes relationship records, feeding them to {@link RelationshipCountsProcessor} which keeps
  * the accumulated counts per thread. Aggregated in {@link #done()}.
  */
-public class ProcessRelationshipCountsDataStep extends ProcessorStep<RelationshipRecord[]>
+public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<RelationshipRecord>
 {
-    private final NodeLabelsCache cache;
-    private final Map<Thread,RelationshipCountsProcessor> processors = new ConcurrentHashMap<>();
-    private final int highLabelId;
-    private final int highRelationshipTypeId;
-    private final CountsAccessor.Updater countsUpdater;
-    private final NumberArrayFactory cacheFactory;
-    private final ProgressReporter progressMonitor;
-    private final MemoryTracker memoryTracker;
-
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
             highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
             ProgressReporter progressReporter, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        super( control, "COUNT", config, numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), pageCacheTracer );
-        this.cache = cache;
-        this.highLabelId = highLabelId;
-        this.highRelationshipTypeId = highRelationshipTypeId;
-        this.countsUpdater = countsUpdater;
-        this.cacheFactory = cacheFactory;
-        this.progressMonitor = progressReporter;
-        this.memoryTracker = memoryTracker;
+        super( control, "COUNT", config,
+                () -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ), true,
+                numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), pageCacheTracer );
     }
 
     /**
@@ -90,53 +70,5 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
         long threadMem = RelationshipCountsProcessor.calculateMemoryUsage( highLabelId, highRelationshipTypeId );
         long possibleThreads = availableMem / threadMem;
         return possibleThreads >= config.maxNumberOfProcessors() ? 0 : toIntExact( max( 1, possibleThreads ) );
-    }
-
-    @Override
-    protected void process( RelationshipRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
-    {
-        RelationshipCountsProcessor processor = processor();
-        for ( RelationshipRecord record : batch )
-        {
-            if ( record.inUse() )
-            {
-                processor.process( record, cursorTracer );
-            }
-        }
-        progressMonitor.progress( batch.length );
-    }
-
-    private RelationshipCountsProcessor processor()
-    {
-        // This is OK since in this step implementation we use TaskExecutor which sticks to its threads deterministically.
-        return processors.computeIfAbsent( Thread.currentThread(),
-                k -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ) );
-    }
-
-    @Override
-    protected void done()
-    {
-        super.done();
-        RelationshipCountsProcessor all = null;
-        for ( RelationshipCountsProcessor processor : processors.values() )
-        {
-            if ( all == null )
-            {
-                all = processor;
-            }
-            else
-            {
-                all.addCountsFrom( processor );
-            }
-        }
-        if ( all != null )
-        {
-            all.done();
-        }
-
-        for ( RelationshipCountsProcessor processor : processors.values() )
-        {
-            processor.close();
-        }
     }
 }

@@ -26,6 +26,12 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -33,20 +39,33 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  */
 public class RecordProcessorStep<T extends AbstractBaseRecord> extends ProcessorStep<T[]>
 {
-    private final RecordProcessor<T> processor;
+    private final Supplier<RecordProcessor<T>> processorFactory;
     private final boolean endOfLine;
+    private final List<RecordProcessor<T>> allProcessors = Collections.synchronizedList( new ArrayList<>() );
+    private final ThreadLocal<RecordProcessor<T>> threadProcessors = new ThreadLocal<RecordProcessor<T>>()
+    {
+        @Override
+        protected RecordProcessor<T> initialValue()
+        {
+            RecordProcessor<T> processor = processorFactory.get();
+            allProcessors.add( processor );
+            return processor;
+        }
+    };
 
     public RecordProcessorStep( StageControl control, String name, Configuration config,
-            RecordProcessor<T> processor, boolean endOfLine, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
+            Supplier<RecordProcessor<T>> processorFactory, boolean endOfLine, int maxProcessors, PageCacheTracer pageCacheTracer,
+            StatsProvider... additionalStatsProviders )
     {
-        super( control, name, config, 1, pageCacheTracer, additionalStatsProviders );
-        this.processor = processor;
+        super( control, name, config, maxProcessors, pageCacheTracer, additionalStatsProviders );
+        this.processorFactory = processorFactory;
         this.endOfLine = endOfLine;
     }
 
     @Override
     protected void process( T[] batch, BatchSender sender, PageCursorTracer cursorTracer )
     {
+        RecordProcessor<T> processor = threadProcessors.get();
         for ( T item : batch )
         {
             if ( item != null && item.inUse() )
@@ -71,6 +90,15 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     protected void done()
     {
         super.done();
-        processor.done();
+        Iterator<RecordProcessor<T>> processors = allProcessors.iterator();
+        if ( processors.hasNext() )
+        {
+            RecordProcessor<T> first = processors.next();
+            while ( processors.hasNext() )
+            {
+                first.mergeResultsFrom( processors.next() );
+            }
+            first.done();
+        }
     }
 }

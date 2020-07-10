@@ -48,7 +48,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         add( new LabelIndexWriterStep( control(), config, labelIndex, nodeStore, pageCacheTracer ) );
-        add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
-                nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, pageCacheTracer, additionalStatsProviders ) );
+        add( new RecordProcessorStep<>( control(), "COUNT", config, () -> new NodeCountsProcessor(
+                nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer, additionalStatsProviders ) );
     }
 }

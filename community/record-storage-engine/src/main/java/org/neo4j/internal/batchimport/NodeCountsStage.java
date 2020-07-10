@@ -46,7 +46,7 @@ public class NodeCountsStage extends Stage
         add( new BatchFeedStep( control(), config, RecordIdIterator.allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config,
-                new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, pageCacheTracer,
+                () -> new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer,
                 additionalStatsProviders ) );
     }
 }
