@@ -208,7 +208,7 @@ class TransactionTracingIT
             transaction.kernelTransaction().dataWrite().nodeDetachDelete( sourceId );
 
             softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 5 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 0 );
             softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 5 );
         }
     }

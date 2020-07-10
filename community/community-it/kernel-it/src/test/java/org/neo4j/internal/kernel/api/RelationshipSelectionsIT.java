@@ -420,7 +420,8 @@ public class RelationshipSelectionsIT
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets registered due to
+        // cursor context being closed before the storage cursor on KTI#commit()
     }
 
     private static void assertOneCursor( CursorContext cursorContext )
@@ -428,7 +429,8 @@ public class RelationshipSelectionsIT
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isOne();
         assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
+        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets registered due to
+        // cursor context being closed before the storage cursor on KTI#commit()
     }
 
     private static void assertZeroCursor( CursorContext cursorContext )
