@@ -82,7 +82,7 @@ object ResultOrdering {
       case class OrderNotYetDecided(providedOrderColumns: Seq[Column]) extends Acc
       case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[Column]) extends Acc
 
-      def possibleOrdersForCandidate(candidate: OrderCandidate): Acc =
+      def possibleOrdersForCandidate(candidate: OrderCandidate[_]): Acc =
         candidate.order.zipAll(indexProperties, null, null).foldLeft[Acc](OrderNotYetDecided(Seq.empty)) {
 
           // We decided to use IndexOrderDescending and find another DESC column in the ORDER BY

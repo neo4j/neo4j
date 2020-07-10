@@ -63,8 +63,8 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-abstract class ResultOrderingTest(ascXFoo: InterestingOrder, descXFoo: InterestingOrder, ascX: InterestingOrder, descX: InterestingOrder,
-                                  orderCandidateFactory: OrderCandidateFactory, toInterestingOrder: OrderCandidate => InterestingOrder) extends CypherFunSuite with LogicalPlanningTestSupport2 {
+abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](ascXFoo: InterestingOrder, descXFoo: InterestingOrder, ascX: InterestingOrder, descX: InterestingOrder,
+                                  orderCandidateFactory: OrderCandidateFactory[OC], toInterestingOrder: OC => InterestingOrder) extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   // Index operator
 
@@ -281,9 +281,9 @@ object ResultOrderingTest extends AstConstructionTestSupport {
     ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexProperties, indexProperties.map(_ => CTInteger), _ => orderCapability)
 }
 
-class RequiredTestIndexOrder extends ResultOrderingTest(requiredAscXFoo, requiredDescXFoo, requiredAscX, requiredDescX, RequiredOrderCandidate, InterestingOrder.required)
+class RequiredTestIndexOrder extends ResultOrderingTest[RequiredOrderCandidate](requiredAscXFoo, requiredDescXFoo, requiredAscX, requiredDescX, RequiredOrderCandidate, InterestingOrder.required)
 
-class InterestingTestIndexOrder extends ResultOrderingTest(InterestingOrder.interested(interestingAscXFoo), InterestingOrder.interested(interestingDescXFoo),
+class InterestingTestIndexOrder extends ResultOrderingTest[InterestingOrderCandidate](InterestingOrder.interested(interestingAscXFoo), InterestingOrder.interested(interestingDescXFoo),
                                                            InterestingOrder.interested(interestingAscX), InterestingOrder.interested(interestingDescX),
                                                            InterestingOrderCandidate, InterestingOrder.interested) {
   // Index operator

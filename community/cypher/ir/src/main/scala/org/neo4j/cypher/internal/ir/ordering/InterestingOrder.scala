@@ -63,9 +63,9 @@ object InterestingOrder {
 
   val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
-  def required(candidate: OrderCandidate): InterestingOrder = InterestingOrder(candidate.asInstanceOf[RequiredOrderCandidate], Seq.empty)
+  def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
 
-  def interested(candidate: OrderCandidate): InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate.asInstanceOf[InterestingOrderCandidate]))
+  def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate))
 }
 
 /**
