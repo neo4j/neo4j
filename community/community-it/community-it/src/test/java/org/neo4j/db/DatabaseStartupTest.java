@@ -199,6 +199,41 @@ class DatabaseStartupTest
     }
 
     @Test
+    void startDatabaseWithoutStoreFilesAndWithTransactionLogFilesFailure() throws IOException
+    {
+        // Create a store
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
+        managementService.shutdown();
+
+        fs.deleteRecursively( databaseLayout.databaseDirectory() );
+
+        // Try to start
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
+        try
+        {
+            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            assertFalse( db.isAvailable( 10 ) );
+
+            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            Optional<Throwable> cause = dbStateService.causeOfFailure( db.databaseId() );
+            assertTrue( cause.isPresent() );
+            assertThat( cause.get() ).hasStackTraceContaining(
+                    "Fail to start database '" + DEFAULT_DATABASE_NAME + "' since transaction logs were found, while database " );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     void startTestDatabaseOnProvidedNonAbsoluteFile()
     {
         File directory = new File( "notAbsoluteDirectory" );
