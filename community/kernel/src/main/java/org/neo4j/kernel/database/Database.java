@@ -755,7 +755,7 @@ public class Database extends LifecycleAdapter
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
-                recurringPeriod, databaseHealth );
+                recurringPeriod, databaseHealth, namedDatabaseId.name() );
 
         life.add( checkPointer );
         life.add( checkPointScheduler );
@@ -832,7 +832,7 @@ public class Database extends LifecycleAdapter
         databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         TransactionMonitorScheduler transactionMonitorScheduler =
                 new TransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
-                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
+                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis(), namedDatabaseId.name() );
         life.add( transactionMonitorScheduler );
     }
 

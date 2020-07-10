@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -63,8 +64,8 @@ class GlobalModuleTest
         lock.acquire( 1 );
 
         // add an increment task to the deferred executor
-        later.execute( latch::countDown );
-        later.execute( lock::release );
+        later.execute( new JobMonitoringParams( null, null, null ), latch::countDown );
+        later.execute( new JobMonitoringParams( null, null, null ), lock::release );
 
         // if I try and get the lock it should fail because the deferred executor is still waiting for a real executor implementation.
         // n.b. this will take the whole timeout time. So don't set this high, even if it means that this test might get lucky and pass

@@ -31,7 +31,10 @@ import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+
+import static org.neo4j.common.Subject.SYSTEM;
 
 /**
  * Thread-safe query collector.
@@ -70,7 +73,8 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
         int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
         if ( collectSeconds > 0 )
         {
-            jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+            var monitoringParams = new JobMonitoringParams( SYSTEM, databaseId.name(), "Timeout of query collection" );
+            jobScheduler.schedule( Group.DATA_COLLECTOR, monitoringParams, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
         }
         isCollecting = true;
         return success( "Collection started." );

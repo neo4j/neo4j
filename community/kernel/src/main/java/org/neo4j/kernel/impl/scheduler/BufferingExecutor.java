@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.scheduler;
 
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 
 import org.neo4j.scheduler.DeferredExecutor;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 
 /**
  * Buffers all tasks sent to it, and is able to replay those messages into
@@ -38,12 +39,12 @@ import org.neo4j.scheduler.DeferredExecutor;
  */
 public class BufferingExecutor implements DeferredExecutor
 {
-    private final Queue<Runnable> buffer = new LinkedList<>();
+    private final Queue<Command> buffer = new LinkedList<>();
 
-    private volatile Executor realExecutor;
+    private volatile MonitoredJobExecutor realExecutor;
 
     @Override
-    public void satisfyWith( Executor executor )
+    public void satisfyWith( MonitoredJobExecutor executor )
     {
         synchronized ( this )
         {
@@ -58,15 +59,15 @@ public class BufferingExecutor implements DeferredExecutor
 
     private void replayBuffer()
     {
-        Runnable command = pollRunnable();
+        Command command = pollCommand();
         while ( command != null )
         {
-            realExecutor.execute( command );
-            command = pollRunnable();
+            realExecutor.execute( command.monitoringParams, command.runnable );
+            command = pollCommand();
         }
     }
 
-    private Runnable pollRunnable()
+    private Command pollCommand()
     {
         synchronized ( buffer )
         {
@@ -74,7 +75,7 @@ public class BufferingExecutor implements DeferredExecutor
         }
     }
 
-    private void queueRunnable( Runnable command )
+    private void queueCommand( Command command )
     {
         synchronized ( buffer )
         {
@@ -83,12 +84,12 @@ public class BufferingExecutor implements DeferredExecutor
     }
 
     @Override
-    public void execute( @Nonnull Runnable command )
+    public void execute( @Nonnull JobMonitoringParams monitoringParams, @Nonnull Runnable command )
     {
         // First do an unsynchronized check to see if a realExecutor is present
         if ( realExecutor != null )
         {
-            realExecutor.execute( command );
+            realExecutor.execute( monitoringParams, command );
             return;
         }
 
@@ -97,12 +98,24 @@ public class BufferingExecutor implements DeferredExecutor
         {
             if ( realExecutor != null )
             {
-                realExecutor.execute( command );
+                realExecutor.execute( monitoringParams, command );
             }
             else
             {
-                queueRunnable( command );
+                queueCommand( new Command( monitoringParams, command ) );
             }
+        }
+    }
+
+    private static class Command
+    {
+        private final JobMonitoringParams monitoringParams;
+        private final Runnable runnable;
+
+        Command( JobMonitoringParams monitoringParams, Runnable runnable )
+        {
+            this.monitoringParams = monitoringParams;
+            this.runnable = runnable;
         }
     }
 }

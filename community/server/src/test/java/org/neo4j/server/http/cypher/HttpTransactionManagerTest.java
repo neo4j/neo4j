@@ -31,6 +31,7 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -55,7 +56,8 @@ class HttpTransactionManagerTest
         new HttpTransactionManager( managementService, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
 
         long runEvery = Math.round( Duration.ofMinutes( 1 ).toMillis() / 2.0 );
-        verify( jobScheduler ).scheduleRecurring( eq( Group.SERVER_TRANSACTION_TIMEOUT ), any(), eq( runEvery ), eq( TimeUnit.MILLISECONDS ) );
+        verify( jobScheduler ).scheduleRecurring( eq( Group.SERVER_TRANSACTION_TIMEOUT ), any( JobMonitoringParams.class ), any(), eq( runEvery ),
+                eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test

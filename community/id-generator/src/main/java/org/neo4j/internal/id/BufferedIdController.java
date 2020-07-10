@@ -25,9 +25,11 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.common.Subject.SYSTEM;
 
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.
@@ -40,19 +42,23 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
     private final PageCacheTracer pageCacheTracer;
+    private final String databaseName;
     private JobHandle<?> jobHandle;
 
-    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, PageCacheTracer pageCacheTracer )
+    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, PageCacheTracer pageCacheTracer,
+            String databaseName )
     {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
         this.pageCacheTracer = pageCacheTracer;
+        this.databaseName = databaseName;
     }
 
     @Override
     public void start()
     {
-        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, this::maintenance, 1, SECONDS );
+        var monitoringParams = new JobMonitoringParams( SYSTEM, databaseName, "ID generator maintenance" );
+        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS );
     }
 
     @Override

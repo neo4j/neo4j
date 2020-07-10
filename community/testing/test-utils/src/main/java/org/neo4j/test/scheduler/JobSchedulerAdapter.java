@@ -34,6 +34,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
@@ -58,6 +59,12 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
 
     @Override
     public CallableExecutor executor( Group group )
+    {
+        return null;
+    }
+
+    @Override
+    public MonitoredJobExecutor monitoredJobExecutor( Group group )
     {
         return null;
     }

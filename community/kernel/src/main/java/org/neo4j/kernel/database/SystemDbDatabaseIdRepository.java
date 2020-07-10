@@ -32,8 +32,11 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Node;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 
+import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
@@ -41,33 +44,33 @@ import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERT
 public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
 {
     private final DatabaseManager<?> databaseManager;
-    private final Executor executor;
+    private final MonitoredJobExecutor monitoredJobExecutor;
 
     public SystemDbDatabaseIdRepository( DatabaseManager<?> databaseManager, JobScheduler jobScheduler )
     {
         this.databaseManager = databaseManager;
-        this.executor = jobScheduler.executor( Group.DATABASE_ID_REPOSITORY );
+        this.monitoredJobExecutor = jobScheduler.monitoredJobExecutor( Group.DATABASE_ID_REPOSITORY );
     }
 
     @Override
     public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName normalizedDatabaseName )
     {
         var databaseName = normalizedDatabaseName.name();
-        return runAsync(
-                () -> get0( DATABASE_NAME_PROPERTY, databaseName ),
-                executor );
+        return runAsync( () -> get( DATABASE_NAME_PROPERTY, databaseName ), databaseName );
     }
 
     @Override
     public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
     {
-        return runAsync( () -> get0( DATABASE_UUID_PROPERTY, databaseId.uuid().toString() ), executor );
+        return runAsync( () -> get( DATABASE_UUID_PROPERTY, databaseId.uuid().toString() ), null );
     }
 
-    private static <T> T runAsync( Supplier<T> supplier, Executor executor )
+    private <T> T runAsync( Supplier<T> supplier, String databaseName )
     {
         try
         {
+            var monitoringParams = new JobMonitoringParams( SYSTEM, databaseName, "Obtaining a database ID from System database" );
+            Executor executor = job -> monitoredJobExecutor.execute( monitoringParams, job );
             return CompletableFuture.supplyAsync( supplier, executor ).join();
         }
         catch ( CompletionException e )
@@ -81,7 +84,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     // Run on another thread to avoid running in an enclosing transaction on a different database
-    private Optional<NamedDatabaseId> get0( String propertyKey, String propertyValue )
+    private Optional<NamedDatabaseId> get( String propertyKey, String propertyValue )
     {
         var context = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );

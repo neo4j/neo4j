@@ -34,6 +34,7 @@ import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 public class VmPauseMonitor
 {
@@ -57,7 +58,7 @@ public class VmPauseMonitor
         monitor.started();
         Preconditions.checkState( job == null, "VM pause monitor is already started" );
         stopped = false;
-        job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, this::run ) );
+        job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, NOT_MONITORED, this::run ) );
     }
 
     public void stop()

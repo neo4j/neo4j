@@ -24,12 +24,14 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Subject;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
@@ -94,7 +96,8 @@ public class HttpTransactionManager
 
         long timeoutMillis = timeout.toMillis();
         long runEvery = round( timeoutMillis / 2.0 );
-        jobScheduler.scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, () ->
+        var monitoringParams = new JobMonitoringParams( Subject.SYSTEM, null, "Timeout of HTTP transactions" );
+        jobScheduler.scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, monitoringParams, () ->
         {
             long maxAge = clock.millis() - timeoutMillis;
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );

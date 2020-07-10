@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.api.transaction.monitor;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.Subject;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 public class TransactionMonitorScheduler extends LifecycleAdapter
@@ -31,14 +33,16 @@ public class TransactionMonitorScheduler extends LifecycleAdapter
     private final TransactionMonitor transactionMonitor;
     private final JobScheduler scheduler;
     private final long checkIntervalMillis;
+    private final String databaseName;
     private JobHandle monitorJobHandle;
 
     public TransactionMonitorScheduler( TransactionMonitor transactionMonitor,
-            JobScheduler scheduler, long checkIntervalMillis )
+            JobScheduler scheduler, long checkIntervalMillis, String databaseName )
     {
         this.transactionMonitor = transactionMonitor;
         this.scheduler = scheduler;
         this.checkIntervalMillis = checkIntervalMillis;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -46,7 +50,8 @@ public class TransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( checkIntervalMillis > 0 )
         {
-            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, transactionMonitor,
+            var monitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Monitoring of transaction timeout" );
+            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, monitoringParams, transactionMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
         }
     }

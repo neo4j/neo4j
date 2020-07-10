@@ -21,7 +21,6 @@ package org.neo4j.monitoring;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import org.neo4j.monitoring.VmPauseMonitor.VmPauseInfo;
@@ -32,8 +31,11 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.monitoring.VmPauseMonitor.Monitor.EMPTY;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 class VmPauseMonitorTest
 {
@@ -45,7 +47,7 @@ class VmPauseMonitorTest
     @BeforeEach
     void setUp()
     {
-        Mockito.doReturn( jobHandle ).when( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        Mockito.doReturn( jobHandle ).when( jobScheduler ).schedule( any( Group.class ), eq( NOT_MONITORED ), any( Runnable.class ) );
     }
 
     @Test
@@ -69,7 +71,7 @@ class VmPauseMonitorTest
         vmPauseMonitor.start();
         vmPauseMonitor.stop();
 
-        verify( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        verify( jobScheduler ).schedule( any( Group.class ), eq( NOT_MONITORED ), any( Runnable.class ) );
         verify( jobHandle ).cancel();
     }
 
@@ -80,7 +82,7 @@ class VmPauseMonitorTest
         vmPauseMonitor.stop();
         vmPauseMonitor.start();
 
-        verify( jobScheduler, Mockito.times( 2 ) ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        verify( jobScheduler, Mockito.times( 2 ) ).schedule( any( Group.class ), eq( NOT_MONITORED ), any( Runnable.class ) );
         verify( jobHandle ).cancel();
     }
 
@@ -116,6 +118,6 @@ class VmPauseMonitorTest
     {
         Mockito.doReturn( false, true ).when( vmPauseMonitor ).isStopped();
         vmPauseMonitor.monitor();
-        Mockito.verify( monitor ).pauseDetected( ArgumentMatchers.any( VmPauseInfo.class ) );
+        Mockito.verify( monitor ).pauseDetected( any( VmPauseInfo.class ) );
     }
 }

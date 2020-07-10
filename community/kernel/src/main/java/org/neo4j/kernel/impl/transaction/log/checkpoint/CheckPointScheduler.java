@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.common.Subject;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
@@ -48,6 +50,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final Health health;
+    private final String databaseName;
     private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
     private final Runnable job = new Runnable()
@@ -92,7 +95,7 @@ public class CheckPointScheduler extends LifecycleAdapter
             // reschedule only if it is not stopped
             if ( !stopped )
             {
-                handle = scheduler.schedule( Group.CHECKPOINT, job, recurringPeriodMillis, MILLISECONDS );
+                schedule();
             }
         }
 
@@ -113,19 +116,20 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final BooleanSupplier checkPointingCondition = () -> !checkPointing;
 
     public CheckPointScheduler( CheckPointer checkPointer, IOLimiter ioLimiter, JobScheduler scheduler, long recurringPeriodMillis,
-            Health health )
+            Health health, String databaseName )
     {
         this.checkPointer = checkPointer;
         this.ioLimiter = ioLimiter;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
         this.health = health;
+        this.databaseName = databaseName;
     }
 
     @Override
     public void start()
     {
-        handle = scheduler.schedule( Group.CHECKPOINT, job, recurringPeriodMillis, MILLISECONDS );
+        schedule();
     }
 
     @Override
@@ -150,5 +154,11 @@ public class CheckPointScheduler extends LifecycleAdapter
         {
             ioLimiter.enableLimit();
         }
+    }
+
+    private void schedule()
+    {
+        var jobMonitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Scheduled checkpoint" );
+        handle = scheduler.schedule( Group.CHECKPOINT, jobMonitoringParams, job, recurringPeriodMillis, MILLISECONDS );
     }
 }

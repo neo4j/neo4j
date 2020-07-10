@@ -63,6 +63,7 @@ import org.neo4j.time.SystemNanoClock;
 import static java.lang.String.format;
 import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
@@ -612,7 +613,7 @@ public class MuninnPageCache implements PageCache
         // Submit all flushes to the background thread
         for ( PagedFile file : files )
         {
-            flushes.add( scheduler.schedule( Group.FILE_IO_HELPER, () ->
+            flushes.add( scheduler.schedule( FILE_IO_HELPER, () ->
             {
                 try
                 {
@@ -1085,6 +1086,6 @@ public class MuninnPageCache implements PageCache
 
     void allocateFileAsync( PageSwapper swapper, long newFileSize )
     {
-        scheduler.schedule( Group.FILE_IO_HELPER, new AllocateFileTask( swapper, newFileSize ) );
+        scheduler.schedule( FILE_IO_HELPER, new JobMonitoringParams( SYSTEM, null, "File size increase" ), new AllocateFileTask( swapper, newFileSize ) );
     }
 }

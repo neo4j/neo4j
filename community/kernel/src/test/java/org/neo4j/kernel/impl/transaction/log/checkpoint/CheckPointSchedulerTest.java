@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.OtherThreadExecutor;
@@ -88,7 +89,7 @@ class CheckPointSchedulerTest
     void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health, "test db" );
 
         assertNull( jobScheduler.getJob() );
 
@@ -97,7 +98,7 @@ class CheckPointSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler ).schedule( eq( Group.CHECKPOINT ), any( Runnable.class ),
+        verify( jobScheduler ).schedule( eq( Group.CHECKPOINT ), any( JobMonitoringParams.class ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
@@ -105,7 +106,7 @@ class CheckPointSchedulerTest
     void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health, "test db" );
 
         assertNull( jobScheduler.getJob() );
 
@@ -118,7 +119,7 @@ class CheckPointSchedulerTest
         jobScheduler.runJob();
 
         // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( Group.CHECKPOINT ), any( Runnable.class ),
+        verify( jobScheduler, times( 2 ) ).schedule( eq( Group.CHECKPOINT ), any( JobMonitoringParams.class ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
         verify( checkPointer ).checkPointIfNeeded( any( TriggerInfo.class ) );
         assertEquals( scheduledJob, jobScheduler.getJob() );
@@ -128,7 +129,7 @@ class CheckPointSchedulerTest
     void shouldNotRescheduleAJobWhenStopped()
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health, "test db" );
 
         assertNull( jobScheduler.getJob() );
 
@@ -146,7 +147,7 @@ class CheckPointSchedulerTest
     @Test
     void stoppedJobCantBeInvoked() throws Throwable
     {
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 10L, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 10L, health, "test db" );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -217,7 +218,7 @@ class CheckPointSchedulerTest
             }
         };
 
-        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
+        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health, "test db" );
 
         // when
         scheduler.start();
@@ -262,7 +263,7 @@ class CheckPointSchedulerTest
     {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 1, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 1, health, "test db" );
         scheduler.start();
 
         // WHEN/THEN
@@ -291,7 +292,7 @@ class CheckPointSchedulerTest
         CheckableIOLimiter ioLimiter = new CheckableIOLimiter();
         CountDownLatch checkPointerLatch = new CountDownLatch( 1 );
         WaitUnlimitedCheckPointer checkPointer = new WaitUnlimitedCheckPointer( ioLimiter, checkPointerLatch );
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 0L, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 0L, health, "test db" );
         scheduler.start();
 
         Future<?> checkpointerStarter = executor.submit( jobScheduler::runJob );
@@ -313,7 +314,7 @@ class CheckPointSchedulerTest
                 new RuntimeException( "Second" ),
                 new RuntimeException( "Third" ) };
         when( checkPointer.checkPointIfNeeded( any( TriggerInfo.class ) ) ).thenThrow( failures );
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 1, health );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 1, health, "test db" );
         scheduler.start();
 
         // WHEN

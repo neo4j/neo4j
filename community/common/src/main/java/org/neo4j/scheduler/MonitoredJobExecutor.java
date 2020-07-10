@@ -19,19 +19,7 @@
  */
 package org.neo4j.scheduler;
 
-/**
- * Defers execution of all tasks sent to it until it is "satisfied" by being
- * provided with an actual executor.
- * <p>
- * This can be used to construct services that need an executor for their
- * constructor who wish to defer construction of actual executors to some other
- * time or place.
- * <p>
- * You should also not use this when there is a risk that not executing tasks
- * could block the progress of the application lifecycle.
- * <p>
- */
-public interface DeferredExecutor extends MonitoredJobExecutor
+public interface MonitoredJobExecutor
 {
-    void satisfyWith( MonitoredJobExecutor executor );
+    void execute( JobMonitoringParams monitoringParams, Runnable command );
 }

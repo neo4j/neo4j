@@ -35,7 +35,7 @@ public enum Group
     /* Page cache background eviction. */
     PAGE_CACHE_PRE_FETCHER( "PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard() ),
     /** Watch out for, and report, external manipulation of store files. */
-    FILE_WATCHER( "FileWatcher" ),
+    FILE_WATCHER( "FileWatcher", ExecutorServiceFactory.unschedulable() ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */
     VM_PAUSE_MONITOR( "VmPauseMonitor" ),
     /** Rotates diagnostic text logs. */

@@ -71,6 +71,11 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     CallableExecutor executor( Group group );
 
     /**
+     * Expose a group scheduler as a {@link MonitoredJobExecutor}.
+     */
+    MonitoredJobExecutor monitoredJobExecutor( Group group );
+
+    /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
      * This is a lower-level alternative than {@link #executor(Group)}, where you are in control of when to spin
      * up new threads for your jobs.

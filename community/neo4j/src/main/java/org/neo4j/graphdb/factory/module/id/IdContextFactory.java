@@ -66,7 +66,7 @@ public class IdContextFactory
     {
         IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( namedDatabaseId );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
-        BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler, cacheTracer );
+        BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler, cacheTracer, namedDatabaseId.name() );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
     }
 
@@ -76,9 +76,9 @@ public class IdContextFactory
     }
 
     private static BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler,
-            PageCacheTracer cacheTracer )
+            PageCacheTracer cacheTracer, String databaseName )
     {
-        return new BufferedIdController( idGeneratorFactory, scheduler, cacheTracer );
+        return new BufferedIdController( idGeneratorFactory, scheduler, cacheTracer, databaseName );
     }
 
     private static DefaultIdController createDefaultIdController()

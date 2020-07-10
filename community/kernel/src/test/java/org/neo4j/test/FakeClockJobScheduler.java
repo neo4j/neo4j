@@ -38,6 +38,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.scheduler.MonitoredJobInfo;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.FakeClock;
@@ -125,6 +126,13 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     public CallableExecutor executor( Group group )
     {
         return new FakeClockExecutor();
+    }
+
+    @Override
+    public MonitoredJobExecutor monitoredJobExecutor( Group group )
+    {
+        var executor = new FakeClockExecutor();
+        return ( monitoringParams, command ) -> executor.execute( command );
     }
 
     @Override

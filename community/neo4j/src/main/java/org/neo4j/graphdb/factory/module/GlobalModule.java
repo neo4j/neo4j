@@ -287,7 +287,7 @@ public class GlobalModule
         {
             DeferredExecutor executor = executorGroupPair.first();
             Group group = executorGroupPair.other();
-            executor.satisfyWith( jobScheduler.executor( group ) );
+            executor.satisfyWith( jobScheduler.monitoredJobExecutor( group ) );
         }
     }
 

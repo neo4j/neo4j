@@ -121,7 +121,7 @@ public abstract class FabricServicesBootstrap
         var transactionMonitor = new FabricTransactionMonitor( systemNanoClock, logService, fabricConfig );
 
         var transactionCheckInterval = config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis();
-        register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval ), TransactionMonitorScheduler.class );
+        register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
 
         var errorReporter = new ErrorReporter( logService );
         register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor ), TransactionManager.class );

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -47,14 +48,14 @@ class KernelTransactionTimeoutMonitorSchedulerTest
     void startJobTransactionMonitor()
     {
         JobHandle jobHandle = Mockito.mock( JobHandle.class );
-        when( jobScheduler.scheduleRecurring( eq(Group.TRANSACTION_TIMEOUT_MONITOR ), eq( transactionMonitor), anyLong(),
-                any(TimeUnit.class) )).thenReturn( jobHandle );
+        when( jobScheduler.scheduleRecurring( eq( Group.TRANSACTION_TIMEOUT_MONITOR ), any( JobMonitoringParams.class ), eq( transactionMonitor ), anyLong(),
+                any( TimeUnit.class ) ) ).thenReturn( jobHandle );
 
-        TransactionMonitorScheduler monitorScheduler = new TransactionMonitorScheduler( transactionMonitor, jobScheduler, 7 );
+        TransactionMonitorScheduler monitorScheduler = new TransactionMonitorScheduler( transactionMonitor, jobScheduler, 7, "test database" );
 
         monitorScheduler.start();
-        verify(jobScheduler).scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, transactionMonitor,
-                7, TimeUnit.MILLISECONDS );
+        verify( jobScheduler ).scheduleRecurring( eq( Group.TRANSACTION_TIMEOUT_MONITOR ), any( JobMonitoringParams.class ), eq( transactionMonitor ),
+                eq( 7L ), eq( TimeUnit.MILLISECONDS ) );
 
         monitorScheduler.stop();
         verify( jobHandle ).cancel();

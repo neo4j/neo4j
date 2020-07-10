@@ -89,6 +89,6 @@ class BufferedIdControllerTest
 
     private BufferedIdController newController( PageCacheTracer pageCacheTracer )
     {
-        return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), pageCacheTracer );
+        return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), pageCacheTracer, "test db" );
     }
 }
