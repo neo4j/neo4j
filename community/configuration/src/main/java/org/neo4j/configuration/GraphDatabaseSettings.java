@@ -560,7 +560,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "cache pages into one bigger buffer to minimize the number of individual IOPS performed and better utilization of available " +
             "I/O resources, especially when those are restricted." )
     public static final Setting<Boolean> pagecache_buffered_flush_enabled =
-            newBuilder( "dbms.memory.pagecache.flush.buffer.enabled", BOOL, true ).dynamic().build();
+            newBuilder( "dbms.memory.pagecache.flush.buffer.enabled", BOOL, false ).dynamic().build();
 
     @Description( "Page cache can be configured to use a temporal buffer for flushing purposes. It is used to combine, if possible, sequence of several " +
             "cache pages into one bigger buffer to minimize the number of individual IOPS performed and better utilization of available " +

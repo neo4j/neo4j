@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration.pagecache;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
@@ -57,6 +58,7 @@ class ConfigurableIOBufferFactoryTest
     }
 
     @Test
+    @Disabled
     void defaultBufferCreation()
     {
         var config = Config.defaults();
