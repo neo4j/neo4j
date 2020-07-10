@@ -313,6 +313,13 @@ class DatabaseIT
         }
 
         @Override
+        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions,
+                String databaseName ) throws IOException
+        {
+            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, openOptions, databaseName ), fileFlushes );
+        }
+
+        @Override
         public void flushAndForce( IOLimiter limiter ) throws IOException
         {
             flushes.incrementAndGet();
