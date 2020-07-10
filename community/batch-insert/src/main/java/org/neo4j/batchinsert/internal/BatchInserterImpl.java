@@ -631,10 +631,11 @@ public class BatchInserterImpl implements BatchInserter
         Path countsStoreFile = databaseLayout.countStore();
         fileSystem.deleteFile( countsStoreFile );
         CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile, fileSystem, immediate(), initialCountsBuilder,
-                false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
+                initialCountsBuilder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
+            countsStore.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
         }
     }
 
