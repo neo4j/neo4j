@@ -23,6 +23,12 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.platform.commons.util.AnnotationUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -65,6 +71,29 @@ public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutp
     @Override
     public void beforeEach( ExtensionContext context )
     {
+        assertHasResourceLock( context );
         getStoredValue( context ).captureVoices();
+    }
+
+    private void assertHasResourceLock( ExtensionContext context )
+    {
+
+        List<ResourceLock> resourceLocks = new ArrayList<>();
+        context.getTestMethod().ifPresent( method -> resourceLocks.addAll( AnnotationUtils.findRepeatableAnnotations( method, ResourceLock.class ) ) );
+        context.getTestClass().ifPresent( testClass -> {
+            Class<?> cls;
+            Class<?> host = testClass;
+            do
+            {
+                cls = host;
+                resourceLocks.addAll( AnnotationUtils.findRepeatableAnnotations( cls, ResourceLock.class ) );
+                host = cls.getEnclosingClass();
+            }
+            while ( host != null );
+        } );
+        if ( resourceLocks.stream().noneMatch( resourceLock -> Resources.SYSTEM_OUT.equals( resourceLock.value() ) ) )
+        {
+            throw new IllegalStateException( getClass().getSimpleName() + " requires `@ResourceLock( Resources.SYSTEM_OUT )` annotation." );
+        }
     }
 }
