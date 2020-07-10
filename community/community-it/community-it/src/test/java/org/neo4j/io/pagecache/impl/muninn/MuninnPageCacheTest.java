@@ -353,11 +353,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void flushFilwWithSeveralChunks() throws IOException
+    void flushFileWithSeveralChunks() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new FlushInfoTracer();
-        int maxPages = 4096 /* chunk size*/ + 10;
+        int maxPages = 4096 /* chunk size */ + 10;
         PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory();
         try ( MuninnPageCache pageCache = createPageCache( swapperFactory, maxPages, pageCacheTracer, EMPTY );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -375,28 +375,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             var observedChunks = pageCacheTracer.getObservedChunks();
             assertThat( observedChunks ).hasSize( 2 );
             var chunkInfo = observedChunks.get( 0 );
-            assertThat( chunkInfo.getFlushPerChunk() ).isEqualTo( 4096 / pagecache_flush_buffer_size_in_pages.defaultValue() );
+            assertThat( chunkInfo.getFlushPerChunk() ).isGreaterThanOrEqualTo( 4096 / pagecache_flush_buffer_size_in_pages.defaultValue() );
             var chunkInfo2 = observedChunks.get( 1 );
             assertThat( chunkInfo2.getFlushPerChunk() ).isEqualTo( 1 );
             observedChunks.clear();
-
-//            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
-//            {
-//                assertTrue( cursor.next() );
-//                cursor.putLong( 1 );
-//            }
-//            try ( PageCursor cursor = pagedFile.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
-//            {
-//                assertTrue( cursor.next() );
-//                cursor.putLong( 1 );
-//            }
-//            pagedFile.flushAndForce();
-//
-//            var secondFlushChunks = pageCacheTracer.getObservedChunks();
-//            assertThat( secondFlushChunks ).hasSize( 1 );
-//            var partialChunkInfo = secondFlushChunks.get( 0 );
-//            // all the rest went to buffer as dirty so we do not count those as nnon modified
-//            assertThat( partialChunkInfo.getNotModifiedPages() ).isEqualTo( 1 );
         }
     }
 
