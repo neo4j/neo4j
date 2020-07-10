@@ -54,7 +54,7 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
  * and previously found connections will be cached and can significantly speed up traversals.
  */
 @SuppressWarnings( {"unused", "UnnecessaryLocalVariable"} )
-public class CachingExpandInto implements AutoCloseable
+public class CachingExpandInto extends DefaultCloseListenable
 {
     static final long SCOPED_MEM_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
 
@@ -93,9 +93,15 @@ public class CachingExpandInto implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void closeInternal()
     {
         scopedMemoryTracker.close();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return false;
     }
 
     /**

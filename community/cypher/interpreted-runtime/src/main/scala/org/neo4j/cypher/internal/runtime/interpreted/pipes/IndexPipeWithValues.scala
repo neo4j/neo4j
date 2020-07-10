@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 /**
@@ -36,10 +36,11 @@ trait IndexPipeWithValues extends Pipe {
   // the cached properties where we will get values
   val indexCachedProperties: Array[CachedProperty]
 
-  class IndexIterator(queryContext: QueryContext,
+  class IndexIterator(state: QueryState,
+                      queryContext: QueryContext,
                       baseContext: CypherRow,
                       cursor: NodeValueIndexCursor
-                     ) extends IndexIteratorBase[CypherRow](cursor) {
+                     ) extends IndexIteratorBase[CypherRow](state, cursor) {
 
     override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {

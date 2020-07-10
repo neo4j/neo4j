@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -353,14 +354,16 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
-    new Iterator[CypherRow] {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+    new ClosingIterator[CypherRow] {
 
       var (stateMachine, current) = new LoadNext(input, state).next()
 
-      override def hasNext = current != null
+      override protected[this] def closeMore(): Unit = ()
 
-      override def next() = {
+      override def innerHasNext: Boolean = current != null
+
+      override def next(): CypherRow = {
         if (current == null) {
           // fail
           Iterator.empty.next()

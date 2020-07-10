@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.VirtualValues
@@ -27,11 +28,11 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(lhs) {
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map {
-      ctx =>
-        val original = ctx.createClone()
-        val innerState = state.withInitialContext(ctx)
+      row =>
+        val original = row.createClone()
+        val innerState = state.withInitialContext(row)
         val innerResults = rhs.createResults(innerState)
         val collection = VirtualValues.list(innerResults.map(m => m.getByName(identifierToCollect)).toArray: _*)
         original.set(collectionName, collection)

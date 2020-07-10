@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
@@ -123,9 +125,9 @@ case class SetNodePropertyOperation(nodeName: String,
 
   override def name = "SetNodeProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
+  override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
-  override protected def operations(qtx: QueryContext) = qtx.nodeOps
+  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeOps
 
   override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedNodeProperties(id)
@@ -139,9 +141,9 @@ case class SetRelationshipPropertyOperation(relName: String,
 
   override def name = "SetRelationshipProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
+  override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
-  override protected def operations(qtx: QueryContext) = qtx.relationshipOps
+  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipOps
 
   override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedRelationshipProperties(id)
@@ -152,7 +154,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
   override def name: String = "SetProperty"
 
-  override def set(executionContext: CypherRow, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState): Unit = {
     val resolvedEntity = entityExpr(executionContext, state)
     if (!(resolvedEntity eq Values.NO_VALUE)) {
       def setIt[T](entityId: Long, ops: Operations[T, _], invalidation: Long => Unit): Unit = {
@@ -178,7 +180,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   override def needsExclusiveLock = true
 }
 
-abstract class AbstractSetPropertyFromMapOperation(expression: Expression) extends SetOperation {
+abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
 
   protected def setPropertiesFromMap[T, CURSOR]( propertyCursor: PropertyCursor,
                                                  qtx: QueryContext,
@@ -224,8 +226,8 @@ abstract class AbstractSetPropertyFromMapOperation(expression: Expression) exten
 
 abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
                                                                expression: Expression,
-                                                               removeOtherProps: Boolean) extends AbstractSetPropertyFromMapOperation(expression) {
-  override def set(executionContext: CypherRow, state: QueryState) = {
+                                                               removeOtherProps: Boolean) extends AbstractSetPropertyFromMapOperation() {
+  override def set(executionContext: CypherRow, state: QueryState): Unit = {
     val item = executionContext.getByName(itemName)
     if (!(item eq Values.NO_VALUE)) {
       val ops = operations(state.query)
@@ -257,9 +259,9 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override def name = "SetNodePropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
+  override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
-  override protected def operations(qtx: QueryContext) = qtx.nodeOps
+  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeOps
 
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 
@@ -275,9 +277,9 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
 
   override def name = "SetRelationshipPropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
+  override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
-  override protected def operations(qtx: QueryContext) = qtx.relationshipOps
+  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipOps
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 
@@ -287,11 +289,11 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
 case class SetPropertyFromMapOperation(entityExpr: Expression,
                                        expression: Expression,
                                        removeOtherProps: Boolean)
-  extends AbstractSetPropertyFromMapOperation(expression) {
+  extends AbstractSetPropertyFromMapOperation() {
 
   override def name = "SetPropertyFromMap"
 
-  override def set(executionContext: CypherRow, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState): Unit = {
     val resolvedEntity = entityExpr(executionContext, state)
     if (resolvedEntity != Values.NO_VALUE) {
       def setIt[T, CURSOR](entityId: Long, ops: Operations[T, CURSOR], cursor: CURSOR, invalidation: Long => Unit): Unit = {
@@ -321,7 +323,7 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
 
-  override def set(executionContext: CypherRow, state: QueryState) = {
+  override def set(executionContext: CypherRow, state: QueryState): Unit = {
     val value: AnyValue = executionContext.getByName(nodeName)
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()

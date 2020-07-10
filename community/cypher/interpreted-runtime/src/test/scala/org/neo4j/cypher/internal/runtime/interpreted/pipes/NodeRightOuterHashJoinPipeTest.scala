@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
@@ -34,7 +36,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("should support simple hash join over nodes") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node1)),
@@ -56,7 +58,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("should support cached node properties") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val bPropLeft = prop("b", "prop1")
     val left = newMockedPipe(
@@ -82,7 +84,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("should work when the inner pipe produces multiple rows with the same join key") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
@@ -105,13 +107,13 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("empty rhs should give empty results and not fetch anything from the lhs") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe()
 
     val left = mock[Pipe]
     val lhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
-    when(left.createResults(any())).thenReturn(lhsIterator)
+    when(left.createResults(any())).thenReturn(ClosingIterator(lhsIterator))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
@@ -123,7 +125,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("empty lhs should give null results") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
@@ -145,7 +147,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("rhs with null in the join key should not match anything on lhs") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
@@ -170,7 +172,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("lhs with null in the join key should not match anything") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
@@ -195,7 +197,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("null in both sides should still not match anything") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("b" -> NO_VALUE,  "a" -> intValue(20)))
@@ -214,7 +216,7 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
   test("should support joining on two different variables") {
     // given
-    val queryState = QueryStateHelper.empty
+    val queryState = QueryStateHelper.emptyWithValueSerialization
 
     val right = newMockedPipe(
       row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node2), "c" -> intValue(1)),
@@ -241,5 +243,43 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
       Map("a" -> fromNodeEntity(node2), "b" -> fromNodeEntity(node3), "c" -> intValue(4), "d" -> NO_VALUE),
       Map("a" -> fromNodeEntity(node1), "b" -> NO_VALUE, "c" -> intValue(5), "d" -> NO_VALUE)
     ))
+  }
+
+
+  test("exhaust should close table") {
+    // given
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
+
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+
+    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+
+    // when
+    NodeRightOuterHashJoinPipe(Set("n"), left, right, Set())().createResults(queryState).toList
+
+    // then
+    monitor.closedResources.collect { case t: ProbeTable => t } should have size(1)
+  }
+
+  test("close should close table") {
+    // given
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
+
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+
+    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+
+    // when
+    val result = NodeRightOuterHashJoinPipe(Set("n"), left, right, Set())().createResults(queryState)
+    result.close()
+
+    // then
+    monitor.closedResources.collect { case t: ProbeTable => t } should have size(1)
   }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -30,8 +31,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.FloatingPointValue
 
-import scala.collection.Iterator.empty
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.mutable
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -40,7 +41,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val limitNumber = NumericHelper.evaluateStaticallyKnownNumber(countExpression, state)
     if (limitNumber.isInstanceOf[FloatingPointValue]) {
       val limit = limitNumber.doubleValue()
@@ -52,10 +53,11 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
       throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
     }
 
-    if (limit == 0 || input.isEmpty) return empty
+    if (limit == 0 || input.isEmpty) return ClosingIterator.empty
 
     val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
+    state.query.resources.trace(topTable)
 
     var i = 1L
     while (input.hasNext) {
@@ -71,7 +73,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     topTable.sort()
 
-    topTable.autoClosingIterator(scopedMemoryTracker).asScala
+    ClosingIterator(topTable.autoClosingIterator(scopedMemoryTracker).asScala).closing(topTable)
   }
 }
 
@@ -82,9 +84,8 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
-    if (input.isEmpty) Iterator.empty
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    if (input.isEmpty) ClosingIterator.empty
     else {
 
       val first = input.next()
@@ -96,7 +97,7 @@ case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
           result = ctx
         }
       }
-      Iterator.single(result)
+      ClosingIterator.single(result)
     }
   }
 }
@@ -107,10 +108,9 @@ case class Top1Pipe(source: Pipe, comparator: Comparator[ReadableRow])
 case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
                            (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     if (input.isEmpty)
-      Iterator.empty
+      ClosingIterator.empty
     else {
       val first = input.next()
       var best = first
@@ -129,12 +129,12 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
           matchingRows += ctx
         }
       }
-      matchingRows.result().iterator
+      ClosingIterator(matchingRows.result().iterator)
     }
   }
 
   @inline
-  private def init(first: CypherRow) = {
+  private def init(first: CypherRow): mutable.Builder[CypherRow, Vector[CypherRow]] = {
     val builder = Vector.newBuilder[CypherRow]
     builder += first
     builder

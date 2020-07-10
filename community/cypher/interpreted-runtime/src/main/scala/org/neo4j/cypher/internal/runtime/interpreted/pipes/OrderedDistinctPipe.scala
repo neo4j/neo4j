@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -40,8 +41,7 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
     (ordered.map(_.key), unordered.map(_.key))
   }
 
-  protected def internalCreateResults(input: Iterator[CypherRow],
-                                      state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
 
     /*
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
@@ -49,9 +49,10 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
      */
     val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     var seen: DistinctSet[AnyValue] = DistinctSet.createDistinctSet[AnyValue](memoryTracker)
+    state.query.resources.trace(seen)
     var currentOrderedGroupingValue: AnyValue = null
 
-    val resultIter = input.filter { ctx =>
+    input.filter { ctx =>
       var i = 0
       while (i < groupingColumns.length) {
         ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
@@ -65,22 +66,11 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
         currentOrderedGroupingValue = orderedGroupingValues
         seen.close()
         seen = DistinctSet.createDistinctSet[AnyValue](memoryTracker)
+        state.query.resources.trace(seen)
       }
       val added = seen.add(unorderedGroupingValues)
       added
-    }
-    new Iterator[CypherRow]() {
-      override def hasNext: Boolean = {
-        val resultIterHasNext = resultIter.hasNext
-        if (!resultIterHasNext) {
-          seen.close()
-        }
-        resultIterHasNext
-      }
-
-      override def next(): CypherRow =
-        resultIter.next()
-    }
+    }.closing(seen)
   }
 
   override def equals(obj: Any): Boolean = {
@@ -108,8 +98,7 @@ case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingC
   // First the ordered columns, then the unordered ones
   private val keyNames = groupingColumns.map(_.key)
 
-  protected def internalCreateResults(input: Iterator[CypherRow],
-                                      state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     var currentOrderedGroupingValue: AnyValue = null
 
     input.filter { ctx =>

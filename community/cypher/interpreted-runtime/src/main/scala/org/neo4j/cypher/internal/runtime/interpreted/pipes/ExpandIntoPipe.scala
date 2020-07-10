@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -62,10 +63,12 @@ case class ExpandIntoPipe(source: Pipe,
     case SemanticDirection.BOTH => Direction.BOTH
   }
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val query = state.query
 
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTracker.memoryTrackerForOperator(id.x))
+    state.query.resources.trace(expandInto)
+
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -97,14 +100,14 @@ case class ExpandIntoPipe(source: Pipe,
 
           case IsNoValue() => Iterator.empty
         }
-    }
+    }.closing(expandInto)
   }
 }
 
 object ExpandIntoPipe {
 
   def relationshipIterator(cursor: RelationshipTraversalCursor,
-                           query: QueryContext): Iterator[RelationshipValue] = {
+                           query: QueryContext): ClosingIterator[RelationshipValue] = {
     new CursorIterator[RelationshipValue] {
 
       override protected def fetchNext(): RelationshipValue = {
@@ -116,7 +119,7 @@ object ExpandIntoPipe {
         }
       }
 
-      override protected def close(): Unit = cursor.close()
+      override protected def closeMore(): Unit = cursor.close()
     }
   }
 

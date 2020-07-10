@@ -23,12 +23,15 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toNodeValue
+import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TestableIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
+import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 
 class NodeHashJoinPipeTest extends CypherFunSuite {
@@ -38,7 +41,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
 
     val left = mock[Pipe]
-    when(left.createResults(queryState)).thenReturn(Iterator.empty)
+    when(left.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
     val right = mock[Pipe]
 
@@ -55,11 +58,11 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
 
     val left = mock[Pipe]
-    when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> null), row("b" -> null)))
+    when(left.createResults(queryState)).thenReturn(ClosingIterator(Iterator(row("b" -> null), row("b" -> null))))
 
     val right = mock[Pipe]
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
-    when(left.createResults(queryState)).thenReturn(Iterator.empty)
+    when(left.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
     // when
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
@@ -78,10 +81,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val node2 = newMockedNode(2)
 
     val lhsIterator = new TestableIterator(Iterator(row("b" -> node1), row("b" -> node2)))
-    when(left.createResults(queryState)).thenReturn(lhsIterator)
+    when(left.createResults(queryState)).thenReturn(ClosingIterator(lhsIterator))
 
     val right = mock[Pipe]
-    when(right.createResults(queryState)).thenReturn(Iterator.empty)
+    when(right.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
     // when
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
@@ -89,6 +92,43 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     // then
     result shouldBe empty
     lhsIterator.fetched should equal(0)
+  }
+
+  test("exhaust should close table") {
+    // given
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
+
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+
+    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+
+    // when
+    NodeHashJoinPipe(Set("n"), left, right)().createResults(queryState).toList
+
+    // then
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
+  }
+
+  test("close should close table") {
+    // given
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val queryState = QueryStateHelper.emptyWithResourceManager(new ResourceManager(monitor))
+
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+
+    val left = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+    val right = new FakePipe(Seq(Map("n"->node1),Map("n"->node2)))
+
+    // when
+    val result = NodeHashJoinPipe(Set("n"), left, right)().createResults(queryState)
+    result.close()
+
+    // then
+    monitor.closedResources.collect { case t: collection.ProbeTable[_, _] => t } should have size(1)
   }
 
   private def row(values: (String, AnyValue)*) = CypherRow.from(values: _*)

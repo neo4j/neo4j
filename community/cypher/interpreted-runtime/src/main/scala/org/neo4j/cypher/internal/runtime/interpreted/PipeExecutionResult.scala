@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class PipeExecutionResult(pipe: Pipe,
@@ -36,7 +37,7 @@ class PipeExecutionResult(pipe: Pipe,
 
   private var demand = 0L
   private var cancelled = false
-  private var inner: Iterator[_] = _
+  private var inner: ClosingIterator[_] = _
   private val numberOfFields = fieldNames.length
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
@@ -45,6 +46,9 @@ class PipeExecutionResult(pipe: Pipe,
 
   override def close(): Unit = {
     state.close()
+    if (inner != null) {
+      inner.close()
+    }
   }
 
   override def consumptionState: RuntimeResult.ConsumptionState =

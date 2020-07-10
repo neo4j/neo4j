@@ -35,15 +35,21 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
@@ -168,6 +174,152 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     transactionalContext.close()
     tx.close()
+  }
+
+  test("getRelationshipsForIds closes underlying cursor") {
+    // GIVEN
+    val relTypeName = "LINK"
+    val node = createMiniGraph(relTypeName)
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
+  }
+
+  test("getRelationshipsForIdsPrimitive closes underlying cursor") {
+    // GIVEN
+    val relTypeName = "LINK"
+    val node = createMiniGraph(relTypeName)
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.getRelationshipsForIdsPrimitive(node.getId, SemanticDirection.BOTH, null)
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r:RelationshipTraversalCursor => r } should have size(1)
+  }
+
+  test("getNodesByLabel closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.getNodesByLabel(0, IndexOrderNone)
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r:NodeLabelIndexCursor => r } should have size(1)
+  }
+
+  test("getNodesByLabelPrimitive closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.getNodesByLabelPrimitive(0, IndexOrderNone)
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r:NodeLabelIndexCursor => r } should have size(1)
+  }
+
+  test("nodeOps.all closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.nodeOps.all
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r: NodeCursor => r } should have size(1)
+  }
+
+  test("nodeOps.allPrimitive closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.nodeOps.allPrimitive
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r: NodeCursor => r } should have size(1)
+  }
+
+  test("relationshipOps.all closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.relationshipOps.all
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r: RelationshipScanCursor => r } should have size(1)
+  }
+
+  test("relationshipOps.allPrimitive closes underlying cursor") {
+    // GIVEN
+    createLabeledNodesAndRels
+
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
+    val iteratorA = context.relationshipOps.allPrimitive
+
+    // WHEN
+    iteratorA.next()
+    iteratorA.close()
+
+    // THEN
+    monitor.closedResources.collect { case r: RelationshipScanCursor => r } should have size(1)
   }
 
   test("should deny non-whitelisted URL protocols for loading") {
@@ -320,6 +472,26 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       other2.createRelationshipTo(node, relType)
       tx.commit()
       node
+    }
+    finally {
+      tx.close()
+    }
+  }
+
+  private def createLabeledNodesAndRels: Unit = {
+    val label = Label.label("Foo")
+    val relType = RelationshipType.withName("Foo")
+    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.writeToken())
+    try {
+      val n1 = tx.createNode(label)
+      val n2 = tx.createNode(label)
+      val n3 = tx.createNode(label)
+
+      n1.createRelationshipTo(n2, relType)
+      n2.createRelationshipTo(n3, relType)
+      n3.createRelationshipTo(n1, relType)
+
+      tx.commit()
     }
     finally {
       tx.close()

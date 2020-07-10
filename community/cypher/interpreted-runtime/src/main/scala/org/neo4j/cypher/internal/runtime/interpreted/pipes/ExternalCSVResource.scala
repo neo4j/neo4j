@@ -21,8 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+
 trait ExternalCSVResource {
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
+  def getCsvIterator(url: URL,
+                     fieldTerminator: Option[String],
+                     legacyCsvQuoteEscaping: Boolean,
+                     bufferSize: Int,
                      headers: Boolean = false): LoadCsvIterator
 }
 
@@ -31,16 +36,17 @@ object ExternalCSVResource {
                                     _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 
-trait LoadCsvIterator extends Iterator[Array[String]] {
+trait LoadCsvIterator extends ClosingIterator[Array[String]] {
   def lastProcessed: Long
   def readAll: Boolean
 }
 
 object LoadCsvIterator {
   def empty: LoadCsvIterator = new LoadCsvIterator {
+    override protected[this] def closeMore(): Unit = ()
     override def lastProcessed: Long = 0L
     override def readAll: Boolean = false
-    override def hasNext: Boolean = false
+    override def innerHasNext: Boolean = false
     def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
   }
 }

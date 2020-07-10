@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -33,8 +34,13 @@ import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable.ListBuffer
 
-case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
-                                  dir: SemanticDirection, types: RelationshipTypes, predicate: Option[Expression])
+case class OptionalExpandIntoPipe(source: Pipe,
+                                  fromName: String,
+                                  relName: String,
+                                  toName: String,
+                                  dir: SemanticDirection,
+                                  types: RelationshipTypes,
+                                  predicate: Option[Expression])
                                  (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source)  {
   private val kernelDirection = dir match {
@@ -43,10 +49,10 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     case SemanticDirection.BOTH => Direction.BOTH
   }
 
-  protected def internalCreateResults(input: Iterator[CypherRow],
-                                      state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val query = state.query
     val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTracker.memoryTrackerForOperator(id.x))
+    state.query.resources.trace(expandInto)
     input.flatMap {
       row =>
         val fromNode = getRowNode(row, fromName)
@@ -57,7 +63,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             toNode match {
               case IsNoValue() =>
                 row.set(relName, Values.NO_VALUE)
-                Iterator.single(row)
+                ClosingIterator.single(row)
               case n: NodeValue =>
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
@@ -70,6 +76,8 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                   query.resources.trace(selectionCursor)
                   val relationships = relationshipIterator(selectionCursor, query)
                   val filteredRows = ListBuffer.empty[CypherRow]
+                  // This is exhausting relationships directly, thus we do not need to return
+                  // a ClosingIterator in this flatMap.
                   while (relationships.hasNext) {
                     val candidateRow = rowFactory.copyWith(row, relName, relationships.next())
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
@@ -78,7 +86,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                   }
                   if (filteredRows.isEmpty) {
                     row.set(relName, Values.NO_VALUE)
-                    Iterator.single(row)
+                    ClosingIterator.single(row)
                   }
                   else filteredRows
                 } finally {
@@ -88,8 +96,8 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
 
           case IsNoValue() =>
             row.set(relName, Values.NO_VALUE)
-            Iterator(row)
+            ClosingIterator.single(row)
         }
-    }
+    }.closing(expandInto)
   }
 }

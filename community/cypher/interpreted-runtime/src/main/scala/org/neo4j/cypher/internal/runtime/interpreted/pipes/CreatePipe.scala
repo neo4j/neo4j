@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
@@ -140,7 +141,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
 case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])
                      (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
 
-  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map(row => {
       nodes.foreach { nodeCommand =>
         val (key, node) = createNode(row, state, nodeCommand)
@@ -179,7 +180,7 @@ case class CreateRelationshipCommand(idName: String,
 case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
                               (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
 
-  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map(inRow => {
       val (idName, node) = createNode(inRow, state, data)
       inRow.copyWith(idName, node)
@@ -200,10 +201,10 @@ case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipComman
                                       (val id: Id = Id.INVALID_ID)
   extends EntityCreatePipe(src) {
 
-  override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map(inRow => {
       val (idName, relationship) = createRelationship(inRow, state, data)
-      inRow.copyWith(idName, relationship)
+    inRow.copyWith(idName, relationship)
     })
 
   override protected def handleNoValue(key: String): Unit = {

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 import java.util.Optional
 
-import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
@@ -94,9 +93,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue]
 
-  def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator
+  def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
   def nodeCursor(): NodeCursor
 
@@ -141,9 +140,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
 
-  def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue]
+  def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
 
-  def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator
+  def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
@@ -187,14 +186,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def asObject(value: AnyValue): AnyRef
 
-  // Legacy dependency between kernel and compiler
-  def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path]
-
   def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE): Option[Path]
 
   def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
-                      filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE): Iterator[Path]
+                      filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE): ClosingIterator[Path]
 
   def lockNodes(nodeIds: Long*)
 
@@ -313,9 +309,9 @@ trait Operations[T, CURSOR] {
 
   def isDeletedInThisTx(id: Long): Boolean
 
-  def all: Iterator[T]
+  def all: ClosingIterator[T]
 
-  def allPrimitive: LongIterator
+  def allPrimitive: ClosingLongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
 

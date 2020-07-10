@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -35,7 +36,7 @@ import org.neo4j.values.storable.Values
 case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
                                       (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     var count = 1L
     val it = labels.iterator
     while (it.hasNext) {
@@ -53,6 +54,6 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
     }
 
     val baseContext = state.newRowWithArgument(rowFactory)
-    Iterator(rowFactory.copyWith(baseContext, ident, Values.longValue(count)))
+    ClosingIterator.single(rowFactory.copyWith(baseContext, ident, Values.longValue(count)))
   }
 }

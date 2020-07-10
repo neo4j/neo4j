@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.ReadableRow
@@ -57,7 +58,7 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(

@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 
@@ -40,7 +40,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
  * @param <K> key type
  * @param <V> value type
  */
-public class ProbeTable<K extends Measurable,V extends Measurable> implements Resource
+public class ProbeTable<K extends Measurable,V extends Measurable> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( ProbeTable.class );
     private final MemoryTracker scopedMemoryTracker;
@@ -90,12 +90,18 @@ public class ProbeTable<K extends Measurable,V extends Measurable> implements Re
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( map != null )
         {
             map = null;
             scopedMemoryTracker.close();
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return map == null;
     }
 }

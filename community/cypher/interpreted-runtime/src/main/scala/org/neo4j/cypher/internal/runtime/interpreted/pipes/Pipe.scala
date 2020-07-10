@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
@@ -36,15 +37,15 @@ import org.neo4j.cypher.internal.util.attribution.Id
 trait Pipe {
   self: Pipe =>
 
-  def createResults(state: QueryState) : Iterator[CypherRow] = {
+  def createResults(state: QueryState) : ClosingIterator[CypherRow] = {
     val decoratedState = state.decorator.decorate(self.id, state)
     decoratedState.setExecutionContextFactory(rowFactory)
     val innerResult = internalCreateResults(decoratedState)
     state.decorator.afterCreateResults(self.id, decoratedState)
-    state.decorator.decorate(self.id, innerResult, () => state.initialContext)
+    state.decorator.decorate(self.id, innerResult, () => state.initialContext).closing(innerResult)
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow]
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow]
 
   // Used by profiling to identify where to report dbhits and rows
   def id: Id
@@ -57,26 +58,26 @@ trait Pipe {
 
 case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 
-  def internalCreateResults(state: QueryState) =
-    Iterator(state.newRowWithArgument(rowFactory))
+  def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =
+    ClosingIterator.single(state.newRowWithArgument(rowFactory))
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
-  override def createResults(state: QueryState): Iterator[CypherRow] = {
+  override final def createResults(state: QueryState): ClosingIterator[CypherRow] = {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this.id, state)
     decoratedState.setExecutionContextFactory(rowFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
     state.decorator.afterCreateResults(this.id, decoratedState)
-    state.decorator.decorate(this.id, result, sourceResult)
+    state.decorator.decorate(this.id, result, sourceResult).closing(result).closing(sourceResult)
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] =
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
-  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow]
-  private[pipes] def testCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow]
+  private[pipes] def testCreateResults(input: ClosingIterator[CypherRow], state: QueryState) =
     internalCreateResults(input, state)
 
   def getSource: Pipe = source

@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -37,7 +38,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       override def answer(invocation: InvocationOnMock) = {
         val state:QueryState = invocation.getArgument(0)
         state.initialContext should not be empty
-        Iterator.empty
+        ClosingIterator.empty
       }
     })
     val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y")()

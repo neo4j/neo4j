@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util.collection;
 import org.eclipse.collections.api.block.procedure.Procedure;
 import org.eclipse.collections.api.set.MutableSet;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 
@@ -33,7 +34,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
  * A specialized heap tracking set used for distinct query operators.
  * @param <T> element type
  */
-public class DistinctSet<T extends Measurable> implements AutoCloseable
+public class DistinctSet<T extends Measurable> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( DistinctSet.class );
     private final MemoryTracker scopedMemoryTracker;
@@ -68,9 +69,15 @@ public class DistinctSet<T extends Measurable> implements AutoCloseable
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         // No need to close distinctSet individually since it uses scopedMemoryTracker anyway
         scopedMemoryTracker.close();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return false;
     }
 }

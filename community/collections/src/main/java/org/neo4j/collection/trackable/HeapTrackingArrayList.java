@@ -76,6 +76,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         return new HeapTrackingArrayList<>( initialSize, memoryTracker, trackedSize );
     }
 
+    @SuppressWarnings( "CopyConstructorMissesField" )
     private HeapTrackingArrayList( HeapTrackingArrayList<E> other )
     {
         int otherSize = other.size;
@@ -462,6 +463,19 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         int hash = hashCodeRange( 0, size );
         checkForComodification( expectedModCount );
         return hash;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "[" );
+        forEach( elem -> sb.append( elem ).append( "," ) );
+        if ( size() > 0 )
+        {
+            sb.deleteCharAt( sb.length() - 1 );
+        }
+        sb.append( "]" );
+        return sb.toString();
     }
 
     @Override

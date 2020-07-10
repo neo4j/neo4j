@@ -19,31 +19,44 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe.CountingIterator
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.collection.Map
 
-class FakePipe(val data: Iterator[Map[String, Any]]) extends Pipe {
+case class FakePipe(data: Traversable[Map[String, Any]]) extends Pipe {
 
   private var _countingIterator: CountingIterator[CypherRow] = _
 
-  def this(data: Traversable[Map[String, Any]]) = this(data.toIterator)
+  def this(data: Iterator[Map[String, Any]]) = this(data.toList)
 
-  override def internalCreateResults(state: QueryState): CountingIterator[CypherRow] = {
-    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))))
+  override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
+    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))).toIterator)
     _countingIterator
   }
 
   def numberOfPulledRows: Int = _countingIterator.count
 
+  def wasClosed: Boolean = _countingIterator.wasClosed
+
+  def resetClosed(): Unit = _countingIterator.resetClosed()
+
+  def currentIterator: CountingIterator[CypherRow] = _countingIterator
+
   override val id: Id = Id.INVALID_ID
+}
 
-  class CountingIterator[T](inner: Iterator[T]) extends Iterator[T] {
+object FakePipe {
+  class CountingIterator[T](inner: Iterator[T]) extends ClosingIterator[T] {
     private var _count = 0
+    private var _closed = false
 
-    override def hasNext: Boolean = inner.hasNext
+    override protected[this] def closeMore(): Unit = _closed = true
+
+    override protected[this] def innerHasNext: Boolean = inner.hasNext
 
     override def next(): T = {
       _count += 1
@@ -51,5 +64,9 @@ class FakePipe(val data: Iterator[Map[String, Any]]) extends Pipe {
     }
 
     def count: Int = _count
+
+    def wasClosed: Boolean = _closed
+
+    def resetClosed(): Unit = _closed = false
   }
 }

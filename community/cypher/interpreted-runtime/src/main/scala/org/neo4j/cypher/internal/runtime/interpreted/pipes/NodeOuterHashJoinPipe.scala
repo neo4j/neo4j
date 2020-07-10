@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.kernel.impl.util.collection
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT
@@ -33,7 +35,6 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
-                                     rhs: Pipe,
                                      nullableVariables: Set[String]) extends PipeWithSource(lhs) {
 
   private val myVariables = nodeVariables.toIndexedSeq
@@ -74,7 +75,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
 }
 
 //noinspection ReferenceMustBePrefixed
-class ProbeTable(memoryTracker: MemoryTracker) extends AutoCloseable {
+class ProbeTable(memoryTracker: MemoryTracker) extends DefaultCloseListenable {
   private[this] var table: collection.ProbeTable[LongArray, CypherRow] =
     collection.ProbeTable.createProbeTable[LongArray, CypherRow](memoryTracker)
   private[this] var rowsWithNullInKey: EagerBuffer[CypherRow] =
@@ -90,9 +91,11 @@ class ProbeTable(memoryTracker: MemoryTracker) extends AutoCloseable {
 
   def keySet: java.util.Set[LongArray] = table.keySet
 
-  def nullRows: Iterator[CypherRow] = rowsWithNullInKey.autoClosingIterator().asScala
+  def nullRows: ClosingIterator[CypherRow] = ClosingIterator(rowsWithNullInKey.autoClosingIterator().asScala).closing(rowsWithNullInKey)
 
-  override def close(): Unit = {
+  override def isClosed: Boolean = table == null
+
+  override def closeInternal(): Unit = {
     if (table != null) {
       table.close()
       rowsWithNullInKey.close()

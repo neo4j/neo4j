@@ -44,7 +44,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
         this( Collections.singletonList( chain ) );
     }
 
-    StubRelationshipCursor( List<TestRelationshipChain> store )
+    public StubRelationshipCursor( List<TestRelationshipChain> store )
     {
         this.store = store;
         this.chainId = 0;
@@ -117,7 +117,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     @Override
     public long otherNodeReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return targetNodeReference();
     }
 
     @Override

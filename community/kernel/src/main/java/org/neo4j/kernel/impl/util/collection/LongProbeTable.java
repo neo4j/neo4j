@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -33,7 +34,7 @@ import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class LongProbeTable<V extends Measurable> implements AutoCloseable
+public class LongProbeTable<V extends Measurable> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongProbeTable.class );
     static final long SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
@@ -75,12 +76,18 @@ public class LongProbeTable<V extends Measurable> implements AutoCloseable
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( map != null )
         {
             map = null;
             scopedMemoryTracker.close();
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return map == null;
     }
 }

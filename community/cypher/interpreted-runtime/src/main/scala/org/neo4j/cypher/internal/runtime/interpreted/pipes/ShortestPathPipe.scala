@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -41,7 +42,7 @@ case class ShortestPathPipe(source: Pipe,
   private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
 
-  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
 
     input.flatMap(ctx => {

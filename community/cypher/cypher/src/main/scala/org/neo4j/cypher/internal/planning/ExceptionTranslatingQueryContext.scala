@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.planning
 
 import java.net.URL
 
-import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
@@ -138,10 +139,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                            values: Seq[IndexQuery]): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.indexSeek(index, needsValues, indexOrder, values))
 
-  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue] =
+  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
     translateException(tokenNameLookup, inner.getNodesByLabel(id, indexOrder))
 
-  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator =
+  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     translateException(tokenNameLookup, inner.getNodesByLabelPrimitive(id, indexOrder))
 
 
@@ -240,10 +241,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
     translateException(tokenNameLookup, inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator =
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     translateException(tokenNameLookup, inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
@@ -283,13 +284,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
     translateException(tokenNameLookup, inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
 
-  override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] =
-    translateException(tokenNameLookup, inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
-
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Option[Path] =
     translateException(tokenNameLookup, inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Iterator[Path] =
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): ClosingIterator[Path] =
     translateException(tokenNameLookup, inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def nodeCountByCountStore(labelId: Int): Long =
@@ -335,10 +333,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
       translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))
 
-    override def all: Iterator[T] =
+    override def all: ClosingIterator[T] =
       translateException(tokenNameLookup, inner.all)
 
-    override def allPrimitive: LongIterator =
+    override def allPrimitive: ClosingLongIterator =
       translateException(tokenNameLookup, inner.allPrimitive)
 
     override def isDeletedInThisTx(id: Long): Boolean =

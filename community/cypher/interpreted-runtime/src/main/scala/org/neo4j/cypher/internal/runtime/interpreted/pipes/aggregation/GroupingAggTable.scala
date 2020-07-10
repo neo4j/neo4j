@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.eclipse.collections.api.block.function.Function2
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
@@ -54,11 +55,16 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
   private[this] val newAggregators: Function2[AnyValue, MemoryTracker, Array[AggregationFunction]] =
     computeNewAggregatorsFunction(aggregations.map(_.expression))
 
-  override def clear(): Unit = {
+  protected def close(): Unit = {
     if (resultMap != null) {
       resultMap.close()
     }
+  }
+
+  override def clear(): Unit = {
+    close()
     resultMap = HeapTrackingOrderedAppendMap.createOrderedMap[AnyValue, Array[AggregationFunction]](memoryTracker)
+    state.query.resources.trace(resultMap)
   }
 
   override def processRow(row: CypherRow): Unit = {
@@ -71,10 +77,13 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
     }
   }
 
-  override def result(): Iterator[CypherRow] = {
+  override def result(): ClosingIterator[CypherRow] = {
     val innerIterator = resultMap.autoClosingEntryIterator()
-    new Iterator[CypherRow] {
-      override def hasNext: Boolean = innerIterator.hasNext
+    new ClosingIterator[CypherRow] {
+
+      override protected[this] def closeMore(): Unit = resultMap.close()
+
+      override def innerHasNext: Boolean = innerIterator.hasNext
 
       override def next(): CypherRow = {
         val entry = innerIterator.next() // NOTE: This entry is transient and only valid until we call next() again

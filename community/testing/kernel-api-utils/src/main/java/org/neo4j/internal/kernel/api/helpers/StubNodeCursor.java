@@ -86,6 +86,12 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
         return this;
     }
 
+    public StubNodeCursor withDegree( int degree )
+    {
+        this.degree = degree;
+        return this;
+    }
+
     @Override
     public long nodeReference()
     {
@@ -163,7 +169,7 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     @Override
     public int degree( RelationshipSelection selection )
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        return degree;
     }
 
     @Override

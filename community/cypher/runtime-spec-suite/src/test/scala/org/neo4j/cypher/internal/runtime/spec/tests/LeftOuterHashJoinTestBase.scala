@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
+// TODO this does not test null rows at all, yet!
 abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                     runtime: CypherRuntime[CONTEXT],
                                                                     var sizeHint: Int

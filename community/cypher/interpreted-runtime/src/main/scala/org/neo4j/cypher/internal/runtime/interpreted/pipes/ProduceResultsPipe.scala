@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ValuePopulation
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -26,7 +27,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 
 case class ProduceResultsPipe(source: Pipe, columns: Array[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
     val subscriber = state.subscriber

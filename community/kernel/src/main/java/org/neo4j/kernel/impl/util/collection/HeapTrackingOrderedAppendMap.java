@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.util.VisibleForTesting;
@@ -47,7 +48,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  * @param <K> key type
  * @param <V> value type
  */
-public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
+public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedAppendMap.class );
     private static final int INITIAL_CHUNK_SIZE = 32; // Must be even, preferably a power of 2 (32 matches the HeapTrackingUnifiedMap initial size)
@@ -184,12 +185,18 @@ public class HeapTrackingOrderedAppendMap<K, V> implements AutoCloseable
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         map = null;
         first = null;
         current = null;
         scopedMemoryTracker.close();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return first == null;
     }
 
     public void addToBuffer( Object key, Object value )

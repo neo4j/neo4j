@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -31,5 +32,35 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Should not throw
     SemiApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
+  }
+
+  test("SemiApply: Each row should immediately close RHS. Exhaust should close LHS.") {
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val resourceManager = new ResourceManager(monitor)
+    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
+    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val pipe = SemiApplyPipe(lhs, rhs)()
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
+    result.next() // First row
+    lhs.wasClosed shouldBe false
+    rhs.wasClosed shouldBe true
+
+    rhs.resetClosed()
+    result.next() // Second row
+    result.hasNext shouldBe false // Make sure to exhaust
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
+  }
+
+  test("AntiSemiApply: Each row should immediately close RHS. Exhaust should close LHS.") {
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val resourceManager = new ResourceManager(monitor)
+    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
+    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val pipe = AntiSemiApplyPipe(lhs, rhs)()
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
+    result.hasNext shouldBe false // Make sure to exhaust
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
   }
 }

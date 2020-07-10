@@ -288,7 +288,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
       case _ => 0.1
     }
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
 
   test("should deallocate memory between left outer hash joins") {
@@ -296,15 +296,18 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     val nNodes = sizeHint
 
-    val nodes = given { nodeGraph(nNodes/2) }
-    val random = new Random(seed = 1337)
-    val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)}.toArray
-    val data = (0 until nNodes/2).map { i => Array[Any](nodes(i), payload(i)) }
-    val nullData = (nNodes/2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
-    val shuffledData = random.shuffle(data ++ nullData).toArray
-    val dataFunction = (i: Long) => shuffledData(i.toInt - 1)
-    val input1 = finiteInput(nNodes, Some(dataFunction))
-    val input2 = finiteInput(nNodes, Some(dataFunction))
+    val n = nodeGraph(nNodes/2)
+
+    def input(): InputDataStream = {
+      val nodes = given { n }
+      val random = new Random(seed = 1337)
+      val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*) }.toArray
+      val data = (0 until nNodes / 2).map { i => Array[Any](nodes(i), payload(i)) }
+      val nullData = (nNodes / 2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
+      val shuffledData = random.shuffle(data ++ nullData).toArray
+      val dataFunction = (i: Long) => shuffledData(i.toInt - 1)
+      finiteInput(nNodes, Some(dataFunction))
+    }
 
     // when
     val logicalQuery1 = new LogicalQueryBuilder(this)
@@ -334,24 +337,23 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation = 0.1)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, input, input, toleratedDeviation = 0.1)
   }
 
   test("should deallocate memory between right outer hash joins") {
-    assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
-    assume(runtimeUsed != Interpreted) // TODO: Interpreted tries to pre-populate returned node values from a transaction that is closed because of restarting
-
     val nNodes = sizeHint
 
-    val nodes = given { nodeGraph(nNodes/2) }
-    val random = new Random(seed = 1337)
-    val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)}.toArray
-    val data = (0 until nNodes/2).map { i => Array[Any](nodes(i), payload(i)) }
-    val nullData = (nNodes/2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
-    val shuffledData = random.shuffle(data ++ nullData).toArray
-    val dataFunction = (i: Long) => shuffledData(i.toInt - 1)
-    val input1 = finiteInput(nNodes, Some(dataFunction))
-    val input2 = finiteInput(nNodes, Some(dataFunction))
+    val n = nodeGraph(nNodes/2)
+    def input(): InputDataStream = {
+      val nodes = given { n }
+      val random = new Random(seed = 1337)
+      val payload: Array[ListValue] = (1 to nNodes).map { _ => VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)}.toArray
+      val data = (0 until nNodes/2).map { i => Array[Any](nodes(i), payload(i)) }
+      val nullData = (nNodes/2 until nNodes).map { i => Array[Any](VirtualValues.node(-1L), payload(i)) }
+      val shuffledData = random.shuffle(data ++ nullData).toArray
+      val dataFunction = (i: Long) => shuffledData(i.toInt - 1)
+      finiteInput(nNodes, Some(dataFunction))
+    }
 
     // when
     val logicalQuery1 = new LogicalQueryBuilder(this)
@@ -381,7 +383,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation = 0.1)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, input, input, toleratedDeviation = 0.1)
   }
 
   test("should deallocate memory between value hash joins") {
@@ -421,33 +423,42 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation)
   }
 
-  protected def compareMemoryUsage(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, toleratedDeviation: Double = 0.0d): Unit = {
-    compareMemoryUsage(logicalQuery1, logicalQuery2, NoInput, NoInput, toleratedDeviation)
+  protected def compareMemoryUsage(logicalQuery1: LogicalQuery,
+                                   logicalQuery2: LogicalQuery,
+                                   toleratedDeviation: Double = 0.0d): Unit = {
+    compareMemoryUsage(logicalQuery1, logicalQuery2, () => NoInput, () => NoInput, toleratedDeviation)
   }
 
-  protected def compareMemoryUsageWithInputRows(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, nRows: Int, toleratedDeviation: Double = 0.0d): Unit = {
+  protected def compareMemoryUsageWithInputRows(logicalQuery1: LogicalQuery,
+                                                logicalQuery2: LogicalQuery,
+                                                nRows: Int,
+                                                toleratedDeviation: Double = 0.0d): Unit = {
     val input1 = finiteInput(nRows)
     val input2 = finiteInput(nRows)
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
 
-  protected def compareMemoryUsageWithInputStreams(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, input1: InputDataStream, input2: InputDataStream,
-                                                 toleratedDeviation: Double = 0.0d): Unit = {
-    compareMemoryUsage(logicalQuery1, logicalQuery2, input1, input2, toleratedDeviation)
+  protected def compareMemoryUsageWithInputStreams(logicalQuery1: LogicalQuery,
+                                                   logicalQuery2: LogicalQuery,
+                                                   input1: InputDataStream,
+                                                   input2: InputDataStream,
+                                                   toleratedDeviation: Double = 0.0d): Unit = {
+    compareMemoryUsage(logicalQuery1, logicalQuery2, () => input1, () => input2, toleratedDeviation)
   }
 
-  private def compareMemoryUsage(logicalQuery1: LogicalQuery, logicalQuery2: LogicalQuery, input1: InputDataStream, input2: InputDataStream,
+  private def compareMemoryUsage(logicalQuery1: LogicalQuery,
+                                 logicalQuery2: LogicalQuery,
+                                 input1: () => InputDataStream,
+                                 input2: () => InputDataStream,
                                  toleratedDeviation: Double): Unit = {
     restartTx()
-    val runtimeResult1 = profile(logicalQuery1, runtime, input1)
+    val runtimeResult1 = profile(logicalQuery1, runtime, input1())
     consume(runtimeResult1)
     val queryProfile1 = runtimeResult1.runtimeResult.queryProfile()
     val maxMem1 = queryProfile1.maxAllocatedMemory()
 
-    //println(s"\nQuery 1 used $maxMem1\n======================================================================================\n")
-
     restartTx()
-    val runtimeResult2 = profile(logicalQuery2, runtime, input2)
+    val runtimeResult2 = profile(logicalQuery2, runtime, input2())
     consume(runtimeResult2)
     val queryProfile2 = runtimeResult2.runtimeResult.queryProfile()
     val maxMem2 = queryProfile2.maxAllocatedMemory()

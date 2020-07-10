@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -29,9 +30,9 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class EagerAggregationPipe(source: Pipe,
                                 tableFactory: AggregationTableFactory)
                                (val id: Id = Id.INVALID_ID)
-  extends AggregationPipe(source, tableFactory) {
+  extends AggregationPipe(source) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val table = tableFactory.table(state, rowFactory, id)
     table.clear()
     while (input.hasNext) {

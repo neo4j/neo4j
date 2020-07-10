@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -27,18 +28,18 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
-import scala.collection.mutable.ListBuffer
 import scala.collection.AbstractIterator
 import scala.collection.Iterator
+import scala.collection.mutable.ListBuffer
 
 case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
                                (val id: Id = Id.INVALID_ID)
 extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     var triadicState: LongHashSet = null
     // 1. Build
-    new LazyGroupingIterator[CypherRow](input) {
+    ClosingIterator(new LazyGroupingIterator[CypherRow](input) {
       override def getKey(row: CypherRow): AnyValue = row.getByName(source)
 
       override def getValue(row: CypherRow): Option[Long] = row.getByName(seen) match {
@@ -50,7 +51,7 @@ extends PipeWithSource(left) {
       override def setState(triadicSet: LongHashSet): Unit = triadicState = triadicSet
 
     // 2. pass through 'right'
-    }.flatMap { outerContext =>
+    }).flatMap { outerContext =>
       val innerState = state.withInitialContext(outerContext)
       right.createResults(innerState)
 
@@ -72,7 +73,7 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
   var current: Iterator[ROW] = _
   var nextRow: ROW = _
 
-  override def next() = if(hasNext) current.next() else Iterator.empty.next()
+  override def next(): ROW = if(hasNext) current.next() else Iterator.empty.next()
 
   override def hasNext: Boolean = {
     if (current != null && current.hasNext)

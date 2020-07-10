@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -90,7 +91,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     CachedProperty("n", Variable(node)(pos), PropertyKeyName(property.name)(pos), NODE_TYPE)(pos)
 
   private def mockedQueryContext[T] = {
-    val query = mock[QueryContext]
+    val query = mock[QueryContext](RETURNS_DEEP_STUBS)
     when(query.nodeById(any())).thenAnswer(new Answer[NodeValue] {
       override def answer(invocationOnMock: InvocationOnMock): NodeValue =
         VirtualValues.nodeValue(invocationOnMock.getArgument(0), Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)

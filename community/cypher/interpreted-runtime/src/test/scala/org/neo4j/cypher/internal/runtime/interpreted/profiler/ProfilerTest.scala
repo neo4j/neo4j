@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.profiling.NoKernelStatisticProvider
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
@@ -224,14 +225,14 @@ class ProfilerTest extends CypherFunSuite {
     val profiler = new Profiler(DbmsInfo.COMMUNITY, new InterpretedProfileInformation)
 
     val pipe1 = ArgumentPipe()(idGen.id())
-    val iter1 = Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty)
+    val iter1 = ClosingIterator(Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty))
 
     val profiled1 = profiler.decorate(pipe1.id, iter1)
     profiled1.toList // consume it
     profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
     val pipe2 = ArgumentPipe()(idGen.id())
-    val iter2 = Iterator(CypherRow.empty, CypherRow.empty)
+    val iter2 = ClosingIterator(Iterator(CypherRow.empty, CypherRow.empty))
 
     val profiled2 = profiler.decorate(pipe2.id, iter2)
     profiled2.toList // consume it
@@ -291,14 +292,14 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
                             misses: Long = 0)(val id: Id)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input:Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.size
     if (statisticProvider != null) {
       statisticProvider.hits = hits
       statisticProvider.misses = misses
     }
     (0 until dbAccess).foreach(_ => state.query.createNode(Array.empty))
-    (0 until rows).map(_ => CypherRow.empty).toIterator
+    ClosingIterator((0 until rows).map(_ => CypherRow.empty).toIterator)
   }
 }
 

@@ -37,7 +37,9 @@ case class NestedPipeExistsExpression(pipe: Pipe,
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)
-    Values.booleanValue(results.hasNext)
+    val hasNext = results.hasNext
+    results.close()
+    Values.booleanValue(hasNext)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(this)

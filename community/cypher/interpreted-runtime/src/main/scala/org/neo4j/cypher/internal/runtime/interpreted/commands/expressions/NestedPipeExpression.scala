@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -35,7 +36,7 @@ abstract class NestedPipeExpression(pipe: Pipe,
                                     owningPlanId: Id) extends Expression {
 
   protected def createNestedResults(row: ReadableRow,
-                                    state: QueryState): Iterator[CypherRow] = {
+                                    state: QueryState): ClosingIterator[CypherRow] = {
     val initialContext: CypherRow = createInitialContext(row, state)
     val innerState =
       state
@@ -54,7 +55,7 @@ abstract class NestedPipeExpression(pipe: Pipe,
   }
 
   protected def collectResults(state: QueryState,
-                               results: Iterator[CypherRow],
+                               results: ClosingIterator[CypherRow],
                                projection: Expression): ListValue = {
     val all = ListValueBuilder.newListBuilder()
     while (results.hasNext) {

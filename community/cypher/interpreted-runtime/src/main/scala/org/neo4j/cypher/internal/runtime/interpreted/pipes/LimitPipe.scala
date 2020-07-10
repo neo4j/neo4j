@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
@@ -26,14 +27,13 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.FloatingPointValue
 
-import scala.collection.AbstractIterator
 import scala.collection.Iterator.empty
 
 case class LimitPipe(source: Pipe, exp: Expression)
                     (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val limitNumber = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
     if (limitNumber.isInstanceOf[FloatingPointValue]) {
       val limit = limitNumber.doubleValue()
@@ -45,14 +45,16 @@ case class LimitPipe(source: Pipe, exp: Expression)
       throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
     }
 
-    if (limit == 0 || input.isEmpty) return empty
+    if (limit == 0 || input.isEmpty) return ClosingIterator.empty
 
-    new AbstractIterator[CypherRow] {
+    new ClosingIterator[CypherRow] {
       private var remaining = limit
 
-      def hasNext: Boolean = remaining > 0 && input.hasNext
+      override def closeMore(): Unit = ()
 
-      def next(): CypherRow =
+      override def innerHasNext: Boolean = remaining > 0 && input.hasNext
+
+      override def next(): CypherRow =
         if (remaining > 0L) {
           remaining -= 1L
           input.next()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.Ascending
 import org.neo4j.cypher.internal.runtime.interpreted.Descending
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContextOrdering
@@ -109,6 +111,39 @@ class TopNPipeTest extends CypherFunSuite {
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(10,null))
+  }
+
+  // This test is really representing that all pipes should close their input
+  // under special circumstances (here: early abort because of limit 0).
+  // This test is _not_ repeated for every pipe since the solution was implemented in PipeWithSource.
+  test("limit 0 should close input") {
+    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val pipe = TopNPipe(input, literal(0), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a"))
+    result.hasNext
+    input.wasClosed shouldBe true
+  }
+
+  test("close should close input and table") {
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val resourceManager = new ResourceManager(monitor)
+    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a"))
+    result.close()
+    input.wasClosed shouldBe true
+    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size(1)
+  }
+
+  test("exhaust should close input and table") {
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val resourceManager = new ResourceManager(monitor)
+    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
+    val pipe = TopNPipe(input, literal(1), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    // exhaust
+    pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager)).map(ctx => ctx.getByName("a")).toList
+    input.wasClosed shouldBe true
+    monitor.closedResources.collect { case t: DefaultComparatorTopTable[_] => t } should have size(1)
   }
 
   private def list(a: Any*) = a.map(ValueUtils.of).toList

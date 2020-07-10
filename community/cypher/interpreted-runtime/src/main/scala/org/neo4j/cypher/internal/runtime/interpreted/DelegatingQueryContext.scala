@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
 
-import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
@@ -71,10 +72,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   protected def singleDbHit[A](value: A): A = value
   protected def unknownDbHits[A](value: A): A = value
-  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = value
 
-  protected def manyDbHits(value: LongIterator): LongIterator = value
+  protected def manyDbHits(value: ClosingLongIterator): ClosingLongIterator = value
   protected def manyDbHits(value: RelationshipIterator): RelationshipIterator = value
+  protected def manyDbHitsCliRi(value: ClosingLongIterator with RelationshipIterator): ClosingLongIterator with RelationshipIterator = value
   protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
@@ -110,11 +112,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator =
-  manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
+    manyDbHitsCliRi(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 
@@ -177,10 +179,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                                      value: TextValue): NodeValueIndexCursor =
     manyDbHits(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
 
-  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue] =
+  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
     manyDbHits(inner.getNodesByLabel(id, indexOrder))
 
-  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator =
+  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     manyDbHits(inner.getNodesByLabelPrimitive(id, indexOrder))
 
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
@@ -249,13 +251,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.nodeHasCheapDegrees(node, nodeCursor))
 
-  override def variableLengthPathExpand(realNode: Long,
-                                        minHops: Option[Int],
-                                        maxHops: Option[Int],
-                                        direction: SemanticDirection,
-                                        relTypes: Seq[String]): Iterator[Path] =
-    manyDbHits(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
-
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node, nodeCursor))
 
   override def nodeCountByCountStore(labelId: Int): Long = singleDbHit(inner.nodeCountByCountStore(labelId))
@@ -276,7 +271,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[Entity]],
-                               memoryTracker: MemoryTracker): Iterator[Path] =
+                               memoryTracker: MemoryTracker): ClosingIterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
@@ -316,9 +311,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {
 
   protected def singleDbHit[A](value: A): A = value
-  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = value
 
-  protected def manyDbHits[A](value: LongIterator): LongIterator = value
+  protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = value
 
   override def delete(id: Long): Unit = singleDbHit(inner.delete(id))
 
@@ -343,9 +338,9 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
-  override def all: Iterator[T] = manyDbHits(inner.all)
+  override def all: ClosingIterator[T] = manyDbHits(inner.all)
 
-  override def allPrimitive: LongIterator = manyDbHits(inner.allPrimitive)
+  override def allPrimitive: ClosingLongIterator = manyDbHits(inner.allPrimitive)
 
   override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 

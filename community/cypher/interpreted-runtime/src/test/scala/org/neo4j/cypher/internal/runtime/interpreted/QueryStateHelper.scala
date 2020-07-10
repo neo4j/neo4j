@@ -24,9 +24,12 @@ import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
+import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
@@ -35,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.spatial.Point
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
@@ -50,6 +54,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.scalatest.mockito.MockitoSugar
 
+import scala.collection.mutable.ArrayBuffer
+
 object QueryStateHelper extends MockitoSugar {
   def empty: QueryState = emptyWith()
 
@@ -62,10 +68,11 @@ object QueryStateHelper extends MockitoSugar {
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
                 decorator: PipeDecorator = NullPipeDecorator,
-                initialContext: Option[CypherRow] = None
+                initialContext: Option[CypherRow] = None,
+                input: InputDataStream = NoInput
                ):QueryState =
     new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoOpQueryMemoryTracker,
-      decorator, initialContext = initialContext)
+      decorator, initialContext = initialContext, input = input)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,
@@ -97,10 +104,27 @@ object QueryStateHelper extends MockitoSugar {
 
   def countStats(q: QueryState): QueryState = q.withQueryContext(query = new UpdateCountingQueryContext(q.query))
 
-  def emptyWithValueSerialization: QueryState = emptyWith(query = context)
+  def emptyWithValueSerialization: QueryState = {
+    val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
+    Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer((invocationOnMock: InvocationOnMock) => toObject(invocationOnMock.getArgument(0)))
+    emptyWith(query = context)
+  }
 
-  private val context = mock[QueryContext]
-  Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer((invocationOnMock: InvocationOnMock) => toObject(invocationOnMock.getArgument(0)))
+  def emptyWithResourceManager(resourceManager: ResourceManager): QueryState = {
+    val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
+    Mockito.when(context.resources).thenReturn(resourceManager)
+    emptyWith(query = context)
+  }
+
+  class TrackClosedMonitor extends ResourceMonitor {
+    private val _closedResources = new ArrayBuffer[AutoCloseablePlus]()
+    override def trace(resource: AutoCloseablePlus): Unit = ()
+    override def untrace(resource: AutoCloseablePlus): Unit = ()
+    override def close(resource: AutoCloseablePlus): Unit = _closedResources += resource
+    def closedResources: Seq[AutoCloseablePlus] = _closedResources
+  }
+
+  def trackClosedMonitor = new TrackClosedMonitor
 
   private def toObject(any: AnyValue) = {
     val writer = new BaseToObjectValueWriter[RuntimeException] {

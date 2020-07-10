@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -33,14 +34,15 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
 
   private val keyNames = groupingColumns.map(_.key)
 
-  protected def internalCreateResults(input: Iterator[CypherRow],
-                                      state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     new PrefetchingIterator[CypherRow] {
       /*
        * The filtering is done by extracting from the context the values of all return expressions, and keeping them
        * in a set.
        */
       private var seen = DistinctSet.createDistinctSet[AnyValue](state.memoryTracker.memoryTrackerForOperator(id.x))
+
+      state.query.resources.trace(seen)
 
       override def produceNext(): Option[CypherRow] = {
         while (input.hasNext) {
@@ -63,6 +65,8 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
         seen = null
         None
       }
+
+      override protected[this] def closeMore(): Unit = if(seen != null) seen.close()
     }
   }
 

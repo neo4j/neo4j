@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -35,17 +35,17 @@ case class ExpandAllPipe(source: Pipe,
                          types: RelationshipTypes)
                         (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.flatMap {
       row =>
         row.getByName(fromName) match {
           case n: NodeValue =>
-            val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+            val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
                 val other = r.otherNode(n)
                 rowFactory.copyWith(row, relName, r, toName, other)
             }
-          case IsNoValue() => None
+          case IsNoValue() => ClosingIterator.empty
 
           case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
         }

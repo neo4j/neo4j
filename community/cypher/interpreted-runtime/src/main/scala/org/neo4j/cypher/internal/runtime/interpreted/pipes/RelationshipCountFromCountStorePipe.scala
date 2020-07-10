@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -28,7 +29,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
                                                types: RelationshipTypes, endLabel: Option[LazyLabel])
                                               (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val maybeStartLabelId = getLabelId(startLabel, state)
     val maybeEndLabelId = getLabelId(endLabel, state)
 
@@ -43,7 +44,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
 
     val baseContext = state.newRowWithArgument(rowFactory)
     baseContext.set(ident, Values.longValue(count))
-    Seq(baseContext).iterator
+    ClosingIterator.single(baseContext)
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {

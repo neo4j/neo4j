@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toIntValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toListValue
@@ -515,7 +516,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(rel: String, rows: CypherRow*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.createResults(any())).thenAnswer((_: InvocationOnMock) => rows.iterator)
+    when(pipe.createResults(any())).thenAnswer((_: InvocationOnMock) => ClosingIterator(rows.iterator))
 
     pipe
   }

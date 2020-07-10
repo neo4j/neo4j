@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregatingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
@@ -40,6 +41,10 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
   private val scopedMemoryTracker: MemoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
 
+  protected def close(): Unit = {
+    scopedMemoryTracker.close()
+  }
+
   override def clear(): Unit = {
     scopedMemoryTracker.reset()
     var i = 0
@@ -57,10 +62,10 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
     }
   }
 
-  override def result(): Iterator[CypherRow] = {
+  override def result(): ClosingIterator[CypherRow] = {
     val row = resultRow()
     scopedMemoryTracker.close()
-    Iterator.single(row)
+    ClosingIterator.single(row)
   }
 
   protected def resultRow(): CypherRow = {

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -33,24 +34,23 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.storable.TextValue
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
-                                               label: LabelToken,
                                                property: IndexedProperty,
                                                queryIndexId: Int,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val indexCachedProperties: Array[CachedProperty] = Array(property.asCachedProperty(ident))
-  protected val needsValues = indexPropertyIndices.nonEmpty
+  protected val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  override protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
     val value = valueExpr(baseContext, state)
 
     val resultNodes = value match {
       case value: TextValue =>
-        new IndexIterator(state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value ))
+        new IndexIterator(state, state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value))
       case IsNoValue() =>
-        Iterator.empty
+        ClosingIterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
     }
 
@@ -69,7 +69,7 @@ case class NodeIndexContainsScanPipe(ident: String,
                                      valueExpr: Expression,
                                      indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, property, queryIndexId, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
 
   override protected def queryContextCall(state: QueryState,
                                           index: IndexReadSession,
@@ -84,7 +84,7 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                      valueExpr: Expression,
                                      indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, property, queryIndexId, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, property, queryIndexId, valueExpr) {
 
   override protected def queryContextCall(state: QueryState,
                                           index: IndexReadSession,

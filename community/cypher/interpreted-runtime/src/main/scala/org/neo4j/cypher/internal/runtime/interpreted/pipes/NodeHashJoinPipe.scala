@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.Iterators
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.impl.util.collection
@@ -35,35 +35,35 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     if (input.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     val rhsIterator = right.createResults(state)
 
     if (rhsIterator.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     val table = buildProbeTable(input, state)
+    state.query.resources.trace(table)
 
     if (table.isEmpty) {
       table.close()
-      return Iterator.empty
+      return ClosingIterator.empty
     }
 
     val result =
-      for {rhsRow <- rhsIterator
-           joinKey <- computeKey(rhsRow)}
-        yield {
-          val lhsRows = table.get(joinKey)
-          lhsRows.asScala.map { lhsRow =>
-            val output = lhsRow.createClone()
-            output.mergeWith(rhsRow, state.query)
-            output
-          }
-        }
+      for {
+        rhsRow <- rhsIterator
+        joinKey <- computeKey(rhsRow).toIterator
+        lhsRow <- table.get(joinKey).asScala
+      } yield {
+        val output = lhsRow.createClone()
+        output.mergeWith(rhsRow, state.query)
+        output
+      }
 
-    Iterators.resourceClosingIterator[CypherRow](result.flatten, table)
+    result.closing(table)
   }
 
   private def buildProbeTable(input: Iterator[CypherRow], queryState: QueryState): collection.ProbeTable[LongArray, CypherRow] = {

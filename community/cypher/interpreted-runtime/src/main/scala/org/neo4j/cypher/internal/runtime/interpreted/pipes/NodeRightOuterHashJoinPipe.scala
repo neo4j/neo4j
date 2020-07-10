@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.Iterators
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -30,34 +30,35 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
                                       rhs: Pipe,
                                       nullableVariables: Set[String])
                                      (val id: Id = Id.INVALID_ID)
-  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
+  extends NodeOuterHashJoinPipe(nodeVariables, lhs, nullableVariables) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
 
     val rhsResult = rhs.createResults(state)
     if (rhsResult.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTracker.memoryTrackerForOperator(id.x), withNulls = false)
-    val resultIterator = (
-      for {rhsRow <- rhsResult}
-        yield {
-          computeKey(rhsRow) match {
-            case Some(joinKey) =>
-              val lhsRows = probeTable(joinKey)
-              if(lhsRows.hasNext) {
-                lhsRows.asScala.map { lhsRow =>
-                  val outputRow = rowFactory.copyWith(rhsRow)
-                  outputRow.mergeWith(lhsRow, state.query)
-                  outputRow
-                }
-              } else {
-                Seq(addNulls(rhsRow))
-              }
-            case None =>
-              Seq(addNulls(rhsRow))
+    state.query.resources.trace(probeTable)
+    val result = for {
+      rhsRow <- rhsResult
+      outputRow <- computeKey(rhsRow) match {
+        case Some(joinKey) =>
+          val lhsRows = probeTable(joinKey)
+          if (lhsRows.hasNext) {
+            lhsRows.asScala.map { lhsRow =>
+              val outputRow = rowFactory.copyWith(rhsRow)
+              outputRow.mergeWith(lhsRow, state.query)
+              outputRow
+            }
+          } else {
+            Seq(addNulls(rhsRow))
           }
-        }).flatten
-    Iterators.resourceClosingIterator(resultIterator, probeTable)
+        case None =>
+          Seq(addNulls(rhsRow))
+      }
+    } yield outputRow
+
+    result.closing(probeTable)
   }
 }

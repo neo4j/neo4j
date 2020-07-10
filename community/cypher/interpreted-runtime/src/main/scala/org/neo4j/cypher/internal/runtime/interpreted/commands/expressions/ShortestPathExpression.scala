@@ -59,7 +59,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                   disallowSameNode: Boolean = true,
                                   operatorId: Id = Id.INVALID_ID) extends Expression {
 
-  val predicates = perStepPredicates ++ fullPathPredicates
+  val predicates: Seq[Predicate] = perStepPredicates ++ fullPathPredicates
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
     apply(row, state, state.memoryTracker.memoryTrackerForOperator(operatorId.x))
@@ -101,6 +101,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
         .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }
         .map(ValueUtils.fromPath)
         .toArray
+      // Here we immediately exhaust allShortestPath, thus no need to connect to an outer ClosingIterator.
+      // If we ever expose a `getMatchesIterator` (which would be useful), then we need to connect!
       VirtualValues.list(result:_*)
     }
   }
@@ -256,12 +258,14 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
           }
       }
 
+  @scala.annotation.tailrec
   private def isNodesFunction(expression: Expression): Boolean = expression match {
     case _: NodesFunction => true
     case e: ExtendedExpression => isNodesFunction(e.legacy)
     case _ => false
   }
 
+  @scala.annotation.tailrec
   private def isRelationshipsFunction(expression: Expression): Boolean = expression match {
     case _: RelationshipFunction => true
     case e: ExtendedExpression => isRelationshipsFunction(e.legacy)

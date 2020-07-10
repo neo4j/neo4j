@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -32,8 +33,8 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    if (input.hasNext) ClosingIterator(new UnwindIterator(input, state)) else ClosingIterator.empty
   }
 
   private class UnwindIterator(input: Iterator[CypherRow], state: QueryState) extends Iterator[CypherRow] {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.Iterators
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection
@@ -33,35 +33,35 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
                             (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
 
     if (input.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     val rhsIterator = right.createResults(state)
 
     if (rhsIterator.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     val table = buildProbeTable(input, state)
+    state.query.resources.trace(table)
 
     if (table.isEmpty) {
       table.close()
-      return Iterator.empty
+      return ClosingIterator.empty
     }
 
-    val result = for {rhsRow <- rhsIterator
-                      joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE) }
-      yield {
-        val lhsRows = table.get(joinKey)
-        lhsRows.asScala.map { lhsRow =>
-          val outputRow = lhsRow.createClone()
-          outputRow.mergeWith(rhsRow, state.query)
-          outputRow
-        }
-      }
+    val result: ClosingIterator[CypherRow] = for {
+      rhsRow <- rhsIterator
+      joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE)
+      lhsRow <- table.get(joinKey).asScala
+    } yield {
+      val outputRow = lhsRow.createClone()
+      outputRow.mergeWith(rhsRow, state.query)
+      outputRow
+    }
 
-    Iterators.resourceClosingIterator(result.flatten, table)
+    result.closing(table)
   }
 
   private def buildProbeTable(input: Iterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {

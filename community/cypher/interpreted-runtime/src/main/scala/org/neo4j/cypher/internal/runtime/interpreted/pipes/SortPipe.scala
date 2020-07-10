@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
-import org.neo4j.cypher.internal.runtime.AutoClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.DelegatingClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -33,7 +34,7 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     var arrayList: HeapTrackingArrayList[CypherRow] = HeapTrackingArrayList.newArrayList(256, scopedMemoryTracker)
     while (input.hasNext) {
@@ -42,8 +43,8 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
       arrayList.add(row)
     }
     arrayList.sort(comparator)
-    new AutoClosingIterator[CypherRow](arrayList.iterator().asScala) {
-      override def close(): Unit = {
+    new DelegatingClosingIterator[CypherRow](arrayList.iterator().asScala) {
+      override def closeMore(): Unit = {
         arrayList = null
         scopedMemoryTracker.close()
       }

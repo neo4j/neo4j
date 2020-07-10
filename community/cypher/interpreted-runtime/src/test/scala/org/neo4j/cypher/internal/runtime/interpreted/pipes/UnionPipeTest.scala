@@ -19,27 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.kernel.GraphDatabaseQueryService
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LazyIterator[T](count: Int, f: (Int, GraphDatabaseQueryService) => T) extends Iterator[T]() with Assertions {
-  var db: Option[GraphDatabaseQueryService] = None
+class UnionPipeTest extends CypherFunSuite {
+  test("Close should close RHS and LHS.") {
+    val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
+    val pipe = UnionPipe(lhs, rhs)()
+    val result = pipe.createResults(QueryStateHelper.empty)
+    result.next()
+    result.close()
 
-  def this(count: Int, f: Int => T) = {
-    this(count, (count: Int, _) => f(count))
-    db = Some(null)
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
   }
-
-  var counter = 0
-
-  def hasNext: Boolean = counter < count
-
-  def next(): T = {
-    val graph = db.getOrElse(fail("Iterator needs that database set before it can be used"))
-
-    counter += 1
-    f(counter, graph)
-  }
-
-  override def toString(): String = counter.toString
 }

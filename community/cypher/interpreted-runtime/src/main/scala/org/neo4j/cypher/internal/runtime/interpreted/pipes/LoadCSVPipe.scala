@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -43,7 +44,7 @@ case class LoadCSVPipe(source: Pipe,
                        variable: String,
                        fieldTerminator: Option[String],
                        legacyCsvQuoteEscaping: Boolean,
-                        bufferSize: Int)
+                       bufferSize: Int)
                       (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
@@ -70,12 +71,14 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   //Uses an ArrayBackedMap to store header-to-values mapping
-  private class IteratorWithHeaders(headers: Seq[Value], context: CypherRow, filename: String, inner: LoadCsvIterator) extends Iterator[CypherRow] {
+  private class IteratorWithHeaders(headers: Seq[Value], context: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
     private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
     private var nextContext: CypherRow = _
     private var needsUpdate = true
 
-    override def hasNext: Boolean = {
+    override protected[this] def closeMore(): Unit = inner.close()
+
+    override def innerHasNext: Boolean = {
       if (needsUpdate) {
         nextContext = computeNextRow()
         needsUpdate = false
@@ -107,8 +110,11 @@ case class LoadCSVPipe(source: Pipe,
     }
   }
 
-  private class IteratorWithoutHeaders(context: CypherRow, filename: String, inner: LoadCsvIterator) extends Iterator[CypherRow] {
-    override def hasNext: Boolean = inner.hasNext
+  private class IteratorWithoutHeaders(context: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
+
+    override protected[this] def closeMore(): Unit = inner.close()
+
+    override def innerHasNext: Boolean = inner.hasNext
 
     override def next(): CypherRow = {
       // Make sure to pull on inner.next before calling inner.lastProcessed to get the right line number
@@ -123,7 +129,7 @@ case class LoadCSVPipe(source: Pipe,
     )
   }
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.flatMap(context => {
       val urlString: TextValue = urlExpression(context, state).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)

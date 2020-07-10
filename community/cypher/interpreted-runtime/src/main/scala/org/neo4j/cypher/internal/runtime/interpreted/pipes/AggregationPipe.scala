@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.api.block.function.Function2
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.GroupingCol
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -35,10 +35,7 @@ import org.neo4j.values.virtual.VirtualValues
 /**
  * This abstracts all the logic of aggregating, potentially per group.
  */
-abstract class AggregationPipe(source: Pipe,
-                               tableFactory: AggregationTableFactory)
-  extends PipeWithSource(source) {
-}
+abstract class AggregationPipe(source: Pipe) extends PipeWithSource(source)
 
 object AggregationPipe {
 
@@ -51,7 +48,7 @@ object AggregationPipe {
 
     def processRow(row: CypherRow): Unit
 
-    def result(): Iterator[CypherRow]
+    def result(): ClosingIterator[CypherRow]
   }
 
   /**

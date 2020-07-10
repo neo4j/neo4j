@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
-class IndexIteratorBaseTest extends CypherFunSuite {
-
-  test("should close if empty") {
-    val cursor = mock[NodeValueIndexCursor]
-
-    new IndexIteratorBase[String](cursor) {
-      override protected def fetchNext(): String = null
-    }
-
-    Mockito.verify(cursor).close()
+class FilterPipeTest extends CypherFunSuite {
+  test("should be lazy") {
+    val input = new FakePipe(Seq(Map("a"->10), Map("a"->11), Map("a"->12), Map("a"->13)))
+    val pipe = FilterPipe(input, True())()
+    // when
+    val res = pipe.createResults(QueryStateHelper.emptyWithValueSerialization)
+    res.next()
+    // then
+    input.numberOfPulledRows shouldBe 1
   }
-
-
 }

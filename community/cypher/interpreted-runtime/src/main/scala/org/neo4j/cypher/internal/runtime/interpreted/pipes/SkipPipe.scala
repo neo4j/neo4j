@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
@@ -30,7 +31,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val skipNumber = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
     if (skipNumber.isInstanceOf[FloatingPointValue]) {
       val skip = skipNumber.doubleValue()
@@ -43,7 +44,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
     }
 
     if(input.isEmpty)
-      return Iterator.empty
+      return ClosingIterator.empty
 
     SkipPipe.drop(skip, input)
   }
@@ -51,7 +52,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
 }
 
 object SkipPipe {
-  def drop[T](n: Long, iterator: Iterator[T]): Iterator[T] = {
+  def drop[T](n: Long, iterator: ClosingIterator[T]): ClosingIterator[T] = {
     var j = 0L
     while (j < n && iterator.hasNext) {
       iterator.next()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -28,13 +29,15 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
                                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map {
       outerContext =>
         val holds = predicate.isTrue(outerContext, state) || {
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
-          if (negated) innerResults.isEmpty else innerResults.nonEmpty
+          val result = if (negated) !innerResults.hasNext else innerResults.hasNext
+          innerResults.close()
+          result
         }
         outerContext.set(letVarName, Values.booleanValue(holds))
         outerContext

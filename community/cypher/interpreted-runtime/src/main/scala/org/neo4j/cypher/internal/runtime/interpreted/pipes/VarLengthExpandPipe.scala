@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.RelationshipContainer
@@ -70,9 +71,10 @@ case class VarLengthExpandPipe(source: Pipe,
       def next(): (NodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
-          val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
+          val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
           val relationshipValues = relationships.filter(filteringStep.filterRelationship(row, state))
+          // relationships get immediately exhausted. Therefore we do not need a ClosingIterator here.
           while (relationshipValues.hasNext) {
             val rel = relationshipValues.next()
             val otherNode = rel.otherNode(node)
@@ -94,12 +96,12 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
-    def expand(row: CypherRow, n: NodeValue) = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    def expand(row: CypherRow, n: NodeValue): Iterator[CypherRow] = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
         paths.collect {
-          case (node, rels) if rels.size >= min && isToNodeValid(row, state, node) =>
+          case (node, rels) if rels.size >= min && isToNodeValid(row, node) =>
             rowFactory.copyWith(row, relName, rels.asList, toName, node)
         }
       } else {
@@ -124,7 +126,7 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  private def isToNodeValid(row: CypherRow, state: QueryState, node: VirtualNodeValue): Boolean =
+  private def isToNodeValid(row: CypherRow, node: VirtualNodeValue) =
     !nodeInScope || {
       row.getByName(toName) match {
         case toNode: VirtualNodeValue =>

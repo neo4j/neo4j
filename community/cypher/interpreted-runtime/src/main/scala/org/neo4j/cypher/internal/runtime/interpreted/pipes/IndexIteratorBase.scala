@@ -19,33 +19,29 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 import scala.collection.Iterator
 
-abstract class IndexIteratorBase[T](val cursor: NodeValueIndexCursor) extends Iterator[T] {
+abstract class IndexIteratorBase[T](state: QueryState, val cursor: NodeValueIndexCursor) extends ClosingIterator[T] {
+  state.query.resources.trace(cursor)
+
   private var _next: T = fetchNext()
-  if (!hasNext) {
-    close()
-  }
 
   protected def fetchNext(): T
 
-  protected def close(): Unit = cursor.close()
+  protected def closeMore(): Unit = cursor.close()
 
-  override final def hasNext: Boolean = _next != null
+  override final def innerHasNext: Boolean = _next != null
 
   override final def next(): T = {
     if (!hasNext) {
-      close()
       Iterator.empty.next()
     }
 
     val current = _next
     _next = fetchNext()
-    if (!hasNext) {
-      close()
-    }
     current
   }
 }

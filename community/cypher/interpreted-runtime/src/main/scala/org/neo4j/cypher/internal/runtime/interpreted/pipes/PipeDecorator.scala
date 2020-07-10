@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -36,12 +37,12 @@ trait PipeDecorator {
    */
   def afterCreateResults(planId: Id, state: QueryState): Unit
 
-  def decorate(planId: Id, iter: Iterator[CypherRow]): Iterator[CypherRow]
+  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow]
 
   // These two are used for linenumber only
-  def decorate(planId: Id, iter: Iterator[CypherRow], sourceIter: Iterator[CypherRow]): Iterator[CypherRow] = decorate(planId, iter)
+  def decorate(planId: Id, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = decorate(planId, iter)
 
-  def decorate(planId: Id, iter: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): Iterator[CypherRow] = decorate(planId, iter)
+  def decorate(planId: Id, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = decorate(planId, iter)
 
   /*
    * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
@@ -51,7 +52,7 @@ trait PipeDecorator {
 }
 
 object NullPipeDecorator extends PipeDecorator {
-  def decorate(planId: Id, iter: Iterator[CypherRow]): Iterator[CypherRow] = iter
+  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
 
   def decorate(planId: Id, state: QueryState): QueryState = state
 
@@ -67,9 +68,9 @@ class LinenumberPipeDecorator() extends PipeDecorator {
 
   override def decorate(planId: Id, state: QueryState): QueryState = inner.decorate(planId, state)
 
-  def decorate(planId: Id, iter: Iterator[CypherRow]): Iterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
+  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
 
-  override def decorate(planId: Id, iter: Iterator[CypherRow], sourceIter: Iterator[CypherRow]): Iterator[CypherRow] = {
+  override def decorate(planId: Id, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
     val previousContextSupplier = sourceIter match {
       case p: LinenumberIterator => () => p.previousRecord
       case _ => () => None
@@ -77,17 +78,19 @@ class LinenumberPipeDecorator() extends PipeDecorator {
     decorate(planId, iter, previousContextSupplier)
   }
 
-  override def decorate(planId: Id, iter: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): Iterator[CypherRow] = {
+  override def decorate(planId: Id, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = {
     new LinenumberIterator(inner.decorate(planId, iter), previousContextSupplier)
   }
 
   override def innerDecorator(owningPipe: Id): PipeDecorator = this
 
-  class LinenumberIterator(inner: Iterator[CypherRow], previousContextSupplier: () => Option[CypherRow]) extends Iterator[CypherRow] {
+  class LinenumberIterator(inner: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]) extends ClosingIterator[CypherRow] {
 
     var previousRecord: Option[CypherRow] = None
 
-    def hasNext: Boolean = {
+    override protected[this] def closeMore(): Unit = inner.close()
+
+    def innerHasNext: Boolean = {
       try {
         inner.hasNext
       } catch {

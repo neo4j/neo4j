@@ -75,7 +75,10 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseLi
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
+  def getCsvIterator(url: URL,
+                     fieldTerminator: Option[String],
+                     legacyCsvQuoteEscaping: Boolean,
+                     bufferSize: Int,
                      headers: Boolean = false): LoadCsvIterator = {
 
     val reader: CharReadable = getReader(url)
@@ -85,11 +88,14 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     val intDelimiter = delimiter.toInt
     val mark = new Mark
 
-    resourceManager.trace(CSVResource(url, seeker))
+    val resource = CSVResource(url, seeker)
+    resourceManager.trace(resource)
 
     new LoadCsvIterator {
       var lastProcessed = 0L
       var readAll = false
+
+      override protected[this] def closeMore(): Unit = resource.close()
 
       private def readNextRow: Array[String] = {
         val buffer = new ArrayBuffer[String]
@@ -114,7 +120,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
       var nextRow: Array[String] = readNextRow
 
-      override def hasNext: Boolean = nextRow != null
+      override def innerHasNext: Boolean = nextRow != null
 
       override def next(): Array[String] = {
         if (!hasNext) Iterator.empty.next()

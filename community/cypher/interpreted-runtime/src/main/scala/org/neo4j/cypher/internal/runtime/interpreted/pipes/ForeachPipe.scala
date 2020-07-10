@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -28,7 +29,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
                       (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
-  override protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map {
       outerContext =>
         val values = makeTraversable(expression(outerContext, state)).iterator()

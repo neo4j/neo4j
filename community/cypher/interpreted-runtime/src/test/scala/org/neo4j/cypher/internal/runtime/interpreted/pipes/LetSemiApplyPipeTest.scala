@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -84,5 +85,23 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Should not throw
     LetSemiApplyPipe(lhs, rhs, "let", negated = false)().createResults(QueryStateHelper.empty).toList
+  }
+
+  test("Each row should immediately close RHS. Exhaust should close LHS.") {
+    val monitor = QueryStateHelper.trackClosedMonitor
+    val resourceManager = new ResourceManager(monitor)
+    val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
+    val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
+    val pipe = LetSemiApplyPipe(lhs, rhs, "c", negated = false)()
+    val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
+    result.next() // First row
+    lhs.wasClosed shouldBe false
+    rhs.wasClosed shouldBe true
+
+    rhs.resetClosed()
+    result.next() // Second row
+    result.hasNext shouldBe false // Make sure to exhaust
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
   }
 }

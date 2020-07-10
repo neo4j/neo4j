@@ -132,7 +132,9 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
       var lastProcessed: Long = 0L
       var readAll: Boolean = false
 
-      override def hasNext: Boolean = inner.hasNext
+      override protected[this] def closeMore(): Unit = ()
+
+      override def innerHasNext: Boolean = inner.hasNext
 
       override def next(): Array[String] = {
         val next = inner.next()

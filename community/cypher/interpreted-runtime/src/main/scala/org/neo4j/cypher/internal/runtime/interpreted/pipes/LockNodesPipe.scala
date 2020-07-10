@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CastSupport
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -29,7 +30,7 @@ import org.neo4j.values.virtual.VirtualNodeValue
 case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src)  {
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] =
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map { ctx =>
       val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
         ctx.getByName(varName) match {

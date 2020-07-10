@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
@@ -49,6 +50,11 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState
 
   private var currentGroupKey: AnyValue = _
 
+  override def close(): Unit = {
+    currentGroupKey = null
+    super.close()
+  }
+
   override def clear(): Unit = {
     currentGroupKey = null
     super.clear()
@@ -62,10 +68,10 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState
   }
 
   // This is the result of one chunk, not the whole result
-  override def result(): Iterator[CypherRow] = {
+  override def result(): ClosingIterator[CypherRow] = {
     val row = resultRow()
     AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)(row, currentGroupKey)
-    Iterator.single(row)
+    ClosingIterator.single(row)
   }
 
   override def processNextChunk: Boolean = true

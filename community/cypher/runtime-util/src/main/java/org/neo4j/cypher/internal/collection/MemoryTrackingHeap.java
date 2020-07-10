@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.AutoCloseablePlus;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.io.IOUtils;
 import org.neo4j.memory.MemoryTracker;
 
@@ -39,7 +41,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
  *
  * By default this is a max-heap. Use a reverse comparator to get a min-heap.
  */
-abstract class MemoryTrackingHeap<T> implements AutoCloseable
+abstract class MemoryTrackingHeap<T> extends DefaultCloseListenable implements AutoCloseablePlus
 {
     protected final Comparator<? super T> comparator;
     protected final MemoryTracker memoryTracker;
@@ -119,13 +121,19 @@ abstract class MemoryTrackingHeap<T> implements AutoCloseable
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( heap != null )
         {
             memoryTracker.releaseHeap( shallowInstanceSize() + trackedSize  );
             heap = null;
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return false;
     }
 
     /**

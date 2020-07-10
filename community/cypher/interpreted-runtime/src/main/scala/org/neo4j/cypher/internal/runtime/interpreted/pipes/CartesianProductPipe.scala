@@ -19,18 +19,20 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
-                               (val id: Id = Id.INVALID_ID) extends Pipe {
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    for (lhsRow <- lhs.createResults(state);
-         rhsRow <- rhs.createResults(state))
-      yield {
-        val output = lhsRow.createClone()
-        output.mergeWith(rhsRow, state.query)
-        output
-      }
+                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(lhs) {
+  protected def internalCreateResults(lhsResults: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    for {
+      lhsRow <- lhsResults
+      rhsRow <- rhs.createResults(state)
+    } yield {
+      val output = lhsRow.createClone()
+      output.mergeWith(rhsRow, state.query)
+      output
+    }
   }
 }

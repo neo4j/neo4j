@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -44,10 +45,10 @@ case class NodeIndexSeekPipe(ident: String,
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newRowWithArgument(rowFactory)
-    new IndexIterator(state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
+    new IndexIterator(state, state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

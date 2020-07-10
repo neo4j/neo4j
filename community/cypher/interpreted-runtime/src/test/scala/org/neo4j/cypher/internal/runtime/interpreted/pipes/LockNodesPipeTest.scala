@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -45,7 +46,7 @@ class LockNodesPipeTest extends CypherFunSuite {
 
     // when
     val x = LockNodesPipe(mock[Pipe], Set("x"))()
-    val result = x.testCreateResults(source, state)
+    val result = x.testCreateResults(ClosingIterator(source), state)
 
     // then
     result.next()
@@ -72,7 +73,7 @@ class LockNodesPipeTest extends CypherFunSuite {
 
       // when
       val x = LockNodesPipe(mock[Pipe], Set("x"))()
-      val result = x.testCreateResults(source, state)
+      val result = x.testCreateResults(ClosingIterator(source), state)
 
       // then
       intercept[CypherTypeException] { result.next() }

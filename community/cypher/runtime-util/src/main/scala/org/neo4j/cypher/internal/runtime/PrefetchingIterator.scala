@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-abstract class PrefetchingIterator[T] extends Iterator[T] {
+abstract class PrefetchingIterator[T] extends ClosingIterator[T] {
   private var buffer: Option[T] = _
 
   def produceNext(): Option[T]
 
-  override def hasNext: Boolean = {
+  override def innerHasNext: Boolean = {
     if (buffer == null)
       pullNextElementFromSource()
     buffer.nonEmpty

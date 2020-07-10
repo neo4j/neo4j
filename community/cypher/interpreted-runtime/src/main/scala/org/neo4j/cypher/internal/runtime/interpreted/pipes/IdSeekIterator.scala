@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
@@ -30,14 +31,14 @@ import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
 abstract class IdSeekIterator[T, CURSOR]
-  extends Iterator[CypherRow] {
+  extends ClosingIterator[CypherRow] {
 
   private var cachedEntity: T = computeNextEntity()
 
   protected def operations: Operations[T, CURSOR]
   protected def entityIds: Iterator[AnyValue]
 
-  protected def hasNextEntity = cachedEntity != null
+  protected def hasNextEntity: Boolean = cachedEntity != null
 
   protected def nextEntity(): T = {
     if (hasNextEntity) {
@@ -63,6 +64,10 @@ abstract class IdSeekIterator[T, CURSOR]
     }
     null.asInstanceOf[T]
   }
+
+  protected[this] def innerHasNext: Boolean = hasNextEntity
+
+  protected[this] def closeMore(): Unit = ()
 }
 
 final class NodeIdSeekIterator(ident: String,
@@ -71,8 +76,6 @@ final class NodeIdSeekIterator(ident: String,
                                protected val operations: Operations[NodeValue, NodeCursor],
                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[NodeValue, NodeCursor] {
-
-  def hasNext: Boolean = hasNextEntity
 
   def next(): CypherRow =
     rowFactory.copyWith(baseContext, ident, nextEntity())
@@ -86,8 +89,6 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
-
-  def hasNext: Boolean = hasNextEntity
 
   def next(): CypherRow = {
     val rel = nextEntity()
@@ -109,8 +110,6 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   private var lastEnd: NodeValue = _
   private var emitSibling = false
 
-  def hasNext: Boolean = emitSibling || hasNextEntity
-
   def next(): CypherRow = {
     if (emitSibling) {
       emitSibling = false
@@ -123,4 +122,6 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
       rowFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
+
+  override protected[this] def innerHasNext: Boolean = emitSibling || hasNextEntity
 }

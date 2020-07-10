@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 
 /**
@@ -33,21 +34,23 @@ trait OrderedInputPipe {
    */
   def getReceiver(state: QueryState): OrderedChunkReceiver
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val receiver = getReceiver(state)
-    internalCreateResultsWithReceiver(input, state, receiver)
+    internalCreateResultsWithReceiver(input, receiver)
   }
 
   /**
    * Processes the input in chunks as described by [[OrderedChunkReceiver]].
    */
-  protected final def internalCreateResultsWithReceiver(input: Iterator[CypherRow], state: QueryState, receiver: OrderedChunkReceiver): Iterator[CypherRow] = {
+  protected final def internalCreateResultsWithReceiver(input: ClosingIterator[CypherRow], receiver: OrderedChunkReceiver): ClosingIterator[CypherRow] = {
     val inputState = new InputState()
 
-    new Iterator[CypherRow] {
+    new ClosingIterator[CypherRow] {
       private var processNextChunk = true
 
-      override def hasNext: Boolean = {
+      override protected[this] def closeMore(): Unit = receiver.close()
+
+      override def innerHasNext: Boolean = {
         val _hasNext = inputState.resultRowsOfChunk.hasNext ||
           (processNextChunk && (
             inputState.firstRowOfNextChunk != null || input.hasNext))
@@ -145,7 +148,5 @@ trait OrderedChunkReceiver {
   /**
    * Will be called after all chunks are completed.
    */
-  def close(): Unit = {
-    clear()
-  }
+  def close(): Unit
 }

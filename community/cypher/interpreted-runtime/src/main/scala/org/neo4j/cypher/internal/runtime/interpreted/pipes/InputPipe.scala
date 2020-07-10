@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.InputCursor
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -26,12 +27,14 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class InputPipe(variables: Array[String])
                     (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
-    new Iterator[CypherRow] {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
+    new ClosingIterator[CypherRow] {
       var cursor: InputCursor = _
       var cursorOnNextRow: Boolean = false
 
-      override def hasNext: Boolean = {
+      override def closeMore(): Unit = if (cursor != null) cursor.close()
+
+      override def innerHasNext: Boolean = {
         while (!cursorOnNextRow) {
           if (cursor == null) {
             cursor = state.input.nextInputBatch()
@@ -42,6 +45,7 @@ case class InputPipe(variables: Array[String])
           if (cursor.next()) {
             cursorOnNextRow = true
           } else {
+            cursor.close()
             cursor = null
           }
         }
@@ -59,7 +63,7 @@ case class InputPipe(variables: Array[String])
           cursorOnNextRow = false
           ctx
         } else
-          Iterator.empty.next()
+          ClosingIterator.empty.next()
       }
     }
   }

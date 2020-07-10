@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -62,7 +63,7 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
 
   protected def newMockedPipe(rows: CypherRow*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.createResults(any())).thenReturn(rows.iterator)
+    when(pipe.createResults(any())).thenReturn(ClosingIterator(rows.iterator))
     pipe
   }
 }

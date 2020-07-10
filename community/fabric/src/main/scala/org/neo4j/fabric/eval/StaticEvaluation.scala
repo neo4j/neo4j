@@ -23,13 +23,14 @@ import java.net.URL
 import java.time.Clock
 import java.util.function.Supplier
 
-import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.evaluator.EvaluationException
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -162,13 +163,13 @@ object StaticEvaluation {
 
     override def getOrCreateRelTypeId(relTypeName: String): Int = notAvailable()
 
-    override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue] = notAvailable()
+    override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] = notAvailable()
 
     override def nodeCursor(): NodeCursor = notAvailable()
 
     override def traversalCursor(): RelationshipTraversalCursor = notAvailable()
 
-    override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator = notAvailable()
+    override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator = notAvailable()
 
     override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): RelationshipValue = notAvailable()
 
@@ -200,9 +201,9 @@ object StaticEvaluation {
 
     override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = notAvailable()
 
-    override def getNodesByLabel(id: Int, indexOrder: IndexOrder): Iterator[NodeValue] = notAvailable()
+    override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = notAvailable()
 
-    override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): LongIterator = notAvailable()
+    override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator = notAvailable()
 
     override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = notAvailable()
 
@@ -228,11 +229,9 @@ object StaticEvaluation {
 
     override def asObject(value: AnyValue): AnyRef = notAvailable()
 
-    override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = notAvailable()
-
     override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Option[Path] = notAvailable()
 
-    override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): Iterator[Path] = notAvailable()
+    override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): ClosingIterator[Path] = notAvailable()
 
     override def nodeCountByCountStore(labelId: Int): Long = notAvailable()
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.CastSupport
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.MergeConstraintConflictException
@@ -29,14 +30,14 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
                              (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(lhsResult: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val rhsResults = inner.createResults(state)
-    if (lhsResult.isEmpty != rhsResults.isEmpty) {
+    if (input.isEmpty != rhsResults.isEmpty) {
       throw new MergeConstraintConflictException(
         s"Merge did not find a matching node $node and can not create a new node due to conflicts with existing unique nodes")
     }
 
-    lhsResult.map { leftRow =>
+    input.map { leftRow =>
       val lhsNode = CastSupport.castOrFail[VirtualNodeValue](leftRow.getByName(node))
       rhsResults.foreach { rightRow =>
         val rhsNode = CastSupport.castOrFail[VirtualNodeValue](rightRow.getByName(node))

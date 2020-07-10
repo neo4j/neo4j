@@ -39,6 +39,7 @@ import java.util.Set;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
+import org.neo4j.cypher.internal.runtime.ClosingIterator;
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
@@ -152,22 +153,23 @@ public class ShortestPath implements PathFinder<Path>
      * @param end end node
      * @return
      */
-    public Iterator<Path> findAllPathsAutoCloseableIterator( Node start, Node end )
+    public ClosingIterator<Path> findAllPathsAutoCloseableIterator( Node start, Node end )
     {
-        return new Iterator<>()
+        return new ClosingIterator()
         {
             Iterator<Path> inner = internalPaths( start, end, false ).iterator();
 
             @Override
-            public boolean hasNext()
+            public void closeMore()
             {
-                boolean hasNext = this.inner.hasNext();
-                if ( !hasNext )
-                {
-                    inner = null;
-                    memoryTracker.reset();
-                }
-                return hasNext;
+                inner = null;
+                memoryTracker.reset();
+            }
+
+            @Override
+            public boolean innerHasNext()
+            {
+                return this.inner.hasNext();
             }
 
             @Override

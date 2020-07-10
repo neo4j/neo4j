@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -44,6 +45,27 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       y.id()
     }.toSet
     ids should equal(Set(11, 12, 21, 22))
+  }
+
+  test("triadic should close LHS and RHS on close") {
+    val left = FakePipe(Seq(
+      Map("a" -> nodeWithId(0), "b" -> nodeWithId(1))
+    ))
+    val right = FakePipe(Seq(
+      Map("a" -> nodeWithId(0), "b" -> nodeWithId(1), "c" -> nodeWithId(11)),
+      Map("a" -> nodeWithId(0), "b" -> nodeWithId(1), "c" -> nodeWithId(12))
+    ))
+    val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
+    val queryState = QueryStateHelper.empty
+    println(left.createResults(queryState).toList)
+    println(right.createResults(queryState).toList)
+    val result = pipe.createResults(queryState)
+    //when
+    result.hasNext
+    result.close()
+    // then
+    left.wasClosed shouldBe true
+    right.wasClosed shouldBe true
   }
 
   test("triadic from input with cycles and negative predicate") {
@@ -159,10 +181,11 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 
+  private def nodeWithId(id: Long) = {
+    new NodeEntity(null, id)
+  }
+
   private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
-    def nodeWithId(id: Long) = {
-      new NodeEntity(null, id)
-    }
 
     data.flatMap {
       case (x, related) =>
@@ -183,9 +206,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val in = createFakeDataWith(keys, data: _*)
 
     new Pipe {
-      override def internalCreateResults(state: QueryState): Iterator[CypherRow] = state.initialContext match {
+      override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = state.initialContext match {
         case Some(context: CypherRow) =>
-          in.flatMap { m =>
+          ClosingIterator(in.flatMap { m =>
             if (ValueUtils.of(m(keys(0))) == context.getByName(keys(0))) {
               val stringToProxy: mutable.Map[String, AnyValue] = collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)
               val outRow = state.newRow(CommunityCypherRowFactory())
@@ -193,8 +216,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
               Some(outRow)
             }
             else None
-          }.iterator
-        case _ => Iterator.empty
+          }.iterator)
+        case _ => ClosingIterator.empty
       }
 
       override def id: Id = Id.INVALID_ID

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -38,7 +39,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   with ListSupport  {
   type Projector = CypherRow => Iterator[CypherRow]
 
-  protected def internalCreateResults(input: Iterator[CypherRow], state: QueryState) =
+  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.flatMap(projector(state.query))
 
   private def projector(qtx: QueryContext): Projector =

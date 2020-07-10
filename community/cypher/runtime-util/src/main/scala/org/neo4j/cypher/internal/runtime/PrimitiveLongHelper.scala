@@ -19,24 +19,20 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.eclipse.collections.api.iterator.LongIterator
-
 object PrimitiveLongHelper {
-  def map[T](in: LongIterator, f: Long => T): Iterator[T] = new Iterator[T] {
-    override def hasNext: Boolean = in.hasNext
+  def map[T](in: ClosingLongIterator, f: Long => T): ClosingIterator[T] = new ClosingIterator[T] {
+    override def innerHasNext: Boolean = in.hasNext
 
     override def next(): T = f(in.next())
+
+    override protected[this] def closeMore(): Unit = in.close()
   }
 
-  def mapPrimitive(in: LongIterator, f: Long => Long): LongIterator = new LongIterator {
-    override def hasNext: Boolean = in.hasNext
+  def mapPrimitive(in: ClosingLongIterator, f: Long => Long): ClosingLongIterator = new ClosingLongIterator {
+    override def innerHasNext: Boolean = in.hasNext
 
     override def next(): Long = f(in.next())
-  }
 
-  def mapToPrimitive[T](in: Iterator[T], f: T => Long): LongIterator = new LongIterator {
-    override def hasNext: Boolean = in.hasNext
-
-    override def next(): Long = f(in.next())
+    override def close(): Unit = in.close()
   }
 }

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedGroupingAggTable
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedNonGroupingAggTable
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
@@ -31,7 +33,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class OrderedAggregationPipe(source: Pipe,
                                   tableFactory: OrderedAggregationTableFactory)
                                  (val id: Id = Id.INVALID_ID)
-  extends AggregationPipe(source, tableFactory) with OrderedInputPipe {
+  extends AggregationPipe(source) with OrderedInputPipe {
   override def getReceiver(state: QueryState): OrderedChunkReceiver = tableFactory.table(state, rowFactory, id)
 }
 

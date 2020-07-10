@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
@@ -33,8 +34,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
-  override protected def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map { row =>
       expression(row, state) match {
         case IsNoValue() => // do nothing

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -251,6 +252,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       if ( rels == null ) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
         val builder = Array.newBuilder[RelationshipValue]
+        // Immediately exhausting allRels. No ClosingIterator needed for connecting them to the outside.
         while (allRels.hasNext) {
           val rel = allRels.next()
           if (filteringStep.filterRelationship(row, queryState)(rel) &&
@@ -348,21 +350,24 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   }
 
   class FullyPruningIterator(
-                              private val input: Iterator[CypherRow],
+                              private val input: ClosingIterator[CypherRow],
                               private val queryState: QueryState
-  ) extends Iterator[CypherRow] {
+  ) extends ClosingIterator[CypherRow] {
 
     private val memoryTracker = queryState.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
-    private var outputRow:CypherRow = _
-    private var fullPruneState:FullPruneState = new FullPruneState(queryState, memoryTracker)
+    private var outputRow: CypherRow = _
+    private var fullPruneState: FullPruneState = new FullPruneState(queryState, memoryTracker)
     private var hasPrefetched = false
 
-    override def hasNext: Boolean = {
-      prefetch()
-      if (outputRow == null && fullPruneState != null) {
+    override protected[this] def closeMore(): Unit = {
+      if (fullPruneState != null) {
         fullPruneState = null
         memoryTracker.close()
       }
+    }
+
+    override def innerHasNext: Boolean = {
+      prefetch()
       outputRow != null
     }
 
@@ -401,8 +406,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  override protected def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     new FullyPruningIterator(input, state)
   }
 }

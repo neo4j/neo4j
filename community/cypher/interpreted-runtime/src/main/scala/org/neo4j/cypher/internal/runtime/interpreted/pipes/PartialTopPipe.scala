@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.mutable
 
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
@@ -75,22 +77,22 @@ case class PartialTopNPipe(source: Pipe,
     override def processNextChunk: Boolean = remainingLimit > 0
   }
 
-  protected override def internalCreateResults(input: Iterator[CypherRow], state: QueryState): Iterator[CypherRow] = {
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     if (input.isEmpty) {
-      Iterator.empty
+      ClosingIterator.empty
     } else {
       val first = input.next()
       val longCount = countExpression(first, state).asInstanceOf[NumberValue].longValue()
       if (longCount <= 0) {
-        Iterator.empty
+        ClosingIterator.empty
       } else {
         // We don't need a special case for LIMIT > Int.Max (Like the TopPipe)
         // We use something similar to PartialSort in any way, and that will only fail at runtime if one chunk is too big.
 
         // We have to re-attach the already read first row to the iterator
-        val restoredInput = Iterator.single(first) ++ input
+        val restoredInput = ClosingIterator.single(first) ++ input
         val receiver = new PartialTopNReceiver(longCount, state)
-        internalCreateResultsWithReceiver(restoredInput, state, receiver)
+        internalCreateResultsWithReceiver(restoredInput, receiver)
       }
     }
   }
@@ -103,10 +105,9 @@ case class PartialTopNPipe(source: Pipe,
 case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
                           (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     if (input.isEmpty) {
-      Iterator.empty
+      ClosingIterator.empty
     } else {
       val first = input.next()
       var current = first
@@ -125,7 +126,7 @@ case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRo
           current = null
         }
       }
-      Iterator.single(result)
+      ClosingIterator.single(result)
     }
   }
 }
@@ -136,10 +137,9 @@ case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRo
 case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
                                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  protected override def internalCreateResults(input: Iterator[CypherRow],
-                                               state: QueryState): Iterator[CypherRow] = {
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     if (input.isEmpty) {
-      Iterator.empty
+      ClosingIterator.empty
     } else {
       val first = input.next()
       var current = first
@@ -169,12 +169,12 @@ case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[Re
           current = null
         }
       }
-      matchingRows.result().iterator
+      ClosingIterator(matchingRows.result().iterator)
     }
   }
 
   @inline
-  private def init(first: CypherRow) = {
+  private def init(first: CypherRow): mutable.Builder[CypherRow, Vector[CypherRow]] = {
     val builder = Vector.newBuilder[CypherRow]
     builder += first
     builder

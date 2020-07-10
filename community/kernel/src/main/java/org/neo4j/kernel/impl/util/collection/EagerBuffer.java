@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.function.IntUnaryOperator;
 
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -39,7 +40,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  *
  * @param <T> element type
  */
-public class EagerBuffer<T extends Measurable> implements AutoCloseable
+public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
 {
     public static final IntUnaryOperator KEEP_CONSTANT_CHUNK_SIZE = size -> size;
     public static final IntUnaryOperator GROW_NEW_CHUNKS_BY_50_PCT = size -> size + (size >> 1);
@@ -142,11 +143,17 @@ public class EagerBuffer<T extends Measurable> implements AutoCloseable
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         first = null;
         current = null;
         scopedMemoryTracker.close();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return false;
     }
 
     @VisibleForTesting

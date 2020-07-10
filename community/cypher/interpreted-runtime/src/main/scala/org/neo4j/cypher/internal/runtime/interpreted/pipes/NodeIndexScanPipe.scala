@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
-
-import scala.collection.Iterator
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
@@ -41,9 +40,9 @@ case class NodeIndexScanPipe(ident: String,
     indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  protected def internalCreateResults(state: QueryState): Iterator[CypherRow] = {
+  protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
     val cursor = state.query.indexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
-    new IndexIterator(state.query, baseContext, cursor)
+    new IndexIterator(state, state.query, baseContext, cursor)
   }
 }
