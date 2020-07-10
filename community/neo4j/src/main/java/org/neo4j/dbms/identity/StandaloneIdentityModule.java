@@ -64,6 +64,10 @@ public class StandaloneIdentityModule implements IdentityModule
                 {
                     throw new IllegalStateException( String.format( "%s storage was found on disk, but it could not be read correctly", idType ) );
                 }
+                else
+                {
+                    log.info( String.format( "Found %s on disk: %s", idType, myself ) );
+                }
             }
             else
             {
