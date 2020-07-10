@@ -1044,23 +1044,25 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty),
     ).foreach {
       case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
-        // When
-        val query =
-          s"""MATCH (n:Label)
-             |WHERE n.prop1 = 42 AND n.prop2 <= 3
-             |RETURN n.prop1, n.prop2
-             |ORDER BY $orderByString""".stripMargin
-        val plan = new given {
-          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
-        } getLogicalPlanFor query
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (n:Label)
+               |WHERE n.prop1 = 42 AND n.prop2 <= 3
+               |RETURN n.prop1, n.prop2
+               |ORDER BY $orderByString""".stripMargin
+          val plan = new given {
+            indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+          } getLogicalPlanFor query
 
-        // Then
-        val leafPlan = IndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
-        plan._2 should equal {
-          if (shouldSort)
-            PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
-          else
-            Projection(leafPlan, projection)
+          // Then
+          val leafPlan = IndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
+          plan._2 should equal {
+            if (shouldSort)
+              PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
+            else
+              Projection(leafPlan, projection)
+          }
         }
     }
   }
@@ -1091,23 +1093,25 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty),
     ).foreach {
       case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
-        // When
-        val query =
-          s"""MATCH (n:Label)
-             |WHERE n.prop1 <= 42 AND n.prop2 = 3
-             |RETURN n.prop1, n.prop2
-             |ORDER BY $orderByString""".stripMargin
-        val plan = new given {
-          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
-        } getLogicalPlanFor query
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (n:Label)
+               |WHERE n.prop1 <= 42 AND n.prop2 = 3
+               |RETURN n.prop1, n.prop2
+               |ORDER BY $orderByString""".stripMargin
+          val plan = new given {
+            indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+          } getLogicalPlanFor query
 
-        // Then
-        val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), IndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue))
-        plan._2 should equal {
-          if (shouldSort)
-            Sort(Projection(leafPlan, projection), toBeSorted)
-          else
-            Projection(leafPlan, projection)
+          // Then
+          val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), IndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue))
+          plan._2 should equal {
+            if (shouldSort)
+              Sort(Projection(leafPlan, projection), toBeSorted)
+            else
+              Projection(leafPlan, projection)
+          }
         }
     }
   }
@@ -1138,17 +1142,19 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
     ).foreach {
       case (orderByString, orderCapability, indexOrder) =>
-        // When
-        val query =
-          s"""MATCH (n:Label)
-             |WHERE n.prop1 = 42 AND n.prop2 = 3
-             |RETURN n.prop1, n.prop2
-             |ORDER BY $orderByString""".stripMargin
-        val plan = new given {
-          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
-        } getLogicalPlanFor query
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (n:Label)
+               |WHERE n.prop1 = 42 AND n.prop2 = 3
+               |RETURN n.prop1, n.prop2
+               |ORDER BY $orderByString""".stripMargin
+          val plan = new given {
+            indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+          } getLogicalPlanFor query
 
-        plan._2 should equal(Projection(IndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue), projection))
+          plan._2 should equal(Projection(IndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue), projection))
+        }
     }
   }
 
