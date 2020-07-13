@@ -25,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.time.Duration;
 import java.util.Map;
@@ -80,6 +82,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @ExtendWith( {SuppressOutputExtension.class, OtherThreadExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 public class ShutdownSequenceIT
 {
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds( 10 );

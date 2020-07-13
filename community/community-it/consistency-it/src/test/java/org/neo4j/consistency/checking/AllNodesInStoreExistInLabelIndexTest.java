@@ -21,6 +21,8 @@ package org.neo4j.consistency.checking;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +65,7 @@ import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 @DbmsExtension
 @ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class AllNodesInStoreExistInLabelIndexTest
 {
     @Inject
