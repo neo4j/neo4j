@@ -218,7 +218,7 @@ class CommonAbstractStoreTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        store.logIdUsage( logProvider.getLog( TheStore.class ).infoLogger(), NULL );
+        store.logIdUsage( logProvider.getLog( TheStore.class )::info, NULL );
 
         // then
         LogAssertions.assertThat( logProvider ).containsMessages( format( "%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName() ) );
@@ -232,7 +232,7 @@ class CommonAbstractStoreTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        store.logVersions( logProvider.getLog( TheStore.class ).infoLogger() );
+        store.logVersions( logProvider.getLog( TheStore.class )::info );
 
         // then
         LogAssertions.assertThat( logProvider ).containsMessages(

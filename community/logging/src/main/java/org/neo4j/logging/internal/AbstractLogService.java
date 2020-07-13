@@ -27,13 +27,13 @@ import org.neo4j.logging.Log;
 public abstract class AbstractLogService implements LogService
 {
     @Override
-    public Log getUserLog( Class loggingClass )
+    public Log getUserLog( Class<?> loggingClass )
     {
         return getUserLogProvider().getLog( loggingClass );
     }
 
     @Override
-    public Log getInternalLog( Class loggingClass )
+    public Log getInternalLog( Class<?> loggingClass )
     {
         return getInternalLogProvider().getLog( loggingClass );
     }

@@ -23,7 +23,6 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.StoreLogService;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
@@ -54,7 +53,6 @@ class ErrorReporter
      * Large message with stacktrace (if available) is written to internal log.
      *
      * @param error the error to log.
-     * @see StoreLogService
      * @see DuplicatingLogProvider
      */
     public void report( Neo4jError error )

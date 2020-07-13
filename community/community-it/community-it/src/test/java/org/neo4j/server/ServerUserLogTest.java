@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_max_archives;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_delay;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_to_stdout;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
@@ -142,7 +141,6 @@ class ServerUserLogTest
         try
         {
             Map<String,String> configOverrides = stringMap( store_user_log_to_stdout.name(), FALSE,
-                            store_user_log_rotation_delay.name(), "0",
                             store_user_log_rotation_threshold.name(), "16",
                             store_user_log_max_archives.name(), Integer.toString( maxArchives ) );
             configOverrides.putAll( connectorsConfig() );

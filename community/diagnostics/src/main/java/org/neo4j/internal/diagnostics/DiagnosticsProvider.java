@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.diagnostics;
 
-import org.neo4j.logging.Logger;
-
 public interface DiagnosticsProvider
 {
     /**
@@ -45,9 +43,9 @@ public interface DiagnosticsProvider
     String getDiagnosticsName();
 
     /**
-     * Dump the diagnostic information of this {@link DiagnosticsProvider} to the provided {@link Logger logger}.
+     * Dump the diagnostic information of this {@link DiagnosticsProvider} to sink.
      *
-     * @param logger the {@link Logger logger} to dump information to.
+     * @param logger to dump messages to.
      */
-    void dump( Logger logger );
+    void dump( DiagnosticsLogger logger );
 }

@@ -25,8 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -34,13 +35,13 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class NeoStoresDiagnosticsTest
 {
     private AssertableLogProvider logProvider;
-    private Logger logger;
+    private Log logger;
 
     @BeforeEach
     void setUp()
     {
         logProvider = new AssertableLogProvider();
-        logger = logProvider.getLog( DiagnosticsManager.class ).infoLogger();
+        logger = logProvider.getLog( DiagnosticsManager.class );
     }
 
     @Test
@@ -50,9 +51,9 @@ class NeoStoresDiagnosticsTest
         NeoStoresDiagnostics.NeoStoreIdUsage idUsage = new NeoStoresDiagnostics.NeoStoreIdUsage( neoStores );
         String errorMessage = "IdGenerator is not initialized";
 
-        doThrow( new IllegalStateException( errorMessage ) ).when( neoStores ).logIdUsage( logger );
+        doThrow( new IllegalStateException( errorMessage ) ).when( neoStores ).logIdUsage( any() );
 
-        idUsage.dump( logger );
+        idUsage.dump( logger::info );
 
         assertThat( logProvider ).containsMessages( "Diagnostics not available", errorMessage )
                                  .doesNotContainMessage( "Exception" );

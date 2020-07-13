@@ -66,7 +66,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         assertThat( logProvider ).containsMessages( "Disk space on partition" );
     }
@@ -78,7 +78,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         assertThat( logProvider ).containsMessages( "Storage files stored on file store: " );
     }
@@ -99,7 +99,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         assertThat( logProvider ).containsMessages( "Total size of store: 4.000KiB", "Total size of mapped files: 3.000KiB" );
     }

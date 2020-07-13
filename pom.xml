@@ -78,6 +78,7 @@
       -XX:MaxInlineLevel=15
       -XX:-UseBiasedLocking
       -Djdk.nio.maxCachedBufferSize=262144
+      -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
@@ -893,6 +894,16 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>2.11.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>2.11.2</version>
+      </dependency>
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
         <artifactId>jettison</artifactId>

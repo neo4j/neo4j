@@ -115,7 +115,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -2333,7 +2333,8 @@ public class FullCheckIntegrationTest
     {
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
-        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, INSTANCE, FormattedLog.toOutputStream( System.out ) );
+        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, INSTANCE,
+                new Log4jLogProvider( System.out ).getLog( "test" ) );
     }
 
     protected NodeBasedMemoryLimiter.Factory memoryLimit()

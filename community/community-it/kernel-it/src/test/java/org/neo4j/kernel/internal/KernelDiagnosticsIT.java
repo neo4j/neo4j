@@ -26,11 +26,9 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -43,13 +41,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -79,7 +75,7 @@ class KernelDiagnosticsIT
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
             SizeCapture capture = new SizeCapture();
-            files.dump( capture );
+            files.dump( capture::log );
             assertNotNull( capture.size );
 
             // then
@@ -148,11 +144,10 @@ class KernelDiagnosticsIT
         }
     }
 
-    private class SizeCapture implements Logger
+    private static class SizeCapture
     {
         private String size;
 
-        @Override
         public void log( @Nonnull String message )
         {
             if ( message.contains( "Total size of mapped files" ) )
@@ -161,24 +156,6 @@ class KernelDiagnosticsIT
                 Assertions.assertTrue( beginPos != -1 );
                 size = message.substring( beginPos + 2 );
             }
-        }
-
-        @Override
-        public void log( @Nonnull String message, @Nonnull Throwable throwable )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void log( @Nonnull String format, @Nullable Object... arguments )
-        {
-            log( format( format, arguments ) );
-        }
-
-        @Override
-        public void bulk( @Nonnull Consumer<Logger> consumer )
-        {
-            throw new UnsupportedOperationException();
         }
     }
 }

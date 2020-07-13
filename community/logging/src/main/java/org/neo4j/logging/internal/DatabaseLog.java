@@ -21,31 +21,20 @@ package org.neo4j.logging.internal;
 
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
-import org.neo4j.logging.NullLogger;
 
 public class DatabaseLog extends AbstractLog
 {
     private final DatabaseLogContext logContext;
     private final Log delegate;
-    private final Logger debugLogger;
-    private final Logger infoLogger;
-    private final Logger warnLogger;
-    private final Logger errorLogger;
 
     DatabaseLog( DatabaseLogContext logContext, Log delegate )
     {
         this.logContext = logContext;
         this.delegate = delegate;
-
-        // use logger suppliers because the log delegate is allowed to return different loggers based on the configured log level
-        this.debugLogger = new DatabaseLogger( logContext, delegate::debugLogger );
-        this.infoLogger = new DatabaseLogger( logContext, delegate::infoLogger );
-        this.warnLogger = new DatabaseLogger( logContext, delegate::warnLogger );
-        this.errorLogger = new DatabaseLogger( logContext, delegate::errorLogger );
     }
 
     @Override
@@ -54,38 +43,91 @@ public class DatabaseLog extends AbstractLog
         return delegate.isDebugEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger debugLogger()
+    public void debug( @Nonnull String message )
     {
-        // check if debug is enabled to avoid string concatenation to create a prefix
-        return isDebugEnabled() ? debugLogger : NullLogger.getInstance();
-    }
-
-    @Nonnull
-    @Override
-    public Logger infoLogger()
-    {
-        return infoLogger;
-    }
-
-    @Nonnull
-    @Override
-    public Logger warnLogger()
-    {
-        return warnLogger;
-    }
-
-    @Nonnull
-    @Override
-    public Logger errorLogger()
-    {
-        return errorLogger;
+        delegate.debug( withPrefix( message ));
     }
 
     @Override
+    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
+    {
+        delegate.debug( withPrefix( message ), throwable );
+    }
+
+    @Override
+    public void debug( @Nonnull String format, @Nullable Object... arguments )
+    {
+        delegate.debug( withPrefix( format ), arguments );
+    }
+
+    @Override
+    public void info( @Nonnull String message )
+    {
+        delegate.info( withPrefix( message ) );
+    }
+
+    @Override
+    public void info( @Nonnull String message, @Nonnull Throwable throwable )
+    {
+        delegate.info( withPrefix( message ), throwable );
+    }
+
+    @Override
+    public void info( @Nonnull String format, @Nullable Object... arguments )
+    {
+        delegate.info( withPrefix( format ), arguments );
+    }
+
+    @Override
+    public void warn( @Nonnull String message )
+    {
+        delegate.warn( withPrefix( message ) );
+    }
+
+    @Override
+    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+    {
+        delegate.warn( withPrefix( message ), throwable );
+    }
+
+    @Override
+    public void warn( @Nonnull String format, @Nullable Object... arguments )
+    {
+        delegate.warn( withPrefix( format ), arguments );
+    }
+
+    @Override
+    public void error( @Nonnull String message )
+    {
+        delegate.error( withPrefix( message ) );
+    }
+
+    @Override
+    public void error( @Nonnull String message, @Nonnull Throwable throwable )
+    {
+        delegate.error( withPrefix( message ), throwable );
+    }
+
+    @Override
+    public void error( @Nonnull String format, @Nullable Object... arguments )
+    {
+        delegate.error( withPrefix( format ), arguments );
+    }
+
+    @Override
+    @Deprecated
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
-        delegate.bulk( log -> consumer.accept( new DatabaseLog( logContext, log ) ) );
+        delegate.bulk( log -> consumer.accept( this ) );
+    }
+
+    private String withPrefix( String message )
+    {
+        if ( logContext != null )
+        {
+            return logContext.formatMessage( message );
+        }
+        return message;
     }
 }

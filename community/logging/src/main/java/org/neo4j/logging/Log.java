@@ -38,28 +38,24 @@ public interface Log
 
     /**
      * @return a {@link Logger} instance for writing debug messages
+     * @deprecated Use {@link #debug(String)} directly.
      */
     @Nonnull
+    @Deprecated( forRemoval = true, since = "4.2" )
     Logger debugLogger();
 
     /**
-     * Shorthand for {@code debugLogger().log( message )}
-     *
      * @param message The message to be written
      */
     void debug( @Nonnull String message );
 
     /**
-     * Shorthand for {@code debugLogger().log( message, throwable )}
-     *
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
     void debug( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
-     * Shorthand for {@code debugLogger().log( format, arguments )}
-     *
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
@@ -67,28 +63,24 @@ public interface Log
 
     /**
      * @return a {@link Logger} instance for writing info messages
+     * @deprecated Use {@link #info(String)}} directly.
      */
     @Nonnull
+    @Deprecated( forRemoval = true, since = "4.2" )
     Logger infoLogger();
 
     /**
-     * Shorthand for {@code infoLogger().log( message )}
-     *
      * @param message The message to be written
      */
     void info( @Nonnull String message );
 
     /**
-     * Shorthand for {@code infoLogger().log( message, throwable )}
-     *
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
     void info( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
-     * Shorthand for {@code infoLogger().log( format, arguments )}
-     *
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
@@ -96,28 +88,24 @@ public interface Log
 
     /**
      * @return a {@link Logger} instance for writing warn messages
+     * @deprecated Use {@link #warn(String)} directly.
      */
     @Nonnull
+    @Deprecated( forRemoval = true, since = "4.2" )
     Logger warnLogger();
 
     /**
-     * Shorthand for {@code warnLogger().log( message )}
-     *
      * @param message The message to be written
      */
     void warn( @Nonnull String message );
 
     /**
-     * Shorthand for {@code warnLogger().log( message, throwable )}
-     *
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
     void warn( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
-     * Shorthand for {@code warnLogger().log( format, arguments )}
-     *
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
@@ -125,28 +113,24 @@ public interface Log
 
     /**
      * @return a {@link Logger} instance for writing error messages
+     * @deprecated Use {@link #error(String)} directly.
      */
     @Nonnull
+    @Deprecated( forRemoval = true, since = "4.2" )
     Logger errorLogger();
 
     /**
-     * Shorthand for {@code errorLogger().log( message )}
-     *
      * @param message The message to be written
      */
     void error( @Nonnull String message );
 
     /**
-     * Shorthand for {@code errorLogger().log( message, throwable )}
-     *
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
     void error( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
-     * Shorthand for {@code errorLogger().log( format, arguments )}
-     *
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the {@code format}
      */
@@ -158,5 +142,6 @@ public interface Log
      *
      * @param consumer A consumer for the bulk {@link Log}
      */
+    @Deprecated( forRemoval = true, since = "4.2" )
     void bulk( @Nonnull Consumer<Log> consumer );
 }

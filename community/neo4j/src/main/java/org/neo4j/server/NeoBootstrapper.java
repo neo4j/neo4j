@@ -22,8 +22,6 @@ package org.neo4j.server;
 import sun.misc.Signal;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.logging.Level;
@@ -37,21 +35,16 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.scheduler.Group;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class NeoBootstrapper implements Bootstrapper
 {
@@ -65,8 +58,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private volatile Closeable userLogFileStream;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-    // in case we have errors loading/validating the configuration log to stdout
-    private Log log = FormattedLogProvider.toOutputStream( System.out ).getLog( getClass() );
+    private Log log;
     private String serverAddress = "unknown address";
 
     public static int start( Bootstrapper boot, String... argv )
@@ -104,13 +96,15 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .build();
+        Log4jLogProvider userLogProvider = setupLogging( config );
+        this.userLogFileStream = userLogProvider;
+
+        dependencies = dependencies.userLogProvider( userLogProvider );
+        log = userLogProvider.getLog( getClass() );
+        config.setLogger( log );
+
         try
         {
-            LogProvider userLogProvider = setupLogging( config );
-            dependencies = dependencies.userLogProvider( userLogProvider );
-            log = userLogProvider.getLog( getClass() );
-            config.setLogger( log );
-
             serverAddress = HttpConnector.listen_address.toString();
 
             log.info( "Starting..." );
@@ -175,16 +169,24 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
     protected abstract DatabaseManagementService createNeo( Config config, GraphDatabaseDependencies dependencies );
 
-    private LogProvider setupLogging( Config config )
+    private Log4jLogProvider setupLogging( Config config )
     {
-        FormattedLogProvider.Builder builder = FormattedLogProvider
-                .withoutRenderingContext()
-                .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
-                .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
-                .withFormat( config.get( GraphDatabaseInternalSettings.log_format) );
 
-        LogProvider userLogProvider = config.get( GraphDatabaseSettings.store_user_log_to_stdout ) ? builder.toOutputStream( System.out )
-                                                                                                   : createFileSystemUserLogProvider( config, builder );
+        LogConfig.Builder builder =
+                LogConfig.createBuilder( config.get( GraphDatabaseSettings.store_user_log_path ), config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                        .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
+                        .withFormat( config.get( GraphDatabaseInternalSettings.log_format ) )
+                        .withCategory( false )
+                        .withRotation( config.get( GraphDatabaseSettings.store_user_log_rotation_threshold ),
+                                config.get( GraphDatabaseSettings.store_user_log_max_archives ) );
+
+        if ( config.get( GraphDatabaseSettings.store_user_log_to_stdout ) )
+        {
+            builder.logToSystemOut();
+        }
+
+        Neo4jLoggerContext ctx = builder.build();
+        Log4jLogProvider userLogProvider = new Log4jLogProvider( ctx );
 
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
@@ -254,36 +256,6 @@ public abstract class NeoBootstrapper implements Bootstrapper
             {
                 log.warn( "Unable to remove shutdown hook" );
             }
-        }
-    }
-
-    private LogProvider createFileSystemUserLogProvider( Config config, FormattedLogProvider.Builder builder )
-    {
-        BufferingExecutor deferredExecutor = new BufferingExecutor();
-        dependencies = dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION );
-
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Path destination = config.get( GraphDatabaseSettings.store_user_log_path );
-        Long rotationThreshold = config.get( GraphDatabaseSettings.store_user_log_rotation_threshold );
-        try
-        {
-            if ( rotationThreshold == 0L )
-            {
-                OutputStream userLog = createOrOpenAsOutputStream( fs, destination.toFile(), true );
-                // Assign it to the server instance so that it gets closed when the server closes
-                this.userLogFileStream = userLog;
-                return builder.toOutputStream( userLog );
-            }
-            RotatingFileOutputStreamSupplier rotatingUserLogSupplier = new RotatingFileOutputStreamSupplier( fs, destination.toFile(), rotationThreshold,
-                    config.get( GraphDatabaseSettings.store_user_log_rotation_delay ).toMillis(),
-                    config.get( GraphDatabaseSettings.store_user_log_max_archives ), deferredExecutor );
-            // Assign it to the server instance so that it gets closed when the server closes
-            this.userLogFileStream = rotatingUserLogSupplier;
-            return builder.toOutputStream( rotatingUserLogSupplier );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 }

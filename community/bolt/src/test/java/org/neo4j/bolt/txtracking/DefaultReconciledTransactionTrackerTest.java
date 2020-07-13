@@ -25,8 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +41,8 @@ class DefaultReconciledTransactionTrackerTest
     @BeforeEach
     void beforeEach()
     {
-        tracker = new DefaultReconciledTransactionTracker( new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ) ) );
+        tracker = new DefaultReconciledTransactionTracker( new SimpleLogService(
+                new Log4jLogProvider( System.out ) ) );
     }
 
     @Test

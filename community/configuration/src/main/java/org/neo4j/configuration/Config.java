@@ -46,7 +46,6 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.service.Services;
 

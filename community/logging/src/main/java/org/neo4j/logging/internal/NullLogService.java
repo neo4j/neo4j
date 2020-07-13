@@ -47,7 +47,7 @@ public final class NullLogService implements LogService
     }
 
     @Override
-    public Log getUserLog( Class loggingClass )
+    public Log getUserLog( Class<?> loggingClass )
     {
         return nullLog;
     }
@@ -59,7 +59,7 @@ public final class NullLogService implements LogService
     }
 
     @Override
-    public Log getInternalLog( Class loggingClass )
+    public Log getInternalLog( Class<?> loggingClass )
     {
         return nullLog;
     }

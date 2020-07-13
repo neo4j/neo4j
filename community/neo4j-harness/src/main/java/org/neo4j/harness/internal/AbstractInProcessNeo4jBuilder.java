@@ -52,8 +52,11 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
@@ -158,7 +161,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
                 dbConfig = config.build();
             }
 
-            LogProvider userLogProvider = FormattedLogProvider.withZoneId( dbConfig.get( db_timezone ).getZoneId() ).toOutputStream( userLogOutputStream );
+            Neo4jLoggerContext loggerContext = LogConfig.createBuilder( userLogOutputStream, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
+            LogProvider userLogProvider = new Log4jLogProvider( loggerContext );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
             dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
 

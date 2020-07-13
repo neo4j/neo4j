@@ -31,11 +31,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -57,7 +57,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
     }
 
     @Override
-    public void dump( Logger logger )
+    public void dump( DiagnosticsLogger logger )
     {
         logger.log( getDiskSpace( databaseLayout ) );
         logger.log( "Storage files stored on file store: " + getFileStoreType( databaseLayout.databaseDirectory() ) );
@@ -69,7 +69,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
     }
 
-    private long logStoreFiles( Logger logger, String prefix, File dir, MappedFileCounter mappedCounter )
+    private long logStoreFiles( DiagnosticsLogger logger, String prefix, File dir, MappedFileCounter mappedCounter )
     {
         if ( !dir.isDirectory() )
         {

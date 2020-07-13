@@ -19,14 +19,10 @@
  */
 package org.neo4j.logging;
 
-import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * An abstract {@link LogProvider} implementation, which ensures {@link Log}s are cached and reused.
@@ -71,14 +67,6 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
     }
 
     /**
-     * @return a {@link Collection} of the {@link Log} mappings that are currently held in the cache
-     */
-    protected Collection<T> cachedLogs()
-    {
-        return logCache.values().stream().map( logWithContext -> logWithContext.log ).collect( toList() );
-    }
-
-    /**
      * @param loggingClass the context for the returned {@link Log}
      * @return a {@link Log} that logs messages with the {@code loggingClass} as the context
      */
@@ -89,27 +77,6 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
      * @return a {@link Log} that logs messages with the specified name as the context
      */
     protected abstract T buildLog( String name );
-
-    /**
-     * Makes a thread-safe change of settings. This method is co-ordinated with {@link #getLog(Class)} and all its variants.
-     * All log instances will be notified with this change.
-     *
-     * @param change the settings change to be performed under a lock.
-     * @param logInstanceRefresher {@link BiConsumer} to refresh existing log instances.
-     */
-    void makeDynamicSettingsChange( Runnable change, BiConsumer<T,String> logInstanceRefresher )
-    {
-        settingsChangeLock.writeLock().lock();
-        try
-        {
-            change.run();
-            logCache.values().forEach( log -> logInstanceRefresher.accept( log.log, log.fullContext ) );
-        }
-        finally
-        {
-            settingsChangeLock.writeLock().unlock();
-        }
-    }
 
     /**
      * A log accompanied its original context, since logs may be instantiated with a modified version of the context

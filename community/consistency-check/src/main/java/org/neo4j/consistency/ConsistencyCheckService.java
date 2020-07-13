@@ -69,9 +69,12 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.DuplicatingLog;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -218,8 +221,10 @@ public class ConsistencyCheckService
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
-        Suppliers.Lazy<PrintWriter> reportWriterSupplier = getReportWriterSupplier( fileSystem, reportFile );
-        Log reportLog = new ConsistencyReportLog( reportWriterSupplier );
+
+        Log4jLogProvider reportLogProvider = new Log4jLogProvider(
+                LogConfig.createBuilder( reportFile.toPath(), Level.INFO ).createOnDemand().withCategory( false ).build() );
+        Log reportLog = reportLogProvider.getLog( getClass() );
 
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
@@ -229,7 +234,7 @@ public class ConsistencyCheckService
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         final RecoveryCleanupWorkCollector workCollector = RecoveryCleanupWorkCollector.ignore();
         DatabaseExtensions extensions = life.add( instantiateExtensions( databaseLayout,
-                fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
+                fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                 workCollector,
                 TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
                 monitors, tokenHolders ) );
@@ -278,10 +283,7 @@ public class ConsistencyCheckService
         finally
         {
             life.shutdown();
-            if ( reportWriterSupplier.isInitialised() )
-            {
-                reportWriterSupplier.get().close();
-            }
+            reportLogProvider.close();
         }
 
         if ( !summary.isConsistent() )

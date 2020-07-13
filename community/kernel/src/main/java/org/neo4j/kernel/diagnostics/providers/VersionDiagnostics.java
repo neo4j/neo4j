@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
 
 public class VersionDiagnostics extends NamedDiagnosticsProvider
@@ -38,7 +38,7 @@ public class VersionDiagnostics extends NamedDiagnosticsProvider
     }
 
     @Override
-    public void dump( Logger logger )
+    public void dump( DiagnosticsLogger logger )
     {
         logger.log( "DBMS: " + dbmsInfo + " " + storeId );
         logger.log( "Kernel version: " + Version.getKernelVersion() );

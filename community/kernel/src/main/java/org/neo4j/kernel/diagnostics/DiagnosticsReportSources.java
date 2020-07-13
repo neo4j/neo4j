@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-
-import static org.neo4j.logging.RotatingFileOutputStreamSupplier.getAllArchives;
 
 /**
  * Contains helper methods to create create {@link DiagnosticsReportSource}.
@@ -57,8 +54,6 @@ public final class DiagnosticsReportSources
     }
 
     /**
-     * This is to be used by loggers that uses {@link RotatingFileOutputStreamSupplier}.
-     *
      * @param destination final destination in archive.
      * @param fs filesystem abstraction to use.
      * @param file input log file, should be without rotation numbers.
@@ -93,6 +88,23 @@ public final class DiagnosticsReportSources
     public static DiagnosticsReportSource newDiagnosticsString( String destination, Supplier<String> messageSupplier )
     {
         return new DiagnosticsStringReportSource( destination, messageSupplier );
+    }
+
+    private static List<File> getAllArchives( FileSystemAbstraction fileSystem,  File outputFile )
+    {
+        ArrayList<File> ret = new ArrayList<>();
+        int i = 1;
+        while ( true )
+        {
+            File file = new File( String.format( "%s.%d", outputFile.getPath(), i ) );
+            if ( !fileSystem.fileExists( file ) )
+            {
+                break;
+            }
+            ret.add( file );
+            i++;
+        }
+        return ret;
     }
 
     private static class DiagnosticsFileReportSource implements DiagnosticsReportSource

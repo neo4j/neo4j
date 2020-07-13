@@ -160,10 +160,13 @@ import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -218,7 +221,7 @@ public class BatchInserterImpl implements BatchInserter
     private final Locker locker;
     private final PageCache pageCache;
     private final RecordStorageReader storageReader;
-    private final StoreLogService logService;
+    private final SimpleLogService logService;
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
     private final JobScheduler jobScheduler;
@@ -282,9 +285,9 @@ public class BatchInserterImpl implements BatchInserter
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
-            File internalLog = config.get( store_internal_log_path ).toFile();
+            Neo4jLoggerContext ctx = LogConfig.createBuilder( config.get( store_internal_log_path ), Level.INFO ).build();
 
-            logService = life.add( StoreLogService.withInternalLog( internalLog ).build( fileSystem ) );
+            logService = life.add( new SimpleLogService( ctx ) );
             msgLog = logService.getInternalLog( getClass() );
 
             boolean dump = config.get( GraphDatabaseInternalSettings.dump_configuration );

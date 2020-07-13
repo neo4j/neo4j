@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.lang.String.format;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
@@ -186,55 +187,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
     }
 
-    private class LogCallRecorder implements Logger
-    {
-        private final String context;
-        private final Level level;
-
-        LogCallRecorder( String context, Level level )
-        {
-            this.context = context;
-            this.level = level;
-        }
-
-        @Override
-        public void log( @Nonnull String message )
-        {
-            logCalls.add( new LogCall( context, level, message, null, null ) );
-        }
-
-        @Override
-        public void log( @Nonnull String message, @Nonnull Throwable throwable )
-        {
-            logCalls.add( new LogCall( context, level, message, null, throwable ) );
-        }
-
-        @Override
-        public void log( @Nonnull String format, @Nonnull Object... arguments )
-        {
-            logCalls.add( new LogCall( context, level, format, arguments, null ) );
-        }
-
-        @Override
-        public void bulk( @Nonnull Consumer<Logger> consumer )
-        {
-            consumer.accept( this );
-        }
-    }
-
     protected class AssertableLog extends AbstractLog
     {
-        private final Logger debugLogger;
-        private final Logger infoLogger;
-        private final Logger warnLogger;
-        private final Logger errorLogger;
+        private final String context;
 
         AssertableLog( String context )
         {
-            this.debugLogger = new LogCallRecorder( context, Level.DEBUG );
-            this.infoLogger = new LogCallRecorder( context, Level.INFO );
-            this.warnLogger = new LogCallRecorder( context, Level.WARN );
-            this.errorLogger = new LogCallRecorder( context, Level.ERROR );
+            this.context = context;
         }
 
         @Override
@@ -243,32 +202,76 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             return debugEnabled;
         }
 
-        @Nonnull
         @Override
-        public Logger debugLogger()
+        public void debug( @Nonnull String message )
         {
-            return debugLogger;
+            logCalls.add( new LogCall( context, Level.DEBUG, message, null, null ) );
         }
 
-        @Nonnull
         @Override
-        public Logger infoLogger()
+        public void debug( @Nonnull String message, @Nonnull Throwable throwable )
         {
-            return infoLogger;
+            logCalls.add( new LogCall( context, Level.DEBUG, message, null, throwable ) );
         }
 
-        @Nonnull
         @Override
-        public Logger warnLogger()
+        public void debug( @Nonnull String format, @Nullable Object... arguments )
         {
-            return warnLogger;
+            logCalls.add( new LogCall( context, Level.DEBUG, format, arguments, null ) );
         }
 
-        @Nonnull
         @Override
-        public Logger errorLogger()
+        public void info( @Nonnull String message )
         {
-            return errorLogger;
+            logCalls.add( new LogCall( context, Level.INFO, message, null, null ) );
+        }
+
+        @Override
+        public void info( @Nonnull String message, @Nonnull Throwable throwable )
+        {
+            logCalls.add( new LogCall( context, Level.INFO, message, null, throwable ) );
+        }
+
+        @Override
+        public void info( @Nonnull String format, @Nullable Object... arguments )
+        {
+            logCalls.add( new LogCall( context, Level.INFO, format, arguments, null ) );
+        }
+
+        @Override
+        public void warn( @Nonnull String message )
+        {
+            logCalls.add( new LogCall( context, Level.WARN, message, null, null ) );
+        }
+
+        @Override
+        public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+        {
+            logCalls.add( new LogCall( context, Level.WARN, message, null, throwable ) );
+        }
+
+        @Override
+        public void warn( @Nonnull String format, @Nullable Object... arguments )
+        {
+            logCalls.add( new LogCall( context, Level.WARN, format, arguments, null ) );
+        }
+
+        @Override
+        public void error( @Nonnull String message )
+        {
+            logCalls.add( new LogCall( context, Level.ERROR, message, null, null ) );
+        }
+
+        @Override
+        public void error( @Nonnull String message, @Nonnull Throwable throwable )
+        {
+            logCalls.add( new LogCall( context, Level.ERROR, message, null, throwable ) );
+        }
+
+        @Override
+        public void error( @Nonnull String format, @Nullable Object... arguments )
+        {
+            logCalls.add( new LogCall( context, Level.ERROR, format, arguments, null ) );
         }
 
         @Override

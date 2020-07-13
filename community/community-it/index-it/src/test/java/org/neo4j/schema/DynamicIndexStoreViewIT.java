@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -123,7 +123,7 @@ class DynamicIndexStoreViewIT
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
             Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
             consistencyCheckService.runFullConsistencyCheck( databaseLayout, config,
-                    ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
+                    ProgressMonitorFactory.NONE, new Log4jLogProvider( System.out ), false );
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.exceptions.KernelException;
@@ -52,6 +53,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
  */
 @SuppressWarnings( "WeakerAccess" )
 @TestDirectoryExtension
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 @ResourceLock( SHARED_RESOURCE )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {

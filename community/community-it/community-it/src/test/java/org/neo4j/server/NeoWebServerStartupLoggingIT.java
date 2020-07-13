@@ -27,13 +27,13 @@ import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.helpers.WebContainerHelper.createNonPersistentContainer;
 
@@ -46,7 +46,7 @@ public class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
     public static void setupServer() throws Exception
     {
         out = new ByteArrayOutputStream();
-        webContainer = createNonPersistentContainer( toOutputStream( out ) );
+        webContainer = createNonPersistentContainer( new Log4jLogProvider( out ) );
     }
 
     @AfterClass

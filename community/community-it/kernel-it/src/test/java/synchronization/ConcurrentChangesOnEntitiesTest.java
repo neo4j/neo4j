@@ -41,8 +41,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -196,7 +196,7 @@ class ConcurrentChangesOnEntitiesTest
 
     private void assertDatabaseConsistent()
     {
-        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+        LogProvider logProvider = new Log4jLogProvider( System.out );
         assertDoesNotThrow( () ->
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, Config.defaults(),

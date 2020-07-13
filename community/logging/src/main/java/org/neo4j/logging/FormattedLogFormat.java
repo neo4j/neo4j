@@ -19,29 +19,11 @@
  */
 package org.neo4j.logging;
 
-import java.io.PrintWriter;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.function.Supplier;
-import javax.annotation.Nonnull;
+import org.neo4j.annotations.api.IgnoreApiCheck;
 
+@IgnoreApiCheck
 public enum FormattedLogFormat
 {
     STANDARD_FORMAT,
     JSON_FORMAT;
-
-    public static AbstractPrintWriterLogger getFormattedLogger( FormattedLogFormat format, FormattedLog formattedLog,
-                                                                @Nonnull Supplier<PrintWriter> writerSupplier,
-                                                                @Nonnull Level level, String category, DateTimeFormatter dateTimeFormatter,
-                                                                Supplier<ZonedDateTime> zonedDateTimeSupplier )
-    {
-        switch ( format )
-        {
-        case JSON_FORMAT:
-            return new FormattedLoggerJson( formattedLog, writerSupplier, level, category, dateTimeFormatter, zonedDateTimeSupplier );
-        case STANDARD_FORMAT:
-        default:
-            return new FormattedLoggerStandard( formattedLog, writerSupplier, level, category, dateTimeFormatter, zonedDateTimeSupplier );
-        }
-    }
 }

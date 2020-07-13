@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.time.ZoneId;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -72,8 +74,12 @@ public final class ConfigurableStandalonePageCacheFactory
             VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, MemoryPools memoryPools )
     {
         config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, "8M" );
-        ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
-        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
+        Neo4jLoggerContext loggerContext =
+                LogConfig.createBuilder( System.err, Level.INFO )
+                        .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
+                        .build();
+        LogProvider logProvider = new Log4jLogProvider( loggerContext );
+
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler,
                 Clocks.nanoClock(), memoryPools );

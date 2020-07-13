@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -876,7 +876,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
     }
 
-    public void logRecords( final Logger log )
+    public void logRecords( final DiagnosticsLogger logger )
     {
         scanAllFields( PF_SHARED_READ_LOCK, cursor ->
         {
@@ -889,7 +889,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 }
                 while ( cursor.shouldRetry() );
                 boolean bounds = cursor.checkAndClearBoundsFlag();
-                log.log( position.name() + " (" + position.description() + "): " + value +
+                logger.log( position.name() + " (" + position.description() + "): " + value +
                             (bounds ? " (out-of-bounds detected; value cannot be trusted)" : ""));
             }
             return false;

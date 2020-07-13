@@ -52,13 +52,10 @@ public class DiagnosticsManager
 
     public void dump( List<DiagnosticsProvider> providers, Log dumpLog )
     {
-        dumpLog.bulk( bulkLog ->
+        for ( DiagnosticsProvider provider : providers )
         {
-            for ( DiagnosticsProvider provider : providers )
-            {
-                dump( provider, bulkLog );
-            }
-        } );
+            dump( provider, dumpLog );
+        }
     }
 
     public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
@@ -85,7 +82,7 @@ public class DiagnosticsManager
         try
         {
             header( log, provider.getDiagnosticsName() );
-            provider.dump( log.infoLogger() );
+            provider.dump( log::info );
             log.info( EMPTY );
         }
         catch ( Exception cause )

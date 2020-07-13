@@ -19,12 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
@@ -78,11 +72,14 @@ import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
@@ -94,13 +91,20 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.log_format;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_level;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_max_archives;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
@@ -158,6 +162,11 @@ public class GlobalModule
 
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
+        // If no logging was passed in from the outside then create logging and register
+        // with this life
+        logService = globalDependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
+        globalConfig.setLogger( logService.getInternalLog( Config.class ) );
+
         fileSystem = tryResolveOrCreate( FileSystemAbstraction.class, this::createFileSystemAbstraction );
         globalDependencies.satisfyDependency( fileSystem );
         globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
@@ -169,12 +178,6 @@ public class GlobalModule
         JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
         jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
         startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
-
-        // If no logging was passed in from the outside then create logging and register
-        // with this life
-        logService = globalDependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
-
-        globalConfig.setLogger( logService.getInternalLog( Config.class ) );
 
         fileLockerService = createFileLockerService();
         Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
@@ -311,7 +314,7 @@ public class GlobalModule
     private FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, LogService logging, JobScheduler jobScheduler,
             Config config )
     {
-        if ( !config.get( GraphDatabaseSettings.filewatcher_enabled ) )
+        if ( !config.get( filewatcher_enabled ) )
         {
             Log log = logging.getInternalLog( getClass() );
             log.info( "File watcher disabled by configuration." );
@@ -332,59 +335,30 @@ public class GlobalModule
 
     protected LogService createLogService( LogProvider userLogProvider )
     {
-        long internalLogRotationThreshold = globalConfig.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
-        long internalLogRotationDelay = globalConfig.get( GraphDatabaseSettings.store_internal_log_rotation_delay ).toMillis();
-        int internalLogMaxArchives = globalConfig.get( GraphDatabaseSettings.store_internal_log_max_archives );
+        // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed during start up).
+        Neo4jLoggerContext loggerContext = LogConfig.createBuilder( globalConfig.get( store_internal_log_path), globalConfig.get( store_internal_log_level) )
+                .withFormat( globalConfig.get( log_format) )
+                .withTimezone( globalConfig.get( db_timezone ) )
+                .withHeaderLogger( log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName() )
+                .withRotation( globalConfig.get( store_internal_log_rotation_threshold ), globalConfig.get( store_internal_log_max_archives ) )
+                .build();
+        Log4jLogProvider internalLogProvider = new Log4jLogProvider( loggerContext );
+        userLogProvider = userLogProvider == null ? NullLogProvider.getInstance() : userLogProvider;
+        SimpleLogService logService = new SimpleLogService( userLogProvider, internalLogProvider );
 
-        final StoreLogService.Builder builder =
-                StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay,
-                        internalLogMaxArchives, jobScheduler );
-
-        if ( userLogProvider != null )
-        {
-            builder.withUserLogProvider( userLogProvider );
-        }
-
-        builder.withRotationListener(
-                logProvider -> dbmsDiagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
-
-        builder.withLevels( asDebugLogLevels( globalConfig.get( GraphDatabaseInternalSettings.store_internal_debug_contexts ) ) );
-        builder.withDefaultLevel( globalConfig.get( GraphDatabaseSettings.store_internal_log_level ) )
-               .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
-               .withFormat( globalConfig.get( GraphDatabaseInternalSettings.log_format ) );
-
-        Path logFile = globalConfig.get( store_internal_log_path );
-        if ( Files.notExists( logFile.getParent() ) )
-        {
-            try
-            {
-                Files.createDirectories( logFile.getParent() );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( "Failed to create logging directory", e );
-            }
-        }
-        StoreLogService logService;
-        try
-        {
-            logService = builder.withInternalLog( logFile.toFile() ).build( fileSystem );
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( ex );
-        }
         // Listen to changes to the dynamic log level settings.
-        globalConfig.addListener( GraphDatabaseSettings.store_internal_log_level,
-                ( before, after ) -> logService.setDefaultLogLevel( after ) );
-        globalConfig.addListener( GraphDatabaseInternalSettings.store_internal_debug_contexts,
-                ( before, after ) -> logService.setContextLogLevels( asDebugLogLevels( after ) ) );
-        return globalLife.add( logService );
-    }
+        globalConfig.addListener( store_internal_log_level,
+                ( before, after ) -> internalLogProvider.updateLogLevel( after ) );
 
-    private static Map<String,Level> asDebugLogLevels( List<String> strings )
-    {
-        return strings.stream().collect( toMap( identity(), s -> Level.DEBUG ) );
+        // If the user log provider comes from us we make sure that it starts with the default log level and listens to updates.
+        if ( userLogProvider instanceof Log4jLogProvider )
+        {
+            Log4jLogProvider provider = (Log4jLogProvider) userLogProvider;
+            provider.updateLogLevel( globalConfig.get( store_internal_log_level) );
+            globalConfig.addListener( store_internal_log_level,
+                    ( before, after ) -> provider.updateLogLevel( after ) );
+        }
+        return globalLife.add( logService );
     }
 
     private JobScheduler createJobScheduler()
@@ -414,7 +388,7 @@ public class GlobalModule
 
     private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config, LifeSupport life )
     {
-        final GraphDatabaseSettings.TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
+        final TransactionStateMemoryAllocation allocation = config.get( tx_state_memory_allocation );
         switch ( allocation )
         {
         case ON_HEAP:
@@ -424,7 +398,7 @@ public class GlobalModule
                     config.get( tx_state_off_heap_max_cacheable_block_size ),
                     config.get( tx_state_off_heap_block_cache_size ) );
             final OffHeapBlockAllocator sharedBlockAllocator;
-            final long maxMemory = config.get( GraphDatabaseSettings.tx_state_max_off_heap_memory );
+            final long maxMemory = config.get( tx_state_max_off_heap_memory );
             if ( maxMemory > 0 )
             {
                 sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( allocator, maxMemory );

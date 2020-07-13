@@ -46,13 +46,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.logging.Logger;
 
+import static java.lang.String.format;
 import static java.net.NetworkInterface.getNetworkInterfaces;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
@@ -61,7 +62,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     SYSTEM_MEMORY( "System memory information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             logBytes( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
             logBytes( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
@@ -73,7 +74,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     JAVA_MEMORY( "JVM memory information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             logger.log( "Free  memory: " + bytesToString( Runtime.getRuntime().freeMemory() ) );
             logger.log( "Total memory: " + bytesToString( Runtime.getRuntime().totalMemory() ) );
@@ -85,7 +86,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             for ( MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans() )
             {
                 MemoryUsage usage = pool.getUsage();
-                logger.log( String.format( "Memory Pool: %s (%s): committed=%s, used=%s, max=%s, threshold=%s",
+                logger.log( format( "Memory Pool: %s (%s): committed=%s, used=%s, max=%s, threshold=%s",
                         pool.getName(), pool.getType(), usage == null ? "?" : bytesToString( usage.getCommitted() ),
                         usage == null ? "?" : bytesToString( usage.getUsed() ), usage == null ? "?" : bytesToString( usage.getMax() ),
                         pool.isUsageThresholdSupported() ? bytesToString( pool.getUsageThreshold() ) : "?" ) );
@@ -95,11 +96,11 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     OPERATING_SYSTEM( "Operating system information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-            logger.log( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
+            logger.log( format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                     os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
             logLong( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
             logLong( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
@@ -116,7 +117,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     JAVA_VIRTUAL_MACHINE( "JVM information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( "VM Name: " + runtime.getVmName() );
@@ -130,7 +131,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     CLASSPATH( "Java classpath" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             Collection<String> classpath;
@@ -200,7 +201,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     LIBRARY_PATH( "Library path" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             for ( String path : runtime.getLibraryPath().split( File.pathSeparator ) )
@@ -212,7 +213,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     SYSTEM_PROPERTIES( "System properties" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             for ( Object property : System.getProperties().keySet() )
             {
@@ -232,7 +233,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     TIMEZONE_DATABASE( "(IANA) TimeZone database version" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             Map<String,Integer> versions = new HashMap<>();
             for ( String tz : ZoneRulesProvider.getAvailableZoneIds() )
@@ -246,14 +247,14 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             Arrays.sort( sorted );
             for ( String tz : sorted )
             {
-                logger.log( "  TimeZone version: %s (available for %d zone identifiers)", tz, versions.get( tz ) );
+                logger.log( format( "  TimeZone version: %s (available for %d zone identifiers)", tz, versions.get( tz )  ) );
             }
         }
     },
     NETWORK( "Network information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             try
             {
@@ -262,14 +263,14 @@ public enum SystemDiagnostics implements DiagnosticsProvider
                 while ( networkInterfaces.hasMoreElements() )
                 {
                     NetworkInterface iface = networkInterfaces.nextElement();
-                    logger.log( String.format( "Interface %s:", iface.getDisplayName() ) );
+                    logger.log( format( "Interface %s:", iface.getDisplayName() ) );
 
                     Enumeration<InetAddress> addresses = iface.getInetAddresses();
                     while ( addresses.hasMoreElements() )
                     {
                         InetAddress address = addresses.nextElement();
                         String hostAddress = address.getHostAddress();
-                        logger.log( "    address: %s", hostAddress );
+                        logger.log( format( "    address: %s", hostAddress ) );
                     }
                 }
             }
@@ -282,7 +283,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     NATIVE_ACCESSOR( "Native access information" )
     {
         @Override
-        public void dump( Logger logger )
+        public void dump( DiagnosticsLogger logger )
         {
             NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
             logger.log( "Native access details: " + nativeAccess.describe() );
@@ -314,7 +315,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static void logBytes( Logger logger, String message, long value )
+    private static void logBytes( DiagnosticsLogger logger, String message, long value )
     {
         if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
         {
@@ -322,7 +323,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static void logLong( Logger logger, String message, long value )
+    private static void logLong( DiagnosticsLogger logger, String message, long value )
     {
         if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
         {

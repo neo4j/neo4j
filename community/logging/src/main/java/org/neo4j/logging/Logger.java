@@ -27,8 +27,10 @@ import org.neo4j.annotations.api.PublicApi;
 
 /**
  * A log into which messages can be written
+ * @deprecated Use {@link Log} directly.
  */
 @PublicApi
+@Deprecated( forRemoval = true, since = "4.2" )
 public interface Logger
 {
     /**

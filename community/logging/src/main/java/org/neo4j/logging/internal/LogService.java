@@ -37,7 +37,7 @@ public interface LogService
      * @param loggingClass the context for the return logger.
      * @return a {@link org.neo4j.logging.Log} that logs user visible messages with the {@code loggingClass} as context.
      */
-    Log getUserLog( Class loggingClass );
+    Log getUserLog( Class<?> loggingClass );
 
     /**
      * @return a {@link LogProvider} that providers loggers for internal messages.
@@ -49,5 +49,5 @@ public interface LogService
      * @param loggingClass the context for the return logger.
      * @return a {@link Log} that logs internal messages with the {@code loggingClass} as context.
      */
-    Log getInternalLog( Class loggingClass );
+    Log getInternalLog( Class<?> loggingClass );
 }

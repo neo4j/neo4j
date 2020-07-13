@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.Math.max;
@@ -822,12 +822,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return idType;
     }
 
-    void logVersions( Logger logger )
+    void logVersions( DiagnosticsLogger logger )
     {
         logger.log( String.format( "%s[%s] %s", getTypeDescriptor(), getStorageFile().getFileName(), storeVersion ) );
     }
 
-    void logIdUsage( Logger logger, PageCursorTracer cursorTracer )
+    void logIdUsage( DiagnosticsLogger logger, PageCursorTracer cursorTracer )
     {
         logger.log( format( "%s[%s]: used=%s high=%s", getTypeDescriptor(), getStorageFile().getFileName(), getNumberOfIdsInUse(),
                 getHighestPossibleIdInUse( cursorTracer ) ) );

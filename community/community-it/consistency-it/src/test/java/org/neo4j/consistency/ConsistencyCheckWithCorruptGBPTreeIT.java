@@ -27,7 +27,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -70,6 +72,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -88,13 +92,17 @@ import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
+@TestDirectoryExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 class ConsistencyCheckWithCorruptGBPTreeIT
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     private static final Label label = Label.label( "label" );
     private static final String propKey1 = "key1";
 
-    private static final Path neo4jHome = Path.of( "neo4j_home" ).toAbsolutePath();
+    private static Path neo4jHome;
     // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0
     private EphemeralFileSystemAbstraction sourceSnapshot;
     // Database layout for database created in @BeforeAll
@@ -105,6 +113,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @BeforeAll
     void createIndex() throws Exception
     {
+        neo4jHome = testDirectory.homePath();
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         fs.mkdirs( neo4jHome.toFile() );
 
@@ -509,7 +518,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
         assertTrue( result.isSuccessful(), "Expected store to be considered inconsistent." );
-        try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( result.reportFile(), UTF_8 ) ) )
         {
             readLines( reader ).forEach( System.out::println );
         }
@@ -684,7 +693,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     runConsistencyCheck( fs, neo4jHome.toFile(), layout, NullLogProvider.getInstance(), NONE, DEFAULT );
             for ( File file : files )
             {
-                assertResultContainsMessage( fs, result,
+                assertResultContainsMessage( result,
                         "Index will be excluded from further consistency checks. Index file: " + file.getAbsolutePath() );
             }
         }
@@ -696,12 +705,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
-        assertResultContainsMessage( fs, result, expectedMessage );
-    }
-
-    private void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
-    {
-        try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( result.reportFile(), UTF_8 ) ) )
         {
             var lines = readLines( reader );
             boolean reportContainExpectedMessage = false;

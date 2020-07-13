@@ -355,10 +355,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone = newBuilder( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC ).build();
 
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "Minimum time interval after last rotation of the user log before it may be rotated again." )
     public static final Setting<Duration> store_user_log_rotation_delay =
             newBuilder( "dbms.logs.user.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
     public static final Setting<Duration> store_internal_log_rotation_delay =
             newBuilder( "dbms.logs.debug.rotation.delay", DURATION, ofSeconds( 300 ) ).build();

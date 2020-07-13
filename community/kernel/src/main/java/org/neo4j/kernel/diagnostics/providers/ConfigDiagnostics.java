@@ -23,8 +23,10 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingImpl;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
-import org.neo4j.logging.Logger;
+
+import static java.lang.String.format;
 
 public class ConfigDiagnostics extends NamedDiagnosticsProvider
 {
@@ -37,7 +39,7 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider
     }
 
     @Override
-    public void dump( Logger logger )
+    public void dump( DiagnosticsLogger logger )
     {
         if ( config.getDeclaredSettings().values().stream().noneMatch( config::isExplicitlySet ) )
         {
@@ -51,7 +53,7 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider
                 .forEachOrdered( e ->
                 {
                     String value = ((SettingImpl<Object>) e.getValue()).valueToString( config.get( e.getValue() ) );
-                    logger.log( "%s=%s", e.getKey(), value );
+                    logger.log( format( "%s=%s", e.getKey(), value ) );
                 } );
     }
 }

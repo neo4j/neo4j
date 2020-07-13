@@ -39,6 +39,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.Race;
@@ -52,7 +53,6 @@ import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
-import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 
 /**
  * This is a test for triggering a race which was found in and around {@link RecordStorageEngine#apply(CommandsToApply, TransactionApplicationMode)}
@@ -102,7 +102,8 @@ class LabelScanStoreTxApplyRaceIT
         managementService.shutdown();
 
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults(), NONE,
-                toOutputStream( System.out ), false, new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
+                new Log4jLogProvider( System.out ), false,
+                new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
     }
 
     private Runnable creator( AtomicReferenceArray<Node> nodeHeads, int guy )

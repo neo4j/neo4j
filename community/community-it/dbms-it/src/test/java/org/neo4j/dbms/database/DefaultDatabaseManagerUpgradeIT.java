@@ -23,6 +23,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
@@ -41,15 +45,11 @@ import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
-
-import java.io.File;
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -157,7 +157,7 @@ class DefaultDatabaseManagerUpgradeIT
 
     /**
      * Create a mocked user log provider that will throw provided exception
-     * when trying to log to info logger on DatabaseMigrator class.
+     * when trying to log on info level on DatabaseMigrator class.
      * This is designed to hook in on MigrationProgressMonitor.started in
      * StoreUpgrader.migrate.
      */
@@ -165,8 +165,6 @@ class DefaultDatabaseManagerUpgradeIT
     {
         Log mockedLog = mock( Log.class, RETURNS_MOCKS );
         when( userLogProvider.getLog( DatabaseMigrator.class ) ).thenReturn( mockedLog );
-        Logger mockedLogger = mock( Logger.class );
-        Mockito.doThrow( e ).when( mockedLogger ).log( anyString() );
-        when( mockedLog.infoLogger() ).thenReturn( mockedLogger );
+        Mockito.doThrow( e ).when( mockedLog ).info( anyString() );
     }
 }

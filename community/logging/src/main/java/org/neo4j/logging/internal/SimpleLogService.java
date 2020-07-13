@@ -19,17 +19,21 @@
  */
 package org.neo4j.logging.internal;
 
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 
-public class SimpleLogService extends AbstractLogService
+public class SimpleLogService extends AbstractLogService implements Lifecycle
 {
     private final LogProvider userLogProvider;
     private final LogProvider internalLogProvider;
 
     /**
-     * Create log service where both: user and internal log provider use the same {@link LogProvider} as a provider.
-     * Should be used when user and internal are backed by same log provider.
+     * Create log service where both: user and internal log provider use the same {@link LogProvider} as a provider. Should be used when user and internal are
+     * backed by same log provider.
+     *
      * @param commonLogProvider log provider
      */
     public SimpleLogService( LogProvider commonLogProvider )
@@ -39,16 +43,21 @@ public class SimpleLogService extends AbstractLogService
     }
 
     /**
-     * Create log service with different user and internal log providers.
-     * User logs will be duplicated to internal logs as well.
-     * Should be used when user and internal are backed by different log providers.
-     * @param userLogProvider user log provider
+     * Create log service with different user and internal log providers. User logs will be duplicated to internal logs as well. Should be used when user and
+     * internal are backed by different log providers.
+     *
+     * @param userLogProvider     user log provider
      * @param internalLogProvider internal log provider
      */
     public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
     {
         this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
         this.internalLogProvider = internalLogProvider;
+    }
+
+    public SimpleLogService( Neo4jLoggerContext ctx )
+    {
+        this( new Log4jLogProvider( ctx ) );
     }
 
     @Override
@@ -61,5 +70,29 @@ public class SimpleLogService extends AbstractLogService
     public LogProvider getInternalLogProvider()
     {
         return this.internalLogProvider;
+    }
+
+    @Override
+    public void init()
+    {
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+    }
+
+    @Override
+    public void shutdown()
+    {
+        if ( internalLogProvider instanceof Log4jLogProvider )
+        {
+            ((Log4jLogProvider) internalLogProvider).close();
+        }
     }
 }

@@ -31,7 +31,6 @@ import java.util.logging.LogRecord;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 
 public class JULBridge extends Handler
 {
@@ -76,37 +75,54 @@ public class JULBridge extends Handler
 
         String context = record.getLoggerName();
         Log log = getLog( ( context != null ) ? context : UNKNOWN_LOGGER_NAME );
-        Logger logger = getLogger( record, log );
-
-        Throwable throwable = record.getThrown();
-        if ( throwable == null )
-        {
-            logger.log( message );
-        }
-        else
-        {
-            logger.log( message, throwable );
-        }
+        log( log, record.getLevel().intValue(), message, record.getThrown() );
     }
 
-    private Logger getLogger( LogRecord record, Log log )
+    private void log( Log log, int level, String message, Throwable throwable )
     {
-        int level = record.getLevel().intValue();
         if ( level <= Level.FINE.intValue() )
         {
-            return log.debugLogger();
+            if ( throwable == null )
+            {
+                log.debug( message );
+            }
+            else
+            {
+                log.debug( message, throwable );
+            }
         }
         else if ( level <= Level.INFO.intValue() )
         {
-            return log.infoLogger();
+            if ( throwable == null )
+            {
+                log.info( message );
+            }
+            else
+            {
+                log.info( message, throwable );
+            }
         }
         else if ( level <= Level.WARNING.intValue() )
         {
-            return log.warnLogger();
+            if ( throwable == null )
+            {
+                log.warn( message );
+            }
+            else
+            {
+                log.warn( message, throwable );
+            }
         }
         else
         {
-            return log.errorLogger();
+            if ( throwable == null )
+            {
+                log.error( message );
+            }
+            else
+            {
+                log.error( message, throwable );
+            }
         }
     }
 

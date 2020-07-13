@@ -24,19 +24,16 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.ZoneId;
-import java.util.concurrent.Executor;
+import java.nio.file.Path;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.logging.LogTimeZone;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
@@ -44,15 +41,16 @@ import static org.apache.commons.lang3.StringUtils.defaultString;
 public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor
 {
     private final Log log;
-    private final RotatingFileOutputStreamSupplier outputSupplier;
+    private final Neo4jLoggerContext loggerContext;
 
-    public RotatingRequestLog( FileSystemAbstraction fs, JobScheduler scheduler, ZoneId logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
-            throws IOException
+    public RotatingRequestLog( LogTimeZone logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
     {
-        Executor rotationExecutor = scheduler.executor( Group.LOG_ROTATION );
-        outputSupplier = new RotatingFileOutputStreamSupplier( fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
-        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( outputSupplier );
-        log = logProvider.getLog( "REQUEST" );
+        loggerContext = LogConfig.createBuilder( Path.of( logFile ), Level.INFO )
+                .withRotation( rotationSize, rotationKeepNumber )
+                .withTimezone( logTimeZone )
+                .build();
+
+        log = new Log4jLogProvider( loggerContext ).getLog( "REQUEST" );
     }
 
     @Override
@@ -96,9 +94,9 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     }
 
     @Override
-    protected synchronized void doStop() throws IOException
+    protected synchronized void doStop()
     {
-        outputSupplier.close();
+        loggerContext.close();
     }
 
     @Override

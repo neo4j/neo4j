@@ -21,7 +21,6 @@ package org.neo4j.configuration;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
@@ -42,7 +41,6 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
-import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
@@ -296,11 +294,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "The file should exists in the scripts directory in neo4j home directory." )
     public static final Setting<Path> system_init_file =
             newBuilder( "dbms.init_file", PATH, null ).immutable().setDependency( scripts_dir ).build();
-
-    @Internal
-    @Description( "Debug log contexts that should output debug level logging" )
-    public static final Setting<List<String>> store_internal_debug_contexts =
-            newBuilder( "unsupported.dbms.logs.debug.debug_loggers", listOf( STRING ), List.of( "org.neo4j.diagnostics" ) ).dynamic().build();
 
     @Internal
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )

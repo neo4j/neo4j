@@ -19,57 +19,29 @@
  */
 package org.neo4j.logging;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Function;
-
 /**
  * A {@link LogProvider} implementation that duplicates all messages to other LogProvider instances
  */
-public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
+public class DuplicatingLogProvider implements LogProvider
 {
-    private final CopyOnWriteArraySet<LogProvider> logProviders;
-    private final Map<DuplicatingLog,Map<LogProvider,Log>> duplicatingLogCache =
-            Collections.synchronizedMap( new WeakHashMap<>() );
+    private final LogProvider logProvider1;
+    private final LogProvider logProvider2;
 
-    /**
-     * @param logProviders A list of {@link LogProvider} instances that messages should be duplicated to
-     */
-    public DuplicatingLogProvider( LogProvider... logProviders )
+    public DuplicatingLogProvider( LogProvider logProvider1, LogProvider logProvider2 )
     {
-        this.logProviders = new CopyOnWriteArraySet<>( Arrays.asList( logProviders ) );
+        this.logProvider1 = logProvider1;
+        this.logProvider2 = logProvider2;
     }
 
     @Override
-    protected DuplicatingLog buildLog( final Class<?> loggingClass )
+    public Log getLog( Class<?> loggingClass )
     {
-        return buildLog( logProvider -> logProvider.getLog( loggingClass ) );
+        return new DuplicatingLog( logProvider1.getLog( loggingClass ), logProvider2.getLog( loggingClass ) );
     }
 
     @Override
-    protected DuplicatingLog buildLog( final String name )
+    public Log getLog( String name )
     {
-        return buildLog( logProvider -> logProvider.getLog( name ) );
-    }
-
-    private DuplicatingLog buildLog( Function<LogProvider, Log> logConstructor )
-    {
-        List<Log> logs = new ArrayList<>( logProviders.size() );
-        Map<LogProvider, Log> providedLogs = new HashMap<>();
-        for ( LogProvider logProvider : logProviders )
-        {
-            Log log = logConstructor.apply( logProvider );
-            providedLogs.put( logProvider, log );
-            logs.add( log );
-        }
-        DuplicatingLog duplicatingLog = new DuplicatingLog( logs );
-        duplicatingLogCache.put( duplicatingLog, providedLogs );
-        return duplicatingLog;
+        return new DuplicatingLog( logProvider1.getLog( name ), logProvider2.getLog( name ) );
     }
 }

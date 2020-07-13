@@ -19,32 +19,16 @@
  */
 package org.neo4j.logging;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.Answer;
 
-import java.util.function.Consumer;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 class DuplicatingLogTest
 {
     final Log log1 = mock( Log.class );
     final Log log2 = mock( Log.class );
-    final Logger infoLogger1 = mock( Logger.class );
-    final Logger infoLogger2 = mock( Logger.class );
-
-    @BeforeEach
-    void beforeEach()
-    {
-        when( log1.infoLogger() ).thenReturn( infoLogger1 );
-        when( log2.infoLogger() ).thenReturn( infoLogger2 );
-    }
 
     @Test
     void shouldOutputToMultipleLogs()
@@ -56,36 +40,9 @@ class DuplicatingLogTest
         log.info( "When the going gets weird" );
 
         // Then
-        verify( infoLogger1 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "When the going gets weird" );
-        verifyNoMoreInteractions( infoLogger1 );
-        verifyNoMoreInteractions( infoLogger2 );
-    }
-
-    @Test
-    void shouldBulkOutputToMultipleLogs()
-    {
-        final Answer bulkAnswer = invocationOnMock ->
-        {
-            final Consumer<Log> consumer = invocationOnMock.getArgument( 0 );
-            consumer.accept( (Log) invocationOnMock.getMock() );
-            return null;
-        };
-
-        doAnswer( bulkAnswer ).when( log1 ).bulk( any() );
-        doAnswer( bulkAnswer ).when( log2 ).bulk( any() );
-
-        // Given
-        DuplicatingLog log = new DuplicatingLog( log1, log2 );
-
-        // When
-        log.bulk( bulkLog -> bulkLog.info( "When the going gets weird" ) );
-
-        // Then
-        verify( infoLogger1 ).log( "When the going gets weird" );
-        verify( infoLogger2 ).log( "When the going gets weird" );
-
-        verifyNoMoreInteractions( infoLogger1 );
-        verifyNoMoreInteractions( infoLogger2 );
+        verify( log1 ).info( "When the going gets weird" );
+        verify( log2 ).info( "When the going gets weird" );
+        verifyNoMoreInteractions( log1 );
+        verifyNoMoreInteractions( log2 );
     }
 }
