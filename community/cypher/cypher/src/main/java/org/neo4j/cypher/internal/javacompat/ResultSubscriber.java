@@ -366,7 +366,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private HashMap<String,Object> createPublicRecord()
     {
         String[] fieldNames = execution.fieldNames();
-        HashMap<String,Object> result = new HashMap<>();
+        HashMap<String,Object> result = new HashMap<>( (int) (Math.ceil( fieldNames.length * 1.33 )) );
 
         try
         {
