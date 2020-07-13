@@ -54,7 +54,8 @@ public class BoltV41Messages
     private static final String USER_AGENT = "BoltV41Messages/0.0";
     private static final RequestMessage HELLO = new HelloMessage( map( "user_agent", USER_AGENT ),
                                                                   new RoutingContext( true,
-                                                                                      stringMap(  "policy", "fast", "region", "europe" ) ) );
+                                                                                      stringMap( "policy", "fast", "region", "europe" ) ),
+                                                                  map( "user_agent", USER_AGENT ) );
     private static final RequestMessage RUN_RETURN_ONE = new RunMessage( "RETURN 1" );
     private static final RequestMessage BEGIN = new BeginMessage();
 
@@ -102,7 +103,7 @@ public class BoltV41Messages
         {
             meta.put( "user_agent", USER_AGENT );
         }
-        return new HelloMessage( meta, routingContext );
+        return new HelloMessage( meta, routingContext, meta );
     }
 
     public static RequestMessage run( String statement )

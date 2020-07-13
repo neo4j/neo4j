@@ -45,8 +45,9 @@ public class HelloMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Hel
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         Map<String,Object> meta = readMetaDataMap( unpacker );
+
         RoutingContext routingContext = parseRoutingContext( meta );
-        return new HelloMessage( meta, routingContext );
+        return new HelloMessage( meta, routingContext, extractAuthToken( meta ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -75,6 +76,21 @@ public class HelloMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Hel
             }
             return new RoutingContext( true, routingStringMap );
         }
+    }
+
+    private Map<String, Object> extractAuthToken( Map<String, Object> meta )
+    {
+        // The authToken is currently nothing more than the Hello metadata minus the routing context.
+        Map<String, Object> authToken = new HashMap<>();
+        for ( Map.Entry<String, Object> entry : meta.entrySet() )
+        {
+            if ( !entry.getKey().equals( ROUTING ) )
+            {
+                authToken.put( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        return authToken;
     }
 
 }
