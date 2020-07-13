@@ -133,15 +133,15 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-trait IfExistsDo
+sealed trait IfExistsDo
 
-final case class IfExistsReplace() extends IfExistsDo
+case object IfExistsReplace extends IfExistsDo
 
-final case class IfExistsDoNothing() extends IfExistsDo
+case object IfExistsDoNothing extends IfExistsDo
 
-final case class IfExistsThrowError() extends IfExistsDo
+case object IfExistsThrowError extends IfExistsDo
 
-final case class IfExistsInvalidSyntax() extends IfExistsDo
+case object IfExistsInvalidSyntax extends IfExistsDo
 
 final case class ShowUsers(override  val yields: Option[Return], override val where: Option[Where],
                            override val returns: Option[Return])(val position: InputPosition) extends ReadAdministrationCommand {
@@ -169,12 +169,12 @@ final case class CreateUser(userName: Either[String, Parameter],
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
   }
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userAsString': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userAsString': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
     case _ =>
       super.semanticCheck chain
         SemanticState.recordCurrentScope(this)
@@ -231,13 +231,13 @@ final case class CreateRole(roleName: Either[String, Parameter], from: Option[Ei
                            (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE ROLE"
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE ROLE"
     case _ => "CREATE ROLE"
   }
 
   override def semanticCheck: SemanticCheck =
     ifExistsDo match {
-      case _: IfExistsInvalidSyntax =>
+      case IfExistsInvalidSyntax =>
         val name = Prettifier.escapeName(roleName)
         SemanticError(s"Failed to create the specified role '$name': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
       case _ =>
@@ -692,12 +692,12 @@ final case class ShowDatabase(scope: DatabaseScope, override val yields: Option[
 final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
-    case _: IfExistsReplace | _: IfExistsInvalidSyntax => "CREATE OR REPLACE DATABASE"
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE DATABASE"
     case _ => "CREATE DATABASE"
   }
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case _: IfExistsInvalidSyntax =>
+    case IfExistsInvalidSyntax =>
       val name = Prettifier.escapeName(dbName)
       SemanticError(s"Failed to create the specified database '$name': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
     case _ =>

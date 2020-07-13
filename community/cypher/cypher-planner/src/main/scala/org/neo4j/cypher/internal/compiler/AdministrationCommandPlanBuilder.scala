@@ -123,8 +123,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
     }
 
     def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {
-      case _: IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(Seq(DropRoleAction, CreateRoleAction)), roleName)
-      case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
+      case IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(Seq(DropRoleAction, CreateRoleAction)), roleName)
+      case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
       case _ => plans.AssertDbmsAdmin(CreateRoleAction)
     }
 
@@ -135,8 +135,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
+          case IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
+          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
@@ -329,8 +329,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>
         val source = ifExistsDo match {
-          case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName, DestroyData)
-          case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
+          case IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName, DestroyData)
+          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
           case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))

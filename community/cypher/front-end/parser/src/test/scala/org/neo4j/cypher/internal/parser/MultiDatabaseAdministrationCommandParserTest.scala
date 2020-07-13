@@ -101,56 +101,56 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError))
   }
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE $foo") {
-    yields(ast.CreateDatabase(param("foo"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(param("foo"), ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase(literal(""), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal(""), ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsDoNothing()))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing()))
+    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsReplace()))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsReplace))
   }
 
   test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace()))
+    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsInvalidSyntax()))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsInvalidSyntax))
   }
 
   test("CREATE DATABASE foo.bar") {

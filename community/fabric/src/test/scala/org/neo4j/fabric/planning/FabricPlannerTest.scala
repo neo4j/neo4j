@@ -162,7 +162,7 @@ class FabricPlannerTest
           |""".stripMargin)
 
       parse(remote.query)
-        .shouldEqual(CreateRole(Left("myRole"), None, IfExistsThrowError())(pos))
+        .shouldEqual(CreateRole(Left("myRole"), None, IfExistsThrowError)(pos))
     }
 
     "single admin command with password" in {

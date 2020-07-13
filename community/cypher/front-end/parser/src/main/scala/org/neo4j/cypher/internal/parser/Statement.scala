@@ -140,10 +140,10 @@ trait Statement extends Parser
 
   def createUserStart: Rule2[Either[String, Parameter], IfExistsDo] = {
     // returns: userName, IfExistsDo
-    group(keyword("CREATE OR REPLACE USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~> (_ => IfExistsInvalidSyntax())) |
-    group(keyword("CREATE OR REPLACE USER") ~~ SymbolicNameOrStringParameter ~> (_ => IfExistsReplace())) |
-    group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~> (_ => IfExistsDoNothing())) |
-    group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~> (_ => IfExistsThrowError()))
+    group(keyword("CREATE OR REPLACE USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~> (_ => IfExistsInvalidSyntax)) |
+    group(keyword("CREATE OR REPLACE USER") ~~ SymbolicNameOrStringParameter ~> (_ => IfExistsReplace)) |
+    group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~> (_ => IfExistsDoNothing)) |
+    group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~> (_ => IfExistsThrowError))
   }
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
@@ -231,13 +231,13 @@ trait Statement extends Parser
 
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
     group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsInvalidSyntax())) |
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsInvalidSyntax)) |
     group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameOrStringParameter ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsReplace())) |
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsReplace)) |
     group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing())) |
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing)) |
     group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~~
-      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
+      optional(keyword("AS COPY OF") ~~ SymbolicNameOrStringParameter)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError))
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
@@ -563,10 +563,10 @@ trait Statement extends Parser
   )
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax())) |
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsReplace())) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsThrowError()))
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax)) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsReplace)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsThrowError))
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {

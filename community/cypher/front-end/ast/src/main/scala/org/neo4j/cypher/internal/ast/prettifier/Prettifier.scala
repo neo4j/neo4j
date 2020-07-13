@@ -259,7 +259,7 @@ case class Prettifier(
       case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifNotExists = ifExistsDo match {
-          case _: IfExistsDoNothing | _: IfExistsInvalidSyntax => " IF NOT EXISTS"
+          case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
           case _                    => ""
         }
         val password = expr.escapePassword(initialPassword)
@@ -292,13 +292,13 @@ case class Prettifier(
 
       case x @ CreateRole(roleName, None, ifExistsDo) =>
         ifExistsDo match {
-          case _: IfExistsDoNothing | _: IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
+          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
           case _                    => s"${x.name} ${Prettifier.escapeName(roleName)}"
         }
 
       case x @ CreateRole(roleName, Some(fromRole), ifExistsDo) =>
         ifExistsDo match {
-          case _: IfExistsDoNothing | _: IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
           case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
         }
 
@@ -401,7 +401,7 @@ case class Prettifier(
 
       case x @ CreateDatabase(dbName, ifExistsDo) =>
         ifExistsDo match {
-          case _: IfExistsDoNothing | _: IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS"
+          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS"
           case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}"
         }
 
