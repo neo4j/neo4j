@@ -36,6 +36,8 @@ import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
@@ -64,6 +66,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
+import org.neo4j.memory.ScopedMemoryTracker;
 
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -94,7 +98,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Override
     protected Fixture<MuninnPageCache> createFixture()
     {
-        return fixture = new MuninnPageCacheFixture();
+        ConfigurableIOBufferFactory bufferFactory = new ConfigurableIOBufferFactory(
+                Config.defaults( pagecache_buffered_flush_enabled, true ), new ScopedMemoryTracker( INSTANCE ) );
+        fixture = new MuninnPageCacheFixture();
+        fixture.withBufferFactory( bufferFactory );
+        return fixture;
     }
 
     private PageCacheTracer blockCacheFlush( PageCacheTracer delegate )
