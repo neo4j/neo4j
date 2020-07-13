@@ -22,18 +22,18 @@ package org.neo4j.io.fs;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.IOException;
 
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@TestDirectoryExtension
-class FileSystemUtilsTest
+abstract class FileSystemUtilsTest
 {
     @Inject
     private FileSystemAbstraction fs;
@@ -54,6 +54,19 @@ class FileSystemUtilsTest
         File existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
 
         assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
+    }
+
+    @Test
+    void dropDirectoryWithFile() throws IOException
+    {
+        File directory = testDirectory.directory( "directory" );
+        fs.openAsOutputStream( new File( directory, "a" ), false ).close();
+
+        assertEquals( 1, fs.listFiles( directory ).length );
+
+        FileSystemUtils.deleteFile( fs, directory );
+
+        assertThat( fs.listFiles( directory ) ).isNullOrEmpty();
     }
 
     @Test
@@ -78,7 +91,7 @@ class FileSystemUtilsTest
     {
         File file = testDirectory.createFile( "a" );
 
-        try ( FileWriter fileWriter = new FileWriter( file ) )
+        try ( var fileWriter = fs.openAsWriter( file, UTF_8, false ) )
         {
             fileWriter.append( 'a' );
         }
@@ -93,11 +106,11 @@ class FileSystemUtilsTest
         File file1 = new File( dir, "file1" );
         File file2 = new File( dir, "file2" );
 
-        try ( FileWriter fileWriter = new FileWriter( file1 ) )
+        try ( var fileWriter = fs.openAsWriter( file1, UTF_8, false ) )
         {
             fileWriter.append( 'a' ).append( 'b' );
         }
-        try ( FileWriter fileWriter = new FileWriter( file2 ) )
+        try ( var fileWriter = fs.openAsWriter( file2, UTF_8, false ) )
         {
             fileWriter.append( 'a' );
         }

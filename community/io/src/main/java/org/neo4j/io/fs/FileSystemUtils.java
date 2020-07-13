@@ -103,7 +103,7 @@ public final class FileSystemUtils
 
     public static void deleteFile( FileSystemAbstraction fs, File fileToDelete ) throws IOException
     {
-        if ( fileToDelete.isDirectory() )
+        if ( fs.isDirectory( fileToDelete ) )
         {
             fs.deleteRecursively( fileToDelete );
         }
