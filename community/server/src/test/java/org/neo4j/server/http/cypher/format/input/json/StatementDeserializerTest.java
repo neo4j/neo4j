@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher.format.input.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -38,12 +40,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 class StatementDeserializerTest
 {
-    private final JsonFactory jsonFactory = new JsonFactory().setCodec(new ObjectMapper());
+    private final JsonFactory jsonFactory = new JsonFactory().setCodec( new ObjectMapper() );
 
     @Test
     void shouldDeserializeSingleStatement()
@@ -205,7 +204,7 @@ class StatementDeserializerTest
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
                          "Could not map the incoming JSON", "Cannot deserialize instance of" +
                                 " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` out of START_ARRAY token\n " +
-                        "at [Source: (ByteArrayInputStream); line: 1, column: 59]" );
+                        "at [Source: (ByteArrayInputStream); line: 1, column: 60]" );
     }
 
     private void assertYieldsErrors( String json, String... expectedErrorMessages )

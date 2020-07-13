@@ -94,14 +94,15 @@ class CheckConsistencyCommandIT
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "check-consistency (--database=<database> | --backup=<path>) [--verbose]%n" +
-                "                  [--additional-config=<path>] [--check-graph=<true/false>]%n" +
+                "check-consistency [--verbose] [--additional-config=<path>]%n" +
+                "                  [--check-graph=<true/false>]%n" +
                 "                  [--check-index-structure=<true/false>]%n" +
                 "                  [--check-indexes=<true/false>]%n" +
                 "                  [--check-label-scan-store=<true/false>]%n" +
                 "                  [--check-property-owners=<true/false>]%n" +
                 "                  [--check-relationship-type-scan-store=<true/false>]%n" +
-                "                  [--report-dir=<path>]%n" +
+                "                  [--report-dir=<path>] (--database=<database> |%n" +
+                "                  --backup=<path>)%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
