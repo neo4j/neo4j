@@ -370,7 +370,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private Map<String,Object> createPublicRecord()
     {
         String[] fieldNames = execution.fieldNames();
-        Map<String,Object> result = new HashMap<>();
+        Map<String,Object> result = new HashMap<>( (int) (Math.ceil( fieldNames.length * 1.33 )) );
 
         try
         {
