@@ -67,6 +67,16 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationComman
             yields(func(ast.GraphPrivilege(action)(_), ast.LabelsResource(Seq("label"))(_), List(ast.NamedGraphScope(literal("foo"))(_), ast.NamedGraphScope(literal("bar"))(_)), List(ast.LabelAllQualifier()(_)), Seq(literal("role"))))
           }
 
+          // Default graph should be allowed
+
+          test(s"$verb $setOrRemove LABEL label ON DEFAULT GRAPH $preposition role") {
+            yields(func(ast.GraphPrivilege(action)(_), ast.LabelsResource(Seq("label"))(_), List(ast.DefaultGraphScope()(_)), List(ast.LabelAllQualifier()(_)), Seq(literal("role"))))
+          }
+
+          test(s"$verb $setOrRemove LABEL * ON DEFAULT GRAPH $preposition role") {
+            yields(func(ast.GraphPrivilege(action)(_), ast.AllLabelResource()(_), List(ast.DefaultGraphScope()(_)), List(ast.LabelAllQualifier()(_)), Seq(literal("role"))))
+          }
+
           // Multiple roles should be allowed
           test(s"$verb $setOrRemove LABEL label ON GRAPHS foo $preposition role1, role2") {
             yields(func(ast.GraphPrivilege(action)(_), ast.LabelsResource(Seq("label"))(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.LabelAllQualifier()(_)), Seq(literal("role1"), literal("role2"))))

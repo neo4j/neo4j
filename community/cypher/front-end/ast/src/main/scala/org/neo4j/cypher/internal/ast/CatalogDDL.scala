@@ -370,6 +370,8 @@ final case class NamedGraphScope(graph: Either[String, Parameter])(val position:
 
 final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
 
+final case class DefaultGraphScope()(val position: InputPosition) extends GraphScope
+
 sealed trait DatabaseScope extends GraphOrDatabaseScope {
   val showCommandName: String
 }

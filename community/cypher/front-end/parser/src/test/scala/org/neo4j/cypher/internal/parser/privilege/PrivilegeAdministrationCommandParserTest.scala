@@ -190,6 +190,14 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   ).foreach {
     case (privilege: ast.PrivilegeType, command: String, preposition: String, func: resourcePrivilegeFunc) =>
 
+      test(s"$command ${privilege.name} { prop } ON DEFAULT GRAPH $preposition role"){
+        yields(func(privilege, ast.PropertiesResource(Seq("prop"))(pos), List(ast.DefaultGraphScope()(pos)), List(ast.ElementsAllQualifier() _), Seq(literal("role"))))
+      }
+
+      test(s"$command ${privilege.name} { prop } ON DEFAULT GRAPH NODE foo $preposition role"){
+        yields(func(privilege, ast.PropertiesResource(Seq("prop"))(pos), List(ast.DefaultGraphScope()(pos)), List(ast.LabelQualifier("foo") _), Seq(literal("role"))))
+      }
+
       Seq("GRAPH", "GRAPHS").foreach {
         graphKeyword =>
 

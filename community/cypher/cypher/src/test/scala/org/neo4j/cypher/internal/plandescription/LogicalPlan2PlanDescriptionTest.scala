@@ -1133,6 +1133,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
 
+    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("DEFAULT GRAPH", "NODE Label1", "ROLE role1"))), Set.empty))
+
+    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
+      planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("DEFAULT GRAPH", "ALL PROPERTIES", "NODE Label1", "ROLE role1"))), Set.empty))
+
     assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolesPrivileges(List(util.Left("role1")))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
 

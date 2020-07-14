@@ -436,9 +436,9 @@ trait Statement extends Parser
 
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
-      group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-        group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
-          (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
+    group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
+      group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+      (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
@@ -539,9 +539,10 @@ trait Statement extends Parser
   private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
 
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
+    keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
       group((SymbolicNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
-        keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
+      keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
   )
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(

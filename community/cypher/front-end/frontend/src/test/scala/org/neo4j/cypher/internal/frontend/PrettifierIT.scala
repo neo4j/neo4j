@@ -709,6 +709,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action traverse on graph * elements A (*) $preposition role" ->
             s"$action TRAVERSE ON GRAPH * ELEMENTS A $preposition role",
 
+          s"$action traverse on default graph elements A (*) $preposition role" ->
+            s"$action TRAVERSE ON DEFAULT GRAPH ELEMENTS A $preposition role",
+
           s"$action read {*} on graph * $preposition role" ->
             s"$action READ {*} ON GRAPH * ELEMENTS * $preposition role",
 
@@ -741,6 +744,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action read {*} on graph * elements A (*) $preposition role" ->
             s"$action READ {*} ON GRAPH * ELEMENTS A $preposition role",
+
+          s"$action read {*} on default graph elements A (*) $preposition role" ->
+            s"$action READ {*} ON DEFAULT GRAPH ELEMENTS A $preposition role",
 
           s"$action match {*} on graph * $preposition role" ->
             s"$action MATCH {*} ON GRAPH * ELEMENTS * $preposition role",
@@ -775,6 +781,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action match {*} on graph * elements A (*) $preposition role" ->
             s"$action MATCH {*} ON GRAPH * ELEMENTS A $preposition role",
 
+          s"$action match {*} on default graph nodes * (*) $preposition role" ->
+            s"$action MATCH {*} ON DEFAULT GRAPH NODES * $preposition role",
+
           s"$action write on graph * $preposition role" ->
             s"$action WRITE ON GRAPH * $preposition role",
 
@@ -808,6 +817,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action create on graph foo, $$bar relationship * $preposition role" ->
             s"$action CREATE ON GRAPHS foo, $$bar RELATIONSHIPS * $preposition role",
 
+          s"$action create on default graph relationship * $preposition role" ->
+            s"$action CREATE ON DEFAULT GRAPH RELATIONSHIPS * $preposition role",
+
           s"$action delete on graph * $preposition role" ->
             s"$action DELETE ON GRAPH * ELEMENTS * $preposition role",
 
@@ -832,6 +844,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action delete on graph foo, $$bar relationship * $preposition role" ->
             s"$action DELETE ON GRAPHS foo, $$bar RELATIONSHIPS * $preposition role",
 
+          s"$action delete on default graph relationship * $preposition role" ->
+            s"$action DELETE ON DEFAULT GRAPH RELATIONSHIPS * $preposition role",
+
           s"$action set label label on graph * $preposition role" ->
             s"$action SET LABEL label ON GRAPH * $preposition role",
 
@@ -846,6 +861,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action set label label on graph foo, $$bar $preposition role" ->
             s"$action SET LABEL label ON GRAPHS foo, $$bar $preposition role",
+
+          s"$action set label label on default graph $preposition role" ->
+            s"$action SET LABEL label ON DEFAULT GRAPH $preposition role",
 
           s"$action remove label label on graph * $preposition role" ->
             s"$action REMOVE LABEL label ON GRAPH * $preposition role",
@@ -862,6 +880,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action remove label label on graph foo, $$bar $preposition role" ->
             s"$action REMOVE LABEL label ON GRAPHS foo, $$bar $preposition role",
 
+          s"$action remove label label on default graph $preposition role1, role2, role3" ->
+            s"$action REMOVE LABEL label ON DEFAULT GRAPH $preposition role1, role2, role3",
+
           s"$action set property {*} on graph * $preposition role" ->
             s"$action SET PROPERTY {*} ON GRAPH * ELEMENTS * $preposition role",
 
@@ -877,6 +898,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action set property {*} on graph foo, $$bar $preposition role1, role2, role3" ->
             s"$action SET PROPERTY {*} ON GRAPHS foo, $$bar ELEMENTS * $preposition role1, role2, role3",
 
+          s"$action set property {Foo, BAR} on default graph $preposition role" ->
+            s"$action SET PROPERTY {Foo, BAR} ON DEFAULT GRAPH ELEMENTS * $preposition role",
+
           s"$action all on graph * $preposition role" ->
             s"$action ALL GRAPH PRIVILEGES ON GRAPH * $preposition role",
 
@@ -885,6 +909,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action all graph privileges on graph foo, $$bar $preposition role1, role2, role3" ->
             s"$action ALL GRAPH PRIVILEGES ON GRAPHS foo, $$bar $preposition role1, role2, role3",
+
+          s"$action all privileges on default graph $preposition role" ->
+            s"$action ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role",
 
           s"$action merge {*} on graph * $preposition role" ->
             s"$action MERGE {*} ON GRAPH * ELEMENTS * $preposition role",
@@ -900,6 +927,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action merge {*} on graph foo, $$bar $preposition role1, role2, role3" ->
             s"$action MERGE {*} ON GRAPHS foo, $$bar ELEMENTS * $preposition role1, role2, role3",
+
+          s"$action merge {Foo, BAR} on default graph $preposition role" ->
+            s"$action MERGE {Foo, BAR} ON DEFAULT GRAPH ELEMENTS * $preposition role",
 
         ) ++ Seq(
           ("access", "ACCESS"),

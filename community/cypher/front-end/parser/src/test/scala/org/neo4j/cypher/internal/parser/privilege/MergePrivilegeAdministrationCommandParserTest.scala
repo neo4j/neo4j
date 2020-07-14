@@ -49,6 +49,16 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationComman
         yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.ElementsAllQualifier()(_)), Seq(literal("role"))))
       }
 
+      // Default graph should be allowed
+
+      test(s"$verb MERGE { * } ON DEFAULT GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), AllPropertyResource()(_), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(literal("role"))))
+      }
+
+      test(s"$verb MERGE { prop1, prop2 } ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
+        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.DefaultGraphScope()(_)), List(ast.RelationshipAllQualifier()(_)), Seq(literal("role"))))
+      }
+
       // Multiple graphs should be allowed
 
       test(s"$verb MERGE { prop } ON GRAPHS * $preposition role") {

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -1171,6 +1172,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     graphScope match {
       case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
       case AllGraphsScope() => pretty"ALL GRAPHS"
+      case DefaultGraphScope() => pretty"DEFAULT GRAPH"
     }
   }
 

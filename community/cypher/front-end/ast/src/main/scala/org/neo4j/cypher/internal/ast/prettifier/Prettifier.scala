@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
@@ -732,14 +733,12 @@ object Prettifier {
   }
 
   def extractGraphScope(graphScope: List[GraphScope]): String = {
-    val (graphString, multipleGraphs) = graphScope match {
-        case NamedGraphScope(name) :: Nil => (escapeName(name), false)
-        case AllGraphsScope() :: Nil => ("*", false)
-        case namedGraphScopes => (escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name }), true)
+      graphScope match {
+        case NamedGraphScope(name) :: Nil => s"GRAPH ${escapeName(name)}"
+        case AllGraphsScope() :: Nil => "GRAPH *"
+        case DefaultGraphScope() :: Nil => "DEFAULT GRAPH"
+        case namedGraphScopes => s"GRAPHS ${escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name })}"
       }
-
-    val graphWord = if (multipleGraphs) "GRAPHS" else "GRAPH"
-    s"$graphWord $graphString"
   }
 
   def extractScope(graphScope: List[GraphScope], qualifier: List[PrivilegeQualifier]): String = {

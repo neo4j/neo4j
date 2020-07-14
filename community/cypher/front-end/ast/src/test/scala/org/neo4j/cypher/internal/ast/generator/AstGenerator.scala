@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DbmsAdminAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
@@ -1389,7 +1390,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _graphPrivilege: Gen[PrivilegeCommand] = for {
     graphAction                 <- _graphAction
     namedScope                  <- _listOfNameOfEither.map(_.map(n => NamedGraphScope(n)(pos)))
-    graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)))
+    graphScope                  <- oneOf(namedScope, List(AllGraphsScope()(pos)), List(DefaultGraphScope()(pos)))
     (qualifier, maybeResource)  <- _graphQualifierAndResource(graphAction)
     roleNames                   <- _listOfNameOfEither
     revokeType                  <- _revokeType

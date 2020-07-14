@@ -48,11 +48,11 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     // Graph privileges
     "TRAVERSE ON GRAPH * NODES * (*)",
     "READ {*} ON GRAPH * NODES * (*)",
-    "MATCH {*} ON GRAPH * NODES * (*)",
+    "MATCH {*} ON DEFAULT GRAPH NODES * (*)",
     "WRITE ON GRAPH *",
     "SET LABEL foo ON GRAPH *",
     "REMOVE LABEL foo ON GRAPH *",
-    "CREATE ON GRAPH * NODE A",
+    "CREATE ON DEFAULT GRAPH NODE A",
     "DELETE ON GRAPH * RELATIONSHIP B",
     "SET PROPERTY {prop} ON GRAPH *",
     "ALL GRAPH PRIVILEGES ON GRAPH *",

@@ -49,6 +49,20 @@ class GraphPrivilegeAdministrationCommandParserTest extends AdministrationComman
         yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.NamedGraphScope(literal("foo"))(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
       }
 
+      // Default graph should be allowed
+
+      test(s"$verb ALL ON DEFAULT GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.DefaultGraphScope()(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
+      }
+
+      test(s"$verb ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.DefaultGraphScope()(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
+      }
+
+      test(s"$verb ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(AllGraphAction)(_), List(ast.DefaultGraphScope()(_)), List(ast.AllQualifier()(_)), Seq(literal("role"))))
+      }
+
       // Multiple graphs should be allowed
 
       test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
