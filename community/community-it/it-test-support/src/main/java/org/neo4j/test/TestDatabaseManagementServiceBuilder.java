@@ -103,6 +103,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .fromConfig( fromConfig )
                 .build();
 
+        var originalDependencies = dependencies;
         if ( noOpSystemGraphInitializer )
         {
             dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
@@ -114,7 +115,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
             dependencies = dependencyWrapper;
         }
 
-        return newDatabaseManagementService( cfg, databaseDependencies() );
+        var dbms = newDatabaseManagementService( cfg, databaseDependencies() );
+        dependencies = originalDependencies;
+        return dbms;
     }
 
     @Override
