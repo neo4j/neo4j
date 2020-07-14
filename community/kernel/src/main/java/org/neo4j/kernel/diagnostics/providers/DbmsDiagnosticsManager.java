@@ -20,6 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
@@ -40,11 +41,15 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 public class DbmsDiagnosticsManager
 {
     private static final int CONCISE_DATABASE_DUMP_THRESHOLD = getInteger( DbmsDiagnosticsManager.class, "conciseDumpThreshold", 10 );
+    private static final int CONCISE_DATABASE_NAMES_PER_ROW = 5;
     private final Dependencies dependencies;
     private final Log log;
 
@@ -80,7 +85,7 @@ public class DbmsDiagnosticsManager
         Collection<? extends DatabaseContext> values = getDatabaseManager().registeredDatabases().values();
         if ( values.size() > CONCISE_DATABASE_DUMP_THRESHOLD )
         {
-            values.forEach( context -> dumpConciseDiagnostics( context.database(), log ) );
+            dumpConciseDiagnostics( values, log );
         }
         else
         {
@@ -88,13 +93,43 @@ public class DbmsDiagnosticsManager
         }
     }
 
-    private void dumpConciseDiagnostics( Database database, Log log )
+    private void dumpConciseDiagnostics( Collection<? extends DatabaseContext> databaseContexts, Log log )
     {
+        var startedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( Database::isStarted ).collect( toList() );
+        var stoppedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( not( Database::isStarted ) ).collect( toList() );
+
         dumpAsSingleMessage( log, stringJoiner ->
         {
-            dumpDatabaseSectionName( database, stringJoiner::add );
-            logDatabaseStatus( database, stringJoiner::add );
+            logDatabasesState( stringJoiner::add, startedDbs, "Started" );
+            logDatabasesState( stringJoiner::add, stoppedDbs, "Stopped" );
         } );
+    }
+
+    private void logDatabasesState( DiagnosticsLogger log, List<Database> databases, String state )
+    {
+        DiagnosticsManager.section( log, state + " Databases" );
+        if ( databases.isEmpty() )
+        {
+            log.log( format( "There are no %s databases", state.toLowerCase() ) );
+            return;
+        }
+        int lastIndex = 0;
+        for ( int i = CONCISE_DATABASE_NAMES_PER_ROW; i < databases.size(); i += CONCISE_DATABASE_NAMES_PER_ROW )
+        {
+            var subList = databases.subList( lastIndex, i );
+            logDatabases( log, subList );
+            lastIndex = i;
+        }
+        var lastDbs = databases.subList( lastIndex, databases.size() );
+        logDatabases( log, lastDbs );
+    }
+
+    private void logDatabases( DiagnosticsLogger log, List<Database> subList )
+    {
+        log.log( subList
+                .stream()
+                .map( database -> database.getNamedDatabaseId().name() )
+                .collect( joining( ", " ) ) );
     }
 
     private void dumpSystemDiagnostics( Log log )

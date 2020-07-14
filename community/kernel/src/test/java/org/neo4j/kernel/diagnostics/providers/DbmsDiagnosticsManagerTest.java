@@ -212,10 +212,8 @@ class DbmsDiagnosticsManagerTest
 
         diagnosticsManager.dumpAll();
         var logAssertions = assertThat( logProvider );
-        for ( var dbId : databaseMap.keySet() )
-        {
-            logAssertions.containsMessages( "Database: " + dbId.name() );
-        }
+        var databaseNames = databaseMap.keySet().stream().map( NamedDatabaseId::name ).toArray( String[]::new );
+        logAssertions.containsMessagesOnce( databaseNames );
     }
 
     @Test
