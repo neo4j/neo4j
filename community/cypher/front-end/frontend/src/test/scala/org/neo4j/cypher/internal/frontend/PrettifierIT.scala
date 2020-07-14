@@ -165,6 +165,18 @@ class PrettifierIT extends CypherFunSuite {
       "create INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
         "CREATE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
 
+      "create or REPLACE INDEX FOR (n:A) ON (n.p)" ->
+        "CREATE OR REPLACE INDEX FOR (n:A) ON (n.p)",
+
+      "create or REPLACE INDEX foo FOR (n:A) ON (n.p)" ->
+        "CREATE OR REPLACE INDEX foo FOR (n:A) ON (n.p)",
+
+      "create INDEX IF not EXISTS FOR (n:A) ON (n.p)" ->
+        "CREATE INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
+
+      "create INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
+        "CREATE INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
+
       "drop INDEX ON :A(p)" ->
         "DROP INDEX ON :A(p)",
 
@@ -179,6 +191,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "drop INDEX `$foo`" ->
         "DROP INDEX `$foo`",
+
+      "drop INDEX foo if EXISTS" ->
+        "DROP INDEX foo IF EXISTS",
 
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",

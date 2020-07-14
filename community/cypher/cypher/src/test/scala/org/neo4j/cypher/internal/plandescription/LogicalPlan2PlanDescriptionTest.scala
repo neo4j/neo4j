@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
@@ -556,23 +557,37 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
-    assertGood(attach(CreateIndex(label("Label"), List(PropertyKeyName("prop")(pos)), Some("$indexName")), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), Some("$indexName")), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(label("Label"), List(PropertyKeyName("prop")(pos)), None), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), None), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateIndex(Some(DropIndexOnName("index", ifExists = true)), label("Label"), List(key("prop")), Some("index")), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX index")), Set.empty)
+      ), Seq(details("INDEX index FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateIndex(Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), None)),
+      label("Label"), List(key("prop")), None), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
+      ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
   }
 
   test("DropIndex") {
-    assertGood(attach(DropIndex(label("Label"), List(PropertyKeyName("prop")(pos))), 63.2),
+    assertGood(attach(DropIndex(label("Label"), List(key("prop"))), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(DropIndex(label("Label"), List(PropertyKeyName("prop1")(pos), PropertyKeyName("prop2")(pos))), 63.2),
+    assertGood(attach(DropIndex(label("Label"), List(key("prop1"), key("prop2"))), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop1, prop2)")), Set.empty))
   }
 
   test("DropIndexOnName") {
-    assertGood(attach(DropIndexOnName("indexName"), 63.2),
+    assertGood(attach(DropIndexOnName("indexName", ifExists = false), 63.2),
+      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty))
+
+    assertGood(attach(DropIndexOnName("indexName", ifExists = true), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty))
   }
 
@@ -612,17 +627,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("DropUniquePropertyConstraint") {
-    assertGood(attach(DropUniquePropertyConstraint(LabelName("Label")(pos), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
+    assertGood(attach(DropUniquePropertyConstraint(label("Label"), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS UNIQUE")), Set.empty))
   }
 
   test("DropNodeKeyConstraint") {
-    assertGood(attach(DropNodeKeyConstraint(LabelName("Label")(pos), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
+    assertGood(attach(DropNodeKeyConstraint(label("Label"), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS NODE KEY")), Set.empty))
   }
 
   test("DropNodePropertyExistenceConstraint") {
-    assertGood(attach(DropNodePropertyExistenceConstraint(LabelName("Label")(pos), prop("x", " prop")), 63.2),
+    assertGood(attach(DropNodePropertyExistenceConstraint(label("Label"), prop("x", " prop")), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (x:Label) ASSERT exists(x.` prop`)")), Set.empty))
   }
 
@@ -1142,7 +1157,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolesPrivileges(List(util.Left("role1")))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
 
-    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(Parameter("user2", CTString)(pos))))(pos), List(), None, None, None), 1.0),
+    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), List(), None, None, None), 1.0),
       planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("USERS user1, $user2")), Set.empty))
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),
@@ -1219,7 +1234,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val testCases = Seq(
       ("a", ListLiteral(Seq(number("1"), number("2")))(pos)) ->
         "a IN [1, 2]",
-      ("b", Parameter("param", CTList(CTInteger))(pos)) ->
+      ("b", parameter("param", CTList(CTInteger))) ->
         "b IN $param",
       ("c", ListLiteral(Seq.empty)(pos)) ->
         "c IN []",

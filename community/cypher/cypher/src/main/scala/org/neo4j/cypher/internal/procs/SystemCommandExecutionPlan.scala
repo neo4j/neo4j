@@ -49,7 +49,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                                       checkCredentialsExpired: Boolean = true,
                                       parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
                                       parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p)
-  extends ChainedExecutionPlan(source) {
+  extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
                            executionMode: ExecutionMode,

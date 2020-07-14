@@ -75,6 +75,8 @@ import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
@@ -192,15 +194,22 @@ case class Prettifier(
       case CreateIndex(LabelName(label), properties, _) =>
         s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
-      case CreateIndexNewSyntax(Variable(variable), LabelName(label), properties, name, _) =>
+      case CreateIndexNewSyntax(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
         val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        s"CREATE INDEX ${nameString}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}"
+        val startOfCommand = ifExistsDo match {
+          case IfExistsDoNothing     => s"CREATE INDEX ${nameString}IF NOT EXISTS "
+          case IfExistsInvalidSyntax => s"CREATE OR REPLACE INDEX ${nameString}IF NOT EXISTS "
+          case IfExistsReplace       => s"CREATE OR REPLACE INDEX $nameString"
+          case IfExistsThrowError    => s"CREATE INDEX $nameString"
+        }
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}"
 
       case DropIndex(LabelName(label), properties, _) =>
         s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
-      case DropIndexOnName(name, _) =>
-        s"DROP INDEX ${backtick(name)}"
+      case DropIndexOnName(name, ifExists, _) =>
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"DROP INDEX ${backtick(name)}$ifExistsString"
 
       case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, _) =>
         val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")

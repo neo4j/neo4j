@@ -17,6 +17,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
@@ -64,10 +68,24 @@ trait SchemaCommand extends Parser
   }
 
   def CreateIndexNewSyntax: Rule1[ast.CreateIndexNewSyntax] = rule {
+    // without name
+    group(keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, None, IfExistsInvalidSyntax)) |
+    group(keyword("CREATE OR REPLACE INDEX FOR") ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, None, IfExistsReplace)) |
+    group(keyword("CREATE INDEX IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, None, IfExistsDoNothing)) |
     group(keyword("CREATE INDEX FOR") ~~ IndexPatternSyntax) ~~>>
-      ((variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, None)) |
+      ((variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, None, IfExistsThrowError)) |
+    // with name
+    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, Some(name), IfExistsInvalidSyntax)) |
+    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, Some(name), IfExistsReplace)) |
+    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, Some(name), IfExistsDoNothing)) |
     group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
-      ((name, variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, Some(name)))
+      ((name, variable, label, properties) => ast.CreateIndexNewSyntax(variable, label, properties.toList, Some(name), IfExistsThrowError))
   }
 
   def IndexPatternSyntax: Rule3[Variable, LabelName, Seq[Property]] = rule {
@@ -79,7 +97,8 @@ trait SchemaCommand extends Parser
   }
 
   def DropIndexOnName: Rule1[ast.DropIndexOnName] = rule {
-    group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_))
+    group(keyword("DROP INDEX") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropIndexOnName(_, ifExists = true)) |
+    group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_, ifExists = false))
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {

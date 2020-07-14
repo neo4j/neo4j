@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -90,6 +91,15 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Multiple users in SHOW USER PRIVILEGE command is not supported in this Cypher version.", s.position)
 
       case d: DefaultGraphScope => throw cypherExceptionFactory.syntaxException("Default graph is not supported in this Cypher version.", d.position)
+
+      // CREATE OR REPLACE INDEX name ...
+      // CREATE INDEX [name] IF NOT EXISTS ...
+      case c@CreateIndexNewSyntax(_, _, _, _, ifExistsDo, _) if ifExistsDo != IfExistsThrowError =>
+        throw cypherExceptionFactory.syntaxException("Creating index using `OR REPLACE` or `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // DROP INDEX name IF EXISTS
+      case d@DropIndexOnName(_, true, _) =>
+        throw cypherExceptionFactory.syntaxException("Dropping index using `IF EXISTS` is not supported in this Cypher version.", d.position)
     }
   }
 }

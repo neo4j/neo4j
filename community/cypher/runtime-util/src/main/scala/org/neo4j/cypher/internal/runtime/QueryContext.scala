@@ -119,6 +119,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexDescriptor
 
+  def indexExists(name: String): Boolean
+
   def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder,

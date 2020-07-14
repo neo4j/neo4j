@@ -18,6 +18,10 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.expressions
 import org.parboiled.scala.Rule1
 
@@ -49,27 +53,51 @@ class SchemaCommandParserTest
   // new syntax
 
   test("CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError))
   }
 
   test("USE neo4j CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, Some(use(varFor("neo4j")))))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Some(use(varFor("neo4j")))))
   }
 
   test("CREATE INDEX FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsThrowError))
   }
 
   test("CREATE INDEX my_index FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index")))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsThrowError))
   }
 
   test("CREATE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index")))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsThrowError))
   }
 
   test("CREATE INDEX `$my_index` FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index")))
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index"), IfExistsThrowError))
+  }
+
+  test("CREATE OR REPLACE INDEX FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsReplace))
+  }
+
+  test("CREATE OR REPLACE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsReplace))
+  }
+
+  test("CREATE OR REPLACE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsInvalidSyntax))
+  }
+
+  test("CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsInvalidSyntax))
+  }
+
+  test("CREATE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name, n.age)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsDoNothing))
+  }
+
+  test("CREATE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsDoNothing))
   }
 
   test("CREATE INDEX $my_index FOR (n:Person) ON (n.name)") {
@@ -96,11 +124,15 @@ class SchemaCommandParserTest
   }
 
   test("DROP INDEX my_index") {
-    yields(ast.DropIndexOnName("my_index"))
+    yields(ast.DropIndexOnName("my_index", ifExists = false))
   }
 
   test("DROP INDEX `$my_index`") {
-    yields(ast.DropIndexOnName("$my_index"))
+    yields(ast.DropIndexOnName("$my_index", ifExists = false))
+  }
+
+  test("DROP INDEX my_index IF EXISTS") {
+    yields(ast.DropIndexOnName("my_index", ifExists = true))
   }
 
   test("DROP INDEX $my_index") {

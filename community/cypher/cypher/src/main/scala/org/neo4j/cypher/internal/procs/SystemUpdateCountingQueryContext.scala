@@ -24,11 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.kernel.impl.query.TransactionalContext
 
-class SystemUpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
+class SystemUpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
   val kernelTransactionalContext: TransactionalContext = inner match {
     case ctx: ExceptionTranslatingQueryContext => ctx.inner match {

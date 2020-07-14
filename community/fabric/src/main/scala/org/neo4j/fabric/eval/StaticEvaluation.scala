@@ -189,6 +189,8 @@ object StaticEvaluation {
 
     override def dropIndexRule(name: String): Unit = notAvailable()
 
+    override def indexExists(name: String): Boolean = notAvailable()
+
     override def indexReference(label: Int, properties: Int*): IndexDescriptor = notAvailable()
 
     override def indexSeek[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[IndexQuery]): NodeValueIndexCursor = notAvailable()

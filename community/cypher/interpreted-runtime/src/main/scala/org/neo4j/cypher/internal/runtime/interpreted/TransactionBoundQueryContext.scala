@@ -747,6 +747,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def dropIndexRule(name: String): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(name)
 
+  override def indexExists(name: String): Boolean =
+    transactionalContext.kernelTransaction.schemaRead().indexGetForName(name) != IndexDescriptor.NO_INDEX
+
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(
       IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).withName(name.orNull))
