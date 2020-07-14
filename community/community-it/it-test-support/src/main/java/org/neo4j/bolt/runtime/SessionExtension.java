@@ -137,6 +137,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
             if ( runningMachines != null )
             {
                 IOUtils.closeAll( runningMachines );
+                runningMachines.clear();
             }
         }
         catch ( Throwable e )
