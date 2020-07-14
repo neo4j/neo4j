@@ -36,6 +36,7 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.bolt.v41.messaging.request.HelloMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
@@ -64,8 +65,10 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     @Test
     void shouldDecodeHelloMessage() throws Exception
     {
-        HelloMessage originalMessage = new HelloMessage( map( "user_agent", "My Driver", "user", "neo4j", "password", "secret" ),
-                                                         new RoutingContext( true, Collections.emptyMap() ) );
+        HelloMessage originalMessage = new HelloMessage( map( "user_agent", "My Driver", "user", "neo4j", "password", "secret", "routing",
+                                                              Collections.emptyMap() ),
+                                                         new RoutingContext( true, Collections.emptyMap() ),
+                                                         map( "user_agent", "My Driver", "user", "neo4j", "password", "secret" ) );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 
@@ -73,8 +76,9 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     void shouldDecodeHelloMessageWithRouting() throws Exception
     {
         HelloMessage originalMessage = new HelloMessage( map( "user_agent", "My Driver", "user", "neo4j",
-                                                              "password", "secret"),
-                                                         new RoutingContext( true, stringMap("policy", "europe") ) );
+                                                              "password", "secret", "routing", map( "policy", "europe" ) ),
+                                                         new RoutingContext( true, stringMap( "policy", "europe" ) ),
+                                                         map( "user_agent", "My Driver", "user", "neo4j", "password", "secret" ) );
 
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
@@ -92,12 +96,14 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
 
         RequestMessage deserializedMessage = decoder.decode( unpacker );
         assertEquals( originalMessage, deserializedMessage );
+        assertAuthTokenDoesNotContainRoutingContext( deserializedMessage );
     }
 
     @Test
     void testShouldDecodeRoutingContext() throws Exception
     {
         Map<String,Object> meta = new HashMap<>();
+        Map<String,Object> authToken;
         Map<String,String> parameterMap = new HashMap<>();
         RoutingContext routingContext = new RoutingContext( true, parameterMap );
 
@@ -107,7 +113,11 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
         Neo4jPack neo4jPack = newNeo4jPack();
         meta.put( "user_agent", "My Driver" );
         meta.put( "routing", parameterMap );
-        HelloMessage originalMessage = new HelloMessage( meta, routingContext );
+
+        authToken = new HashMap<>( Map.copyOf( meta ) );
+        authToken.remove( "routing" );
+
+        HelloMessage originalMessage = new HelloMessage( meta, routingContext, authToken );
 
         PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
@@ -129,7 +139,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
 
         Neo4jPack neo4jPack = newNeo4jPack();
         meta.put( "user_agent", "My Driver" );
-        HelloMessage originalMessage = new HelloMessage( meta, new RoutingContext( false, Collections.emptyMap() ) );
+        HelloMessage originalMessage = new HelloMessage( meta, new RoutingContext( false, Collections.emptyMap() ), meta );
 
         PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
@@ -154,7 +164,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
         Neo4jPack neo4jPack = newNeo4jPack();
         meta.put( "user_agent", "My Driver" );
         meta.put( "routing", parameterMap );
-        HelloMessage originalMessage = new HelloMessage( meta, routingContext );
+        HelloMessage originalMessage = new HelloMessage( meta, routingContext, meta );
 
         PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
@@ -174,7 +184,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     {
         Neo4jPack neo4jPack = newNeo4jPack();
         authToken.put( "user_agent", "My Driver" );
-        HelloMessage originalMessage = new HelloMessage( authToken, new RoutingContext( true,Collections.emptyMap() ) );
+        HelloMessage originalMessage = new HelloMessage( authToken, new RoutingContext( true,Collections.emptyMap() ), authToken );
 
         PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
@@ -198,7 +208,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
         Neo4jPack neo4jPack = newNeo4jPack();
         meta.put( "user_agent", "My Driver" );
         meta.put( "routing", routingContext );
-        HelloMessage originalMessage = new HelloMessage( meta, null );
+        HelloMessage originalMessage = new HelloMessage( meta, null, meta );
 
         PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
@@ -220,5 +230,10 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     private static void assertRoutingContextMatches( HelloMessage expected, RequestMessage actual )
     {
         assertEquals( expected.routingContext(), ((HelloMessage) actual).routingContext() );
+    }
+
+    private static void assertAuthTokenDoesNotContainRoutingContext( RequestMessage message )
+    {
+        assertFalse( ((HelloMessage) message).authToken().containsKey( "routing" ) );
     }
 }
