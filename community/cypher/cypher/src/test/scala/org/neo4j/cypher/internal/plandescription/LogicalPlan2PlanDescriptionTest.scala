@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
@@ -559,11 +560,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
-    assertGood(attach(CreateIndex(label("Label"), List(PropertyKeyName("prop")(pos)), Some("$indexName")), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(PropertyKeyName("prop")(pos)), Some("$indexName")), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(label("Label"), List(PropertyKeyName("prop")(pos)), None), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(PropertyKeyName("prop")(pos)), None), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateIndex(Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), None)),
+      label("Label"), List(key("prop")), None), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
+      ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
   }
 
   test("DropIndex") {
@@ -575,7 +582,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("DropIndexOnName") {
-    assertGood(attach(DropIndexOnName("indexName"), 63.2),
+    assertGood(attach(DropIndexOnName("indexName", ifExists = false), 63.2),
+      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty))
+
+    assertGood(attach(DropIndexOnName("indexName", ifExists = true), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty))
   }
 

@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
@@ -347,13 +348,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables)
 
-      case CreateIndex(labelName, propertyKeyNames, nameOption) =>
+      case DoNothingIfExistsForIndex(labelName, propertyKeyNames, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
+
+      case CreateIndex(_, labelName, propertyKeyNames, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
 
       case DropIndex(labelName, propertyKeyNames) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexSchemaInfo(None, labelName, propertyKeyNames))), variables)
 
-      case DropIndexOnName(name) =>
+      case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
 
       case CreateUniquePropertyConstraint(node, label, properties: Seq[Property], nameOption) =>
@@ -669,6 +673,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case ExpandInto => "Into"
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables)
+
+      case CreateIndex(_, labelName, propertyKeyNames, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
 
       case ShowUsers(_, _, _, where, _) =>
         PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(where), variables)

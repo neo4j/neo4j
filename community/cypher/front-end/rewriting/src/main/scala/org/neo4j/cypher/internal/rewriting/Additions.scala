@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RoleManagementAction
 import org.neo4j.cypher.internal.ast.ShowDatabase
@@ -160,6 +161,14 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Extended show commands are not supported in this Cypher version.", sd.position)
       case sd @ ShowDefaultDatabase(yields, where, returns) if Seq(yields, where, returns).flatten.nonEmpty =>
         throw cypherExceptionFactory.syntaxException("Extended show commands are not supported in this Cypher version.", sd.position)
+
+      // CREATE INDEX [name] IF NOT EXISTS ...
+      case c@CreateIndexNewSyntax(_, _, _, _, IfExistsDoNothing(), _) =>
+        throw cypherExceptionFactory.syntaxException("Creating index using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // DROP INDEX name IF EXISTS
+      case d@DropIndexOnName(_, true, _) =>
+        throw cypherExceptionFactory.syntaxException("Dropping index using `IF EXISTS` is not supported in this Cypher version.", d.position)
     }
   }
 

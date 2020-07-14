@@ -37,7 +37,7 @@ import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.virtual.MapValue
 
 class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
-                                  onViolation: (MapValue, SecurityContext) => Exception) extends ChainedExecutionPlan(source) {
+                                  onViolation: (MapValue, SecurityContext) => Exception) extends AdministrationChainedExecutionPlan(source) {
   override def runSpecific(originalCtx: SystemUpdateCountingQueryContext,
                            executionMode: ExecutionMode,
                            params: MapValue,

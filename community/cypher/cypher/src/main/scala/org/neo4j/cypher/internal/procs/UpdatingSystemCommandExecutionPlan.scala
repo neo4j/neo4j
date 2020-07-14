@@ -54,7 +54,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
                                               parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
                                               assertPrivilegeAction: Transaction => Unit = _ => {})
-  extends ChainedExecutionPlan(source) {
+  extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
                            executionMode: ExecutionMode,

@@ -20,14 +20,10 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.SchemaRuntimeName
-import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
@@ -38,10 +34,10 @@ import org.neo4j.values.virtual.MapValue
  * @param name        A name of the schema write
  * @param schemaWrite The actual schema write to perform
  */
-case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => Unit)
-  extends ExecutionPlan {
+case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => SchemaWriteExecutionResult, source: Option[ExecutionPlan] = None)
+  extends SchemaCommandChainedExecutionPlan(source) {
 
-  override def run(ctx: QueryContext,
+  override def runSpecific(ctx: UpdateCountingQueryContext,
                    executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
@@ -50,16 +46,17 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
 
     ctx.assertSchemaWritesAllowed()
 
-    val countingCtx = new UpdateCountingQueryContext(ctx)
-    schemaWrite(countingCtx)
-    ctx.transactionalContext.close()
-    val runtimeResult = SchemaWriteRuntimeResult(countingCtx, subscriber)
-    runtimeResult
+    if (schemaWrite(ctx) == SuccessResult) {
+      ctx.transactionalContext.close()
+      val runtimeResult = SchemaWriteRuntimeResult(ctx, subscriber)
+      runtimeResult
+    } else {
+      IgnoredRuntimeResult
+    }
   }
-
-  override def runtimeName: RuntimeName = SchemaRuntimeName
-
-  override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
 }
+
+sealed trait SchemaWriteExecutionResult
+
+case object SuccessResult extends SchemaWriteExecutionResult
+case object IgnoredResult extends SchemaWriteExecutionResult

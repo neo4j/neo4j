@@ -152,6 +152,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
 
+  override def indexExists(name: String): Boolean = singleDbHit(inner.indexExists(name))
+
   override def indexReference(label: Int, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(label, properties:_*))
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,

@@ -129,6 +129,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(name: String): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(name))
 
+  override def indexExists(name: String): Boolean =
+    translateException(tokenNameLookup, inner.indexExists(name))
+
   override def indexReference(label: Int, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.indexReference(label, properties:_*))
 

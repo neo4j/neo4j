@@ -1113,17 +1113,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield props
 
   def _createIndex: Gen[CreateIndexNewSyntax] = for {
-    variable  <- _variable
-    labelName <- _labelName
-    props     <- _listOfProperties
-    name      <- option(_identifier)
-    use       <- option(_use)
-  } yield CreateIndexNewSyntax(variable, labelName, props, name, use)(pos)
+    variable   <- _variable
+    labelName  <- _labelName
+    props      <- _listOfProperties
+    name       <- option(_identifier)
+    ifExistsDo <- _ifExistsDo
+    use        <- option(_use)
+  } yield CreateIndexNewSyntax(variable, labelName, props, name, ifExistsDo, use)(pos)
 
   def _dropIndex: Gen[DropIndexOnName] = for {
-    name <- _identifier
-    use  <- option(_use)
-  } yield DropIndexOnName(name, use)(pos)
+    name     <- _identifier
+    ifExists <- boolean
+    use      <- option(_use)
+  } yield DropIndexOnName(name, ifExists, use)(pos)
 
   def _indexCommandsOldSyntax: Gen[SchemaCommand] = for {
     labelName <- _labelName

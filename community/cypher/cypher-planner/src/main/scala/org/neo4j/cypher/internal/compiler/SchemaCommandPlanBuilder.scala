@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -98,20 +99,25 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndex(label, props, _) =>
-        Some(plans.CreateIndex(label, props, None))
+        Some(plans.CreateIndex(None, label, props, None))
 
       // CREATE INDEX FOR (n:LABEL) ON (n.prop)
       // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
-      case CreateIndexNewSyntax(_, label, props, name, _) =>
-        Some(plans.CreateIndex(label, props.map(_.propertyKey), name))
+      case CreateIndexNewSyntax(_, label, props, name, ifExistsDo, _) =>
+        val propKeys = props.map(_.propertyKey)
+        val source = ifExistsDo match {
+          case _:IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(label, propKeys, name))
+          case _ => None
+        }
+        Some(plans.CreateIndex(source, label, propKeys, name))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>
         Some(plans.DropIndex(label, props))
 
       // DROP INDEX name
-      case DropIndexOnName(name, _) =>
-        Some(plans.DropIndexOnName(name))
+      case DropIndexOnName(name, ifExists, _) =>
+        Some(plans.DropIndexOnName(name, ifExists))
 
       case _ => None
     }

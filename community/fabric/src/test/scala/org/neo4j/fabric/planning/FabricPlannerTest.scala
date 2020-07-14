@@ -133,7 +133,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          CreateIndexNewSyntax(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"))(pos)
+          CreateIndexNewSyntax(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError())(pos)
         )
     }
 
