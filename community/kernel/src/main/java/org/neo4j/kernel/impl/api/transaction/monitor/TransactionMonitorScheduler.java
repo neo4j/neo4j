@@ -50,7 +50,7 @@ public class TransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( checkIntervalMillis > 0 )
         {
-            var monitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Monitoring of transaction timeout" );
+            var monitoringParams = JobMonitoringParams.systemJob( databaseName, "Monitoring of transaction timeout" );
             monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, monitoringParams, transactionMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
         }

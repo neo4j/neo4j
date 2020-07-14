@@ -19,6 +19,12 @@
  */
 package org.neo4j.scheduler;
 
+/**
+ * Like {@link java.util.concurrent.Executor}, executes submitted tasks.
+ * The extra feature is that extra monitoring params can be submitted
+ * together with the task.
+ */
+@FunctionalInterface
 public interface MonitoredJobExecutor
 {
     void execute( JobMonitoringParams monitoringParams, Runnable command );

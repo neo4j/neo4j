@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.neo4j.common.Subject;
 
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.common.Subject.SYSTEM;
 
 public class JobMonitoringParams
 {
@@ -38,6 +39,27 @@ public class JobMonitoringParams
         this.submitter = Objects.requireNonNullElse( submitter, AUTH_DISABLED );
         this.targetDatabaseName = targetDatabaseName;
         this.description = description;
+    }
+
+    /**
+     * A convenience method for a background job performed by the DBMS itself (not triggered explicitly by an end user) and not linked to a single database.
+     *
+     * @param description description of the job used for monitoring purposes.
+     */
+    public static JobMonitoringParams systemJob( String description )
+    {
+        return new JobMonitoringParams( SYSTEM, null, description );
+    }
+
+    /**
+     * A convenience method for a background job on a single database performed by the DBMS itself (not triggered explicitly by an end user).
+     *
+     * @param targetDatabaseName name of the database this job works with.
+     * @param description description of the job used for monitoring purposes.
+     */
+    public static JobMonitoringParams systemJob( String targetDatabaseName, String description )
+    {
+        return new JobMonitoringParams( SYSTEM, targetDatabaseName, description );
     }
 
     public Subject getSubmitter()

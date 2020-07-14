@@ -65,6 +65,7 @@ import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -485,7 +486,7 @@ public class MuninnPageCache implements PageCache
 
         try
         {
-            var monitoringParams = new JobMonitoringParams( SYSTEM, null, "Eviction of pages from the page cache" );
+            var monitoringParams = systemJob( "Eviction of pages from the page cache" );
             scheduler.schedule( Group.PAGE_CACHE_EVICTION, monitoringParams, new EvictionTask( this ) );
         }
         catch ( Exception e )
@@ -1080,7 +1081,7 @@ public class MuninnPageCache implements PageCache
         PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
         var pagedFile = cursor.pagedFile;
         var fileName = pagedFile.swapper.path().getFileName();
-        var monitoringParams = new JobMonitoringParams( SYSTEM, pagedFile.databaseName, "Prefetching of file '" + fileName + "'" );
+        var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
     }
 

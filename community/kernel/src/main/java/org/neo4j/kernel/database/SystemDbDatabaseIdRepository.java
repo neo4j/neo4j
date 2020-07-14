@@ -36,7 +36,6 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.MonitoredJobExecutor;
 
-import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
@@ -69,7 +68,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     {
         try
         {
-            var monitoringParams = new JobMonitoringParams( SYSTEM, databaseName, "Obtaining a database ID from System database" );
+            var monitoringParams = JobMonitoringParams.systemJob( databaseName, "Obtaining a database ID from System database" );
             Executor executor = job -> monitoredJobExecutor.execute( monitoringParams, job );
             return CompletableFuture.supplyAsync( supplier, executor ).join();
         }

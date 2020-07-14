@@ -29,7 +29,6 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.common.Subject.SYSTEM;
 
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.
@@ -57,7 +56,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void start()
     {
-        var monitoringParams = new JobMonitoringParams( SYSTEM, databaseName, "ID generator maintenance" );
+        var monitoringParams = JobMonitoringParams.systemJob( databaseName, "ID generator maintenance" );
         jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS );
     }
 

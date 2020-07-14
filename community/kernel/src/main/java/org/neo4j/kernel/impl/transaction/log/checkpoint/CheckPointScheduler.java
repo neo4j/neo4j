@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.common.Subject;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -30,11 +29,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 public class CheckPointScheduler extends LifecycleAdapter
 {
@@ -158,7 +157,6 @@ public class CheckPointScheduler extends LifecycleAdapter
 
     private void schedule()
     {
-        var jobMonitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Scheduled checkpoint" );
-        handle = scheduler.schedule( Group.CHECKPOINT, jobMonitoringParams, job, recurringPeriodMillis, MILLISECONDS );
+        handle = scheduler.schedule( Group.CHECKPOINT, systemJob( databaseName, "Scheduled checkpoint" ), job, recurringPeriodMillis, MILLISECONDS );
     }
 }
