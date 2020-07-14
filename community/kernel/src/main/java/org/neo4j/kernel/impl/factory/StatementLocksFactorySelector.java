@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import java.util.Collection;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.locking.Locks;

@@ -22,6 +22,7 @@ package org.neo4j.consistency.statistics;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -30,7 +31,7 @@ import static java.lang.String.format;
 
 /**
  * Keeps access statistics about a store, i.e. identifying
- * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)} patterns and how random the access is.
+ * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, PageCursorTracer)} patterns and how random the access is.
  */
 public class AccessStatistics
 {

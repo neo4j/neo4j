@@ -20,12 +20,13 @@
 package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Indicates that some code attempted to thaw transaction locks that were not frozen.
  *
- * @see Transaction#thawLocks()
+ * @see KernelTransaction#thawLocks()
  */
 public class LocksNotFrozenException extends KernelException
 {

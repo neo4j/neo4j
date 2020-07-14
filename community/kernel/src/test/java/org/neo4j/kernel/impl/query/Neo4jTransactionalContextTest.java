@@ -90,23 +90,6 @@ class Neo4jTransactionalContextTest
     }
 
     @Test
-    void checkKernelStatementOnCheck()
-    {
-        ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.databaseId() ).thenReturn( Optional.of( namedDatabaseId ) );
-        InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        KernelTransaction kernelTransaction = mockTransaction( statement );
-        when( initialTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-
-        Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( null, initialTransaction, statement, executingQuery, transactionFactory );
-
-        transactionalContext.check();
-
-        verify( kernelTransaction ).assertOpen();
-    }
-
-    @Test
     void neverStopsExecutingQueryDuringCommitAndRestartTx() throws TransactionFailureException
     {
         // Given

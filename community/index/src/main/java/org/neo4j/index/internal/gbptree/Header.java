@@ -22,7 +22,9 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Defines interfaces and common implementations of header reader/writer for {@link GBPTree}.
@@ -39,7 +41,7 @@ public class Header
 
     /**
      * Writes a header into a {@link GBPTree} state page during
-     * {@link GBPTree#checkpoint(org.neo4j.io.pagecache.IOLimiter)}.
+     * {@link GBPTree#checkpoint(IOLimiter, PageCursorTracer)}.
      */
     public interface Writer
     {

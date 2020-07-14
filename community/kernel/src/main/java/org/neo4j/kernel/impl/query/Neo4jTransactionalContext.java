@@ -243,12 +243,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void check()
-    {
-        kernelTransaction().assertOpen();
-    }
-
-    @Override
     public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
     {
         return transaction.overrideWith( context );

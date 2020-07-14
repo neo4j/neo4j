@@ -19,12 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.exceptions;
 
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Indicates that some code attempted to acquire or release a Lock while lock interactions were frozen.
  *
- * @see Transaction#freezeLocks()
+ * @see KernelTransaction#freezeLocks()
  */
 public class FrozenLocksException extends RuntimeException implements Status.HasStatus
 {

@@ -33,8 +33,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
- * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}
- * is called, or {@link #close()} for that matter.
+ * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
  */
 public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         implements RecordAccess<RECORD,ADDITIONAL>

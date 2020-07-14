@@ -115,13 +115,13 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private final Monitors monitors;
 
     /**
-     * {@link PageCache} to {@link PageCache#map(File, int, ImmutableSet)}
+     * {@link PageCache} to {@link PageCache#map(Path, int, ImmutableSet)}
      * store file backing this token scan store. Passed to {@link GBPTree}.
      */
     private final PageCache pageCache;
 
     /**
-     * Store file {@link PageCache#map(File, int, ImmutableSet)}.
+     * Store file {@link PageCache#map(Path, int, ImmutableSet)}.
      */
     private final File storeFile;
 

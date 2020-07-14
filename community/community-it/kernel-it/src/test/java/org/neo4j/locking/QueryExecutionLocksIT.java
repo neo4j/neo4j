@@ -320,12 +320,6 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void check()
-        {
-            delegate.check();
-        }
-
-        @Override
         public SecurityContext securityContext()
         {
             return delegate.securityContext();

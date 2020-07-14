@@ -22,11 +22,11 @@ package org.neo4j.io.pagecache;
 import com.sun.nio.file.ExtendedOpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 /**
- * {@link OpenOption}s that are specific to {@link PageCache#map(File, int, ImmutableSet)},
+ * {@link OpenOption}s that are specific to {@link PageCache#map(Path, int, ImmutableSet)},
  * and not normally supported by file systems.
  */
 public enum PageCacheOpenOptions implements OpenOption

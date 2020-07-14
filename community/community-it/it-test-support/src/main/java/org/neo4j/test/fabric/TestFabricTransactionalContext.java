@@ -137,12 +137,6 @@ public class TestFabricTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void check()
-    {
-        throw failure();
-    }
-
-    @Override
     public SecurityContext securityContext()
     {
         throw failure();

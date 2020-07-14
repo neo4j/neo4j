@@ -20,8 +20,8 @@
 package org.neo4j.lock;
 
 /**
- * Note: This is confusing to you. What is the difference between this and {@link Locks}? Well. {@link Locks} is the
- * primary locking component in neo. However, there are lower layers that use a separate locking mechanism (this),
+ * Note: What is the difference between this and neo4j locks? Neo4j locks is the
+ * primary locking component. However, there are lower layers that use a separate locking mechanism (this),
  * which they can do under very strict rules of engagement.
  *
  * This implementation should be removed, and it's usage should be replaced by using the regular lock manager.
