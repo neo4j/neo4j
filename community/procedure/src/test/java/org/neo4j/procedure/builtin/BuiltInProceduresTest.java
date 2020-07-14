@@ -37,6 +37,9 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.configuration.SettingValueParsers;
+import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.TestSystemGraphComponent;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -67,6 +70,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -78,12 +82,14 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -118,6 +124,7 @@ class BuiltInProceduresTest
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
+    private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
     private final Log log = mock( Log.class );
 
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
@@ -131,6 +138,7 @@ class BuiltInProceduresTest
         procs.registerComponent( Transaction.class, Context::internalTransaction, true );
         procs.registerComponent( SecurityContext.class, Context::securityContext, true );
         procs.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
+        procs.registerComponent( SystemGraphComponents.class, ctx -> systemGraphComponents, false );
 
         procs.registerComponent( Log.class, ctx -> log, false );
         procs.registerType( Node.class, NTNode );
@@ -426,6 +434,60 @@ class BuiltInProceduresTest
         );
     }
 
+    @Test
+    void shouldNotListSystemGraphComponentsIfNotSystemDb()
+    {
+        when( callContext.isSystemDatabase() ).thenReturn( false );
+
+        assertThatThrownBy( () -> call( "dbms.upgradeStatus" ) )
+                .isInstanceOf( ProcedureException.class )
+                .hasMessage( "This is an administration command and it should be executed against the system database: dbms.upgradeStatus" );
+    }
+
+    @Test
+    void shouldListSystemGraphComponents() throws ProcedureException, IndexNotFoundKernelException
+    {
+        setupFakeSystemComponents();
+        when( callContext.isSystemDatabase() ).thenReturn( true );
+
+        var r = call( "dbms.upgradeStatus" ).iterator();
+        assertThat( r.hasNext() ).isEqualTo( true ).describedAs( "Expected one result" );
+        Object[] row = r.next();
+        String status = resultAsString( row, 0 );
+        String description = resultAsString( row, 1 );
+        String resolution = resultAsString( row, 2 );
+        assertThat( r.hasNext() ).isEqualTo( false ).describedAs( "Expected only one result" );
+        assertThat( status ).contains( SystemGraphComponent.Status.REQUIRES_UPGRADE.name() );
+        assertThat( description ).contains( SystemGraphComponent.Status.REQUIRES_UPGRADE.description() );
+        assertThat( resolution ).contains( SystemGraphComponent.Status.REQUIRES_UPGRADE.resolution() );
+    }
+
+    @Test
+    void shouldNotUpgradeSystemGraphIfNotSystemDb()
+    {
+        when( callContext.isSystemDatabase() ).thenReturn( false );
+
+        assertThatThrownBy( () -> call( "dbms.upgrade" ) )
+                .isInstanceOf( ProcedureException.class )
+                .hasMessage( "This is an administration command and it should be executed against the system database: dbms.upgrade" );
+    }
+
+    @Test
+    void shouldUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException
+    {
+        setupFakeSystemComponents();
+        when( callContext.isSystemDatabase() ).thenReturn( true );
+
+        var r = call( "dbms.upgrade" ).iterator();
+        assertThat( r.hasNext() ).isEqualTo( true ).describedAs( "Expected one result" );
+        Object[] row = r.next();
+        String status = resultAsString( row, 0 );
+        String result = resultAsString( row, 1 );
+        assertThat( r.hasNext() ).isEqualTo( false ).describedAs( "Expected only one result" );
+        assertThat( status ).contains( SystemGraphComponent.Status.REQUIRES_UPGRADE.name() );
+        assertThat( result ).contains( "Failed: [component_D] Upgrade failed because this is a test" );
+    }
+
     private static Object[] record( Object... fields )
     {
         return fields;
@@ -582,5 +644,48 @@ class BuiltInProceduresTest
             toReturn.add( values );
         }
         return toReturn;
+    }
+
+    private String resultAsString( Object[] row, int index  )
+    {
+        Object result = row[index];
+        if ( result instanceof TextValue )
+        {
+            return ((TextValue) result).stringValue();
+        }
+        else if ( result instanceof Value )
+        {
+            return ((Value) result).asObjectCopy().toString();
+        }
+        else
+        {
+            return result.toString();
+        }
+    }
+
+    private SystemGraphComponent makeSystemComponentCurrent( String component )
+    {
+        return new TestSystemGraphComponent( component, SystemGraphComponent.Status.CURRENT, null, null );
+    }
+
+    @SuppressWarnings( "SameParameterValue" )
+    private SystemGraphComponent makeSystemComponentUpgradeSucceeds( String component )
+    {
+        return new TestSystemGraphComponent( component, SystemGraphComponent.Status.REQUIRES_UPGRADE, null, null );
+    }
+
+    @SuppressWarnings( "SameParameterValue" )
+    private SystemGraphComponent makeSystemComponentUpgradeFails( String component )
+    {
+        return new TestSystemGraphComponent( component, SystemGraphComponent.Status.REQUIRES_UPGRADE, null,
+                                             new RuntimeException( "Upgrade failed because this is a test" ) );
+    }
+
+    private void setupFakeSystemComponents()
+    {
+        systemGraphComponents.register( makeSystemComponentCurrent( "component_A" ) );
+        systemGraphComponents.register( makeSystemComponentCurrent( "component_B" ) );
+        systemGraphComponents.register( makeSystemComponentUpgradeSucceeds( "component_C" ) );
+        systemGraphComponents.register( makeSystemComponentUpgradeFails( "component_D" ) );
     }
 }

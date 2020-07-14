@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,8 +35,12 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -56,7 +61,11 @@ import org.neo4j.storageengine.api.StoreIdProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
+import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 import static org.neo4j.procedure.Mode.DBMS;
+import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
 import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
 
@@ -76,6 +85,12 @@ public class BuiltInDbmsProcedures
 
     @Context
     public SecurityContext securityContext;
+
+    @Context
+    public ProcedureCallContext callContext;
+
+    @Context
+    public SystemGraphComponents systemGraphComponents;
 
     @SystemProcedure
     @Description( "Provides information regarding the DBMS." )
@@ -226,6 +241,54 @@ public class BuiltInDbmsProcedures
         return Stream.of( new StringResult( result ) );
     }
 
+    @Admin
+    @SystemProcedure
+    @Description( "Report the current status of the system database sub-graph schema." )
+    @Procedure( name = "dbms.upgradeStatus", mode = READ )
+    public Stream<SystemGraphComponentStatusResult> systemSchemaVersion() throws ProcedureException
+    {
+        if ( !callContext.isSystemDatabase() )
+        {
+            throw new ProcedureException( ProcedureCallFailed,
+                                          "This is an administration command and it should be executed against the system database: dbms.upgradeStatus" );
+        }
+        return Stream.of( new SystemGraphComponentStatusResult( systemGraphComponents.detect( transaction ) ) );
+    }
+
+    @Admin
+    @SystemProcedure
+    @Description( "Upgrade the system database schema if it is not the current schema." )
+    @Procedure( name = "dbms.upgrade", mode = WRITE )
+    public Stream<SystemGraphComponentUpgradeResult> upgradeSystemSchema() throws ProcedureException
+    {
+        if ( !callContext.isSystemDatabase() )
+        {
+            throw new ProcedureException( ProcedureCallFailed,
+                                          "This is an administration command and it should be executed against the system database: dbms.upgrade" );
+        }
+        SystemGraphComponents versions = systemGraphComponents;
+        SystemGraphComponent.Status status = versions.detect( transaction );
+        if ( status == REQUIRES_UPGRADE )
+        {
+            ArrayList<String> failed = new ArrayList<>();
+            versions.forEach( component ->
+                              {
+                                  SystemGraphComponent.Status initialStatus = component.detect( transaction );
+                                  if ( initialStatus == REQUIRES_UPGRADE )
+                                  {
+                                      Optional<Exception> error = component.upgradeToCurrent( graph );
+                                      error.ifPresent( e -> failed.add( String.format( "[%s] %s", component.component(), e.getMessage() ) ) );
+                                  }
+                              } );
+            String upgradeResult = failed.isEmpty() ? "Success" : "Failed: " + String.join( ", ", failed );
+            return Stream.of( new SystemGraphComponentUpgradeResult( versions.detect( transaction ).name(), upgradeResult ) );
+        }
+        else
+        {
+            return Stream.of( new SystemGraphComponentUpgradeResult( status.name(), status.resolution() ) );
+        }
+    }
+
     private GraphDatabaseAPI getSystemDatabase()
     {
         return (GraphDatabaseAPI) graph.getDependencyResolver().resolveDependency( DatabaseManagementService.class ).database( SYSTEM_DATABASE_NAME );
@@ -317,6 +380,32 @@ public class BuiltInDbmsProcedures
         MetadataResult( Map<String,Object> metadata )
         {
             this.metadata = metadata;
+        }
+    }
+
+    public static class SystemGraphComponentStatusResult
+    {
+        public final String status;
+        public final String description;
+        public final String resolution;
+
+        SystemGraphComponentStatusResult( SystemGraphComponent.Status status )
+        {
+            this.status = status.name();
+            this.description = status.description();
+            this.resolution = status.resolution();
+        }
+    }
+
+    public static class SystemGraphComponentUpgradeResult
+    {
+        public final String status;
+        public final String upgradeResult;
+
+        SystemGraphComponentUpgradeResult( String status, String upgradeResult )
+        {
+            this.status = status;
+            this.upgradeResult = upgradeResult;
         }
     }
 }

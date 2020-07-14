@@ -184,7 +184,13 @@ public interface ProcedureITBase
                       "This procedure can be used by client side tooling to test whether they are correctly connected to a database. " +
                       "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call " +
                       "this procedure.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ", true )
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ", true ),
+                proc( "dbms.upgradeStatus", "() :: (status :: STRING?, description :: STRING?, resolution :: STRING?)",
+                      "Report the current status of the system database sub-graph schema.",
+                      stringArray( "admin" ), "READ" ),
+                proc( "dbms.upgrade", "() :: (status :: STRING?, upgradeResult :: STRING?)",
+                      "Upgrade the system database schema if it is not the current schema.",
+                      stringArray( "admin" ), "WRITE" )
         );
     }
 
@@ -261,13 +267,7 @@ public interface ProcedureITBase
                 proc( "dbms.listConnections", "() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, " +
                                 "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
                         "List all accepted network connections at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.upgradeStatus", "() :: (status :: STRING?, description :: STRING?, resolution :: STRING?)",
-                        "Report the current status of the system database sub-graph schema.",
-                        stringArray( "admin" ), "READ" ),
-                proc( "dbms.upgrade", "() :: (status :: STRING?, upgradeResult :: STRING?)",
-                        "Upgrade the system database schema if it is not the current schema.",
-                        stringArray( "admin" ), "WRITE" )
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )
         ));
         return result;
     }
