@@ -24,6 +24,8 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
+import java.io.PrintStream;
+
 import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.PrintStreamLogger;
@@ -83,8 +85,8 @@ public abstract class AbstractCommand implements Command
 
     private void printVerboseHeader()
     {
-        PrintStreamLogger logger = new PrintStreamLogger( ctx.out() );
-        logger.log( "neo4j " + Version.getNeo4jVersion() );
-        SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump( logger );
+        PrintStream out = ctx.out();
+        out.println( "neo4j " + Version.getNeo4jVersion() );
+        SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump( out::println );
     }
 }

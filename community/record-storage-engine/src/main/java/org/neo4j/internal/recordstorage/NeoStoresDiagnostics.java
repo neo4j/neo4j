@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.logging.Logger;
 import org.neo4j.util.FeatureToggles;
 
 public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
@@ -37,7 +37,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
         }
 
         @Override
-        protected void dump( NeoStores neoStores, Logger logger )
+        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
         {
             neoStores.logVersions( logger );
         }
@@ -52,7 +52,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
         }
 
         @Override
-        protected void dump( NeoStores neoStores, Logger logger )
+        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
         {
             neoStores.logIdUsage( logger );
         }
@@ -66,7 +66,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
         }
 
         @Override
-        protected void dump( NeoStores neoStores, Logger logger )
+        protected void dump( NeoStores neoStores, DiagnosticsLogger logger )
         {
             neoStores.getMetaDataStore().logRecords( logger );
         }
@@ -81,7 +81,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
     }
 
     @Override
-    public void dump( Logger logger )
+    public void dump( DiagnosticsLogger logger )
     {
         try
         {
@@ -98,5 +98,5 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
         }
     }
 
-    protected abstract void dump( NeoStores neoStores, Logger logger );
+    protected abstract void dump( NeoStores neoStores, DiagnosticsLogger logger );
 }

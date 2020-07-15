@@ -713,7 +713,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             fakePageCursorOverflow = true;
-            store.logRecords( NullLogger.getInstance() );
+            store.logRecords( s -> {} );
             fakePageCursorOverflow = false;
         }
     }

@@ -21,12 +21,13 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.IOException;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.logging.Logger;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
 {
@@ -39,7 +40,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
     }
 
     @Override
-    public void dump( Logger logger )
+    public void dump( DiagnosticsLogger logger )
     {
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try
@@ -59,7 +60,8 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         }
         catch ( IOException e )
         {
-            logger.log( "Error trying to dump transaction log files info.", e );
+            logger.log( "Error trying to dump transaction log files info." );
+            logger.log( Exceptions.stringify( e ) );
         }
     }
 }

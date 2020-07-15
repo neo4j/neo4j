@@ -31,33 +31,46 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+@TestDirectoryExtension
 class DbmsDiagnosticsManagerTest
 {
     private static final NamedDatabaseId DEFAULT_DATABASE_ID = TestDatabaseIdRepository.randomNamedDatabaseId();
     private static final String DEFAULT_DATABASE_NAME = DEFAULT_DATABASE_ID.name();
+
+    @Inject
+    private TestDirectory directory;
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
@@ -110,6 +123,75 @@ class DbmsDiagnosticsManagerTest
         diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
 
         assertContainsDatabaseDiagnostics();
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticsNotInterleavedWithEachother() throws Throwable
+    {
+        Database secondDatabase = prepareDatabase( DatabaseIdFactory.from( "second", UUID.randomUUID() ));
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        Race race = new Race();
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase ) );
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( secondDatabase ) );
+        race.go();
+
+        // Assert that diagnostics messages from the two databases are not interleaved.
+        // If they are the sequence of the diagnostics provider headers will not be ordered correctly.
+        assertThat( logProvider.serialize() ).containsSubsequence( "Database: ",
+                "Version",
+                "Store files",
+                "Transaction log",
+                "Database: ",
+                "Version",
+                "Store files",
+                "Transaction log" );
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticsNotInterleaved() throws Throwable
+    {
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        Race race = new Race().withRandomStartDelays();
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase ) );
+        race.addContestant( () -> logProvider.getLog( "test" ).info( "Testlog message" ) );
+        race.go();
+
+        // Assert that diagnostics messages from one database is not interleaved with other log messages.
+        assertThat( logProvider.serialize() ).satisfiesAnyOf(
+                string -> assertThat( string ).containsSubsequence(
+                        "Database: ", "Version", "Store files", "Transaction log", "Testlog message" ),
+                string -> assertThat( string ).containsSubsequence(
+                        "Testlog message", "Database: ", "Version", "Store files", "Transaction log" ) );
+    }
+
+    @Test
+    void dumpDiagnosticsEvenOnFailure()
+    {
+        DiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider()
+        {
+            @Override
+            public String getDiagnosticsName()
+            {
+                return "foo";
+            }
+
+            @Override
+            public void dump( DiagnosticsLogger logger )
+            {
+                throw new RuntimeException( "error during dump" );
+            }
+        };
+
+        dependencies.satisfyDependency( diagnosticsProvider );
+
+        diagnosticsManager.dumpAll();
+        assertThat( logProvider.serialize() ).containsSubsequence( "Failure while logging diagnostics",
+                "error during dump",
+                "System diagnostics",
+                "foo",
+                "Database: " );
     }
 
     @Test
@@ -188,7 +270,7 @@ class DbmsDiagnosticsManagerTest
             }
 
             @Override
-            public void dump( Logger logger )
+            public void dump( DiagnosticsLogger logger )
             {
             }
         };
@@ -227,12 +309,17 @@ class DbmsDiagnosticsManagerTest
     private void assertContainsDatabaseDiagnostics()
     {
         assertThat( logProvider ).containsMessages( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase(),
-                                                    "Version",
-                                                    "Store files",
-                                                    "Transaction log" );
+                                                    "[ Version ]",
+                                                    "[ Store files ]",
+                                                    "[ Transaction log ]" );
     }
 
-    private Database prepareDatabase()
+    private Database prepareDatabase() throws IOException
+    {
+        return prepareDatabase( DEFAULT_DATABASE_ID );
+    }
+
+    private Database prepareDatabase( NamedDatabaseId databaseId ) throws IOException
     {
         Database database = mock( Database.class );
         Dependencies databaseDependencies = new Dependencies();
@@ -240,9 +327,12 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngine );
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
+        databaseDependencies.satisfyDependency(
+                logFilesBasedOnlyBuilder( directory.homeDir(), directory.getFileSystem() ).withLogEntryReader( mock( LogEntryReader.class ) ).build() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
-        when( database.getNamedDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
+        when( database.getNamedDatabaseId() ).thenReturn( databaseId );
         when( database.isStarted() ).thenReturn( true );
+        when( database.getDatabaseLayout() ).thenReturn( DatabaseLayout.ofFlat( directory.homeDir() ) );
         return database;
     }
 }

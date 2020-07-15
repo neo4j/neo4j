@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
 import static org.mockito.Mockito.mock;
@@ -46,10 +47,10 @@ class TransactionRangeDiagnosticsTest
         // GIVEN
         Database database = databaseWithLogFilesContainingLowestTxId( noLogs() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
+        Log logger = logProvider.getLog( getClass() );
 
         // WHEN
-        new TransactionRangeDiagnostics( database ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger::info );
 
         // THEN
         assertThat( logProvider )
@@ -66,10 +67,10 @@ class TransactionRangeDiagnosticsTest
         Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
+        Log logger = logProvider.getLog( getClass() );
 
         // WHEN
-        new TransactionRangeDiagnostics( database ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger::info );
 
         // THEN
         assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1),
@@ -85,10 +86,10 @@ class TransactionRangeDiagnosticsTest
         Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
+        Log logger = logProvider.getLog( getClass() );
 
         // WHEN
-        new TransactionRangeDiagnostics( database ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger::info );
 
         // THEN
         assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1), "version " + (logVersion + 1) );
