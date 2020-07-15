@@ -73,7 +73,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         logProvider.rawMessageMatcher().assertContains( "100 / 40 / 40" );
     }
@@ -85,7 +85,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         logProvider.rawMessageMatcher().assertContains( "Storage files stored on file store: " );
     }
@@ -106,7 +106,7 @@ class KernelDiagnosticsTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
-        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+        storeFiles.dump( logProvider.getLog( getClass() )::debug );
 
         logProvider.rawMessageMatcher().assertContains( "Total size of store: 4.000KiB" );
         logProvider.rawMessageMatcher().assertContains( "Total size of mapped files: 3.000KiB" );

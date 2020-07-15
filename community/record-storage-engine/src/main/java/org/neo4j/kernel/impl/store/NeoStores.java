@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
@@ -384,12 +384,12 @@ public class NeoStores implements AutoCloseable
         visitStores( CommonAbstractStore::checkStoreOk );
     }
 
-    public void logVersions( Logger msgLog )
+    public void logVersions( DiagnosticsLogger msgLog )
     {
         visitStores( store -> store.logVersions( msgLog ) );
     }
 
-    public void logIdUsage( Logger msgLog )
+    public void logIdUsage( DiagnosticsLogger msgLog )
     {
         visitStores( store -> store.logIdUsage( msgLog ) );
     }

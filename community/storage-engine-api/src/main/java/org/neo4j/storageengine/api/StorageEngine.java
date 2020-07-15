@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.ResourceLocker;
@@ -111,12 +111,12 @@ public interface StorageEngine extends Lifecycle
     void flushAndForce( IOLimiter limiter ) throws IOException;
 
     /**
-     * Dump diagnostics about the storage onto {@link DiagnosticsManager}.
+     * Dump diagnostics about the storage.
      *
-     * @param diagnosticsManager {@link DiagnosticsManager} to register diagnostics at.
-     * @param log {@link Log} to which print diagnostics.
+     * @param errorLog to which to log error messages.
+     * @param diagnosticsLog to which to log diagnostics messages.
      */
-    void dumpDiagnostics( DiagnosticsManager diagnosticsManager, Log log );
+    void dumpDiagnostics( Log errorLog, DiagnosticsLogger diagnosticsLog );
 
     /**
      * Force close all opened resources. This may be called during startup if there's a failure

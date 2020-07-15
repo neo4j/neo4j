@@ -42,7 +42,7 @@ class ConfigDiagnosticsTest
                 .build();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
-        configDiagnostics.dump( log.infoLogger() );
+        configDiagnostics.dump( log::info );
 
         logProvider.formattedMessageMatcher().assertContains( "DBMS provided settings:" );
         logProvider.formattedMessageMatcher().assertContains( max_concurrent_transactions.name() + "=400" );
@@ -56,7 +56,7 @@ class ConfigDiagnosticsTest
         Config config = Config.defaults();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
-        configDiagnostics.dump( log.infoLogger() );
+        configDiagnostics.dump( log::info );
 
         logProvider.formattedMessageMatcher().assertContains( "No provided DBMS settings." );
         logProvider.formattedMessageMatcher().assertNotContains( "DBMS provided settings" );

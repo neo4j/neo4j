@@ -33,7 +33,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.logging.BufferingLog;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 @ServiceProvider
@@ -129,10 +128,10 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
 
-        BufferingLog logger = new BufferingLog();
-        storeFiles.dump( logger.debugLogger() );
+        List<String> files = new ArrayList<>();
+        storeFiles.dump( files::add );
 
-        sources.add( DiagnosticsReportSources.newDiagnosticsString( "tree.txt", logger::toString ) );
+        sources.add( DiagnosticsReportSources.newDiagnosticsString( "tree.txt", () -> String.join( System.lineSeparator(), files ) ) );
     }
 
     /**

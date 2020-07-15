@@ -79,7 +79,7 @@ class KernelDiagnosticsIT
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
             SizeCapture capture = new SizeCapture();
-            files.dump( capture );
+            files.dump( capture::log );
             assertNotNull( capture.size );
 
             // then

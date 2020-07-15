@@ -34,6 +34,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGenerator;
@@ -388,11 +389,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void dumpDiagnostics( DiagnosticsManager diagnosticsManager, Log log )
+    public void dumpDiagnostics( Log errorLog, DiagnosticsLogger diagnosticsLog )
     {
-        diagnosticsManager.dump( new NeoStoreIdUsage( neoStores ), log );
-        diagnosticsManager.dump( new NeoStoreRecords( neoStores ), log );
-        diagnosticsManager.dump( new NeoStoreVersions( neoStores ), log );
+        DiagnosticsManager.dump( new NeoStoreIdUsage( neoStores ), errorLog, diagnosticsLog );
+        DiagnosticsManager.dump( new NeoStoreRecords( neoStores ), errorLog, diagnosticsLog );
+        DiagnosticsManager.dump( new NeoStoreVersions( neoStores ), errorLog, diagnosticsLog );
     }
 
     @Override

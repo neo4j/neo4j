@@ -47,7 +47,7 @@ public interface DiagnosticsProvider
     /**
      * Dump the diagnostic information of this {@link DiagnosticsProvider} to the provided {@link Logger logger}.
      *
-     * @param logger the {@link Logger logger} to dump information to.
+     * @param logger the {@link DiagnosticsLogger logger} to dump information to.
      */
-    void dump( Logger logger );
+    void dump( DiagnosticsLogger logger );
 }

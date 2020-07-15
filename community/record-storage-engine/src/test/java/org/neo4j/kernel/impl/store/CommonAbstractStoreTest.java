@@ -210,7 +210,7 @@ class CommonAbstractStoreTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        store.logIdUsage( logProvider.getLog( TheStore.class ).infoLogger() );
+        store.logIdUsage( logProvider.getLog( TheStore.class )::info );
 
         // then
         logProvider.assertExactly( AssertableLogProvider.inLog( TheStore.class ).info(
@@ -225,7 +225,7 @@ class CommonAbstractStoreTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        store.logVersions( logProvider.getLog( TheStore.class ).infoLogger() );
+        store.logVersions( logProvider.getLog( TheStore.class )::info );
 
         // then
         logProvider.assertExactly( AssertableLogProvider.inLog( TheStore.class ).info(
