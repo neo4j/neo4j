@@ -750,7 +750,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> fail_on_corrupted_log_files =
             newBuilder("unsupported.dbms.tx_log.fail_on_corrupted_log_files", BOOL, true ).build();
 
-    @Description( "If `true`, Neo4j will abort recovery if logical log files are missing. Setting " +
+    @Description( "If `true`, Neo4j will abort recovery if transaction log files are missing. Setting " +
             "this to `false` will allow Neo4j to create new empty missing files for already existing database, but, " +
             "the integrity of the database might be compromised." )
     public static final Setting<Boolean> fail_on_missing_files = newBuilder( "dbms.recovery.fail_on_missing_files", BOOL, true ).build();
