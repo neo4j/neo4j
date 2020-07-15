@@ -547,13 +547,13 @@ public class IndexedIdGenerator implements IdGenerator
             try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false, cursorTracer ) )
             {
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
-                long highestFreeId = freeIdsForRebuild.accept( id ->
+                long highestId = freeIdsForRebuild.accept( id ->
                 {
                     idRangeMarker.markDeleted( id );
                     idRangeMarker.markFree( id );
                 } );
-                highId.set( highestFreeId + 1 );
-                highestWrittenId.set( highestFreeId );
+                highId.set( highestId + 1 );
+                highestWrittenId.set( highestId );
             }
             // We can checkpoint here since the free ids we read are committed
             checkpoint( IOLimiter.UNLIMITED, cursorTracer );
