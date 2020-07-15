@@ -169,9 +169,13 @@ class MathFunctionsTest extends CypherFunSuite {
   }
 
   test("roundTests") {
-    calc(RoundFunction(literal(1.5))) should equal(doubleValue(2))
-    calc(RoundFunction(literal(12.22))) should equal(doubleValue(12))
-    intercept[CypherTypeException](calc(RoundFunction(literal("wut"))))
+    calc(RoundFunction(literal(1.5), literal(0), literal("HALF_UP"))) should equal(doubleValue(2))
+    calc(RoundFunction(literal(1.5), literal(0), literal("HALF_DOWN"))) should equal(doubleValue(1))
+    calc(RoundFunction(literal(12.22), literal(0), literal("HALF_UP"))) should equal(doubleValue(12))
+    calc(RoundFunction(literal(12.22), literal(1), literal("HALF_UP"))) should equal(doubleValue(12.2))
+    intercept[CypherTypeException](calc(RoundFunction(literal("wut"), literal(0), literal("HALF_UP"))))
+    intercept[CypherTypeException](calc(RoundFunction(literal(1.5), literal("wut"), literal("HALF_UP"))))
+    intercept[CypherTypeException](calc(RoundFunction(literal(1.5), literal(1), literal(42))))
   }
 
   test("powFunction") {

@@ -123,6 +123,7 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.ZERO_INT
 import org.neo4j.values.storable.Values.intValue
 
@@ -428,7 +429,11 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           self.toCommandExpression(id, invocation.arguments.head),
           self.toCommandExpression(id, invocation.arguments(1))
         )
-      case Round => commands.expressions.RoundFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Round => commands.expressions.RoundFunction(
+        self.toCommandExpression(id, invocation.arguments.head),
+        toCommandExpression(id, invocation.arguments.lift(1), self).getOrElse(commands.expressions.Literal(intValue(0))),
+        toCommandExpression(id, invocation.arguments.lift(2), self).getOrElse(commands.expressions.Literal(Values.stringValue("HALF_UP")))
+      )
       case RTrim => commands.expressions.RTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Sign => commands.expressions.SignFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Sin => commands.expressions.SinFunction(self.toCommandExpression(id, invocation.arguments.head))

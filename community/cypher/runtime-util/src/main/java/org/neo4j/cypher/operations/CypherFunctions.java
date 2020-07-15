@@ -20,6 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,6 +44,7 @@ import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -60,6 +62,14 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
+import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.DOWN;
+import static java.math.RoundingMode.FLOOR;
+import static java.math.RoundingMode.HALF_DOWN;
+import static java.math.RoundingMode.HALF_EVEN;
+import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.UNNECESSARY;
+import static java.math.RoundingMode.UP;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -227,12 +237,55 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
     public static DoubleValue round( AnyValue in )
     {
+        return round( in, Values.ZERO_INT, Values.stringValue( "HALF_UP" ) );
+    }
+
+    @CalledFromGeneratedCode
+    public static DoubleValue round( AnyValue in, AnyValue precision )
+    {
+        return round( in, precision, Values.stringValue( "HALF_UP" ) );
+    }
+
+    public static DoubleValue round( AnyValue in, AnyValue precisionValue, AnyValue modeValue )
+    {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( in instanceof NumberValue )
+        assert precisionValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
+        if ( !(modeValue instanceof StringValue) )
         {
-            return doubleValue( Math.round( ((NumberValue) in).doubleValue() ) );
+            throw notAModeString( "round", modeValue );
+        }
+
+        RoundingMode mode;
+        try
+        {
+            mode = RoundingMode.valueOf( ((StringValue) modeValue).stringValue() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new InvalidArgumentException(
+                    "Unknown rounding mode. Valid values are: CEILING, FLOOR, UP, DOWN, HALF_EVEN, HALF_UP, HALF_DOWN, UNNECESSARY." );
+        }
+
+        if ( in instanceof NumberValue && precisionValue instanceof NumberValue )
+        {
+            int precision = asInt( precisionValue );
+            if ( precision < 0 )
+            {
+                throw new InvalidArgumentException( "precision argument to round() cannot be negative", null );
+            }
+            // For the default values, standard Java round is faster
+            else if ( precision == 0 && mode.equals( HALF_UP ) )
+            {
+                return doubleValue( Math.round( ((NumberValue) in).doubleValue() ) );
+            }
+            else
+            {
+                return doubleValue( BigDecimal.valueOf( ((NumberValue) in).doubleValue() ).setScale( precision, mode ).doubleValue() );
+            }
         }
         else
         {
@@ -1453,5 +1506,13 @@ public final class CypherFunctions
                 format( "Expected a string value for `%s`, but got: %s; consider converting it to a string with " +
                                 "toString().",
                         method, in ), null );
+    }
+
+    private static CypherTypeException notAModeString( String method, AnyValue mode )
+    {
+        assert mode != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        return new CypherTypeException(
+                format( "Expected a string value for `%s`, but got: %s.",
+                        method, mode ), null );
     }
 }

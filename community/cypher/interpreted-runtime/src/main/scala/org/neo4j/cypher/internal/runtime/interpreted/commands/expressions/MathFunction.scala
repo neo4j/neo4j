@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols.NumberType
 import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.NumberType
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.IntegralValue
-import org.neo4j.values.storable.NumberValues
-import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.NumberValues
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 
 abstract class MathFunction(arg: Expression) extends Expression {
 
@@ -368,14 +368,14 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
-case class RoundFunction(argument: Expression) extends MathFunction(argument) {
+case class RoundFunction(argument: Expression, precision: Expression, mode: Expression) extends MathFunction(argument) {
 
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = argument(row, state) match {
-    case x if x eq NO_VALUE => NO_VALUE
-    case v => CypherFunctions.round(v)
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = (argument(row, state), precision(row, state), mode(row, state)) match {
+    case (value, precision, mode) if (value eq NO_VALUE) || (precision eq NO_VALUE) || (mode eq NO_VALUE) => NO_VALUE
+    case (value, precision, mode) => CypherFunctions.round(value, precision, mode)
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(RoundFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(RoundFunction(argument.rewrite(f), precision.rewrite(f), mode.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
