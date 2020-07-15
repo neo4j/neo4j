@@ -19,14 +19,27 @@
  */
 package org.neo4j.configuration;
 
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.util.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +53,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
@@ -48,8 +62,10 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.Log;
 import org.neo4j.service.Services;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
+import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 
@@ -66,8 +82,10 @@ public class Config implements Configuration
         private final Map<String,String> settingValueStrings = new HashMap<>();
         private final Map<String,Object> settingValueObjects = new HashMap<>();
         private final Map<String,Object> overriddenDefaults = new HashMap<>();
+        private final List<Path> configFiles = new ArrayList<>();
         private Config fromConfig;
         private final Log log = new BufferingLog();
+        private boolean expandCommands;
 
         private static boolean allowedToLogOverriddenValues( String setting )
         {
@@ -232,6 +250,7 @@ public class Config implements Configuration
                         }
                     }.load( stream );
                 }
+                configFiles.add( file );
             }
             catch ( IOException e )
             {
@@ -244,6 +263,12 @@ public class Config implements Configuration
             return this;
         }
 
+        public Builder allowCommandExpansion()
+        {
+            expandCommands = true;
+            return this;
+        }
+
         private Builder()
         {
 
@@ -251,8 +276,124 @@ public class Config implements Configuration
 
         public Config build()
         {
+            expandCommands |= fromConfig != null && fromConfig.expandCommands; //inherit expandCommands from another config
+            if ( expandCommands )
+            {
+                validateFilePermissionForCommandExpansion( configFiles );
+            }
             return new Config( settingsClasses, groupSettingClasses, settingMigrators, settingValueStrings, settingValueObjects, overriddenDefaults,
-                    fromConfig, log );
+                    fromConfig, log, expandCommands );
+        }
+
+        private void validateFilePermissionForCommandExpansion( List<Path> files )
+        {
+            if ( files.isEmpty() )
+            {
+                return;
+            }
+            String processOwner = SystemUtils.getUserName();
+            if ( SystemUtils.IS_OS_UNIX )
+            {
+                String processGroup = executeCommand( "id -gn", DEFAULT_COMMAND_EVALUATION_TIMEOUT );
+
+                for ( Path path : files )
+                {
+                    try
+                    {
+                        final Set<PosixFilePermission> unixPermission600 = Set.of( PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE );
+                        PosixFileAttributes attrs = Files.getFileAttributeView( path, PosixFileAttributeView.class ).readAttributes();
+                        Set<PosixFilePermission> permissions = attrs.permissions();
+                        if ( !unixPermission600.containsAll( permissions ) ) //actual permission is a subset of required ones
+                        {
+                            throw new IllegalArgumentException(
+                                    format( "%s does not have the correct file permissions to evaluate commands. Has %s, requires at most %s.", path,
+                                            permissions, unixPermission600 ) );
+                        }
+
+                        String fileOwner = attrs.owner().getName();
+                        if ( !fileOwner.equals( processOwner ) )
+                        {
+                            throw new IllegalArgumentException(
+                                    format( "%s does not have the correct file owner to evaluate commands. Has %s, requires %s.", path, fileOwner,
+                                            processOwner ) );
+                        }
+
+                        String fileGroup = attrs.group().getName();
+                        if ( !fileGroup.equals( processGroup ) )
+                        {
+                            throw new IllegalArgumentException(
+                                    format( "%s does not have the correct file group to evaluate commands. Has %s, requires %s.", path, fileGroup,
+                                            processGroup ) );
+                        }
+                    }
+                    catch ( IOException | UnsupportedOperationException e )
+                    {
+                        throw new IllegalStateException( "Unable to access file permissions for " + path, e );
+                    }
+                }
+            }
+            else if ( SystemUtils.IS_OS_WINDOWS )
+            {
+                for ( Path path : files )
+                {
+                    try
+                    {
+                        AclFileAttributeView attrs = Files.getFileAttributeView( path, AclFileAttributeView.class );
+                        UserPrincipal owner = attrs.getOwner();
+
+                        final Set<AclEntryPermission> windowsUserNoExecute = Set.of( //All but execute for owner
+                                AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA, AclEntryPermission.APPEND_DATA,
+                                AclEntryPermission.READ_ATTRIBUTES, AclEntryPermission.WRITE_ATTRIBUTES,
+                                AclEntryPermission.READ_NAMED_ATTRS, AclEntryPermission.WRITE_NAMED_ATTRS,
+                                AclEntryPermission.READ_ACL, AclEntryPermission.WRITE_ACL,
+                                AclEntryPermission.DELETE, AclEntryPermission.DELETE_CHILD,
+                                AclEntryPermission.WRITE_OWNER, AclEntryPermission.SYNCHRONIZE
+                        );
+                        for ( AclEntry acl : attrs.getAcl() )
+                        {
+                            Set<AclEntryPermission> permissions = acl.permissions();
+                            if ( AclEntryType.ALLOW.equals( acl.type() ) )
+                            {
+                                if ( acl.principal().equals( owner ) )
+                                {
+                                    if ( !windowsUserNoExecute.containsAll( permissions ) )
+                                    {
+                                        throw new IllegalArgumentException(
+                                                format( "%s does not have the correct ACL for owner to evaluate commands. Has %s for %s, requires at most %s.",
+                                                        path, permissions, acl.principal().getName(), windowsUserNoExecute ) );
+                                    }
+                                }
+                                else
+                                {
+                                    if ( !permissions.isEmpty() )
+                                    {
+                                        throw new IllegalArgumentException(
+                                                format( "%s does not have the correct ACL. Has %s for %s, should be none for all except owner.",
+                                                        path, permissions, acl.principal().getName() ) );
+                                    }
+                                }
+                            }
+                        }
+
+                        String domainAndName = owner.getName();
+                        String fileOwner = domainAndName.contains( "\\" ) ? domainAndName.split( "\\\\" )[1] : domainAndName; //remove domain
+                        if ( !fileOwner.equals( processOwner ) )
+                        {
+                            throw new IllegalArgumentException(
+                                    format( "%s does not have the correct file owner to evaluate commands. Has %s, requires %s.", path, domainAndName,
+                                            processOwner ) );
+                        }
+                    }
+                    catch ( IOException | UnsupportedOperationException e )
+                    {
+                        throw new IllegalStateException( "Unable to access file permissions for " + path, e );
+                    }
+                }
+            }
+            else
+            {
+                throw new IllegalStateException( "Configuration command expansion not supported for " + SystemUtils.OS_NAME );
+            }
         }
     }
 
@@ -289,10 +430,15 @@ public class Config implements Configuration
     protected final Map<String,Entry<?>> settings = new HashMap<>();
     private final Map<Class<? extends GroupSetting>, Map<String,GroupSetting>> allGroupInstances = new HashMap<>();
     private Log log;
-    private Configuration validationConfig = new ValidationConfig();
+    private final boolean expandCommands;
+    private final Configuration validationConfig = new ValidationConfig();
+
+    static final int DEFAULT_COMMAND_EVALUATION_TIMEOUT = 30;
+    private final int commandEvaluationTimeout = FeatureToggles.getInteger( Config.class, "CommandEvaluationTimeout", DEFAULT_COMMAND_EVALUATION_TIMEOUT );
 
     protected Config()
     {
+        expandCommands = false;
     }
 
     private Config( Collection<Class<? extends SettingsDeclaration>> settingsClasses,
@@ -302,9 +448,16 @@ public class Config implements Configuration
             Map<String,Object> settingValueObjects,
             Map<String,Object> overriddenDefaultObjects,
             Config fromConfig,
-            Log log )
+            Log log,
+            boolean expandCommands )
     {
         this.log = log;
+        this.expandCommands = expandCommands;
+
+        if ( expandCommands )
+        {
+            log.info( "Command expansion is explicitly enabled for configuration" );
+        }
 
         Map<String,String> overriddenDefaultStrings = new HashMap<>();
         try
@@ -506,7 +659,7 @@ public class Config implements Configuration
             }
             else if ( overriddenDefaultStrings.containsKey( key ) )
             {
-                defaultValue = setting.parse( overriddenDefaultStrings.get( key ) );
+                defaultValue = setting.parse( evaluateIfCommand( key, overriddenDefaultStrings.get( key ) ) );
             }
             else
             {
@@ -529,7 +682,7 @@ public class Config implements Configuration
             }
             else if ( settingValueStrings.containsKey( key ) ) // Map value
             {
-                value = setting.parse( settingValueStrings.get( key ) );
+                value = setting.parse( evaluateIfCommand( key, settingValueStrings.get( key ) ) );
             }
             else if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
             {
@@ -549,6 +702,66 @@ public class Config implements Configuration
         {
             String msg = format( "Error evaluating value for setting '%s'. %s", setting.name(), exception.getMessage() );
             throw new IllegalArgumentException( msg, exception );
+        }
+    }
+
+    private String evaluateIfCommand( String settingName, String entry )
+    {
+        if ( isCommand( entry ) )
+        {
+            if ( !expandCommands )
+            {
+                throw new IllegalArgumentException( format( "%s is a command, but config is not explicitly told to expand it.", entry ) );
+            }
+            String str = entry.trim();
+            String command = str.substring( 2, str.length() - 1 );
+            log.info( "Executing external script to retrieve value of setting " + settingName );
+            return executeCommand( command, commandEvaluationTimeout );
+        }
+        return entry;
+    }
+
+    private static boolean isCommand( String entry )
+    {
+        String str = entry.trim();
+        return str.length() > 3 && str.charAt( 0 ) == '$' && str.charAt( 1 ) == '(' && str.charAt( str.length() - 1 ) == ')';
+    }
+
+    private static String executeCommand( String command, int timeout )
+    {
+        try
+        {
+            String[] commands = CommandLine.parse( command ).toStrings();
+            //Unquote the arguments, as ProcessBuilder does not handle that
+            for ( int i = 1; i < commands.length; i++ )
+            {
+                String arg = commands[i];
+                if ( StringUtils.isQuoted( arg ) )
+                {
+                    commands[i] = arg.substring( 1, arg.length() - 1 );
+                }
+            }
+            Process process = new ProcessBuilder( commands ).start();
+            BufferedReader out = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+            BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
+            if ( !process.waitFor( timeout, TimeUnit.SECONDS ) )
+            {
+                throw new IllegalArgumentException( format( "Timed out executing command `%s`", command ) );
+            }
+
+            String output = out.lines().collect( Collectors.joining( lineSeparator() ) );
+
+            int exitCode = process.exitValue();
+            if ( exitCode != 0 )
+            {
+                String errOutput =  err.lines().collect( Collectors.joining( lineSeparator() ) );
+                throw new IllegalArgumentException( format( "Command `%s` failed with exit code %s.%n%s%n%s", command, exitCode, output, errOutput ) );
+            }
+            return output;
+        }
+        catch ( IOException | InterruptedException e )
+        {
+            throw new IllegalArgumentException( e );
         }
     }
 
@@ -907,7 +1120,7 @@ public class Config implements Configuration
 
         AccessDuringEvaluationException( Setting<?> attemptedAccess )
         {
-            super( String.format( "AccessDuringEvaluationException{ Tried to access %s in config during construction }", attemptedAccess.name() ) );
+            super( format( "AccessDuringEvaluationException{ Tried to access %s in config during construction }", attemptedAccess.name() ) );
             this.attemptedAccess = attemptedAccess;
         }
 

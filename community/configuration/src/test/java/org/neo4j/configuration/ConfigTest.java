@@ -19,13 +19,21 @@
  */
 package org.neo4j.configuration;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +51,11 @@ import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.FeatureToggles;
 
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -657,9 +669,180 @@ class ConfigTest
         assertThat( msg ).contains( "Can not depend on dynamic setting" );
     }
 
+    @Test
+    void shouldNotEvaluateCommandsByDefault()
+    {
+        assumeUnixOrWindows();
+        //Given
+        Config.Builder builder = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.intSetting.name(), "$(foo bar)" ) );
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "is a command, but config is not explicitly told to expand it" );
+    }
+
+    @Test
+    void shouldReportCommandWithSyntaxError()
+    {
+        assumeUnixOrWindows();
+        //Given
+        Config.Builder builder = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.intSetting.name(), "$(foo bar" ) );
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "Error evaluating value for setting 'test.setting.integer'" );
+    }
+
+    @Test
+    void shouldReportUsefulErrorOnInvalidCommand()
+    {
+        assumeUnixOrWindows();
+        //Given
+        Config.Builder builder = Config.newBuilder()
+                .allowCommandExpansion()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.intSetting.name(), "$(foo bar)" ) );
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "Cannot run program \"foo\"" );
+    }
+
+    @Test
+    void shouldCorrectlyEvaluateCommandAndLogIt()
+    {
+        assumeUnixOrWindows();
+        //Given
+        var logProvider = new AssertableLogProvider();
+        String command = IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr";
+        Config config = Config.newBuilder()
+                .allowCommandExpansion()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s 10 - 2)", command ) ) )
+                .build();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        //Then
+        assertEquals( 8, config.get( TestSettings.intSetting ) );
+        assertThat( logProvider ).containsMessages(
+                "Command expansion is explicitly enabled for configuration",
+                "Executing external script to retrieve value of setting " + TestSettings.intSetting.name()
+        );
+    }
+
+    @Test
+    @DisabledOnOs( OS.WINDOWS ) //For some reason it does not work on our test instances on TC
+    void shouldCorrectlyEvaluateCommandFromFile() throws IOException
+    {
+        assumeUnixOrWindows();
+        String command = IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr";
+
+        Path confFile = testDirectory.file( "test.conf" ).toPath();
+        if ( IS_OS_WINDOWS )
+        {
+            Files.createFile( confFile );
+            AclFileAttributeView attrs = Files.getFileAttributeView( confFile, AclFileAttributeView.class );
+            attrs.setAcl( List.of( AclEntry.newBuilder().setType( AclEntryType.ALLOW )
+                    .setPrincipal( attrs.getOwner() )
+                    .setPermissions( AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA, AclEntryPermission.READ_ATTRIBUTES,
+                            AclEntryPermission.WRITE_ATTRIBUTES, AclEntryPermission.READ_NAMED_ATTRS, AclEntryPermission.WRITE_NAMED_ATTRS,
+                            AclEntryPermission.APPEND_DATA, AclEntryPermission.READ_ACL, AclEntryPermission.SYNCHRONIZE ).build() ) );
+        }
+        else
+        {
+            Files.createFile( confFile, PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) ) );
+        }
+        Files.write( confFile, List.of( String.format("%s=$(%s 3 + 3)", TestSettings.intSetting.name(), command ) ) );
+
+        //Given
+        Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile.toFile() ).build();
+
+        //Then
+        assertEquals( 6, config.get( TestSettings.intSetting ) );
+    }
+
+    @Test
+    void shouldNotEvaluateWithIncorrectFilePermission() throws IOException
+    {
+        assumeUnixOrWindows();
+        Path confFile = testDirectory.file( "test.conf" ).toPath();
+        if ( IS_OS_WINDOWS )
+        {
+            Files.createFile( confFile );
+            AclFileAttributeView attrs = Files.getFileAttributeView( confFile, AclFileAttributeView.class );
+            attrs.setAcl( List.of( AclEntry.newBuilder().setType( AclEntryType.ALLOW )
+                    .setPrincipal( attrs.getOwner() )
+                    .setPermissions( AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA, AclEntryPermission.READ_ATTRIBUTES,
+                            AclEntryPermission.WRITE_ATTRIBUTES, AclEntryPermission.READ_NAMED_ATTRS, AclEntryPermission.WRITE_NAMED_ATTRS,
+                            AclEntryPermission.APPEND_DATA, AclEntryPermission.READ_ACL, AclEntryPermission.SYNCHRONIZE, AclEntryPermission.EXECUTE )
+                    .build() ) );
+        }
+        else
+        {
+            Files.createFile( confFile, PosixFilePermissions.asFileAttribute( PosixFilePermissions.fromString( "rwx------" ) ) );
+
+        }
+        Files.write( confFile, List.of( TestSettings.intSetting.name() + "=$(foo bar)" ) );
+
+        //Given
+        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile.toFile() );
+
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        String expectedErrorMessage = IS_OS_WINDOWS ? "does not have the correct ACL for owner" : "does not have the correct file permissions";
+        assertThat( msg ).contains( expectedErrorMessage );
+    }
+
+    @Test
+    void shouldTimeoutOnSlowCommands()
+    {
+        assumeUnixOrWindows();
+        try
+        {
+            String command = IS_OS_WINDOWS ? "ping -n 3 localhost" : "sleep 3";
+            //This should be the only test modifying this value, so no issue of modifying feature flag
+            FeatureToggles.set( Config.class, "CommandEvaluationTimeout", 1 );
+            //Given
+            Config.Builder builder = Config.newBuilder()
+                    .allowCommandExpansion()
+                    .addSettingsClass( TestSettings.class )
+                    .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s)", command ) ) );
+            //Then
+            String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+            assertThat( msg ).contains( "Timed out executing command" );
+        }
+        finally
+        {
+            FeatureToggles.set( Config.class, "CommandEvaluationTimeout", Config.DEFAULT_COMMAND_EVALUATION_TIMEOUT );
+        }
+    }
+
+    @Test
+    void shouldNotEvaluateCommandsOnDynamicChanges()
+    {
+        assumeUnixOrWindows();
+        String command1 = String.format( "$(%s 2 + 2)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
+        String command2 = String.format( "$(%s 10 - 3)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
+        //Given
+        Config config = Config.emptyBuilder()
+                .allowCommandExpansion()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.dynamicStringSetting.name(), command1 ) )
+                .build();
+        //Then
+        assertThat( config.get( TestSettings.dynamicStringSetting ) ).isEqualTo( "4" );
+        //When
+        config.setDynamic( TestSettings.dynamicStringSetting, command2, "test" );
+        //Then
+        assertThat( config.get( TestSettings.dynamicStringSetting ) ).isNotEqualTo( "7" ); //not evaluated
+        assertThat( config.get( TestSettings.dynamicStringSetting ) ).isEqualTo( command2 );
+    }
+
     private static final class TestSettings implements SettingsDeclaration
     {
         static final Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
+        static final Setting<String> dynamicStringSetting = newBuilder( "test.setting.dynamicstring", STRING, "hello" ).dynamic().build();
         static final Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
         static final Setting<Integer> constrainedIntSetting = newBuilder( "test.setting.constrained-integer", INT, 1 )
                 .addConstraint( max( 3 ) ).dynamic().build();
@@ -790,4 +973,8 @@ class ConfigTest
         static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
     }
 
+    private static void assumeUnixOrWindows()
+    {
+        assumeTrue( IS_OS_WINDOWS || SystemUtils.IS_OS_UNIX, "Require system to be either Unix or Windows based." );
+    }
 }
