@@ -33,7 +33,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
 
     public static final String LONG_MIN_VALUE_DECIMAL_STRING = Long.toString( Long.MIN_VALUE ).substring( 1 );
     public static final String LONG_MIN_VALUE_HEXADECIMAL_STRING = "0x" + Long.toString( Long.MIN_VALUE, 16 ).substring( 1 );
-    public static final String LONG_MIN_VALUE_OCTAL_STRING = "0" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
+    public static final String LONG_MIN_VALUE_OCTAL_STRING_OLD_SYNTAX = "0" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
+    public static final String LONG_MIN_VALUE_OCTAL_STRING = "0o" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
 
     @Override
     public NULL newSingleQuery( List<NULL> nulls )
@@ -353,12 +354,20 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     {
         try
         {
-            long x = Long.parseLong( image, 8 );
+            long x;
+            if ( image.charAt( 1 ) == 'o' )
+            {
+                x = Long.parseLong( image.substring( 2 ), 8 );
+            }
+            else
+            {
+                x = Long.parseLong( image, 8 );
+            }
             return negated ? -x : x;
         }
         catch ( NumberFormatException e )
         {
-            if ( negated && LONG_MIN_VALUE_OCTAL_STRING.equals( image ) )
+            if ( negated && ( LONG_MIN_VALUE_OCTAL_STRING.equals( image ) || LONG_MIN_VALUE_OCTAL_STRING_OLD_SYNTAX.equals( image ) ) )
             {
                 return Long.MIN_VALUE;
             }

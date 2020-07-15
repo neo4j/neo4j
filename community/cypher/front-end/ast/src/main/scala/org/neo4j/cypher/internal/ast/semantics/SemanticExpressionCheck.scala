@@ -488,7 +488,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:OctalIntegerLiteral =>
         when(!validNumber(x)) {
-          if (x.stringVal matches "^-?0[0-7]+$")
+          if (x.stringVal matches "^-?0o?[0-7]+$")
             SemanticError("integer is too large", x.position)
           else
             SemanticError("invalid literal number", x.position)

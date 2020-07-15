@@ -58,7 +58,19 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                         containsItem( deprecatedProcedureReturnFieldWarning ) );
     }
 
-    // DEPRECATED SYNTAX
+    @Test
+    void deprecatedOctalLiteralSyntax()
+    {
+        assertNotifications( List.of( "Cypher 4.2 " ), "explain RETURN 0123 AS name", containsItem( deprecatedOctalLiteralSyntax ) );
+    }
+
+    @Test
+    void deprecatedHexLiteralSyntax()
+    {
+        assertNotifications( List.of( "Cypher 4.2 " ), "explain RETURN 0X123 AS name", containsItem( deprecatedHexLiteralSyntax ) );
+    }
+
+    // DEPRECATED SYNTAX in 4.X
 
     @Test
     void deprecatedBindingVariableLengthRelationship()
@@ -263,6 +275,12 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private Matcher<Notification> deprecatedLengthOnNonPath =
             deprecation( "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
+
+    private Matcher<Notification> deprecatedOctalLiteralSyntax =
+            deprecation( "The octal integer literal syntax `0123` is deprecated, please use `0o123` instead" );
+
+    private Matcher<Notification> deprecatedHexLiteralSyntax =
+            deprecation( "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead" );
 
     private static Matcher<Notification> deprecation( String message )
     {

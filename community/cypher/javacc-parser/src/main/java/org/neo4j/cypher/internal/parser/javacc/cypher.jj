@@ -194,7 +194,7 @@ TOKEN :
 |
   < UNSIGNED_HEX_INTEGER: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
 |
-  < UNSIGNED_OCTAL_INTEGER: "0" (["0"-"7"])+ >
+  < UNSIGNED_OCTAL_INTEGER: "0" ("o")? (["0"-"7"])+ >
 }
 
 MORE : { < STRING1_OPEN: "'" > : STRING1 }

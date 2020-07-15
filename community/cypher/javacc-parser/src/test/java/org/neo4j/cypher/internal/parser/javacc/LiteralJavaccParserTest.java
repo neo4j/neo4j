@@ -56,6 +56,11 @@ public class LiteralJavaccParserTest
         assertEquals( -8L, parseLiteral( "-010" ) );
         assertEquals( Long.MIN_VALUE, parseLiteral( "-01000000000000000000000" ) );
 
+        assertEquals( 8L, parseLiteral( "0o10" ) );
+        assertEquals( -8L, parseLiteral( "-0o10" ) );
+        assertEquals( -8L, parseLiteral( "-0o10" ) );
+        assertEquals( Long.MIN_VALUE, parseLiteral( "-0o1000000000000000000000" ) );
+
         assertEquals( 255L, parseLiteral( "0xff" ) );
         assertEquals( -255L, parseLiteral( "-0xff" ) );
         assertEquals( Long.MIN_VALUE, parseLiteral( "-0x8000000000000000" ) );

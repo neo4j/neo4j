@@ -108,21 +108,56 @@ class LiteralTest extends SemanticFunSuite {
     assertSemanticError(decimalDouble("1e9999"), "floating point number is too large")
   }
 
-  test("correctly parses octal numbers") {
+  test("correctly parses old syntax octal numbers") {
     assert(signedOctal("022").value === 0x12)
     assert(signedOctal("00").value === 0x0)
     assert(signedOctal("0734").value === 0x1dc)
     assert(signedOctal("0034").value === 0x1c)
   }
 
-  test("throws error for invalid octal numbers") {
+  test("correctly parses hex numbers") {
+    assert(signedOctal("0x22").value === 0x22)
+    assert(signedOctal("0x0").value === 0x0)
+    assert(signedOctal("0x734").value === 0x734)
+    assert(signedOctal("-0x034").value === -0x034)
+  }
+
+  test("correctly parses hex numbers (with soon-to-be-deprecated syntax)") {
+    assert(signedOctal("0X22").value === 0x22)
+    assert(signedOctal("0X0").value === 0x0)
+    assert(signedOctal("0X734").value === 0x734)
+    assert(signedOctal("-0X034").value === -0x034)
+  }
+
+
+  test("correctly parses octal numbers") {
+    assert(signedOctal("0o22").value === 0x12)
+    assert(signedOctal("0o0").value === 0x0)
+    assert(signedOctal("0o734").value === 0x1dc)
+    assert(signedOctal("-0o034").value === -0x1c)
+  }
+
+  test("throws error for invalid old syntax octal numbers") {
     assertSemanticError(signedOctal("0393"), "invalid literal number")
     assertSemanticError(signedOctal("03f4"), "invalid literal number")
     assertSemanticError(signedOctal("-0934"), "invalid literal number")
   }
 
-  test("throws error for too large octal numbers") {
+  test("throws error for invalid octal numbers") {
+    assertSemanticError(signedOctal("0o393"), "invalid literal number")
+    assertSemanticError(signedOctal("0o3f4"), "invalid literal number")
+    assertSemanticError(signedOctal("-0o934"), "invalid literal number")
+    assertSemanticError(signedOctal("0O393"), "invalid literal number")
+    assertSemanticError(signedOctal("0O3f4"), "invalid literal number")
+    assertSemanticError(signedOctal("-0O934"), "invalid literal number")
+  }
+
+  test("throws error for too large old syntax octal numbers") {
     assertSemanticError(signedOctal("077777777777777777777777777777"), "integer is too large")
+  }
+
+  test("throws error for too large octal numbers") {
+    assertSemanticError(signedOctal("0o77777777777777777777777777777"), "integer is too large")
   }
 
   private def assertSemanticError(literal: Literal, errorMessage: String) {

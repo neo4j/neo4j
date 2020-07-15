@@ -118,6 +118,16 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, please use `DROP CONSTRAINT constraint_name` instead"
     ),
+    DEPRECATED_OCTAL_LITERAL_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The octal integer literal syntax `0123` is deprecated, please use `0o123` instead"
+    ),
+    DEPRECATED_HEX_LITERAL_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead"
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

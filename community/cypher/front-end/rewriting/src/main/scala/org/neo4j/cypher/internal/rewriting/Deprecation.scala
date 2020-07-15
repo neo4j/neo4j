@@ -31,12 +31,16 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
+import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
@@ -69,6 +73,21 @@ object Deprecations {
           () => Some(DeprecatedFunctionNotification(f.position, name, functionRenames(name)))
         )
 
+      // old octal literal syntax
+      case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(1) != 'o' =>
+        Deprecation(
+          () => p,
+          () => Some(DeprecatedOctalLiteralSyntax(p.position))
+        )
+
+      // old hex literal syntax
+      case p@SignedHexIntegerLiteral(stringVal) if stringVal.charAt(1) == 'X' =>
+        Deprecation(
+          () => SignedHexIntegerLiteral(stringVal.toLowerCase)(p.position),
+          () => Some(DeprecatedHexLiteralSyntax(p.position))
+        )
+
+      // Deprecated in 4.X
       // timestamp
       case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if name.equalsIgnoreCase("timestamp")=>
         Deprecation(

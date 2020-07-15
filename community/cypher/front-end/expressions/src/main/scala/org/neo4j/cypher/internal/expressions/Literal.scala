@@ -83,7 +83,7 @@ case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPos
 case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
 
 sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal)
+  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal.toList.filter(c => c != 'o').mkString)
 }
 
 case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral
