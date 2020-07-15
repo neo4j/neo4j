@@ -561,7 +561,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> store_internal_log_rotation_delay =
             newBuilder( "dbms.logs.debug.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
-    @Description( "Maximum number of history files for the user log." )
+    @Description( "Maximum number of history files for the user log (_neo4j.log_)." )
     public static final Setting<Integer> store_user_log_max_archives =
             newBuilder( "dbms.logs.user.rotation.keep_number", INT, 7 ).addConstraint( min( 1 ) ).build();
 
