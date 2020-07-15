@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
@@ -34,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -55,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
+import static java.lang.Long.max;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -168,7 +171,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void buildIdFiles( DatabaseLayout layout, List<StoreType> storeTypes, IdGeneratorFactory rebuiltIdGenerators,
-        List<Pair<File,File>> renameMap, NeoStores stores, PageCursorTracer cursorTracer )
+        List<Pair<File,File>> renameMap, NeoStores stores, PageCursorTracer cursorTracer ) throws IOException
     {
         for ( StoreType storeType : storeTypes )
         {
@@ -178,22 +181,26 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             File idFile = new File( actualIdFile.getAbsolutePath() + ".new" );
             renameMap.add( Pair.of( idFile, actualIdFile ) );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+            int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
                   IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
-                            readOnly, cursorTracer, immutable.empty() );
-                  Marker marker = idGenerator.marker( cursorTracer ) )
+                            readOnly, cursorTracer, immutable.empty() ) )
             {
-                AbstractBaseRecord record = store.newRecord();
-                for ( long id = 0; id < highId; id++ )
+                idGenerator.start( visitor ->
                 {
-                    store.getRecordByCursor( id, record, RecordLoad.CHECK, cursor );
-                    if ( !record.inUse() )
+                    AbstractBaseRecord record = store.newRecord();
+                    for ( long id = numberOfReservedLowIds; id < highId; id++ )
                     {
-                        marker.markDeleted( id );
-                        // it's enough with deleted - even if we don't mark the ids as free the next time we open the id generator they will be
+                        store.getRecordByCursor( id, record, RecordLoad.CHECK, cursor );
+                        if ( !record.inUse() )
+                        {
+                            visitor.accept( id );
+                            // it's enough with deleted - even if we don't mark the ids as free the next time we open the id generator they will be
+                        }
                     }
-                }
+                    return max( highId, numberOfReservedLowIds ) - 1;
+                }, cursorTracer );
             }
         }
     }
