@@ -172,7 +172,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
             try ( PageCursor cursor = store.openPageCursorForReading( numberOfReservedLowIds );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                    IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE, readOnly ) )
+                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE, readOnly ) )
             {
                 idGenerator.start( visitor ->
                 {

@@ -97,7 +97,7 @@ class IdGeneratorMigratorTest
         // when
         IdGeneratorMigrator migrator = new IdGeneratorMigrator( fs, pageCache, defaults() );
         migrator.migrate( db, upgrade, ProgressReporter.SILENT, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION );
-        migrator.moveMigratedFiles( upgrade, db, StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
+        migrator.moveMigratedFiles( upgrade, db, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION );
 
         // then
         assertIdGeneratorContainsIds( db.idNodeStore(), IdType.NODE, 500, 1, 3, nodeStoreStartId );
