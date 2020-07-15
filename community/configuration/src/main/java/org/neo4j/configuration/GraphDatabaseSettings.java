@@ -522,7 +522,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Description( "Threshold for rotation of the user log. If set to 0 log rotation is disabled." )
+    @Description( "Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is disabled." )
     public static final Setting<Long> store_user_log_rotation_threshold =
             newBuilder( "dbms.logs.user.rotation.size", BYTES, 0L ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
 
