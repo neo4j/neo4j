@@ -20,35 +20,38 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Collection;
+import java.util.StringJoiner;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
+import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 public class DbmsDiagnosticsManager
 {
     private static final int CONCISE_DATABASE_DUMP_THRESHOLD = getInteger( DbmsDiagnosticsManager.class, "conciseDumpThreshold", 10 );
     private final Dependencies dependencies;
-    private final DiagnosticsManager diagnosticsManager;
     private final Log log;
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
         this.log = logService.getInternalLog( DiagnosticsManager.class );
         this.dependencies = dependencies;
-        this.diagnosticsManager = new DiagnosticsManager( log );
     }
 
     public void dumpSystemDiagnostics()
@@ -87,51 +90,79 @@ public class DbmsDiagnosticsManager
 
     private void dumpConciseDiagnostics( Database database, Log log )
     {
-        dumpDatabaseSectionName( database, log );
-        logDatabaseStatus( database, log );
+        dumpAsSingleMessage( log, stringJoiner ->
+        {
+            dumpDatabaseSectionName( database, stringJoiner::add );
+            logDatabaseStatus( database, stringJoiner::add );
+        } );
     }
 
     private void dumpSystemDiagnostics( Log log )
     {
-        diagnosticsManager.section( log, "System diagnostics" );
-        diagnosticsManager.dump( SystemDiagnostics.class, log );
-        diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
-        // dump any custom additional diagnostics that can be registered by specific edition
-        dependencies.resolveTypeDependencies( DiagnosticsProvider.class ).forEach( provider -> diagnosticsManager.dump( provider, log ) );
+        dumpAsSingleMessage( log, stringJoiner ->
+        {
+            DiagnosticsManager.section( stringJoiner::add, "System diagnostics" );
+            DiagnosticsManager.dump( SystemDiagnostics.class, log, stringJoiner::add );
+            DiagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log, stringJoiner::add );
+            // dump any custom additional diagnostics that can be registered by specific edition
+            dependencies.resolveTypeDependencies( DiagnosticsProvider.class )
+                    .forEach( provider -> DiagnosticsManager.dump( provider, log, stringJoiner::add ) );
+        } );
     }
 
     private void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
     {
-        dumpDatabaseSectionName( database, log );
-        if ( checkStatus )
+        dumpAsSingleMessage( log, stringJoiner ->
         {
-            logDatabaseStatus( database, log );
-
-            if ( !database.isStarted() )
+            dumpDatabaseSectionName( database, stringJoiner::add );
+            if ( checkStatus )
             {
-                return;
+                logDatabaseStatus( database, stringJoiner::add );
+
+                if ( !database.isStarted() )
+                {
+                    return;
+                }
             }
+            Dependencies databaseResolver = database.getDependencyResolver();
+            DbmsInfo dbmsInfo = databaseResolver.resolveDependency( DbmsInfo.class );
+            FileSystemAbstraction fs = databaseResolver.resolveDependency( FileSystemAbstraction.class );
+            StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
+            StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
+
+            DiagnosticsManager.dump( new VersionDiagnostics( dbmsInfo, database.getStoreId() ), log, stringJoiner::add );
+            DiagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log, stringJoiner::add );
+            DiagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log, stringJoiner::add );
+            storageEngine.dumpDiagnostics( log, stringJoiner::add );
+        });
+    }
+
+    /**
+     * Messages will be buffered and logged as one single message to make sure that diagnostics are
+     * grouped together in the log.
+     */
+    private void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
+    {
+        // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
+        // This is first and foremost useful for speeding up testing.
+        if ( log == NullLog.getInstance() )
+        {
+            return;
         }
-        Dependencies databaseResolver = database.getDependencyResolver();
-        DbmsInfo dbmsInfo = databaseResolver.resolveDependency( DbmsInfo.class );
-        FileSystemAbstraction fs = databaseResolver.resolveDependency( FileSystemAbstraction.class );
-        StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
-        StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.dump( new VersionDiagnostics( dbmsInfo, database.getStoreId() ), log );
-        diagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log );
-        diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
-        storageEngine.dumpDiagnostics( diagnosticsManager, log );
+        StringJoiner message = new StringJoiner( System.lineSeparator(), System.lineSeparator(), "" );
+        dumpFunction.accept( message );
+        log.info( message.toString() );
     }
 
-    private static void logDatabaseStatus( Database database, Log log )
+    private static void logDatabaseStatus( Database database, DiagnosticsLogger log )
     {
-        log.info( "Database is %s.", database.isStarted() ? "started" : "stopped" );
+        log.log( format( "Database is %s.", database.isStarted() ? "started" : "stopped" ) );
     }
 
-    private void dumpDatabaseSectionName( Database database, Log log )
+    private void dumpDatabaseSectionName( Database database, DiagnosticsLogger log )
     {
-        diagnosticsManager.section( log, "Database: " + database.getNamedDatabaseId().name() );
+        DiagnosticsManager.section( log, "Database: " + database.getNamedDatabaseId().name() );
     }
 
     private DatabaseManager<?> getDatabaseManager()

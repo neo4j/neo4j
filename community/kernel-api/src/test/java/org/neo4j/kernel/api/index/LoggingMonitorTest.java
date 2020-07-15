@@ -51,6 +51,6 @@ class LoggingMonitorTest
                 .withName( "index" )
                 .materialise( 1 );
         monitor.failedToOpenIndex( index, "I'll do something about this.", new Exception( "Dammit Leroy!" ) );
-        assertThat( logProvider ).doesNotContainMessage( "java.lang.Exception: Dammit Leroy!" );
+        assertThat( logProvider ).containsMessages( "java.lang.Exception: Dammit Leroy!" );
     }
 }

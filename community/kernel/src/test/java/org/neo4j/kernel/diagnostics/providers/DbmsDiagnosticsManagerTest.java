@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -40,6 +41,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -47,6 +49,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.Race;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,6 +113,76 @@ class DbmsDiagnosticsManagerTest
         diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
 
         assertContainsDatabaseDiagnostics();
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticsNotInterleavedWithEachother() throws Throwable
+    {
+        Database secondDatabase = prepareDatabase( DatabaseIdFactory.from( "second", UUID.randomUUID() ));
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        Race race = new Race();
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase ) );
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( secondDatabase ) );
+        race.go();
+
+        // Assert that diagnostics messages from the two databases are not interleaved.
+        // If they are the sequence of the diagnostics provider headers will not be ordered correctly.
+        assertThat( logProvider.serialize() ).containsSubsequence( "Database: ",
+                "Version",
+                "Store files",
+                "Transaction log",
+                "Database: ",
+                "Version",
+                "Store files",
+                "Transaction log" );
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticsNotInterleaved() throws Throwable
+    {
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        Race race = new Race().withRandomStartDelays();
+        race.addContestant( () -> diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase ) );
+        race.addContestant( () -> logProvider.getLog( "test" ).info( "Testlog message" ) );
+        race.go();
+
+        // Assert that diagnostics messages from one database is not interleaved with other log messages.
+        assertThat( logProvider.serialize() ).satisfiesAnyOf(
+                string -> assertThat( string ).containsSubsequence(
+                        "Database: ", "Version", "Store files", "Transaction log", "Testlog message" ),
+                string -> assertThat( string ).containsSubsequence(
+                        "Testlog message", "Database: ", "Version", "Store files", "Transaction log" ) );
+    }
+
+    @Test
+    void dumpDiagnosticsEvenOnFailure()
+    {
+        DiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider()
+        {
+            @Override
+            public String getDiagnosticsName()
+            {
+                return "foo";
+            }
+
+            @Override
+            public void dump( DiagnosticsLogger logger )
+            {
+                throw new RuntimeException( "error during dump" );
+            }
+        };
+
+        dependencies.satisfyDependency( diagnosticsProvider );
+
+        diagnosticsManager.dumpAll();
+        assertThat( logProvider.serialize() ).containsSubsequence( "Failure while logging diagnostics",
+                "error during dump",
+                "System diagnostics",
+                "foo",
+                "Database: " );
+
     }
 
     @Test
@@ -234,6 +307,11 @@ class DbmsDiagnosticsManagerTest
 
     private Database prepareDatabase()
     {
+        return prepareDatabase( DEFAULT_DATABASE_ID );
+    }
+
+    private Database prepareDatabase( NamedDatabaseId databaseId )
+    {
         Database database = mock( Database.class );
         Dependencies databaseDependencies = new Dependencies();
         databaseDependencies.satisfyDependency( DbmsInfo.COMMUNITY );
@@ -241,7 +319,7 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
-        when( database.getNamedDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
+        when( database.getNamedDatabaseId() ).thenReturn( databaseId );
         when( database.isStarted() ).thenReturn( true );
         return database;
     }

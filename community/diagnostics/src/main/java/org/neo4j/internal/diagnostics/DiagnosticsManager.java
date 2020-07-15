@@ -19,10 +19,7 @@
  */
 package org.neo4j.internal.diagnostics;
 
-import java.util.List;
-
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.center;
@@ -32,77 +29,50 @@ import static org.apache.commons.lang3.StringUtils.center;
  * Each independent diagnostics provider will be logged as table with caption and body, where caption will contain provider name
  * and body - information provided by diagnostic provider.
  */
-public class DiagnosticsManager
+public final class DiagnosticsManager
 {
     private static final int CAPTION_WIDTH = 80;
     private static final String NAME_START = "[ ";
     private static final String NAME_END = " ]";
 
-    private final Log log;
-
-    public DiagnosticsManager( Log log )
+    private DiagnosticsManager( )
     {
-        this.log = log;
     }
 
-    public void dump( DiagnosticsProvider provider )
-    {
-        dump( provider, log );
-    }
-
-    public void dump( List<DiagnosticsProvider> providers, Log dumpLog )
-    {
-        for ( DiagnosticsProvider provider : providers )
-        {
-            dump( provider, dumpLog );
-        }
-    }
-
-    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
-    {
-        dump( enumProvider, log );
-    }
-
-    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, Log log )
+    public static <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, Log errorLog, DiagnosticsLogger diagnosticsLog )
     {
         for ( E provider : enumProvider.getEnumConstants() )
         {
-            dump( provider, log );
+            dump( provider, errorLog, diagnosticsLog );
         }
     }
 
-    public void dump( DiagnosticsProvider provider, Log log )
+    public static void dump( DiagnosticsProvider provider, Log errorLog, DiagnosticsLogger diagnosticsLog )
     {
-        // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
-        // This is first and foremost useful for speeding up testing.
-        if ( log == NullLog.getInstance() )
-        {
-            return;
-        }
         try
         {
-            header( log, provider.getDiagnosticsName() );
-            provider.dump( log::info );
-            log.info( EMPTY );
+            header( diagnosticsLog, provider.getDiagnosticsName() );
+            provider.dump( diagnosticsLog );
+            diagnosticsLog.log( EMPTY );
         }
         catch ( Exception cause )
         {
-            log.error( "Failure while logging diagnostics for " + provider, cause );
+            errorLog.error( "Failure while logging diagnostics for " + provider, cause );
         }
     }
 
-    public void section( Log log, String sectionName )
+    public static void section( DiagnosticsLogger diagnosticsLog, String sectionName )
     {
-        log.info( "*".repeat( CAPTION_WIDTH ) );
-        log.info( center( title( sectionName ), CAPTION_WIDTH ) );
-        log.info( "*".repeat( CAPTION_WIDTH ) );
+        diagnosticsLog.log( "*".repeat( CAPTION_WIDTH ) );
+        diagnosticsLog.log( center( title( sectionName ), CAPTION_WIDTH ) );
+        diagnosticsLog.log( "*".repeat( CAPTION_WIDTH ) );
     }
 
-    private static void header( Log log, String caption )
+    private static void header( DiagnosticsLogger diagnosticsLog, String caption )
     {
-        log.info( "-".repeat( CAPTION_WIDTH ) );
-        log.info( center( title( caption ), CAPTION_WIDTH ) );
-        log.info( "-".repeat( CAPTION_WIDTH ) );
+        diagnosticsLog.log( "-".repeat( CAPTION_WIDTH ) );
+        diagnosticsLog.log( center( title( caption ), CAPTION_WIDTH ) );
+        diagnosticsLog.log( "-".repeat( CAPTION_WIDTH ) );
     }
 
     private static String title( String name )
