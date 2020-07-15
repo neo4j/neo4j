@@ -964,7 +964,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Path> auth_store =
             newBuilder( "unsupported.dbms.security.auth_store.location", PATH, null ).setDependency( neo4j_home ).immutable().build();
 
-    @Description( "The maximum number of unsuccessful authentication attempts before imposing a user lock for the configured amount of time." +
+    @Description( "The maximum number of unsuccessful authentication attempts before imposing a user lock for the configured amount of time, as defined by `dbms.security.auth_lock_time`." +
             "The locked out user will not be able to log in until the lock period expires, even if correct credentials are provided. " +
             "Setting this configuration option to values less than 3 is not recommended because it might make it easier for an attacker " +
             "to brute force the password." )
