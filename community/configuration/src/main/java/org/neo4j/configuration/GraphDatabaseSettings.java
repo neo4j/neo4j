@@ -552,7 +552,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> counts_store_rotation_timeout =
             newBuilder( "unsupported.dbms.counts_store_rotation_timeout", DURATION, ofMinutes( 10 ) ).build();
 
-    @Description( "Minimum time interval after last rotation of the user log before it may be rotated again." )
+    @Description( "Minimum time interval after last rotation of the user log (_neo4j.log_) before it may be  " +
+            "rotated again." )
     public static final Setting<Duration> store_user_log_rotation_delay =
             newBuilder( "dbms.logs.user.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
