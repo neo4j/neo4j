@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -155,6 +156,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
 
   override def indexExists(name: String): Boolean = singleDbHit(inner.indexExists(name))
+
+  override def constraintExists(name: String): Boolean = singleDbHit(inner.constraintExists(name))
+
+  override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
+    singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
   override def indexReference(label: Int, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(label, properties:_*))
 

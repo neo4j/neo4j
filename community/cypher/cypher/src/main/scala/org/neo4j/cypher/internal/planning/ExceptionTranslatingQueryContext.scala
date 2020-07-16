@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.memory.MemoryTracker
@@ -132,6 +133,12 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexExists(name: String): Boolean =
     translateException(tokenNameLookup, inner.indexExists(name))
+
+  override def constraintExists(name: String): Boolean =
+    translateException(tokenNameLookup, inner.constraintExists(name))
+
+  override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
+    translateException(tokenNameLookup, inner.constraintExists(matchFn, entityId, properties: _*))
 
   override def indexReference(label: Int, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.indexReference(label, properties:_*))

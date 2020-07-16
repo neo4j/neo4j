@@ -73,6 +73,7 @@ import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
@@ -187,6 +188,15 @@ case class Prettifier(
     def backtick(s: String) = ExpressionStringifier.backtick(s)
     def propertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("(", ", ", ")")
     def propertyToString(property: Property): String = s"${expr(property.map)}.${ExpressionStringifier.backtick(property.propertyKey.name)}"
+    def getStartOfCommand(name: Option[String], ifExistsDo: IfExistsDo, schemaType: String): String = {
+      val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+      ifExistsDo match {
+        case IfExistsDoNothing     => s"CREATE $schemaType ${nameString}IF NOT EXISTS "
+        case IfExistsInvalidSyntax => s"CREATE OR REPLACE $schemaType ${nameString}IF NOT EXISTS "
+        case IfExistsReplace       => s"CREATE OR REPLACE $schemaType $nameString"
+        case IfExistsThrowError    => s"CREATE $schemaType $nameString"
+      }
+    }
 
     val useString = asString(command.useGraph)
     val commandString = command match {
@@ -195,13 +205,7 @@ case class Prettifier(
         s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
       case CreateIndexNewSyntax(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
-        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        val startOfCommand = ifExistsDo match {
-          case IfExistsDoNothing     => s"CREATE INDEX ${nameString}IF NOT EXISTS "
-          case IfExistsInvalidSyntax => s"CREATE OR REPLACE INDEX ${nameString}IF NOT EXISTS "
-          case IfExistsReplace       => s"CREATE OR REPLACE INDEX $nameString"
-          case IfExistsThrowError    => s"CREATE INDEX $nameString"
-        }
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}"
 
       case DropIndex(LabelName(label), properties, _) =>
@@ -211,36 +215,37 @@ case class Prettifier(
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP INDEX ${backtick(name)}$ifExistsString"
 
-      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, _) =>
-        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
+      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
 
-      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, _) =>
-        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
+      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
-      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, _) =>
-        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        s"CREATE CONSTRAINT ${nameString}ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
+      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
 
-      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, _) =>
-        val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
-        s"CREATE CONSTRAINT ${nameString}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
+      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        s"${startOfCommand}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
         s"DROP CONSTRAINT ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
 
-      case DropConstraintOnName(name, _) =>
-        s"DROP CONSTRAINT ${backtick(name)}"
+      case DropConstraintOnName(name, ifExists, _) =>
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
+        s"DROP CONSTRAINT ${backtick(name)}$ifExistsString"
 
       case _ => throw new IllegalStateException(s"Unknown command: $command")
     }

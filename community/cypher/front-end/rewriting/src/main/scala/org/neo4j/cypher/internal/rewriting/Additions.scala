@@ -52,19 +52,19 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Dropping index by name is not supported in this Cypher version.", d.position)
 
       // CREATE CONSTRAINT name ON ... IS NODE KEY
-      case c@CreateNodeKeyConstraint(_, _, _, Some(_), _) =>
+      case c@CreateNodeKeyConstraint(_, _, _, Some(_), _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named node key constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ... IS UNIQUE
-      case c@CreateUniquePropertyConstraint(_, _, _, Some(_), _) =>
+      case c@CreateUniquePropertyConstraint(_, _, _, Some(_),_, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named uniqueness constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON () ... EXISTS
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _) =>
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_),_, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named node existence constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ()-[]-() ... EXISTS
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _) =>
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _,_) =>
         throw cypherExceptionFactory.syntaxException("Creating named relationship existence constraint is not supported in this Cypher version.", c.position)
 
       // DROP CONSTRAINT name
@@ -100,6 +100,30 @@ object Additions {
       // DROP INDEX name IF EXISTS
       case d@DropIndexOnName(_, true, _) =>
         throw cypherExceptionFactory.syntaxException("Dropping index using `IF EXISTS` is not supported in this Cypher version.", d.position)
+
+      // CREATE OR REPLACE CONSTRAINT name ...
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
+      case c@CreateNodeKeyConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo != IfExistsThrowError =>
+        throw cypherExceptionFactory.syntaxException("Creating node key constraint using `OR REPLACE` or `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // CREATE OR REPLACE CONSTRAINT name ...
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
+      case c@CreateUniquePropertyConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo != IfExistsThrowError =>
+        throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `OR REPLACE` or `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // CREATE OR REPLACE CONSTRAINT name ...
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo != IfExistsThrowError =>
+        throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `OR REPLACE` or `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // CREATE OR REPLACE CONSTRAINT name ...
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo != IfExistsThrowError =>
+        throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `OR REPLACE` or `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // DROP CONSTRAINT name IF EXISTS
+      case d@DropConstraintOnName(_, true, _) =>
+        throw cypherExceptionFactory.syntaxException("Dropping constraint using `IF EXISTS` is not supported in this Cypher version.", d.position)
     }
   }
 }

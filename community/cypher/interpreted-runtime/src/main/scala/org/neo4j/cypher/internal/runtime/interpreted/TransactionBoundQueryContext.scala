@@ -78,6 +78,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexPrototype
@@ -106,6 +107,7 @@ import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Iterator
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
@@ -749,6 +751,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexExists(name: String): Boolean =
     transactionalContext.kernelTransaction.schemaRead().indexGetForName(name) != IndexDescriptor.NO_INDEX
+
+  override def constraintExists(name: String): Boolean =
+    transactionalContext.kernelTransaction.schemaRead().constraintGetForName(name) != null
+
+  override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
+    transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forLabel(entityId, properties: _*)).asScala.exists(matchFn) ||
+      transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forRelType(entityId, properties: _*)).asScala.exists(matchFn)
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(

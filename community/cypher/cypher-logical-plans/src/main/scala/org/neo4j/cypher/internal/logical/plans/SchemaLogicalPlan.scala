@@ -38,19 +38,27 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
 }
 
-case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class CreateNodeKeyConstraint(source: Option[SchemaLogicalPlan], node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class CreateUniquePropertyConstraint(source: Option[SchemaLogicalPlan], node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class CreateNodePropertyExistenceConstraint(source: Option[SchemaLogicalPlan], label: LabelName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
 case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class CreateRelationshipPropertyExistenceConstraint(source: Option[SchemaLogicalPlan], typeName: RelTypeName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
 case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class DropConstraintOnName(name: String)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class CreateIndex(source: Option[SchemaLogicalPlan], label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
@@ -59,3 +67,10 @@ case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForConstraint(entity: String, entityType: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+
+sealed trait ConstraintType
+case object NodeKey extends ConstraintType
+case object Uniqueness extends ConstraintType
+case object NodePropertyExistence extends ConstraintType
+case object RelationshipPropertyExistence extends ConstraintType

@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -174,6 +175,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeKey
+import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -193,6 +196,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -226,6 +230,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -543,16 +548,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("RelationshipCountFromCountStore") {
-    assertGood(attach(RelationshipCountFromCountStore("x", None, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), None, Set.empty), 54.2),
+    assertGood(attach(RelationshipCountFromCountStore("x", None, Seq(relType("LIKES"), relType("LOVES")), None, Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( ()-[:LIKES|LOVES]->() ) AS x")), Set("x")))
 
-    assertGood(attach(RelationshipCountFromCountStore("  UNNAMED122", None, Seq(RelTypeName("LIKES")(pos)), None, Set.empty), 54.2),
+    assertGood(attach(RelationshipCountFromCountStore("  UNNAMED122", None, Seq(relType("LIKES")), None, Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details(s"count( ()-[:LIKES]->() ) AS ${anonVar("122")}")), Set(anonVar("122"))))
 
-    assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), None, Set.empty), 54.2),
+    assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(relType("LIKES"), relType("LOVES")), None, Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( (:StartLabel)-[:LIKES|LOVES]->() ) AS x")), Set("x")))
 
-    assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), Some(label("EndLabel")), Set.empty), 54.2),
+    assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(relType("LIKES"), relType("LOVES")), Some(label("EndLabel")), Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( (:StartLabel)-[:LIKES|LOVES]->(:EndLabel) ) AS x")), Set("x")))
   }
 
@@ -592,38 +597,82 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateUniquePropertyConstraint") {
-    assertGood(attach(CreateUniquePropertyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
+
+    assertGood(attach(CreateUniquePropertyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), Uniqueness, None)),
+      " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty)
+      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
+
+    assertGood(attach(CreateUniquePropertyConstraint(Some(DropConstraintOnName("constraintName", ifExists = true)), "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT constraintName")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
   }
 
   test("CreateNodeKeyConstraint") {
-    assertGood(attach(CreateNodeKeyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
+
+    assertGood(attach(CreateNodeKeyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodeKey, Some("constraintName"))),
+      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
+
+    assertGood(attach(CreateNodeKeyConstraint(Some(DropConstraintOnName("constraintName", ifExists = true)), "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT constraintName")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
   }
 
   test("CreateNodePropertyExistenceConstraint") {
-    assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
 
-    assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
+
+    assertGood(attach(CreateNodePropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodePropertyExistence, None)),
+      label("Label"), prop(" x", "prop"), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty)
+      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
+
+    assertGood(attach(CreateNodePropertyExistenceConstraint(Some(DropConstraintOnName("constraintName", ifExists = true)), label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT constraintName")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
   }
 
   test("CreateRelationshipPropertyExistenceConstraint") {
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
 
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Right(relType("R")), Seq(prop(" x", "prop")), RelationshipPropertyExistence, None)),
+      relType("R"), prop(" x", "prop"), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty)
+      ), Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(Some(DropConstraintOnName("constraintName", ifExists = true)), relType("R"), prop(" x", "prop"), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT constraintName")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
   }
 
   test("DropUniquePropertyConstraint") {
@@ -642,12 +691,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("DropRelationshipPropertyExistenceConstraint") {
-    assertGood(attach(DropRelationshipPropertyExistenceConstraint(RelTypeName("$R")(pos), prop("x", " prop")), 63.2),
+    assertGood(attach(DropRelationshipPropertyExistenceConstraint(relType("$R"), prop("x", " prop")), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[x:`$R`]-() ASSERT exists(x.` prop`)")), Set.empty))
   }
 
   test("DropConstraintOnName") {
-    assertGood(attach(DropConstraintOnName("name"), 63.2),
+    assertGood(attach(DropConstraintOnName("name", ifExists = false), 63.2),
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty))
+
+    assertGood(attach(DropConstraintOnName("name", ifExists = true), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty))
   }
 
@@ -754,19 +806,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       (key("crs"), StringLiteral("cartesian")(pos))))(pos)
 
     assertGood(
-      attach(Create(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, None))), 32.2),
+      attach(Create(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))), 32.2),
       planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x)", "(x)<-[r:R]-(y)"))), Set("a", "x", "r")))
 
     assertGood(
-      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), None)), Seq(CreateRelationship("  REL67", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, None))), 32.2),
+      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), None)), Seq(CreateRelationship("  REL67", "x", relType("R"), "y", SemanticDirection.INCOMING, None))), 32.2),
       planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", s"(x)<-[${anonVar("67")}:R]-(y)"))), Set("a", "x", anonVar("67"))))
 
     assertGood(
-      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label1"), label("Label2")), None)), Seq(CreateRelationship("r", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, None))), 32.2),
+      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label1"), label("Label2")), None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))), 32.2),
       planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label1:Label2)", "(x)<-[r:R]-(y)"))), Set("a", "x", "r")))
 
     assertGood(
-      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), Some(properties))), Seq(CreateRelationship("r", "x", RelTypeName("R")(pos), "y", SemanticDirection.INCOMING, Some(properties)))), 32.2),
+      attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), Some(properties))), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties)))), 32.2),
       planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", "(x)<-[r:R]-(y)"))), Set("a", "x", "r")))
   }
 
@@ -817,22 +869,22 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(Expand(lhsLP, "a", OUTGOING, Seq.empty, "  UNNAMED4", "r1", ExpandAll), 95.0),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details(s"(a)-[r1]->(${anonVar("4")})")), Set("a", anonVar("4"), "r1")))
 
-    assertGood(attach(Expand(lhsLP, "a", INCOMING, Seq(RelTypeName("R")(pos)), "y", "r1", ExpandAll), 95.0),
+    assertGood(attach(Expand(lhsLP, "a", INCOMING, Seq(relType("R")), "y", "r1", ExpandAll), 95.0),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)<-[r1:R]-(y)")), Set("a", "y", "r1")))
 
-    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "y", "r1", ExpandAll), 95.0),
+    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "r1", ExpandAll), 95.0),
       planDescription(id, "Expand(All)", SingleChild(lhsPD), Seq(details("(a)-[r1:R1|R2]-(y)")), Set("a", "y", "r1")))
 
     assertGood(attach(Expand(lhsLP, "a", OUTGOING, Seq.empty, "y", "r1", ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[r1]->(y)")), Set("a", "y", "r1")))
 
-    assertGood(attach(Expand(lhsLP, "a", INCOMING, Seq(RelTypeName("R")(pos)), "y", "r1", ExpandInto), 113.0),
+    assertGood(attach(Expand(lhsLP, "a", INCOMING, Seq(relType("R")), "y", "r1", ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)<-[r1:R]-(y)")), Set("a", "y", "r1")))
 
-    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "y", "r1", ExpandInto), 113.0),
+    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "r1", ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details("(a)-[r1:R1|R2]-(y)")), Set("a", "y", "r1")))
 
-    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "y", "  UNNAMED1", ExpandInto), 113.0),
+    assertGood(attach(Expand(lhsLP, "a", BOTH, Seq(relType("R1"), relType("R2")), "y", "  UNNAMED1", ExpandInto), 113.0),
       planDescription(id, "Expand(Into)", SingleChild(lhsPD), Seq(details(s"(a)-[${anonVar("1")}:R1|R2]-(y)")), Set("a", "y", anonVar("1"))))
   }
 
@@ -859,7 +911,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val predicate2 = LessThan(varFor("a"), number("2002"))(pos)
 
     // Without predicate
-    assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(RelTypeName("R")(pos)), "  NODE5", "r", ExpandAll, None), 12.0),
+    assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(relType("R")), "  NODE5", "r", ExpandAll, None), 12.0),
       planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details(s"(a)<-[r:R]-(${anonVar("5")})")), Set("a", anonVar("5"), "r")))
 
     // With predicate and no relationship types
@@ -867,11 +919,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r]->(to) WHERE to = $autoint_2")), Set("a", "to", "r")))
 
     // With predicate and relationship types
-    assertGood(attach(OptionalExpand(lhsLP, "a", BOTH, Seq(RelTypeName("R")(pos)), "to", "r", ExpandAll, Some(And(predicate1, predicate2)(pos))), 12.0),
+    assertGood(attach(OptionalExpand(lhsLP, "a", BOTH, Seq(relType("R")), "to", "r", ExpandAll, Some(And(predicate1, predicate2)(pos))), 12.0),
       planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[r:R]-(to) WHERE to = $autoint_2 AND a < 2002")), Set("a", "to", "r")))
 
     // With multiple relationship types
-    assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), "to", "r", ExpandAll, None), 12.0),
+    assertGood(attach(OptionalExpand(lhsLP, "a", INCOMING, Seq(relType("R1"), relType("R2")), "to", "r", ExpandAll, None), 12.0),
       planDescription(id, "OptionalExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[r:R1|R2]-(to)")), Set("a", "to", "r")))
   }
 
@@ -918,11 +970,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(${anonVar("23")})-[r*2..4]-(y)")), Set("r", "a", anonVar("23"), "y")))
 
     // with: predicates, path name, relationship type
-    assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(Some("  UNNAMED12"), PatternRelationship("r", ("a", "y"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, Some(4))), single = true)(null), Seq(predicate)), 2345.0),
+    assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(Some("  UNNAMED12"), PatternRelationship("r", ("a", "y"), SemanticDirection.BOTH, Seq(relType("R")), VarPatternLength(2, Some(4))), single = true)(null), Seq(predicate)), 2345.0),
       planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE r.prop = $$autostring_1")), Set("r", "a", "y", anonVar("12"))))
 
     // with: predicates, UNNAMED variables, relationship type, unbounded max length
-    assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("a", "  UNNAMED2"), SemanticDirection.BOTH, Seq(RelTypeName("R")(pos)), VarPatternLength(2, None)), single = true)(null), Seq(predicate)), 2345.0),
+    assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("a", "  UNNAMED2"), SemanticDirection.BOTH, Seq(relType("R")), VarPatternLength(2, None)), single = true)(null), Seq(predicate)), 2345.0),
       planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")), Set("r", "a", anonVar("2"))))
   }
 
@@ -935,7 +987,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(MergeCreateNode(lhsLP, "x", Seq(label("L1"), label("L2")), Some(properties)), 113.0),
       planDescription(id, "MergeCreateNode", SingleChild(lhsPD), Seq(details("x")), Set("a", "x")))
 
-    assertGood(attach(MergeCreateRelationship(lhsLP, "r", "x", RelTypeName("R")(pos), "  NODE90", Some(properties)), 113.0),
+    assertGood(attach(MergeCreateRelationship(lhsLP, "r", "x", relType("R"), "  NODE90", Some(properties)), 113.0),
       planDescription(id, "MergeCreateRelationship", SingleChild(lhsPD), Seq(details(s"(x)-[r:R]->(${anonVar("90")})")), Set("a", "r", "x", anonVar("90"))))
   }
 
@@ -953,7 +1005,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ProjectEndpoints(lhsLP, "r", "start", startInScope = true, "end", endInScope = true, None, directed = true, VarPatternLength(1, Some(1))), 234.2),
       planDescription(id, "ProjectEndpoints", SingleChild(lhsPD), Seq(details("(start)-[r]->(end)")), Set("a", "start", "r", "end")))
 
-    assertGood(attach(ProjectEndpoints(lhsLP, "r", "start", startInScope = true, "end", endInScope = true, Some(Seq(RelTypeName("R")(pos))), directed = false, VarPatternLength(1, Some(3))), 234.2),
+    assertGood(attach(ProjectEndpoints(lhsLP, "r", "start", startInScope = true, "end", endInScope = true, Some(Seq(relType("R"))), directed = false, VarPatternLength(1, Some(3))), 234.2),
       planDescription(id, "ProjectEndpoints(BOTH)", SingleChild(lhsPD), Seq(details("(start)-[r:R*..3]-(end)")), Set("a", "start", "r", "end")))
   }
 
@@ -965,11 +1017,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // -- PruningVarExpand --
 
     // With nodePredicate and relationshipPredicate
-    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 1, 4, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
+    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(relType("R")), "y", 1, 4, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
       planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")), Set("a", "y")))
 
     // With nodePredicate, without relationshipPredicate
-    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), "y", 2, 4, Some(nodePredicate), None), 1.0),
+    assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(relType("R")), "y", 2, 4, Some(nodePredicate), None), 1.0),
       planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = $autodouble_1")), Set("a", "y")))
 
     // Without predicates, without relationship type
@@ -979,19 +1031,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // -- VarExpand --
 
     // With unnamed variables, without predicates
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "  UNNAMED123", "  UNNAMED99", VarPatternLength(1, Some(1)), ExpandAll), 1.0),
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(relType("LIKES"), relType("LOVES")), "  UNNAMED123", "  UNNAMED99", VarPatternLength(1, Some(1)), ExpandAll), 1.0),
       planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details(s"(a)<-[${anonVar("99")}:LIKES|LOVES]-(${anonVar("123")})")), Set("a", anonVar("99"), anonVar("123"))))
 
     // With nodePredicate and relationshipPredicate
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(relType("LIKES"), relType("LOVES")), "to", "rel", VarPatternLength(1, Some(1)), ExpandAll, Some(nodePredicate), Some(relationshipPredicate)), 1.0),
       planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")), Set("a", "to", "rel")))
 
     // With nodePredicate, without relationshipPredicate, with length
-    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, Some(3)), ExpandAll, Some(nodePredicate)), 1.0),
+    assertGood(attach(VarExpand(lhsLP, "a", INCOMING, INCOMING, Seq(relType("LIKES"), relType("LOVES")), "to", "rel", VarPatternLength(2, Some(3)), ExpandAll, Some(nodePredicate)), 1.0),
       planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = $autodouble_1")), Set("a", "to", "rel")))
 
     // With unbounded length
-    assertGood(attach(VarExpand(lhsLP, "a", OUTGOING, OUTGOING, Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), "to", "rel", VarPatternLength(2, None), ExpandAll), 1.0),
+    assertGood(attach(VarExpand(lhsLP, "a", OUTGOING, OUTGOING, Seq(relType("LIKES"), relType("LOVES")), "to", "rel", VarPatternLength(2, None), ExpandAll), 1.0),
       planDescription(id, "VarLengthExpand(All)", SingleChild(lhsPD), Seq(details("(a)-[rel:LIKES|LOVES*2..]->(to)")), Set("a", "to", "rel")))
   }
 
@@ -1371,6 +1423,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private def cachedProp(varName: String, propName: String): CachedProperty = CachedProperty(varName, varFor(varName), PropertyKeyName(propName)(pos), NODE_TYPE)(pos)
 
   private def label(name: String): LabelName = LabelName(name)(pos)
+
+  private def relType(name: String): RelTypeName = RelTypeName(name)(pos)
 
   private def key(name: String): PropertyKeyName = PropertyKeyName(name)(pos)
 

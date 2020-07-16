@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.procedure.Context
@@ -190,6 +191,10 @@ object StaticEvaluation {
     override def dropIndexRule(name: String): Unit = notAvailable()
 
     override def indexExists(name: String): Boolean = notAvailable()
+
+    override def constraintExists(name: String): Boolean = notAvailable()
+
+    override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
     override def indexReference(label: Int, properties: Int*): IndexDescriptor = notAvailable()
 
