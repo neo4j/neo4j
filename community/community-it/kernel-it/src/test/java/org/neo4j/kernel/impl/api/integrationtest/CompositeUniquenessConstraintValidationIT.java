@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -42,50 +39,41 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
-@RunWith( Parameterized.class )
+@ImpermanentDbmsExtension
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public class CompositeUniquenessConstraintValidationIT
 {
-    @ClassRule
-    public static final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
-    @Rule
-    public final TestName testName = new TestName();
-    private final int numberOfProps;
-    private final Object[] aValues;
-    private final Object[] bValues;
     private ConstraintDescriptor constraintDescriptor;
     private int label;
     private KernelTransaction transaction;
     protected Kernel kernel;
 
-    @Parameterized.Parameters( name = "{index}: {0}" )
-    public static Iterable<TestParams> parameterValues()
+    public static Stream<Arguments> parameterValues()
     {
-        return Arrays.asList(
-                param( values( 10 ), values( 10d ) ),
-                param( values( 10, 20 ), values( 10, 20 ) ),
-                param( values( 10L, 20L ), values( 10, 20 ) ),
-                param( values( 10, 20 ), values( 10L, 20L ) ),
-                param( values( 10, 20 ), values( 10.0, 20.0 ) ),
-                param( values( 10, 20 ), values( 10.0, 20.0 ) ),
-                param( values( new int[]{1, 2}, "v2" ), values( new int[]{1, 2}, "v2" ) ),
-                param( values( "a", "b", "c" ), values( "a", "b", "c" ) ),
-                param( values( 285414114323346805L ), values( 285414114323346805L ) ),
-                param( values( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), values( 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d ) )
+        return Stream.of(
+                Arguments.of( values( 10 ), values( 10d ) ),
+                Arguments.of( values( 10, 20 ), values( 10, 20 ) ),
+                Arguments.of( values( 10L, 20L ), values( 10, 20 ) ),
+                Arguments.of( values( 10, 20 ), values( 10L, 20L ) ),
+                Arguments.of( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                Arguments.of( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                Arguments.of( values( new int[]{1, 2}, "v2" ), values( new int[]{1, 2}, "v2" ) ),
+                Arguments.of( values( "a", "b", "c" ), values( "a", "b", "c" ) ),
+                Arguments.of( values( 285414114323346805L ), values( 285414114323346805L ) ),
+                Arguments.of( values( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), values( 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d ) )
         );
-    }
-
-    private static TestParams param( Object[] l, Object[] r )
-    {
-        return new TestParams( l, r );
     }
 
     private static Object[] values( Object... values )
@@ -93,19 +81,10 @@ public class CompositeUniquenessConstraintValidationIT
         return values;
     }
 
-    public CompositeUniquenessConstraintValidationIT( TestParams params )
-    {
-        assert params.lhs.length == params.rhs.length;
-        aValues = params.lhs;
-        bValues = params.rhs;
-        numberOfProps = aValues.length;
-    }
-
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( Kernel.class );
+        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
 
         newTransaction();
         // This transaction allocates all the tokens we'll need in this test.
@@ -120,13 +99,17 @@ public class CompositeUniquenessConstraintValidationIT
             assertEquals( i, prop );
         }
         commit();
+}
 
+    private void setupConstraintDescriptor( int nbrOfProperties ) throws KernelException
+    {
         newTransaction();
-        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( forLabel( label, propertyIds() ) ) );
+        constraintDescriptor =
+                transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( forLabel( label, propertyIds( nbrOfProperties ) ) ) );
         commit();
     }
 
-    @After
+    @AfterEach
     public void clean() throws Exception
     {
         if ( transaction != null )
@@ -153,159 +136,186 @@ public class CompositeUniquenessConstraintValidationIT
         }
     }
 
-    @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        long node = createNodeWithLabelAndProps( label, aValues );
+        long node = createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         transaction.dataWrite().nodeDelete( node );
         long newNode = createLabeledNode( label );
-        setProperties( newNode, aValues );
+        setProperties( newNode, lhs );
 
         // then does not fail
         commit();
     }
 
-    @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        long node = createNodeWithLabelAndProps( label, aValues );
+        long node = createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         transaction.dataWrite().nodeRemoveLabel( node, label );
         long newNode = createLabeledNode( label );
-        setProperties( newNode, aValues );
+        setProperties( newNode, lhs );
 
         // then does not fail
         commit();
     }
 
-    @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        long node = createNodeWithLabelAndProps( label, aValues );
+        long node = createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         transaction.dataWrite().nodeRemoveProperty( node, 0 );
         long newNode = createLabeledNode( label );
-        setProperties( newNode, aValues );
+        setProperties( newNode, lhs );
 
         // then does not fail
         commit();
     }
 
-    @Test
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        long node = createNodeWithLabelAndProps( label, aValues );
+        long node = createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         transaction.dataWrite().nodeSetProperty( node, 0, Values.of( "Alive!" ) );
         long newNode = createLabeledNode( label );
-        setProperties( newNode, aValues );
+        setProperties( newNode, lhs );
 
         // then does not fail
         commit();
     }
 
-    @Test
-    public void shouldPreventConflictingDataInTx() throws Throwable
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldPreventConflictingDataInTx( Object[] lhs, Object[] rhs ) throws Throwable
     {
+        setupConstraintDescriptor( lhs.length );
+
         // Given
 
         // When
         newTransaction();
         long n1 = createLabeledNode( label );
         long n2 = createLabeledNode( label );
-        setProperties( n1, aValues );
-        int lastPropertyOffset = numberOfProps - 1;
+        setProperties( n1, lhs );
+        int lastPropertyOffset = lhs.length - 1;
         for ( int prop = 0; prop < lastPropertyOffset; prop++ )
         {
-            setProperty( n2, prop, aValues[prop] ); // still ok
+            setProperty( n2, prop, lhs[prop] ); // still ok
         }
 
-        assertThatThrownBy( () -> setProperty( n2, lastPropertyOffset, aValues[lastPropertyOffset] ) ).isInstanceOf(
+        assertThatThrownBy( () -> setProperty( n2, lastPropertyOffset, lhs[lastPropertyOffset] ) ).isInstanceOf(
                 UniquePropertyValueValidationException.class );
 
         // Then should fail
         commit();
     }
 
-    @Test
-    public void shouldEnforceOnSetProperty() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldEnforceOnSetProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        createNodeWithLabelAndProps( label, this.aValues );
+        createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         long node = createLabeledNode( label );
 
-        int lastPropertyOffset = numberOfProps - 1;
+        int lastPropertyOffset = lhs.length - 1;
         for ( int prop = 0; prop < lastPropertyOffset; prop++ )
         {
-            setProperty( node, prop, aValues[prop] ); // still ok
+            setProperty( node, prop, lhs[prop] ); // still ok
         }
 
-        assertThatThrownBy( () -> setProperty( node, lastPropertyOffset, aValues[lastPropertyOffset] ) ).isInstanceOf(
+        assertThatThrownBy( () -> setProperty( node, lastPropertyOffset, lhs[lastPropertyOffset] ) ).isInstanceOf(
                 UniquePropertyValueValidationException.class );
         commit();
     }
 
-    @Test
-    public void shouldEnforceOnSetLabel() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldEnforceOnSetLabel( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        createNodeWithLabelAndProps( label, this.aValues );
+        createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         long node = createNode();
-        setProperties( node, bValues ); // ok because no label is set
+        setProperties( node, rhs ); // ok because no label is set
 
         assertThatThrownBy( () -> addLabel( node, label ) ).isInstanceOf( UniquePropertyValueValidationException.class );
         commit();
     }
 
-    @Test
-    public void shouldEnforceOnSetPropertyInTx() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldEnforceOnSetPropertyInTx( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // when
         newTransaction();
         long aNode = createLabeledNode( label );
-        setProperties( aNode, aValues );
+        setProperties( aNode, lhs );
 
         long nodeB = createLabeledNode( label );
-        int lastPropertyOffset = numberOfProps - 1;
+        int lastPropertyOffset = lhs.length - 1;
         for ( int prop = 0; prop < lastPropertyOffset; prop++ )
         {
-            setProperty( nodeB, prop, bValues[prop] ); // still ok
+            setProperty( nodeB, prop, rhs[prop] ); // still ok
         }
 
-        assertThatThrownBy( () -> setProperty( nodeB, lastPropertyOffset, bValues[lastPropertyOffset] ) )
+        assertThatThrownBy( () -> setProperty( nodeB, lastPropertyOffset, rhs[lastPropertyOffset] ) )
                 .isInstanceOf( UniquePropertyValueValidationException.class );
         commit();
     }
 
-    @Test
-    public void shouldEnforceOnSetLabelInTx() throws Exception
+    @ParameterizedTest( name = "{index}: lhs={0}, rhs={1}" )
+    @MethodSource( "parameterValues" )
+    public void shouldEnforceOnSetLabelInTx( Object[] lhs, Object[] rhs ) throws Exception
     {
+        setupConstraintDescriptor( lhs.length );
+
         // given
-        createNodeWithLabelAndProps( label, aValues );
+        createNodeWithLabelAndProps( label, lhs );
 
         // when
         newTransaction();
         long nodeB = createNode();
-        setProperties( nodeB, bValues );
+        setProperties( nodeB, rhs );
 
         assertThatThrownBy( () -> addLabel( nodeB, label ) ).isInstanceOf( UniquePropertyValueValidationException.class );
         commit();
@@ -313,10 +323,7 @@ public class CompositeUniquenessConstraintValidationIT
 
     private void newTransaction() throws KernelException
     {
-        if ( transaction != null )
-        {
-            fail( "tx already opened" );
-        }
+        assertThat( transaction ).as("tx already opened").isNull();
         transaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED );
     }
 
@@ -354,7 +361,7 @@ public class CompositeUniquenessConstraintValidationIT
         newTransaction();
         long nodeId = createNode();
         addLabel( nodeId, labelId );
-        for ( int prop = 0; prop < numberOfProps; prop++ )
+        for ( int prop = 0; prop < propertyValues.length; prop++ )
         {
             setProperty( nodeId, prop, propertyValues[prop] );
         }
@@ -371,7 +378,7 @@ public class CompositeUniquenessConstraintValidationIT
         }
     }
 
-    private int[] propertyIds()
+    private int[] propertyIds( int numberOfProps )
     {
         int[] props = new int[numberOfProps];
         for ( int i = 0; i < numberOfProps; i++ )
@@ -379,23 +386,5 @@ public class CompositeUniquenessConstraintValidationIT
             props[i] = i;
         }
         return props;
-    }
-
-    static class TestParams // Only here to be able to produce readable output
-    {
-        private final Object[] lhs;
-        private final Object[] rhs;
-
-        TestParams( Object[] lhs, Object[] rhs )
-        {
-            this.lhs = lhs;
-            this.rhs = rhs;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "lhs=%s, rhs=%s", ArrayUtils.toString( lhs ), ArrayUtils.toString( rhs ) );
-        }
     }
 }

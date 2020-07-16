@@ -23,39 +23,33 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-@RunWith( Parameterized.class )
+@ImpermanentDbmsExtension
 public class IndexingCompositeQueryAcceptanceTest
 {
-    @ClassRule
-    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-    @Rule
-    public final TestName testName = new TestName();
+    @Inject
+    private GraphDatabaseAPI db;
 
-    @Parameterized.Parameters
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        return Arrays.asList(
+        return Stream.of(
                 testCase( array( 2, 3 ), biIndexSeek, true ),
                 testCase( array( 2, 3 ), biIndexSeek, false ),
                 testCase( array( 2, 3, 4 ), triIndexSeek, true ),
@@ -65,24 +59,10 @@ public class IndexingCompositeQueryAcceptanceTest
         );
     }
 
-    @Parameterized.Parameter( 0 )
-    public String[] keys;
-    @Parameterized.Parameter( 1 )
-    public Object[] values;
-    @Parameterized.Parameter( 2 )
-    public Object[][] nonMatching;
-    @Parameterized.Parameter( 3 )
-    public IndexSeek indexSeek;
-    @Parameterized.Parameter( 4 )
-    public boolean withIndex;
-
     private static final Label LABEL = Label.label( "LABEL1" );
-    private GraphDatabaseService db;
 
-    @Before
-    public void setup()
+    public void setup( boolean withIndex, String[] keys )
     {
-        db = dbRule.getGraphDatabaseAPI();
         if ( withIndex )
         {
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -106,18 +86,15 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    @After
-    public void tearDown()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldSupportIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
     {
-        dbRule.shutdown();
-    }
+        setup( withIndex, keys );
 
-    @Test
-    public void shouldSupportIndexSeek()
-    {
         // GIVEN
-        createNodes( db, LABEL, nonMatching );
-        LongSet expected = createNodes( db, LABEL, values );
+        createNodes( db, LABEL, keys, nonMatching );
+        LongSet expected = createNodes( db, LABEL, keys, values );
 
         // WHEN
         MutableLongSet found = new LongHashSet();
@@ -130,12 +107,15 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    @Test
-    public void shouldSupportIndexSeekBackwardsOrder()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldSupportIndexSeekBackwardsOrder( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
     {
+        setup( withIndex, keys );
+
         // GIVEN
-        createNodes( db, LABEL, nonMatching );
-        LongSet expected = createNodes( db, LABEL, values );
+        createNodes( db, LABEL, keys, nonMatching );
+        LongSet expected = createNodes( db, LABEL, keys, values );
 
         // WHEN
         MutableLongSet found = new LongHashSet();
@@ -155,12 +135,15 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    @Test
-    public void shouldIncludeNodesCreatedInSameTxInIndexSeek()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldIncludeNodesCreatedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
     {
+        setup( withIndex, keys );
+
         // GIVEN
-        createNodes( db, LABEL, nonMatching[0], nonMatching[1] );
-        MutableLongSet expected = createNodes( db, LABEL, values );
+        createNodes( db, LABEL, keys, nonMatching[0], nonMatching[1] );
+        MutableLongSet expected = createNodes( db, LABEL, keys, values );
         // WHEN
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -174,13 +157,17 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    @Test
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeek()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek,
+            boolean withIndex )
     {
+        setup( withIndex, keys );
+
         // GIVEN
-        createNodes( db, LABEL, nonMatching[0] );
-        LongSet toDelete = createNodes( db, LABEL, values, nonMatching[1], nonMatching[2] );
-        MutableLongSet expected = createNodes( db, LABEL, values );
+        createNodes( db, LABEL, keys, nonMatching[0] );
+        LongSet toDelete = createNodes( db, LABEL, keys, values, nonMatching[1], nonMatching[2] );
+        MutableLongSet expected = createNodes( db, LABEL, keys, values );
         // WHEN
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -199,14 +186,17 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    @Test
-    public void shouldConsiderNodesChangedInSameTxInIndexSeek()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldConsiderNodesChangedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
     {
+        setup( withIndex, keys );
+
         // GIVEN
-        createNodes( db, LABEL, nonMatching[0] );
-        LongSet toChangeToMatch = createNodes( db, LABEL, nonMatching[1] );
-        LongSet toChangeToNotMatch = createNodes( db, LABEL, values );
-        MutableLongSet expected = createNodes( db, LABEL, values );
+        createNodes( db, LABEL, keys, nonMatching[0] );
+        LongSet toChangeToMatch = createNodes( db, LABEL, keys, nonMatching[1] );
+        LongSet toChangeToNotMatch = createNodes( db, LABEL, keys, values );
+        MutableLongSet expected = createNodes( db, LABEL, keys, values );
         // WHEN
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -215,14 +205,14 @@ public class IndexingCompositeQueryAcceptanceTest
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
-                setProperties( tx, id, values );
+                setProperties( tx, id, keys, values );
                 expected.add( id );
             }
             LongIterator toNotMatching = toChangeToNotMatch.longIterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();
-                setProperties( tx, id, nonMatching[2] );
+                setProperties( tx, id, keys, nonMatching[2] );
                 expected.remove( id );
             }
 
@@ -232,7 +222,7 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    private MutableLongSet createNodes( GraphDatabaseService db, Label label, Object[]... propertyValueTuples )
+    private MutableLongSet createNodes( GraphDatabaseService db, Label label, String[] keys, Object[]... propertyValueTuples )
     {
         MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -274,11 +264,11 @@ public class IndexingCompositeQueryAcceptanceTest
         return node;
     }
 
-    private static Object[] testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )
+    private static Arguments testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )
     {
         Object[][] nonMatching = {plus( values, 1 ), plus( values, 2 ), plus( values, 3 )};
         String[] keys = Arrays.stream( values ).map( v -> "key" + v ).toArray( String[]::new );
-        return new Object[]{keys, values, nonMatching, indexSeek, withIndex};
+        return Arguments.of( keys, values, nonMatching, indexSeek, withIndex );
     }
 
     private static <T> Object[] plus( Integer[] values, int offset )
@@ -291,7 +281,7 @@ public class IndexingCompositeQueryAcceptanceTest
         return result;
     }
 
-    private void setProperties( Transaction tx, long id, Object[] values )
+    private void setProperties( Transaction tx, long id, String[] keys, Object[] values )
     {
         Node node = tx.getNodeById( id );
         for ( int i = 0; i < keys.length; i++ )
