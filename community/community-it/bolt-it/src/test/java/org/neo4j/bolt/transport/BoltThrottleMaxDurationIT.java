@@ -44,6 +44,7 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
@@ -122,6 +123,7 @@ public class BoltThrottleMaxDurationIT
     {
         return settings ->
         {
+            settings.put( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout, Duration.ofMinutes( 5 ) );
             settings.put( GraphDatabaseInternalSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds( 30 ) );
             settings.put( BoltConnector.encryption_level, OPTIONAL );
         };
