@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -57,9 +58,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -75,53 +74,43 @@ class RecoveryCleanupIT
     private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
-    private Map<Setting<?>,Object> testSpecificConfig = new HashMap<>();
+    private final Map<Setting<?>,Object> testSpecificConfig = new HashMap<>();
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void setup()
     {
-        testSpecificConfig.clear();
         factory = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
     }
 
     @AfterEach
     void tearDown() throws InterruptedException
     {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
         executor.shutdown();
         executor.awaitTermination( 10, TimeUnit.SECONDS );
     }
 
     @Test
-    void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes()
+    void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes() throws IOException, ExecutionException, InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 1000 ), () ->
-        {
-            // GIVEN
-            try
-            {
-                dirtyDatabase();
+        // GIVEN
+        dirtyDatabase();
 
-                // WHEN
-                Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
-                LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
-                setMonitor( recoveryBarrierMonitor );
-                Future<GraphDatabaseService> recovery = executor.submit( () -> db = startDatabase() );
-                recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
+        // WHEN
+        Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
+        LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
+        setMonitor( recoveryBarrierMonitor );
+        Future<GraphDatabaseService> recovery = executor.submit( () -> db = startDatabase() );
+        recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
 
-                // THEN
-                shouldWait( recovery );
-                recoveryCompleteBarrier.release();
-                recovery.get();
-            }
-            finally
-            {
-                if ( db != null )
-                {
-                    managementService.shutdown();
-                }
-            }
-        } );
+        // THEN
+        shouldWait( recovery );
+        recoveryCompleteBarrier.release();
+        recovery.get();
     }
 
     @Test
