@@ -25,6 +25,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.Selectivity
@@ -81,7 +82,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(Some(Selectivity.ZERO))
+    statistics.indexPropertyExistsSelectivity(index) should equal(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
   }
 
   test("indexPropertyExistsSelectivity should log if index wasn't found") {
