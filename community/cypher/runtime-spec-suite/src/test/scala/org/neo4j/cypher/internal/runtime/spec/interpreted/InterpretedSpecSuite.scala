@@ -28,6 +28,7 @@ object InterpretedSpecSuite {
   val SIZE_HINT = 200
 }
 
+class InterpretedApplyTest extends ApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAggregationTest extends AggregationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedAggregationTest extends OrderedAggregationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
