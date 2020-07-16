@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
@@ -747,6 +748,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case _: Union =>
         PlanDescriptionImpl(id, "Union", children, Seq.empty, variables, withRawCardinalities)
+
+      case _: OrderedUnion =>
+        PlanDescriptionImpl(id, "OrderedUnion", children, Seq.empty, variables)
 
       case ValueHashJoin(_, _, predicate) =>
         PlanDescriptionImpl(

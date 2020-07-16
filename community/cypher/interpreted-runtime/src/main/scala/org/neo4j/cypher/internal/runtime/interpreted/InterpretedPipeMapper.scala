@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.Prober
@@ -191,6 +192,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPip
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedDistinctPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OrderedUnionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTopNPipe
@@ -730,6 +732,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)
+
+      case OrderedUnion(_, _, sortedColumns) =>
+        OrderedUnionPipe(lhs, rhs, InterpretedExecutionContextOrdering.asComparator(sortedColumns.map(translateColumnOrder)))(id = id)
 
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId, seenId, targetId, rhs)(id = id)

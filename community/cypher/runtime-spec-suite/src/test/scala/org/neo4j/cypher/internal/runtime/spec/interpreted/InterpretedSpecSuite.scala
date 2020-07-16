@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.OptionalFailureTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedAggregationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedUnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTop1TestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTopNTestBase
@@ -225,6 +226,7 @@ class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITI
                                    with WriteProcedureCallTestBase[CommunityRuntimeContext]
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUnionTest extends UnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedOrderedUnionTest extends OrderedUnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSemiApplyTest extends SemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAntiSemiApplyTest extends AntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLetAntiSemiApplyTest extends LetAntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

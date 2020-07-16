@@ -559,6 +559,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("orderedUnion",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .orderedUnion(Seq(Ascending("x")))
+      .|.argument()
+      .argument()
+      .build())
+
   testPlan("relationshipCountFromCountStore",
     new TestPlanBuilder()
       .produceResults("x", "y")

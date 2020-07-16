@@ -251,6 +251,8 @@ object LogicalPlanToPlanBuilderString {
           case None => ""
         }
         s""" $asStr, $stsStr, $lStr$ssplStr """.trim
+      case OrderedUnion(_, _, sortedColumns) =>
+        sortItemsStr(sortedColumns)
       case ErrorPlan(_, exception) =>
         // This is by no means complete, but the best we can do.
         s"new ${exception.getClass.getSimpleName}()"
