@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.forever
+import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.GenTraversableOnce
@@ -329,21 +332,23 @@ class ClosingIteratorTest extends CypherFunSuite {
     single.next() shouldBe 1
     single.hasNext shouldBe false
   }
+}
+
+object ClosingIteratorTest {
 
   abstract class TestClosingIterator[+T] extends ClosingIterator[T] {
     var closed = false
     override def closeMore(): Unit = closed = true
   }
 
-  private def values[T](values: T*): TestClosingIterator[T] = new TestClosingIterator[T] {
+  def values[T](values: T*): TestClosingIterator[T] = new TestClosingIterator[T] {
     private val inner = Iterator(values: _*)
     override protected[this] def innerHasNext: Boolean = inner.hasNext
     override def next(): T = inner.next()
   }
 
-  private def forever[T](value: T): TestClosingIterator[T] = new TestClosingIterator[T] {
+  def forever[T](value: T): TestClosingIterator[T] = new TestClosingIterator[T] {
     override protected[this] def innerHasNext: Boolean = true
     override def next(): T = value
   }
-
 }
