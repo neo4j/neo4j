@@ -40,7 +40,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @Command(
@@ -96,19 +96,19 @@ public class PushToCloudCommand extends AbstractCommand
     {
         try
         {
-            if ( (database == null || isEmpty( database.name() )) && (dump == null || isEmpty( dump.toString() )) )
+            if ( (database == null || isBlank( database.name() )) && (dump == null || isBlank( dump.toString() )) )
             {
                 database = new NormalizedDatabaseName( DEFAULT_DATABASE_NAME );
             }
-            if ( isEmpty( username ) )
+            if ( isBlank( username ) )
             {
-                if ( (username = cons.readLine( "%s", "Neo4j aura username (default: neo4j):" )) == null )
+                if ( isBlank( username = cons.readLine( "%s", "Neo4j aura username (default: neo4j):" ) ) )
                 {
                     username = "neo4j";
                 }
             }
             char[] pass;
-            if ( isEmpty( password ) )
+            if ( isBlank( password ) )
             {
                 if ( (pass = cons.readPassword( "Neo4j aura password for %s:", username )).length == 0 )
                 {
