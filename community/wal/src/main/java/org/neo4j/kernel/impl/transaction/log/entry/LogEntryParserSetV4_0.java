@@ -27,14 +27,14 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class LogEntryParserSetV4_0 extends LogEntryParserSet.Adapter
+public class LogEntryParserSetV4_0 extends LogEntryParserSet
 {
     public static final LogEntryParserSet V4_0 = new LogEntryParserSetV4_0();
 
     private LogEntryParserSetV4_0()
     {
         super( (byte) 1 );
-        register( new LogEntryParser.Adapter( LogEntryTypeCodes.TX_START )
+        register( new LogEntryParser( LogEntryTypeCodes.TX_START )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
@@ -50,7 +50,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet.Adapter
                 return new LogEntryStart( version, timeWritten, latestCommittedTxWhenStarted, previousChecksum, additionalHeader, position );
             }
         } );
-        register( new LogEntryParser.Adapter( LogEntryTypeCodes.COMMAND )
+        register( new LogEntryParser( LogEntryTypeCodes.COMMAND )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
@@ -60,7 +60,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet.Adapter
                 return command == null ? null : new LogEntryCommand( version, command );
             }
         } );
-        register( new LogEntryParser.Adapter( LogEntryTypeCodes.TX_COMMIT )
+        register( new LogEntryParser( LogEntryTypeCodes.TX_COMMIT )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
@@ -72,7 +72,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet.Adapter
                 return new LogEntryCommit( version, txId, timeWritten, checksum );
             }
         } );
-        register( new LogEntryParser.Adapter( LogEntryTypeCodes.CHECK_POINT )
+        register( new LogEntryParser( LogEntryTypeCodes.CHECK_POINT )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )

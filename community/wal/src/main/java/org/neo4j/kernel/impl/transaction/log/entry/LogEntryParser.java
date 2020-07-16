@@ -31,8 +31,23 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
  *
  * {@link #parse(byte, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
  */
-public interface LogEntryParser
+public abstract class LogEntryParser
 {
+    private final byte type;
+
+    public LogEntryParser( byte type )
+    {
+        this.type = type;
+    }
+
+    /**
+     * @return code representing the type of log entry. See {@link LogEntryTypeCodes}.
+     */
+    byte type()
+    {
+        return type;
+    }
+
     /**
      * Parses the next {@link LogEntry} read from the {@code channel}.
      *
@@ -45,27 +60,6 @@ public interface LogEntryParser
      * @return the next {@link LogEntry} read and parsed from the {@code channel}.
      * @throws IOException I/O error from channel or if data was read past the end of the channel.
      */
-    LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+    abstract LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
             throws IOException;
-
-    /**
-     * @return code representing the type of log entry. See {@link LogEntryTypeCodes}.
-     */
-    byte type();
-
-    abstract class Adapter implements LogEntryParser
-    {
-        private final byte byteCode;
-
-        Adapter( byte byteCode )
-        {
-            this.byteCode = byteCode;
-        }
-
-        @Override
-        public byte type()
-        {
-            return byteCode;
-        }
-    }
 }

@@ -33,7 +33,7 @@ public class LogEntryStart extends AbstractLogEntry
     private final long lastCommittedTxWhenTransactionStarted;
     private final int previousChecksum;
     private final byte[] additionalHeader;
-    private LogPosition startPosition;
+    private final LogPosition startPosition;
 
     public LogEntryStart( long timeWritten, long lastCommittedTxWhenTransactionStarted,
             int previousChecksum, byte[] additionalHeader, LogPosition startPosition )

@@ -27,55 +27,45 @@ import org.neo4j.util.Preconditions;
 /**
  * Set of log entry parsers for a specific version/layout of these entries. Typically such a set contains parsers for log entries such as:
  * START, COMMAND, COMMIT and CHECKPOINT (see {@link LogEntryTypeCodes}, where each such type maps to a specific parser.
- * A new version of this set is rarely needed, only when meta data about transactions or for checksum changes or similar.
  * Versioning of commands (see {@link CommandReaderFactory} should be detached from versions of this set.
  */
-public interface LogEntryParserSet
+public abstract class LogEntryParserSet
 {
+    private final byte version;
+    private final ByteObjectHashMap<LogEntryParser> parsers = new ByteObjectHashMap<>();
+
+    LogEntryParserSet( byte version )
+    {
+        this.version = version;
+    }
+
     /**
      * Selects the correct log entry parser for the specific type, for type codes see {@link LogEntryTypeCodes}.
      * @param type type code for the log entry to parse.
      * @return parser able to read and parse log entry of this type.
      */
-    LogEntryParser select( byte type );
+    public LogEntryParser select( byte type )
+    {
+        LogEntryParser parser = parsers.get( type );
+        if ( parser == null )
+        {
+            throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version );
+        }
+        return parser;
+    }
+
+    protected void register( LogEntryParser parser )
+    {
+        byte type = parser.type();
+        Preconditions.checkState( !parsers.containsKey( type ), "Already registered parser for type " + type );
+        parsers.put( type, parser );
+    }
 
     /**
      * @return the version of this log entry parser set.
      */
-    byte version();
-
-    abstract class Adapter implements LogEntryParserSet
+    public byte version()
     {
-        private final byte version;
-        private final ByteObjectHashMap<LogEntryParser> parsers = new ByteObjectHashMap<>();
-
-        Adapter( byte version )
-        {
-            this.version = version;
-        }
-
-        protected void register( LogEntryParser parser )
-        {
-            byte type = parser.type();
-            Preconditions.checkState( !parsers.containsKey( type ), "Already registered parser for type " + type );
-            parsers.put( type, parser );
-        }
-
-        @Override
-        public LogEntryParser select( byte type )
-        {
-            LogEntryParser parser = parsers.get( type );
-            if ( parser == null )
-            {
-                throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version );
-            }
-            return parser;
-        }
-
-        @Override
-        public byte version()
-        {
-            return version;
-        }
+        return version;
     }
 }
