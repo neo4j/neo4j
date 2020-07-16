@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -176,6 +177,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeKey
+import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -195,6 +198,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -230,6 +234,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -590,38 +595,62 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateUniquePropertyConstraint") {
-    assertGood(attach(CreateUniquePropertyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
+
+    assertGood(attach(CreateUniquePropertyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), Uniqueness, None)),
+      " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty)
+      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
   }
 
   test("CreateNodeKeyConstraint") {
-    assertGood(attach(CreateNodeKeyConstraint(" x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint("x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
+
+    assertGood(attach(CreateNodeKeyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodeKey, Some("constraintName"))),
+      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName")), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty)
+      ), Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
   }
 
   test("CreateNodePropertyExistenceConstraint") {
-    assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
 
-    assertGood(attach(CreateNodePropertyExistenceConstraint(label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
+
+    assertGood(attach(CreateNodePropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodePropertyExistence, None)),
+      label("Label"), prop(" x", "prop"), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty)
+      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
   }
 
   test("CreateRelationshipPropertyExistenceConstraint") {
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, RelTypeName("R")(pos), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
 
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(RelTypeName("R")(pos), prop(" x", "prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, RelTypeName("R")(pos), prop(" x", "prop"), Some("constraintName")), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Right(relType("R")), Seq(prop(" x", "prop")), RelationshipPropertyExistence, None)),
+      relType("R"), prop(" x", "prop"), None), 63.2),
+      planDescription(id, "CreateConstraint", SingleChild(
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty)
+      ), Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
   }
 
   test("DropUniquePropertyConstraint") {
@@ -645,7 +674,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("DropConstraintOnName") {
-    assertGood(attach(DropConstraintOnName("name"), 63.2),
+    assertGood(attach(DropConstraintOnName("name", ifExists = false), 63.2),
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty))
+
+    assertGood(attach(DropConstraintOnName("name", ifExists = true), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty))
   }
 
@@ -1369,6 +1401,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private def cachedProp(varName: String, propName: String): CachedProperty = CachedProperty(varName, varFor(varName), PropertyKeyName(propName)(pos), NODE_TYPE)(pos)
 
   private def label(name: String): LabelName = LabelName(name)(pos)
+
+  private def relType(name: String): RelTypeName = RelTypeName(name)(pos)
 
   private def key(name: String): PropertyKeyName = PropertyKeyName(name)(pos)
 

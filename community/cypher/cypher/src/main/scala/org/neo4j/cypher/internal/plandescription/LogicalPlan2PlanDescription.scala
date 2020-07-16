@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -167,6 +168,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -229,6 +231,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -360,45 +363,53 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
 
-      case CreateUniquePropertyConstraint(node, label, properties: Seq[Property], nameOption) =>
-        val details = Details(constraintInfo(nameOption, Some(node), scala.util.Left(label), properties, scala.util.Right("IS UNIQUE")))
+      case DoNothingIfExistsForConstraint(entity, entityType, props, assertion, name) =>
+        val a = assertion match {
+          case NodeKey    => scala.util.Right("IS NODE KEY")
+          case Uniqueness => scala.util.Right("IS UNIQUE")
+          case _          => scala.util.Left("exists")
+        }
+        PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityType, props, a))), variables)
+
+      case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
-      case CreateNodeKeyConstraint(node, label, properties: Seq[Property], nameOption) =>
-        val details = Details(constraintInfo(nameOption, Some(node), scala.util.Left(label), properties, scala.util.Right("IS NODE KEY")))
+      case CreateNodeKeyConstraint(_, node, label, properties: Seq[Property], nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS NODE KEY")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
-      case CreateNodePropertyExistenceConstraint(label, prop, nameOption) =>
+      case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, Some(node), scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
-      case CreateRelationshipPropertyExistenceConstraint(relTypeName, prop, nameOption) =>
+      case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, Some(relationship),scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
       case DropUniquePropertyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, Some(node), scala.util.Left(label), props, scala.util.Right("IS UNIQUE")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS UNIQUE")))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
 
       case DropNodeKeyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, Some(node), scala.util.Left(label), props, scala.util.Right("IS NODE KEY")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS NODE KEY")))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
 
       case DropNodePropertyExistenceConstraint(label, prop) =>
         val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, Some(node), scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
 
       case DropRelationshipPropertyExistenceConstraint(relTypeName, prop) =>
         val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, Some(relationship),scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(None, relationship,scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
 
-      case DropConstraintOnName(name) =>
+      case DropConstraintOnName(name, _) =>
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
@@ -676,6 +687,24 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case CreateIndex(_, labelName, propertyKeyNames, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
+
+      case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE")))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+
+      case CreateNodeKeyConstraint(_, node, label, properties: Seq[Property], nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS NODE KEY")))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+
+      case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val node = prop.map.asCanonicalStringVal
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+
+      case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val relationship = prop.map.asCanonicalStringVal
+        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
 
       case ShowUsers(_, _, _, where, _) =>
         PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(where), variables)
@@ -1281,21 +1310,18 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     pretty"INDEX$name FOR (:$prettyLabel) ON $propertyString"
   }
 
-  private def constraintInfo(nameOption: Option[String], entityOption: Option[String], entityType: Either[LabelName, RelTypeName], properties: Seq[Property], assertion: Either[String, String]): PrettyString = {
-    val name = nameOption match {
-      case Some(n) => pretty" ${asPrettyString(n)}"
-      case _ => pretty""
-    }
+  private def constraintInfo(nameOption: Option[String], entity: String, entityType: Either[LabelName, RelTypeName], properties: Seq[Property], assertion: Either[String, String]): PrettyString = {
+    val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
     val (leftAssertion, rightAssertion) = assertion match {
       case scala.util.Left(a) => (asPrettyString.raw(a), pretty"")
       case scala.util.Right(a) => (pretty"",asPrettyString.raw(s" $a"))
     }
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
-    val entity = entityOption.map(asPrettyString(_)).getOrElse(pretty"")
+    val prettyEntity = asPrettyString(entity)
 
     val entityInfo = entityType match {
-      case scala.util.Left(label) => pretty"($entity:${asPrettyString(label)})"
-      case scala.util.Right(relType) => pretty"()-[$entity:${asPrettyString(relType)}]-()"
+      case scala.util.Left(label) => pretty"($prettyEntity:${asPrettyString(label)})"
+      case scala.util.Right(relType) => pretty"()-[$prettyEntity:${asPrettyString(relType)}]-()"
     }
     pretty"CONSTRAINT$name ON $entityInfo ASSERT $leftAssertion$propertyString$rightAssertion"
   }

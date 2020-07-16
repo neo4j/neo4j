@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
@@ -127,6 +128,14 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def indexExists(name: String): Boolean = {
     inner.indexExists(name)
+  }
+
+  override def constraintExists(name: String): Boolean = {
+    inner.constraintExists(name)
+  }
+
+  override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = {
+    inner.constraintExists(matchFn, entityId, properties: _*)
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = {

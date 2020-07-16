@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -121,6 +122,10 @@ trait QueryContext extends TokenContext with DbAccess {
   def indexReference(label: Int, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean
+
+  def constraintExists(name: String): Boolean
+
+  def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean
 
   def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,

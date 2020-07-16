@@ -1141,12 +1141,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props               <- _listOfProperties
     prop                <- _variableProperty
     name                <- option(_identifier)
+    ifExistsDo          <- _ifExistsDo
     use                 <- option(_use)
-    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, use)(pos)
-    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, use)(pos)
-    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, use)(pos)
-    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, use)(pos)
-    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, use)(pos)
+    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, use)(pos)
+    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, use)(pos)
+    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, use)(pos)
+    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, use)(pos)
+    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, use)(pos)
     command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
   } yield command
 
@@ -1166,9 +1167,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield command
 
   def _dropConstraint: Gen[DropConstraintOnName] = for {
-    name <- _identifier
-    use  <- option(_use)
-  } yield DropConstraintOnName(name, use)(pos)
+    name     <- _identifier
+    ifExists <- boolean
+    use      <- option(_use)
+  } yield DropConstraintOnName(name, ifExists, use)(pos)
 
   def _indexCommand: Gen[SchemaCommand] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax)
 
