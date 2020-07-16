@@ -83,6 +83,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private final long reschedulingDelayNanos;
     private final Set<ScheduledJobHandle<?>> monitoredJobs;
     private final FailedJobRunsStore failedJobRunsStore;
+    private final long jobId;
     private volatile JobHandle latestHandle;
     private volatile Throwable lastException;
 
@@ -95,7 +96,8 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
             long submittedMillis,
             Set<ScheduledJobHandle<?>> monitoredJobs,
             FailedJobRunsStore failedJobRunsStore,
-            SystemNanoClock clock )
+            SystemNanoClock clock,
+            long jobId )
     {
         this.jobMonitoringParams = jobMonitoringParams;
         this.submittedMillis = submittedMillis;
@@ -106,6 +108,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
         this.reschedulingDelayNanos = reschedulingDelayNanos;
         this.monitoredJobs = monitoredJobs;
         this.failedJobRunsStore = failedJobRunsStore;
+        this.jobId = jobId;
         handleRelease = new BinaryLatch();
         cancelListeners = new CopyOnWriteArrayList<>();
         boolean isRecurring = reschedulingDelayNanos > 0;
@@ -238,7 +241,8 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
             return null;
         }
 
-        return new MonitoredJobInfo( group,
+        return new MonitoredJobInfo( jobId,
+                group,
                 Instant.ofEpochMilli( submittedMillis ),
                 jobMonitoringParams.getSubmitter(),
                 jobMonitoringParams.getTargetDatabaseName(),
@@ -246,7 +250,8 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
                 Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nextDeadlineNanos ) ),
                 reschedulingDelayNanos == 0 ? null : Duration.ofNanos( reschedulingDelayNanos ),
                 getStatus(),
-                getJobType() );
+                getJobType(),
+                jobMonitoringParams.getCurrentStateDescription() );
     }
 
     private MonitoredJobInfo.State getStatus()
@@ -276,7 +281,8 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
             return;
         }
 
-        FailedJobRun failedJobRun = new FailedJobRun( group,
+        FailedJobRun failedJobRun = new FailedJobRun( jobId,
+                group,
                 jobMonitoringParams.getSubmitter(),
                 jobMonitoringParams.getTargetDatabaseName(),
                 jobMonitoringParams.getDescription(),

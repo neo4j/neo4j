@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -60,6 +63,12 @@ public class IndexPopulationJob implements Runnable
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
     private final String databaseName;
     private final Subject subject;
+    private final EntityType populatedEntityType;
+
+    /**
+     * A list of all indexes populated by this job.
+     */
+    private final List<IndexDescriptor> populatedIndexes = new ArrayList<>();
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean stopped;
@@ -70,7 +79,7 @@ public class IndexPopulationJob implements Runnable
     private volatile JobHandle<?> jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
@@ -81,6 +90,7 @@ public class IndexPopulationJob implements Runnable
         this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, parseBlockSize() );
         this.databaseName = databaseName;
         this.subject = subject;
+        this.populatedEntityType = populatedEntityType;
     }
 
     /**
@@ -96,6 +106,7 @@ public class IndexPopulationJob implements Runnable
             FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
+        populatedIndexes.add( indexDescriptor );
         return this.multiPopulator.addPopulator( populator, indexDescriptor, flipper, failedIndexProxyFactory,
                 indexUserDescription );
     }
@@ -261,6 +272,64 @@ public class IndexPopulationJob implements Runnable
 
     public JobMonitoringParams getMonitoringParams()
     {
-        return new JobMonitoringParams( subject, databaseName, multiPopulator.getMonitoringDescription() );
+        return new JobMonitoringParams( subject, databaseName, getMonitoringDescription(), () ->
+        {
+            var stateDescriptionBuilder = new StringBuilder();
+            // Print index names only if there is more than 1,
+            // because if there is only one, its name will already be in the job description
+            if ( populatedIndexes.size() > 1 )
+            {
+                stateDescriptionBuilder.append( "Population of indexes " );
+                boolean first = true;
+
+                for ( var index : populatedIndexes )
+                {
+                    if ( first )
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        stateDescriptionBuilder.append( "," );
+                    }
+
+                    stateDescriptionBuilder.append( "'" )
+                                           .append( index.getName() )
+                                           .append( "'" );
+                }
+
+                stateDescriptionBuilder.append( "; " );
+            }
+
+            PopulationProgress populationProgress = PopulationProgress.NONE;
+            if ( storeScan != null )
+            {
+                populationProgress = storeScan.getProgress();
+            }
+
+            stateDescriptionBuilder.append( "Total progress: " )
+                                   .append( populationProgress.toIndexPopulationProgress().getCompletedPercentage() )
+                                   .append( "%" );
+
+            return stateDescriptionBuilder.toString();
+        } );
+    }
+
+    private String getMonitoringDescription()
+    {
+        if ( populatedIndexes.isEmpty() )
+        {
+            // this should not happen
+            // but it is better to show this over throwing an exception.
+            return "Empty index population";
+        }
+
+        if ( populatedIndexes.size() == 1 )
+        {
+            var index = populatedIndexes.get( 0 );
+            return "Population of index '" + index.getName() + "'";
+        }
+
+        return "Population of " + populatedIndexes.size() + " '" + populatedEntityType + "' indexes";
     }
 }

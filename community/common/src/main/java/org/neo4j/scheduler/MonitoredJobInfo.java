@@ -26,6 +26,7 @@ import org.neo4j.common.Subject;
 
 public class MonitoredJobInfo
 {
+    private final long id;
     private final Group group;
     private final Subject submitter;
     private final String targetDatabaseName;
@@ -35,10 +36,12 @@ public class MonitoredJobInfo
     private final Duration period;
     private final State state;
     private final JobType type;
+    private final String currentStateDescription;
 
-    public MonitoredJobInfo( Group group, Instant submitted, Subject submitter, String targetDatabaseName, String description,
-            Instant nextDeadline, Duration period, State state, JobType type )
+    public MonitoredJobInfo( long id, Group group, Instant submitted, Subject submitter, String targetDatabaseName, String description,
+            Instant nextDeadline, Duration period, State state, JobType type, String currentStateDescription )
     {
+        this.id = id;
         this.group = group;
         this.submitter = submitter;
         this.targetDatabaseName = targetDatabaseName;
@@ -48,6 +51,12 @@ public class MonitoredJobInfo
         this.period = period;
         this.state = state;
         this.type = type;
+        this.currentStateDescription = currentStateDescription;
+    }
+
+    public long getId()
+    {
+        return id;
     }
 
     public Group getGroup()
@@ -93,6 +102,11 @@ public class MonitoredJobInfo
     public JobType getType()
     {
         return type;
+    }
+
+    public String getCurrentStateDescription()
+    {
+        return currentStateDescription;
     }
 
     public enum State

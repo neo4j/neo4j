@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.scheduler.CancelListener;
@@ -58,8 +59,9 @@ class TimeBasedTaskSchedulerTest
     {
         clock = new FakeClock();
         FailedJobRunsStore failedJobRunsStore = new FailedJobRunsStore( 10 );
-        pools = new ThreadPoolManager( new ThreadGroup( "TestPool" ), clock, failedJobRunsStore );
-        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore );
+        var idGenerator = new AtomicLong();
+        pools = new ThreadPoolManager( new ThreadGroup( "TestPool" ), clock, failedJobRunsStore, idGenerator::get );
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, idGenerator::get );
         counter = new AtomicInteger();
         semaphore = new Semaphore( 0 );
     }

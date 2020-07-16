@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.scheduler.Group;
@@ -48,14 +49,16 @@ final class TimeBasedTaskScheduler implements Runnable
     private final Set<ScheduledJobHandle<?>> monitoredJobs = ConcurrentHashMap.newKeySet();
     private final PriorityBlockingQueue<ScheduledJobHandle<?>> delayedTasks;
     private final ConcurrentLinkedQueue<ScheduledJobHandle<?>> canceledTasks;
+    private final LongSupplier jobIdSupplier;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
 
-    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools, FailedJobRunsStore failedJobRunsStore )
+    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools, FailedJobRunsStore failedJobRunsStore, LongSupplier jobIdSupplier )
     {
         this.clock = clock;
         this.pools = pools;
         this.failedJobRunsStore = failedJobRunsStore;
+        this.jobIdSupplier = jobIdSupplier;
         delayedTasks = new PriorityBlockingQueue<>( 42, DEADLINE_COMPARATOR );
         canceledTasks = new ConcurrentLinkedQueue<>();
     }
@@ -69,6 +72,13 @@ final class TimeBasedTaskScheduler implements Runnable
     {
         long now = clock.nanos();
         long nextDeadlineNanos = now + initialDelayNanos;
+
+        long jobId = -1;
+        if ( jobMonitoringParams != JobMonitoringParams.NOT_MONITORED )
+        {
+            jobId = jobIdSupplier.getAsLong();
+        }
+
         ScheduledJobHandle<?> task = new ScheduledJobHandle<>( this,
                 group,
                 job,
@@ -78,7 +88,8 @@ final class TimeBasedTaskScheduler implements Runnable
                 clock.nanos(),
                 monitoredJobs,
                 failedJobRunsStore,
-                clock );
+                clock,
+                jobId );
 
         if ( jobMonitoringParams != JobMonitoringParams.NOT_MONITORED )
         {

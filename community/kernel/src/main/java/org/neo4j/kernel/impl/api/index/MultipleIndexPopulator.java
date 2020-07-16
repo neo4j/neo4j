@@ -579,31 +579,6 @@ public class MultipleIndexPopulator
                 "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
     }
 
-    /**
-     * The description of what this index populator will do.
-     * This should be invoked only before the population starts.
-     */
-    public String getMonitoringDescription()
-    {
-        var populations = this.populations;
-
-        if ( populations.isEmpty() )
-        {
-            // this should not happen if this is really
-            // invoked only before the population starts,
-            // but it is better to show this over throwing an exception.
-            return "Empty index population";
-        }
-
-        if ( populations.size() == 1 )
-        {
-            var population = populations.get( 0 );
-            return "Population of Index '" + population.indexDescriptor.getName() + "'";
-        }
-
-        return "Population of " + populations.size() + " '" + type + "' indexes";
-    }
-
     public static class MultipleIndexUpdater implements IndexUpdater
     {
         private final Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;

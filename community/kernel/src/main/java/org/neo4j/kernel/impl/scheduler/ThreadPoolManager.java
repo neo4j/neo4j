@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.scheduler;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.LongSupplier;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
@@ -34,14 +35,16 @@ final class ThreadPoolManager
     private final ThreadGroup topLevelGroup;
     private final SystemNanoClock clock;
     private final FailedJobRunsStore failedJobRunsStore;
+    private final LongSupplier jobIdSupplier;
     private boolean shutdown;
 
-    ThreadPoolManager( ThreadGroup topLevelGroup, SystemNanoClock clock, FailedJobRunsStore failedJobRunsStore )
+    ThreadPoolManager( ThreadGroup topLevelGroup, SystemNanoClock clock, FailedJobRunsStore failedJobRunsStore, LongSupplier jobIdSupplier )
     {
         this.topLevelGroup = topLevelGroup;
         pools = new ConcurrentHashMap<>();
         this.clock = clock;
         this.failedJobRunsStore = failedJobRunsStore;
+        this.jobIdSupplier = jobIdSupplier;
     }
 
     ThreadPool getThreadPool( Group group )
@@ -76,7 +79,8 @@ final class ThreadPoolManager
     private synchronized ThreadPool createThreadPool( Group group, ThreadPool.ThreadPoolParameters parameters )
     {
         assertNotShutDown();
-        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ), clock, failedJobRunsStore );
+        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ), clock, failedJobRunsStore,
+                jobIdSupplier );
     }
 
     private void assertNotShutDown()

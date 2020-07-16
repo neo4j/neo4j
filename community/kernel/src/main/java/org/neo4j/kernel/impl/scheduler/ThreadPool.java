@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +54,7 @@ final class ThreadPool
     private final Group group;
     private final SystemNanoClock clock;
     private final FailedJobRunsStore failedJobRunsStore;
+    private final LongSupplier jobIdSupplier;
     private InterruptedException shutdownInterrupted;
 
     static class ThreadPoolParameters
@@ -61,11 +63,13 @@ final class ThreadPool
         volatile SchedulerThreadFactoryFactory providedThreadFactory = GroupedDaemonThreadFactory::new;
     }
 
-    ThreadPool( Group group, ThreadGroup parentThreadGroup, ThreadPoolParameters parameters, SystemNanoClock clock, FailedJobRunsStore failedJobRunsStore )
+    ThreadPool( Group group, ThreadGroup parentThreadGroup, ThreadPoolParameters parameters, SystemNanoClock clock, FailedJobRunsStore failedJobRunsStore,
+            LongSupplier jobIdSupplier )
     {
         this.group = group;
         this.clock = clock;
         this.failedJobRunsStore = failedJobRunsStore;
+        this.jobIdSupplier = jobIdSupplier;
         threadFactory = parameters.providedThreadFactory.newSchedulerThreadFactory( group, parentThreadGroup );
         executor = group.buildExecutorService( threadFactory, parameters.desiredParallelism );
         registry = new ConcurrentHashMap<>();
@@ -86,6 +90,16 @@ final class ThreadPool
         Object registryKey = new Object();
         AtomicBoolean running = new AtomicBoolean();
         Instant submitted = clock.instant();
+        long jobId;
+        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
+        {
+            jobId = -1;
+        }
+        else
+        {
+            jobId = jobIdSupplier.getAsLong();
+        }
+
         Callable<T> registeredJob = () ->
         {
             Instant executionStart = clock.instant();
@@ -96,7 +110,7 @@ final class ThreadPool
             }
             catch ( Throwable t )
             {
-                recordFailedRun( jobMonitoringParams, submitted, executionStart, t );
+                recordFailedRun( jobId, jobMonitoringParams, submitted, executionStart, t );
                 throw t;
             }
             finally
@@ -105,12 +119,12 @@ final class ThreadPool
             }
         };
 
-        var placeHolder = new RegisteredJob( null, null, null, null );
+        var placeHolder = new RegisteredJob( -1, null, null, null, null );
         registry.put( registryKey, placeHolder );
         try
         {
             var future = executor.submit( registeredJob );
-            registry.replace( registryKey, new RegisteredJob( future, jobMonitoringParams, submitted, running ) );
+            registry.replace( registryKey, new RegisteredJob( jobId, future, jobMonitoringParams, submitted, running ) );
             return new PooledJobHandle<>( future, registryKey, registry );
         }
         catch ( Exception e )
@@ -181,6 +195,7 @@ final class ThreadPool
                        .filter( registeredJob -> registeredJob.monitoredJobParams != JobMonitoringParams.NOT_MONITORED )
                        .map( monitoredJob ->
                                new MonitoredJobInfo(
+                                       monitoredJob.jobId,
                                        group,
                                        monitoredJob.submitted,
                                        monitoredJob.monitoredJobParams.getSubmitter(),
@@ -189,7 +204,8 @@ final class ThreadPool
                                        null,
                                        null,
                                        monitoredJob.running.get() ? MonitoredJobInfo.State.EXECUTING : MonitoredJobInfo.State.SCHEDULED,
-                                       JobType.IMMEDIATE )
+                                       JobType.IMMEDIATE,
+                                       monitoredJob.monitoredJobParams.getCurrentStateDescription() )
                        )
                        .collect( Collectors.toList() );
     }
@@ -199,14 +215,15 @@ final class ThreadPool
         return shutdownInterrupted;
     }
 
-    private void recordFailedRun( JobMonitoringParams jobMonitoringParams, Instant submitted, Instant executionStart, Throwable t )
+    private void recordFailedRun( long jobId, JobMonitoringParams jobMonitoringParams, Instant submitted, Instant executionStart, Throwable t )
     {
         if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
         {
             return;
         }
 
-        FailedJobRun failedJobRun = new FailedJobRun( group,
+        FailedJobRun failedJobRun = new FailedJobRun( jobId,
+                group,
                 jobMonitoringParams.getSubmitter(),
                 jobMonitoringParams.getTargetDatabaseName(),
                 jobMonitoringParams.getDescription(),
@@ -220,13 +237,15 @@ final class ThreadPool
 
     private static class RegisteredJob
     {
+        private final long jobId;
         private final Future<?> future;
         private final JobMonitoringParams monitoredJobParams;
         private final Instant submitted;
         private final AtomicBoolean running;
 
-        RegisteredJob( Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
+        RegisteredJob( long jobId, Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
         {
+            this.jobId = jobId;
             this.future = future;
             this.monitoredJobParams = monitoredJobParams;
             this.submitted = submitted;

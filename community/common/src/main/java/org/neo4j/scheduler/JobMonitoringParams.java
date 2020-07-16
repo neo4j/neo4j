@@ -20,6 +20,7 @@
 package org.neo4j.scheduler;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.neo4j.common.Subject;
 
@@ -28,17 +29,24 @@ import static org.neo4j.common.Subject.SYSTEM;
 
 public class JobMonitoringParams
 {
-    public static final JobMonitoringParams NOT_MONITORED = new JobMonitoringParams( null, null, null );
+    public static final JobMonitoringParams NOT_MONITORED = new JobMonitoringParams( null, null, null, null );
 
     private final Subject submitter;
     private final String targetDatabaseName;
     private final String description;
+    private final Supplier<String> currentStateDescriptionSupplier;
 
-    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description )
+    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description, Supplier<String> currentStateDescriptionSupplier )
     {
         this.submitter = Objects.requireNonNullElse( submitter, AUTH_DISABLED );
         this.targetDatabaseName = targetDatabaseName;
         this.description = description;
+        this.currentStateDescriptionSupplier = currentStateDescriptionSupplier;
+    }
+
+    public JobMonitoringParams( Subject submitter, String targetDatabaseName, String description )
+    {
+        this( submitter, targetDatabaseName, description, null );
     }
 
     /**
@@ -75,6 +83,16 @@ public class JobMonitoringParams
     public String getDescription()
     {
         return description;
+    }
+
+    public String getCurrentStateDescription()
+    {
+        if ( currentStateDescriptionSupplier == null )
+        {
+            return null;
+        }
+
+        return currentStateDescriptionSupplier.get();
     }
 
     @Override

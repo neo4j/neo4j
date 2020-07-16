@@ -39,7 +39,7 @@ class ThreadPoolTest
     void setup()
     {
         threadPool = new ThreadPool( Group.TESTING, new ThreadGroup( "TestPool" ), new ThreadPool.ThreadPoolParameters(), Clocks.nanoClock(),
-                new FailedJobRunsStore( 10 ) );
+                new FailedJobRunsStore( 10 ), () -> 9999 );
     }
 
     @AfterEach

@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -592,7 +591,7 @@ class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE );
 
         // when
         populationJob.run();
@@ -641,7 +640,7 @@ class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED  );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE );
 
         // when
         populationJob.run();
@@ -861,7 +860,7 @@ class IndexPopulationJobTest
         MultipleIndexPopulator multiPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE,
                         "", AUTH_DISABLED );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED  );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE  );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;

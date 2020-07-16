@@ -27,6 +27,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class FailedJobRun
 {
+    private final long jobId;
     private final Group group;
     private final Subject submitter;
     private final String targetDatabaseName;
@@ -37,9 +38,10 @@ public class FailedJobRun
     private final Instant failureTime;
     private final String failureDescription;
 
-    public FailedJobRun( Group group, Subject submitter, String targetDatabaseName, String description, JobType jobType, Instant submitted,
+    public FailedJobRun( long jobId, Group group, Subject submitter, String targetDatabaseName, String description, JobType jobType, Instant submitted,
             Instant executionStart, Instant failureTime, Throwable failure )
     {
+        this.jobId = jobId;
         this.group = group;
         this.submitter = submitter;
         this.targetDatabaseName = targetDatabaseName;
@@ -56,6 +58,11 @@ public class FailedJobRun
         String exceptionClass = failure.getClass().getSimpleName();
         String message = failure.getMessage();
         return isNotEmpty( message ) ? exceptionClass + ": " + message : exceptionClass;
+    }
+
+    public long getJobId()
+    {
+        return jobId;
     }
 
     public Group getGroup()

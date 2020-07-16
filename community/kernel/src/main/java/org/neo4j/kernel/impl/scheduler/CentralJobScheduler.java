@@ -28,6 +28,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.Exceptions;
@@ -80,8 +81,9 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     {
         topLevelGroup = new TopLevelGroup();
         this.failedJobRunsStore = new FailedJobRunsStore( 100 );
-        pools = new ThreadPoolManager( topLevelGroup, clock, failedJobRunsStore );
-        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore );
+        var jobIdCounter = new AtomicLong();
+        pools = new ThreadPoolManager( topLevelGroup, clock, failedJobRunsStore, jobIdCounter::incrementAndGet );
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, jobIdCounter::incrementAndGet );
         extraParameters = new ConcurrentHashMap<>();
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().

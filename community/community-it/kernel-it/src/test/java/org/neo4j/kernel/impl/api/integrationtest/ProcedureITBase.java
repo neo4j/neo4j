@@ -260,11 +260,13 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.scheduler.groups", "() :: (group :: STRING?, threads :: INTEGER?)",
                         "List the job groups that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.scheduler.failedJobs", "() :: (group :: STRING?, database :: STRING?, submitter :: STRING?, description :: STRING?," +
-                                " type :: STRING?, submitted :: STRING?, executionStart :: STRING?, failureTime :: STRING?, failureDescription :: STRING?)",
+                proc( "dbms.scheduler.failedJobs", "() :: (jobId :: STRING?, group :: STRING?, database :: STRING?, submitter :: STRING?, " +
+                                "description :: STRING?, type :: STRING?, submitted :: STRING?, executionStart :: STRING?, failureTime :: STRING?, " +
+                                "failureDescription :: STRING?)",
                         "List failed job runs. There is a limit for amount of historical data.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.scheduler.jobs", "() :: (group :: STRING?, submitted :: STRING?, database :: STRING?, submitter :: STRING?, " +
-                                "description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, state :: STRING?)",
+                proc( "dbms.scheduler.jobs", "() :: (jobId :: STRING?, group :: STRING?, submitted :: STRING?, database :: STRING?, " +
+                                "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, state :: STRING?, " +
+                                "currentStateDescription :: STRING?)",
                         "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
                 proc( "dbms.killConnections", "(ids :: LIST? OF STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
                         "Kill all network connections with the given connection ids.", stringArray( "reader", "editor", "publisher", "architect", "admin" ),
