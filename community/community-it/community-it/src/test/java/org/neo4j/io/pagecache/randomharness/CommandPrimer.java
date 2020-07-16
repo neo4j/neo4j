@@ -331,6 +331,24 @@ class CommandPrimer
                     {
                         recordLocks.unlock( recordId );
                     }
+
+                    // check that we wrote everything correctly
+                    try
+                    {
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+                        {
+                            if ( cursor.next() )
+                            {
+                                cursor.setOffset( pageOffset );
+                                var actualRecord = recordFormat.readRecord( cursor );
+                                assertThat( actualRecord ).as( toString() ).isEqualTo( record );
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        recordLocks.unlock( recordId );
+                    }
                 }
             }
             else
