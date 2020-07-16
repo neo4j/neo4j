@@ -31,6 +31,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -96,13 +97,18 @@ class BoltChannelAutoReadLimiterIT
 
     protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, false );
+        return settings ->
+        {
+            settings.put( GraphDatabaseSettings.auth_enabled, false );
+            settings.put( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark, 8 );
+            settings.put( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark, 3 );
+        };
     }
 
     @Test
     public void largeNumberOfSlowRunningJobsShouldChangeAutoReadState() throws Exception
     {
-        int numberOfRunDiscardPairs = 1000;
+        int numberOfRunDiscardPairs = 20;
         String largeString = " ".repeat( 8 * 1024 );
 
         connection.connect( address )
