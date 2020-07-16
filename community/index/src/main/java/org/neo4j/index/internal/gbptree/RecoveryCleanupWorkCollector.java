@@ -20,13 +20,12 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.scheduler.CallableExecutor;
-import org.neo4j.scheduler.CallableExecutorService;
 
 /**
  * Place to add recovery cleanup work to be done as part of recovery of {@link GBPTree}.
@@ -72,7 +71,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
     }
 
     /**
-     * {@link CleanupJob#run(CallableExecutor) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
+     * {@link CleanupJob#run(CleanupJob.Executor) Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
      * calling {@link #add(CleanupJob)}.
      */
     public static RecoveryCleanupWorkCollector immediate()
@@ -109,7 +108,16 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
             {
                 try
                 {
-                    job.run( new CallableExecutorService( executor ) );
+                    job.run( new CleanupJob.Executor()
+                    {
+
+                        @Override
+                        public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
+                        {
+                            var future = executor.submit( job );
+                            return future::get;
+                        }
+                    } );
                 }
                 finally
                 {

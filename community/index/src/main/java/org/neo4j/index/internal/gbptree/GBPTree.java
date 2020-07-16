@@ -515,7 +515,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * in the header. At the very least {@link Layout#identifier()} will be matched.
      * <p>
      * On start, tree can be in a clean or dirty state. If dirty, it will
-     * {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
+     * {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean, String)} and clean crashed pointers as part of constructor. Tree is only clean if
      * since last time it was opened it was {@link #close()}  closed} without any non-checkpointed changes present.
      * Correct usage pattern of the GBPTree is:
      *
@@ -567,12 +567,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @param readOnly Opening tree in readOnly mode will prevent any modifications to it.
+     * @param name name of the tree that will be used when describing work related to this tree.
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
             Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions ) throws MetadataMismatchException
+            ImmutableSet<OpenOption> openOptions, String name ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -626,7 +627,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 if ( !readOnly )
                 {
                     forceState( cursorTracer );
-                    cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup );
+                    cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
                 }
                 else
                 {
@@ -1431,7 +1432,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Called on start if tree was not clean.
      */
-    private CleanupJob createCleanupJob( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean needsCleaning )
+    private CleanupJob createCleanupJob( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean needsCleaning, String treeName )
     {
         if ( !needsCleaning )
         {
@@ -1449,7 +1450,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
-                            stableGeneration, unstableGeneration, monitor, pageCacheTracer );
+                            stableGeneration, unstableGeneration, monitor, pageCacheTracer, treeName );
             GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor, indexFile );
             recoveryCleanupWorkCollector.add( cleanupJob );
             return cleanupJob;

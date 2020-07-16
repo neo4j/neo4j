@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -33,10 +32,8 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -62,9 +59,10 @@ class CrashGenerationCleaner
     private final long unstableGeneration;
     private final Monitor monitor;
     private final PageCacheTracer pageCacheTracer;
+    private final String treeName;
 
     CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
-            long stableGeneration, long unstableGeneration, Monitor monitor, PageCacheTracer pageCacheTracer )
+            long stableGeneration, long unstableGeneration, Monitor monitor, PageCacheTracer pageCacheTracer, String treeName )
     {
         this.pagedFile = pagedFile;
         this.treeNode = treeNode;
@@ -74,6 +72,7 @@ class CrashGenerationCleaner
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
         this.pageCacheTracer = pageCacheTracer;
+        this.treeName = treeName;
     }
 
     private static long batchSize( long pagesToClean, int threads )
@@ -84,7 +83,7 @@ class CrashGenerationCleaner
 
     // === Methods about the execution and threading ===
 
-    public void clean( CallableExecutor executor )
+    public void clean( CleanupJob.Executor executor )
     {
         monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration : unexpectedGenerations();
@@ -98,23 +97,15 @@ class CrashGenerationCleaner
         AtomicBoolean stopFlag = new AtomicBoolean();
         LongAdder cleanedPointers = new LongAdder();
         LongAdder numberOfTreeNodes = new LongAdder();
-        List<Future<?>> cleanerFutures = new ArrayList<>();
+        List<CleanupJob.JobResult<?>> jobResults = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
             Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag, pageCacheTracer );
-            Future<?> future = executor.submit( cleanerTask );
-            cleanerFutures.add( future );
+            CleanupJob.JobResult<?> jobHandle = executor.submit( "Recovery clean up of '" + treeName + "'", cleanerTask );
+            jobResults.add( jobHandle );
         }
 
-        try
-        {
-            Futures.getAll( cleanerFutures );
-        }
-        catch ( Throwable e )
-        {
-            Exceptions.throwIfUnchecked( e );
-            throw new RuntimeException( e );
-        }
+        awaitAll( jobResults );
 
         monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), startTime.elapsed( MILLISECONDS ) );
     }
@@ -261,5 +252,26 @@ class CrashGenerationCleaner
     private String unexpectedGenerations( )
     {
         return "Unexpected generations, stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration;
+    }
+
+    private void awaitAll( Iterable<? extends CleanupJob.JobResult<?>> jobHandles )
+    {
+        Throwable finalError = null;
+        for ( var jobHandle : jobHandles )
+        {
+            try
+            {
+                jobHandle.get();
+            }
+            catch ( Throwable e )
+            {
+                finalError = Exceptions.chain( finalError, e );
+            }
+        }
+        if ( finalError != null )
+        {
+            Exceptions.throwIfUnchecked( finalError );
+            throw new RuntimeException( finalError );
+        }
     }
 }

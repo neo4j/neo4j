@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,8 +33,10 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,10 +55,19 @@ class CrashGenerationCleanerCrashTest
         String exceptionMessage = "When there's no more room in hell, the dead will walk the earth";
         CrashGenerationCleaner cleaner = newCrashingCrashGenerationCleaner( exceptionMessage );
         ExecutorService executorService = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+        ThreadPoolJobScheduler threadPoolJobScheduler = new ThreadPoolJobScheduler( executorService );
 
         try
         {
-            CallableExecutorService executor = new CallableExecutorService( executorService );
+            var executor = new CleanupJob.Executor()
+            {
+                @Override
+                public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
+                {
+                    var jobHandle = threadPoolJobScheduler.schedule( Group.TESTING, JobMonitoringParams.NOT_MONITORED, job );
+                    return jobHandle::get;
+                }
+            };
             Throwable exception = assertThrows( Throwable.class, () -> cleaner.clean( executor ) );
             Throwable rootCause = getRootCause( exception );
             assertTrue( rootCause instanceof IOException );
@@ -94,6 +106,6 @@ class CrashGenerationCleanerCrashTest
             }
         };
         return new CrashGenerationCleaner( pagedFile, new TreeNodeFixedSize<>( pageSize, SimpleLongLayout.longLayout().build() ), 0,
-                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, PageCacheTracer.NULL );
+                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, PageCacheTracer.NULL, "test tree" );
     }
 }

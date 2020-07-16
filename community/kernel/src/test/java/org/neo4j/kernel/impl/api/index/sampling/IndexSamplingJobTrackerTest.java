@@ -59,7 +59,7 @@ class IndexSamplingJobTrackerTest
     void shouldNotRunASampleJobWhichIsAlreadyRunning()
     {
         // given
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, "test database" );
         final DoubleLatch latch = new DoubleLatch();
 
         // when
@@ -81,6 +81,12 @@ class IndexSamplingJobTrackerTest
             {
                 return indexId12;
             }
+
+            @Override
+            public String indexName()
+            {
+                return "test database";
+            }
         };
 
         jobTracker.scheduleSamplingJob( job );
@@ -97,7 +103,7 @@ class IndexSamplingJobTrackerTest
     {
         // Given
         JobScheduler scheduler = mock( JobScheduler.class );
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, "test database" );
         jobTracker.stopAndAwaitAllJobs();
 
         // When
@@ -111,7 +117,7 @@ class IndexSamplingJobTrackerTest
     void shouldStopAndWaitForAllJobsToFinish() throws Exception
     {
         // Given
-        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler );
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, "test database" );
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
@@ -157,6 +163,12 @@ class IndexSamplingJobTrackerTest
         public long indexId()
         {
             return indexId;
+        }
+
+        @Override
+        public String indexName()
+        {
+            return "test database";
         }
 
         @Override

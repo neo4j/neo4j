@@ -45,6 +45,7 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     public IndexSamplingJob create( long indexId, IndexProxy indexProxy )
     {
         final String indexUserDescription = indexProxy.getDescriptor().userDescription( nameLookup );
-        return new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, indexUserDescription, logProvider, pageCacheTracer );
+        String indexName = indexProxy.getDescriptor().getName();
+        return new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, indexUserDescription, indexName, logProvider, pageCacheTracer );
     }
 }

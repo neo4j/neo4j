@@ -35,6 +35,6 @@ class NativeLabelScanStore extends NativeTokenScanStore implements LabelScanStor
             PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer,
-                memoryTracker );
+                memoryTracker, "Label Scan Store" );
     }
 }

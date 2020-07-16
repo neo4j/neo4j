@@ -97,7 +97,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         try
         {
             tree = new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty() );
+                    recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty(), "Statistics store" );
         }
         catch ( TreeFileNotFoundException e )
         {

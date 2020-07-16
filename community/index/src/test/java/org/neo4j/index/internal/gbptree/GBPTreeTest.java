@@ -1779,7 +1779,15 @@ class GBPTreeTest
                 {
                     try
                     {
-                        job.run( new CallableExecutorService( executor ) );
+                        job.run( new CleanupJob.Executor()
+                        {
+                            @Override
+                            public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
+                            {
+                                var future = executor.submit( job );
+                                return future::get;
+                            }
+                        } );
                         startedJobs.add( job );
                     }
                     finally

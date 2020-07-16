@@ -403,7 +403,7 @@ class IndexSamplingControllerTest
     private IndexSamplingController newSamplingController( RecoveryCondition recoveryPredicate, LogProvider logProvider )
     {
         return new IndexSamplingController( samplingConfig, jobFactory, samplingUpdatePredicate, tracker, snapshotProvider, scheduler, recoveryPredicate,
-                logProvider );
+                logProvider, "Test DB" );
     }
 
     private static class Always implements RecoveryCondition

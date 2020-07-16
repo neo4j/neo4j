@@ -22,4 +22,6 @@ package org.neo4j.kernel.impl.api.index.sampling;
 public interface IndexSamplingJob extends Runnable
 {
     long indexId();
+
+    String indexName();
 }

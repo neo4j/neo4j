@@ -35,6 +35,6 @@ class NativeRelationshipTypeScanStore extends NativeTokenScanStore implements Re
             EntityType entityType, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer,
-                memoryTracker );
+                memoryTracker, "Relationship Type Scan Store" );
     }
 }

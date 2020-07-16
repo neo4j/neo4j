@@ -144,7 +144,7 @@ public class GBPTreeCountsStore implements CountsStore
         try
         {
             return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, pageCacheTracer,
-                    immutable.empty() );
+                    immutable.empty(), "Counts store" );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -433,7 +433,7 @@ public class GBPTreeCountsStore implements CountsStore
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty() ) )
+                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), "Counts store" ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

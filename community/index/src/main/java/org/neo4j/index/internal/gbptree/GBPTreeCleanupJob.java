@@ -22,8 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import java.io.File;
 import java.util.StringJoiner;
 
-import org.neo4j.scheduler.CallableExecutor;
-
 class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
@@ -75,7 +73,7 @@ class GBPTreeCleanupJob implements CleanupJob
     }
 
     @Override
-    public void run( CallableExecutor executor )
+    public void run( Executor executor )
     {
         try
         {

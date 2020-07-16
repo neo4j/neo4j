@@ -40,10 +40,11 @@ public class IndexSamplingControllerFactory
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
     private final PageCacheTracer cacheTracer;
+    private final String databaseName;
 
     public IndexSamplingControllerFactory( IndexSamplingConfig config, IndexStatisticsStore indexStatisticsStore,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           LogProvider logProvider, PageCacheTracer cacheTracer )
+                                           LogProvider logProvider, PageCacheTracer cacheTracer, String databaseName )
     {
         this.config = config;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -51,17 +52,18 @@ public class IndexSamplingControllerFactory
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.cacheTracer = cacheTracer;
+        this.databaseName = databaseName;
     }
 
     public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
     {
         OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider, cacheTracer );
         LongPredicate samplingUpdatePredicate = createSamplingPredicate();
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, databaseName );
         RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
-                logProvider );
+                logProvider, databaseName );
     }
 
     private LongPredicate createSamplingPredicate()

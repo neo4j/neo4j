@@ -73,7 +73,7 @@ class OnlineIndexSamplingJobTest
     void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider, NULL );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, NULL );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -88,7 +88,7 @@ class OnlineIndexSamplingJobTest
     void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider, NULL );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, NULL );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -105,7 +105,7 @@ class OnlineIndexSamplingJobTest
         var pageCursorTracer = mock( PageCursorTracer.class );
         when( pageCacheTracer.createPageCursorTracer( any() ) ).thenReturn( pageCursorTracer );
 
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider, pageCacheTracer );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, pageCacheTracer );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when

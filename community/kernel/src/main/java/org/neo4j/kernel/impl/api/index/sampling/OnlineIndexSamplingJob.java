@@ -41,9 +41,10 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
     private final String indexUserDescription;
+    private final String indexName;
     private final PageCacheTracer pageCacheTracer;
 
-    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription,
+    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription, String indexName,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         this.indexId = indexId;
@@ -51,6 +52,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         this.indexStatisticsStore = indexStatisticsStore;
         this.log = logProvider.getLog( getClass() );
         this.indexUserDescription = indexUserDescription;
+        this.indexName = indexName;
         this.pageCacheTracer = pageCacheTracer;
     }
 
@@ -58,6 +60,12 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     public long indexId()
     {
         return indexId;
+    }
+
+    @Override
+    public String indexName()
+    {
+        return indexName;
     }
 
     @Override

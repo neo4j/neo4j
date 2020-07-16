@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -67,7 +68,8 @@ public class IndexUpdateSink
 
         try
         {
-            scheduler.schedule( Group.INDEX_UPDATING, eventualUpdate );
+            var monitoringParams = JobMonitoringParams.systemJob( "Background update of index '" + index.getDescriptor().getName() + "'" );
+            scheduler.schedule( Group.INDEX_UPDATING, monitoringParams, eventualUpdate );
         }
         catch ( Exception e )
         {
@@ -91,7 +93,8 @@ public class IndexUpdateSink
 
     public void closeUpdater( DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater )
     {
-        scheduler.schedule( Group.INDEX_UPDATING, () ->
+        var monitoringParams = JobMonitoringParams.systemJob( "Closing of an updater for index '" + index.getDescriptor().getName() + "'" );
+        scheduler.schedule( Group.INDEX_UPDATING, monitoringParams, () ->
         {
             try
             {
@@ -107,7 +110,7 @@ public class IndexUpdateSink
     public void awaitUpdateApplication()
     {
         BinaryLatch updateLatch = new BinaryLatch();
-        scheduler.schedule( Group.INDEX_UPDATING, updateLatch::release );
+        scheduler.schedule( Group.INDEX_UPDATING, JobMonitoringParams.NOT_MONITORED, updateLatch::release );
         updateLatch.await();
     }
 }

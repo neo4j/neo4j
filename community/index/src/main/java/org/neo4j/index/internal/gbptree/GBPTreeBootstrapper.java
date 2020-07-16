@@ -92,7 +92,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
-                    pageCacheTracer, Sets.immutable.empty() );
+                    pageCacheTracer, Sets.immutable.empty(), file.getName() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )

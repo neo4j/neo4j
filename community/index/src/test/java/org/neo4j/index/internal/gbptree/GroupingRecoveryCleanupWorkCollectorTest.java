@@ -27,17 +27,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.scheduler.CallableExecutor;
-import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +49,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
     private static final Group GROUP = Group.INDEX_CLEANUP;
     private static final Group WORK_GROUP = Group.INDEX_CLEANUP_WORK;
     private final SingleGroupJobScheduler jobScheduler = new SingleGroupJobScheduler( GROUP, WORK_GROUP );
-    private final GroupingRecoveryCleanupWorkCollector collector = new GroupingRecoveryCleanupWorkCollector( jobScheduler, GROUP, WORK_GROUP );
+    private final GroupingRecoveryCleanupWorkCollector collector = new GroupingRecoveryCleanupWorkCollector( jobScheduler, GROUP, WORK_GROUP, "test db" );
 
     @Test
     void shouldNotAcceptJobsAfterStart()
@@ -147,19 +146,6 @@ class GroupingRecoveryCleanupWorkCollectorTest
         assertThrows( IllegalStateException.class, () -> collector.add( new DummyJob( "first", new ArrayList<>() ) ) );
     }
 
-    @Test
-    void shouldScheduleCleanupTasksToJobScheduler() throws ExecutionException, InterruptedException
-    {
-        TrackingJob job = new TrackingJob();
-        collector.init();
-        collector.add( job );
-        collector.start();
-        collector.shutdown();
-
-        assertThat( job.targetExecutor ).isNotNull();
-        assertThat( job.targetExecutor ).isSameAs( jobScheduler.createdExecutor );
-    }
-
     private void addAll( Collection<DummyJob> jobs )
     {
         jobs.forEach( collector::add );
@@ -185,7 +171,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         private final ExecutorService executorService = Executors.newSingleThreadExecutor();
         private final Group mainGroup;
         private final Group workGroup;
-        private CallableExecutor createdExecutor;
+        private MonitoredJobExecutor createdExecutor;
 
         SingleGroupJobScheduler( Group mainGroup, Group workGroup )
         {
@@ -194,15 +180,15 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public CallableExecutor executor( Group group )
+        public MonitoredJobExecutor monitoredJobExecutor( Group group )
         {
             assertGroup( group, workGroup );
-            createdExecutor = new CallableExecutorService( executorService );
+            createdExecutor = ( monitoringParams, job ) -> executorService.submit( job );
             return createdExecutor;
         }
 
         @Override
-        public JobHandle<?> schedule( Group group, Runnable job )
+        public JobHandle<?> schedule( Group group, JobMonitoringParams jobMonitoringParams, Runnable job )
         {
             assertGroup( group, mainGroup );
             Future<?> future = executorService.submit( job );
@@ -249,7 +235,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
     private static class EvilJob extends CleanupJob.Adaptor
     {
         @Override
-        public void run( CallableExecutor executor )
+        public void run( Executor executor )
         {
             throw new RuntimeException( "Resilient to run attempts" );
         }
@@ -280,7 +266,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void run( CallableExecutor executor )
+        public void run( Executor executor )
         {
             allRuns.add( this );
         }
@@ -288,17 +274,6 @@ class GroupingRecoveryCleanupWorkCollectorTest
         public boolean isClosed()
         {
             return closed;
-        }
-    }
-
-    private static class TrackingJob extends CleanupJob.Adaptor
-    {
-        private Executor targetExecutor;
-
-        @Override
-        public void run( CallableExecutor executor )
-        {
-            targetExecutor = executor;
         }
     }
 }

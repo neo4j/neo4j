@@ -72,7 +72,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         GBPTree.Monitor monitor = treeMonitor();
         File storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                readOnly, NULL, immutable.empty() );
+                readOnly, NULL, immutable.empty(), descriptor.getName() );
         afterTreeInstantiation( tree );
     }
 

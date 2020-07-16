@@ -19,7 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.scheduler.CallableExecutor;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
@@ -53,17 +55,43 @@ public interface CleanupJob
      * Run cleanup job and use provided executor for parallel tasks.
      * This method will wait for all jobs passed to executor to finish before returning.
      */
-    void run( CallableExecutor executor );
+    void run( Executor executor );
 
     /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
      */
     CleanupJob CLEAN = new Adaptor();
 
+    /**
+     * Executor of asynchronous units of work needed during the recovery clean up.
+     */
+    @FunctionalInterface
+    interface Executor
+    {
+        <T> JobResult<T> submit( String jobDescription, Callable<T> job );
+    }
+
+    /**
+     * Result handle of jobs executed by {@link Executor}.
+     */
+    @FunctionalInterface
+    interface JobResult<T>
+    {
+        /**
+         * Waits if necessary for the computation to complete, and then
+         * retrieves its result, similar to {@link Future#get()}.
+         *
+         * @return the computed result
+         * @throws ExecutionException if the computation threw an exception
+         * @throws InterruptedException if the current thread was interrupted while waiting
+         */
+        T get() throws ExecutionException, InterruptedException;
+    }
+
     class Adaptor implements CleanupJob
     {
         @Override
-        public void run( CallableExecutor executor )
+        public void run( Executor executor )
         {   // no-op
         }
 

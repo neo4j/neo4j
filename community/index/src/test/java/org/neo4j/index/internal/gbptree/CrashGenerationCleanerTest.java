@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -43,8 +44,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.CallableExecutor;
-import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -83,7 +82,7 @@ class CrashGenerationCleanerTest
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
     private static ExecutorService executorService;
-    private static CallableExecutor executor;
+    private static CleanupJob.Executor executor;
     private final TreeState checkpointedTreeState = new TreeState( 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true );
     private final TreeState unstableTreeState = new TreeState( 0, 10, 12, 0, 0, 0, 0, 0, 0, 0, true, true );
     private final List<GBPTreeCorruption.PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
@@ -102,7 +101,15 @@ class CrashGenerationCleanerTest
     static void setUp()
     {
         executorService = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        executor = new CallableExecutorService( executorService );
+        executor = new CleanupJob.Executor()
+        {
+            @Override
+            public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
+            {
+                var future = executorService.submit( job );
+                return future::get;
+            }
+        };
     }
 
     @AfterAll
@@ -285,7 +292,7 @@ class CrashGenerationCleanerTest
         assertThat( cacheTracer.hits() ).isZero();
 
         var cleaner = new CrashGenerationCleaner( pagedFile, treeNode, 0, pages.length,
-                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), NO_MONITOR, cacheTracer );
+                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), NO_MONITOR, cacheTracer, "test tree" );
         cleaner.clean( executor );
 
         assertThat( cacheTracer.pins() ).isEqualTo( pages.length );
@@ -296,7 +303,7 @@ class CrashGenerationCleanerTest
     private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId, SimpleCleanupMonitor monitor )
     {
         return new CrashGenerationCleaner( pagedFile, treeNode, lowTreeNodeId, highTreeNodeId,
-                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), monitor, PageCacheTracer.NULL );
+                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), monitor, PageCacheTracer.NULL, "test tree" );
     }
 
     private void initializeFile( PagedFile pagedFile, Page... pages ) throws IOException

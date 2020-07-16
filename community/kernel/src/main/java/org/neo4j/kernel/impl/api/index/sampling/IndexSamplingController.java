@@ -46,6 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
@@ -71,6 +72,7 @@ public class IndexSamplingController
     private final boolean logRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamplesWait;
+    private final String databaseName;
 
     private JobHandle backgroundSamplingHandle;
 
@@ -82,7 +84,8 @@ public class IndexSamplingController
                              IndexMapSnapshotProvider indexMapSnapshotProvider,
                              JobScheduler scheduler,
                              RecoveryCondition indexRecoveryCondition,
-                             LogProvider logProvider )
+                             LogProvider logProvider,
+                             String databaseName )
     {
         this.backgroundSampling = config.backgroundSampling();
         this.jobFactory = jobFactory;
@@ -96,6 +99,7 @@ public class IndexSamplingController
         this.asyncRecoverIndexSamples = flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
         this.asyncRecoverIndexSamplesWait =
                 flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, asyncRecoverIndexSamples );
+        this.databaseName = databaseName;
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
@@ -262,7 +266,8 @@ public class IndexSamplingController
         if ( backgroundSampling )
         {
             Runnable samplingRunner = () -> sampleIndexes( backgroundRebuildUpdated() );
-            backgroundSamplingHandle = scheduler.scheduleRecurring( Group.INDEX_SAMPLING, samplingRunner, 10, SECONDS );
+            var monitoringParams = JobMonitoringParams.systemJob( databaseName, "Background rebuilding of updated indexes" );
+            backgroundSamplingHandle = scheduler.scheduleRecurring( Group.INDEX_SAMPLING, monitoringParams, samplingRunner, 10, SECONDS );
         }
     }
 

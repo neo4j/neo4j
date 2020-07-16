@@ -25,8 +25,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.common.Subject;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 class IndexSamplingJobTracker
@@ -35,13 +37,15 @@ class IndexSamplingJobTracker
     private final Set<Long> executingJobs;
     private final Lock lock = new ReentrantLock( true );
     private final Condition allJobsFinished = lock.newCondition();
+    private final String databaseName;
 
     private boolean stopped;
 
-    IndexSamplingJobTracker( JobScheduler jobScheduler )
+    IndexSamplingJobTracker( JobScheduler jobScheduler, String databaseName )
     {
         this.jobScheduler = jobScheduler;
         this.executingJobs = new HashSet<>();
+        this.databaseName = databaseName;
     }
 
     JobHandle scheduleSamplingJob( final IndexSamplingJob samplingJob )
@@ -61,7 +65,8 @@ class IndexSamplingJobTracker
             }
 
             executingJobs.add( indexId );
-            return jobScheduler.schedule( Group.INDEX_SAMPLING, () ->
+            var monitoringParams = new JobMonitoringParams( Subject.SYSTEM, databaseName, "Sampling of index '" + samplingJob.indexName() + "'" );
+            return jobScheduler.schedule( Group.INDEX_SAMPLING, monitoringParams, () ->
             {
                 try
                 {

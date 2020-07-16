@@ -176,6 +176,11 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private NativeTokenScanWriter.WriteMonitor writeMonitor;
 
     /**
+     * Name of the store that will be used when describing work related to this store.
+     */
+    private final String tokenStoreName;
+
+    /**
      * Write rebuilding bit to header.
      */
     private static final Consumer<PageCursor> needsRebuildingWriter =
@@ -188,7 +193,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker, String tokenStoreName )
     {
         this.pageCache = pageCache;
         this.fs = fs;
@@ -205,6 +210,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.fileSystem = fs;
         this.entityType = entityType;
+        this.tokenStoreName = tokenStoreName;
     }
 
     @Override
@@ -422,7 +428,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         try
         {
             index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), monitor, readRebuilding,
-                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty() );
+                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), tokenStoreName );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )

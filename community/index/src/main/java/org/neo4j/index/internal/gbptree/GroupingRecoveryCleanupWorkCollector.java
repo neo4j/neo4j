@@ -20,12 +20,14 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.Preconditions;
 
@@ -38,6 +40,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     private final JobScheduler jobScheduler;
     private final Group group;
     private final Group workerGroup;
+    private final String databaseName;
     private volatile boolean moreJobsAllowed = true;
     private JobHandle handle;
 
@@ -45,12 +48,15 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
      * @param group {@link Group} to which all cleanup jobs should be scheduled.
      * @param workerGroup {@link Group} to which all sub-tasks of cleanup jobs should be scheduled.
+     * @param databaseName name of the database that is being recovered. This is currently used only for monitoring
+     * purposes to link this unit of work with a database it belongs to.
      */
-    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler, Group group, Group workerGroup )
+    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler, Group group, Group workerGroup, String databaseName )
     {
         this.jobScheduler = jobScheduler;
         this.group = group;
         this.workerGroup = workerGroup;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -93,7 +99,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
 
     private void scheduleJobs()
     {
-        handle = jobScheduler.schedule( group, allJobs() );
+        handle = jobScheduler.schedule( group, JobMonitoringParams.systemJob( databaseName, "Index recovery clean up" ), allJobs() );
     }
 
     private Runnable allJobs()
@@ -108,7 +114,16 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
                     job = jobs.poll( 100, TimeUnit.MILLISECONDS );
                     if ( job != null )
                     {
-                        job.run( jobScheduler.executor( workerGroup ) );
+                        job.run( new CleanupJob.Executor()
+                        {
+                            @Override
+                            public <T> CleanupJob.JobResult<T> submit( String jobDescription, Callable<T> job )
+                            {
+                                var jobMonitoringParams = JobMonitoringParams.systemJob( databaseName, jobDescription );
+                                var jobHandle = jobScheduler.schedule( workerGroup, jobMonitoringParams, job );
+                                return jobHandle::get;
+                            }
+                        } );
                     }
                 }
                 catch ( Exception e )
