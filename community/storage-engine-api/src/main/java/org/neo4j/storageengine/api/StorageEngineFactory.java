@@ -117,12 +117,12 @@ public interface StorageEngineFactory
     LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
-     * Instantiates a fully functional {@link TransactionMetaDataStore}, which is a union of {@link TransactionIdStore}
+     * Instantiates a fully functional {@link MetadataProvider}, which is a union of {@link TransactionIdStore}
      * and {@link LogVersionRepository}.
-     * @return a fully functional {@link TransactionMetaDataStore}.
+     * @return a fully functional {@link MetadataProvider}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
+    MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             PageCacheTracer cacheTracer ) throws IOException;
 
     StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException;

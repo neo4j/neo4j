@@ -41,8 +41,8 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
@@ -179,7 +179,7 @@ public class LogsUpgrader
     public void upgrade( DatabaseLayout layout )
     {
         CommandReaderFactory commandReaderFactory = storageEngineFactory.commandReaderFactory();
-        try ( TransactionMetaDataStore store = getMetaDataStore() )
+        try ( MetadataProvider store = getMetaDataStore() )
         {
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
                     fs, store, commandReaderFactory, tracer );
@@ -246,7 +246,7 @@ public class LogsUpgrader
         }
     }
 
-    private TransactionMetaDataStore getMetaDataStore() throws IOException
+    private MetadataProvider getMetaDataStore() throws IOException
     {
         // Make sure to create the TransactionMetaDataStore with a `read_only` config,
         // to avoid relying on the persistent id generators.

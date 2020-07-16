@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogFilesInitializer;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -55,7 +55,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 public class TransactionLogInitializer
 {
     private final FileSystemAbstraction fs;
-    private final TransactionMetaDataStore store;
+    private final MetadataProvider store;
     private final CommandReaderFactory commandReaderFactory;
     private final PageCacheTracer tracer;
 
@@ -81,7 +81,7 @@ public class TransactionLogInitializer
         };
     }
 
-    public TransactionLogInitializer( FileSystemAbstraction fs, TransactionMetaDataStore store, CommandReaderFactory commandReaderFactory,
+    public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, CommandReaderFactory commandReaderFactory,
                                       PageCacheTracer tracer )
     {
         this.fs = fs;

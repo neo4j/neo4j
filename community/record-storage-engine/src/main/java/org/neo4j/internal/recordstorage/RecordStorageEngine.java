@@ -79,14 +79,13 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -515,13 +514,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public TransactionIdStore transactionIdStore()
-    {
-        return neoStores.getMetaDataStore();
-    }
-
-    @Override
-    public LogVersionRepository logVersionRepository()
+    public MetadataProvider metadataProvider()
     {
         return neoStores.getMetaDataStore();
     }

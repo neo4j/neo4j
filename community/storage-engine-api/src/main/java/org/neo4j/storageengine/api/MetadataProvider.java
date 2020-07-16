@@ -22,10 +22,8 @@ package org.neo4j.storageengine.api;
 import java.io.Closeable;
 
 /**
- * This union of {@link TransactionIdStore} and {@link LogVersionRepository} exists because of how the current implementation,
- * you know the MetaDataStore has all this information in it. In the end I believe this abstraction should be extracted from storage
- * into kernel so that it owns it altogether.
+ * Provider for metadata that describes stores properties, ids, store level implementation details
  */
-public interface TransactionMetaDataStore extends TransactionIdStore, LogVersionRepository, StoreIdProvider, Closeable
+public interface MetadataProvider extends TransactionIdStore, LogVersionRepository, StoreIdProvider, Closeable
 {
 }

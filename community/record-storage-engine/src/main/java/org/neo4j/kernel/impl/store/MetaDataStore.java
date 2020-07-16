@@ -48,9 +48,9 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.util.Bits;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -67,7 +67,7 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements TransactionMetaDataStore
+public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements MetadataProvider
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once

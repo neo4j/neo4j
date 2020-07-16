@@ -68,6 +68,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -97,7 +98,7 @@ class KernelTransactionTestBase
 {
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
     protected final StorageReader storageReader = mock( StorageReader.class );
-    protected final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+    protected final MetadataProvider metadataProvider = mock( MetadataProvider.class );
     protected final CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
@@ -115,7 +116,7 @@ class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), any() ) ).thenReturn( commandCreationContext );
-        when( storageEngine.transactionIdStore() ).thenReturn( transactionIdStore );
+        when( storageEngine.metadataProvider() ).thenReturn( metadataProvider );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),

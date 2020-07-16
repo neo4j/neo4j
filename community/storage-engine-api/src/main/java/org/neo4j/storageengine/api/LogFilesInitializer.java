@@ -33,5 +33,5 @@ public interface LogFilesInitializer
      * Initialize the transaction log files in the given database layout.
      * This is usually called after creating an empty, or newly imported, store.
      */
-    void initializeLogFiles( DatabaseLayout databaseLayout, TransactionMetaDataStore store, FileSystemAbstraction fileSystem );
+    void initializeLogFiles( DatabaseLayout databaseLayout, MetadataProvider store, FileSystemAbstraction fileSystem );
 }

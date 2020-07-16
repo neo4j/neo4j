@@ -154,12 +154,9 @@ public interface StorageEngine extends Lifecycle
     Lifecycle schemaAndTokensLifecycle();
 
     /**
-     * @return a {@link TransactionIdStore}, which is exposed because kernel treats transaction ids as central to a lot of functionality,
-     * not the least clustering. It is owned by the storage engine because it's tightly coupled with.
+     * @return a {@link TransactionIdStore}, provides access to underlying storage metadata information.
      */
-    TransactionIdStore transactionIdStore();
-
-    LogVersionRepository logVersionRepository();
+    MetadataProvider metadataProvider();
 
     CountsAccessor countsAccessor();
 

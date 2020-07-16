@@ -159,6 +159,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
@@ -456,18 +457,17 @@ public class Database extends LifecycleAdapter
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore,
                     pageCacheTracer, otherDatabaseMemoryTracker );
 
-            TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
-            databaseDependencies.satisfyDependency( transactionIdStore );
-            databaseDependencies.satisfyDependency( storageEngine.logVersionRepository() );
+            MetadataProvider metadataProvider = storageEngine.metadataProvider();
+            databaseDependencies.satisfyDependency( metadataProvider );
             databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
 
-            versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
+            versionContextSupplier.init( metadataProvider::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation =
                     new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
-                            logEntryReader, transactionIdStore, databaseMonitors );
+                            logEntryReader, metadataProvider, databaseMonitors );
             transactionLogModule.satisfyDependencies( databaseDependencies );
 
             final DatabaseKernelModule kernelModule = buildKernel(
@@ -478,7 +478,7 @@ public class Database extends LifecycleAdapter
                     labelScanStore,
                     relationshipTypeScanStore,
                     storageEngine,
-                    transactionIdStore,
+                    metadataProvider,
                     databaseAvailabilityGuard,
                     clock,
                     indexStatisticsStore, databaseFacade, leaseService );

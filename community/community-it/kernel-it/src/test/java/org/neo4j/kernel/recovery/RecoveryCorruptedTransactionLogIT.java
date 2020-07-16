@@ -84,12 +84,12 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -868,7 +868,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private long getLastClosedTransactionOffset( GraphDatabaseAPI database )
     {
-        TransactionMetaDataStore metaDataStore = database.getDependencyResolver().resolveDependency( TransactionMetaDataStore.class );
+        MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
         return metaDataStore.getLastClosedTransaction()[2];
     }
 

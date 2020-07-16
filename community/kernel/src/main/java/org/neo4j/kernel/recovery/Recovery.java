@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.DefaultForceOperation;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -95,6 +94,7 @@ import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -329,13 +329,12 @@ public final class Recovery
                 config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
                 tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), false );
 
-        TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
-        LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();
+        MetadataProvider metadataProvider = storageEngine.metadataProvider();
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                 NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ), new DefaultIdController(),
-                EmptyVersionContextSupplier.EMPTY, logService, transactionIdStore, logVersionRepository );
+                EmptyVersionContextSupplier.EMPTY, logService, metadataProvider );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
@@ -353,20 +352,20 @@ public final class Recovery
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
         BatchingTransactionAppender transactionAppender = new BatchingTransactionAppender( logFiles, LogRotation.NO_ROTATION, metadataCache,
-                transactionIdStore, databaseHealth );
+                metadataProvider, databaseHealth );
 
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add( storageEngine.schemaAndTokensLifecycle() );
         schemaLife.add( indexingService );
 
         TransactionLogsRecovery transactionLogsRecovery =
-                transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
-                        monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
+                transactionLogRecovery( fs, metadataProvider, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
+                        monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
                         schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
         CheckPointerImpl checkPointer =
-                new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
+                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
                         databaseHealth, logProvider, tracers, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
