@@ -75,7 +75,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -213,10 +212,10 @@ public class StoreUpgraderInterruptionTestIT
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
 
-        assertEquals( 20, idMigratorTracer.faults() );
-        assertEquals( 83, idMigratorTracer.hits() );
-        assertEquals( 103, idMigratorTracer.pins() );
-        assertEquals( 103, idMigratorTracer.unpins() );
+        assertEquals( 21, idMigratorTracer.faults() );
+        assertEquals( 178, idMigratorTracer.hits() );
+        assertEquals( 199, idMigratorTracer.pins() );
+        assertEquals( 199, idMigratorTracer.unpins() );
 
         assertEquals( 52, recordMigratorTracer.faults() );
         assertEquals( 208, recordMigratorTracer.hits() );
