@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -32,51 +30,54 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.PointValue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 import static org.neo4j.values.storable.Values.pointValue;
 
+@DbmsExtension( configurationCallback = "configure" )
 public class FusionIndexIT
 {
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
-
-    private DatabaseLayout databaseLayout;
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
+
+    @Inject
+    private DbmsController controller;
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
     private FileSystemAbstraction fs;
+
     private int numberValue = 1;
     private String stringValue = "string";
     private PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS84, 0.5, 0.5 );
     private DateValue temporalValue = DateValue.date( 2018, 3, 19 );
 
-    @Before
-    public void setup()
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        databaseLayout = db.databaseLayout();
-        fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
     }
 
     @Test
-    public void mustRebuildFusionIndexIfNativePartIsMissing()
+    void mustRebuildFusionIndexIfNativePartIsMissing()
     {
         // given
-        initializeIndexWithDataAndShutdown();
+        initializeIndexWithData();
 
         // when
-        IndexProviderDescriptor descriptor = GenericNativeIndexProvider.DESCRIPTOR;
-        deleteIndexFilesFor( descriptor );
+        deleteIndexFilesForProviderAndRestartDbms( GenericNativeIndexProvider.DESCRIPTOR );
 
         // then
         // ... should rebuild
@@ -84,14 +85,13 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfLucenePartIsMissing()
+    void mustRebuildFusionIndexIfLucenePartIsMissing()
     {
         // given
-        initializeIndexWithDataAndShutdown();
+        initializeIndexWithData();
 
         // when
-        IndexProviderDescriptor descriptor = LuceneIndexProvider.DESCRIPTOR;
-        deleteIndexFilesFor( descriptor );
+        deleteIndexFilesForProviderAndRestartDbms( LuceneIndexProvider.DESCRIPTOR );
 
         // then
         // ... should rebuild
@@ -99,26 +99,34 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfCompletelyMissing()
+    void mustRebuildFusionIndexIfCompletelyMissing()
     {
         // given
-        initializeIndexWithDataAndShutdown();
+        initializeIndexWithData();
 
         // when
-        IndexProviderDescriptor luceneDescriptor = LuceneIndexProvider.DESCRIPTOR;
-        IndexProviderDescriptor nativeDescriptor = GenericNativeIndexProvider.DESCRIPTOR;
-        deleteIndexFilesFor( luceneDescriptor );
-        deleteIndexFilesFor( nativeDescriptor );
+        deleteIndexFilesForProviderAndRestartDbms( LuceneIndexProvider.DESCRIPTOR, GenericNativeIndexProvider.DESCRIPTOR );
 
         // then
         // ... should rebuild
         verifyContent();
+    }
+
+    private void deleteIndexFilesForProviderAndRestartDbms( IndexProviderDescriptor ... descriptors )
+    {
+        controller.restartDbms( db.databaseName() , builder ->
+        {
+            for ( IndexProviderDescriptor descriptor : descriptors )
+            {
+                deleteIndexFilesFor( descriptor );
+            }
+            return builder;
+        } );
     }
 
     private void verifyContent()
     {
-        GraphDatabaseAPI newDb = db.getGraphDatabaseAPI();
-        try ( Transaction tx = newDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 1L, Iterators.stream( tx.schema().getIndexes( label ).iterator() ).count() );
             assertNotNull( tx.findNode( label, propKey, numberValue ) );
@@ -131,7 +139,7 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
     {
-        File databaseDirectory = this.databaseLayout.databaseDirectory().toFile();
+        File databaseDirectory = db.databaseLayout().databaseDirectory().toFile();
         File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
         File[] files = fs.listFiles( rootDirectory );
         for ( File indexFile : files )
@@ -140,7 +148,7 @@ public class FusionIndexIT
         }
     }
 
-    private void initializeIndexWithDataAndShutdown()
+    private void initializeIndexWithData()
     {
         createIndex();
         try ( Transaction tx = db.beginTx() )
@@ -151,7 +159,6 @@ public class FusionIndexIT
             tx.createNode( label ).setProperty( propKey, temporalValue );
             tx.commit();
         }
-        db.shutdown();
     }
 
     private void createIndex()

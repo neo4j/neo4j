@@ -19,16 +19,15 @@
  */
 package org.neo4j.index.recovery;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
@@ -47,20 +46,22 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
-@RunWith( Parameterized.class )
+@TestDirectoryExtension
 public class UniqueIndexRecoveryTest
 {
-    @Rule
-    public final TestDirectory storeDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory storeDir;
 
     private static final String PROPERTY_KEY = "key";
     private static final String PROPERTY_VALUE = "value";
@@ -69,36 +70,34 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static SchemaIndex[] parameters()
+    private static Stream<SchemaIndex> parameters()
     {
-        return SchemaIndex.values();
+        return Arrays.stream( SchemaIndex.values() );
     }
 
-    @Parameterized.Parameter
-    public SchemaIndex schemaIndex;
-
-    @Before
-    public void before()
+    private void setupDatabase( SchemaIndex schemaIndex )
     {
-        db = (GraphDatabaseAPI) newDb();
+        db = (GraphDatabaseAPI) newDb( schemaIndex );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
 
-    @Test
-    public void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint() throws Exception
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint( SchemaIndex schemaIndex ) throws Exception
     {
+        setupDatabase( schemaIndex );
+
         // given
         createUniqueConstraint();
         dropConstraints();
 
         // when - perform recovery
-        restart( snapshot( storeDir.absolutePath() ) );
+        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
 
         // then - just make sure the constraint is gone
         try ( Transaction tx = db.beginTx() )
@@ -108,9 +107,12 @@ public class UniqueIndexRecoveryTest
         }
     }
 
-    @Test
-    public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldRecoverWhenCommandsTemporarilyViolateConstraints( SchemaIndex schemaIndex ) throws Exception
     {
+        setupDatabase( schemaIndex );
+
         // GIVEN
         Node unLabeledNode = createUnLabeledNodeWithProperty();
         Node labeledNode = createLabeledNode();
@@ -122,7 +124,7 @@ public class UniqueIndexRecoveryTest
         flushAll(); // persist - recovery will do everything since last log rotate
 
         // WHEN recovery is triggered
-        restart( snapshot( storeDir.absolutePath() ) );
+        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
 
         // THEN
         // it should just not blow up!
@@ -133,13 +135,13 @@ public class UniqueIndexRecoveryTest
         }
     }
 
-    private void restart( File newStore )
+    private void restart( File newStore, SchemaIndex schemaIndex )
     {
         managementService.shutdown();
-        db = (GraphDatabaseAPI) newDb();
+        db = (GraphDatabaseAPI) newDb( schemaIndex );
     }
 
-    private GraphDatabaseService newDb()
+    private GraphDatabaseService newDb( SchemaIndex schemaIndex )
     {
         managementService = new TestDatabaseManagementServiceBuilder( storeDir.homePath().toAbsolutePath() )
                 .setConfig( default_schema_provider, schemaIndex.providerName() )

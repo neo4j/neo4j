@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +30,19 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ImpermanentDbmsExtension
+@ExtendWith( OtherThreadExtension.class )
 public class NestedIndexReadersIT
 {
     private static final int NODE_PER_ID = 3;
@@ -45,13 +50,13 @@ public class NestedIndexReadersIT
     private static final Label LABEL = Label.label( "Label" );
     private static final String KEY = "key";
 
-    @Rule
-    public final ImpermanentDbmsRule db = new ImpermanentDbmsRule();
-    @Rule
-    public final OtherThreadRule t2 = new OtherThreadRule();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private OtherThreadRule t2;
 
     @Test
-    public void shouldReadCorrectResultsFromMultipleNestedReaders()
+    void shouldReadCorrectResultsFromMultipleNestedReaders()
     {
         // given
         createIndex();
@@ -91,7 +96,7 @@ public class NestedIndexReadersIT
     }
 
     @Test
-    public void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens() throws Exception
+    void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens() throws Exception
     {
         // given
         createIndex();
@@ -175,8 +180,7 @@ public class NestedIndexReadersIT
         assertTrue( reader.hasNext() );
         Node node = reader.next();
         assertTrue( node.hasLabel( LABEL ) );
-        assertEquals( "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + id,
-                id, node.getProperty( KEY ) );
+        assertEquals( id, node.getProperty( KEY ), "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + id );
     }
 
     private void createIndex()

@@ -19,42 +19,58 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.index.SabotageNativeIndex.nativeIndexDirectoryStructure;
 
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
 public class IndexFailureOnStartupTest
 {
     private static final Label PERSON = Label.label( "Person" );
 
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule().startLazily();
+    @Inject
+    private RandomRule random;
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private DbmsController controller;
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Test
-    public void failedIndexShouldRepairAutomatically() throws Exception
+    void failedIndexShouldRepairAutomatically()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -65,7 +81,7 @@ public class IndexFailureOnStartupTest
         awaitIndexesOnline( 5, SECONDS );
         createNamed( PERSON, "Johan" );
         // when - we restart the database in a state where the index is not operational
-        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
+        sabotageNativeIndexAndRestartDbms();
         // then - the database should still be operational
         createNamed( PERSON, "Lars" );
         awaitIndexesOnline( 5, SECONDS );
@@ -74,7 +90,7 @@ public class IndexFailureOnStartupTest
     }
 
     @Test
-    public void shouldNotBeAbleToViolateConstraintWhenBackingIndexFailsToOpen() throws Exception
+    void shouldNotBeAbleToViolateConstraintWhenBackingIndexFailsToOpen()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -84,54 +100,71 @@ public class IndexFailureOnStartupTest
         }
         createNamed( PERSON, "Lars" );
         // when - we restart the database in a state where the index is not operational
-        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
+        sabotageNativeIndexAndRestartDbms();
         // then - we must not be able to violate the constraint
         createNamed( PERSON, "Johan" );
-        Throwable failure = null;
-        try
-        {
-            createNamed( PERSON, "Lars" );
-        }
-        catch ( Throwable e )
-        {
-            // this must fail, otherwise we have violated the constraint
-            failure = e;
-        }
-        assertNotNull( failure );
+        // this must fail, otherwise we have violated the constraint
+        assertThrows( ConstraintViolationException.class, () -> createNamed( PERSON, "Lars" ) );
         indexStateShouldBe( ONLINE );
     }
 
-    @Test
-    public void shouldArchiveFailedIndex() throws Exception
+    @Nested
+    @DbmsExtension( configurationCallback = "configure" )
+    class ArchiveIndex
     {
-        // given
-        db.withSetting( GraphDatabaseInternalSettings.archive_failed_index, true );
-        try ( Transaction tx = db.beginTx() )
+
+        @ExtensionCallback
+        void configure( TestDatabaseManagementServiceBuilder builder )
         {
-            Node node = tx.createNode( PERSON );
-            node.setProperty( "name", "Fry" );
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( PERSON );
-            node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
-            tx.commit();
+            builder.setConfig( GraphDatabaseInternalSettings.archive_failed_index, true );
         }
 
-        try ( Transaction tx = db.beginTx() )
+        @Test
+        void shouldArchiveFailedIndex()
         {
-            tx.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
-            tx.commit();
+            // given
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode( PERSON );
+                node.setProperty( "name", "Fry" );
+                tx.commit();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode( PERSON );
+                node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
+                tx.commit();
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
+                tx.commit();
+            }
+            assertThat( archiveFile() ).isNull();
+
+            // when
+            sabotageNativeIndexAndRestartDbms();
+            // then
+            indexStateShouldBe( ONLINE );
+            assertThat( archiveFile() ).isNotNull();
         }
-        assertThat( archiveFile() ).isNull();
+    }
 
-        // when
-        db.restartDatabase( new SabotageNativeIndex( random.random() ) );
-
-        // then
-        indexStateShouldBe( ONLINE );
-        assertThat( archiveFile() ).isNotNull();
+    private void sabotageNativeIndexAndRestartDbms()
+    {
+        controller.restartDbms( db.databaseName(), builder ->
+        {
+            try
+            {
+                new SabotageNativeIndex( random.random() ).run( fs, db.databaseLayout() );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+            return builder;
+        } );
     }
 
     private File archiveFile()
@@ -159,8 +192,7 @@ public class IndexFailureOnStartupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( "Must be able to find node created while index was offline",
-                    tx.findNode( label, "name", name ) );
+            assertNotNull( tx.findNode( label, "name", name ), "Must be able to find node created while index was offline" );
             tx.commit();
         }
     }

@@ -21,8 +21,9 @@ package org.neo4j.index.backup;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.index.IndexFileNames;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,65 +44,83 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
 public class IndexBackupIT
 {
     private static final String PROPERTY_PREFIX = "property";
     private static final int NUMBER_OF_INDEXES = 10;
 
-    @Rule
-    public RandomRule randomRule = new RandomRule();
-    @Rule
-    public EmbeddedDbmsRule database = new EmbeddedDbmsRule().startLazily();
+    @Inject
+    private RandomRule random;
+    @Inject
+    private GraphDatabaseAPI database;
+
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;
 
-    @Test
-    public void concurrentLuceneIndexSnapshotUseDifferentSnapshots() throws Exception
+    @Nested
+    @DbmsExtension( configurationCallback = "configure" )
+    class LuceneIndexSnapshots
     {
-        Label label = Label.label( "testLabel" );
-        database.withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
-        prepareDatabase( label );
+        @ExtensionCallback
+        void configure( TestDatabaseManagementServiceBuilder builder )
+        {
+            builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
+        }
 
-        forceCheckpoint( checkPointer );
-        ResourceIterator<Path> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
-        generateData( label );
-        removeOldNodes( LongStream.range( 1, 20 )  );
-        updateOldNodes( LongStream.range( 30, 40 ) );
+        @Test
+        void concurrentLuceneIndexSnapshotUseDifferentSnapshots() throws Exception
+        {
+            Label label = Label.label( "testLabel" );
+            prepareDatabase( label );
 
-        forceCheckpoint( checkPointer );
-        ResourceIterator<Path> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
+            forceCheckpoint( checkPointer );
+            ResourceIterator<Path> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
+            generateData( label );
+            removeOldNodes( LongStream.range( 1, 20 ) );
+            updateOldNodes( LongStream.range( 30, 40 ) );
 
-        generateData( label );
-        removeOldNodes( LongStream.range( 50, 60 )  );
-        updateOldNodes( LongStream.range( 70, 80 ) );
+            forceCheckpoint( checkPointer );
+            ResourceIterator<Path> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
-        forceCheckpoint( checkPointer );
-        ResourceIterator<Path> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
+            generateData( label );
+            removeOldNodes( LongStream.range( 50, 60 ) );
+            updateOldNodes( LongStream.range( 70, 80 ) );
 
-        Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
-        Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
-        Set<String> thirdSnapshotFileNames = getFileNames( thirdCheckpointSnapshot );
+            forceCheckpoint( checkPointer );
+            ResourceIterator<Path> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
-        compareSnapshotFiles( firstSnapshotFileNames, secondSnapshotFileNames, fileSystem );
-        compareSnapshotFiles( secondSnapshotFileNames, thirdSnapshotFileNames, fileSystem);
-        compareSnapshotFiles( thirdSnapshotFileNames, firstSnapshotFileNames, fileSystem);
+            Set<String> firstSnapshotFileNames = getFileNames( firstCheckpointSnapshot );
+            Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
+            Set<String> thirdSnapshotFileNames = getFileNames( thirdCheckpointSnapshot );
 
-        firstCheckpointSnapshot.close();
-        secondCheckpointSnapshot.close();
-        thirdCheckpointSnapshot.close();
+            compareSnapshotFiles( firstSnapshotFileNames, secondSnapshotFileNames, fileSystem );
+            compareSnapshotFiles( secondSnapshotFileNames, thirdSnapshotFileNames, fileSystem );
+            compareSnapshotFiles( thirdSnapshotFileNames, firstSnapshotFileNames, fileSystem );
+
+            firstCheckpointSnapshot.close();
+            secondCheckpointSnapshot.close();
+            thirdCheckpointSnapshot.close();
+        }
     }
 
     @Test
-    public void snapshotFilesDeletedWhenSnapshotReleased() throws IOException
+    void snapshotFilesDeletedWhenSnapshotReleased() throws IOException
     {
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );
@@ -143,15 +162,14 @@ public class IndexBackupIT
                 NUMBER_OF_INDEXES );
         for ( String fileName : firstSnapshotFileNames )
         {
-            assertFalse( "Snapshot segments fileset should not have files from another snapshot set." +
-                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
-                    secondSnapshotFileNames.contains( fileName ) );
+            assertFalse( secondSnapshotFileNames.contains( fileName ),
+                    "Snapshot segments fileset should not have files from another snapshot set." +
+                    describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ) );
             String path = FilenameUtils.getFullPath( fileName );
-            assertTrue( "Snapshot should contain files for index in path: " + path + "." +
-                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
-                    secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ) );
-            assertTrue( format( "Snapshot segment file '%s' should exist.", fileName ),
-                    fileSystem.fileExists( new File( fileName ) ) );
+            assertTrue( secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ),
+                    "Snapshot should contain files for index in path: " + path + "." +
+                    describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ) );
+            assertTrue( fileSystem.fileExists( new File( fileName ) ), format( "Snapshot segment file '%s' should exist.", fileName ) );
         }
     }
 
@@ -172,7 +190,7 @@ public class IndexBackupIT
             for ( int i = 0; i < NUMBER_OF_INDEXES; i++ )
             {
                 String propertyName = PROPERTY_PREFIX + i;
-                nodes.forEach( node -> node.setProperty( propertyName, randomRule.nextLong() ) );
+                nodes.forEach( node -> node.setProperty( propertyName, random.nextLong() ) );
             }
             transaction.commit();
         }
