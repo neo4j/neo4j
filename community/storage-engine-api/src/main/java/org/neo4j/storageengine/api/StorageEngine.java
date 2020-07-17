@@ -154,7 +154,7 @@ public interface StorageEngine extends Lifecycle
     Lifecycle schemaAndTokensLifecycle();
 
     /**
-     * @return a {@link TransactionIdStore}, provides access to underlying storage metadata information.
+     * @return a {@link MetadataProvider}, provides access to underlying storage metadata information.
      */
     MetadataProvider metadataProvider();
 
