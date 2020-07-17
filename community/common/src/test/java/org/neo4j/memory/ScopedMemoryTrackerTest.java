@@ -22,6 +22,7 @@ package org.neo4j.memory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ScopedMemoryTrackerTest
 {
@@ -60,5 +61,51 @@ class ScopedMemoryTrackerTest
 
         assertEquals( 1, memoryTracker.usedNativeMemory() );
         assertEquals( 3, memoryTracker.estimatedHeapMemory() );
+    }
+
+    @Test
+    void closeParentThenCloseChildShouldBeOK()
+    {
+        // Given
+        // scopedMemoryTracker is the parent in this test
+        scopedMemoryTracker.allocateNative( 10 );
+        scopedMemoryTracker.allocateHeap( 10 );
+
+        ScopedMemoryTracker child = new ScopedMemoryTracker( scopedMemoryTracker );
+
+        child.allocateNative( 5 );
+        child.allocateHeap( 5 );
+
+        // When
+        scopedMemoryTracker.close();
+
+        assertEquals( 0, scopedMemoryTracker.usedNativeMemory() );
+        assertEquals( 0, scopedMemoryTracker.estimatedHeapMemory() );
+
+        child.close();
+
+        // Then
+        assertEquals( 0, scopedMemoryTracker.usedNativeMemory() );
+        assertEquals( 0, scopedMemoryTracker.estimatedHeapMemory() );
+    }
+
+    @Test
+    void closeParentThenAllocateReleaseOrResetChildShouldThrow()
+    {
+        // scopedMemoryTracker is the parent in this test
+        scopedMemoryTracker.allocateNative( 10 );
+        scopedMemoryTracker.allocateHeap( 10 );
+
+        ScopedMemoryTracker child = new ScopedMemoryTracker( scopedMemoryTracker );
+
+        child.allocateNative( 5 );
+        child.allocateHeap( 5 );
+        scopedMemoryTracker.close();
+
+        assertThrows( IllegalStateException.class, () -> child.allocateHeap( 10 ) );
+        assertThrows( IllegalStateException.class, () -> child.allocateNative( 10 ) );
+        assertThrows( IllegalStateException.class, () -> child.releaseHeap( 10 ) );
+        assertThrows( IllegalStateException.class, () -> child.releaseNative( 10 ) );
+        assertThrows( IllegalStateException.class, child::reset );
     }
 }

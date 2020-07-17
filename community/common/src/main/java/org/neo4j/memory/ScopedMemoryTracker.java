@@ -29,6 +29,7 @@ public class ScopedMemoryTracker implements MemoryTracker
     private final MemoryTracker delegate;
     private long trackedNative;
     private long trackedHeap;
+    private boolean isClosed;
 
     public ScopedMemoryTracker( MemoryTracker delegate )
     {
@@ -50,6 +51,7 @@ public class ScopedMemoryTracker implements MemoryTracker
     @Override
     public void allocateNative( long bytes )
     {
+        throwIfClosed();
         delegate.allocateNative( bytes );
         trackedNative += bytes;
     }
@@ -57,6 +59,7 @@ public class ScopedMemoryTracker implements MemoryTracker
     @Override
     public void releaseNative( long bytes )
     {
+        throwIfClosed();
         delegate.releaseNative( bytes );
         trackedNative -= bytes;
     }
@@ -64,6 +67,7 @@ public class ScopedMemoryTracker implements MemoryTracker
     @Override
     public void allocateHeap( long bytes )
     {
+        throwIfClosed();
         delegate.allocateHeap( bytes );
         trackedHeap += bytes;
     }
@@ -71,8 +75,17 @@ public class ScopedMemoryTracker implements MemoryTracker
     @Override
     public void releaseHeap( long bytes )
     {
+        throwIfClosed();
         delegate.releaseHeap( bytes );
         trackedHeap -= bytes;
+    }
+
+    private void throwIfClosed()
+    {
+        if ( isClosed )
+        {
+            throw new IllegalStateException( "Should not use a closed ScopedMemoryTracker" );
+        }
     }
 
     @Override
@@ -88,6 +101,20 @@ public class ScopedMemoryTracker implements MemoryTracker
         delegate.releaseHeap( trackedHeap );
         trackedNative = 0;
         trackedHeap = 0;
+    }
+
+    @Override
+    public void close()
+    {
+        // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
+        if ( !(delegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) delegate).isClosed )
+        {
+            delegate.releaseNative( trackedNative );
+            delegate.releaseHeap( trackedHeap );
+        }
+        trackedNative = 0;
+        trackedHeap = 0;
+        isClosed = true;
     }
 
     @Override
