@@ -19,25 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
@@ -46,23 +44,20 @@ import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.awaitIndexesOnl
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.index;
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.uniquenessConstraint;
 
-@RunWith( Parameterized.class )
+@ImpermanentDbmsExtension
 public class UniqueIndexApplicationIT
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
-    private final Function<Transaction, ?> createIndex;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> indexTypes()
+    private static Stream<Function<Transaction, Void>> indexTypes()
     {
-        return asList( createIndex( index( label( "Label1" ), "key1" ) ),
-                createIndex( uniquenessConstraint( label( "Label1" ), "key1" ) ) );
+        return Stream.of( index( label( "Label1" ), "key1" ),
+                uniquenessConstraint( label( "Label1" ), "key1" ) );
     }
 
-    @After
-    public void then()
+    @AfterEach
+    void then()
     {
         try ( var transaction = db.beginTx() )
         {
@@ -71,20 +66,26 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Before
-    public void given()
+    private void createIndex( Function<Transaction, Void> createIndexFunc )
     {
-        db.executeAndCommit( createIndex::apply );
-        db.executeAndCommit( transaction ->
+        try ( Transaction tx = db.beginTx() )
         {
-            awaitIndexesOnline( 5, SECONDS ).apply( transaction );
-            return null;
-        } );
+            createIndexFunc.apply( tx );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            awaitIndexesOnline( 5, SECONDS ).apply( tx );
+            tx.commit();
+        }
     }
 
-    @Test
-    public void tx_createNode_addLabel_setProperty()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_addLabel_setProperty( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         try ( var transaction = db.beginTx() )
         {
             var node = transaction.createNode();
@@ -94,9 +95,12 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Test
-    public void tx_createNode_tx_addLabel_setProperty()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_tx_addLabel_setProperty( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         try ( var transaction = db.beginTx() )
         {
             var node = transaction.createNode();
@@ -106,9 +110,12 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Test
-    public void tx_createNode_addLabel_tx_setProperty()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_addLabel_tx_setProperty( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         Node node;
         try ( var transaction = db.beginTx() )
         {
@@ -123,9 +130,12 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Test
-    public void tx_createNode_setProperty_tx_addLabel()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_setProperty_tx_addLabel( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         Node node;
         try ( var transaction = db.beginTx() )
         {
@@ -141,9 +151,12 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Test
-    public void tx_createNode_tx_addLabel_tx_setProperty()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_tx_addLabel_tx_setProperty( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         Node node;
         try ( var transaction = db.beginTx() )
         {
@@ -162,9 +175,12 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    @Test
-    public void tx_createNode_tx_setProperty_tx_addLabel()
+    @ParameterizedTest
+    @MethodSource( "indexTypes" )
+    void tx_createNode_tx_setProperty_tx_addLabel( Function<Transaction, Void> createIndexFunc )
     {
+        createIndex( createIndexFunc );
+
         try ( var transaction = db.beginTx() )
         {
             var node = transaction.createNode();
@@ -186,15 +202,5 @@ public class UniqueIndexApplicationIT
             }
             return ids;
         };
-    }
-
-    public UniqueIndexApplicationIT( Function<Transaction, ?> createIndex )
-    {
-        this.createIndex = createIndex;
-    }
-
-    private static Object[] createIndex( Function<Transaction, Void> createIndex )
-    {
-        return new Object[]{createIndex};
     }
 }

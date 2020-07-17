@@ -19,15 +19,14 @@
  */
 package org.neo4j.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -87,15 +88,15 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -110,7 +111,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 //[NodePropertyUpdate[4, prop:0 add:Volvo, labelsBefore:[], labelsAfter:[2]]]
 //[NodePropertyUpdate[5, prop:0 add:Ford, labelsBefore:[], labelsAfter:[2]]]
 //TODO: check count store counts
-@RunWith( Parameterized.class )
+@ImpermanentDbmsExtension
 public class MultiIndexPopulationConcurrentUpdatesIT
 {
     private static final String NAME_PROPERTY = "name";
@@ -118,21 +119,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private static final String COLOR_LABEL = "color";
     private static final String CAR_LABEL = "car";
 
-    @Rule
-    public EmbeddedDbmsRule embeddedDatabase = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
+
     private IndexDescriptor[] rules;
     private StorageEngine storageEngine;
     private SchemaCache schemaCache;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static GraphDatabaseSettings.SchemaIndex[] parameters()
-    {
-        return GraphDatabaseSettings.SchemaIndex.values();
-    }
-
-    @Parameterized.Parameter
-    public GraphDatabaseSettings.SchemaIndex schemaIndex;
-
     private IndexingService indexService;
     private int propertyId;
     private Map<String,Integer> labelsNameIdMap;
@@ -145,8 +137,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private Node car2;
     private Node[] otherNodes;
 
-    @After
-    public void tearDown() throws Throwable
+    @AfterEach
+    void tearDown() throws Throwable
     {
         if ( indexService != null )
         {
@@ -154,8 +146,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         prepareDb();
 
@@ -164,11 +156,17 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 .stream()
                 .collect( Collectors.toMap( Map.Entry::getValue, Map.Entry::getKey ) );
         propertyId = getPropertyId();
-        storageEngine = embeddedDatabase.getDependencyResolver().resolveDependency( StorageEngine.class );
+        storageEngine = db.getDependencyResolver().resolveDependency( StorageEngine.class );
     }
 
-    @Test
-    public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
+    private static Stream<GraphDatabaseSettings.SchemaIndex> parameters()
+    {
+        return Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void applyConcurrentDeletesToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( country1.getId(), false ).withTokens( id( COUNTRY_LABEL ) )
@@ -176,29 +174,30 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
                 .removed( propertyId, Values.of( "green" ) ).build() );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 0, NULL, new int[] {propertyId}, Values.of( "Sweden"  )) );
+                assertThat( indexReader.countIndexedNodes( 0, NULL, new int[]{propertyId}, Values.of( "Sweden" ) ) )
+                        .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 3, NULL, new int[] {propertyId}, Values.of( "green"  )) );
+                assertThat( indexReader.countIndexedNodes( 3, NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                        .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
         }
     }
 
-    @Test
-    public void applyConcurrentAddsToPopulatedIndex() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void applyConcurrentAddsToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( otherNodes[0].getId(), false ).withTokens( id( COUNTRY_LABEL ) )
@@ -206,29 +205,30 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( otherNodes[1].getId(), false ).withTokens( id( CAR_LABEL ) )
                 .added( propertyId, Values.of( "BMW" ) ).build() );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( otherNodes[0].getId(), NULL, new int[] {propertyId}, Values.of( "Denmark" ) ) );
+                assertThat( indexReader.countIndexedNodes( otherNodes[0].getId(), NULL, new int[]{propertyId}, Values.of( "Denmark" ) ) )
+                        .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertEquals("Should be added by concurrent add.", 1,
-                        indexReader.countIndexedNodes( otherNodes[1].getId(), NULL, new int[] {propertyId}, Values.of( "BMW" ) ) );
+                assertThat( indexReader.countIndexedNodes( otherNodes[1].getId(), NULL, new int[]{propertyId}, Values.of( "BMW" ) ) )
+                        .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
         }
     }
 
-    @Test
-    public void applyConcurrentChangesToPopulatedIndex() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void applyConcurrentChangesToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
@@ -236,36 +236,37 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( car2.getId(), false ).withTokens( id( CAR_LABEL ) )
                 .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ), 0,
-                        indexReader.countIndexedNodes( color2.getId(), NULL, new int[] {propertyId}, Values.of( "green" ) ) );
+                assertThat( indexReader.countIndexedNodes( color2.getId(), NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                        .as( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ) ).isEqualTo( 0 );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals("Should be updated by concurrent change.", 1,
-                        indexReader.countIndexedNodes( color2.getId(), NULL, new int[] {propertyId}, Values.of( "pink"  ) ) );
+                assertThat( indexReader.countIndexedNodes( color2.getId(), NULL, new int[]{propertyId}, Values.of( "pink" ) ) )
+                        .as( "Should be updated by concurrent change." ).isEqualTo( 1 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertEquals("Should be added by concurrent change.", 1,
-                        indexReader.countIndexedNodes( car2.getId(), NULL, new int[] {propertyId}, Values.of( "SAAB"  ) ) );
+                assertThat( indexReader.countIndexedNodes( car2.getId(), NULL, new int[]{propertyId}, Values.of( "SAAB" ) ) )
+                        .as( "Should be added by concurrent change." ).isEqualTo( 1 );
             }
         }
     }
 
-    @Test
-    public void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId,
+        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId,
                 new IndexDropAction( labelsNameIdMap.get( COLOR_LABEL ) ) );
         labelsNameIdMap.remove( COLOR_LABEL );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
@@ -274,27 +275,24 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         checkIndexIsOnline( labelsNameIdMap.get( COUNTRY_LABEL ));
     }
 
-    @Test
-    public void indexDroppedDuringPopulationDoesNotExist() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void indexDroppedDuringPopulationDoesNotExist( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
         Integer labelToDropId = labelsNameIdMap.get( COLOR_LABEL );
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId, new IndexDropAction( labelToDropId ) );
+        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new IndexDropAction( labelToDropId ) );
         labelsNameIdMap.remove( COLOR_LABEL );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
-        try
-        {
-            Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
-            while ( iterator.hasNext() )
-            {
-                IndexDescriptor index = iterator.next();
-                indexService.getIndexProxy( index );
-            }
-            fail( "Index does not exist, we should fail to find it." );
-        }
-        catch ( IndexNotFoundKernelException ignore )
-        {
-            // expected
-        }
+
+        assertThrows( IndexNotFoundKernelException.class, () ->
+                {
+                    Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
+                    while ( iterator.hasNext() )
+                    {
+                        IndexDescriptor index = iterator.next();
+                        indexService.getIndexProxy( index );
+                    }
+                });
     }
 
     private void checkIndexIsOnline( int labelId ) throws IndexNotFoundKernelException
@@ -317,13 +315,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return indexService.getIndexProxy( index ).newReader();
     }
 
-    private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId, Runnable customAction ) throws Throwable
+    private void launchCustomIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex, Map<String,Integer> labelNameIdMap, int propertyId,
+            Runnable customAction ) throws Throwable
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();
         RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
 
-        try ( Transaction transaction = embeddedDatabase.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             Config config = Config.defaults();
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
@@ -340,7 +339,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "", false );
             indexService.start();
 
-            rules = createIndexRules( labelNameIdMap, propertyId );
+            rules = createIndexRules( schemaIndex, labelNameIdMap, propertyId );
             schemaCache = new SchemaCache( new StandardConstraintSemantics(), providerMap );
             schemaCache.load( iterable( rules ) );
 
@@ -363,7 +362,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             for ( int labelId : labelsIds.values() )
             {
@@ -374,7 +373,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private int getPropertyId()
     {
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return getPropertyIdByName( tx, NAME_PROPERTY );
         }
@@ -382,7 +381,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private Map<String,Integer> getLabelsNameIdMap()
     {
-        try ( Transaction tx = embeddedDatabase.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return getLabelIdsByName( tx, COUNTRY_LABEL, COLOR_LABEL, CAR_LABEL );
         }
@@ -403,7 +402,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private IndexDescriptor[] createIndexRules( GraphDatabaseSettings.SchemaIndex schemaIndex, Map<String,Integer> labelNameIdMap, int propertyId )
     {
         final IndexProviderMap indexProviderMap = getIndexProviderMap();
         IndexProvider indexProvider = indexProviderMap.lookup( schemaIndex.providerName() );
@@ -443,7 +442,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         Label countryLabel = Label.label( COUNTRY_LABEL );
         Label color = Label.label( COLOR_LABEL );
         Label car = Label.label( CAR_LABEL );
-        try ( Transaction transaction = embeddedDatabase.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             country1 = createNamedLabeledNode( transaction, countryLabel, "Sweden" );
             country2 = createNamedLabeledNode( transaction, countryLabel, "USA" );
@@ -473,32 +472,32 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private LabelScanStore getLabelScanStore()
     {
-        return embeddedDatabase.resolveDependency( LabelScanStore.class );
+        return db.getDependencyResolver().resolveDependency( LabelScanStore.class );
     }
 
     private RelationshipTypeScanStore getRelationshipTypeScanStore()
     {
-        return embeddedDatabase.resolveDependency( RelationshipTypeScanStore.class );
+        return db.getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class );
     }
 
     private RecordStorageEngine getStorageEngine()
     {
-        return embeddedDatabase.resolveDependency( RecordStorageEngine.class );
+        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
     }
 
     private SchemaState getSchemaState()
     {
-        return embeddedDatabase.resolveDependency( SchemaState.class );
+        return db.getDependencyResolver().resolveDependency( SchemaState.class );
     }
 
     private IndexProviderMap getIndexProviderMap()
     {
-        return embeddedDatabase.resolveDependency( IndexProviderMap.class );
+        return db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
     }
 
     private JobScheduler getJobScheduler()
     {
-        return embeddedDatabase.resolveDependency( JobScheduler.class );
+        return db.getDependencyResolver().resolveDependency( JobScheduler.class );
     }
 
     private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
@@ -609,7 +608,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             for ( EntityUpdates update : updates )
                 {
-                    try ( Transaction transaction = embeddedDatabase.beginTx() )
+                    try ( Transaction transaction = db.beginTx() )
                     {
                         Node node = transaction.getNodeById( update.getEntityId() );
                         for ( int labelId : labelsNameIdMap.values() )

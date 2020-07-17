@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,9 +36,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -48,30 +50,34 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
+@EphemeralTestDirectoryExtension
 public class SchemaIndexAcceptanceTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+
+    @Inject
+    private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        db = newDb();
+        db = newDb( fs );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
 
     @Test
-    public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
+    void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
     {
         Node node1;
         Node node2;
@@ -97,7 +103,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArrays()
+    void shouldIndexArrays()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         createIndex( db, label, propertyKey );
@@ -124,7 +130,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexStringArrays()
+    void shouldIndexStringArrays()
     {
         String[] arrayPropertyValue = {"A, B", "C"};
         createIndex( db, label, propertyKey );
@@ -151,7 +157,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArraysPostPopulation()
+    void shouldIndexArraysPostPopulation()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         Node node1;
@@ -178,7 +184,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void recoveryAfterCreateAndDropIndex() throws Exception
+    void recoveryAfterCreateAndDropIndex()
     {
         // GIVEN
         IndexDefinition indexDefinition = createIndex( db, label, propertyKey );
@@ -197,23 +203,24 @@ public class SchemaIndexAcceptanceTest
         }
     }
 
-    private GraphDatabaseService newDb()
+    private GraphDatabaseService newDb( EphemeralFileSystemAbstraction fileSystemAbstraction )
     {
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem(
-                new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) ).impermanent().build();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setFileSystem(
+                new UncloseableDelegatingFileSystemAbstraction( fileSystemAbstraction ) ).impermanent().build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private void crashAndRestart() throws Exception
+    private void crashAndRestart()
     {
-        fsRule.snapshot( managementService::shutdown );
-        db = newDb();
+        EphemeralFileSystemAbstraction crashSnapshot = fs.snapshot();
+        managementService.shutdown();
+        db = newDb( crashSnapshot );
     }
 
     private void restart()
     {
         managementService.shutdown();
-        db = newDb();
+        db = newDb( fs );
     }
 
     private Node createNode( Transaction tx, Label label, Object... properties )

@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -57,9 +56,11 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
@@ -67,7 +68,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.longValue;
 
-@RunWith( Parameterized.class )
+@TestDirectoryExtension
 public class IndexingServiceIntegrationTest
 {
     private static final String FOOD_LABEL = "food";
@@ -76,22 +77,17 @@ public class IndexingServiceIntegrationTest
     private static final String PROPERTY_NAME = "name";
     private static final int NUMBER_OF_NODES = 100;
 
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static GraphDatabaseSettings.SchemaIndex[] parameters()
+    private static Stream<GraphDatabaseSettings.SchemaIndex> parameters()
     {
-        return GraphDatabaseSettings.SchemaIndex.values();
+        return Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() );
     }
 
-    @Parameterized.Parameter()
-    public GraphDatabaseSettings.SchemaIndex schemaIndex;
-
-    @Before
-    public void setUp()
+    private void setUp( GraphDatabaseSettings.SchemaIndex schemaIndex )
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
@@ -99,15 +95,18 @@ public class IndexingServiceIntegrationTest
         createData( database );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         managementService.shutdown();
     }
 
-    @Test
-    public void tracePageCacheAccessOnIndexUpdatesApply() throws KernelException
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void tracePageCacheAccessOnIndexUpdatesApply( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws KernelException
     {
+        setUp( schemaIndex );
+
         var marker = Label.label( "marker" );
         var propertyName = "property";
         var testConstraint = "testConstraint";
@@ -138,9 +137,12 @@ public class IndexingServiceIntegrationTest
         }
     }
 
-    @Test
-    public void testManualIndexPopulation() throws InterruptedException, IndexNotFoundKernelException
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void testManualIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws InterruptedException, IndexNotFoundKernelException
     {
+        setUp( schemaIndex );
+
         IndexDescriptor index;
         try ( Transaction tx = database.beginTx() )
         {
@@ -158,9 +160,12 @@ public class IndexingServiceIntegrationTest
         assertEquals( progress.getCompleted(), progress.getTotal() );
     }
 
-    @Test
-    public void testManualRelationshipIndexPopulation() throws Exception
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void testManualRelationshipIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Exception
     {
+        setUp( schemaIndex );
+
         IndexDescriptor index;
         Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
@@ -181,9 +186,12 @@ public class IndexingServiceIntegrationTest
         assertEquals( progress.getCompleted(), progress.getTotal() );
     }
 
-    @Test
-    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void testSchemaIndexMatchIndexingService( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IndexNotFoundKernelException
     {
+        setUp( schemaIndex );
+
         String constraintName = "MyConstraint";
         String indexName = "MyIndex";
         try ( Transaction transaction = database.beginTx() )
@@ -207,9 +215,12 @@ public class IndexingServiceIntegrationTest
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
     }
 
-    @Test
-    public void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
+        setUp( schemaIndex );
+
         IndexingService indexingService = getIndexingService( database );
         CheckPointer checkPointer = getCheckPointer( database );
 
@@ -233,9 +244,12 @@ public class IndexingServiceIntegrationTest
         race.go();
     }
 
-    @Test
-    public void dropIndexRaceWithCheckpoint() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void dropIndexRaceWithCheckpoint( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
     {
+        setUp( schemaIndex );
+
         CheckPointer checkPointer = getCheckPointer( database );
 
         int nbrOfIndexes = 100;

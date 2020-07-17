@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -44,44 +43,44 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
-@RunWith( Parameterized.class )
+@TestDirectoryExtension
 public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
 
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
     private DatabaseManagementServiceBuilder dbBuilder;
     private IndexDescriptor index;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         dbBuilder = new TestDatabaseManagementServiceBuilder( directory.homePath() );
     }
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<GraphDatabaseSettings.SchemaIndex> providers()
+    private static Stream<GraphDatabaseSettings.SchemaIndex> providers()
     {
         List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>( Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() ) );
         providers.add( null ); // <-- to exercise the default option
-        return providers;
+        return providers.stream();
     }
 
-    @Parameterized.Parameter
-    public GraphDatabaseSettings.SchemaIndex provider;
-
-    @Test
-    public void shouldUseConfiguredIndexProvider()
+    @ParameterizedTest
+    @MethodSource( "providers" )
+    void shouldUseConfiguredIndexProvider( GraphDatabaseSettings.SchemaIndex provider )
     {
         // given
         DatabaseManagementServiceBuilder
@@ -102,8 +101,9 @@ public class DefaultSchemaIndexConfigTest
         }
     }
 
-    @Test
-    public void indexShouldHaveIndexConfig() throws IndexNotFoundKernelException
+    @ParameterizedTest
+    @MethodSource( "providers" )
+    void indexShouldHaveIndexConfig( GraphDatabaseSettings.SchemaIndex provider ) throws IndexNotFoundKernelException
     {
         DatabaseManagementServiceBuilder
                 databaseManagementServiceBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
@@ -163,7 +163,7 @@ public class DefaultSchemaIndexConfigTest
 
     private void assertIndexProvider( String expectedProviderIdentifier )
     {
-        assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier, index.getIndexProvider().name() );
+        assertThat( index.getIndexProvider().name() ).as( "expected IndexProvider.Descriptor" ).isEqualTo(  expectedProviderIdentifier );
     }
 
     private void createIndex( GraphDatabaseService db )
