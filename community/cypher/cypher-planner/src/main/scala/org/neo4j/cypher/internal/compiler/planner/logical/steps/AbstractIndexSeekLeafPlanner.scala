@@ -139,7 +139,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case _ => None
     }.toSet
 
-  private def producePlansForSpecificVariable(idName: String, indexCompatiblePredicates: Set[IndexCompatiblePredicate],
+  private def producePlansForSpecificVariable(idName: String,
+                                              indexCompatiblePredicates: Set[IndexCompatiblePredicate],
                                               labelPredicates: Set[HasLabels],
                                               hints: Set[Hint], argumentIds: Set[String],
                                               context: LogicalPlanningContext,
@@ -149,9 +150,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         (predicates, canGetValues, providedOrder, indexOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
+         predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, indexOrder, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicatesForIndex, indexDescriptor.isUnique, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -160,13 +161,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 labelPredicate: HasLabels,
                                 labelName: LabelName,
                                 labelId: LabelId,
-                                indexCompatiblePredicates: Seq[IndexCompatiblePredicate],
+                                predicatesForIndex: PredicatesForIndex,
                                 isUnique: Boolean,
-                                canGetValues: Seq[GetValueFromIndexBehavior],
-                                providedOrder: ProvidedOrder,
-                                indexOrder: IndexOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
+    val indexCompatiblePredicates = predicatesForIndex.predicatesInOrder.map(_.indexCompatiblePredicate)
+
     val hint = {
       val name = idName
       val propertyNames = indexCompatiblePredicates.map(_.propertyKeyName.name)
@@ -185,11 +185,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(indexedPredicates)
 
-    val properties = indexCompatiblePredicates.map(p => p.propertyKeyName).zip(canGetValues).map {
-      case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
+    val properties = predicatesForIndex.predicatesInOrder.map { indexCompatiblePredicateWithGetValue =>
+      val propertyName = indexCompatiblePredicateWithGetValue.indexCompatiblePredicate.propertyKeyName
+      val getValue = indexCompatiblePredicateWithGetValue.getValueFromIndexBehavior
+      IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, indexOrder, context, indexedPredicates.head.isExists)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, predicatesForIndex.providedOrder, predicatesForIndex.indexOrder, context, indexedPredicates.head.isExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
       .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
@@ -288,11 +290,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
   }
 
+  private case class IndexCompatiblePredicateWithGetValue(indexCompatiblePredicate: IndexCompatiblePredicate, getValueFromIndexBehavior: GetValueFromIndexBehavior)
+  private case class PredicatesForIndex(predicatesInOrder: Seq[IndexCompatiblePredicateWithGetValue], providedOrder: ProvidedOrder, indexOrder: IndexOrder)
+
   /**
    * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
    */
   private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrder: InterestingOrder)
-                                (implicit semanticTable: SemanticTable): Seq[(Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder)] = {
+                                (implicit semanticTable: SemanticTable): Seq[PredicatesForIndex] = {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
@@ -315,18 +320,17 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
                                                                    indexDescriptor: IndexDescriptor,
-                                                                   interestingOrder: InterestingOrder): (Seq[IndexCompatiblePredicate], Seq[GetValueFromIndexBehavior], ProvidedOrder, IndexOrder) = {
+                                                                   interestingOrder: InterestingOrder): PredicatesForIndex = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its value capabilities for the types of all properties.
     // We might override some of these later if they value is known in an equality predicate
     val propertyBehaviorFromIndex = indexDescriptor.valueCapability(types)
 
-    // Combine plannable predicates with their available properties
-    val propertyBehaviours = propertyBehaviorFromIndex.zip(matchingPredicates.map(_.exactPredicate)).map {
-      case (_, SingleExactPredicate) => CanGetValue
-      case (_, MultipleExactPredicate) => CanGetValue
-      case (behavior, _) => behavior
+    // Combine plannable predicates with their available properties and getValueFromIndexBehavior
+    val predicatesInOrder = propertyBehaviorFromIndex.zip(matchingPredicates).map {
+      case (_, predicate) if predicate.exactPredicate != NotExactPredicate => IndexCompatiblePredicateWithGetValue(predicate, CanGetValue)
+      case (behavior, predicate) => IndexCompatiblePredicateWithGetValue(predicate, behavior)
     }
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
@@ -337,8 +341,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     val (providedOrder, indexOrder) = ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability)
 
-    // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
-    (matchingPredicates, propertyBehaviours, providedOrder, indexOrder)
+    PredicatesForIndex(predicatesInOrder, providedOrder, indexOrder)
   }
 
   /**
