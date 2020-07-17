@@ -28,11 +28,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.GetDegree
-import org.neo4j.cypher.internal.expressions.GreaterThan
-import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
@@ -48,7 +44,6 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
-import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -84,7 +79,6 @@ import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
@@ -255,10 +249,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
+        .|.expandAll("(a)-[`  REL37`:Y]->(`  NODE44`)")
         .|.argument("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL37`:Y]->(`  NODE44`)")
+        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
