@@ -31,13 +31,13 @@ public class StandardRecordFormat extends RecordFormat
     @Override
     public int getRecordSize()
     {
-        return 16;
+        return 32;
     }
 
     @Override
-    public Record createRecord( Path path, int recordId )
+    public Record createRecord( Path path, int recordId, int page, int offset )
     {
-        return new StandardRecord( path, recordId );
+        return new StandardRecord( path, recordId, page, offset );
     }
 
     @Override
@@ -47,7 +47,9 @@ public class StandardRecordFormat extends RecordFormat
         byte t;
         byte f;
         short f1;
-        int r;
+        int recordId;
+        int page;
+        int recordOffset;
         long f2;
         do
         {
@@ -55,11 +57,14 @@ public class StandardRecordFormat extends RecordFormat
             t = cursor.getByte();
             f = cursor.getByte();
             f1 = cursor.getShort();
-            r = cursor.getInt();
+            recordId = cursor.getInt();
             f2 = cursor.getLong();
+            page = cursor.getInt();
+            recordOffset = cursor.getInt();
+            cursor.getLong(); // empty space
         }
         while ( cursor.shouldRetry() );
-        return new StandardRecord( t, f, f1, r, f2 );
+        return new StandardRecord( t, f, f1, recordId, f2, page, recordOffset );
     }
 
     @Override
@@ -69,7 +74,7 @@ public class StandardRecordFormat extends RecordFormat
         short sz = (short) ((z << 8) + z);
         int iz = (sz << 16) + sz;
         long lz = (((long) iz) << 32) + iz;
-        return new StandardRecord( z, z, sz, iz, lz );
+        return new StandardRecord( z, z, sz, iz, lz, 0, 0 );
     }
 
     @Override
@@ -83,6 +88,9 @@ public class StandardRecordFormat extends RecordFormat
         cursor.putShort( r.fill1 );
         cursor.putInt( r.recordId );
         cursor.putLong( r.fill2 );
+        cursor.putInt( r.page );
+        cursor.putInt( r.offset );
+        cursor.putLong( 0 );
     }
 
     static final class StandardRecord implements Record
@@ -92,12 +100,16 @@ public class StandardRecordFormat extends RecordFormat
         final int recordId;
         final short fill1;
         final long fill2;
+        private final int page;
+        private final int offset;
 
-        StandardRecord( Path path, int recordId )
+        StandardRecord( Path path, int recordId, int page, int offset )
         {
             this.type = 42;
             this.path = path;
             this.recordId = recordId;
+            this.page = page;
+            this.offset = offset;
             int fileHash = path.hashCode();
 
             int a = xorshift( fileHash ^ xorshift( recordId ) );
@@ -110,12 +122,14 @@ public class StandardRecordFormat extends RecordFormat
             fill2 = d;
         }
 
-        StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
+        StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2, int page, int offset )
         {
             this.type = type;
             this.path = fileName == 0 ? null : Path.of( new String( new byte[]{fileName} ) );
             this.fill1 = fill1;
             this.recordId = recordId;
+            this.page = page;
+            this.offset = offset;
             this.fill2 = fill2;
         }
 
@@ -181,8 +195,8 @@ public class StandardRecordFormat extends RecordFormat
         public String format( byte type, Path path, int recordId, short fill1, long fill2 )
         {
             return String.format(
-                    "Record%s[file=%s, recordId=%s; %04x %016x]",
-                    type, path, recordId, fill1, fill2 );
+                    "Record%s on page: %s offset: %s [file=%s, recordId=%s; %04x %016x]",
+                    type, page, offset, path, recordId, fill1, fill2 );
         }
     }
 }

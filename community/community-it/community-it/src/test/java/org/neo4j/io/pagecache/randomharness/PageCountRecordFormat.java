@@ -35,9 +35,9 @@ public class PageCountRecordFormat extends RecordFormat
     }
 
     @Override
-    public Record createRecord( Path path, int recordId )
+    public Record createRecord( Path path, int recordId, int page, int offset )
     {
-        return new PageCountRecord( recordId, getRecordSize() );
+        return new PageCountRecord( recordId, getRecordSize(), page, offset );
     }
 
     @Override
@@ -57,7 +57,7 @@ public class PageCountRecordFormat extends RecordFormat
     @Override
     public Record zeroRecord()
     {
-        return new PageCountRecord( 0, getRecordSize() );
+        return new PageCountRecord( 0, getRecordSize(), 0, 0 );
     }
 
     @Override
@@ -76,7 +76,7 @@ public class PageCountRecordFormat extends RecordFormat
         private final byte[] bytes;
         private final ByteBuffer buf;
 
-        PageCountRecord( int recordId, int recordSize )
+        PageCountRecord( int recordId, int recordSize, int page, int offset )
         {
             if ( recordId > Short.MAX_VALUE )
             {

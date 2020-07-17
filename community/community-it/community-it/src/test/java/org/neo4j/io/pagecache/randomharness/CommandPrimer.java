@@ -223,7 +223,7 @@ class CommandPrimer
                                                       : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
         final int pageId = recordId / recordsPerPage;
         final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
-        final Record expectedRecord = recordFormat.createRecord( file, recordId );
+        final Record expectedRecord = recordFormat.createRecord( file, recordId, pageId, pageOffset );
         return new ReadAction( file, recordId, pageId, pageOffset, expectedRecord, innerAction );
     }
 
@@ -245,7 +245,7 @@ class CommandPrimer
         recordsWrittenTo.get( file ).add( recordId );
         final int pageId = recordId / recordsPerPage;
         final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
-        final Record record = recordFormat.createRecord( file, recordId );
+        final Record record = recordFormat.createRecord( file, recordId, pageId, pageOffset );
         return new WriteAction( file, recordId, pageId, pageOffset, record, innerAction );
     }
 

@@ -93,6 +93,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buff
 import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -4481,7 +4482,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 StoreChannel channel = fs.write( file.toFile() );
                 for ( int recordId = 0; recordId < fileId + 1; recordId++ )
                 {
-                    Record record = recordFormat.createRecord( file, recordId );
+                    Record record = recordFormat.createRecord( file, recordId, (int) (channel.position() / PAGE_SIZE),
+                            (int) (channel.position() % PAGE_SIZE) );
                     recordFormat.writeRecord( record, channel );
                 }
                 channel.close();

@@ -30,13 +30,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public abstract class RecordFormat
 {
     public abstract int getRecordSize();
 
-    public abstract Record createRecord( Path file, int recordId );
+    public abstract Record createRecord( Path file, int recordId, int page, int offset );
 
     public abstract Record readRecord( PageCursor cursor ) throws IOException;
 
@@ -66,7 +67,7 @@ public abstract class RecordFormat
     {
         int pageRecordId = cursor.getOffset() / getRecordSize();
         int recordId = (int) (pageId * recordsPerPage + pageRecordId);
-        Record record = createRecord( cursor.getCurrentFile(), recordId );
+        Record record = createRecord( cursor.getCurrentFile(), recordId, (int) pageId, cursor.getOffset() );
         write( record, cursor );
     }
 
@@ -79,7 +80,7 @@ public abstract class RecordFormat
         {
             long currentPageId = cursor.getCurrentPageId();
             int recordId = (int) (currentPageId * recordsPerPage + pageRecordId);
-            Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId );
+            Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId, (int) currentPageId, cursor.getOffset() );
             Record actualRecord;
             actualRecord = readRecord( cursor );
             try
@@ -114,11 +115,18 @@ public abstract class RecordFormat
         {
             assertThat( channel.read( buffer ) ).as( "reading record id " + i ).isEqualTo( recordSize );
             buffer.flip();
-            Record expectedRecord = createRecord( file, i );
+            Record expectedRecord = createRecord( file, i, (int) (channel.position() / PAGE_SIZE), 0 );
             cursor.setOffset( 0 );
             Record actualRecord = readRecord( cursor );
             buffer.clear();
-            assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
+            try
+            {
+                assertThat( actualRecord ).isIn( expectedRecord, zeroRecord() );
+            }
+            catch ( Throwable t )
+            {
+                throw new RuntimeException( t );
+            }
         }
     }
 }
