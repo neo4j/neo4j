@@ -51,6 +51,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Objects.requireNonNull;
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -133,7 +134,59 @@ class PushToCloudCommandTest
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
     }
 
-    //
+    @Test
+    public void shouldUseNeo4jAsDefaultUsernameIfUserHitsEnter() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudConsole console = mock( PushToCloudConsole.class );
+        when( console.readLine( anyString(), anyString() ) ).thenReturn( "" );
+        String defaultUsername = "neo4j";
+        String password = "super-secret-password";
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .console( console )
+                .build();
+
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", SOME_EXAMPLE_BOLT_URI,
+                "--password", password.toString() };
+        new CommandLine( command ).execute( args );
+
+        // then
+        verify( console ).readLine( "%s", format( "Neo4j aura username (default: %s):", defaultUsername ) );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( defaultUsername ), eq( password.toCharArray() ), anyBoolean() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
+    }
+
+    @Test
+    public void shouldUseNeo4jAsDefaultUsernameIfStdinIndicatesEndOfFile() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudConsole console = mock( PushToCloudConsole.class );
+        when( console.readLine( anyString(), anyString() ) ).thenReturn( null );
+        String defaultUsername = "neo4j";
+        String password = "super-secret-password";
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .console( console )
+                .build();
+
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", SOME_EXAMPLE_BOLT_URI,
+                "--password", password.toString() };
+        new CommandLine( command ).execute( args );
+
+        // then
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( defaultUsername ), eq( password.toCharArray() ), anyBoolean() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( false ), any() );
+    }
+
     @Test
     void shouldAcceptDumpAsSource() throws Exception
     {
