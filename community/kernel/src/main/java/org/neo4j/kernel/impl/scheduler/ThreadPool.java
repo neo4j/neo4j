@@ -48,6 +48,8 @@ import org.neo4j.time.SystemNanoClock;
 final class ThreadPool
 {
     private static final int SHUTDOWN_TIMEOUT_SECONDS = FeatureToggles.getInteger( ThreadPool.class, "shutdownTimeout", 30 );
+    private static final int UNMONITORED_JOB_ID = -1;
+
     private final SchedulerThreadFactory threadFactory;
     private final ExecutorService executor;
     private final ConcurrentHashMap<Object,RegisteredJob> registry;
@@ -93,7 +95,7 @@ final class ThreadPool
         long jobId;
         if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
         {
-            jobId = -1;
+            jobId = UNMONITORED_JOB_ID;
         }
         else
         {
