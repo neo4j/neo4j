@@ -345,6 +345,10 @@ object PatternExpressionSolver {
             val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
             val semiApplyPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, subQueryPlan, e, context)
             (solvedExprs :+ e, semiApplyPlan)
+          case ((solvedExprs, plan), not@Not(e: ExistsSubClause)) =>
+            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
+            val antiSemiApplyPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, subQueryPlan, not, context)
+            (solvedExprs :+ not, antiSemiApplyPlan)
           case (acc, _) => acc
       }
     }
