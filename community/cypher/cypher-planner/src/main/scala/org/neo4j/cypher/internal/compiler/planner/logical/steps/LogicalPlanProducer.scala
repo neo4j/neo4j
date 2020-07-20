@@ -679,6 +679,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(SemiApply(left, right), solved, providedOrders.get(left.id).fromLeft, context)
   }
 
+  def planAntiSemiApplyInHorizon(left: LogicalPlan, right: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {
+      case horizon: QueryProjection => horizon.addPredicates(expr)
+      case horizon => horizon
+    })
+    annotate(AntiSemiApply(left, right), solved, providedOrders.get(left.id), context)
+  }
+
   def planQueryArgument(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
