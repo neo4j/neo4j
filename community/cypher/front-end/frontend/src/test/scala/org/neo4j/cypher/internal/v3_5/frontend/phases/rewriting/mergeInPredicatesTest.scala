@@ -128,6 +128,10 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     )
   }
 
+  test( "RETURN ANY(i IN [1,2,3]) AND ANY(i IN [4])") {
+   shouldNotRewrite("MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [1,2]) AND ANY(i IN n.prop WHERE i IN [3]) RETURN n")
+  }
+
   private def shouldRewrite(from: String, to: String): Unit = {
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]

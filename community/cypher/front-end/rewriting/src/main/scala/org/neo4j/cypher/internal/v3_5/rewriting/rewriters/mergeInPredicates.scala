@@ -42,7 +42,7 @@ case object mergeInPredicates extends Rewriter {
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 
-    case and@And(lhs, rhs) if noOrs(lhs) && noOrs(rhs) => {
+    case and@And(lhs, rhs) if noOrsNorInnerScopes(lhs) && noOrsNorInnerScopes(rhs) => {
       if (noNots(lhs) && noNots(rhs))
       //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
@@ -67,8 +67,9 @@ case object mergeInPredicates extends Rewriter {
     }
   })
 
-  private def noOrs(expression: Expression):Boolean = !expression.treeExists {
+  private def noOrsNorInnerScopes(expression: Expression):Boolean = !expression.treeExists {
     case _: Or => true
+    case _: ScopeExpression => true
   }
 
   private def noAnds(expression: Expression):Boolean = !expression.treeExists {
