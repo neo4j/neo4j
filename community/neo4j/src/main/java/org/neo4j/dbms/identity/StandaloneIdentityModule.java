@@ -36,14 +36,16 @@ public class StandaloneIdentityModule implements IdentityModule
 {
     public static IdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
     {
-       return new StandaloneIdentityModule( logProvider, createServerIdStorage( fs, dataDir, memoryTracker ), ServerId::new, UUID::randomUUID );
+        return new StandaloneIdentityModule( logProvider, createServerIdStorage( fs, dataDir, memoryTracker ), UUID::randomUUID );
     }
 
     private final ServerId myself;
 
-    protected StandaloneIdentityModule( LogProvider logProvider, SimpleStorage<ServerId> storage, Function<UUID,ServerId> creator, Supplier<UUID> uuid )
+    protected StandaloneIdentityModule( LogProvider logProvider, SimpleStorage<ServerId> storage, Supplier<UUID> uuid )
     {
-        myself = readOrGenerate( storage, logProvider.getLog( getClass() ), ServerId.class.getSimpleName(), creator, uuid );
+        var log = logProvider.getLog( getClass() );
+        var idType = ServerId.class.getSimpleName();
+        myself = readOrGenerate( storage, log, idType, ServerId::new, ServerId::getUuid, uuid );
     }
 
     @Override
@@ -52,7 +54,8 @@ public class StandaloneIdentityModule implements IdentityModule
         return myself;
     }
 
-    protected static <T> T readOrGenerate( SimpleStorage<T> storage, Log log, String idType, Function<UUID, T> creator, Supplier<UUID> uuid )
+    protected static <T> T readOrGenerate( SimpleStorage<T> storage, Log log, String idType, Function<UUID,T> creator, Function<T,UUID> query,
+            Supplier<UUID> uuid )
     {
         T myself;
         try
@@ -66,7 +69,7 @@ public class StandaloneIdentityModule implements IdentityModule
                 }
                 else
                 {
-                    log.info( String.format( "Found %s on disk: %s", idType, myself ) );
+                    log.info( String.format( "Found %s on disk: %s (%s)", idType, myself, query.apply( myself ) ) );
                 }
             }
             else
