@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
 // Supported by all runtimes
@@ -1057,6 +1058,40 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint * 5))
+  }
+}
+
+// Supported by slotted, pipelined, parallel (not compiled though because of composite index)
+trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
+  self: NodeIndexSeekTestBase[CONTEXT] =>
+
+  test("should support composite index with equality and equality check on the RHS of Apply with Node Key constraint") {
+    val (milk, honey) = given {
+      nodeKey("Honey", "prop", "prop2")
+      val milk = nodeGraph(5, "Milk")
+      val honey = nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+      (milk, honey)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .projection("'borked' AS borked")
+      .apply()
+      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true, getValue = GetValue, argumentIds = Set("a"))
+      .distinct("a AS a")
+      .nodeByLabelScan("a", "Milk", IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected: Seq[Node] = for {
+      _ <- milk
+    } yield honey(10)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 }
 
