@@ -43,7 +43,9 @@ public class StandaloneDatabaseStateProcedure extends DatabaseStateProcedure
     public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         var databaseId = extractDatabaseId( input );
-        var resultRow = resultRowFactory( databaseId, "standalone", advertisedAddress, stateService );
+        var status = stateService.stateOfDatabase( databaseId );
+        var error = stateService.causeOfFailure( databaseId ).map( Throwable::getMessage );
+        var resultRow = resultRowFactory( status, error, "standalone", advertisedAddress );
         return RawIterator.<AnyValue[],ProcedureException>of( resultRow );
     }
 }

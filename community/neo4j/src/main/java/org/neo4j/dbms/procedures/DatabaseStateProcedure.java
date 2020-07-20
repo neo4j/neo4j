@@ -20,9 +20,10 @@
 package org.neo4j.dbms.procedures;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-import org.neo4j.dbms.DatabaseStateService;
+import org.neo4j.dbms.OperatorState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -79,12 +80,10 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
                         "for database with name %s because no database with this name exists!", name ) ) );
     }
 
-    protected AnyValue[] resultRowFactory( NamedDatabaseId namedDatabaseId, String role, String address, DatabaseStateService stateService )
+    protected AnyValue[] resultRowFactory( OperatorState status, Optional<String> error, String role, String address )
     {
-        var status = stateService.stateOfDatabase( namedDatabaseId );
         var formattedStatus = stringValue( status.description() );
-        var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage );
         var formattedError = error.map( Values::stringValue ).orElse( EMPTY_STRING );
-        return new AnyValue[]{ stringValue( role ), stringValue( address ), formattedStatus, formattedError };
+        return new AnyValue[]{stringValue( role ), stringValue( address ), formattedStatus, formattedError};
     }
 }
