@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.RelType
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 
 abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -301,5 +303,28 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     }
 
     runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght") {
+        // given
+        val (aNode, bNode) = given {
+          val a = runtimeTestSupport.tx.createNode()
+          val b = runtimeTestSupport.tx.createNode()
+          a.createRelationshipTo(b, RelationshipType.withName("R"))
+          (a, b)
+        }
+
+        // when
+        val logicalQuery = new LogicalQueryBuilder(this)
+          .produceResults("x", "y")
+          .projectEndpoints("(x)-[r*]-(y)", startInScope = true, endInScope = false)
+          .expandAll("(x)<-[r*]-()")
+          .allNodeScan("x")
+          .build()
+
+        val runtimeResult = execute(logicalQuery, runtime)
+
+        // then
+        runtimeResult should beColumns("x", "y").withSingleRow(bNode, aNode)
   }
 }
