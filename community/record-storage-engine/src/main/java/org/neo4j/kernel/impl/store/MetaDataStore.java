@@ -60,6 +60,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -74,12 +75,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
     private static final UUID NOT_INITIALISED_EXTERNAL_STORE_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
-    /*
-     *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
-     *  constraint tx | upgrade time | upgrade id
-     */
-    // Positions of meta-data records
 
+    // Positions of meta-data records
     public enum Position
     {
         TIME( 0, "Creation time" ),
@@ -103,7 +100,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         EXTERNAL_STORE_UUID_MOST_SIGN_BITS( 16, "Database identifier exposed as external store identity. " +
                 "Generated on creation and never updated. Most significant bits." ),
         EXTERNAL_STORE_UUID_LEAST_SIGN_BITS( 17, "Database identifier exposed as external store identity. " +
-                "Generated on creation and never updated. Least significant bits" );
+                "Generated on creation and never updated. Least significant bits" ),
+        CHECKPOINT_LOG_VERSION( 18, "Current checkpoint log version" );
 
         private final int id;
         private final String description;
@@ -129,6 +127,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
     private volatile long randomNumberField = FIELD_NOT_INITIALIZED;
     private volatile long versionField = FIELD_NOT_INITIALIZED;
+    private volatile long checkpointLogVersionField = FIELD_NOT_INITIALIZED;
     // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
     // we do that when flushing, which performs better and fine from a recovery POV.
     private final AtomicLong lastCommittingTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
@@ -159,6 +158,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private final Object randomNumberLock = new Object();
     private final Object upgradeTransactionLock = new Object();
     private final Object logVersionLock = new Object();
+    private final Object checkpointLogVersionLock = new Object();
     private final Object storeVersionLock = new Object();
     private final Object lastConstraintIntroducingTxLock = new Object();
     private final Object transactionCommittedLock = new Object();
@@ -197,9 +197,36 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setStoreVersion( storeVersionAsLong, cursorTracer );
         setLatestConstraintIntroducingTx( 0, cursorTracer );
         setExternalStoreUUID( UUID.randomUUID(), cursorTracer );
+        setCheckpointLogVersion( 0, cursorTracer );
 
         initHighId();
         flush( cursorTracer );
+    }
+
+    @Override
+    public long getCheckpointLogVersion()
+    {
+        assertNotClosed();
+        checkInitialized( checkpointLogVersionField );
+        return checkpointLogVersionField;
+    }
+
+    @Override
+    public void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer )
+    {
+        synchronized ( checkpointLogVersionLock )
+        {
+            setRecord( CHECKPOINT_LOG_VERSION, version, cursorTracer );
+            checkpointLogVersionField = version;
+        }
+    }
+
+    @Override
+    public long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer )
+    {
+        long checkPointVersion = incrementAndGetVersion( cursorTracer, checkpointLogVersionLock, CHECKPOINT_LOG_VERSION );
+        checkpointLogVersionField = checkPointVersion;
+        return checkPointVersion;
     }
 
     private void setExternalStoreUUID( UUID uuid, PageCursorTracer cursorTracer )
@@ -488,19 +515,29 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     @Override
     public long incrementAndGetVersion( PageCursorTracer cursorTracer )
     {
+        long version = incrementAndGetVersion( cursorTracer, logVersionLock, Position.LOG_VERSION );
+        versionField = version;
+        return version;
+    }
+
+    private long incrementAndGetVersion( PageCursorTracer cursorTracer, Object lock, Position position )
+    {
         // This method can expect synchronisation at a higher level,
         // and be effectively single-threaded.
-        long pageId = pageIdForRecord( Position.LOG_VERSION.id );
+        long pageId = pageIdForRecord( position.id );
         long version;
-        synchronized ( logVersionLock )
+        synchronized ( lock )
         {
             try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
             {
                 if ( cursor.next() )
                 {
-                    incrementVersion( cursor );
+                    version = incrementVersion( cursor, position );
                 }
-                version = versionField;
+                else
+                {
+                    throw new IllegalStateException( "Filed " + position + "missing in metadata store. Page " + pageId + "not found." );
+                }
             }
             catch ( IOException e )
             {
@@ -511,18 +548,18 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return version;
     }
 
-    private void incrementVersion( PageCursor cursor )
+    private long incrementVersion( PageCursor cursor, Position position )
     {
         if ( !cursor.isWriteLocked() )
         {
             throw new IllegalArgumentException( "Cannot increment log version on page cursor that is not write-locked" );
         }
         // offsets plus one to skip the inUse byte
-        int offset = (Position.LOG_VERSION.id * getRecordSize()) + 1;
+        int offset = (position.id * getRecordSize()) + 1;
         long value = cursor.getLong( offset ) + 1;
         cursor.putLong( offset, value );
-        checkForDecodingErrors( cursor, Position.LOG_VERSION.id, NORMAL );
-        versionField = value;
+        checkForDecodingErrors( cursor, position.id, NORMAL );
+        return value;
     }
 
     public long getStoreVersion()
@@ -586,6 +623,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             externalStoreUUID = readExternalStoreUUID( cursor );
 
             upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
+            checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )

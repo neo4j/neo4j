@@ -767,9 +767,9 @@ class MetaDataStoreTest
         newMetaDataStore( pageCacheTracer );
 
         assertThat( pageCacheTracer.faults() ).isOne();
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 23 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 23 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 22 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 24 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 24 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 23 );
     }
 
     @Test
@@ -861,6 +861,33 @@ class MetaDataStoreTest
             assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
             assertThat( cursorTracer.hits() ).isEqualTo( 5 );
         }
+    }
+
+    @Test
+    void accessCheckpointLogVersion()
+    {
+        var dataStore = newMetaDataStore();
+        assertEquals( 0, dataStore.getCheckpointLogVersion() );
+        assertEquals( 1, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+        assertEquals( 2, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+        assertEquals( 3, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+        assertEquals( 4, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+        assertEquals( 5, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+        assertEquals( 5, dataStore.getCheckpointLogVersion() );
+        assertEquals( 0, dataStore.getCurrentLogVersion() );
+    }
+
+    @Test
+    void checkSetCheckpointLogVersion()
+    {
+        var dataStore = newMetaDataStore();
+        assertEquals( 0, dataStore.getCheckpointLogVersion() );
+        dataStore.setCheckpointLogVersion( 123, NULL );
+        assertEquals( 123, dataStore.getCheckpointLogVersion() );
+
+        dataStore.setCheckpointLogVersion( 321, NULL );
+        assertEquals( 321, dataStore.getCheckpointLogVersion() );
+        assertEquals( 0, dataStore.getCurrentLogVersion() );
     }
 
     private MetaDataStore newMetaDataStore()

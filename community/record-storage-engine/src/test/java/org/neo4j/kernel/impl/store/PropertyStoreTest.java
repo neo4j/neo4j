@@ -82,14 +82,11 @@ class PropertyStoreTest
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
-        final PropertyStore store =
-                new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
+        try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                         NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                        RecordFormatSelector.defaultFormat(), immutable.empty() );
-        store.initialise( true, NULL );
-
-        try
+                        RecordFormatSelector.defaultFormat(), immutable.empty() ) )
         {
+            store.initialise( true, NULL );
             store.start( NULL );
             final long propertyRecordId = store.nextId( NULL );
 
@@ -112,10 +109,6 @@ class PropertyStoreTest
 
             // then verify that our mocked method above, with the assert, was actually called
             verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any() );
-        }
-        finally
-        {
-            store.close();
         }
     }
 
