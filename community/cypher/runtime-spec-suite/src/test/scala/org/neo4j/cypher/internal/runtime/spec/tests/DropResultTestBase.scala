@@ -100,7 +100,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(nodes.map(Array[Any](_)))
   }
 
-    test("should work on top of apply") {
+  test("should work on top of apply") {
     val nodesPerLabel = 50
     given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
@@ -268,4 +268,26 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
 
     inputStream.hasMore shouldBe true
   }
+
+  test("should work on top of complex RHS") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.dropResult()
+      .|.cartesianProduct()
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
 }
