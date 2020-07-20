@@ -22,8 +22,8 @@ package org.neo4j.fabric.executor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.fabric.planning.FabricPlan;
+import java.util.function.Consumer;
+
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.Summary;
@@ -32,33 +32,35 @@ import org.neo4j.graphdb.QueryExecutionType;
 class FabricExecutionStatementResultImpl implements StatementResult
 {
     private final StatementResult statementResult;
+    private final Consumer<Throwable> failureHandler;
 
-    FabricExecutionStatementResultImpl( StatementResult statementResult, FabricPlan plan, AccessMode accessMode )
+    FabricExecutionStatementResultImpl( StatementResult statementResult, Consumer<Throwable> failureHandler )
     {
         this.statementResult = statementResult;
+        this.failureHandler = failureHandler;
     }
 
     @Override
     public Flux<String> columns()
     {
-        return statementResult.columns();
+        return statementResult.columns().doOnError( failureHandler );
     }
 
     @Override
     public Flux<Record> records()
     {
-        return statementResult.records();
+        return statementResult.records().doOnError( failureHandler );
     }
 
     @Override
     public Mono<Summary> summary()
     {
-        return statementResult.summary();
+        return statementResult.summary().doOnError( failureHandler );
     }
 
     @Override
     public Mono<QueryExecutionType> executionType()
     {
-        return statementResult.executionType();
+        return statementResult.executionType().doOnError( failureHandler );
     }
 }

@@ -149,12 +149,30 @@ public class FabricExecutor
                     } );
 
             var resultWithErrorMapping = withErrorMapping( statementResult, FabricSecondaryException.class, FabricSecondaryException::getPrimaryException );
-            return new FabricExecutionStatementResultImpl( resultWithErrorMapping, plan, accessMode );
+            return new FabricExecutionStatementResultImpl( resultWithErrorMapping, failure -> rollbackOnFailure( fabricTransaction, failure ) );
         }
         catch ( RuntimeException e )
         {
             lifecycle.endFailure( e );
+            rollbackOnFailure( fabricTransaction, e );
             throw e;
+        }
+    }
+
+    private void rollbackOnFailure( FabricTransaction fabricTransaction, Throwable failure )
+    {
+        try
+        {
+            fabricTransaction.rollback();
+        }
+        catch ( Exception rollbackFailure )
+        {
+            // some components like throwing the original exception
+            // upon any further interaction
+            if ( rollbackFailure != failure )
+            {
+                failure.addSuppressed( rollbackFailure );
+            }
         }
     }
 
