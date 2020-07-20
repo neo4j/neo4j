@@ -130,7 +130,7 @@ public interface FileSystemAbstraction extends Closeable
 
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
 
-    void truncate( File path, long size ) throws IOException;
+    void truncate( File file, long size ) throws IOException;
 
     long lastModifiedTime( File file );
 

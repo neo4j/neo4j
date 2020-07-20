@@ -60,13 +60,14 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -97,6 +98,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -530,28 +532,23 @@ public class StoreUpgraderTest
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, Config config, PageCache pageCache,
-            PageCacheTracer pageCacheTracer ) throws IOException
+            PageCacheTracer pageCacheTracer )
     {
         return newUpgrader( storeVersionCheck, pageCache, config, pageCacheTracer );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, Config config, PageCache pageCache ) throws IOException
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, Config config, PageCache pageCache )
     {
         return newUpgrader( storeVersionCheck, pageCache, config, NULL );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache ) throws IOException
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache )
     {
         return newUpgrader( storeVersionCheck, pageCache, allowMigrateConfig, NULL );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, PageCacheTracer pageCacheTracer ) throws IOException
-    {
-        return newUpgrader( storeVersionCheck, pageCache, allowMigrateConfig, pageCacheTracer );
-    }
-
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
-            PageCacheTracer pageCacheTracer ) throws IOException
+            PageCacheTracer pageCacheTracer )
     {
         return newUpgrader( storeVersionCheck, pageCache, config, SILENT, pageCacheTracer, false );
     }
@@ -573,10 +570,11 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
 
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
+        DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
         LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
-                                                      logsLocator, config, dependencies, pageCacheTracer, INSTANCE, forceUpgrade );
+                                                      logsLocator, config, dependencies, pageCacheTracer, INSTANCE, databaseHealth, forceUpgrade );
         StoreUpgrader upgrader = new StoreUpgrader(
                 storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader, pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
@@ -607,15 +605,12 @@ public class StoreUpgraderTest
         return Standard.LATEST_NAME;
     }
 
-    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, Path databaseDirectory )
-            throws IOException
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, Path databaseDirectory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build();
-        LogTailScanner tailScanner =
-                new LogTailScanner( logFiles, new VersionAwareLogEntryReader( RecordStorageCommandReaderFactory.INSTANCE ), new Monitors(), INSTANCE );
-        LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         if ( logTailInformation.commitsAfterLastCheckpoint() )
         {
@@ -627,7 +622,7 @@ public class StoreUpgraderTest
         assertNotNull( logTailInformation.lastCheckPoint );
 
         LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
-        Path logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
+        Path logFile = logFiles.getLogFile().getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
         fileSystem.truncate( logFile.toFile(), byteOffset );
     }

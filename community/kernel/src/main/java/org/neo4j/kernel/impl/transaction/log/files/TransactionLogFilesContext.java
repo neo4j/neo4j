@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -31,10 +33,12 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
-class TransactionLogFilesContext
+public class TransactionLogFilesContext
 {
     private final AtomicLong rotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
@@ -46,14 +50,22 @@ class TransactionLogFilesContext
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
     private final DatabaseTracers databaseTracers;
-    private final Supplier<StoreId> storeId;
     private final NativeAccess nativeAccess;
     private final MemoryTracker memoryTracker;
+    private final Monitors monitors;
+    private final boolean failOnCorruptedLogFiles;
+    private final Supplier<StoreId> storeId;
+    private final DatabaseHealth databaseHealth;
+    private final boolean useSeparateCheckpointFiles;
+    private final Clock clock;
+    private final Config config;
 
-    TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
+    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
-            Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
-            LogProvider logProvider, DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess, MemoryTracker memoryTracker )
+            Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
+            DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
+            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth, boolean useSeparateCheckpointFiles,
+            Clock clock, Config config )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -68,6 +80,12 @@ class TransactionLogFilesContext
         this.storeId = storeId;
         this.nativeAccess = nativeAccess;
         this.memoryTracker = memoryTracker;
+        this.monitors = monitors;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
+        this.databaseHealth = databaseHealth;
+        this.useSeparateCheckpointFiles = useSeparateCheckpointFiles;
+        this.clock = clock;
+        this.config = config;
     }
 
     AtomicLong getRotationThreshold()
@@ -75,22 +93,22 @@ class TransactionLogFilesContext
         return rotationThreshold;
     }
 
-    LogEntryReader getLogEntryReader()
+    public LogEntryReader getLogEntryReader()
     {
         return logEntryReader;
     }
 
-    LogVersionRepository getLogVersionRepository()
+    public LogVersionRepository getLogVersionRepository()
     {
         return logVersionRepositorySupplier.get();
     }
 
-    long getLastCommittedTransactionId()
+    public long getLastCommittedTransactionId()
     {
         return lastCommittedTransactionIdSupplier.getAsLong();
     }
 
-    long committingTransactionId()
+    public long committingTransactionId()
     {
         return committingTransactionIdSupplier.getAsLong();
     }
@@ -100,7 +118,7 @@ class TransactionLogFilesContext
         return lastClosedPositionSupplier.get();
     }
 
-    FileSystemAbstraction getFileSystem()
+    public FileSystemAbstraction getFileSystem()
     {
         return fileSystem;
     }
@@ -120,7 +138,7 @@ class TransactionLogFilesContext
         return nativeAccess;
     }
 
-    DatabaseTracers getDatabaseTracers()
+    public DatabaseTracers getDatabaseTracers()
     {
         return databaseTracers;
     }
@@ -133,5 +151,35 @@ class TransactionLogFilesContext
     public MemoryTracker getMemoryTracker()
     {
         return memoryTracker;
+    }
+
+    public Monitors getMonitors()
+    {
+        return monitors;
+    }
+
+    public boolean isFailOnCorruptedLogFiles()
+    {
+        return failOnCorruptedLogFiles;
+    }
+
+    public DatabaseHealth getDatabaseHealth()
+    {
+        return databaseHealth;
+    }
+
+    public boolean useSeparateCheckpointFiles()
+    {
+        return useSeparateCheckpointFiles;
+    }
+
+    public Clock getClock()
+    {
+        return clock;
+    }
+
+    public Config getConfig()
+    {
+        return config;
     }
 }

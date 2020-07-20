@@ -34,7 +34,7 @@ public class LogEntryCommit extends AbstractLogEntry
 
     public LogEntryCommit( long txId, long timeWritten, int checksum )
     {
-        this( LogEntryVersion.LATEST.version(), txId, timeWritten, checksum );
+        this( TransactionLogVersionSelector.LATEST.version(), txId, timeWritten, checksum );
     }
 
     public LogEntryCommit( byte version, long txId, long timeWritten, int checksum )

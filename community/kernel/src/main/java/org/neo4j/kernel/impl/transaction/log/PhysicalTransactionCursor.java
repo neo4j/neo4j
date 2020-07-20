@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -70,7 +70,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
             }
 
             LogEntry entry = logEntryCursor.get();
-            if ( entry instanceof CheckPoint )
+            if ( entry instanceof LogEntryInlinedCheckPoint )
             {
                 // this is a good position anyhow
                 channel.getCurrentPosition( lastGoodPositionMarker );
@@ -116,7 +116,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
     }
 
     /**
-     * @return last known good position, which is a {@link LogPosition} after a {@link CheckPoint} or
+     * @return last known good position, which is a {@link LogPosition} after a {@link LogEntryInlinedCheckPoint} or
      * a {@link LogEntryCommit}.
      */
     @Override

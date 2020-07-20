@@ -104,7 +104,7 @@ class MissingStoreFilesRecoveryIT
     {
         LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
-        fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ).toFile() );
+        fileSystem.deleteFile( logFiles.getLogFile().getLogFileForVersion( 0 ).toFile() );
         fileSystem.deleteFile( databaseLayout.nodeStore().toFile() );
 
         var dbStateService = getDatabaseStateService();
@@ -118,7 +118,7 @@ class MissingStoreFilesRecoveryIT
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase( managementService );
         LogFiles logFiles = rotateTransactionLogs( databaseApi );
-        assertNotNull( logFiles.getLogFileForVersion( 1 ) );
+        assertNotNull( logFiles.getLogFile().getLogFileForVersion( 1 ) );
         createSomeData( databaseApi );
         managementService.shutdown();
         return logFiles;

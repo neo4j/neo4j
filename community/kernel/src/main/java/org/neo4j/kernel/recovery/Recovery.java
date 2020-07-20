@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,6 +118,7 @@ import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
+import static org.neo4j.time.Clocks.systemClock;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -256,7 +258,7 @@ public final class Recovery
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
         performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, selectStorageEngine(), NullLogProvider.getInstance(), new Monitors(),
-                loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker );
+                loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
     }
 
     /**
@@ -271,16 +273,16 @@ public final class Recovery
      * @param logProvider log provider
      * @param globalMonitors global server monitors
      * @param extensionFactories extension factories for extensions that should participate in recovery
-     * @param providedLogScanner log scanner
+     * @param providedLogFiles log files from database
      * @throws IOException
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, LogProvider logProvider, Monitors globalMonitors,
-            Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogTailScanner> providedLogScanner,
-            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker ) throws IOException
+            Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock ) throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
-        if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogScanner, memoryTracker ) )
+        if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
         {
             return;
         }
@@ -341,13 +343,11 @@ public final class Recovery
                 .withLogEntryReader( logEntryReader )
                 .withConfig( config )
                 .withDependencies( dependencies )
+                .withMemoryTracker( memoryTracker )
                 .build();
 
-        Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
-        LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles,
-                memoryTracker ) );
-
-        validateStoreId( logTailScanner, storageEngine.getStoreId() );
+        boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
+        validateStoreId( logFiles, storageEngine.getStoreId() );
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
@@ -360,20 +360,21 @@ public final class Recovery
         schemaLife.add( indexingService );
 
         TransactionLogsRecovery transactionLogsRecovery =
-                transactionLogRecovery( fs, metadataProvider, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
+                transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
                         schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
+        var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         CheckPointerImpl checkPointer =
-                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
-                        databaseHealth, logProvider, tracers, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
+                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, checkpointAppender,
+                        databaseHealth, logProvider, tracers, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex(), clock );
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
         recoveryLife.add( extensions );
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailScanner, recoveryLog ) );
+        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logFiles, recoveryLog ) );
         recoveryLife.add( labelScanStore );
         recoveryLife.add( relationshipTypeScanStore );
         recoveryLife.add( logFiles );
@@ -395,11 +396,11 @@ public final class Recovery
         }
     }
 
-    public static void validateStoreId( LogTailScanner tailScanner, StoreId storeId )
+    public static void validateStoreId( LogFiles logFiles, StoreId storeId )
     {
         if ( !IGNORE_STORE_ID )
         {
-            StoreId txStoreId = tailScanner.getTailInformation().lastStoreId;
+            StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
             if ( !StoreId.UNKNOWN.equals( txStoreId ) )
             {
                 if ( !storeId.equalsIgnoringUpdate( txStoreId ) )
@@ -423,12 +424,12 @@ public final class Recovery
     }
 
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
-            LogTailScanner tailScanner, RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
+            RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
             Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
+        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, transactionIdStore, logicalTransactionStore,
                 logVersionRepository, logFiles, positionMonitor, log );
         CorruptedLogsTruncator logsTruncator =
                 new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker );
@@ -460,10 +461,10 @@ public final class Recovery
     }
 
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
-            StorageEngineFactory storageEngineFactory, Config config, Optional<LogTailScanner> logTailScanner, MemoryTracker memoryTracker ) throws IOException
+            StorageEngineFactory storageEngineFactory, Config config, Optional<LogFiles> logFiles, MemoryTracker memoryTracker ) throws IOException
     {
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
-        return logTailScanner.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logTailScanner.get() )
+        return logFiles.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logFiles.get() )
                                           : requiredChecker.isRecoveryRequiredAt( databaseLayout, memoryTracker );
     }
 
@@ -505,17 +506,17 @@ public final class Recovery
         private final DatabaseLayout databaseLayout;
         private final Config config;
         private final FileSystemAbstraction fs;
-        private final LogTailScanner logTailScanner;
-        private final Log recoveryLog;
+        private final LogFiles logFiles;
+        private final Log log;
 
         MissingTransactionLogsCheck( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fs,
-                                     LogTailScanner logTailScanner, Log recoveryLog )
+                                     LogFiles logFiles, Log log )
         {
             this.databaseLayout = databaseLayout;
             this.config = config;
             this.fs = fs;
-            this.logTailScanner = logTailScanner;
-            this.recoveryLog = recoveryLog;
+            this.logFiles = logFiles;
+            this.log = log;
         }
 
         @Override
@@ -526,12 +527,12 @@ public final class Recovery
 
         private void checkForMissingLogFiles()
         {
-            if ( logTailScanner.getTailInformation().logsMissing() )
+            if ( logFiles.getTailInformation().logsMissing() )
             {
                 if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
                 {
-                    recoveryLog.error( "Transaction logs are missing and recovery is not possible." );
-                    recoveryLog.info( "To force the database to start anyway, you can specify '%s=false'. " +
+                    log.error( "Transaction logs are missing and recovery is not possible." );
+                    log.info( "To force the database to start anyway, you can specify '%s=false'. " +
                             "This will create new transaction log and will update database metadata accordingly. " +
                             "Doing this means your database integrity might be compromised, " +
                             "please consider restoring from a consistent backup instead.",
@@ -540,17 +541,17 @@ public final class Recovery
                     Path[] logFiles = findLegacyLogFiles();
                     if ( logFiles.length > 0 )
                     {
-                        recoveryLog.warn( "Transaction log files were found in database directory, rather than the transaction log directory." );
-                        recoveryLog.warn( "Please move or remove the following %s misplaced transaction log file or files:", logFiles.length );
+                        log.warn( "Transaction log files were found in database directory, rather than the transaction log directory." );
+                        log.warn( "Please move or remove the following %s misplaced transaction log file or files:", logFiles.length );
                         for ( Path logFile : logFiles )
                         {
-                            recoveryLog.warn( logFile.toAbsolutePath().toString() );
+                            log.warn( logFile.toAbsolutePath().toString() );
                         }
                     }
 
                     throw new RuntimeException( "Transaction logs are missing and recovery is not possible." );
                 }
-                recoveryLog.warn( "No transaction logs were detected, but recovery was forced by user." );
+                log.warn( "No transaction logs were detected, but recovery was forced by user." );
             }
         }
 
@@ -559,7 +560,7 @@ public final class Recovery
             LegacyTransactionLogsLocator locator = new LegacyTransactionLogsLocator( Config.defaults(), databaseLayout );
             Path logsDirectory = locator.getTransactionLogsDirectory();
             TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fs, logsDirectory );
-            return logFilesHelper.getLogFiles();
+            return logFilesHelper.getMatchedFiles();
         }
     }
 }

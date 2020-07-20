@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
@@ -139,8 +140,9 @@ public class TransactionAppenderStressTest
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fs )
                     .withLogEntryReader( logEntryReader() )
                     .build();
-            PhysicalLogVersionedStoreChannel channel = logFiles.openForVersion( version );
-            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFiles ), INSTANCE );
+            LogFile logFile = logFiles.getLogFile();
+            PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( version );
+            return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFile ), INSTANCE );
         }
     }
 }

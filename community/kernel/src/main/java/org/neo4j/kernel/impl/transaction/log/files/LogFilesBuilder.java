@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -41,6 +42,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -49,6 +53,8 @@ import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 
@@ -84,12 +90,15 @@ public class LogFilesBuilder
     private TransactionIdStore transactionIdStore;
     private LongSupplier lastCommittedTransactionIdSupplier;
     private Supplier<LogPosition> lastClosedPositionSupplier;
-    private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
     private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
+    private DatabaseHealth databaseHealth;
+    private Clock clock;
+    private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
+    private boolean useSeparateCheckpointFiles;
 
     private LogFilesBuilder()
     {
@@ -143,12 +152,6 @@ public class LogFilesBuilder
         return builder;
     }
 
-    LogFilesBuilder withLogFileName( String name )
-    {
-        this.logFileName = name;
-        return this;
-    }
-
     public LogFilesBuilder withLastClosedTransactionPositionSupplier( Supplier<LogPosition> lastClosedPositionSupplier )
     {
         this.lastClosedPositionSupplier = lastClosedPositionSupplier;
@@ -158,6 +161,12 @@ public class LogFilesBuilder
     public LogFilesBuilder withLogVersionRepository( LogVersionRepository logVersionRepository )
     {
         this.logVersionRepository = logVersionRepository;
+        return this;
+    }
+
+    public LogFilesBuilder withSeparateFilesForCheckpoint( boolean useSeparateCheckpointFiles )
+    {
+        this.useSeparateCheckpointFiles = useSeparateCheckpointFiles;
         return this;
     }
 
@@ -188,6 +197,12 @@ public class LogFilesBuilder
     public LogFilesBuilder withConfig( Config config )
     {
         this.config = config;
+        return this;
+    }
+
+    public LogFilesBuilder withMonitors( Monitors monitors )
+    {
+        this.monitors = monitors;
         return this;
     }
 
@@ -227,6 +242,18 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withClock( Clock clock )
+    {
+        this.clock = clock;
+        return this;
+    }
+
+    public LogFilesBuilder withDatabaseHealth( DatabaseHealth databaseHealth )
+    {
+        this.databaseHealth = databaseHealth;
+        return this;
+    }
+
     public LogFilesBuilder withCommandReaderFactory( CommandReaderFactory commandReaderFactory )
     {
         this.commandReaderFactory = commandReaderFactory;
@@ -244,16 +271,12 @@ public class LogFilesBuilder
         TransactionLogFilesContext filesContext = buildContext();
         Path logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs( logsDirectory.toFile() );
-        return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
+        return new TransactionLogFiles( logsDirectory, TransactionLogFilesHelper.DEFAULT_NAME, filesContext );
     }
 
     private Path getLogsDirectory()
     {
-        if ( logsDirectory != null )
-        {
-            return logsDirectory;
-        }
-        return databaseLayout.getTransactionLogsDirectory();
+        return requireNonNullElseGet( logsDirectory, () -> databaseLayout.getTransactionLogsDirectory() );
     }
 
     TransactionLogFilesContext buildContext() throws IOException
@@ -278,10 +301,45 @@ public class LogFilesBuilder
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
         AtomicBoolean tryPreallocateTransactionLogs = getTryToPreallocateTransactionLogs();
         var nativeAccess = getNativeAccess();
+        var monitors = getMonitors();
+        var health = getDatabaseHealth();
+        var clock = getClock();
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
-                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
-                logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker );
+                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
+                fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
+                health, useSeparateCheckpointFiles, clock, config );
+    }
+
+    private Clock getClock()
+    {
+        if ( clock != null )
+        {
+            return clock;
+        }
+        return Clock.systemUTC();
+    }
+
+    private DatabaseHealth getDatabaseHealth()
+    {
+        if ( databaseHealth != null )
+        {
+            return databaseHealth;
+        }
+        if ( dependencies != null )
+        {
+            return dependencies.resolveDependency( DatabaseHealth.class );
+        }
+        return new DatabaseHealth( PanicEventGenerator.NO_OP, logProvider.getLog( DatabaseHealth.class ) );
+    }
+
+    private Monitors getMonitors()
+    {
+        if ( monitors == null )
+        {
+            return new Monitors();
+        }
+        return monitors;
     }
 
     private NativeAccess getNativeAccess()

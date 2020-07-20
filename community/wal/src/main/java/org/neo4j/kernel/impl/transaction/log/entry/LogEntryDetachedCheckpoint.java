@@ -22,25 +22,24 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.util.Objects;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.StoreId;
 
-public class CheckPoint extends AbstractLogEntry
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
+
+public class LogEntryDetachedCheckpoint extends AbstractLogEntry
 {
     private final LogPosition logPosition;
+    private final long checkpointTime;
+    private final StoreId storeId;
+    private final String reason;
 
-    public CheckPoint( LogPosition logPosition )
+    public LogEntryDetachedCheckpoint( byte version, LogPosition logPosition, long checkpointMillis, StoreId storeId, String reason )
     {
-        this( LogEntryVersion.LATEST.version(), logPosition );
-    }
-
-    public CheckPoint( byte version, LogPosition logPosition )
-    {
-        super( version, LogEntryTypeCodes.CHECK_POINT );
+        super( version, DETACHED_CHECK_POINT );
         this.logPosition = logPosition;
-    }
-
-    public LogPosition getLogPosition()
-    {
-        return logPosition;
+        this.checkpointTime = checkpointMillis;
+        this.storeId = storeId;
+        this.reason = reason;
     }
 
     @Override
@@ -54,19 +53,31 @@ public class CheckPoint extends AbstractLogEntry
         {
             return false;
         }
-        CheckPoint that = (CheckPoint) o;
-        return Objects.equals( logPosition, that.logPosition );
+        LogEntryDetachedCheckpoint that = (LogEntryDetachedCheckpoint) o;
+        return Objects.equals( logPosition, that.logPosition ) && Objects.equals( checkpointTime, that.checkpointTime ) &&
+                Objects.equals( storeId, that.storeId ) && Objects.equals( reason, that.reason );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( logPosition );
+        return Objects.hash( logPosition, checkpointTime, storeId, reason );
+    }
+
+    public StoreId getStoreId()
+    {
+        return storeId;
+    }
+
+    public LogPosition getLogPosition()
+    {
+        return logPosition;
     }
 
     @Override
     public String toString()
     {
-        return "CheckPoint{logPosition=" + logPosition + '}';
+        return "LogEntryDetachedCheckpoint{" + "logPosition=" + logPosition + ", checkpointTime=" + checkpointTime + ", storeId=" + storeId + ", reason='" +
+                reason + '\'' + '}';
     }
 }

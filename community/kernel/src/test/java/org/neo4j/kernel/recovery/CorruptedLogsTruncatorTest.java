@@ -109,15 +109,16 @@ class CorruptedLogsTruncatorTest
         life.start();
         generateTransactionLogFiles( logFiles );
 
-        long highestLogVersion = logFiles.getHighestLogVersion();
-        long fileSizeBeforePrune = Files.size( logFiles.getHighestLogFile() );
+        var logFile = logFiles.getLogFile();
+        long highestLogVersion = logFile.getHighestLogVersion();
+        long fileSizeBeforePrune = Files.size( logFile.getHighestLogFile() );
         LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforePrune );
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES - 1, highestLogVersion );
 
         logPruner.truncate( endOfLogsPosition );
 
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
-        assertEquals( fileSizeBeforePrune, Files.size( logFiles.getHighestLogFile() ) );
+        assertEquals( fileSizeBeforePrune, Files.size( logFile.getHighestLogFile() ) );
         assertTrue( ArrayUtils.isEmpty( databaseDirectory.toFile().listFiles( File::isDirectory ) ) );
     }
 
@@ -127,8 +128,9 @@ class CorruptedLogsTruncatorTest
         life.start();
         generateTransactionLogFiles( logFiles );
 
-        long highestLogVersion = logFiles.getHighestLogVersion();
-        Path highestLogFile = logFiles.getHighestLogFile();
+        var logFile = logFiles.getLogFile();
+        long highestLogVersion = logFile.getHighestLogVersion();
+        Path highestLogFile = logFile.getHighestLogFile();
         long fileSizeBeforePrune = Files.size( highestLogFile );
         int bytesToPrune = 5;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
@@ -161,9 +163,10 @@ class CorruptedLogsTruncatorTest
         generateTransactionLogFiles( logFiles );
 
         long highestCorrectLogFileIndex = 5;
-        Path highestCorrectLogFile = logFiles.getLogFileForVersion( highestCorrectLogFileIndex );
+        var logFile = logFiles.getLogFile();
+        Path highestCorrectLogFile = logFile.getLogFileForVersion( highestCorrectLogFileIndex );
         long fileSizeBeforePrune = Files.size( highestCorrectLogFile );
-        long highestLogFileLength = Files.size( logFiles.getHighestLogFile() );
+        long highestLogFileLength = Files.size( logFile.getHighestLogFile() );
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
@@ -219,7 +222,7 @@ class CorruptedLogsTruncatorTest
     private void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
     {
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
+        FlushablePositionAwareChecksumChannel writer = logFile.getTransactionLogWriter().getWriter().getChannel();
         for ( byte i = 0; i < 107; i++ )
         {
             writer.put( i );

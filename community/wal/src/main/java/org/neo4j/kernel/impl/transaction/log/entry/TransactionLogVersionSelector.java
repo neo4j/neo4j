@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.eclipse.collections.impl.map.mutable.primitive.ByteObjectHashMap;
-
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.util.Preconditions;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
 
 /**
  * Sitting at the top of the log entry chain it's about time to explain the general architecture around log entry reading and justify its complications.
@@ -56,60 +54,19 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.
  *                               │       │                │
  *                               │       │                └──── {@link CommandReaderFactory}/{@link CommandReader}
  *                               │       └───────────────────── {@link LogEntryParserSet}
- *                               └───────────────────────────── {@link LogEntryVersion}
+ *                               └───────────────────────────── {@link TransactionLogVersionSelector}
  * </pre>
  */
-public class LogEntryVersion
+public class TransactionLogVersionSelector extends LogVersionSelector
 {
-    public static final LogEntryVersion INSTANCE = new LogEntryVersion();
-    public static final LogEntryParserSet LATEST = V4_0;
+    public static final LogEntryParserSet LATEST = V4_2;
+    public static final TransactionLogVersionSelector INSTANCE = new TransactionLogVersionSelector();
 
-    private final ByteObjectHashMap<LogEntryParserSet> sets;
-
-    private LogEntryVersion()
+    private TransactionLogVersionSelector()
     {
-        sets = new ByteObjectHashMap<>();
+        super( LATEST.version() );
         register( V2_3 );
         register( V4_0 );
-    }
-
-    private void register( LogEntryParserSet set )
-    {
-        byte version = set.version();
-        Preconditions.checkState( !sets.containsKey( version ), "Conflicting version %d", version );
-        sets.put( version, set );
-    }
-
-    public LogEntryParserSet select( byte version )
-    {
-        LogEntryParserSet set = sets.get( version );
-        if ( set != null )
-        {
-            return set;
-        }
-
-        if ( version > LATEST.version() )
-        {
-            throw new UnsupportedLogVersionException( String.format(
-                    "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
-                            "indicates that the log files originates from a newer version of neo4j.",
-                    version, LATEST.version() ) );
-        }
-        throw new UnsupportedLogVersionException( String.format(
-                "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
-                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
-                        "migrations from.",
-                version, sets.keySet().min() ) );
-    }
-
-    /**
-     * Check if a more recent version of the log entry format exists and can be handled.
-     *
-     * @param version to compare against latest version
-     * @return {@code true} if a more recent log entry version exists
-     */
-    public static boolean moreRecentVersionExists( byte version )
-    {
-        return version < LATEST.version();
+        register( V4_2 );
     }
 }

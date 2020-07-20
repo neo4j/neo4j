@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
@@ -27,14 +28,13 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Health;
-import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.time.Stopwatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,8 +45,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private static final String CHECKPOINT_TAG = "checkpoint";
     private static final long NO_TRANSACTION_ID = -1;
 
-    private final TransactionAppender appender;
-    private final TransactionIdStore transactionIdStore;
+    private final CheckpointAppender checkpointAppender;
+    private final MetadataProvider metadataProvider;
     private final CheckPointThreshold threshold;
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
@@ -55,23 +55,25 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log msgLog;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
+    private final Clock clock;
 
     private volatile long lastCheckPointedTx;
 
     public CheckPointerImpl(
-            TransactionIdStore transactionIdStore,
+            MetadataProvider metadataProvider,
             CheckPointThreshold threshold,
             ForceOperation forceOperation,
             LogPruning logPruning,
-            TransactionAppender appender,
+            CheckpointAppender checkpointAppender,
             Health databaseHealth,
             LogProvider logProvider,
             DatabaseTracers tracers,
             IOLimiter ioLimiter,
-            StoreCopyCheckPointMutex mutex )
+            StoreCopyCheckPointMutex mutex,
+            Clock clock )
     {
-        this.appender = appender;
-        this.transactionIdStore = transactionIdStore;
+        this.checkpointAppender = checkpointAppender;
+        this.metadataProvider = metadataProvider;
         this.threshold = threshold;
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
@@ -80,12 +82,13 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracers = tracers;
         this.mutex = mutex;
+        this.clock = clock;
     }
 
     @Override
     public void start()
     {
-        threshold.initialize( transactionIdStore.getLastClosedTransactionId() );
+        threshold.initialize( metadataProvider.getLastClosedTransactionId() );
     }
 
     @Override
@@ -154,7 +157,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
+        if ( threshold.isCheckPointingNeeded( metadataProvider.getLastClosedTransactionId(), info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {
@@ -171,10 +174,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG );
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
-            long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+            long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
-            String prefix = triggerInfo.describe( lastClosedTransactionId );
+            String checkpointReason = triggerInfo.describe( lastClosedTransactionId );
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid
              * getting into a scenario where we would await a condition that would potentially never
@@ -185,7 +188,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * First we flush the store. If we fail now or during the flush, on recovery we'll find the
              * earlier check point and replay from there all the log entries. Everything will be ok.
              */
-            msgLog.info( prefix + " checkpoint started..." );
+            msgLog.info( checkpointReason + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
             forceOperation.flushAndForce( ioLimiter, cursorTracer );
             /*
@@ -194,10 +197,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * repair the damages.
              */
             databaseHealth.assertHealthy( IOException.class );
-            appender.checkPoint( logPosition, event );
+            checkpointAppender.checkPoint( event, logPosition, clock.instant(), checkpointReason );
             threshold.checkPointHappened( lastClosedTransactionId );
             long durationMillis = startTime.elapsed( MILLISECONDS );
-            msgLog.info( prefix + " checkpoint completed in " + duration( durationMillis ) );
+            msgLog.info( checkpointReason + " checkpoint completed in " + duration( durationMillis ) );
             event.checkpointCompleted( durationMillis );
 
             /*
@@ -224,6 +227,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         return lastCheckPointedTx;
     }
 
+    @FunctionalInterface
     public interface ForceOperation
     {
         void flushAndForce( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;

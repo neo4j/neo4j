@@ -38,9 +38,11 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -86,8 +88,8 @@ class BatchingTransactionAppenderRotationIT
         life.add( logFiles );
         Health databaseHealth = getDatabaseHealth();
 
-        LogRotationImpl logRotation =
-                new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
+        LogRotation logRotation =
+                FileLogRotation.transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         BatchingTransactionAppender transactionAppender =
@@ -99,8 +101,9 @@ class BatchingTransactionAppenderRotationIT
         TransactionToApply transactionToApply = prepareTransaction();
         transactionAppender.append( transactionToApply, logAppendEvent );
 
-        assertEquals( 1, logFiles.getHighestLogVersion() );
-        Path highestLogFile = logFiles.getHighestLogFile();
+        LogFile logFile = logFiles.getLogFile();
+        assertEquals( 1, logFile.getHighestLogVersion() );
+        Path highestLogFile = logFile.getHighestLogFile();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile, INSTANCE );
         assertEquals( 2, logHeader.getLastCommittedTxId() );
     }
@@ -137,10 +140,9 @@ class BatchingTransactionAppenderRotationIT
 
     private static class RotationLogAppendEvent implements LogAppendEvent
     {
+        private final LogRotation logRotation;
 
-        private final LogRotationImpl logRotation;
-
-        RotationLogAppendEvent( LogRotationImpl logRotation )
+        RotationLogAppendEvent( LogRotation logRotation )
         {
             this.logRotation = logRotation;
         }

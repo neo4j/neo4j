@@ -25,8 +25,8 @@ import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 class ThresholdBasedPruneStrategyTest
 {
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
-    private final LogFiles logFiles = mock( TransactionLogFiles.class );
+    private final LogFile logFile = mock( TransactionLogFile.class );
     private final Threshold threshold = mock( Threshold.class );
 
     @Test
@@ -58,14 +58,14 @@ class ThresholdBasedPruneStrategyTest
         Path fileName5 = Path.of( "logical.log.v5" );
         Path fileName6 = Path.of( "logical.log.v6" );
 
-        when( logFiles.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
-        when( logFiles.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
-        when( logFiles.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
-        when( logFiles.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
-        when( logFiles.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
-        when( logFiles.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
-        when( logFiles.getLogFileForVersion( 0 ) ).thenReturn( fileName0 );
-        when( logFiles.getLowestLogVersion() ).thenReturn( 0L );
+        when( logFile.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
+        when( logFile.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
+        when( logFile.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
+        when( logFile.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
+        when( logFile.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
+        when( logFile.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
+        when( logFile.getLogFileForVersion( 0 ) ).thenReturn( fileName0 );
+        when( logFile.getLowestLogVersion() ).thenReturn( 0L );
 
         when( fileSystem.fileExists( fileName6.toFile() ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName5.toFile() ) ).thenReturn( true );
@@ -79,11 +79,11 @@ class ThresholdBasedPruneStrategyTest
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
-        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFiles.getLogFileForVersion( v ).toFile() ) );
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ).toFile() ) );
 
         // Then
         verify( threshold ).init();
@@ -110,21 +110,21 @@ class ThresholdBasedPruneStrategyTest
         Path fileName5 = Path.of( "logical.log.v5" );
         Path fileName6 = Path.of( "logical.log.v6" );
 
-        when( logFiles.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
-        when( logFiles.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
-        when( logFiles.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
-        when( logFiles.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
-        when( logFiles.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
-        when( logFiles.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
-        when( logFiles.getLowestLogVersion() ).thenReturn( 1L );
+        when( logFile.getLogFileForVersion( 6 ) ).thenReturn( fileName6 );
+        when( logFile.getLogFileForVersion( 5 ) ).thenReturn( fileName5 );
+        when( logFile.getLogFileForVersion( 4 ) ).thenReturn( fileName4 );
+        when( logFile.getLogFileForVersion( 3 ) ).thenReturn( fileName3 );
+        when( logFile.getLogFileForVersion( 2 ) ).thenReturn( fileName2 );
+        when( logFile.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
+        when( logFile.getLowestLogVersion() ).thenReturn( 1L );
 
         when( fileSystem.getFileSize( any() ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
 
-        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFiles.getLogFileForVersion( v ).toFile() ) );
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ).toFile() ) );
 
         // Then
         verify( threshold ).init();
@@ -139,10 +139,10 @@ class ThresholdBasedPruneStrategyTest
     @Test
     void minimalAvailableVersionHigherThanRequested()
     {
-        when( logFiles.getLowestLogVersion() ).thenReturn( 10L );
+        when( logFile.getLowestLogVersion() ).thenReturn( 10L );
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( true );
 
-        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         assertFalse( strategy.findLogVersionsToDelete( 5 ).findAny().isPresent() );
     }
@@ -150,11 +150,11 @@ class ThresholdBasedPruneStrategyTest
     @Test
     void rangeWithMissingFilesCanBeProduced()
     {
-        when( logFiles.getLowestLogVersion() ).thenReturn( 10L );
+        when( logFile.getLowestLogVersion() ).thenReturn( 10L );
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( true );
         when( fileSystem.fileExists( any() ) ).thenReturn( false );
 
-        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         assertArrayEquals( new long[]{10, 11, 12, 13}, strategy.findLogVersionsToDelete( 15 ).toArray() );
     }
@@ -181,7 +181,7 @@ class ThresholdBasedPruneStrategyTest
                 return "Super-duper threshold";
             }
         };
-        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
         assertEquals( "Super-duper threshold", strategy.toString() );
     }
 }

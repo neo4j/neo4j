@@ -21,23 +21,26 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLog;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -54,6 +57,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
  */
 public class TransactionLogInitializer
 {
+    private static final String LOGS_UPGRADER_TRACER_TAG = "LogsUpgrader";
     private final FileSystemAbstraction fs;
     private final MetadataProvider store;
     private final CommandReaderFactory commandReaderFactory;
@@ -65,14 +69,14 @@ public class TransactionLogInitializer
      */
     public static LogFilesInitializer getLogFilesInitializer()
     {
-        return ( databaseLayout, store, fileSystem ) ->
+        return ( databaseLayout, store, fileSystem, checkpointReason ) ->
         {
             try
             {
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
                         fileSystem, store, StorageEngineFactory.selectStorageEngine().commandReaderFactory(),
                         PageCacheTracer.NULL );
-                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory() );
+                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason );
             }
             catch ( IOException e )
             {
@@ -93,12 +97,12 @@ public class TransactionLogInitializer
     /**
      * Create new empty log files in the given transaction logs directory, for a database that doesn't have any already.
      */
-    public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory ) throws IOException
+    public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws IOException
     {
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
             LogFiles logFiles = span.getLogFiles();
-            appendEmptyTransactionAndCheckPoint( logFiles );
+            appendEmptyTransactionAndCheckPoint( logFiles, checkpointReason );
         }
     }
 
@@ -106,30 +110,30 @@ public class TransactionLogInitializer
      * Make sure that any existing log files in the given transaction logs directory are initialised.
      * This is done when we migrate 3.x stores into a 4.x world.
      */
-    public void initializeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory ) throws Exception
+    public void initializeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws Exception
     {
-        // If there are no transactions in any of the log files,
-        // append an empty transaction, and a checkpoint, to the last log file.
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
             LogFiles logFiles = span.getLogFiles();
-            LogHeader logHeader = logFiles.extractHeader( logFiles.getLowestLogVersion() );
-            ReadableLogChannel readableChannel = logFiles.getLogFile().getReader( logHeader.getStartPosition() );
+            LogFile logFile = logFiles.getLogFile();
+            LogHeader logHeader = logFile.extractHeader( logFile.getLowestLogVersion() );
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( commandReaderFactory, false );
-            try ( LogEntryCursor cursor = new LogEntryCursor( entryReader, readableChannel ) )
+            try ( var readableChannel = logFile.getReader( logHeader.getStartPosition() );
+                  var cursor = new LogEntryCursor( entryReader, readableChannel ) )
             {
                 while ( cursor.next() )
                 {
                     LogEntry entry = cursor.get();
                     if ( entry.getType() == LogEntryTypeCodes.TX_COMMIT )
                     {
-                        // The log files already contain a transaction, so there is nothing for us to do.
+                        // The log files already contain a transaction, so we can only append checkpoint for the end of the log files.
+                        appendCheckpoint( logFiles, checkpointReason, logFile.getTransactionLogWriter().getCurrentPosition() );
                         return;
                     }
                 }
             }
 
-            appendEmptyTransactionAndCheckPoint( logFiles );
+            appendEmptyTransactionAndCheckPoint( logFiles, checkpointReason );
         }
     }
 
@@ -141,27 +145,32 @@ public class TransactionLogInitializer
                                            .withStoreId( store.getStoreId() )
                                            .withLogsDirectory( transactionLogsDirectory )
                                            .withCommandReaderFactory( commandReaderFactory )
+                                           .withDatabaseHealth( new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ) )
                                            .build();
         return new LogFilesSpan( new Lifespan( logFiles ), logFiles );
     }
 
-    private void appendEmptyTransactionAndCheckPoint( LogFiles logFiles ) throws IOException
+    private void appendEmptyTransactionAndCheckPoint( LogFiles logFiles, String reason ) throws IOException
     {
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
         long transactionId = committedTx.transactionId();
-        FlushablePositionAwareChecksumChannel writableChannel = logFiles.getLogFile().getWriter();
-        LogEntryWriter writer = new LogEntryWriter( writableChannel );
+        TransactionLogWriter transactionLogWriter = logFiles.getLogFile().getTransactionLogWriter();
+        var writer = transactionLogWriter.getWriter();
         writer.writeStartEntry( timestamp, BASE_TX_ID, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY );
         int checksum = writer.writeCommitEntry( transactionId, timestamp );
-        LogPositionMarker marker = new LogPositionMarker();
-        writableChannel.getCurrentPosition( marker );
-        LogPosition position = marker.newPosition();
-        writer.writeCheckPointEntry( position );
-        try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( "LogsUpgrader" ) )
+        LogPosition position = transactionLogWriter.getCurrentPosition();
+        appendCheckpoint( logFiles, reason, position );
+        try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) )
         {
             store.setLastCommittedAndClosedTransactionId(
                     transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorTracer );
         }
+    }
+
+    private void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException
+    {
+        var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, position, Instant.now(), reason );
     }
 }

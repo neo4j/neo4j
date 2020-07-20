@@ -30,29 +30,37 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST;
+import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
-public class LogEntryWriter
+public class LogEntryWriter<T extends WritableChecksumChannel>
 {
-    protected final WritableChecksumChannel channel;
     private final Visitor<StorageCommand,IOException> serializer;
+    protected final T channel;
+    private final byte parserSetVersion;
 
     /**
-     * Create a writer that uses {@link LogEntryVersion#LATEST} for versioning.
+     * Create a writer that uses {@link TransactionLogVersionSelector#LATEST} for versioning.
      * @param channel underlying channel
      */
-    public LogEntryWriter( WritableChecksumChannel channel )
+    public LogEntryWriter( T channel )
     {
-        this.channel = channel;
-        this.serializer = new StorageCommandSerializer( channel );
+        this( channel, LATEST );
     }
 
-    protected static void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
+    public LogEntryWriter( T channel, LogEntryParserSet parserSet )
     {
-        channel.put( LATEST.version() ).put( type );
+        this.channel = channel;
+        this.parserSetVersion = parserSet.version();
+        this.serializer = new StorageCommandSerializer( channel, this );
+    }
+
+    public void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
+    {
+        channel.put( parserSetVersion ).put( type );
     }
 
     private void writeStartEntry( LogEntryStart entry ) throws IOException
@@ -73,9 +81,9 @@ public class LogEntryWriter
                 .put( additionalHeaderData, additionalHeaderData.length );
     }
 
-    private int writeCommitEntry( LogEntryCommit entry ) throws IOException
+    private void writeCommitEntry( LogEntryCommit entry ) throws IOException
     {
-        return writeCommitEntry( entry.getTxId(), entry.getTimeWritten() );
+        writeCommitEntry( entry.getTxId(), entry.getTimeWritten() );
     }
 
     public int writeCommitEntry( long transactionId, long timeWritten ) throws IOException
@@ -106,12 +114,42 @@ public class LogEntryWriter
         }
     }
 
-    public void writeCheckPointEntry( LogPosition logPosition ) throws IOException
+    public void serialize( StorageCommand command ) throws IOException
+    {
+        serializer.visit( command );
+    }
+
+    public void writeLegacyCheckPointEntry( LogPosition logPosition ) throws IOException
     {
         channel.beginChecksum();
-        writeLogEntryHeader( CHECK_POINT, channel );
+        writeLogEntryHeader( LEGACY_CHECK_POINT, channel );
         channel.putLong( logPosition.getLogVersion() )
                 .putLong( logPosition.getByteOffset() );
         channel.putChecksum();
+    }
+
+    public T getChannel()
+    {
+        return channel;
+    }
+
+    private static class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
+    {
+        private final WritableChannel channel;
+        private final LogEntryWriter entryWriter;
+
+        StorageCommandSerializer( WritableChannel channel, LogEntryWriter entryWriter )
+        {
+            this.channel = channel;
+            this.entryWriter = entryWriter;
+        }
+
+        @Override
+        public boolean visit( StorageCommand command ) throws IOException
+        {
+            entryWriter.writeLogEntryHeader( COMMAND, channel );
+            command.serialize( channel );
+            return false;
+        }
     }
 }

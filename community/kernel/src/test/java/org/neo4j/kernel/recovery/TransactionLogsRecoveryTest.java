@@ -21,12 +21,14 @@ package org.neo4j.kernel.recovery;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -56,8 +58,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -91,9 +95,11 @@ import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
@@ -124,6 +130,8 @@ class TransactionLogsRecoveryTest
     private LogFiles logFiles;
     private Path storeDir;
     private Lifecycle schemaLife;
+    private LifeSupport life;
+    private boolean useSeparateLogFiles;
 
     @BeforeEach
     void setUp() throws Exception
@@ -133,14 +141,26 @@ class TransactionLogsRecoveryTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withSeparateFilesForCheckpoint( useSeparateLogFiles )
                 .build();
+        life = new LifeSupport();
+        life.add( logFiles );
+        life.start();
         schemaLife = new LifecycleAdapter();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        life.shutdown();
     }
 
     @Test
     void shouldRecoverExistingData() throws Exception
     {
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        LogFile logFile = logFiles.getLogFile();
+        Path file = logFile.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
         {
@@ -158,7 +178,9 @@ class TransactionLogsRecoveryTest
             lastCommittedTxCommitEntry = new LogEntryCommit( 4L, 5L, previousChecksum );
 
             // check point pointing to the previously committed transaction
-            writer.writeCheckPointEntry( lastCommittedTxPosition );
+            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointAppender = checkpointFile.getCheckpointAppender();
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, lastCommittedTxPosition, Instant.now(), "test" );
 
             // tx committed after checkpoint
             consumer.accept( marker );
@@ -192,14 +214,13 @@ class TransactionLogsRecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader reader = logEntryReader();
-            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
             {
                 private int nr;
@@ -258,13 +279,13 @@ class TransactionLogsRecoveryTest
     @Test
     void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
 
+        LogPositionMarker marker = new LogPositionMarker();
         writeSomeData( file, pair ->
         {
             LogEntryWriter writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
-            LogPositionMarker marker = new LogPositionMarker();
 
             // last committed tx
             consumer.accept( marker );
@@ -273,8 +294,16 @@ class TransactionLogsRecoveryTest
 
             // check point
             consumer.accept( marker );
-            writer.writeCheckPointEntry( marker.newPosition() );
-
+            if ( useSeparateLogFiles )
+            {
+                var checkpointFile = logFiles.getCheckpointFile();
+                var checkpointAppender = checkpointFile.getCheckpointAppender();
+                checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
+            }
+            else
+            {
+                writer.writeLegacyCheckPointEntry( marker.newPosition() );
+            }
             return true;
         } );
 
@@ -284,7 +313,6 @@ class TransactionLogsRecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader reader = logEntryReader();
-            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
@@ -298,7 +326,7 @@ class TransactionLogsRecoveryTest
                     fail( "Recovery should not be required" );
                 }
             } );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
                     logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
 
@@ -316,7 +344,7 @@ class TransactionLogsRecoveryTest
     void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
     {
         // GIVEN
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData( file, pair ->
@@ -342,17 +370,13 @@ class TransactionLogsRecoveryTest
     @Test
     void doNotTruncateCheckpointsAfterLastTransaction() throws IOException
     {
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData( file, pair ->
         {
             LogEntryWriter writer = pair.first();
             writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
             Consumer<LogPositionMarker> other = pair.other();
             other.accept( marker );
             return true;
@@ -366,7 +390,7 @@ class TransactionLogsRecoveryTest
     void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData( file, pair ->
@@ -398,7 +422,7 @@ class TransactionLogsRecoveryTest
     void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
@@ -452,7 +476,7 @@ class TransactionLogsRecoveryTest
     @Test
     void shouldFailRecoveryWhenCanceled() throws Exception
     {
-        Path file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
@@ -508,13 +532,12 @@ class TransactionLogsRecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader reader = logEntryReader();
-            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
                     txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
                     logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, NULL ) );
 
@@ -527,15 +550,10 @@ class TransactionLogsRecoveryTest
         return recoveryRequired.get();
     }
 
-    private LogTailScanner getTailScanner( LogFiles logFiles, LogEntryReader reader )
-    {
-        return new LogTailScanner( logFiles, reader, monitors, false, INSTANCE );
-    }
-
     private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file.toFile() ), logVersion,
-                CURRENT_LOG_FORMAT_VERSION, file, logFiles.getChannelNativeAccessor() );
+                CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
                       new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )
         {
@@ -552,7 +570,7 @@ class TransactionLogsRecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, useSeparateLogFiles ? V4_2 : V4_0 );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

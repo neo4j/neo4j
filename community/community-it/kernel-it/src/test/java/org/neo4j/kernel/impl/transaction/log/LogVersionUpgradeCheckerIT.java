@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -32,29 +32,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHECK_POINT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -86,31 +81,9 @@ class LogVersionUpgradeCheckerIT
     }
 
     @Test
-    void failToStartFromOlderTransactionLogsIfNotAllowed() throws Exception
-    {
-        createStoreWithLogEntryVersion( V2_3.version() );
-
-        // Try to start with upgrading disabled
-        DatabaseManagementService managementService = startDatabaseService( false );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-
-            var failure = dbStateService.causeOfFailure( db.databaseId() );
-            assertTrue( failure.isPresent() );
-            assertThat( failure.get() ).hasRootCauseInstanceOf( UpgradeNotAllowedException.class );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
     void startFromOlderTransactionLogsIfAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( V2_3.version() );
+        createStoreWithLogEntryVersion( V2_3.version(), true );
 
         // Try to start with upgrading enabled
         DatabaseManagementService managementService = startDatabaseService( true );
@@ -133,33 +106,41 @@ class LogVersionUpgradeCheckerIT
         managementService.shutdown();
     }
 
-    private void createStoreWithLogEntryVersion( byte logEntryVersion ) throws Exception
+    private void createStoreWithLogEntryVersion( byte logEntryVersion, boolean cleanup ) throws Exception
     {
         createGraphDbAndKillIt();
-        appendCheckpoint( logEntryVersion );
+        appendCheckpoint( logEntryVersion, cleanup );
     }
 
-    private void appendCheckpoint( byte logEntryVersion ) throws IOException
+    private void appendCheckpoint( byte logEntryVersion, boolean removeCheckpointFile ) throws IOException
     {
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.selectStorageEngine().commandReaderFactory() );
-        LogFiles logFiles =
-                LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withLogEntryReader( logEntryReader ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors(), INSTANCE );
-        LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
+                .withLogEntryReader( logEntryReader ).build();
+
+        if ( removeCheckpointFile )
+        {
+            for ( File file : fileSystem.listFiles( logFiles.logFilesDirectory().toFile(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) )
+            {
+                fileSystem.deleteFile( file );
+            }
+        }
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            FlushablePositionAwareChecksumChannel channel = logFiles.getLogFile().getWriter();
+            LogFile logFile = logFiles.getLogFile();
+            TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
+            var channel = transactionLogWriter.getWriter().getChannel();
 
-            LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
+            LogPosition logPosition = transactionLogWriter.getCurrentPosition();
 
             // Fake record
             channel.put( logEntryVersion )
-                    .put( CHECK_POINT )
+                    .put( LEGACY_CHECK_POINT )
                     .putLong( logPosition.getLogVersion() )
                     .putLong( logPosition.getByteOffset() );
 
-            channel.prepareForFlush().flush();
+            logFile.flush();
         }
     }
 

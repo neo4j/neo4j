@@ -19,28 +19,16 @@
  */
 package org.neo4j.kernel.database;
 
-import org.neo4j.collection.Dependencies;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 
 class DatabaseTransactionLogModule
 {
-    private final LogicalTransactionStore logicalTransactionStore;
-    private final LogFiles logFiles;
-    private final LogRotation logRotation;
     private final CheckPointer checkPointer;
     private final TransactionAppender appender;
 
-    DatabaseTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
-            LogFiles logFiles, LogRotation logRotation,
-            CheckPointer checkPointer, TransactionAppender appender )
+    DatabaseTransactionLogModule( CheckPointer checkPointer, TransactionAppender appender )
     {
-        this.logicalTransactionStore = logicalTransactionStore;
-        this.logFiles = logFiles;
-        this.logRotation = logRotation;
         this.checkPointer = checkPointer;
         this.appender = appender;
     }
@@ -53,14 +41,5 @@ class DatabaseTransactionLogModule
     TransactionAppender transactionAppender()
     {
         return appender;
-    }
-
-    public void satisfyDependencies( Dependencies dependencies )
-    {
-        dependencies.satisfyDependencies( checkPointer,
-                                          logFiles,
-                                          logicalTransactionStore,
-                                          logRotation,
-                                          appender );
     }
 }

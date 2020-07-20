@@ -33,6 +33,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.logging.NullLog;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -132,9 +135,11 @@ class LogFilesBuilderTest
     {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 2 );
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( logVersionRepository );
         dependencies.satisfyDependency( transactionIdStore );
+        dependencies.satisfyDependency( databaseHealth );
 
         TransactionLogFilesContext context = builder( databaseLayout, fileSystem )
                 .withDependencies( dependencies )
@@ -144,6 +149,7 @@ class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
+        assertEquals( databaseHealth, context.getDatabaseHealth() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
     }
@@ -166,7 +172,7 @@ class LogFilesBuilderTest
         logFiles.init();
         logFiles.start();
 
-        assertEquals( customLogDirectory.resolve( databaseLayout.getDatabaseName() ), logFiles.getHighestLogFile().getParent() );
+        assertEquals( customLogDirectory.resolve( databaseLayout.getDatabaseName() ), logFiles.getLogFile().getHighestLogFile().getParent() );
         logFiles.shutdown();
     }
 

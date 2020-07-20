@@ -135,7 +135,6 @@ public class StoreUpgrader
         {
             return;
         }
-        logsUpgrader.assertLogVersionIsCurrent( layout );
         if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             // TODO: System database does not (yet) support migration, remove this when it does!

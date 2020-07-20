@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.copyOfRange;
@@ -48,19 +48,19 @@ import static org.neo4j.storageengine.api.StoreId.UNKNOWN;
 
 class ReversedMultiFileTransactionCursorTest
 {
-    private final LogFiles logFiles = mock( LogFiles.class );
+    private final LogFile logFile = mock( LogFile.class );
 
     @BeforeEach
     void setUp() throws IOException
     {
-        when( logFiles.extractHeader( anyLong() ) ).thenAnswer( invocation -> new LogHeader( invocation.getArgument( 0 ), 1, UNKNOWN ) );
+        when( logFile.extractHeader( anyLong() ) ).thenAnswer( invocation -> new LogHeader( invocation.getArgument( 0 ), 1, UNKNOWN ) );
     }
 
     @Test
     void shouldReadSingleVersionReversed() throws Exception
     {
         // GIVEN
-        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFiles, log( 5 ), 0, start() );
+        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFile, log( 5 ), 0, start() );
 
         // WHEN
         CommittedTransactionRepresentation[] reversed = exhaust( cursor );
@@ -73,7 +73,7 @@ class ReversedMultiFileTransactionCursorTest
     void shouldReadMultipleVersionsReversed() throws Exception
     {
         // GIVEN
-        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFiles, log( 5, 3, 8 ), 2, start() );
+        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFile, log( 5, 3, 8 ), 2, start() );
 
         // WHEN
         CommittedTransactionRepresentation[] reversed = exhaust( cursor );
@@ -87,7 +87,7 @@ class ReversedMultiFileTransactionCursorTest
     {
         // GIVEN
         TransactionCursor cursor =
-                new ReversedMultiFileTransactionCursor( logFiles, log( 5, 6, 8 ), 2, new LogPosition( 1, CURRENT_FORMAT_LOG_HEADER_SIZE + 3 ) );
+                new ReversedMultiFileTransactionCursor( logFile, log( 5, 6, 8 ), 2, new LogPosition( 1, CURRENT_FORMAT_LOG_HEADER_SIZE + 3 ) );
 
         // WHEN
         CommittedTransactionRepresentation[] reversed = exhaust( cursor );
@@ -100,7 +100,7 @@ class ReversedMultiFileTransactionCursorTest
     void shouldHandleEmptyLogsMidStream() throws Exception
     {
         // GIVEN
-        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFiles, log( 5, 0, 2, 0, 3 ), 4, start() );
+        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFile, log( 5, 0, 2, 0, 3 ), 4, start() );
 
         // WHEN
         CommittedTransactionRepresentation[] reversed = exhaust( cursor );
@@ -113,7 +113,7 @@ class ReversedMultiFileTransactionCursorTest
     void shouldHandleEmptySingleLogVersion() throws Exception
     {
         // GIVEN
-        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFiles, log( 0 ), 0, start() );
+        TransactionCursor cursor = new ReversedMultiFileTransactionCursor( logFile, log( 0 ), 0, start() );
 
         // WHEN
         CommittedTransactionRepresentation[] reversed = exhaust( cursor );

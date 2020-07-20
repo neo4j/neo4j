@@ -45,4 +45,23 @@ public interface LogVersionRepository
      * @return the latest log version for this repository.
      */
     long incrementAndGetVersion( PageCursorTracer cursorTracer );
+
+    /*
+     * Returns the current checkpoint log version.
+     */
+    long getCheckpointLogVersion();
+
+    /**
+     * Set checkpoint log version
+     * @param version new current log version
+     */
+    void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer );
+
+    /**
+     * Increments (making sure it is persisted on disk) and returns the latest checkpoint log version for this repository.
+     * It does so atomically and can potentially block.
+     * @param cursorTracer underlying page cursor tracer.
+     * @return the latest checkpoint log version for this repository.
+     */
+    long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer );
 }

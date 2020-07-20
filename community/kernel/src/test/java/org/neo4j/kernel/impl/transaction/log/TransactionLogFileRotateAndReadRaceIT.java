@@ -114,7 +114,7 @@ class TransactionLogFileRotateAndReadRaceIT
                 .build();
         life.add( logFiles );
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
+        var writer = logFile.getTransactionLogWriter();
         LogPositionMarker startPosition = new LogPositionMarker();
         writer.getCurrentPosition( startPosition );
 
@@ -131,7 +131,7 @@ class TransactionLogFileRotateAndReadRaceIT
             while ( !end.get() )
             {
                 int bytesToWrite = random.nextInt( 1, dataChunk.length );
-                writer.put( dataChunk, bytesToWrite );
+                writer.getWriter().getChannel().put( dataChunk, bytesToWrite );
                 if ( logFile.rotationNeeded() )
                 {
                     logFile.rotate();

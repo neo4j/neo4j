@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -42,9 +43,10 @@ public class DatabaseMigratorFactory
     private final NamedDatabaseId namedDatabaseId;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
+    private final DatabaseHealth databaseHealth;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
     {
         this.fs = fs;
         this.config = config;
@@ -54,6 +56,7 @@ public class DatabaseMigratorFactory
         this.namedDatabaseId = namedDatabaseId;
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
+        this.databaseHealth = databaseHealth;
     }
 
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
@@ -61,6 +64,6 @@ public class DatabaseMigratorFactory
     {
         DatabaseConfig dbConfig = new DatabaseConfig( config, namedDatabaseId );
         return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, jobScheduler, databaseLayout,
-                storageEngineFactory, pageCacheTracer, memoryTracker );
+                storageEngineFactory, pageCacheTracer, memoryTracker, databaseHealth );
     }
 }

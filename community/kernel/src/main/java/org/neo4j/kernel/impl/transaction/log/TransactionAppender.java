@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -56,15 +55,4 @@ public interface TransactionAppender
      * how to handle exceptions in general thrown from this method.
      */
     long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException;
-
-    /**
-     * Appends a check point to a log which marks a starting point for recovery in the event of failure.
-     * After this method have returned the check point mark must have been flushed to disk.
-     *
-     * @param logPosition the log position contained in the written check point
-     * @param logCheckPointEvent a trace event for the given check point operation.
-     * @throws IOException if there was a problem appending the transaction. See method javadoc body for
-     * how to handle exceptions in general thrown from this method.
-     */
-    void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException;
 }

@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.LongSupplier;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -34,39 +32,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface LogFiles extends Lifecycle
 {
-    long getLogVersion( Path historyLogFile );
-
-    Path[] logFiles();
-
-    boolean isLogFile( Path file );
-
-    Path logFilesDirectory();
-
-    Path getLogFileForVersion( long version );
-
-    Path getHighestLogFile();
-
-    long getHighestLogVersion();
-
-    long getLowestLogVersion();
-
-    LogHeader extractHeader( long version ) throws IOException;
-
-    PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException;
-
-    boolean versionExists( long version );
-
-    boolean hasAnyEntries( long version );
-
-    void accept( LogVersionVisitor visitor );
-
-    void accept( LogHeaderVisitor visitor ) throws IOException;
+    CheckpointFile getCheckpointFile();
 
     LogFile getLogFile();
 
-    TransactionLogFileInformation getLogFileInformation();
+    Path logFilesDirectory();
 
-    LogFileChannelNativeAccessor getChannelNativeAccessor();
+    Path[] logFiles();
 
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long versionUsed, LongSupplier lastCommittedTransactionId ) throws IOException;
+    boolean isLogFile( Path path );
+
+    LogTailInformation getTailInformation();
 }

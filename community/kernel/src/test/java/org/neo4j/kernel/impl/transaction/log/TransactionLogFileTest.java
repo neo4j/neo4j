@@ -19,17 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -41,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -48,7 +59,11 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.util.concurrent.Futures;
 
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -77,30 +92,32 @@ class TransactionLogFileTest
     @Inject
     private LifeSupport life;
 
+    private CapturingChannelFileSystem wrappingFileSystem;
+
     private final long rotationThreshold = ByteUnit.mebiBytes( 1 );
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
 
+    @BeforeEach
+    void setUp()
+    {
+        wrappingFileSystem = new CapturingChannelFileSystem( fileSystem );
+    }
+
     @Test
     void skipLogFileWithoutHeader() throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
         life.add( logFiles );
         life.start();
 
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion( NULL );
-        fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ).toFile() ).close();
+        fileSystem.write( logFiles.getLogFile().getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ).toFile() ).close();
         transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
-        logFiles.accept( versionLocator );
+        logFiles.getLogFile().accept( versionLocator );
 
         LogPosition logPosition = versionLocator.getLogPosition();
         assertEquals( 1, logPosition.getLogVersion() );
@@ -146,13 +163,7 @@ class TransactionLogFileTest
     void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
 
         // WHEN
         life.start();
@@ -161,8 +172,8 @@ class TransactionLogFileTest
 
         // THEN
         Path file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                                    .withLogEntryReader( logEntryReader() )
-                                    .build().getLogFileForVersion( 1L );
+                .withLogEntryReader( logEntryReader() )
+                .build().getLogFile().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fileSystem, file, INSTANCE );
         assertEquals( 1L, header.getLogVersion() );
         assertEquals( 2L, header.getLastCommittedTxId() );
@@ -172,28 +183,23 @@ class TransactionLogFileTest
     void shouldWriteSomeDataIntoTheLog() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
         life.start();
         life.add( logFiles );
 
         // WHEN
-        FlushablePositionAwareChecksumChannel writer = logFiles.getLogFile().getWriter();
-        LogPositionMarker positionMarker = new LogPositionMarker();
-        writer.getCurrentPosition( positionMarker );
+        LogFile logFile = logFiles.getLogFile();
+        TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
+        var channel = transactionLogWriter.getWriter().getChannel();
+        LogPosition currentPosition = transactionLogWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
-        writer.putInt( intValue );
-        writer.putLong( longValue );
-        writer.prepareForFlush().flush();
+        channel.putInt( intValue );
+        channel.putLong( longValue );
+        logFile.flush();
 
         // THEN
-        try ( ReadableChannel reader = logFiles.getLogFile().getReader( positionMarker.newPosition() ) )
+        try ( ReadableChannel reader = logFile.getReader( currentPosition ) )
         {
             assertEquals( intValue, reader.getInt() );
             assertEquals( longValue, reader.getLong() );
@@ -204,35 +210,27 @@ class TransactionLogFileTest
     void shouldReadOlderLogs() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
         life.start();
         life.add( logFiles );
 
         // WHEN
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
-        LogPositionMarker positionMarker = new LogPositionMarker();
-        writer.getCurrentPosition( positionMarker );
-        LogPosition position1 = positionMarker.newPosition();
+        TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
+        var writer = logWriter.getWriter().getChannel();
+        LogPosition position1 = logWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
         byte[] someBytes = someBytes( 40 );
         writer.putInt( intValue );
         writer.putLong( longValue );
         writer.put( someBytes, someBytes.length );
-        writer.prepareForFlush().flush();
-        writer.getCurrentPosition( positionMarker );
-        LogPosition position2 = positionMarker.newPosition();
+        logFile.flush();
+        LogPosition position2 = logWriter.getCurrentPosition();
         long longValue2 = 123456789L;
         writer.putLong( longValue2 );
         writer.put( someBytes, someBytes.length );
-        writer.prepareForFlush().flush();
+        logFile.flush();
 
         // THEN
         try ( ReadableChannel reader = logFile.getReader( position1 ) )
@@ -252,25 +250,19 @@ class TransactionLogFileTest
     void shouldVisitLogFile() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
         life.start();
         life.add( logFiles );
 
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
-        LogPositionMarker mark = new LogPositionMarker();
-        writer.getCurrentPosition( mark );
+        var transactionLogWriter = logFile.getTransactionLogWriter();
+        var writer = transactionLogWriter.getWriter().getChannel();
+        LogPosition position = transactionLogWriter.getCurrentPosition();
         for ( int i = 0; i < 5; i++ )
         {
-            writer.put( (byte)i );
+            writer.put( (byte) i );
         }
-        writer.prepareForFlush();
+        logFile.flush();
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
@@ -282,7 +274,7 @@ class TransactionLogFileTest
             }
             called.set( true );
             return true;
-        }, mark.newPosition() );
+        }, position );
         assertTrue( called.get() );
     }
 
@@ -297,14 +289,14 @@ class TransactionLogFileTest
                 .withLogEntryReader( logEntryReader() )
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFileForVersion( logVersion );
+        Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
         when( fs.read( eq( logFile.toFile() ) ) ).thenReturn( channel );
 
         // WHEN
-        assertThrows( IncompleteLogHeaderException.class, () -> logFiles.openForVersion( logVersion ) );
+        assertThrows( IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion( logVersion ) );
         verify( channel ).close();
     }
 
@@ -319,7 +311,7 @@ class TransactionLogFileTest
                 .withLogEntryReader( logEntryReader() )
                 .build();
         int logVersion = 0;
-        Path logFile = logFiles.getLogFileForVersion( logVersion );
+        Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
@@ -328,7 +320,7 @@ class TransactionLogFileTest
 
         // WHEN
         IncompleteLogHeaderException exception =
-                assertThrows( IncompleteLogHeaderException.class, () -> logFiles.openForVersion( logVersion ) );
+                assertThrows( IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion( logVersion ) );
         verify( channel ).close();
         assertEquals( 1, exception.getSuppressed().length );
         assertTrue( exception.getSuppressed()[0] instanceof IOException );
@@ -337,29 +329,125 @@ class TransactionLogFileTest
     @Test
     void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withRotationThreshold( rotationThreshold )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
+        LogFiles logFiles = buildLogFiles();
         life.start();
         life.add( logFiles );
 
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
+        var channel = logFile.getTransactionLogWriter().getWriter().getChannel();
 
         life.shutdown();
 
-        assertThrows( Throwable.class, () -> writer.put( (byte) 7 ) );
-        assertThrows( Throwable.class, () -> writer.putInt( 7 ) );
-        assertThrows( Throwable.class, () -> writer.putLong( 7 ) );
-        assertThrows( Throwable.class, () -> writer.putDouble( 7 ) );
-        assertThrows( Throwable.class, () -> writer.putFloat( 7 ) );
-        assertThrows( Throwable.class, () -> writer.putShort( (short) 7 ) );
-        assertThrows( Throwable.class, () -> writer.put( new byte[]{1, 2, 3}, 3 ) );
-        assertThrows( IllegalStateException.class, () -> writer.prepareForFlush().flush() );
+        assertThrows( Throwable.class, () -> channel.put( (byte) 7 ) );
+        assertThrows( Throwable.class, () -> channel.putInt( 7 ) );
+        assertThrows( Throwable.class, () -> channel.putLong( 7 ) );
+        assertThrows( Throwable.class, () -> channel.putDouble( 7 ) );
+        assertThrows( Throwable.class, () -> channel.putFloat( 7 ) );
+        assertThrows( Throwable.class, () -> channel.putShort( (short) 7 ) );
+        assertThrows( Throwable.class, () -> channel.put( new byte[]{1, 2, 3}, 3 ) );
+        assertThrows( IllegalStateException.class, logFile::flush );
+    }
+
+    @Test
+    void shouldForceLogChannel() throws Throwable
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        var capturingChannel = wrappingFileSystem.getCapturingChannel();
+
+        var flushesBefore = capturingChannel.getFlushCounter().get();
+        var writesBefore = capturingChannel.getWriteAllCounter().get();
+
+        logFile.forceAfterAppend( LogAppendEvent.NULL );
+
+        assertEquals( 1, capturingChannel.getFlushCounter().get() - flushesBefore );
+        assertEquals( 1, capturingChannel.getWriteAllCounter().get() - writesBefore );
+    }
+
+        @Test
+    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        var capturingChannel = wrappingFileSystem.getCapturingChannel();
+
+        var flushesBefore = capturingChannel.getFlushCounter().get();
+        var writesBefore = capturingChannel.getWriteAllCounter().get();
+        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
+        writeAllLock.lock();
+
+        int executors = 10;
+        var executorService = Executors.newFixedThreadPool( executors );
+        try
+        {
+            List<Future<?>> futures = Stream.iterate( 0, i -> i + 1 )
+                    .limit( executors )
+                    .map( v -> executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) ) )
+                    .collect( toList() );
+            while ( !writeAllLock.hasQueuedThreads() )
+            {
+                parkNanos( 100 );
+            }
+            writeAllLock.unlock();
+            assertThat( futures ).hasSize( executors );
+            Futures.getAll( futures );
+        }
+        finally
+        {
+            if ( writeAllLock.isLocked() )
+            {
+                writeAllLock.unlock();
+            }
+            executorService.shutdownNow();
+        }
+        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isLessThanOrEqualTo( executors );
+        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isLessThanOrEqualTo( executors );
+    }
+
+    @Test
+    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        var capturingChannel = wrappingFileSystem.getCapturingChannel();
+        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
+        var flushesBefore = capturingChannel.getFlushCounter().get();
+        var writesBefore = capturingChannel.getWriteAllCounter().get();
+        writeAllLock.lock();
+
+        int executors = 10;
+        var executorService = Executors.newFixedThreadPool( executors );
+        try
+        {
+            var future = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
+            while ( !writeAllLock.hasQueuedThreads() )
+            {
+                parkNanos( 100 );
+            }
+            writeAllLock.unlock();
+            var future2 = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
+            Futures.getAll( List.of(future, future2 ) );
+        }
+        finally
+        {
+            if ( writeAllLock.isLocked() )
+            {
+                writeAllLock.unlock();
+            }
+            executorService.shutdownNow();
+        }
+
+        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isEqualTo( 2 );
+        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isEqualTo( 2 );
     }
 
     private static byte[] readBytes( ReadableChannel reader, int length ) throws IOException
@@ -367,6 +455,17 @@ class TransactionLogFileTest
         byte[] result = new byte[length];
         reader.get( result, length );
         return result;
+    }
+
+    private LogFiles buildLogFiles() throws IOException
+    {
+        return LogFilesBuilder.builder( databaseLayout, wrappingFileSystem )
+                .withRotationThreshold( rotationThreshold )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .build();
     }
 
     private static byte[] someBytes( int length )
@@ -467,6 +566,77 @@ class TransactionLogFileTest
             evictionCounter = 0;
             preallocateCounter = 0;
             keepCounter = 0;
+        }
+    }
+
+    private class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction
+    {
+        private CapturingStoreChannel capturingChannel;
+
+        CapturingChannelFileSystem( FileSystemAbstraction fs )
+        {
+            super( fs );
+        }
+
+        @Override
+        public StoreChannel write( File fileName ) throws IOException
+        {
+            capturingChannel = new CapturingStoreChannel( super.write( fileName ) );
+            return capturingChannel;
+        }
+
+        public CapturingStoreChannel getCapturingChannel()
+        {
+            return capturingChannel;
+        }
+    }
+
+    private static class CapturingStoreChannel extends DelegatingStoreChannel
+    {
+        private final AtomicInteger writeAllCounter = new AtomicInteger();
+        private final AtomicInteger flushCounter = new AtomicInteger();
+        private final ReentrantLock writeAllLock = new ReentrantLock();
+
+        private CapturingStoreChannel( StoreChannel delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public void writeAll( ByteBuffer src ) throws IOException
+        {
+            writeAllLock.lock();
+            try
+            {
+                writeAllCounter.incrementAndGet();
+                super.writeAll( src );
+            }
+            finally
+            {
+                writeAllLock.unlock();
+            }
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            flushCounter.incrementAndGet();
+            super.flush();
+        }
+
+        public ReentrantLock getWriteAllLock()
+        {
+            return writeAllLock;
+        }
+
+        public AtomicInteger getWriteAllCounter()
+        {
+            return writeAllCounter;
+        }
+
+        public AtomicInteger getFlushCounter()
+        {
+            return flushCounter;
         }
     }
 }

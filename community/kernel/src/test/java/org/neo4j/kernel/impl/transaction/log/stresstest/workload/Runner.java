@@ -41,8 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -52,6 +51,9 @@ import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.Futures;
+
+import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
+import static org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter.EMPTY;
 
 public class Runner implements Callable<Long>
 {
@@ -111,7 +113,7 @@ public class Runner implements Callable<Long>
     {
         Log log = NullLog.getInstance();
         Health databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
-        LogRotationImpl logRotation = new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, LogRotationMonitorAdapter.EMPTY );
+        LogRotation logRotation = transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, EMPTY );
         return new BatchingTransactionAppender( logFiles, logRotation,
                 transactionMetadataCache, transactionIdStore, databaseHealth );
     }

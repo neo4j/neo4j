@@ -19,38 +19,65 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 public class SimpleLogVersionRepository implements LogVersionRepository
 {
-    private volatile long logVersion;
+    private final AtomicLong logVersion = new AtomicLong();
+    private final AtomicLong checkpointLogVersion = new AtomicLong();
 
     public SimpleLogVersionRepository()
     {
-        this( INITIAL_LOG_VERSION );
+        this( INITIAL_LOG_VERSION, INITIAL_LOG_VERSION );
     }
+
     public SimpleLogVersionRepository( long initialLogVersion )
     {
-        this.logVersion = initialLogVersion;
+        this( initialLogVersion, INITIAL_LOG_VERSION );
+    }
+
+    public SimpleLogVersionRepository( long initialLogVersion, long initialCheckpointLogVersion )
+    {
+        this.logVersion.set( initialLogVersion );
+        this.checkpointLogVersion.set( initialCheckpointLogVersion );
     }
 
     @Override
     public long incrementAndGetVersion( PageCursorTracer cursorTracer )
     {
-        logVersion++;
-        return logVersion;
+        return logVersion.incrementAndGet();
     }
 
     @Override
     public long getCurrentLogVersion()
     {
-        return logVersion;
+        return logVersion.get();
     }
 
     @Override
     public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
     {
-        this.logVersion = version;
+        this.logVersion.set( version );
+    }
+
+    @Override
+    public long getCheckpointLogVersion()
+    {
+        return checkpointLogVersion.get();
+    }
+
+    @Override
+    public void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer )
+    {
+        checkpointLogVersion.set( version );
+    }
+
+    @Override
+    public long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer )
+    {
+        return checkpointLogVersion.incrementAndGet();
     }
 }

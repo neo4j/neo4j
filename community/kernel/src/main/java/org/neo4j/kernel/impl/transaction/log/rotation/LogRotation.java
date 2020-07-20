@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvents;
 
 /**
  * Used to check if a log rotation is needed, and also to execute a log rotation.
@@ -34,27 +34,27 @@ public interface LogRotation
     LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
-        public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent )
+        public boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents )
         {
             return false;
         }
 
         @Override
-        public void rotateLogFile( LogAppendEvent logAppendEvent )
+        public void rotateLogFile( LogRotateEvents logRotateEvents )
         {
         }
     };
 
     /**
      * Rotates the undelying log if it is required. Returns true if rotation happened, false otherwise
-     * @param logAppendEvent A trace event for the current log append operation.
+     * @param logRotateEvents A trace event for the current log append operation.
      */
-    boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException;
+    boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException;
 
     /**
      * Force a log rotation.
      *
      * @throws IOException
      */
-    void rotateLogFile( LogAppendEvent logAppendEvent ) throws IOException;
+    void rotateLogFile( LogRotateEvents logRotateEvents ) throws IOException;
 }

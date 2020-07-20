@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,9 +25,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,19 +39,16 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -66,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.InlinedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -74,25 +72,22 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-class LogTailScannerTest
+abstract class AbstractLogTailScannerTest
 {
     @Inject
-    private FileSystemAbstraction fs;
+    protected FileSystemAbstraction fs;
     @Inject
-    private PageCache pageCache;
+    protected PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    protected DatabaseLayout databaseLayout;
 
     private final LogEntryReader reader = logEntryReader();
 
-    private LogTailScanner tailScanner;
-
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
-    private final byte latestLogEntryVersion = LogEntryVersion.LATEST.version();
-    private LogVersionRepository logVersionRepository;
-    private TransactionIdStore transactionIdStore;
-    private AssertableLogProvider logProvider;
+    protected AssertableLogProvider logProvider;
+    protected LogVersionRepository logVersionRepository;
+    protected TransactionIdStore transactionIdStore;
 
     private static Stream<Arguments> params()
     {
@@ -107,21 +102,16 @@ class LogTailScannerTest
     {
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
-        logFiles = LogFilesBuilder
-                .activeFilesBuilder( databaseLayout, fs, pageCache )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .build();
         logProvider = new AssertableLogProvider();
-        tailScanner = new LogTailScanner( logFiles, reader, monitors, false, logProvider, INSTANCE );
+        logFiles = createLogFiles();
     }
+
+    protected abstract LogFiles createLogFiles() throws IOException;
 
     @Test
     void detectMissingLogFiles()
     {
-        LogTailInformation tailInformation = tailScanner.getTailInformation();
+        LogTailInformation tailInformation = logFiles.getTailInformation();
         assertTrue( tailInformation.logsMissing() );
         assertTrue( tailInformation.isRecoveryRequired() );
     }
@@ -134,10 +124,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, -1, logTailInformation );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, true, logTailInformation );
     }
 
     @ParameterizedTest
@@ -148,10 +138,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile() );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, false, logTailInformation );
         assertFalse( logTailInformation.logsMissing() );
     }
 
@@ -164,10 +154,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, txId, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -178,10 +168,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile() );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -193,10 +183,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -207,10 +197,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start() ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -222,10 +212,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -241,10 +231,10 @@ class LogTailScannerTest
             logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -258,10 +248,10 @@ class LogTailScannerTest
             logFile( commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, 6, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, true, 6, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -272,10 +262,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -286,10 +276,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -298,15 +288,15 @@ class LogTailScannerTest
     {
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
-        LogTailScanner tailScanner =
+        InlinedLogTailScanner tailScanner =
             new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
         LogEntryStart startEntry = new LogEntryStart( 3L, 4L, 0, new byte[]{5, 6},
             new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
+        CheckpointInfo checkPoint = new CheckpointInfo( new LogPosition( endLogVersion, 16L ), StoreId.UNKNOWN, LogPosition.UNSPECIFIED );
         LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
-            endLogVersion, latestLogEntryVersion, checkPoint, false, StoreId.UNKNOWN );
+            endLogVersion, (byte) -1, checkPoint, false, StoreId.UNKNOWN );
 
-        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -315,14 +305,14 @@ class LogTailScannerTest
     {
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
 
-        Path highestLogFile = logFiles.getHighestLogFile();
-        fs.truncate( highestLogFile.toFile(), fs.getFileSize( highestLogFile.toFile() ) - 3 );
+        File highestLogFile = logFiles.getLogFile().getHighestLogFile().toFile();
+        fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -332,14 +322,14 @@ class LogTailScannerTest
         int firstTxId = 2;
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
 
-        Path highestLogFile = logFiles.getHighestLogFile();
-        fs.truncate( highestLogFile.toFile(), fs.getFileSize( highestLogFile.toFile() ) - 3 );
+        File highestLogFile = logFiles.getLogFile().getHighestLogFile().toFile();
+        fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, firstTxId, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, firstTxId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -352,10 +342,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( txId ), checkPoint( start ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -366,10 +356,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint(), start(), commit( 1 ), checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -381,10 +371,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -397,10 +387,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start, commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -412,10 +402,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( 1 ), checkPoint() ), logFile() );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -428,10 +418,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -441,13 +431,14 @@ class LogTailScannerTest
     {
         // given
         StartEntry start = start();
-        setupLogFiles( endLogVersion, logFile( start ), logFile( checkPoint( start ) ) );
+        PositionEntry position = position();
+        setupLogFiles( endLogVersion, logFile( start, position ), logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -459,10 +450,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -474,10 +465,10 @@ class LogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
-        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, true, txId, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -493,12 +484,12 @@ class LogTailScannerTest
                        logFile( start(), commit( txId ) ) );
 
         // when
-        tailScanner.getTailInformation();
+        logFiles.getTailInformation();
 
         // then
-        String message = "Scanning transaction file with version %d for checkpoint entries";
-        assertThat( logProvider ).forClass( LogTailScanner.class ).forLevel( INFO ).containsMessageWithArguments( message, endLogVersion );
-        assertThat( logProvider ).forClass( LogTailScanner.class ).forLevel( INFO ).containsMessageWithArguments( message, startLogVersion );
+        String message = "Scanning log file with version %d for checkpoint entries";
+        assertThat( logProvider ).forLevel( INFO ).containsMessageWithArguments( message, endLogVersion );
+        assertThat( logProvider ).forLevel( INFO ).containsMessageWithArguments( message, startLogVersion );
     }
 
     // === Below is code for helping the tests above ===
@@ -521,19 +512,20 @@ class LogTailScannerTest
             {
                 AtomicLong lastTxId = new AtomicLong();
                 logVersionRepository.setCurrentLogVersion( logVersion, NULL );
+                logVersionRepository.setCheckpointLogVersion( logVersion, NULL );
                 LifeSupport logFileLife = new LifeSupport();
                 logFileLife.start();
                 logFileLife.add( logFiles );
                 LogFile logFile = logFiles.getLogFile();
+                var checkpointFile = logFiles.getCheckpointFile();
                 int previousChecksum = BASE_TX_CHECKSUM;
                 try
                 {
-                    FlushablePositionAwareChecksumChannel writeChannel = logFile.getWriter();
-                    LogPositionMarker positionMarker = new LogPositionMarker();
-                    LogEntryWriter writer = new LogEntryWriter( writeChannel );
+                    TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
+                    LogEntryWriter writer = logWriter.getWriter();
                     for ( Entry entry : entries )
                     {
-                        LogPosition currentPosition = writeChannel.getCurrentPosition( positionMarker ).newPosition();
+                        LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put( entry, currentPosition );
                         if ( entry instanceof StartEntry )
                         {
@@ -551,7 +543,14 @@ class LogTailScannerTest
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get( target ) : currentPosition;
                             assert logPosition != null : "No registered log position for " + target;
-                            writer.writeCheckPointEntry( logPosition );
+                            if ( checkpointFile instanceof LegacyCheckpointLogFile )
+                            {
+                                writer.writeLegacyCheckPointEntry( logPosition );
+                            }
+                            else
+                            {
+                                checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" );
+                            }
                         }
                         else if ( entry instanceof PositionEntry )
                         {
@@ -641,7 +640,7 @@ class LogTailScannerTest
     }
 
     private static void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
-        long firstTxIdAfterLastCheckPoint, long logVersion, LogTailInformation logTailInformation )
+        long firstTxIdAfterLastCheckPoint, boolean filesNotFound, LogTailInformation logTailInformation )
     {
         assertEquals( hasCheckPointEntry, logTailInformation.lastCheckPoint != null );
         assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckpoint() );
@@ -649,17 +648,16 @@ class LogTailScannerTest
         {
             assertEquals( firstTxIdAfterLastCheckPoint, logTailInformation.firstTxIdAfterLastCheckPoint );
         }
-        assertEquals( logVersion, logTailInformation.oldestLogVersionFound );
+        assertEquals( filesNotFound, logTailInformation.filesNotFound );
     }
 
-    private static class FirstTxIdConfigurableTailScanner extends LogTailScanner
+    private static class FirstTxIdConfigurableTailScanner extends InlinedLogTailScanner
     {
-
         private final long txId;
 
         FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
         {
-            super( logFiles, logEntryReader, monitors, INSTANCE );
+            super( logFiles, logEntryReader, monitors, false, INSTANCE );
             this.txId = txId;
         }
 

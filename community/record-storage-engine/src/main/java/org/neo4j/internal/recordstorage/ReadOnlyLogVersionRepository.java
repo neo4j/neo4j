@@ -29,57 +29,121 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LOG_VERSION;
+
 public class ReadOnlyLogVersionRepository implements LogVersionRepository
 {
-    private final long logVersion;
-    private volatile boolean incrementVersionCalled;
+    private static final int NOT_EXISTING_VERSION = 0;
+    private final FixedLogVersion logVersion;
+    private final FixedLogVersion checkpointLogVersion;
 
     public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
     {
-        this.logVersion = readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer );
+        this.logVersion = new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, LOG_VERSION ) );
+        this.checkpointLogVersion = new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, CHECKPOINT_LOG_VERSION ) );
     }
 
     @Override
     public long getCurrentLogVersion()
     {
-        // We can expect a call to this during shutting down, if we have a LogFile using us.
-        // So it's sort of OK.
-        if ( incrementVersionCalled )
-        {
-            throw new IllegalStateException( "Read-only log version repository has observed a call to " +
-                    "incrementVersion, which indicates that it's been shut down" );
-        }
-        return logVersion;
+        return getCurrentVersion( logVersion );
     }
 
     @Override
     public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
     {
-        throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
+        setCurrentVersionAttempt();
     }
 
     @Override
     public long incrementAndGetVersion( PageCursorTracer cursorTracer )
+    {
+        return incrementAndGetVersion( logVersion );
+    }
+
+    @Override
+    public long getCheckpointLogVersion()
+    {
+        return getCurrentVersion( checkpointLogVersion );
+    }
+
+    @Override
+    public void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer )
+    {
+        setCurrentVersionAttempt();
+    }
+
+    @Override
+    public long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer )
+    {
+        return incrementAndGetVersion( checkpointLogVersion );
+    }
+
+    private long getCurrentVersion( FixedLogVersion version )
+    {
+        // We can expect a call to this during shutting down, if we have a LogFile using us.
+        // So it's sort of OK.
+        if ( version.isIncrementAttempted() )
+        {
+            throw new IllegalStateException( "Read-only log version repository has observed a call to " +
+                    "incrementVersion, which indicates that it's been shut down" );
+        }
+        return version.getValue();
+    }
+
+    private void setCurrentVersionAttempt()
+    {
+        throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
+    }
+
+    private long incrementAndGetVersion( FixedLogVersion version )
     {   // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
-        if ( incrementVersionCalled )
+        if ( version.isIncrementAttempted() )
         {
             throw new IllegalStateException( "Read-only log version repository only allows " +
                     "to call incrementVersion once, during shutdown" );
         }
-        incrementVersionCalled = true;
-        return logVersion;
+        version.setIncrementAttempt();
+        return version.getValue();
     }
 
-    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer ) throws IOException
+    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer, MetaDataStore.Position position ) throws IOException
     {
         try
         {
-            return MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, cursorTracer );
+            return MetaDataStore.getRecord( pageCache, neoStore, position, cursorTracer );
         }
         catch ( NoSuchFileException ignore )
         {
-            return 0;
+            return NOT_EXISTING_VERSION;
+        }
+    }
+
+    private static class FixedLogVersion
+    {
+        private boolean incrementAttempt;
+        private final long value;
+
+        FixedLogVersion( long value )
+        {
+            this.value = value;
+        }
+
+        boolean isIncrementAttempted()
+        {
+            return incrementAttempt;
+        }
+
+        long getValue()
+        {
+            return value;
+        }
+
+        void setIncrementAttempt()
+        {
+            this.incrementAttempt = true;
         }
     }
 }

@@ -48,9 +48,10 @@ public class TransactionLogFileInformation implements LogFileInformation
     @Override
     public long getFirstExistingEntryId() throws IOException
     {
-        long version = logFiles.getHighestLogVersion();
+        LogFile logFile = logFiles.getLogFile();
+        long version = logFile.getHighestLogVersion();
         long candidateFirstTx = -1;
-        while ( logFiles.versionExists( version ) )
+        while ( logFile.versionExists( version ) )
         {
             candidateFirstTx = getFirstEntryId( version );
             version--;
@@ -59,7 +60,7 @@ public class TransactionLogFileInformation implements LogFileInformation
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
-        return logFiles.hasAnyEntries( version ) ? candidateFirstTx : -1;
+        return logFile.hasAnyEntries( version ) ? candidateFirstTx : -1;
     }
 
     @Override
@@ -72,9 +73,10 @@ public class TransactionLogFileInformation implements LogFileInformation
         }
 
         // Wasn't cached, go look for it
-        if ( logFiles.versionExists( version ) )
+        var logFile = logFiles.getLogFile();
+        if ( logFile.versionExists( version ) )
         {
-            logHeader = logFiles.extractHeader( version );
+            logHeader = logFile.extractHeader( version );
             logHeaderCache.putHeader( version, logHeader );
             return logHeader.getLastCommittedTxId() + 1;
         }
@@ -113,8 +115,9 @@ public class TransactionLogFileInformation implements LogFileInformation
 
         long getTimestampForVersion( long version ) throws IOException
         {
-            LogPosition position = logFiles.extractHeader( version ).getStartPosition();
-            try ( ReadableLogChannel channel = logFiles.getLogFile().getReader( position ) )
+            var logFile = logFiles.getLogFile();
+            LogPosition position = logFile.extractHeader( version ).getStartPosition();
+            try ( ReadableLogChannel channel = logFile.getReader( position ) )
             {
                 LogEntry entry;
                 while ( (entry = logEntryReader.readLogEntry( channel )) != null )

@@ -47,7 +47,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -65,6 +64,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles.DEFAULT_FILENAME_FILTER;
 
 @DbmsExtension
 class DatabaseFileListingTest
@@ -183,7 +183,7 @@ class DatabaseFileListingTest
     {
         assertTrue( database.listStoreFiles( true ).stream()
                 .map( metaData -> metaData.path().getFileName().toString() )
-                .anyMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
+                .anyMatch( fileName -> DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
     @Test
@@ -191,7 +191,7 @@ class DatabaseFileListingTest
     {
         assertTrue( database.listStoreFiles( false ).stream()
                 .map( metaData -> metaData.path().getFileName().toString() )
-                .noneMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
+                .noneMatch( fileName -> DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
 
     @Test

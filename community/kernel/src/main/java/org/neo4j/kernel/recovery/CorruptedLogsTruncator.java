@@ -88,15 +88,16 @@ public class CorruptedLogsTruncator
     private void truncateLogFiles( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
             throws IOException
     {
-        Path lastRecoveredTransactionLog = logFiles.getLogFileForVersion( recoveredTransactionLogVersion );
+        var logFile = logFiles.getLogFile();
+        Path lastRecoveredTransactionLog = logFile.getLogFileForVersion( recoveredTransactionLogVersion );
         fs.truncate( lastRecoveredTransactionLog.toFile(), recoveredTransactionOffset );
         forEachSubsequentLogFile( recoveredTransactionLogVersion,
-                fileIndex -> fs.deleteFile( logFiles.getLogFileForVersion( fileIndex ).toFile() ) );
+                fileIndex -> fs.deleteFile( logFile.getLogFileForVersion( fileIndex ).toFile() ) );
     }
 
     private void forEachSubsequentLogFile( long recoveredTransactionLogVersion, LongConsumer action )
     {
-        long highestLogVersion = logFiles.getHighestLogVersion();
+        long highestLogVersion = logFiles.getLogFile().getHighestLogVersion();
         for ( long fileIndex = recoveredTransactionLogVersion + 1; fileIndex <= highestLogVersion; fileIndex++ )
         {
             action.accept( fileIndex );
@@ -139,7 +140,7 @@ public class CorruptedLogsTruncator
     private void copyTransactionLogContent( long logFileIndex, long logOffset, ZipOutputStream destination,
             ByteBuffer byteBuffer ) throws IOException
     {
-        Path logFile = logFiles.getLogFileForVersion( logFileIndex );
+        Path logFile = logFiles.getLogFile().getLogFileForVersion( logFileIndex );
         if ( fs.getFileSize( logFile.toFile() ) == logOffset )
         {
             // file was recovered fully, nothing to backup
@@ -162,14 +163,14 @@ public class CorruptedLogsTruncator
 
     private boolean haveMoreRecentLogFiles( long recoveredTransactionLogVersion )
     {
-        return logFiles.getHighestLogVersion() > recoveredTransactionLogVersion;
+        return logFiles.getLogFile().getHighestLogVersion() > recoveredTransactionLogVersion;
     }
 
     private boolean isRecoveredLogCorrupted( long recoveredTransactionLogVersion, long recoveredTransactionOffset ) throws IOException
     {
         try
         {
-            return Files.size( logFiles.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset;
+            return Files.size( logFiles.getLogFile().getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset;
         }
         catch ( NoSuchFileException ignored )
         {

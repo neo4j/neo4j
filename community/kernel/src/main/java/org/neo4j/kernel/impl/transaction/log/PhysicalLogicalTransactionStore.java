@@ -44,14 +44,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogEntryReader logEntryReader;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
-    private final LogFiles logFiles;
 
     public PhysicalLogicalTransactionStore( LogFiles logFiles,
             TransactionMetadataCache transactionMetadataCache,
             LogEntryReader logEntryReader, Monitors monitors,
             boolean failOnCorruptedLogFiles )
     {
-        this.logFiles = logFiles;
         this.logFile = logFiles.getLogFile();
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
@@ -69,7 +67,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
     {
         return ReversedMultiFileTransactionCursor
-                .fromLogFile( logFiles, logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles,
+                .fromLogFile( logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles,
                         monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
     }
 
@@ -79,8 +77,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         // look up in position cache
         try
         {
-            TransactionMetadataCache.TransactionMetadata transactionMetadata =
-                    transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
+            TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
             if ( transactionMetadata != null )
             {
                 // we're good
@@ -90,7 +87,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 
             // ask logFiles about the version it may be in
             LogVersionLocator headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
-            logFiles.accept( headerVisitor );
+            logFile.accept( headerVisitor );
 
             // ask LogFile
             TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );

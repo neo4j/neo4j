@@ -80,6 +80,7 @@ import static java.nio.file.Files.exists;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -181,18 +182,11 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         nonRecoveredDatabase();
         ConsistencyCheckService service = new ConsistencyCheckService();
-        try
-        {
-            Config defaults = Config.defaults( settings() );
-            runFullConsistencyCheck( service, defaults );
-            fail();
-        }
-        catch ( ConsistencyCheckIncompleteException e )
-        {
-            assertEquals( e.getCause().getMessage(),
+        Config defaults = Config.defaults( settings() );
+        var e = assertThrows( ConsistencyCheckIncompleteException.class, () -> runFullConsistencyCheck( service, defaults ) );
+        assertEquals( e.getCause().getMessage(),
                     Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
                             "To perform recovery please start database in single mode and perform clean shutdown." ) );
-        }
     }
 
     @Test
@@ -428,20 +422,21 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }
-        Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
-                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
-                .build().logFiles();
-        for ( Path file : txLogs )
+        File[] txLogs = fs.listFiles( LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+                                                      .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                                                      .build().logFilesDirectory().toFile() );
+        for ( File file : txLogs )
         {
-            fs.copyToDirectory( file.toFile(), tmpLogDir.toFile() );
+            fs.copyToDirectory( file, tmpLogDir.toFile() );
         }
         managementService.shutdown();
-        for ( Path txLog : txLogs )
+        for ( File txLog : txLogs )
         {
-            fs.deleteFile( txLog.toFile() );
+            fs.deleteFile( txLog );
         }
 
-        for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
+        for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs )
+                .build().logFiles() )
         {
             fs.moveToDirectory( file.toFile(), databaseLayout.getTransactionLogsDirectory().toFile() );
         }

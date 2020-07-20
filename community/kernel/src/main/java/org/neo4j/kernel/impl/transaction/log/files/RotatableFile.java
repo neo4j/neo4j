@@ -17,28 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import java.io.IOException;
+import java.nio.file.Path;
 
-public interface CheckpointLogVersionRepository
+public interface RotatableFile
 {
     /**
-     * Returns the current checkpoint log version.
+     * @return {@code true} if a rotation is needed.
      */
-    long getCheckpointLogVersion();
+    boolean rotationNeeded();
 
     /**
-     * Set checkpoint log version
-     * @param version new current log version
+     * Rotate the active file.
+     * @return A file object representing the file name and path of the log file rotated to.
+     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
      */
-    void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer );
+    Path rotate() throws IOException;
 
-    /**
-     * Increments (making sure it is persisted on disk) and returns the latest checkpoint log version for this repository.
-     * It does so atomically and can potentially block.
-     * @param cursorTracer underlying page cursor tracer.
-     * @return the latest checkpoint log version for this repository.
-     */
-    long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer );
 }

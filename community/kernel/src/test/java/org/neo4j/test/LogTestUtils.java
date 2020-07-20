@@ -34,11 +34,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
+import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -93,15 +94,14 @@ public final class LogTestUtils
         Path[] files = logFiles.logFiles();
         for ( Path file : files )
         {
-            filterTransactionLogFile( fileSystem, file, filter, logFiles.getChannelNativeAccessor() );
+            filterTransactionLogFile( fileSystem, file, filter, EMPTY_ACCESSOR );
         }
 
         return files;
     }
 
     private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, Path file, final LogHook<LogEntry> filter,
-            LogFileChannelNativeAccessor channelNativeAccessor )
-            throws IOException
+            ChannelNativeAccessor channelNativeAccessor ) throws IOException
     {
         filter.file( file );
         try ( StoreChannel in = fileSystem.read( file.toFile() ) )

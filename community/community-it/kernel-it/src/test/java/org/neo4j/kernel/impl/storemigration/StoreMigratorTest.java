@@ -284,7 +284,7 @@ class StoreMigratorTest
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build();
         assertEquals( 0, logPosition.getLogVersion() );
-        assertEquals( Files.size( logFiles.getHighestLogFile() ), logPosition.getByteOffset() );
+        assertEquals( Files.size( logFiles.getLogFile().getHighestLogFile() ), logPosition.getByteOffset() );
     }
 
     private RecordStorageMigrator newStoreMigrator()

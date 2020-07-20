@@ -26,21 +26,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.Flushable;
 import java.io.IOException;
 import java.lang.StackWalker.StackFrame;
 import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.ClassGuardedAdversary;
@@ -64,15 +58,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
-import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
@@ -82,24 +76,18 @@ import org.neo4j.test.extension.LifeExtension;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
-import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
-import static org.neo4j.test.ThreadTestUtils.fork;
 
 @EphemeralNeo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
 public class BatchingTransactionAppenderConcurrencyTest
 {
-    private static final long MILLISECONDS_TO_WAIT = TimeUnit.MINUTES.toMillis( 1 );
-    private static final Predicate<StackTraceElement[]> IN_CORRECT_FORCE_AFTER_APPEND_METHOD =
-            stackTrace -> Stream.of( stackTrace ).anyMatch( e -> e.getMethodName().equals( "forceAfterAppend" ) );
     private static ExecutorService executor;
 
     @Inject
@@ -107,17 +95,12 @@ public class BatchingTransactionAppenderConcurrencyTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final LogFile logFile = mock( LogFile.class );
     private final LogRotation logRotation = LogRotation.NO_ROTATION;
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-    private final Health databaseHealth = mock( DatabaseHealth.class );
-    private final Semaphore forceSemaphore = new Semaphore( 0 );
-
-    private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
 
     @BeforeAll
     static void setUpExecutor()
@@ -136,88 +119,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
-        when( logFile.getWriter() ).thenReturn( new CommandQueueChannel() );
-    }
-
-    @Test
-    void shouldForceLogChannel() throws Throwable
-    {
-        BatchingTransactionAppender appender = life.add( createTransactionAppender() );
-        life.start();
-
-        appender.forceAfterAppend( logAppendEvent );
-
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
-        assertTrue( channelCommandQueue.isEmpty() );
-    }
-
-    @Test
-    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
-    {
-        channelCommandQueue.put( ChannelCommand.dummy );
-
-        // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
-        // will be at capacity.
-
-        final BatchingTransactionAppender appender = life.add( createTransactionAppender() );
-        life.start();
-
-        Runnable runnable = createForceAfterAppendRunnable( appender );
-        Future<?> future = executor.submit( runnable );
-
-        forceSemaphore.acquire();
-
-        Thread otherThread = fork( runnable );
-        awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
-
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.dummy );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
-        future.get();
-        otherThread.join();
-        assertTrue( channelCommandQueue.isEmpty() );
-    }
-
-    @Test
-    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
-    {
-        channelCommandQueue.put( ChannelCommand.dummy );
-
-        // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
-        // will be at capacity.
-
-        final BatchingTransactionAppender appender = life.add( createTransactionAppender() );
-        life.start();
-
-        Runnable runnable = createForceAfterAppendRunnable( appender );
-        Future<?> future = executor.submit( runnable );
-
-        forceSemaphore.acquire();
-
-        Thread[] otherThreads = new Thread[10];
-        for ( int i = 0; i < otherThreads.length; i++ )
-        {
-            otherThreads[i] = fork( runnable );
-        }
-        for ( Thread otherThread : otherThreads )
-        {
-            awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, IN_CORRECT_FORCE_AFTER_APPEND_METHOD, Thread.State.TIMED_WAITING );
-        }
-
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.dummy );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-        assertThat( channelCommandQueue.take() ).isEqualTo( ChannelCommand.force );
-        future.get();
-        for ( Thread otherThread : otherThreads )
-        {
-            otherThread.join();
-        }
-        assertTrue( channelCommandQueue.isEmpty(), "Command queue: " + channelCommandQueue );
     }
 
     /*
@@ -231,14 +132,15 @@ public class BatchingTransactionAppenderConcurrencyTest
     {
         // GIVEN
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
-                failMethod( BatchingTransactionAppender.class, "force" ) );
+                failMethod( TransactionLogFile.class, "force" ) );
         EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
-        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
+                .withDatabaseHealth( databaseHealth )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
@@ -265,21 +167,16 @@ public class BatchingTransactionAppenderConcurrencyTest
         {
             race.addContestant( () ->
             {
-                try
-                {
+                // Good, we know that this test uses an adversarial file system which will throw
+                // an exception in LogFile#force, and since all these transactions
+                // will append and be forced in the same batch, where the force will fail then
+                // all these transactions should fail. If there's any transaction not failing then
+                // it just didn't notice the panic, which would be potentially hazardous.
+                assertThrows( IOException.class, () ->
                     // Append to the log, the LogAppenderEvent will have all of the appending threads
                     // do wait for all of the other threads to start the force thing
-                    appender.append( tx(), beforeForceTrappingEvent );
-                    fail( "No transaction should be considered appended" );
-                }
-                catch ( IOException e )
-                {
-                    // Good, we know that this test uses an adversarial file system which will throw
-                    // an exception in BatchingTransactionAppender#force, and since all these transactions
-                    // will append and be forced in the same batch, where the force will fail then
-                    // all these transactions should fail. If there's any transaction not failing then
-                    // it just didn't notice the panic, which would be potentially hazardous.
-                }
+                    appender.append( tx(), beforeForceTrappingEvent )
+                );
             } );
         }
 
@@ -299,6 +196,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
+                .withDatabaseHealth( slowPanicDatabaseHealth )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
@@ -317,9 +215,7 @@ public class BatchingTransactionAppenderConcurrencyTest
 
         // Try to commit one additional transaction, should fail since database has already panicked
         fs.shouldOOM = false;
-        try
-        {
-            appender.append( tx(), new LogAppendEvent.Empty()
+        var e = assertThrows( IOException.class, () -> appender.append( tx(), new LogAppendEvent.Empty()
             {
                 @Override
                 public LogForceWaitEvent beginLogForceWait()
@@ -327,32 +223,22 @@ public class BatchingTransactionAppenderConcurrencyTest
                     adversaryLatch.countDown();
                     return super.beginLogForceWait();
                 }
-            } );
-            fail( "Should have failed since database should have panicked" );
-        }
-        catch ( IOException e )
-        {
-            assertTrue( e.getMessage().contains( "The database has encountered a critical error" ) );
-        }
+            } ) );
+
+        assertThat( e ).hasMessageContaining( "The database has encountered a critical error" );
 
         // Check that we actually got an OutOfMemoryError
-        try
-        {
-            failingTransaction.get();
-            fail( "Should have failed with OutOfMemoryError error" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertTrue( e.getCause() instanceof OutOfMemoryError );
-        }
+        var executionException = assertThrows( ExecutionException.class, failingTransaction::get );
+        assertThat( executionException ).hasCauseInstanceOf( OutOfMemoryError.class );
 
         // Check number of transactions, should only have one
         LogEntryReader logEntryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
 
-        assertThat( logFiles.getLowestLogVersion() ).isEqualTo( logFiles.getHighestLogVersion() );
-        long version = logFiles.getHighestLogVersion();
+        LogFile logFile = logFiles.getLogFile();
+        assertThat( logFile.getLowestLogVersion() ).isEqualTo( logFile.getHighestLogVersion() );
+        long version = logFile.getHighestLogVersion();
 
-        try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
+        try ( LogVersionedStoreChannel channel = logFile.openForVersion( version );
                 ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel, INSTANCE );
                 LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
         {
@@ -429,67 +315,8 @@ public class BatchingTransactionAppenderConcurrencyTest
         return new TransactionToApply( tx, NULL );
     }
 
-    private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
-    {
-        return () ->
-        {
-            try
-            {
-                appender.forceAfterAppend( logAppendEvent );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        };
-    }
-
     private static Predicate<StackFrame> failMethod( final Class<?> klass, final String methodName )
     {
         return frame -> frame.getClassName().equals( klass.getName() ) && frame.getMethodName().equals( methodName );
-    }
-
-    private BatchingTransactionAppender createTransactionAppender()
-    {
-        return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, databaseHealth );
-    }
-
-    private enum ChannelCommand
-    {
-        emptyBufferIntoChannelAndClearIt,
-        force,
-        dummy
-    }
-
-    class CommandQueueChannel extends InMemoryClosableChannel implements Flushable
-    {
-        @Override
-        public Flushable prepareForFlush()
-        {
-            try
-            {
-                channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-            return this;
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-            try
-            {
-                forceSemaphore.release();
-                channelCommandQueue.put( ChannelCommand.force );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IOException( e );
-            }
-        }
     }
 }

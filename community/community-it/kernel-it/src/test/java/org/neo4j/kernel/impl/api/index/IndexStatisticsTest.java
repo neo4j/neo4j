@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +67,6 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
@@ -159,7 +157,7 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // then
-        assertThat( indexUpdates( index ), Matchers.greaterThan( indexUpdatesBeforeRestart ) );
+        assertThat( indexUpdates( index ) ).isGreaterThan( indexUpdatesBeforeRestart );
     }
 
     @Test

@@ -80,6 +80,8 @@ org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_time org.neo
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_tx org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_iops_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_policy org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy> public static final
+org.neo4j.configuration.GraphDatabaseSettings::checkpoint_logical_log_keep_threshold org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::checkpoint_logical_log_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::csv_buffer_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::csv_legacy_quote_escaping org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_hints_error org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

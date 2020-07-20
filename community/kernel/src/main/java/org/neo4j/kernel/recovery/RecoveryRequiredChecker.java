@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
@@ -58,26 +57,20 @@ class RecoveryRequiredChecker
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
         LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-        LogFiles logFiles = buildLogFiles( databaseLayout, reader );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors(), true, memoryTracker );
-        return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
+        LogFiles logFiles = buildLogFiles( databaseLayout, reader, memoryTracker );
+        return isRecoveryRequiredAt( databaseLayout, logFiles );
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader reader ) throws IOException
+    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader reader, MemoryTracker memoryTracker ) throws IOException
     {
         return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config )
+                    .withMemoryTracker( memoryTracker )
+                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                     .withLogEntryReader( reader ).build();
     }
 
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner ) throws IOException
-    {
-        LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-        LogFiles logFiles = buildLogFiles( databaseLayout, reader );
-        return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
-    }
-
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner, LogFiles logFiles )
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogFiles logFiles )
     {
         if ( !storageEngineFactory.storageExists( fs, databaseLayout, pageCache ) )
         {
@@ -88,6 +81,6 @@ class RecoveryRequiredChecker
         {
             return true;
         }
-        return new RecoveryStartInformationProvider( tailScanner, logFiles, NO_MONITOR ).get().isRecoveryRequired();
+        return new RecoveryStartInformationProvider( logFiles, NO_MONITOR ).get().isRecoveryRequired();
     }
 }

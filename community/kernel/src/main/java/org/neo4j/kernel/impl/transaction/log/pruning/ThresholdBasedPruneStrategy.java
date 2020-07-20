@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.util.stream.LongStream;
 
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
 
 import static java.lang.Math.min;
@@ -30,14 +30,14 @@ import static org.neo4j.util.Preconditions.requireNonNegative;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 {
-    private final LogFiles logFiles;
+    private final LogFile logFile;
     private final Threshold threshold;
     private final TransactionLogFileInformation logFileInformation;
 
-    ThresholdBasedPruneStrategy( LogFiles logFiles, Threshold threshold )
+    ThresholdBasedPruneStrategy( LogFile logFile, Threshold threshold )
     {
-        this.logFiles = logFiles;
-        this.logFileInformation = this.logFiles.getLogFileInformation();
+        this.logFile = logFile;
+        this.logFileInformation = logFile.getLogFileInformation();
         this.threshold = threshold;
     }
 
@@ -56,7 +56,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         }
 
         threshold.init();
-        long lowestLogVersion = logFiles.getLowestLogVersion();
+        long lowestLogVersion = logFile.getLowestLogVersion();
         ThresholdEvaluationResult thresholdResult = pruneThresholdReached( upToVersion, lowestLogVersion );
         if ( !thresholdResult.reached() )
         {
@@ -82,7 +82,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     {
         for ( long version = upToVersion - 1; version >= lowestLogVersion; version-- )
         {
-            if ( threshold.reached( logFiles.getLogFileForVersion( version ), version, logFileInformation ) )
+            if ( threshold.reached( logFile.getLogFileForVersion( version ), version, logFileInformation ) )
             {
                 return ThresholdEvaluationResult.reached( version );
             }

@@ -46,8 +46,8 @@ class ReadOnlyLogVersionRepositoryIT
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnReadOnlyLogRepoConstruction" );
         new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorTracer );
 
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
-        assertThat( cursorTracer.hits() ).isOne();
+        assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 2 );
     }
 }

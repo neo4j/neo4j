@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 
 /**
  * Log checkpoint event that counts number of checkpoint that occurred and amount of time elapsed
@@ -36,11 +37,13 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent
     private final AtomicLong checkpointCounter = new AtomicLong();
     private final AtomicLong accumulatedCheckpointTotalTimeMillis = new AtomicLong();
     private final BiConsumer<LogPosition,LogPosition> logFileAppendConsumer;
+    private final CountingLogRotateEvent countingLogRotateEvent;
     private volatile long lastCheckpointTimeMillis;
 
-    CountingLogCheckPointEvent( BiConsumer<LogPosition,LogPosition> logFileAppendConsumer )
+    CountingLogCheckPointEvent( BiConsumer<LogPosition,LogPosition> logFileAppendConsumer, CountingLogRotateEvent countingLogRotateEvent )
     {
         this.logFileAppendConsumer = logFileAppendConsumer;
+        this.countingLogRotateEvent = countingLogRotateEvent;
     }
 
     @Override
@@ -88,5 +91,11 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent
     long lastCheckpointTimeMillis()
     {
         return lastCheckpointTimeMillis;
+    }
+
+    @Override
+    public LogRotateEvent beginLogRotate()
+    {
+        return countingLogRotateEvent;
     }
 }

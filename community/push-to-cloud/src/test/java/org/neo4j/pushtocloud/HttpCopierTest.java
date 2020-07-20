@@ -25,9 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
-import wiremock.org.hamcrest.BaseMatcher;
 import wiremock.org.hamcrest.CoreMatchers;
-import wiremock.org.hamcrest.Description;
 import wiremock.org.hamcrest.Matcher;
 
 import java.io.IOException;
@@ -71,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
@@ -83,6 +81,7 @@ import static org.neo4j.pushtocloud.HttpCopier.StatusBody;
 import static wiremock.org.hamcrest.CoreMatchers.allOf;
 import static wiremock.org.hamcrest.CoreMatchers.containsString;
 import static wiremock.org.hamcrest.MatcherAssert.assertThat;
+import static wiremock.org.hamcrest.Matchers.not;
 
 @TestDirectoryExtension
 class HttpCopierTest
@@ -956,23 +955,5 @@ class HttpCopierTest
         {
             throw new UnsupportedOperationException( "Should not be called" );
         }
-    }
-
-    private static <T> Matcher<T> not( Matcher<T> matcher )
-    {
-        return new BaseMatcher<>()
-        {
-            @Override
-            public boolean matches( Object o )
-            {
-                return !matcher.matches( o );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                matcher.describeTo( description );
-            }
-        };
     }
 }

@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl.ForceOperation;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -47,7 +48,9 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
-import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.time.Duration.ofMinutes;
@@ -57,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
@@ -77,11 +81,11 @@ class CheckPointerImplTest
     private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "Test" );
     public static final Duration TIMEOUT = ofMinutes( 5 );
 
-    private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+    private final MetadataProvider metadataProvider = mock( MetadataProvider.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
     private final ForceOperation forceOperation = mock( ForceOperation.class );
     private final LogPruning logPruning = mock( LogPruning.class );
-    private final TransactionAppender appender = mock( TransactionAppender.class );
+    private final CheckpointAppender appender = mock( CheckpointAppender.class );
     private final Health health = mock( DatabaseHealth.class );
     private final DatabaseTracer tracer = mock( DatabaseTracer.class, RETURNS_MOCKS );
     private IOLimiter limiter = mock( IOLimiter.class );
@@ -89,6 +93,8 @@ class CheckPointerImplTest
     private final long initialTransactionId = 2L;
     private final long transactionId = 42L;
     private final LogPosition logPosition = new LogPosition( 16L, 233L );
+    private final Clock clock = Clocks.fakeClock();
+    private final StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Test
     void shouldNotFlushIfItIsNotNeeded() throws Throwable
@@ -126,7 +132,7 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( limiter, NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
         verify( threshold ).isCheckPointingNeeded( transactionId, INFO );
@@ -152,7 +158,7 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( limiter, NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
@@ -177,7 +183,7 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( limiter, NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
@@ -202,7 +208,7 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( limiter, NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
@@ -219,7 +225,7 @@ class CheckPointerImplTest
 
         doAnswer( invocation ->
         {
-            verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
+            verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( LogPosition.class ), any( Instant.class ), any( String.class ) );
             reset( appender );
             invocation.callRealMethod();
             return null;
@@ -291,7 +297,7 @@ class CheckPointerImplTest
 
         checkPointing.forceCheckPoint( INFO );
 
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         reset( appender );
 
         checkPointing.tryCheckPoint( INFO );
@@ -341,6 +347,19 @@ class CheckPointerImplTest
         checkPointing.checkPointIfNeeded( INFO );
 
         verify( forceOperation ).flushAndForce( limiter, NULL );
+    }
+
+    @Test
+    void propagateCheckpointingReason() throws IOException
+    {
+        mockTxIdStore();
+        CheckPointerImpl checkPointer = checkPointer();
+        checkPointer.start();
+
+        String triggerName = "Test checkpoint reason";
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( triggerName ) );
+
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), contains( triggerName ) );
     }
 
     @Test
@@ -526,8 +545,9 @@ class CheckPointerImplTest
         var databaseTracers = mock( DatabaseTracers.class );
         when( databaseTracers.getDatabaseTracer() ).thenReturn( tracer );
         when( databaseTracers.getPageCacheTracer() ).thenReturn( PageCacheTracer.NULL );
-        return new CheckPointerImpl( txIdStore, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), databaseTracers, limiter, mutex );
+        when( metadataProvider.getStoreId() ).thenReturn( storeId );
+        return new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, appender, health,
+                NullLogProvider.getInstance(), databaseTracers, limiter, mutex, clock );
     }
 
     private CheckPointerImpl checkPointer()
@@ -538,8 +558,8 @@ class CheckPointerImplTest
     private void mockTxIdStore()
     {
         long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
-        when( txIdStore.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
+        when( metadataProvider.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
+        when( metadataProvider.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
     }
 
     private static class CheckPointerThread extends Thread

@@ -27,9 +27,11 @@ import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,8 +42,12 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -112,8 +118,8 @@ class TransactionLogChannelAllocatorIT
         return new TransactionLogFilesContext( new AtomicLong( ROTATION_THRESHOLD ), new AtomicBoolean( true ),
                 new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
-                SimpleLogVersionRepository::new, fileSystem,
-                NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN, NativeAccessProvider.getNativeAccess(),
-                EmptyMemoryTracker.INSTANCE );
+                SimpleLogVersionRepository::new, fileSystem, NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
+                NativeAccessProvider.getNativeAccess(), EmptyMemoryTracker.INSTANCE, new Monitors(), true,
+                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), false, Clock.systemUTC(), Config.defaults() );
     }
 }

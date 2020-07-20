@@ -38,7 +38,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -95,7 +94,7 @@ class VersionAwareLogEntryReaderIT
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            assertEquals( kibiBytes( 128 ), Files.size( logFiles.getHighestLogFile() ) );
+            assertEquals( kibiBytes( 128 ), Files.size( logFiles.getLogFile().getHighestLogFile() ) );
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             // this position in a log file before 0's are actually starting
@@ -142,19 +141,18 @@ class VersionAwareLogEntryReaderIT
             long initialPosition = getLastReadablePosition( logFiles );
             long checkpointsEndDataOffset = DEFAULT_READ_AHEAD_SIZE + initialPosition;
 
-            FlushablePositionAwareChecksumChannel writer = logFile.getWriter();
-            TransactionLogWriter logWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
+            TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
             do
             {
-                logWriter.checkPoint( new LogPosition( 4, 5 ) );
-                writer.getCurrentPosition( positionMarker );
+                logWriter.legacyCheckPoint( new LogPosition( 4, 5 ) );
+                logWriter.getCurrentPosition( positionMarker );
             }
             while ( positionMarker.getByteOffset() <= checkpointsEndDataOffset );
-            writer.prepareForFlush().flush();
+            logFile.flush();
             logFiles.getLogFile().rotate();
-            fs.truncate( logFiles.getLogFileForVersion( 0 ).toFile(), checkpointsEndDataOffset );
+            fs.truncate( logFiles.getLogFile().getLogFileForVersion( 0 ).toFile(), checkpointsEndDataOffset );
 
-            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ).toFile() ) )
+            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFile().getLogFileForVersion( 1 ).toFile() ) )
             {
                 storeChannel.position( CURRENT_FORMAT_LOG_HEADER_SIZE );
                 storeChannel.writeAll( ByteBuffer.wrap( new byte[]{0} ) );
@@ -164,8 +162,8 @@ class VersionAwareLogEntryReaderIT
             {
                 LogEntry logEntry = entryReader.readLogEntry( logChannel );
                 // we reading expected checkpoint records
-                assertThat( logEntry ).isInstanceOf( CheckPoint.class );
-                CheckPoint checkPoint = (CheckPoint) logEntry;
+                assertThat( logEntry ).isInstanceOf( LogEntryInlinedCheckPoint.class );
+                LogEntryInlinedCheckPoint checkPoint = (LogEntryInlinedCheckPoint) logEntry;
                 LogPosition logPosition = checkPoint.getLogPosition();
                 assertEquals( 4, logPosition.getLogVersion() );
                 assertEquals( 5, logPosition.getByteOffset() );
@@ -199,13 +197,14 @@ class VersionAwareLogEntryReaderIT
         {
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
-            assertEquals( Files.size( logFiles.getHighestLogFile() ), logPosition.getByteOffset() );
+            assertEquals( Files.size( logFiles.getLogFile().getHighestLogFile() ), logPosition.getByteOffset() );
         }
     }
 
     private long getLastReadablePosition( LogFiles logFiles ) throws IOException
     {
-        try ( ReadableLogChannel logChannel = logFiles.getLogFile().getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
+        var logFile = logFiles.getLogFile();
+        try ( ReadableLogChannel logChannel = logFile.getReader( logFile.extractHeader( 0 ).getStartPosition() ) )
         {
             while ( entryReader.readLogEntry( logChannel ) != null )
             {

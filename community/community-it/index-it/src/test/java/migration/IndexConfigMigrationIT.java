@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
@@ -190,7 +191,7 @@ class IndexConfigMigrationIT
         setSpatialConfig( builder );
 
         DatabaseManagementService dbms = builder.build();
-        GraphDatabaseService db = dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
         createIndex( db, NATIVE_BTREE10.providerName(), label1 );
 //        createIndex( db, NATIVE20.providerName(), label2 ); // <- Those index providers are removed in 4.0, but here for reference.
 //        createIndex( db, NATIVE10.providerName(), label3 );
@@ -218,7 +219,7 @@ class IndexConfigMigrationIT
         DatabaseManagementService dbms = builder.build();
         try
         {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
             Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
             try ( Transaction tx = db.beginTx() )
             {

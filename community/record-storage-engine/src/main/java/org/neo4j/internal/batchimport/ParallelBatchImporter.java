@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
  */
 public class ParallelBatchImporter implements BatchImporter
 {
+    private static final String BATCH_IMPORTER_CHECKPOINT = "Batch importer checkpoint.";
     private final PageCache externalPageCache;
     private final DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem;
@@ -104,7 +105,7 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
-            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem );
+            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
 
             logic.success();
         }

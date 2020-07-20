@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST;
+import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class VersionAwareLogEntryReaderTest
@@ -61,7 +61,7 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 2039335142 );
+        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 1748422299 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         writeCommitEntry( channel, commit );
@@ -97,11 +97,11 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACheckPointLogEntry() throws IOException
     {
         // given
-        final CheckPoint checkPoint = new CheckPoint( new LogPosition( 42, 43 ) );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( new LogPosition( 42, 43 ) );
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
         channel.put( checkPoint.getVersion() );
-        channel.put( LogEntryTypeCodes.CHECK_POINT );
+        channel.put( LogEntryTypeCodes.LEGACY_CHECK_POINT );
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
         channel.putLong( checkPoint.getLogPosition().getByteOffset() );
         channel.putChecksum();

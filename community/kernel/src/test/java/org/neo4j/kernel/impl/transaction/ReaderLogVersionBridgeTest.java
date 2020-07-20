@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.extension.Inject;
@@ -76,7 +77,7 @@ class ReaderLogVersionBridgeTest
     {
         // given
         final StoreChannel newStoreChannel = mock( StoreChannel.class );
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
+        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles.getLogFile() );
 
         when( channel.getVersion() ).thenReturn( version );
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_FORMAT_VERSION );
@@ -115,7 +116,7 @@ class ReaderLogVersionBridgeTest
 
         // then
         PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1,
-                CURRENT_LOG_FORMAT_VERSION, Path.of( "log.file" ), logFiles.getChannelNativeAccessor() );
+                CURRENT_LOG_FORMAT_VERSION, Path.of( "log.file" ), ChannelNativeAccessor.EMPTY_ACCESSOR );
         assertEquals( expected, result );
         verify( channel ).close();
     }
@@ -124,7 +125,7 @@ class ReaderLogVersionBridgeTest
     void shouldReturnOldChannelWhenThereIsNoNextChannel() throws IOException
     {
         // given
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
+        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles.getLogFile() );
 
         when( channel.getVersion() ).thenReturn( version );
         when( fs.read( any( File.class ) ) ).thenThrow( new FileNotFoundException() );
@@ -141,7 +142,7 @@ class ReaderLogVersionBridgeTest
     void shouldReturnOldChannelWhenNextChannelHasNotGottenCompleteHeaderYet() throws Exception
     {
         // given
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
+        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles.getLogFile() );
         final StoreChannel nextVersionWithIncompleteHeader = mock( StoreChannel.class );
         when( nextVersionWithIncompleteHeader.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
 

@@ -46,7 +46,7 @@ public class DefaultTracer implements DatabaseTracer
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
     private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( CURRENT_FORMAT_LOG_HEADER_SIZE );
-    private final CountingLogCheckPointEvent logCheckPointEvent = new CountingLogCheckPointEvent( this::appendLogBytes );
+    private final CountingLogCheckPointEvent logCheckPointEvent = new CountingLogCheckPointEvent( this::appendLogBytes, countingLogRotateEvent );
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final CommitEvent commitEvent = new DefaultCommitEvent();
     private final TransactionEvent transactionEvent = new DefaultTransactionEvent();

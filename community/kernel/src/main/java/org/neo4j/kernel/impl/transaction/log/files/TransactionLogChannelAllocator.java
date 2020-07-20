@@ -39,17 +39,17 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
-class TransactionLogChannelAllocator
+public class TransactionLogChannelAllocator
 {
     private final TransactionLogFilesContext logFilesContext;
     private final FileSystemAbstraction fileSystem;
     private final TransactionLogFilesHelper fileHelper;
     private final LogHeaderCache logHeaderCache;
-    private final LogFileChannelNativeAccessor nativeChannelAccessor;
+    private final ChannelNativeAccessor nativeChannelAccessor;
     private final DatabaseTracer databaseTracer;
 
-    TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache,
-            LogFileChannelNativeAccessor nativeChannelAccessor )
+    public TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache,
+            ChannelNativeAccessor nativeChannelAccessor )
     {
         this.logFilesContext = logFilesContext;
         this.fileSystem = logFilesContext.getFileSystem();
@@ -59,7 +59,7 @@ class TransactionLogChannelAllocator
         this.nativeChannelAccessor = nativeChannelAccessor;
     }
 
-    PhysicalLogVersionedStoreChannel createLogChannel( long version, LongSupplier lastCommittedTransactionId ) throws IOException
+    public PhysicalLogVersionedStoreChannel createLogChannel( long version, LongSupplier lastCommittedTransactionId ) throws IOException
     {
         AllocatedFile allocatedFile = allocateFile( version );
         var storeChannel = allocatedFile.getStoreChannel();
@@ -85,7 +85,7 @@ class TransactionLogChannelAllocator
         }
     }
 
-    PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
+    public PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
     {
         Path fileToOpen = fileHelper.getLogFileForVersion( version );
 

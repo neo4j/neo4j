@@ -28,4 +28,6 @@ import java.io.IOException;
 public interface PositionAwareChannel
 {
     LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+
+    LogPosition getCurrentPosition() throws IOException;
 }

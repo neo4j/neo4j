@@ -142,14 +142,14 @@ class RecoverIndexDropIT
                 .build();
         LogFile logFile = logFiles.getLogFile();
 
-        try ( ReadableLogChannel reader = logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
+        try ( ReadableLogChannel reader = logFile.getReader( logFile.extractHeader( 0 ).getStartPosition() ) )
         {
             LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
             while ( logEntryReader.readLogEntry( reader ) != null )
             {
             }
             LogPosition position = logEntryReader.lastPosition();
-            StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ).toFile() );
+            StoreChannel storeChannel = fs.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() ).toFile() );
             storeChannel.position( position.getByteOffset() );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
             {

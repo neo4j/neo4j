@@ -126,6 +126,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
@@ -697,6 +698,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), cursorTracer );
+
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, CHECKPOINT_LOG_VERSION, 0, cursorTracer );
     }
 
     private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )

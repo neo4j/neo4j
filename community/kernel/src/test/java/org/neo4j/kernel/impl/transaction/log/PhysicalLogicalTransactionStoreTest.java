@@ -122,7 +122,8 @@ class PhysicalLogicalTransactionStoreTest
         }
 
         // create empty transaction log file and clear transaction cache to force re-read
-        fileSystem.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ).toFile() ).close();
+        LogFile logFile = logFiles.getLogFile();
+        fileSystem.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() + 1 ).toFile() ).close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
@@ -390,7 +391,7 @@ class PhysicalLogicalTransactionStoreTest
         @Override
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException
         {
-            return new RecoveryStartInformation( logFiles.extractHeader( 0 ).getStartPosition(), 1 );
+            return new RecoveryStartInformation( logFiles.getLogFile().extractHeader( 0 ).getStartPosition(), 1 );
         }
 
         @Override

@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 public class TransactionLogWriter
 {
-    private final LogEntryWriter writer;
+    private final LogEntryWriter<FlushablePositionAwareChecksumChannel> writer;
 
-    public TransactionLogWriter( LogEntryWriter writer )
+    public TransactionLogWriter( LogEntryWriter<FlushablePositionAwareChecksumChannel> writer )
     {
         this.writer = writer;
     }
@@ -48,8 +48,23 @@ public class TransactionLogWriter
         return writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
 
-    public void checkPoint( LogPosition logPosition ) throws IOException
+    public void legacyCheckPoint( LogPosition logPosition ) throws IOException
     {
-        writer.writeCheckPointEntry( logPosition );
+        writer.writeLegacyCheckPointEntry( logPosition );
+    }
+
+    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter()
+    {
+        return writer;
+    }
+
+    public LogPosition getCurrentPosition() throws IOException
+    {
+        return writer.getChannel().getCurrentPosition();
+    }
+
+    public LogPositionMarker getCurrentPosition( LogPositionMarker logPositionMarker ) throws IOException
+    {
+        return writer.getChannel().getCurrentPosition( logPositionMarker );
     }
 }

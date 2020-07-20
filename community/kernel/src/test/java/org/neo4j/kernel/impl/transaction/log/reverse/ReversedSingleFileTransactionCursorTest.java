@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -162,7 +162,7 @@ class ReversedSingleFileTransactionCursorTest
         writeTransactions( 1, 1, 1 );
 
         // when
-        try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
+        try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( logFiles.getLogFile().extractHeader( 0 ).getStartPosition() ) )
         {
             new ReversedSingleFileTransactionCursor( channel, logEntryReader(), false, monitor );
             fail( "Should've failed" );
@@ -226,7 +226,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private ReversedSingleFileTransactionCursor txCursor( boolean failOnCorruptedLogFiles ) throws IOException
     {
-        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() );
+        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( logFiles.getLogFile().extractHeader( 0 ).getStartPosition() );
         try
         {
             return new ReversedSingleFileTransactionCursor( fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor );
@@ -240,8 +240,8 @@ class ReversedSingleFileTransactionCursorTest
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException
     {
-        FlushablePositionAwareChecksumChannel channel = logFile.getWriter();
-        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+        FlushablePositionAwareChecksumChannel channel = (FlushablePositionAwareChecksumChannel) logFile.getTransactionLogWriter().getWriter().getChannel();
+        TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
         for ( int i = 0; i < transactionCount; i++ )
         {
@@ -253,7 +253,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private void appendCorruptedTransaction() throws IOException
     {
-        FlushablePositionAwareChecksumChannel channel = logFile.getWriter();
+        var channel = logFile.getTransactionLogWriter().getWriter().getChannel();
         TransactionLogWriter writer = new TransactionLogWriter( new CorruptedLogEntryWriter( channel ) );
         writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId, BASE_TX_CHECKSUM );
     }
@@ -273,7 +273,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private static class CorruptedLogEntryWriter extends LogEntryWriter
     {
-        CorruptedLogEntryWriter( FlushableChecksumChannel channel )
+        CorruptedLogEntryWriter( FlushablePositionAwareChecksumChannel channel )
         {
             super( channel );
         }

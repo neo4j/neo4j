@@ -32,7 +32,10 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
 class LogEntryParserDispatcherV6Test
 {
@@ -105,10 +108,10 @@ class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    void shouldParseCheckPointEntry() throws IOException
+    void parseLegacyCheckPointEntry() throws IOException
     {
         // given
-        final CheckPoint checkPoint = new CheckPoint( version, new LogPosition( 43, 44 ) );
+        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( version, new LogPosition( 43, 44 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
@@ -118,11 +121,26 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.CHECK_POINT );
+        final LogEntryParser parser = V4_0.select( LEGACY_CHECK_POINT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( checkPoint, logEntry );
+    }
+
+    @Test
+    void failToParseCheckpointWithLatestFormat()
+    {
+        var checkPoint = new LogEntryInlinedCheckPoint( version, new LogPosition( 43, 44 ) );
+        var channel = new InMemoryClosableChannel();
+
+        channel.putLong( checkPoint.getLogPosition().getLogVersion() );
+        channel.putLong( checkPoint.getLogPosition().getByteOffset() );
+        channel.putChecksum();
+
+        channel.getCurrentPosition( marker );
+        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
+        assertThrows( Exception.class, () -> V4_2.select( LEGACY_CHECK_POINT ) );
     }
 
     @Test

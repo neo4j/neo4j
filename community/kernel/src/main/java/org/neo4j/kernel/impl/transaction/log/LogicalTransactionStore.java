@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 
 /**
  * Accessor of transactions and meta data information about transactions.
@@ -46,7 +46,7 @@ public interface LogicalTransactionStore
     /**
      * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
      * instances for committed transactions, starting from the specified {@link LogPosition}.
-     * This is useful for placing a cursor at a position referred to by a {@link CheckPoint}.
+     * This is useful for placing a cursor at a position referred to by a {@link CheckpointInfo}.
      * Transactions will be returned from the cursor in transaction-id-sequential order.
      *
      * @param position {@link LogPosition} of the first transaction that the cursor will return.

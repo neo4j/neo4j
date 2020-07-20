@@ -219,13 +219,13 @@ class TruncateDatabaseIT
             transaction.commit();
         }
         assertEquals( 20, countPropertyKeys() );
-        long lastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
+        long lastEntryId = getLogFiles().getLogFile().getLogFileInformation().getLastEntryId();
         // at least 10 transactions made it to the logs
         assertThat( lastEntryId ).isGreaterThanOrEqualTo( 10L );
 
         truncator.truncate( database );
 
-        long truncatedLastEntryId = getLogFiles().getLogFileInformation().getLastEntryId();
+        long truncatedLastEntryId = getLogFiles().getLogFile().getLogFileInformation().getLastEntryId();
         assertThat( truncatedLastEntryId ).isEqualTo( 1L );
     }
 

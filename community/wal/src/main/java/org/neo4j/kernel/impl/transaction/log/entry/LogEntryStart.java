@@ -38,7 +38,7 @@ public class LogEntryStart extends AbstractLogEntry
     public LogEntryStart( long timeWritten, long lastCommittedTxWhenTransactionStarted,
             int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
     {
-        this( LogEntryVersion.LATEST.version(), timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum,
+        this( TransactionLogVersionSelector.LATEST.version(), timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum,
                 additionalHeader, startPosition );
     }
 

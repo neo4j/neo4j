@@ -37,6 +37,8 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
             return PhysicalLogCommandReaderV3_0_10.INSTANCE;
         case PhysicalLogCommandReaderV4_0.FORMAT_ID:
             return PhysicalLogCommandReaderV4_0.INSTANCE;
+        case PhysicalLogCommandReaderV4_2.FORMAT_ID:
+            return PhysicalLogCommandReaderV4_2.INSTANCE;
         default:
             throw new IllegalArgumentException( "Unsupported command format [id=" + logEntryVersion + "]" );
         }

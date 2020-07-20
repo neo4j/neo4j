@@ -30,7 +30,9 @@ import java.util.stream.LongStream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.SystemNanoClock;
@@ -61,8 +63,11 @@ class LogPruningTest
     {
         fs = mock( FileSystemAbstraction.class );
         logFiles = mock( LogFiles.class );
+        LogFile logFile = mock( LogFile.class );
+        when( logFiles.getLogFile() ).thenReturn( logFile );
+        when( logFiles.getCheckpointFile() ).thenReturn( mock( CheckpointFile.class ) );
         doAnswer( inv -> Path.of( String.valueOf( inv.getArguments()[0] ) ) )
-                .when( logFiles ).getLogFileForVersion( anyLong() );
+                .when( logFile ).getLogFileForVersion( anyLong() );
         logProvider = NullLogProvider.getInstance();
         clock = mock( SystemNanoClock.class );
         factory = mock( LogPruneStrategyFactory.class );
@@ -87,7 +92,7 @@ class LogPruningTest
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
-        when( logFiles.getHighestLogVersion() ).thenReturn( 4L );
+        when( logFiles.getLogFile().getHighestLogVersion() ).thenReturn( 4L );
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         assertTrue( pruning.mightHaveLogsToPrune() );
     }

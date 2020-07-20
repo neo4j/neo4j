@@ -21,8 +21,11 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.Config;
@@ -53,13 +56,9 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -97,6 +96,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -115,7 +115,7 @@ class RecoveryIT
     private DatabaseLayout databaseLayout;
     private TestDatabaseManagementServiceBuilder builder;
     private DatabaseManagementService managementService;
-    private StorageEngineFactory storageEngineFactory;
+    private final boolean useSeparateCheckpointFiles = false;
 
     boolean enableRelationshipTypeScanStore()
     {
@@ -443,16 +443,16 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
 
-        Path[] txLogFiles = buildLogFiles().logFiles();
+        File[] txLogFiles = fileSystem.listFiles( buildLogFiles().logFilesDirectory().toFile(), ( dir, name ) -> name.startsWith( DEFAULT_NAME ) );
         Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
         DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
         Path transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
         assertNotNull( txLogFiles );
         assertTrue( txLogFiles.length > 0 );
-        for ( Path logFile : txLogFiles )
+        for ( File logFile : txLogFiles )
         {
-            fileSystem.moveToDirectory( logFile.toFile(), transactionLogsDirectory.toFile() );
+            fileSystem.moveToDirectory( logFile, transactionLogsDirectory.toFile() );
         }
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -465,7 +465,7 @@ class RecoveryIT
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( failure.get() ).hasRootCauseMessage( "Transaction logs are missing and recovery is not possible." );
-            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getFileName().toString() );
+            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getName() );
         }
         finally
         {
@@ -532,7 +532,7 @@ class RecoveryIT
         createSingleNode( service );
         forcedRecoveryManagementService.shutdown();
 
-        assertEquals( 1, countTransactionLogFiles() );
+        assertEquals( useSeparateCheckpointFiles ? 2 : 1, countTransactionLogFiles() );
         assertEquals( 2, countCheckPointsInTransactionLogs() );
         removeLastCheckpointRecordFromLastLogFile();
 
@@ -553,7 +553,7 @@ class RecoveryIT
         }
         managementService.shutdown();
 
-        removeHighestLogFile();
+        removeFileWithCheckpoint();
 
         assertEquals( 4, countTransactionLogFiles() );
         assertEquals( 0, countCheckPointsInTransactionLogs() );
@@ -582,7 +582,7 @@ class RecoveryIT
         }
         managementService.shutdown();
 
-        removeHighestLogFile();
+        removeFileWithCheckpoint();
 
         assertEquals( 4, countTransactionLogFiles() );
         assertEquals( 0, countCheckPointsInTransactionLogs() );
@@ -764,26 +764,9 @@ class RecoveryIT
 
     private int countCheckPointsInTransactionLogs() throws IOException
     {
-        int checkpointCounter = 0;
-
         LogFiles logFiles = buildLogFiles();
-        LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
-        try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
-        {
-            LogEntry logEntry;
-            do
-            {
-                logEntry = entryReader.readLogEntry( reader );
-                if ( logEntry instanceof CheckPoint )
-                {
-                    checkpointCounter++;
-                }
-            }
-            while ( logEntry != null );
-        }
-        return checkpointCounter;
+        var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints();
+        return checkpoints.size();
     }
 
     private LogFiles buildLogFiles() throws IOException
@@ -791,31 +774,23 @@ class RecoveryIT
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
+                .withSeparateFilesForCheckpoint( useSeparateCheckpointFiles )
                 .build();
     }
 
     private void removeTransactionLogs() throws IOException
     {
         LogFiles logFiles = buildLogFiles();
-        Path[] txLogFiles = logFiles.logFiles();
-        for ( Path logFile : txLogFiles )
+        for ( File logFile : fileSystem.listFiles( logFiles.logFilesDirectory().toFile() ) )
         {
-            fileSystem.deleteFile( logFile.toFile() );
+            fileSystem.deleteFile( logFile );
         }
     }
 
-    private void removeHighestLogFile() throws IOException
+    private void removeFileWithCheckpoint() throws IOException
     {
         LogFiles logFiles = buildLogFiles();
-        long highestLogVersion = logFiles.getHighestLogVersion();
-        removeFileByVersion( logFiles, highestLogVersion );
-    }
-
-    private void removeFileByVersion( LogFiles logFiles, long version )
-    {
-        Path versionFile = logFiles.getLogFileForVersion( version );
-        assertNotNull( versionFile );
-        fileSystem.deleteFile( versionFile.toFile() );
+        fileSystem.deleteFileOrThrow( logFiles.getCheckpointFile().getCurrentFile().toFile() );
     }
 
     private int countTransactionLogFiles() throws IOException
@@ -826,32 +801,21 @@ class RecoveryIT
 
     private void removeLastCheckpointRecordFromLastLogFile() throws IOException
     {
-        LogPosition checkpointPosition = null;
-
         LogFiles logFiles = buildLogFiles();
-        LogFile transactionLogFile = logFiles.getLogFile();
-        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
-        try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
+        var checkpointFile = logFiles.getCheckpointFile();
+        Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
+        latestCheckpoint.ifPresent( checkpointInfo ->
         {
-            LogEntry logEntry;
-            do
+            LogPosition entryPosition = useSeparateCheckpointFiles ? checkpointInfo.getEntryPosition() : checkpointInfo.getLogPosition();
+            try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getCurrentFile().toFile() ) )
             {
-                logEntry = entryReader.readLogEntry( reader );
-                if ( logEntry instanceof CheckPoint )
-                {
-                    checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
-                }
+                storeChannel.truncate( entryPosition.getByteOffset() );
             }
-            while ( logEntry != null );
-        }
-        if ( checkpointPosition != null )
-        {
-            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile().toFile() ) )
+            catch ( IOException e )
             {
-                storeChannel.truncate( checkpointPosition.getByteOffset() );
+                throw new UncheckedIOException( e );
             }
-        }
+        } );
     }
 
     private static void generateSomeData( GraphDatabaseService database )
@@ -878,9 +842,7 @@ class RecoveryIT
     {
         createBuilder( logThreshold );
         managementService = builder.build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( databaseLayout.getDatabaseName() );
-        storageEngineFactory = database.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
-        return database;
+        return (GraphDatabaseAPI) managementService.database( databaseLayout.getDatabaseName() );
     }
 
     private void createBuilder( long logThreshold )

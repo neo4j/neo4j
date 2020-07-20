@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -31,26 +29,27 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
+import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 
 public class LogsUpgrader
 {
+    private static final String UPGRADE_CHECKPOINT = "Upgrade checkpoint.";
     private final FileSystemAbstraction fs;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseLayout databaseLayout;
@@ -60,9 +59,8 @@ public class LogsUpgrader
     private final DependencyResolver dependencyResolver;
     private final PageCacheTracer tracer;
     private final MemoryTracker memoryTracker;
+    private final DatabaseHealth databaseHealth;
     private final boolean isUpgradeAllowed;
-    private final Map<DatabaseLayout, LogTailScanner> tailScanners;
-    private final Monitors monitors;
 
     public LogsUpgrader(
             FileSystemAbstraction fs,
@@ -74,6 +72,7 @@ public class LogsUpgrader
             DependencyResolver dependencyResolver,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
+            DatabaseHealth databaseHealth,
             boolean forceUpgrade )
     {
         this.fs = fs;
@@ -85,9 +84,8 @@ public class LogsUpgrader
         this.dependencyResolver = dependencyResolver;
         this.tracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
+        this.databaseHealth = databaseHealth;
         this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade ) || forceUpgrade;
-        tailScanners = new HashMap<>();
-        monitors = dependencyResolver.resolveDependency( Monitors.class );
     }
 
     public void assertCleanlyShutDown( DatabaseLayout layout )
@@ -98,10 +96,9 @@ public class LogsUpgrader
             // we should not use provided database layout here since transaction log location is different compare to previous versions
             // and that's why we need to use custom transaction logs locator and database layout
             DatabaseLayout oldDatabaseLayout = buildLegacyLogsLayout( layout );
-            LogTailScanner logTailScanner = getLogTailScanner( oldDatabaseLayout );
-            LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
+            LogFiles logFiles = buildLogFiles( oldDatabaseLayout, false );
 
-            LogTailScanner.LogTailInformation tail = logTailScanner.getTailInformation();
+            LogTailInformation tail = logFiles.getTailInformation();
             if ( !tail.isRecoveryRequired() )
             {
                 // All good
@@ -111,9 +108,8 @@ public class LogsUpgrader
             {
                 // There are no log files in the legacy logs location.
                 // Either log files are missing entirely, or they are already in their correct place.
-                logTailScanner = getLogTailScanner( layout );
-                LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
-                tail = logTailScanner.getTailInformation();
+                logFiles = buildLogFiles( layout, haveSeparateCheckpointFile( layout ) );
+                tail = logFiles.getTailInformation();
 
                 if ( !tail.isRecoveryRequired() )
                 {
@@ -140,11 +136,9 @@ public class LogsUpgrader
         throw exception;
     }
 
-    public void assertLogVersionIsCurrent( DatabaseLayout layout )
+    private boolean haveSeparateCheckpointFile( DatabaseLayout layout )
     {
-        layout = buildLegacyLogsLayout( layout );
-        LogTailScanner logTailScanner = getLogTailScanner( layout );
-        LogVersionUpgradeChecker.check( logTailScanner, isUpgradeAllowed );
+        return isNotEmpty( fs.listFiles( layout.getTransactionLogsDirectory().toFile(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) );
     }
 
     private DatabaseLayout buildLegacyLogsLayout( DatabaseLayout databaseLayout )
@@ -152,12 +146,7 @@ public class LogsUpgrader
         return new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(), legacyLogsLocator );
     }
 
-    private LogTailScanner getLogTailScanner( DatabaseLayout layout )
-    {
-        return tailScanners.computeIfAbsent( layout, this::buildLogTailScanner );
-    }
-
-    private LogTailScanner buildLogTailScanner( DatabaseLayout layout )
+    private LogFiles buildLogFiles( DatabaseLayout layout, boolean useSeparateCheckpointLogs )
     {
         final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         final LogFiles logFiles;
@@ -166,14 +155,15 @@ public class LogsUpgrader
             logFiles = LogFilesBuilder.builder( layout, fs )
                                       .withLogEntryReader( logEntryReader )
                                       .withConfig( config )
+                                      .withMemoryTracker( memoryTracker )
+                                      .withDatabaseHealth( databaseHealth )
                                       .withDependencies( dependencyResolver ).build();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        boolean failOnCorruptedLogFiles = config.get( fail_on_corrupted_log_files );
-        return new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles, memoryTracker );
+        return logFiles;
     }
 
     public void upgrade( DatabaseLayout layout )
@@ -202,7 +192,7 @@ public class LogsUpgrader
                         fs.copyFile( legacyFile.toFile(), transactionLogsDirectory.resolve( legacyFile.getFileName() ).toFile(), EMPTY_COPY_OPTIONS );
                     }
                 }
-                logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory );
+                logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
                 if ( filesNeedsToMove )
                 {
                     for ( Path legacyFile : legacyFiles )
@@ -221,7 +211,7 @@ public class LogsUpgrader
                 if ( legacyFiles != null && legacyFiles.length > 0 )
                 {
                     // The log files are already at their intended location, so initialize them there.
-                    logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory );
+                    logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
                 }
                 else if ( config.get( fail_on_missing_files ) )
                 {
@@ -235,7 +225,7 @@ public class LogsUpgrader
                 {
                     // The log files are missing entirely, but we were told to not think of this as an error condition,
                     // so we instead initialize an empty log file.
-                    logInitializer.initializeEmptyLogFile( layout, transactionLogsDirectory );
+                    logInitializer.initializeEmptyLogFile( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
                 }
             }
         }

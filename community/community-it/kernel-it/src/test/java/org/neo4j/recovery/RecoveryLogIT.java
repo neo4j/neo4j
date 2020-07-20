@@ -22,6 +22,7 @@ package org.neo4j.recovery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -90,9 +91,9 @@ class RecoveryLogIT
 
         managementService.shutdown();
 
-        for ( Path txLog : txLogs )
+        for ( File txLog : fileSystem.listFiles( databaseLayout.getTransactionLogsDirectory().toFile() ) )
         {
-            fileSystem.deleteFile( txLog.toFile() );
+            fileSystem.deleteFile( txLog );
         }
 
         for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fileSystem )

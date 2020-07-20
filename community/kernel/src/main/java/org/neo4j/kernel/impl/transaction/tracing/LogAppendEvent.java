@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
  * Represents the process of turning the state of a committing transaction into a sequence of commands, and appending
  * them to the transaction log.
  */
-public interface LogAppendEvent extends LogForceEvents, AutoCloseable
+public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoCloseable
 {
     LogAppendEvent NULL = new Empty();
 
@@ -47,11 +47,6 @@ public interface LogAppendEvent extends LogForceEvents, AutoCloseable
      * Note whether or not the log was rotated by the appending of this transaction to the log.
      */
     void setLogRotated( boolean logRotated );
-
-    /**
-     * Begin a log rotation as part of this appending to the transaction log.
-     */
-    LogRotateEvent beginLogRotate();
 
     /**
      * Begin serializing and writing out the commands for this transaction.

@@ -17,30 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.IOException;
+import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.storageengine.api.StorageCommand;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
-
-public class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
+class ThreadLink
 {
-    private final WritableChannel channel;
+    final Thread thread;
+    volatile ThreadLink next;
+    volatile boolean done;
 
-    public StorageCommandSerializer( WritableChannel channel )
+    ThreadLink( Thread thread )
     {
-        this.channel = channel;
+        this.thread = thread;
     }
 
-    @Override
-    public boolean visit( StorageCommand command ) throws IOException
+    public void unpark()
     {
-        LogEntryWriter.writeLogEntryHeader( COMMAND, channel );
-        command.serialize( channel );
-        return false;
+        LockSupport.unpark( thread );
+    }
+
+    static final ThreadLink END = new ThreadLink( null );
+
+    static
+    {
+        END.next = END;
     }
 }

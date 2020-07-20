@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -90,10 +91,11 @@ class TestLogPruning
             doTransaction();
         }
 
-        long currentVersion = files.getHighestLogVersion();
+        LogFile logFile = files.getLogFile();
+        long currentVersion = logFile.getHighestLogVersion();
         for ( long version = 0; version < currentVersion; version++ )
         {
-            assertTrue( fs.fileExists( files.getLogFileForVersion( version ).toFile() ), "Version " + version + " has been unexpectedly pruned" );
+            assertTrue( fs.fileExists( logFile.getLogFileForVersion( version ).toFile() ), "Version " + version + " has been unexpectedly pruned" );
         }
     }
 
@@ -217,15 +219,16 @@ class TestLogPruning
         db = newDb( "true", 5 );
         doTransaction();
         managementService.shutdown();
-        return (int) fs.getFileSize( files.getLogFileForVersion( 0 ).toFile() );
+        return (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( 0 ).toFile() );
     }
 
     private int aggregateLogData( Extractor extractor ) throws IOException
     {
         int total = 0;
-        for ( long i = files.getHighestLogVersion(); i >= 0; i-- )
+        LogFile logFile = files.getLogFile();
+        for ( long i = logFile.getHighestLogVersion(); i >= 0; i-- )
         {
-            if ( files.versionExists( i ) )
+            if ( logFile.versionExists( i ) )
             {
                 total += extractor.extract( i );
             }
@@ -244,7 +247,7 @@ class TestLogPruning
 
     private int logFileSize() throws IOException
     {
-        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFileForVersion( from ).toFile() ) );
+        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( from ).toFile() ) );
     }
 
     private int transactionCount() throws IOException
@@ -253,7 +256,7 @@ class TestLogPruning
         {
             int counter = 0;
             LogVersionBridge bridge = channel -> channel;
-            LogVersionedStoreChannel versionedStoreChannel = files.openForVersion( version );
+            LogVersionedStoreChannel versionedStoreChannel = files.getLogFile().openForVersion( version );
             try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, INSTANCE ) )
             {
                 try ( PhysicalTransactionCursor physicalTransactionCursor =

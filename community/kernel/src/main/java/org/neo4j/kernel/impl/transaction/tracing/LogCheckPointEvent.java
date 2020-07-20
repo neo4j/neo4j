@@ -24,10 +24,16 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 /**
  * Represents the process of appending a check point to the transaction log.
  */
-public interface LogCheckPointEvent extends LogForceEvents, AutoCloseable
+public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, AutoCloseable
 {
     LogCheckPointEvent NULL = new LogCheckPointEvent()
     {
+        @Override
+        public LogRotateEvent beginLogRotate()
+        {
+            return LogRotateEvent.NULL;
+        }
+
         @Override
         public LogForceWaitEvent beginLogForceWait()
         {

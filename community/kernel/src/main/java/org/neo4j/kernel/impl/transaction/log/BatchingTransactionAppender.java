@@ -19,26 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.Flushable;
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
@@ -53,16 +41,12 @@ import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SP
  */
 public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
-    private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
-    private final LogPositionMarker positionMarker = new LogPositionMarker();
     private final Health databaseHealth;
-    private final Lock forceLock = new ReentrantLock();
 
-    private FlushablePositionAwareChecksumChannel writer;
     private TransactionLogWriter transactionLogWriter;
     private int previousChecksum;
 
@@ -92,8 +76,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     @Override
     public void start()
     {
-        this.writer = logFile.getWriter();
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
+        this.transactionLogWriter = logFile.getTransactionLogWriter();
     }
 
     @Override
@@ -134,7 +117,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // as committed since they haven't been forced to disk yet. So here we force, or potentially
         // piggy-back on another force, but anyway after this call below we can be sure that all our transactions
         // in this batch exist durably on disk.
-        if ( forceAfterAppend( logAppendEvent ) )
+        if ( logFile.forceAfterAppend( logAppendEvent ) )
         {
             // We got lucky and were the one forcing the log. It's enough if ones of all doing concurrent committers
             // checks the need for log rotation.
@@ -174,28 +157,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
     }
 
-    @Override
-    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
-    {
-        // Synchronized with logFile to get absolute control over concurrent rotations happening
-        synchronized ( logFile )
-        {
-            try
-            {
-                LogPosition logPositionBeforeCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
-                transactionLogWriter.checkPoint( logPosition );
-                LogPosition logPositionAfterCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
-                logCheckPointEvent.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
-            }
-            catch ( Throwable cause )
-            {
-                databaseHealth.panic( cause );
-                throw cause;
-            }
-        }
-        forceAfterAppend( logCheckPointEvent );
-    }
-
     /**
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
      * this transaction contains any explicit index changes.
@@ -211,145 +172,19 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
-            LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
+            var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
             int checksum = transactionLogWriter.append( transaction, transactionId, previousChecksum );
-            LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
+            var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
             logAppendEvent.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
 
             transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit, checksum, transaction.getTimeCommitted() );
 
-            return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit,
-                    transactionIdStore );
+            return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {
             databaseHealth.panic( panic );
             throw panic;
-        }
-    }
-
-    /**
-     * Called by the appender that just appended a transaction to the log.
-     *
-     * @param logForceEvents A trace event for the given log append operation.
-     * @return {@code true} if we got lucky and were the ones forcing the log.
-     */
-    protected boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
-    {
-        // There's a benign race here, where we add our link before we update our next pointer.
-        // This is okay, however, because unparkAll() spins when it sees a null next pointer.
-        ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
-        threadLink.next = threadLinkHead.getAndSet( threadLink );
-        boolean attemptedForce = false;
-
-        try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
-        {
-            do
-            {
-                if ( forceLock.tryLock() )
-                {
-                    attemptedForce = true;
-                    try
-                    {
-                        forceLog( logForceEvents );
-                        // In the event of any failure a database panic will be raised and thrown here
-                    }
-                    finally
-                    {
-                        forceLock.unlock();
-
-                        // We've released the lock, so unpark anyone who might have decided park while we were working.
-                        // The most recently parked thread is the one most likely to still have warm caches, so that's
-                        // the one we would prefer to unpark. Luckily, the stack nature of the ThreadLinks makes it easy
-                        // to get to.
-                        ThreadLink nextWaiter = threadLinkHead.get();
-                        nextWaiter.unpark();
-                    }
-                }
-                else
-                {
-                    waitForLogForce();
-                }
-            }
-            while ( !threadLink.done );
-
-            // If there were many threads committing simultaneously and I wasn't the lucky one
-            // actually doing the forcing (where failure would throw panic exception) I need to
-            // explicitly check if everything is OK before considering this transaction committed.
-            if ( !attemptedForce )
-            {
-                databaseHealth.assertHealthy( IOException.class );
-            }
-        }
-        return attemptedForce;
-    }
-
-    private void forceLog( LogForceEvents logForceEvents ) throws IOException
-    {
-        ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
-        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
-        {
-            force();
-        }
-        catch ( final Throwable panic )
-        {
-            databaseHealth.panic( panic );
-            throw panic;
-        }
-        finally
-        {
-            unparkAll( links );
-        }
-    }
-
-    private static void unparkAll( ThreadLink links )
-    {
-        do
-        {
-            links.done = true;
-            links.unpark();
-            ThreadLink tmp;
-            do
-            {
-                // Spin because of the race:y update when consing.
-                tmp = links.next;
-            }
-            while ( tmp == null );
-            links = tmp;
-        }
-        while ( links != ThreadLink.END );
-    }
-
-    private void waitForLogForce()
-    {
-        long parkTime = TimeUnit.MILLISECONDS.toNanos( 100 );
-        LockSupport.parkNanos( this, parkTime );
-    }
-
-    private void force() throws IOException
-    {
-        // Empty buffer into writer. We want to synchronize with appenders somehow so that they
-        // don't append while we're doing that. The way rotation is coordinated we can't synchronize
-        // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
-        // also synchronize on writer.
-        Flushable flushable;
-        synchronized ( logFile )
-        {
-            databaseHealth.assertHealthy( IOException.class );
-            flushable = writer.prepareForFlush();
-        }
-        // Force the writer outside of the lock.
-        // This allows other threads access to the buffer while the writer is being forced.
-        try
-        {
-            flushable.flush();
-        }
-        catch ( ClosedChannelException ignored )
-        {
-            // This is ok, we were already successful in emptying the buffer, so the channel being closed here means
-            // that some other thread is rotating the log and has closed the underlying channel. But since we were
-            // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes
-            // we emptied into the channel, and thus it is already flushed by that thread.
         }
     }
 }

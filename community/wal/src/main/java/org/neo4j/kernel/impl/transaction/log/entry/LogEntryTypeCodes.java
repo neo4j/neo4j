@@ -30,5 +30,7 @@ public class LogEntryTypeCodes
     public static final byte TX_START = (byte) 1;
     public static final byte COMMAND = (byte) 3;
     public static final byte TX_COMMIT = (byte) 5;
-    public static final byte CHECK_POINT = (byte) 7;
+    public static final byte LEGACY_CHECK_POINT = (byte) 7;
+
+    public static final byte DETACHED_CHECK_POINT = (byte) 8;
 }

@@ -132,7 +132,7 @@ public class Loader
     {
         String entryName = Paths.get( entry.getName() ).getFileName().toString();
         return TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, entryName ) ? transactionLogsDirectory
-                                                                                           : databaseDestination;
+                                                                                     : databaseDestination;
     }
 
     private ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat

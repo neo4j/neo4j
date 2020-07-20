@@ -53,6 +53,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
@@ -221,8 +222,9 @@ class DumpCommandIT
                 .build();
         try ( Lifespan ignored = new Lifespan( logFiles ) )
         {
-            LogEntryWriter writer = new LogEntryWriter( logFiles.getLogFile().getWriter() );
-            writer.writeStartEntry( 0x123456789ABCDEFL, logFiles.getLogFileInformation().getLastEntryId() + 1, BASE_TX_CHECKSUM, new byte[]{0} );
+            LogFile logFile = logFiles.getLogFile();
+            LogEntryWriter writer = logFile.getTransactionLogWriter().getWriter();
+            writer.writeStartEntry( 0x123456789ABCDEFL, logFile.getLogFileInformation().getLastEntryId() + 1, BASE_TX_CHECKSUM, new byte[]{0} );
         }
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertThat( commandFailed.getMessage() ).startsWith( "Active logical log detected, this might be a source of inconsistencies." );

@@ -93,13 +93,13 @@ class TransactionLogsInSeparateLocationIT
         LogFiles storeDirLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem )
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build();
-        assertFalse( storeDirLogs.versionExists( 0 ) );
+        assertFalse( storeDirLogs.getLogFile().versionExists( 0 ) );
 
         LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( txDirectory, fileSystem )
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build();
-        assertTrue( txDirectoryLogs.versionExists( 0 ) );
-        try ( PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel = txDirectoryLogs.openForVersion( 0 ) )
+        assertTrue( txDirectoryLogs.getLogFile().versionExists( 0 ) );
+        try ( PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel = txDirectoryLogs.getLogFile().openForVersion( 0 ) )
         {
             assertThat( physicalLogVersionedStoreChannel.size() ).isGreaterThan( 0L );
         }

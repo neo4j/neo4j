@@ -58,10 +58,13 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -211,15 +214,15 @@ public class StoreUpgraderInterruptionTestIT
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
 
-        assertEquals( 21, idMigratorTracer.faults() );
-        assertEquals( 178, idMigratorTracer.hits() );
-        assertEquals( 199, idMigratorTracer.pins() );
-        assertEquals( 199, idMigratorTracer.unpins() );
+        assertEquals( 22, idMigratorTracer.faults() );
+        assertEquals( 187, idMigratorTracer.hits() );
+        assertEquals( 209, idMigratorTracer.pins() );
+        assertEquals( 209, idMigratorTracer.unpins() );
 
-        assertEquals( 52, recordMigratorTracer.faults() );
+        assertEquals( 53, recordMigratorTracer.faults() );
         assertEquals( 208, recordMigratorTracer.hits() );
-        assertEquals( 260, recordMigratorTracer.pins() );
-        assertEquals( 260, recordMigratorTracer.unpins() );
+        assertEquals( 261, recordMigratorTracer.pins() );
+        assertEquals( 261, recordMigratorTracer.unpins() );
     }
 
     @Test
@@ -276,10 +279,10 @@ public class StoreUpgraderInterruptionTestIT
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
-        LogsUpgrader logsUpgrader = new LogsUpgrader(
-                fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator, config, dependencies, NULL, INSTANCE, false );
-        StoreUpgrader upgrader = new StoreUpgrader(
-                versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
+        var databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator,
+                config, dependencies, NULL, INSTANCE, databaseHealth, false );
+        StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );

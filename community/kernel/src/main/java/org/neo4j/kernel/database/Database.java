@@ -120,13 +120,13 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.AbstractLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -141,7 +141,6 @@ import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
@@ -154,7 +153,6 @@ import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
@@ -170,7 +168,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
@@ -182,6 +179,7 @@ import static org.neo4j.internal.index.label.TokenScanStore.toggledRelationshipT
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 
@@ -405,24 +403,24 @@ public class Database extends LifecycleAdapter
                     .withLogProvider( internalLogProvider )
                     .withDatabaseTracers( tracers )
                     .withMemoryTracker( otherDatabaseMemoryTracker )
+                    .withMonitors( databaseMonitors )
+                    .withClock( clock )
                     .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                     .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );
+            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( AbstractLogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
 
             var pageCacheTracer = tracers.getPageCacheTracer();
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ),
-                    internalLogProvider, otherDatabaseMemoryTracker );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
-            validateStoreAndTxLogs( logFiles, pageCacheTracer, tailScanner, storageExists );
+            validateStoreAndTxLogs( logFiles, pageCacheTracer, storageExists );
 
             performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
-                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
-                    otherDatabaseMemoryTracker );
+                    extensionFactories, Optional.of( logFiles ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
+                    otherDatabaseMemoryTracker, clock );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -466,8 +464,7 @@ public class Database extends LifecycleAdapter
                     new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
-                            logEntryReader, metadataProvider, databaseMonitors );
-            transactionLogModule.satisfyDependencies( databaseDependencies );
+                            logEntryReader, metadataProvider, databaseMonitors, databaseDependencies );
 
             final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
@@ -529,12 +526,12 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    private void validateStoreAndTxLogs( LogFiles logFiles, PageCacheTracer pageCacheTracer, LogTailScanner tailScanner, boolean storageExists )
+    private void validateStoreAndTxLogs( LogFiles logFiles, PageCacheTracer pageCacheTracer, boolean storageExists )
             throws IOException
     {
         if ( storageExists )
         {
-            checkStoreId( pageCacheTracer, tailScanner );
+            checkStoreId( logFiles, pageCacheTracer );
         }
         else
         {
@@ -567,11 +564,11 @@ public class Database extends LifecycleAdapter
         throw new RuntimeException( e );
     }
 
-    private void checkStoreId( PageCacheTracer pageCacheTracer, LogTailScanner tailScanner ) throws IOException
+    private void checkStoreId( LogFiles logFiles, PageCacheTracer pageCacheTracer ) throws IOException
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) )
         {
-            validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ) );
+            validateStoreId( logFiles, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ) );
         }
     }
 
@@ -599,8 +596,8 @@ public class Database extends LifecycleAdapter
 
     private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
-        var factory = new DatabaseMigratorFactory(
-                fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId, tracers.getPageCacheTracer(), memoryTracker );
+        var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId,
+                tracers.getPageCacheTracer(), memoryTracker, databaseHealth );
         return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 
@@ -729,28 +726,30 @@ public class Database extends LifecycleAdapter
         return relationshipTypeScanStore;
     }
 
-    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
-            LogProvider logProvider, JobScheduler scheduler, CheckPointerImpl.ForceOperation forceOperation,
-            LogEntryReader logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
+    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, LogProvider logProvider, JobScheduler scheduler,
+            CheckPointerImpl.ForceOperation forceOperation, LogEntryReader logEntryReader, MetadataProvider metadataProvider, Monitors monitors,
+            Dependencies databaseDependencies )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         final LogPruning logPruning =
                 new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
 
-        final LogRotation logRotation =
-                new LogRotationImpl( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
+        final LogRotation logRotation = transactionLogRotation( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
-        final TransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
+        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
+                logFiles, logRotation, transactionMetadataCache, metadataProvider, databaseHealth ) );
+        databaseDependencies.satisfyDependency( appender );
+
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
 
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
+        var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer =
-                new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
-                        tracers, ioLimiter, storeCopyCheckPointMutex );
+                new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, checkpointAppender, databaseHealth, logProvider,
+                        tracers, ioLimiter, storeCopyCheckPointMutex, clock );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
@@ -759,7 +758,9 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        return new DatabaseTransactionLogModule( logicalTransactionStore, logFiles, logRotation, checkPointer, appender );
+        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation );
+
+        return new DatabaseTransactionLogModule( checkPointer, appender );
     }
 
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
@@ -885,7 +886,7 @@ public class Database extends LifecycleAdapter
         boolean truncateStartedDatabase = started;
         List<Path> filesToKeep = filesToKeepOnTruncation( databaseLayout );
         Path[] transactionLogsFiles = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
-                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getLogFiles();
+                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getMatchedFiles();
 
         final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).toArray( Path[]::new );
         if ( truncateStartedDatabase )
@@ -1043,7 +1044,7 @@ public class Database extends LifecycleAdapter
         return databaseFacade;
     }
 
-    public Health getDatabaseHealth()
+    public DatabaseHealth getDatabaseHealth()
     {
         return databaseHealth;
     }

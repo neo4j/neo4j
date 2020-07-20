@@ -22,50 +22,69 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.function.LongSupplier;
 
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvents;
 import org.neo4j.monitoring.Health;
 import org.neo4j.util.VisibleForTesting;
 
 /**
  * Default implementation of the LogRotation interface.
  */
-public class LogRotationImpl implements LogRotation
+public class FileLogRotation implements LogRotation
 {
     private final Clock clock;
     private final LogRotationMonitor monitor;
-    private final LogFiles logFiles;
     private final Health databaseHealth;
-    private final LogFile logFile;
-    private long lastRotationCompleted; // Guarded by `this`.
+    private final RotatableFile rotatableFile;
+    private long lastRotationCompleted;
+    private final LongSupplier lastTransactionIdSupplier;
+    private final LongSupplier fileVersionSupplier;
 
-    public LogRotationImpl( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
+    public static LogRotation checkpointLogRotation( CheckpointLogFile checkpointLogFile, LogFile logFile, Clock clock, Health databaseHealth,
+            LogRotationMonitor monitor )
+    {
+        return new FileLogRotation( checkpointLogFile, clock, databaseHealth, monitor,
+                () -> logFile.getLogFileInformation().committingEntryId(), checkpointLogFile::getCurrentLogVersion );
+    }
+
+    public static LogRotation transactionLogRotation( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
+    {
+        return new FileLogRotation( logFiles.getLogFile(), clock, databaseHealth, monitor,
+                () -> logFiles.getLogFile().getLogFileInformation().committingEntryId(), logFiles.getLogFile()::getHighestLogVersion );
+    }
+
+    private FileLogRotation( RotatableFile rotatableFile, Clock clock, Health databaseHealth, LogRotationMonitor monitor,
+            LongSupplier lastTransactionIdSupplier, LongSupplier fileVersionSupplier )
     {
         this.clock = clock;
         this.monitor = monitor;
-        this.logFiles = logFiles;
         this.databaseHealth = databaseHealth;
-        this.logFile = logFiles.getLogFile();
+        this.rotatableFile = rotatableFile;
+        this.lastTransactionIdSupplier = lastTransactionIdSupplier;
+        this.fileVersionSupplier = fileVersionSupplier;
     }
 
     @Override
-    public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
+    public boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException
     {
         /* We synchronize on the writer because we want to have a monitor that another thread
          * doing force (think batching of writes), such that it can't see a bad state of the writer
          * even when rotating underlying channels.
          */
-        if ( logFile.rotationNeeded() )
+        if ( rotatableFile.rotationNeeded() )
         {
-            synchronized ( logFile )
+            synchronized ( rotatableFile )
             {
-                if ( logFile.rotationNeeded() )
+                if ( rotatableFile.rotationNeeded() )
                 {
-                    doRotate( logAppendEvent );
+                    doRotate( logRotateEvents );
                     return true;
                 }
             }
@@ -75,28 +94,28 @@ public class LogRotationImpl implements LogRotation
 
     @VisibleForTesting
     @Override
-    public void rotateLogFile( LogAppendEvent logAppendEvent ) throws IOException
+    public void rotateLogFile( LogRotateEvents logRotateEvents ) throws IOException
     {
-        synchronized ( logFile )
+        synchronized ( rotatableFile )
         {
-            doRotate( logAppendEvent );
+            doRotate( logRotateEvents );
         }
     }
 
-    private void doRotate( LogAppendEvent logAppendEvent ) throws IOException
+    private void doRotate( LogRotateEvents logRotateEvents ) throws IOException
     {
-        try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
+        try ( LogRotateEvent rotateEvent = logRotateEvents.beginLogRotate() )
         {
-            long currentVersion = logFiles.getHighestLogVersion();
+            long currentVersion = fileVersionSupplier.getAsLong();
             /*
-             * In order to rotate the current log file safely we need to assert that the kernel is still
+             * In order to rotate the log file safely we need to assert that the kernel is still
              * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
              */
             databaseHealth.assertHealthy( IOException.class );
             long startTimeMillis = clock.millis();
             monitor.startRotation( currentVersion );
-            Path newLogFile = logFile.rotate();
-            long lastTransactionId = logFiles.getLogFileInformation().committingEntryId();
+            Path newLogFile = rotatableFile.rotate();
+            long lastTransactionId = lastTransactionIdSupplier.getAsLong();
             long millisSinceLastRotation = lastRotationCompleted == 0 ? 0 : startTimeMillis - lastRotationCompleted;
             lastRotationCompleted = clock.millis();
             long rotationElapsedTime = lastRotationCompleted - startTimeMillis;

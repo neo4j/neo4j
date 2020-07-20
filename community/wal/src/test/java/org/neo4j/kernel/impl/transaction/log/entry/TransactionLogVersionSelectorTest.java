@@ -27,15 +27,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV2_3.V2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.INSTANCE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.INSTANCE;
 
-class LogEntryVersionTest
+class TransactionLogVersionSelectorTest
 {
     @Test
     void shouldBeAbleToSelectAnyVersion()
     {
         assertEquals( V2_3, INSTANCE.select( V2_3.version() ) );
         assertEquals( V4_0, INSTANCE.select( V4_0.version() ) );
+        assertEquals( V4_2, INSTANCE.select( V4_2.version() ) );
     }
 
     @Test
@@ -59,7 +61,8 @@ class LogEntryVersionTest
     @Test
     void moreRecent()
     {
-        assertTrue( LogEntryVersion.moreRecentVersionExists( V2_3.version() ) );
-        assertFalse( LogEntryVersion.moreRecentVersionExists( V4_0.version() ) );
+        assertTrue( INSTANCE.moreRecentVersionExists( V2_3.version() ) );
+        assertTrue( INSTANCE.moreRecentVersionExists( V4_0.version() ) );
+        assertFalse( INSTANCE.moreRecentVersionExists( V4_2.version() ) );
     }
 }

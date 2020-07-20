@@ -72,7 +72,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
                 return new LogEntryCommit( version, txId, timeWritten, checksum );
             }
         } );
-        register( new LogEntryParser( LogEntryTypeCodes.CHECK_POINT )
+        register( new LogEntryParser( LogEntryTypeCodes.LEGACY_CHECK_POINT )
         {
             @Override
             public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
@@ -81,7 +81,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
                 long logVersion = channel.getLong();
                 long byteOffset = channel.getLong();
                 channel.endChecksumAndValidate();
-                return new CheckPoint( version, new LogPosition( logVersion, byteOffset ) );
+                return new LogEntryInlinedCheckPoint( version, new LogPosition( logVersion, byteOffset ) );
             }
         } );
     }

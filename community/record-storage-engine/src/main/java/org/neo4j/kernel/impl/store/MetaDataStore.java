@@ -623,7 +623,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             externalStoreUUID = readExternalStoreUUID( cursor );
 
             upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
-            checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION );
+            checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION, 0 );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )

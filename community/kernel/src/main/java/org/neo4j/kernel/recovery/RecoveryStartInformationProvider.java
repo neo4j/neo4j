@@ -24,8 +24,9 @@ import java.io.IOException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
@@ -79,13 +80,11 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     {
     };
 
-    private final LogTailScanner logTailScanner;
     private final LogFiles logFiles;
     private final Monitor monitor;
 
-    public RecoveryStartInformationProvider( LogTailScanner logTailScanner, LogFiles logFiles, Monitor monitor )
+    public RecoveryStartInformationProvider( LogFiles logFiles, Monitor monitor )
     {
-        this.logTailScanner = logTailScanner;
         this.logFiles = logFiles;
         this.monitor = monitor;
     }
@@ -100,8 +99,8 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     @Override
     public RecoveryStartInformation get()
     {
-        LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
-        CheckPoint lastCheckPoint = logTailInformation.lastCheckPoint;
+        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        CheckpointInfo lastCheckPoint = logTailInformation.lastCheckPoint;
         long txIdAfterLastCheckPoint = logTailInformation.firstTxIdAfterLastCheckPoint;
 
         if ( !logTailInformation.isRecoveryRequired() )
@@ -117,11 +116,11 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         {
             if ( lastCheckPoint == null )
             {
-                if ( logTailInformation.oldestLogVersionFound != INITIAL_LOG_VERSION )
+                long lowestLogVersion = logFiles.getLogFile().getLowestLogVersion();
+                if ( lowestLogVersion != INITIAL_LOG_VERSION )
                 {
-                    long fromLogVersion = Math.max( INITIAL_LOG_VERSION, logTailInformation.oldestLogVersionFound );
-                    throw new UnderlyingStorageException(
-                            "No check point found in any log file from version " + fromLogVersion + " to " + logTailInformation.currentLogVersion );
+                    throw new UnderlyingStorageException( "No check point found in any log file from version " + lowestLogVersion
+                            + " to " + logTailInformation.currentLogVersion );
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderSize();
@@ -141,7 +140,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     {
         try
         {
-            return logFiles.extractHeader( 0 ).getStartPosition();
+            return logFiles.getLogFile().extractHeader( 0 ).getStartPosition();
         }
         catch ( IOException e )
         {

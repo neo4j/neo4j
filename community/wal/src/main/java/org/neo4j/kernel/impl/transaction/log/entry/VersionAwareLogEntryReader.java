@@ -39,11 +39,11 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 public class VersionAwareLogEntryReader implements LogEntryReader
 {
     private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
-    private final LogEntryVersion selector;
+    private final LogVersionSelector selector;
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
-    private LogEntryParserSet parserSet = LogEntryVersion.LATEST;
+    private LogEntryParserSet parserSet = TransactionLogVersionSelector.LATEST;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
@@ -53,7 +53,12 @@ public class VersionAwareLogEntryReader implements LogEntryReader
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
     {
-        this.selector = LogEntryVersion.INSTANCE;
+        this( commandReaderFactory, TransactionLogVersionSelector.INSTANCE, verifyChecksumChain );
+    }
+
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, LogVersionSelector entryVersion, boolean verifyChecksumChain )
+    {
+        this.selector = entryVersion;
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;

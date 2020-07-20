@@ -48,7 +48,7 @@ public class DefaultRecoveryService implements RecoveryService
     private final LogVersionRepository logVersionRepository;
     private final Log log;
 
-    DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner, TransactionIdStore transactionIdStore,
+    DefaultRecoveryService( StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles,
             RecoveryStartInformationProvider.Monitor monitor, Log log )
     {
@@ -57,7 +57,7 @@ public class DefaultRecoveryService implements RecoveryService
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
         this.log = log;
-        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, logFiles, monitor );
+        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logFiles, monitor );
     }
 
     @Override

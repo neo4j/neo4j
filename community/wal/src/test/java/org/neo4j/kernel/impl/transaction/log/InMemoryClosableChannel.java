@@ -33,22 +33,29 @@ import org.neo4j.io.fs.ReadPastEndException;
 import static java.lang.Math.toIntExact;
 
 /**
- * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
+ * Implementation of {@link ReadableClosablePositionAwareChecksumChannel} operating over a {@code byte[]} in memory.
  */
-public class InMemoryClosableChannel implements ReadableClosablePositionAwareChecksumChannel, FlushablePositionAwareChecksumChannel
+public class InMemoryClosableChannel implements ReadableClosablePositionAwareChecksumChannel, FlushablePositionAwareChecksumChannel, PositionableChannel
 {
     private final byte[] bytes;
     private final Reader reader;
     private final Writer writer;
+    private final boolean isReader;
 
     public InMemoryClosableChannel()
     {
-        this( 1000 );
+        this( false );
     }
 
-    public InMemoryClosableChannel( byte[] bytes, boolean append )
+    public InMemoryClosableChannel( boolean isReader )
+    {
+        this( 1000, isReader );
+    }
+
+    public InMemoryClosableChannel( byte[] bytes, boolean append, boolean isReader )
     {
         this.bytes = bytes;
+        this.isReader = isReader;
         ByteBuffer writeBuffer = ByteBuffer.wrap( this.bytes );
         ByteBuffer readBuffer = ByteBuffer.wrap( this.bytes );
         if ( append )
@@ -59,9 +66,14 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         this.reader = new Reader( readBuffer );
     }
 
+    public InMemoryClosableChannel( int bufferSize, boolean isReader )
+    {
+        this( new byte[bufferSize], false, isReader );
+    }
+
     public InMemoryClosableChannel( int bufferSize )
     {
-        this( new byte[bufferSize], false );
+        this( new byte[bufferSize], false, false );
     }
 
     public void reset()
@@ -199,8 +211,15 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
     @Override
     public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
     {
-        // Hmm, this would be for the writer.
-        return writer.getCurrentPosition( positionMarker );
+        var buffer = isReader ? reader : writer;
+        return buffer.getCurrentPosition( positionMarker );
+    }
+
+    @Override
+    public LogPosition getCurrentPosition() throws IOException
+    {
+        var buffer = isReader ? reader : writer;
+        return buffer.getCurrentPosition();
     }
 
     @Override
@@ -264,6 +283,13 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
     {
     };
 
+    @Override
+    public void setCurrentPosition( long byteOffset )
+    {
+        var buffer = isReader ? reader : writer;
+        buffer.position( (int) byteOffset );
+    }
+
     static class ByteBufferBase implements PositionAwareChannel, Closeable
     {
         protected final ByteBuffer buffer;
@@ -308,6 +334,12 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         {
             positionMarker.mark( 0, buffer.position() );
             return positionMarker;
+        }
+
+        @Override
+        public LogPosition getCurrentPosition()
+        {
+            return new LogPosition( 0, buffer.position() );
         }
     }
 

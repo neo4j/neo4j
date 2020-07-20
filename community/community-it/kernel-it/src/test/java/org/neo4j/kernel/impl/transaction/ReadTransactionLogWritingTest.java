@@ -101,7 +101,7 @@ class ReadTransactionLogWritingTest
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
             filterNeostoreLogicalLog( logFiles, fileSystem, logicalLogCounter );
 
-            long txLogRecordCount = logFiles.getLogFileInformation().getLastEntryId();
+            long txLogRecordCount = logFiles.getLogFile().getLogFileInformation().getLastEntryId();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
         }

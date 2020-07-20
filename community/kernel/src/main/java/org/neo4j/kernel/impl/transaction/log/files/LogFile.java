@@ -21,19 +21,22 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.LongSupplier;
 
-import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 
 /**
  * Sees a log file as bytes, including taking care of rotation of the file into optimal chunks.
  */
-public interface LogFile
+public interface LogFile extends RotatableFile
 {
     @FunctionalInterface
     interface LogFileVisitor
@@ -42,9 +45,9 @@ public interface LogFile
     }
 
     /**
-     * @return {@link FlushableChannel} capable of appending data to this log.
+     * @return transaction writer capable to append transaction representation into transaction log
      */
-    FlushablePositionAwareChecksumChannel getWriter();
+    TransactionLogWriter getTransactionLogWriter();
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
@@ -69,15 +72,35 @@ public interface LogFile
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 
-    /**
-     * @return {@code true} if a rotation is needed.
-     */
-    boolean rotationNeeded();
+    TransactionLogFileInformation getLogFileInformation();
 
-    /**
-     * Rotate the active log file.
-     * @return A file object representing the file name and path of the log file rotated to.
-     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
-     */
-    Path rotate() throws IOException;
+    PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException;
+
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long versionUsed, LongSupplier lastCommittedTransactionId ) throws IOException;
+
+    long getLogVersion( Path file );
+
+    Path getLogFileForVersion( long version );
+
+    Path getHighestLogFile();
+
+    long getHighestLogVersion();
+
+    long getLowestLogVersion();
+
+    LogHeader extractHeader( long version ) throws IOException;
+
+    boolean versionExists( long version );
+
+    boolean hasAnyEntries( long version );
+
+    void accept( LogVersionVisitor visitor );
+
+    void accept( LogHeaderVisitor visitor ) throws IOException;
+
+    Path[] getMatchedFiles();
+
+    boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException;
+
+    void flush() throws IOException;
 }

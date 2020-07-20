@@ -26,9 +26,11 @@ import java.nio.file.Path;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -107,28 +109,33 @@ class TransactionRangeDiagnosticsTest
             throws IOException
     {
         LogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
-        when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyEntries( logVersion ) ).thenReturn( false );
-        when( files.versionExists( logVersion ) ).thenReturn( true );
+        var logFile = files.getLogFile();
+        when( logFile.getLowestLogVersion() ).thenReturn( logVersion );
+        when( logFile.hasAnyEntries( logVersion ) ).thenReturn( false );
+        when( logFile.versionExists( logVersion ) ).thenReturn( true );
         return files;
     }
 
     private static LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
     {
         LogFiles files = mock( TransactionLogFiles.class );
+        LogFile file = mock( TransactionLogFile.class );
+        when( files.getLogFile() ).thenReturn( file );
         when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
-        when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
-        when( files.versionExists( logVersion ) ).thenReturn( true );
-        when( files.extractHeader( logVersion ) )
-                .thenReturn( new LogHeader( LogEntryVersion.LATEST.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+        when( file.getLowestLogVersion() ).thenReturn( logVersion );
+        when( file.hasAnyEntries( logVersion ) ).thenReturn( true );
+        when( file.versionExists( logVersion ) ).thenReturn( true );
+        when( file.extractHeader( logVersion ) )
+                .thenReturn( new LogHeader( TransactionLogVersionSelector.LATEST.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
         return files;
     }
 
     private static LogFiles noLogs()
     {
         LogFiles files = mock( TransactionLogFiles.class );
-        when( files.getLowestLogVersion() ).thenReturn( -1L );
+        LogFile file = mock( TransactionLogFile.class );
+        when( files.getLogFile() ).thenReturn( file );
+        when( file.getLowestLogVersion() ).thenReturn( -1L );
         when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
         return files;
     }

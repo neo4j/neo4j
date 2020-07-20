@@ -224,13 +224,12 @@ class PhysicalFlushableChannelTest
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
         PositionAwarePhysicalFlushableChecksumChannel channel =
                 new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new NativeScopedBuffer( 1024, INSTANCE ) );
-        LogPositionMarker positionMarker = new LogPositionMarker();
-        LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
+        LogPosition initialPosition = channel.getCurrentPosition();
 
         // WHEN
         channel.putLong( 67 );
         channel.putInt( 1234 );
-        LogPosition positionAfterSomeData = channel.getCurrentPosition( positionMarker ).newPosition();
+        LogPosition positionAfterSomeData = channel.getCurrentPosition();
 
         // THEN
         assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );

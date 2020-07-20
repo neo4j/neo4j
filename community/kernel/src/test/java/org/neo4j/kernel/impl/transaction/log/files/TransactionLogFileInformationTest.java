@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -33,8 +34,15 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 class TransactionLogFileInformationTest
 {
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
+    private final LogFile logFile = mock( TransactionLogFile.class );
     private final LogHeaderCache logHeaderCache = mock( LogHeaderCache.class );
     private final TransactionLogFilesContext context = mock( TransactionLogFilesContext.class );
+
+    @BeforeEach
+    void setUp()
+    {
+        when( logFiles.getLogFile() ).thenReturn( logFile );
+    }
 
     @Test
     void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
@@ -44,9 +52,9 @@ class TransactionLogFileInformationTest
 
         long version = 10L;
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
-        when( logFiles.versionExists( version ) ).thenReturn( true );
+        when( logFiles.getLogFile().versionExists( version ) ).thenReturn( true );
         LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE );
-        when( logFiles.extractHeader( version ) ).thenReturn( expectedHeader );
+        when( logFiles.getLogFile().extractHeader( version ) ).thenReturn( expectedHeader );
 
         long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
@@ -74,12 +82,12 @@ class TransactionLogFileInformationTest
         long expected = 5;
 
         long version = 10L;
-        when( logFiles.getHighestLogVersion() ).thenReturn( version );
+        when( logFile.getHighestLogVersion() ).thenReturn( version );
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
-        when( logFiles.versionExists( version ) ).thenReturn( true );
+        when( logFile.versionExists( version ) ).thenReturn( true );
         LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE );
-        when( logFiles.extractHeader( version ) ).thenReturn( expectedHeader );
-        when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
+        when( logFile.extractHeader( version ) ).thenReturn( expectedHeader );
+        when( logFile.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
@@ -93,12 +101,12 @@ class TransactionLogFileInformationTest
         long expected = 5;
 
         long version = 10L;
-        when( logFiles.getHighestLogVersion() ).thenReturn( version );
-        when( logFiles.versionExists( version ) ).thenReturn( true );
+        when( logFile.getHighestLogVersion() ).thenReturn( version );
+        when( logFile.versionExists( version ) ).thenReturn( true );
 
         LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L, CURRENT_FORMAT_LOG_HEADER_SIZE );
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( expectedHeader );
-        when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
+        when( logFile.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
@@ -110,8 +118,8 @@ class TransactionLogFileInformationTest
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
 
         long version = 10L;
-        when( logFiles.getHighestLogVersion() ).thenReturn( version );
-        when( logFiles.hasAnyEntries( version ) ).thenReturn( false );
+        when( logFile.getHighestLogVersion() ).thenReturn( version );
+        when( logFile.hasAnyEntries( version ) ).thenReturn( false );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( -1, firstCommittedTxId );

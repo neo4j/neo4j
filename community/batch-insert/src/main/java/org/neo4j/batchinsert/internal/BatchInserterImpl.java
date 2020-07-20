@@ -182,7 +182,6 @@ import org.neo4j.values.storable.Value;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
@@ -206,7 +205,8 @@ import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 public class BatchInserterImpl implements BatchInserter
 {
-    public static final String BATCH_INSERTER_TAG = "batchInserter";
+    private static final String BATCH_INSERTER_TAG = "batchInserter";
+    private static final String CHECKPOINT_REASON = "Batch inserter checkpoint.";
     private final LifeSupport life;
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -640,7 +640,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void createEmptyTransactionLog()
     {
-        TransactionLogInitializer.getLogFilesInitializer().initializeLogFiles( databaseLayout, neoStores.getMetaDataStore(), fileSystem );
+        TransactionLogInitializer.getLogFilesInitializer().initializeLogFiles( databaseLayout, neoStores.getMetaDataStore(), fileSystem, CHECKPOINT_REASON );
     }
 
     private IndexDescriptor[] getIndexesNeedingPopulation( PageCursorTracer cursorTracer )

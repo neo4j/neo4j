@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -35,22 +36,18 @@ import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
@@ -85,9 +82,8 @@ class RelationshipTypeScanStoreIT
     @Inject
     DatabaseLayout databaseLayout;
     @Inject
-    StorageEngineFactory storageEngineFactory;
-    @Inject
     RandomRule random;
+    private boolean useSeparateCheckpointLogs;
 
     @ExtensionCallback
     void configuration( TestDatabaseManagementServiceBuilder builder )
@@ -373,30 +369,14 @@ class RelationshipTypeScanStoreIT
     {
         try
         {
-            LogPosition checkpointPosition = null;
-
             LogFiles logFiles = buildLogFiles();
-            LogFile transactionLogFile = logFiles.getLogFile();
-            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-            LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
-            try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
+            LogFile logFile = logFiles.getLogFile();
+            Optional<CheckpointInfo> latestCheckpoint = logFiles.getCheckpointFile().findLatestCheckpoint();
+            if ( latestCheckpoint.isPresent() )
             {
-                LogEntry logEntry;
-                do
+                try ( StoreChannel storeChannel = fs.write( logFile.getHighestLogFile().toFile() ) )
                 {
-                    logEntry = entryReader.readLogEntry( reader );
-                    if ( logEntry instanceof CheckPoint )
-                    {
-                        checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
-                    }
-                }
-                while ( logEntry != null );
-            }
-            if ( checkpointPosition != null )
-            {
-                try ( StoreChannel storeChannel = fs.write( logFiles.getHighestLogFile().toFile() ) )
-                {
-                    storeChannel.truncate( checkpointPosition.getByteOffset() );
+                    storeChannel.truncate( latestCheckpoint.get().getEntryPosition().getByteOffset() );
                 }
             }
         }
@@ -408,7 +388,10 @@ class RelationshipTypeScanStoreIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build();
+        return LogFilesBuilder
+                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .build();
     }
 
     private RelationshipTypeScanStore getRelationshipTypeScanStore()

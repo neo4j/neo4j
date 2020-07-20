@@ -17,30 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.tracing;
 
-import java.util.concurrent.locks.LockSupport;
-
-class ThreadLink
+public interface LogRotateEvents
 {
-    final Thread thread;
-    volatile ThreadLink next;
-    volatile boolean done;
-
-    ThreadLink( Thread thread )
-    {
-        this.thread = thread;
-    }
-
-    public void unpark()
-    {
-        LockSupport.unpark( thread );
-    }
-
-    static final ThreadLink END = new ThreadLink( null );
-
-    static
-    {
-        END.next = END;
-    }
+    /**
+     * Begin a log rotation as part of this appending to the transaction log.
+     */
+    LogRotateEvent beginLogRotate();
 }

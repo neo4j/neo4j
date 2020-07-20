@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TestableTransactionAppender implements TransactionAppender
@@ -45,10 +44,5 @@ public class TestableTransactionAppender implements TransactionAppender
             batch = batch.next();
         }
         return txId;
-    }
-
-    @Override
-    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent )
-    {
     }
 }

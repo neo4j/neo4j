@@ -27,6 +27,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
@@ -43,14 +44,15 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
     public void dump( DiagnosticsLogger logger )
     {
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
+        LogFile logFile = logFiles.getLogFile();
         try
         {
             logger.log( "Transaction log files stored on file store: " + FileUtils.getFileStoreType( logFiles.logFilesDirectory() ) );
-            for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )
+            for ( long logVersion = logFile.getLowestLogVersion(); logFile.versionExists( logVersion ); logVersion++ )
             {
-                if ( logFiles.hasAnyEntries( logVersion ) )
+                if ( logFile.hasAnyEntries( logVersion ) )
                 {
-                    LogHeader header = logFiles.extractHeader( logVersion );
+                    LogHeader header = logFile.extractHeader( logVersion );
                     long firstTransactionIdInThisLog = header.getLastCommittedTxId() + 1;
                     logger.log( "Oldest transaction " + firstTransactionIdInThisLog + " found in log with version " + logVersion );
                     return;

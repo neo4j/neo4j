@@ -52,6 +52,12 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     }
 
     @Override
+    public LogPosition getCurrentPosition() throws IOException
+    {
+        return new LogPosition( logVersionedStoreChannel.getVersion(), channel.position() );
+    }
+
+    @Override
     public Flushable prepareForFlush() throws IOException
     {
         return channel.prepareForFlush();

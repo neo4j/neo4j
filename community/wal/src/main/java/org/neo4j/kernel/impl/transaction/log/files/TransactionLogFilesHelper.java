@@ -23,25 +23,29 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.compile;
+import static java.util.regex.Pattern.quote;
 
 public class TransactionLogFilesHelper
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
-    private static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
-    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( REGEX_DEFAULT_NAME );
+    public static final String CHECKPOINT_FILE_PREFIX = "checkpoint";
+    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( quote( DEFAULT_NAME ), quote( CHECKPOINT_FILE_PREFIX ) );
+    public static final Predicate<String> DEFAULT_FILENAME_PREDICATE = file -> file.startsWith( DEFAULT_NAME ) || file.startsWith( CHECKPOINT_FILE_PREFIX );
 
     private static final String VERSION_SUFFIX = ".";
     private static final String REGEX_VERSION_SUFFIX = "\\.";
     private static final Path[] EMPTY_FILES_ARRAY = {};
 
     private final Path logBaseName;
-    private final FilenameFilter logFileFilter;
     private final FileSystemAbstraction fileSystem;
+    private final FilenameFilter filenameFilter;
 
     public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory )
     {
@@ -52,7 +56,7 @@ public class TransactionLogFilesHelper
     {
         this.fileSystem = fileSystem;
         this.logBaseName = directory.resolve( name );
-        this.logFileFilter = new LogicalLogFilenameFilter( name );
+        this.filenameFilter = new LogicalLogFilenameFilter( quote( name ) );
     }
 
     public Path getLogFileForVersion( long version )
@@ -73,10 +77,10 @@ public class TransactionLogFilesHelper
 
     FilenameFilter getLogFilenameFilter()
     {
-        return logFileFilter;
+        return filenameFilter;
     }
 
-    public Path[] getLogFiles()
+    public Path[] getMatchedFiles()
     {
         Path[] files =
                 Arrays.stream( fileSystem.listFiles( logBaseName.getParent().toFile(), getLogFilenameFilter() ) ).map( File::toPath ).toArray( Path[]::new );
@@ -89,7 +93,7 @@ public class TransactionLogFilesHelper
 
     public void accept( LogVersionVisitor visitor )
     {
-        for ( Path file : getLogFiles() )
+        for ( Path file : getMatchedFiles() )
         {
             visitor.visit( file, getLogVersion( file ) );
         }
@@ -97,17 +101,25 @@ public class TransactionLogFilesHelper
 
     private static final class LogicalLogFilenameFilter implements FilenameFilter
     {
-        private final Pattern logFilenamePattern;
+        private final Pattern[] patterns;
 
-        LogicalLogFilenameFilter( String name )
+        LogicalLogFilenameFilter( String... logFileNameBase )
         {
-            logFilenamePattern = compile( name + REGEX_VERSION_SUFFIX + ".*" );
+            requireNonNull( logFileNameBase );
+            patterns = Arrays.stream( logFileNameBase ).map( name -> compile( name + REGEX_VERSION_SUFFIX + ".*" ) ).toArray( Pattern[]::new );
         }
 
         @Override
         public boolean accept( File dir, String name )
         {
-            return logFilenamePattern.matcher( name ).matches();
+            for ( Pattern pattern : patterns )
+            {
+                if ( pattern.matcher( name ).matches() )
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
