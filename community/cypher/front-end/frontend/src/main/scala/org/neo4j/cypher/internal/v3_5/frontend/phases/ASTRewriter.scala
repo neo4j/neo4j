@@ -32,12 +32,12 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
 
     val contract = rewriterSequencer("ASTRewriter")(
       recordScopes(semanticState),
+      expandStar(semanticState),
       desugarMapProjection(semanticState),
       normalizeComparisons,
       enableCondition(noReferenceEqualityAmongVariables),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
       enableCondition(noDuplicatesInReturnItems),
-      expandStar(semanticState),
       enableCondition(containsNoReturnAll),
       foldConstants,
       nameMatchPatternElements,
