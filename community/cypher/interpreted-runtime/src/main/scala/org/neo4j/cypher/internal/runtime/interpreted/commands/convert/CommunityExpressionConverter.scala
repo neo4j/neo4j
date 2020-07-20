@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.functions
@@ -483,9 +483,9 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
 
   private def toCommandProperty(id: Id, e: internal.expressions.LogicalProperty, self: ExpressionConverters): commands.expressions.Expression =
     e match {
-      case Property(map, propertyKey)=> commands.expressions.Property(self.toCommandExpression(id, map), getPropertyKey(propertyKey))
       case e:ASTCachedProperty if e.entityType == NODE_TYPE => commands.expressions.CachedNodeProperty(e.entityName, getPropertyKey(e.propertyKey), e)
       case e:ASTCachedProperty if e.entityType == RELATIONSHIP_TYPE => commands.expressions.CachedRelationshipProperty(e.entityName, getPropertyKey(e.propertyKey), e)
+      case e: LogicalProperty => commands.expressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
     }
 
   private def toCommandExpression(id: Id, expression: Option[internal.expressions.Expression],
