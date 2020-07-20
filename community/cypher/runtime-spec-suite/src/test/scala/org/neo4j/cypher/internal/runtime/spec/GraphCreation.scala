@@ -471,6 +471,21 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
+
+  /**
+   * Creates a node key constraint and restarts the transaction. This should be called before any data creation operation.
+   */
+  def nodeKey(label: String, properties: String*): Unit = {
+    try {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label))) {
+        case (acc, prop) => acc.assertPropertyIsNodeKey(prop)
+      }
+      creator.create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
 }
 
 case class SineGraph(start: Node,

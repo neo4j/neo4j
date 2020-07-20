@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.values.storable.Value
 
-class ValuedNodeIndexCursor(inner: NodeValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
+class ValuedNodeIndexCursor(val inner: NodeValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
 
   override def numberOfProperties(): Int = values.length
 
