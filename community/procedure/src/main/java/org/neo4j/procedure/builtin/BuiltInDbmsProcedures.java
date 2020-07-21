@@ -40,14 +40,17 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.fabric.executor.FabricStatementLifecycles;
+import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource;
-import org.neo4j.internal.kernel.api.security.PrivilegeAction;
+import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.UserSegment;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -76,8 +79,13 @@ import org.neo4j.storageengine.api.StoreIdProvider;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope.ALL;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_TRANSACTION;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 import static org.neo4j.procedure.Mode.DBMS;
 import static org.neo4j.procedure.Mode.READ;
@@ -319,12 +327,12 @@ public class BuiltInDbmsProcedures
         List<TransactionStatusResult> result = new ArrayList<>();
         for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
         {
-            AdminActionOnResource.DatabaseScope dbScope = new AdminActionOnResource.DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
+            DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
             Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleQuerySnapshotsMap = new HashMap<>();
             for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
             {
                 String username = tx.subject().username();
-                var action = new AdminActionOnResource( PrivilegeAction.SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
                 if ( isSelfOrAllows( username, action ) )
                 {
                     handleQuerySnapshotsMap.put( tx, tx.executingQuery().map( ExecutingQuery::snapshot ) );
@@ -375,7 +383,7 @@ public class BuiltInDbmsProcedures
         for ( Map.Entry<NamedDatabaseId,Set<TransactionId>> entry : byDatabase.entrySet() )
         {
             NamedDatabaseId databaseId = entry.getKey();
-            var dbScope = new AdminActionOnResource.DatabaseScope( databaseId.name() );
+            var dbScope = new DatabaseScope( databaseId.name() );
             Optional<DatabaseContext> maybeDatabaseContext = databaseManager.getDatabaseContext( databaseId );
             if ( maybeDatabaseContext.isPresent() )
             {
@@ -384,7 +392,7 @@ public class BuiltInDbmsProcedures
                 for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
                     String username = tx.subject().username();
-                    var action = new AdminActionOnResource( PrivilegeAction.TERMINATE_TRANSACTION, dbScope, new UserSegment( username ) );
+                    var action = new AdminActionOnResource( TERMINATE_TRANSACTION, dbScope, new UserSegment( username ) );
                     if ( !isSelfOrAllows( username, action ) )
                     {
                         continue;
@@ -399,6 +407,169 @@ public class BuiltInDbmsProcedures
         }
 
         return transactionIds.stream().map( id -> terminateTransaction( handles, id ) );
+    }
+
+    @SystemProcedure
+    @Description( "List all queries currently executing at this instance that are visible to the user." )
+    @Procedure( name = "dbms.listQueries", mode = DBMS )
+    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
+    {
+        securityContext.assertCredentialsNotExpired();
+
+        ZoneId zoneId = getConfiguredTimeZone();
+        List<QueryStatusResult> result = new ArrayList<>();
+
+        for ( FabricTransaction tx : getFabricTransactions() )
+        {
+            for ( ExecutingQuery query : getActiveFabricQueries( tx ) )
+            {
+                String username = query.username();
+                var action = new AdminActionOnResource( SHOW_TRANSACTION, ALL, new UserSegment( username ) );
+                if ( isSelfOrAllows( username, action ) )
+                {
+                    result.add( new QueryStatusResult( query, (InternalTransaction) transaction, zoneId, "none" ) );
+                }
+            }
+        }
+
+        for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
+        {
+            DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
+            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            {
+                if ( tx.executingQuery().isPresent() )
+                {
+                    ExecutingQuery query = tx.executingQuery().get();
+                    String username = query.username();
+                    var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                    if ( isSelfOrAllows( username, action ) )
+                    {
+                        result.add(
+                                new QueryStatusResult( query, (InternalTransaction) transaction, zoneId, databaseContext.databaseFacade().databaseName() ) );
+                    }
+                }
+            }
+        }
+        return result.stream();
+    }
+
+    @SystemProcedure
+    @Description( "Kill all transactions executing the query with the given query id." )
+    @Procedure( name = "dbms.killQuery", mode = DBMS )
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
+    {
+        return killQueries( singletonList( idText ) );
+    }
+
+    @SystemProcedure
+    @Description( "Kill all transactions executing a query with any of the given query ids." )
+    @Procedure( name = "dbms.killQueries", mode = DBMS )
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
+    {
+        securityContext.assertCredentialsNotExpired();
+
+        DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
+        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+
+        Map<Long,QueryId> queryIds = new HashMap<>( idTexts.size() );
+        for ( String idText : idTexts )
+        {
+            QueryId id = QueryId.parse( idText );
+            queryIds.put( id.internalId(), id );
+        }
+
+        List<QueryTerminationResult> result = new ArrayList<>( queryIds.size() );
+
+        for ( FabricTransaction tx : getFabricTransactions() )
+        {
+            for ( ExecutingQuery query : getActiveFabricQueries( tx ) )
+            {
+                QueryId givenQueryId = queryIds.remove( query.internalQueryId() );
+                if ( givenQueryId != null )
+                {
+                    result.add( killFabricQueryTransaction( givenQueryId, tx, query ) );
+                }
+            }
+        }
+
+        for ( Map.Entry<NamedDatabaseId,DatabaseContext> databaseEntry : databaseManager.registeredDatabases().entrySet() )
+        {
+            NamedDatabaseId databaseId = databaseEntry.getKey();
+            DatabaseContext databaseContext = databaseEntry.getValue();
+            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            {
+                if ( tx.executingQuery().isPresent() )
+                {
+                    QueryId givenQueryId = queryIds.remove( tx.executingQuery().get().internalQueryId() );
+                    if ( givenQueryId != null )
+                    {
+                        result.add( killQueryTransaction( givenQueryId, tx, databaseId ) );
+                    }
+                }
+            }
+        }
+
+        // Add error about the rest
+        for ( QueryId queryId : queryIds.values() )
+        {
+            result.add( new QueryFailedTerminationResult( queryId, "n/a", "No Query found with this id" ) );
+        }
+
+        return result.stream();
+    }
+
+    private QueryTerminationResult killQueryTransaction( QueryId queryId, KernelTransactionHandle handle, NamedDatabaseId databaseId )
+    {
+        Optional<ExecutingQuery> query = handle.executingQuery();
+        ExecutingQuery executingQuery = query.orElseThrow( () -> new IllegalStateException( "Query should exist since we filtered based on query ids" ) );
+        String username = executingQuery.username();
+        var action = new AdminActionOnResource( TERMINATE_TRANSACTION, new DatabaseScope( databaseId.name() ), new UserSegment( username ) );
+        if ( isSelfOrAllows( username, action ) )
+        {
+            if ( handle.isClosing() )
+            {
+                return new QueryFailedTerminationResult( queryId, username, "Unable to kill queries when underlying transaction is closing." );
+            }
+            handle.markForTermination( Status.Transaction.Terminated );
+            return new QueryTerminationResult( queryId, username, "Query found" );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+    }
+
+    private QueryTerminationResult killFabricQueryTransaction( QueryId queryId, FabricTransaction tx, ExecutingQuery query )
+    {
+        String username = query.username();
+        var action = new AdminActionOnResource( TERMINATE_TRANSACTION, ALL, new UserSegment( username ) );
+        if ( isSelfOrAllows( username, action ) )
+        {
+            tx.markForTermination( Status.Transaction.Terminated );
+            return new QueryTerminationResult( queryId, username, "Query found" );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+    }
+
+    private Set<FabricTransaction> getFabricTransactions()
+    {
+        return getFabricTransactionManager().getOpenTransactions();
+    }
+
+    private List<ExecutingQuery> getActiveFabricQueries( FabricTransaction tx )
+    {
+        return tx.getLastSubmittedStatement().stream()
+                .filter( FabricStatementLifecycles.StatementLifecycle::inFabricPhase )
+                .map( FabricStatementLifecycles.StatementLifecycle::getMonitoredQuery )
+                .collect( toList() );
+    }
+
+    private TransactionManager getFabricTransactionManager()
+    {
+        return resolver.resolveDependency( TransactionManager.class );
     }
 
     private TransactionMarkForTerminationResult terminateTransaction( Map<String,KernelTransactionHandle> handles, String transactionId )
@@ -555,6 +726,28 @@ public class BuiltInDbmsProcedures
         {
             this.status = status;
             this.upgradeResult = upgradeResult;
+        }
+    }
+
+    public static class QueryTerminationResult
+    {
+        public final String queryId;
+        public final String username;
+        public final String message;
+
+        public QueryTerminationResult( QueryId queryId, String username, String message )
+        {
+            this.queryId = queryId.toString();
+            this.username = username;
+            this.message = message;
+        }
+    }
+
+    public static class QueryFailedTerminationResult extends QueryTerminationResult
+    {
+        public QueryFailedTerminationResult( QueryId queryId, String username, String message )
+        {
+            super( queryId, username, message );
         }
     }
 }
