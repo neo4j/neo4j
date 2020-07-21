@@ -56,6 +56,8 @@ import org.neo4j.internal.kernel.api.security.UserSegment;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -516,6 +518,62 @@ public class BuiltInDbmsProcedures
         }
 
         return result.stream();
+    }
+
+    @SystemProcedure
+    @Description( "List all accepted network connections at this instance that are visible to the user." )
+    @Procedure( name = "dbms.listConnections", mode = DBMS )
+    public Stream<ListConnectionResult> listConnections()
+    {
+        securityContext.assertCredentialsNotExpired();
+
+        NetworkConnectionTracker connectionTracker = getConnectionTracker();
+        ZoneId timeZone = getConfiguredTimeZone();
+
+        return connectionTracker.activeConnections()
+                .stream()
+                .filter( connection -> isAdminOrSelf( connection.username() ) )
+                .map( connection -> new ListConnectionResult( connection, timeZone ) );
+    }
+
+    @SystemProcedure
+    @Description( "Kill network connection with the given connection id." )
+    @Procedure( name = "dbms.killConnection", mode = DBMS )
+    public Stream<ConnectionTerminationResult> killConnection( @Name( "id" ) String id )
+    {
+        return killConnections( singletonList( id ) );
+    }
+
+    @SystemProcedure
+    @Description( "Kill all network connections with the given connection ids." )
+    @Procedure( name = "dbms.killConnections", mode = DBMS )
+    public Stream<ConnectionTerminationResult> killConnections( @Name( "ids" ) List<String> ids )
+    {
+        securityContext.assertCredentialsNotExpired();
+
+        NetworkConnectionTracker connectionTracker = getConnectionTracker();
+
+        return ids.stream().map( id -> killConnection( id, connectionTracker ) );
+    }
+
+    private NetworkConnectionTracker getConnectionTracker()
+    {
+        return resolver.resolveDependency( NetworkConnectionTracker.class );
+    }
+
+    private ConnectionTerminationResult killConnection( String id, NetworkConnectionTracker connectionTracker )
+    {
+        TrackedNetworkConnection connection = connectionTracker.get( id );
+        if ( connection != null )
+        {
+            if ( isAdminOrSelf( connection.username() ) )
+            {
+                connection.close();
+                return new ConnectionTerminationResult( id, connection.username() );
+            }
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        return new ConnectionTerminationFailedResult( id );
     }
 
     private QueryTerminationResult killQueryTransaction( QueryId queryId, KernelTransactionHandle handle, NamedDatabaseId databaseId )
