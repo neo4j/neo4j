@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.fabric.transaction.TransactionManager;
@@ -43,9 +46,20 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.security.AdminActionOnResource;
+import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.UserSegment;
+import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -60,6 +74,8 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
@@ -76,6 +92,9 @@ public class BuiltInDbmsProcedures
 
     @Context
     public Log log;
+
+    @Context
+    public DependencyResolver resolver;
 
     @Context
     public GraphDatabaseAPI graph;
@@ -289,6 +308,131 @@ public class BuiltInDbmsProcedures
         }
     }
 
+    @SystemProcedure
+    @Description( "List all transactions currently executing at this instance that are visible to the user." )
+    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    public Stream<TransactionStatusResult> listTransactions() throws InvalidArgumentsException
+    {
+        securityContext.assertCredentialsNotExpired();
+
+        ZoneId zoneId = getConfiguredTimeZone();
+        List<TransactionStatusResult> result = new ArrayList<>();
+        for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
+        {
+            AdminActionOnResource.DatabaseScope dbScope = new AdminActionOnResource.DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
+            Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleQuerySnapshotsMap = new HashMap<>();
+            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            {
+                String username = tx.subject().username();
+                var action = new AdminActionOnResource( PrivilegeAction.SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                if ( isSelfOrAllows( username, action ) )
+                {
+                    handleQuerySnapshotsMap.put( tx, tx.executingQuery().map( ExecutingQuery::snapshot ) );
+                }
+            }
+            TransactionDependenciesResolver transactionBlockerResolvers = new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+
+            for ( KernelTransactionHandle tx : handleQuerySnapshotsMap.keySet() )
+            {
+                result.add( new TransactionStatusResult( databaseContext.databaseFacade().databaseName(), tx, transactionBlockerResolvers,
+                        handleQuerySnapshotsMap, zoneId ) );
+            }
+        }
+
+        return result.stream();
+    }
+
+    @SystemProcedure
+    @Description( "Kill transaction with provided id." )
+    @Procedure( name = "dbms.killTransaction", mode = DBMS )
+    public Stream<TransactionMarkForTerminationResult> killTransaction( @Name( "id" ) String transactionId ) throws InvalidArgumentsException
+    {
+        requireNonNull( transactionId );
+        return killTransactions( singletonList( transactionId ) );
+    }
+
+    @SystemProcedure
+    @Description( "Kill transactions with provided ids." )
+    @Procedure( name = "dbms.killTransactions", mode = DBMS )
+    public Stream<TransactionMarkForTerminationResult> killTransactions( @Name( "ids" ) List<String> transactionIds ) throws InvalidArgumentsException
+    {
+        requireNonNull( transactionIds );
+        securityContext.assertCredentialsNotExpired();
+        log.warn( "User %s trying to kill transactions: %s.", securityContext.subject().username(), transactionIds.toString() );
+
+        DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
+        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+
+        Map<NamedDatabaseId,Set<TransactionId>> byDatabase = new HashMap<>();
+        for ( String idText : transactionIds )
+        {
+            TransactionId id = TransactionId.parse( idText );
+            Optional<NamedDatabaseId> namedDatabaseId = databaseIdRepository.getByName( id.database() );
+            namedDatabaseId.ifPresent( databaseId -> byDatabase.computeIfAbsent( databaseId, ignore -> new HashSet<>() ).add( id ) );
+        }
+
+        Map<String,KernelTransactionHandle> handles = new HashMap<>( transactionIds.size() );
+        for ( Map.Entry<NamedDatabaseId,Set<TransactionId>> entry : byDatabase.entrySet() )
+        {
+            NamedDatabaseId databaseId = entry.getKey();
+            var dbScope = new AdminActionOnResource.DatabaseScope( databaseId.name() );
+            Optional<DatabaseContext> maybeDatabaseContext = databaseManager.getDatabaseContext( databaseId );
+            if ( maybeDatabaseContext.isPresent() )
+            {
+                Set<TransactionId> txIds = entry.getValue();
+                DatabaseContext databaseContext = maybeDatabaseContext.get();
+                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+                {
+                    String username = tx.subject().username();
+                    var action = new AdminActionOnResource( PrivilegeAction.TERMINATE_TRANSACTION, dbScope, new UserSegment( username ) );
+                    if ( !isSelfOrAllows( username, action ) )
+                    {
+                        continue;
+                    }
+                    TransactionId txIdRepresentation = new TransactionId( databaseId.name(), tx.getUserTransactionId() );
+                    if ( txIds.contains( txIdRepresentation ) )
+                    {
+                        handles.put( txIdRepresentation.toString(), tx );
+                    }
+                }
+            }
+        }
+
+        return transactionIds.stream().map( id -> terminateTransaction( handles, id ) );
+    }
+
+    private TransactionMarkForTerminationResult terminateTransaction( Map<String,KernelTransactionHandle> handles, String transactionId )
+    {
+        KernelTransactionHandle handle = handles.get( transactionId );
+        String currentUser = securityContext.subject().username();
+        if ( handle == null )
+        {
+            return new TransactionMarkForTerminationFailedResult( transactionId, currentUser );
+        }
+        if ( handle.isClosing() )
+        {
+            return new TransactionMarkForTerminationFailedResult( transactionId, currentUser, "Unable to kill closing transactions." );
+        }
+        log.debug( "User %s terminated transaction %d.", currentUser, transactionId );
+        handle.markForTermination( Status.Transaction.Terminated );
+        return new TransactionMarkForTerminationResult( transactionId, handle.subject().username() );
+    }
+
+    private static Set<KernelTransactionHandle> getExecutingTransactions( DatabaseContext databaseContext )
+    {
+        return databaseContext.dependencies().resolveDependency( KernelTransactions.class ).executingTransactions();
+    }
+
+    private boolean isSelfOrAllows( String username, AdminActionOnResource actionOnResource )
+    {
+        return securityContext.subject().hasUsername( username ) || securityContext.allowsAdminAction( actionOnResource );
+    }
+
+    private boolean isAdminOrSelf( String username )
+    {
+        return securityContext.allowExecuteAdminProcedure() || securityContext.subject().hasUsername( username );
+    }
+
     private GraphDatabaseAPI getSystemDatabase()
     {
         return (GraphDatabaseAPI) graph.getDependencyResolver().resolveDependency( DatabaseManagementService.class ).database( SYSTEM_DATABASE_NAME );
@@ -297,6 +441,11 @@ public class BuiltInDbmsProcedures
     private StoreIdProvider getSystemDatabaseStoreIdProvider( GraphDatabaseAPI databaseAPI )
     {
         return databaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
+    }
+
+    private DatabaseManager<DatabaseContext> getDatabaseManager()
+    {
+        return (DatabaseManager<DatabaseContext>) resolver.resolveDependency( DatabaseManager.class );
     }
 
     private ZoneId getConfiguredTimeZone()
