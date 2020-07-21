@@ -40,6 +40,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -119,7 +120,7 @@ public abstract class AbstractEditionModule
 
     protected NetworkConnectionTracker createConnectionTracker()
     {
-        return NetworkConnectionTracker.NO_OP;
+        return new DefaultNetworkConnectionTracker();
     }
 
     public DatabaseTransactionStats createTransactionMonitor()
