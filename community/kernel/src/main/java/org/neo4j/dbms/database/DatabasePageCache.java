@@ -219,6 +219,12 @@ public class DatabasePageCache implements PageCache
         }
 
         @Override
+        public String getDatabaseName()
+        {
+            return delegate.getDatabaseName();
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )

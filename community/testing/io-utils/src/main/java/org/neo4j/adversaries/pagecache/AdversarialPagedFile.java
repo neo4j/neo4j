@@ -119,4 +119,10 @@ public class AdversarialPagedFile implements PagedFile
     {
         return delegate.isDeleteOnClose();
     }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return delegate.getDatabaseName();
+    }
 }

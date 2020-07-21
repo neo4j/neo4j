@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -139,7 +140,7 @@ class NonUniqueIndexTest
             @Override
             public JobHandle<?> schedule( Group group, Runnable job )
             {
-                return super.schedule( group, slowRunnable( job ) );
+                return super.schedule( group, JobMonitoringParams.NOT_MONITORED, slowRunnable( job ) );
             }
         };
     }

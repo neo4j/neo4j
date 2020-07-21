@@ -38,6 +38,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWA
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestSupport
 {
@@ -62,7 +63,7 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
 
         // Prevent index updates from being applied to eventually consistent indexes.
         BinaryLatch indexUpdateBlocker = new BinaryLatch();
-        db.getDependencyResolver().resolveDependency( JobScheduler.class ).schedule( Group.INDEX_UPDATING, indexUpdateBlocker::await );
+        db.getDependencyResolver().resolveDependency( JobScheduler.class ).schedule( Group.INDEX_UPDATING, NOT_MONITORED, indexUpdateBlocker::await );
 
         LongHashSet nodeIds = new LongHashSet();
         long relId;

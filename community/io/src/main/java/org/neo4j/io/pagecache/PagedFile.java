@@ -203,4 +203,9 @@ public interface PagedFile extends AutoCloseable
      * @return true if file can be deleted on close, false otherwise.
      */
     boolean isDeleteOnClose();
+
+    /**
+     * An optional name of the database the mapped file belongs to. This option associates the mapped file with a database.
+     */
+    String getDatabaseName();
 }

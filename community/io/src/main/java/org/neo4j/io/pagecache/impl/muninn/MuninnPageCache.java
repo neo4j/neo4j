@@ -614,17 +614,19 @@ public class MuninnPageCache implements PageCache
         // Submit all flushes to the background thread
         for ( PagedFile file : files )
         {
-            flushes.add( scheduler.schedule( FILE_IO_HELPER, () ->
-            {
-                try
-                {
-                    flushFile( (MuninnPagedFile) file, limiter );
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            } ) );
+            flushes.add( scheduler.schedule( FILE_IO_HELPER,
+                    systemJob( file.getDatabaseName(), "Flushing changes to file '" + file.path().getFileName() + "'" ),
+                    () ->
+                    {
+                        try
+                        {
+                            flushFile( (MuninnPagedFile) file, limiter );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    } ) );
         }
 
         // Wait for all to complete
@@ -1087,6 +1089,6 @@ public class MuninnPageCache implements PageCache
 
     void allocateFileAsync( PageSwapper swapper, long newFileSize )
     {
-        scheduler.schedule( FILE_IO_HELPER, new JobMonitoringParams( SYSTEM, null, "File size increase" ), new AllocateFileTask( swapper, newFileSize ) );
+        scheduler.schedule( FILE_IO_HELPER, systemJob( "File size increase" ), new AllocateFileTask( swapper, newFileSize ) );
     }
 }

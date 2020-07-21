@@ -90,9 +90,6 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     ThreadFactory threadFactory( Group group );
 
     /** Schedule a new callable in the specified group. */
-    <T> JobHandle<T> schedule( Group group, Callable<T> job );
-
-    /** Schedule a new callable in the specified group. */
     <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job );
 
     /** Schedule a new job in the specified group. */

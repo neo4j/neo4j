@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
+
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
     @Override
@@ -81,6 +83,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
 
     private CaffeineCacheFactory makeCacheFactory( SPI spi )
     {
-        return new ExecutorBasedCaffeineCacheFactory( spi.jobScheduler().executor( Group.CYPHER_CACHE ) );
+        var monitoredExecutor = spi.jobScheduler().monitoredJobExecutor( Group.CYPHER_CACHE );
+        return new ExecutorBasedCaffeineCacheFactory( job -> monitoredExecutor.execute( systemJob( "Query plan cache maintenance" ), job ) );
     }
 }

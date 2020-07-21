@@ -766,6 +766,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return deleteOnClose;
     }
 
+    @Override
+    public String getDatabaseName()
+    {
+        return databaseName;
+    }
+
     /**
      * Grab a free page for the purpose of page faulting. Possibly blocking if
      * none are immediately available.

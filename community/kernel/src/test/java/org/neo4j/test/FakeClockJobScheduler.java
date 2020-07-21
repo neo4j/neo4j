@@ -142,17 +142,11 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public <T> JobTrigger<T> schedule( Group group, Callable<T> job )
+    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
     {
         JobTrigger<T> handle = schedule( job, now() );
         processSchedule();
         return handle;
-    }
-
-    @Override
-    public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
-    {
-        return schedule( group, job );
     }
 
     @Override

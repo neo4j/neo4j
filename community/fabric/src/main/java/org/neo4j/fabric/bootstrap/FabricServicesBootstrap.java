@@ -70,6 +70,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.Group.FABRIC_WORKER;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 public abstract class FabricServicesBootstrap
 {
@@ -132,7 +133,8 @@ public abstract class FabricServicesBootstrap
         var catalogManager = register( createCatalogManger(), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
         var statementLifecycles = new FabricStatementLifecycles( databaseManager, monitors, config, systemNanoClock );
-        var cacheFactory = new ExecutorBasedCaffeineCacheFactory( jobScheduler.executor( CYPHER_CACHE ) );
+        var monitoredExecutor = jobScheduler.monitoredJobExecutor( CYPHER_CACHE );
+        var cacheFactory = new ExecutorBasedCaffeineCacheFactory( job -> monitoredExecutor.execute( systemJob( "Query plan cache maintenance" ), job ) );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, cacheFactory, signatureResolver ), FabricPlanner.class );
         var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
 

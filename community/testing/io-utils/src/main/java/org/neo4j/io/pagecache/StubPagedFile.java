@@ -101,4 +101,10 @@ public class StubPagedFile implements PagedFile
     {
         return false;
     }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return null;
+    }
 }

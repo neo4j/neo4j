@@ -154,12 +154,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public <T> JobHandle<T> schedule( Group group, Callable<T> job )
-    {
-        return schedule( group, JobMonitoringParams.NOT_MONITORED, job );
-    }
-
-    @Override
     public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
     {
         if ( !started )

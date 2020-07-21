@@ -88,6 +88,12 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
+    public String getDatabaseName()
+    {
+        return delegate.getDatabaseName();
+    }
+
+    @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );

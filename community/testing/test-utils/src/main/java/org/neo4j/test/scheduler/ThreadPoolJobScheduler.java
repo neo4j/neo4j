@@ -106,12 +106,6 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
-    public <T> JobHandle<T> schedule( Group group, Callable<T> job )
-    {
-        return new FutureJobHandle<>( executor.submit( job ) );
-    }
-
-    @Override
     public <T> JobHandle<T> schedule( Group group, JobMonitoringParams jobMonitoringParams, Callable<T> job )
     {
         return new FutureJobHandle<>( executor.submit( job ) );

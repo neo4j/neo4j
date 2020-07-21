@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 class CentralJobSchedulerTest
 {
@@ -82,7 +83,7 @@ class CentralJobSchedulerTest
     {
         life.start();
         assertThrows( RejectedExecutionException.class,
-                () -> scheduler.schedule( Group.TASK_SCHEDULER, () -> fail( "This task should not have been executed." ) ) );
+                () -> scheduler.schedule( Group.TASK_SCHEDULER, NOT_MONITORED, () -> fail( "This task should not have been executed." ) ) );
     }
 
     // Tests scheduling a recurring job to run 5 times with 100ms in between.
@@ -98,7 +99,7 @@ class CentralJobSchedulerTest
             life.start();
 
             // When
-            scheduler.scheduleRecurring( Group.INDEX_POPULATION, countInvocationsJob, period, MILLISECONDS );
+            scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, countInvocationsJob, period, MILLISECONDS );
             awaitInvocationCount( count );
             scheduler.shutdown();
 
@@ -115,7 +116,7 @@ class CentralJobSchedulerTest
         // Given
         long period = 2;
         life.start();
-        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, countInvocationsJob, period, MILLISECONDS );
+        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
 
         // When
@@ -141,7 +142,7 @@ class CentralJobSchedulerTest
 
         long time = System.nanoTime();
 
-        scheduler.schedule( Group.INDEX_POPULATION, () ->
+        scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, () ->
         {
             runTime.set( System.nanoTime() );
             latch.countDown();
@@ -168,15 +169,15 @@ class CentralJobSchedulerTest
 
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.schedule( Group.INDEX_POPULATION, task, 0, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, task, 0, TimeUnit.MILLISECONDS ) );
         }
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.scheduleRecurring( Group.INDEX_POPULATION, task, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, task, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
         }
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.scheduleRecurring( Group.INDEX_POPULATION, task, 0, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
+            handles.add( scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, task, 0, Integer.MAX_VALUE, TimeUnit.MILLISECONDS ) );
         }
 
         long deadline = TimeUnit.SECONDS.toNanos( 10 ) + System.nanoTime();
@@ -213,7 +214,7 @@ class CentralJobSchedulerTest
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
-        JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, job );
+        JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, job );
         handle.registerCancelListener( () -> halted.set( true ) );
         handle.cancel();
 
@@ -235,7 +236,7 @@ class CentralJobSchedulerTest
                 triggered.set( true );
             };
 
-            JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, job, 10, TimeUnit.MILLISECONDS );
+            JobHandle<?> handle = scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, job, 10, TimeUnit.MILLISECONDS );
 
             handle.waitTermination();
             assertTrue( triggered.get() );
@@ -268,7 +269,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, job, 1, TimeUnit.MILLISECONDS );
         handle.registerCancelListener( () -> canceled.set( true ) );
 
         latch.await();
@@ -312,7 +313,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, TimeUnit.MILLISECONDS );
+        JobHandle<?> handle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, job, 1, TimeUnit.MILLISECONDS );
         handle.registerCancelListener( () -> canceled.set( true ) );
 
         startCounter.await();
@@ -347,7 +348,7 @@ class CentralJobSchedulerTest
             }
         };
 
-        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, job, 1, MILLISECONDS );
+        JobHandle<?> jobHandle = scheduler.scheduleRecurring( Group.INDEX_POPULATION, NOT_MONITORED, job, 1, MILLISECONDS );
         jobHandle.registerCancelListener( () -> canceled.set( true ) );
 
         triggerLatch.await();
@@ -367,7 +368,7 @@ class CentralJobSchedulerTest
 
         BinaryLatch startLatch = new BinaryLatch();
         BinaryLatch stopLatch = new BinaryLatch();
-        scheduler.schedule( Group.INDEX_POPULATION, () ->
+        scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, () ->
         {
             try
             {
@@ -422,7 +423,7 @@ class CentralJobSchedulerTest
         List<JobHandle<?>> handles = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
-            handles.add( scheduler.schedule( Group.CYPHER_WORKER, runnable ) );
+            handles.add( scheduler.schedule( Group.CYPHER_WORKER, NOT_MONITORED, runnable ) );
         }
         for ( JobHandle<?> handle : handles )
         {
@@ -460,7 +461,7 @@ class CentralJobSchedulerTest
         assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
 
         BinaryLatch firstLatch = new BinaryLatch();
-        scheduler.schedule( Group.CHECKPOINT, firstLatch::release );
+        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, firstLatch::release );
         firstLatch.await();
         assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
     }
@@ -471,7 +472,7 @@ class CentralJobSchedulerTest
     {
         life.start();
         BinaryLatch checkpointLatch = new BinaryLatch();
-        scheduler.schedule( Group.CHECKPOINT, checkpointLatch::await );
+        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, checkpointLatch::await );
         Profiler profiler = Profiler.profiler();
         scheduler.profileGroup( Group.CHECKPOINT, profiler );
 
@@ -495,7 +496,7 @@ class CentralJobSchedulerTest
     {
         life.start();
         Callable<Boolean> job = () -> true;
-        JobHandle<Boolean> jobHandle = scheduler.schedule( Group.INDEX_POPULATION, job );
+        JobHandle<Boolean> jobHandle = scheduler.schedule( Group.INDEX_POPULATION, NOT_MONITORED, job );
 
         assertTrue( jobHandle.get() );
     }
@@ -529,27 +530,27 @@ class CentralJobSchedulerTest
             }
         }
 
-        scheduler.schedule( Group.CHECKPOINT, new RunnableAndCancellable() ).cancel();
+        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, new RunnableAndCancellable() ).cancel();
         assertThat( cancelled ).hasValue( 1 );
 
         cancelled.set( 0 );
 
-        scheduler.schedule( Group.CHECKPOINT, new RunnableAndCancellable(), 1, SECONDS ).cancel();
+        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, new RunnableAndCancellable(), 1, SECONDS ).cancel();
         assertThat( cancelled ).hasValue( 1 );
 
         cancelled.set( 0 );
 
-        scheduler.scheduleRecurring( Group.CHECKPOINT, new RunnableAndCancellable(), 1, SECONDS ).cancel();
+        scheduler.scheduleRecurring( Group.CHECKPOINT, NOT_MONITORED, new RunnableAndCancellable(), 1, SECONDS ).cancel();
         assertThat( cancelled ).hasValue( 1 );
 
         cancelled.set( 0 );
 
-        scheduler.scheduleRecurring( Group.CHECKPOINT, new RunnableAndCancellable(), 1, 1, SECONDS ).cancel();
+        scheduler.scheduleRecurring( Group.CHECKPOINT, NOT_MONITORED, new RunnableAndCancellable(), 1, 1, SECONDS ).cancel();
         assertThat( cancelled ).hasValue( 1 );
 
         cancelled.set( 0 );
 
-        scheduler.schedule( Group.CHECKPOINT, new CallableAndCancellable() ).cancel();
+        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, new CallableAndCancellable() ).cancel();
         assertThat( cancelled ).hasValue( 1 );
     }
 
