@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
@@ -37,6 +38,9 @@ object Additions {
   case object addedFeaturesIn4_x extends Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+
+      case u: UseGraph =>
+        throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
       // CREATE INDEX [name] FOR (n:Label) ON (n.prop)
       case c: CreateIndexNewSyntax =>
