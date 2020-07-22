@@ -49,6 +49,9 @@ import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class StubKernelTransaction implements KernelTransaction
 {
 
@@ -173,7 +176,7 @@ public class StubKernelTransaction implements KernelTransaction
     @Override
     public boolean isClosing()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return false;
     }
 
     @Override
@@ -191,13 +194,15 @@ public class StubKernelTransaction implements KernelTransaction
     @Override
     public AuthSubject subjectOrAnonymous()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        AuthSubject subject = mock( AuthSubject.class );
+        when( subject.username() ).thenReturn( "testUser" );
+        return subject;
     }
 
     @Override
     public Optional<Status> getReasonIfTerminated()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return Optional.empty();
     }
 
     @Override
@@ -239,7 +244,7 @@ public class StubKernelTransaction implements KernelTransaction
     @Override
     public long startTime()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return 1984;
     }
 
     @Override
@@ -263,7 +268,7 @@ public class StubKernelTransaction implements KernelTransaction
     @Override
     public long getTransactionId()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return 8;
     }
 
     @Override

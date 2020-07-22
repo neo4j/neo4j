@@ -35,6 +35,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -224,6 +225,8 @@ public class ListQueriesProcedureTest
             Map<String,Object> data = getQueryListing( QUERY1 );
 
             // then
+            assertThat( data ).containsEntry( "runtime", "interpreted" );
+            assertThat( data ).containsEntry( "status", "waiting" );
             assertThat( data ).hasEntrySatisfying( "indexes", value -> assertThat( value ).isInstanceOf( List.class ) );
             @SuppressWarnings( "unchecked" )
             List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
@@ -355,7 +358,7 @@ public class ListQueriesProcedureTest
                 finishQueriesLatch.countDown();
             }
             return null;
-        }, null, waitingWhileIn( Transaction.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
+        }, null, waitingWhileIn( Locks.Client.class, "acquireExclusive" ), SECONDS_TIMEOUT, SECONDS );
 
         return new Resource<>( listQueriesLatch, finishQueriesLatch, resource );
     }

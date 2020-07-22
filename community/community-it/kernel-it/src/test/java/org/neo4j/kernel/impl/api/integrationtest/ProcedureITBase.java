@@ -190,7 +190,43 @@ public interface ProcedureITBase
                       stringArray( "admin" ), "READ" ),
                 proc( "dbms.upgrade", "() :: (status :: STRING?, upgradeResult :: STRING?)",
                       "Upgrade the system database schema if it is not the current schema.",
-                      stringArray( "admin" ), "WRITE" )
+                      stringArray( "admin" ), "WRITE" ),
+                proc( "dbms.listTransactions",
+                        "() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?," +
+                                " clientAddress :: STRING?, requestUri :: STRING?, currentQueryId :: STRING?, currentQuery :: STRING?, " +
+                                "activeLockCount :: INTEGER?, status :: STRING?, resourceInformation :: MAP?, elapsedTimeMillis :: INTEGER?, " +
+                                "cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, allocatedBytes :: INTEGER?, " +
+                                "allocatedDirectBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, " +
+                                "initializationStackTrace :: STRING?, database :: STRING?, estimatedUsedHeapMemory :: INTEGER?)",
+                        "List all transactions currently executing at this instance that are visible to the user.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.killQuery", "(id :: STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill all transactions executing the query with the given query id.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.killTransactions", "(ids :: LIST? OF STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill transactions with provided ids.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.killQueries", "(ids :: LIST? OF STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill all transactions executing a query with any of the given query ids.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.listQueries",
+                        "() :: (queryId :: STRING?, username :: STRING?, metaData :: MAP?, query :: STRING?, parameters :: MAP?," +
+                                " planner :: STRING?, runtime :: STRING?, indexes :: LIST? OF MAP?, startTime :: STRING?, protocol :: STRING?, " +
+                                "clientAddress :: STRING?, requestUri :: STRING?, status :: STRING?, resourceInformation :: MAP?, " +
+                                "activeLockCount :: INTEGER?, " +
+                                "elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, " +
+                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?)",
+                        "List all queries currently executing at this instance that are visible to the user.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.killConnection", "(id :: STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill network connection with the given connection id.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.killConnections", "(ids :: LIST? OF STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill all network connections with the given connection ids.", stringArray( "reader", "editor", "publisher", "architect", "admin" ),
+                        "DBMS" ), proc( "dbms.killTransaction", "(id :: STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
+                        "Kill transaction with provided id.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.listConnections", "() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, " +
+                                "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
+                        "List all accepted network connections at this instance that are visible to the user.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )
         );
     }
 
@@ -209,35 +245,9 @@ public interface ProcedureITBase
                                 "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
                         "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.listTransactions",
-                        "() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?," +
-                                " clientAddress :: STRING?, requestUri :: STRING?, currentQueryId :: STRING?, currentQuery :: STRING?, " +
-                                "activeLockCount :: INTEGER?, status :: STRING?, resourceInformation :: MAP?, elapsedTimeMillis :: INTEGER?, " +
-                                "cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, allocatedBytes :: INTEGER?, " +
-                                "allocatedDirectBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, " +
-                                "initializationStackTrace :: STRING?, database :: STRING?, estimatedUsedHeapMemory :: INTEGER?)",
-                        "List all transactions currently executing at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.killQuery", "(id :: STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill all transactions executing the query with the given query id.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.killTransactions", "(ids :: LIST? OF STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill transactions with provided ids.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.scheduler.profile", "(method :: STRING?, group :: STRING?, duration :: STRING?) :: (profile :: STRING?)",
                         "Begin profiling all threads within the given job group, for the specified duration. Note that profiling incurs" +
                                 " overhead to a system, and will slow it down.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.killQueries", "(ids :: LIST? OF STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill all transactions executing a query with any of the given query ids.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.listQueries",
-                        "() :: (queryId :: STRING?, username :: STRING?, metaData :: MAP?, query :: STRING?, parameters :: MAP?," +
-                                " planner :: STRING?, runtime :: STRING?, indexes :: LIST? OF MAP?, startTime :: STRING?, protocol :: STRING?, " +
-                                "clientAddress :: STRING?, requestUri :: STRING?, status :: STRING?, resourceInformation :: MAP?, " +
-                                "activeLockCount :: INTEGER?, " +
-                                "elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, " +
-                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?)",
-                        "List all queries currently executing at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.createNodeKey",
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
                                 "config = {} :: MAP?) " +
@@ -251,8 +261,6 @@ public interface ProcedureITBase
                 proc( "dbms.setConfigValue", "(setting :: STRING?, value :: STRING?) :: VOID",
                         "Updates a given setting value. Passing an empty value will result in removing the configured value and falling back to the " +
                                 "default value. Changes will not persist and will be lost if the server is restarted.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.killConnection", "(id :: STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill network connection with the given connection id.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.checkpoint", "() :: (success :: BOOLEAN?, message :: STRING?)",
                         "Initiate and wait for a new check point, or wait any already on-going check point to complete. " +
                                 "Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point " +
@@ -267,15 +275,7 @@ public interface ProcedureITBase
                 proc( "dbms.scheduler.jobs", "() :: (jobId :: STRING?, group :: STRING?, submitted :: STRING?, database :: STRING?, " +
                                 "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, state :: STRING?, " +
                                 "currentStateDescription :: STRING?)",
-                        "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.killConnections", "(ids :: LIST? OF STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill all network connections with the given connection ids.", stringArray( "reader", "editor", "publisher", "architect", "admin" ),
-                        "DBMS" ), proc( "dbms.killTransaction", "(id :: STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
-                        "Kill transaction with provided id.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.listConnections", "() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, " +
-                                "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
-                        "List all accepted network connections at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )
+                        "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" )
         ));
         return result;
     }
