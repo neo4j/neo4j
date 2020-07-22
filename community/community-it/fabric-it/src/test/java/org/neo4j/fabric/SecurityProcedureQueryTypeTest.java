@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
-public class SecurityProcedureQueryTypeTest
+class SecurityProcedureQueryTypeTest
 {
     @Inject
     static TestDirectory testDirectory;

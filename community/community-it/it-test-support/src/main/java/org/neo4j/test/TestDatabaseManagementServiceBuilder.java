@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.config.Setting;
@@ -51,7 +52,7 @@ import org.neo4j.test.fabric.TestFabricDatabaseManagementServiceFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
-import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 
 /**
  * Test factory for graph databases.
@@ -143,11 +144,12 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected Config augmentConfig( Config config )
     {
         return Config.newBuilder()
-                .fromConfig( config )
-                .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
-                .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
-                .setDefault( BoltConnector.enabled, FALSE )
-                .build();
+                     .fromConfig( config )
+                     .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
+                     .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
+                     .setDefault( BoltConnector.enabled, TRUE )
+                     .setDefault( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) )
+                     .build();
     }
 
     public FileSystemAbstraction getFileSystem()
