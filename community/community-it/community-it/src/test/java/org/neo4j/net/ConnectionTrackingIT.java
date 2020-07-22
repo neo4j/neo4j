@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.neo4j.net;
+package org.neo4j.net;
 
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.HamcrestCondition;
@@ -71,9 +71,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static com.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
-import static com.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
-import static com.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.MINUTES;

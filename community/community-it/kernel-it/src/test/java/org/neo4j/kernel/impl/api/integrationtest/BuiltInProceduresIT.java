@@ -438,8 +438,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
     private ReplanMonitor replanMonitor()
     {
-        Monitors monitors =
-                dependencyResolver.resolveDependency( Monitors.class, DependencyResolver.SelectionStrategy.FIRST );
+        Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
 
         ReplanMonitor monitorListener = new ReplanMonitor();
         monitors.addMonitorListener( monitorListener );
