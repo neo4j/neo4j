@@ -206,6 +206,8 @@ public interface PagedFile extends AutoCloseable
 
     /**
      * An optional name of the database the mapped file belongs to. This option associates the mapped file with a database.
+     * 
+     * @return the name of the owning database or {@code null} if the file has a DBMS scope and does not belong to any particular database.
      */
     String getDatabaseName();
 }
