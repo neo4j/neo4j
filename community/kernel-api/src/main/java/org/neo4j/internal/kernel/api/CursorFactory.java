@@ -50,7 +50,7 @@ public interface CursorFactory
 
     // schema indexes
 
-    NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer );
+    NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer );
 

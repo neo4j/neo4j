@@ -269,13 +269,13 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
+    public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( nodeValueIndexCursor == null )
         {
             return trace( new DefaultNodeValueIndexCursor( this::accept,
                     new DefaultNodeCursor( this::accept,
-                            storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) ) );
+                            storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ), memoryTracker ) );
         }
 
         try
@@ -298,12 +298,15 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeValueIndexCursor = cursor;
     }
 
-    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer )
+    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( fullAccessNodeValueIndexCursor == null )
         {
-            return trace( new FullAccessNodeValueIndexCursor( this::acceptFullAccess, new FullAccessNodeCursor(
-                    this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) ) );
+            return trace( new FullAccessNodeValueIndexCursor( this::acceptFullAccess,
+                                                              new FullAccessNodeCursor( this::acceptFullAccess,
+                                                                                        storageReader.allocateNodeCursor( cursorTracer ),
+                                                                                        storageReader.allocateNodeCursor( cursorTracer ) ),
+                                                              memoryTracker ) );
         }
 
         try

@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -188,11 +189,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( indexDescriptor ) == ONLINE, 1, MINUTES );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
 
-        NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor( NULL );
+        NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
         read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
         c1.close();
 
-        NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor( NULL );
+        NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
         assertEquals( c1, c2 );
         c2.close();
     }

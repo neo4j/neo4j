@@ -118,9 +118,9 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor( cursorTracer );
+        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor( cursorTracer, memoryTracker );
         allCursors.add( n );
         return n;
     }

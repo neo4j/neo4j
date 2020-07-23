@@ -173,7 +173,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                 boolean toInclusive = randomValues.nextBoolean();
                 IndexQuery.RangePredicate<?> range = IndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
 
-                try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
+                try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
                 {
                     read.nodeIndexSeek( index, node, constrained( indexOrder, false ), range );
 

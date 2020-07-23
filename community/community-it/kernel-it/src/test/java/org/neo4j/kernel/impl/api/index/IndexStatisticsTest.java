@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
@@ -388,7 +387,7 @@ public class IndexStatisticsTest
             List<String> mismatches = new ArrayList<>();
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 // Node --> Index
                 for ( Node node : filter( n -> n.hasLabel( label ) && n.hasProperty( NAME_PROPERTY ), transaction.getAllNodes() ) )

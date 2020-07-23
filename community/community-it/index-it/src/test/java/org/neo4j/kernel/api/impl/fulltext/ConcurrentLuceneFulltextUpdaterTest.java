@@ -79,7 +79,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         {
             KernelTransaction ktx = kernelTransaction( tx );
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "nodes" ) );
-            try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( index, bobCursor, unconstrained(), IndexQuery.fulltextSearch( "bob" ) );
                 int bobCount = 0;
@@ -89,7 +89,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
                 }
                 assertEquals( bobThreads * nodesCreatedPerThread, bobCount );
             }
-            try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( index, aliceCursor, unconstrained(), IndexQuery.fulltextSearch( "alice" ) );
                 int aliceCount = 0;

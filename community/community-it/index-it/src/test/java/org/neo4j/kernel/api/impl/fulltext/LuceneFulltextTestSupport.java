@@ -54,8 +54,8 @@ import org.neo4j.test.extension.Inject;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @DbmsExtension
@@ -150,7 +150,7 @@ public class LuceneFulltextTestSupport
         MutableLongSet set = LongSets.mutable.of( ids );
         if ( nodes )
         {
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
@@ -186,7 +186,7 @@ public class LuceneFulltextTestSupport
 
         IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
         {
             int num = 0;
             float score = Float.MAX_VALUE;

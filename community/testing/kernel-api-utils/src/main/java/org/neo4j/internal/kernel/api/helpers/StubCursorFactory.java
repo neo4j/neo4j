@@ -104,7 +104,7 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return poll( nodeValueIndexCursors );
     }

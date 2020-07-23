@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -120,7 +121,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     void shouldGetAllSinglePropertyValues() throws Exception
     {
         IndexReadSession index = read.indexReadSession( indexNodeProp );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.nodeIndexScan( index, node, unorderedValues() );
 
@@ -142,7 +143,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     void shouldGetAllDoublePropertyValues() throws Exception
     {
         IndexReadSession index = read.indexReadSession( indexNodePropPrip );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL ) )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE) )
         {
             read.nodeIndexScan( index, node, unorderedValues() );
 

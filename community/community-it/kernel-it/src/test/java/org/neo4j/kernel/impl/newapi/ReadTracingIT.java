@@ -71,7 +71,8 @@ class ReadTracingIT
             assertZeroCursor( cursorTracer );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
+            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer(),
+                                                                                         transaction.kernelTransaction().memoryTracker() ) )
             {
                 dataRead.nodeIndexSeek( indexSession, cursor, unconstrained(), stringContains( propertyId, stringValue( testPropertyValue ) ) );
 
@@ -132,7 +133,8 @@ class ReadTracingIT
             assertZeroCursor( cursorTracer );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
+            try ( var cursor = kernelTransaction.cursors()
+                                                .allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer(), kernelTransaction.memoryTracker() ) )
             {
                 dataRead.nodeIndexScan( indexSession, cursor, unconstrained() );
 

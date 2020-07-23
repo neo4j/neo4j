@@ -126,7 +126,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         String indexName = createIndex( "User", "name" );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL ) )
+              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
             int name = tx.token().propertyKey( "name" );
             int user = tx.token().nodeLabel( "User" );

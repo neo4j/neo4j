@@ -100,7 +100,7 @@ class KernelAPIParallelIndexScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                                                     N_THREADS,
-                                                    tx -> tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer() ),
+                                                    tx -> tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ),
                                                     ( read, cursor ) -> indexSeek( read,
                                                                                    cursor,
                                                                                    indexes[random.nextInt( indexes.length )] ));

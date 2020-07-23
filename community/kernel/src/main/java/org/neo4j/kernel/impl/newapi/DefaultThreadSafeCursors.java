@@ -96,10 +96,10 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer )
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return trace( new DefaultNodeValueIndexCursor(
-                DefaultNodeValueIndexCursor::release, allocateNodeCursor( cursorTracer ) ) );
+                DefaultNodeValueIndexCursor::release, allocateNodeCursor( cursorTracer ), memoryTracker ) );
     }
 
     @Override

@@ -44,6 +44,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -229,7 +230,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL ) )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             int p1 = token.propertyKey( "p1" );
             IndexReadSession session = read.indexReadSession( index );

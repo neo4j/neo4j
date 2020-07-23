@@ -70,6 +70,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private IndexOrder indexOrder;
+    private final MemoryTracker memoryTracker;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private final DefaultNodeCursor nodeCursor;
     private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
@@ -77,10 +78,11 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private boolean shortcutSecurity;
     private int[] propertyIds;
 
-    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor nodeCursor )
+    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor nodeCursor, MemoryTracker memoryTracker )
     {
         this.pool = pool;
         this.nodeCursor = nodeCursor;
+        this.memoryTracker = memoryTracker;
         node = NO_ID;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;

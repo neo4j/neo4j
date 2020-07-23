@@ -643,7 +643,7 @@ public class TransactionImpl implements InternalTransaction
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
@@ -713,7 +713,7 @@ public class TransactionImpl implements InternalTransaction
         {
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer() );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );

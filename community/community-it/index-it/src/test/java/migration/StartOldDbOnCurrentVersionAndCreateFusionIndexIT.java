@@ -512,7 +512,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) ) );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
             int count = 0;
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), predicates );
                 while ( cursor.next() )

@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -60,7 +61,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
     {
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL ) )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
                     read.nodeIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
