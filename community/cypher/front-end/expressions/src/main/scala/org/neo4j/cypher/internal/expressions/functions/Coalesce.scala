@@ -22,4 +22,6 @@ case object Coalesce extends Function with FunctionWithInfo {
   override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY?)"
 
   override def getDescription: String = "Returns the first non-null value in a list of expressions."
+
+  override def getCategory: String = "Scalar"
 }

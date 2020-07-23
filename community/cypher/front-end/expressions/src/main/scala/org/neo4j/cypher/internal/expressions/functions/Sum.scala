@@ -27,10 +27,10 @@ case object Sum extends AggregatingFunction with TypeSignatures {
 
   override val signatures: Vector[FunctionTypeSignature] = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("input"), argumentTypes = Vector(CTInteger), outputType = CTInteger,
-      description = "Returns the sum of a set of integers"),
+      description = "Returns the sum of a set of integers", category = "Aggregating"),
     FunctionTypeSignature(functionName = name, names = Vector("input"), argumentTypes = Vector(CTFloat), outputType = CTFloat,
-      description = "Returns the sum of a set of floats"),
+      description = "Returns the sum of a set of floats", category = "Aggregating"),
     FunctionTypeSignature(functionName = name, names = Vector("input"), argumentTypes = Vector(CTDuration), outputType = CTDuration,
-      description = "Returns the sum of a set of durations")
+      description = "Returns the sum of a set of durations", category = "Aggregating")
   )
 }

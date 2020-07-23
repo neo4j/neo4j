@@ -26,6 +26,6 @@ case object Relationships extends Function with TypeSignatures {
   def name = "relationships"
 
   override val signatures = Vector(
-    TypeSignature(name, CTPath, CTList(CTRelationship), "Returns a list containing all the relationships in a path.")
+    TypeSignature(name, CTPath, CTList(CTRelationship), "Returns a list containing all the relationships in a path.", "List")
   )
 }

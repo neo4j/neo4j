@@ -25,6 +25,6 @@ case object PercentileCont extends AggregatingFunction with TypeSignatures {
 
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("input", "percentile"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
-      description = "Returns the percentile of a value over a group using linear interpolation.")
+      description = "Returns the percentile of a value over a group using linear interpolation.", category = "Aggregating")
   )
 }

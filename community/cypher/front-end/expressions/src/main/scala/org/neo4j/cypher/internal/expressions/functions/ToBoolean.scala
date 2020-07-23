@@ -22,4 +22,6 @@ case object ToBoolean extends Function with FunctionWithInfo {
   override def getSignatureAsString: String = name + "(input :: STRING?) :: (BOOLEAN?)"
 
   override def getDescription: String = "Converts a string value to a boolean value."
+
+  override def getCategory: String = "Scalar"
 }

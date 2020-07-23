@@ -25,6 +25,6 @@ case object Exp extends Function with TypeSignatures {
 
   override val signatures = Vector(
     TypeSignature(name, CTFloat, CTFloat,
-      "Returns e^n, where e is the base of the natural logarithm, and n is the value of the argument expression.")
+      "Returns e^n, where e is the base of the natural logarithm, and n is the value of the argument expression.", "Logarithmic")
   )
 }

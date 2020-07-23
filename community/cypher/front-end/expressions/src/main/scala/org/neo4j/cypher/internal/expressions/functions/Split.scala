@@ -26,8 +26,8 @@ case object Split extends Function with TypeSignatures {
 
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("original", "splitDelimiter"), argumentTypes = Vector(CTString, CTString), outputType = CTList(CTString),
-      description = "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter."),
+      description = "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter.", category = "String"),
     FunctionTypeSignature(functionName = name, names = Vector("original", "splitDelimiters"), argumentTypes = Vector(CTString, CTList(CTString)), outputType = CTList(CTString),
-      description = "Returns a list of strings resulting from the splitting of the original string around matches of any of the given delimiters.")
+      description = "Returns a list of strings resulting from the splitting of the original string around matches of any of the given delimiters.", category = "String")
   )
 }

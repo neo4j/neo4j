@@ -25,6 +25,6 @@ case object Atan2 extends Function with TypeSignatures {
 
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("y", "x"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
-      description = "Returns the arctangent2 of a set of coordinates in radians.")
+      description = "Returns the arctangent2 of a set of coordinates in radians.", category = "Trigonometric")
   )
 }

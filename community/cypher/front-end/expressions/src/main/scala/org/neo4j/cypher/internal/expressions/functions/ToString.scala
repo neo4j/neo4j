@@ -48,5 +48,7 @@ case object ToString extends Function with FunctionWithInfo {
   override def getSignatureAsString: String = name + "(input :: ANY?) :: (STRING?)"
 
   override def getDescription: String =
-    "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string."
+    "Converts an integer, float, booleanList or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string."
+
+  override def getCategory: String = "String"
 }

@@ -22,4 +22,6 @@ case object Tail extends Function with FunctionWithInfo {
   override def getSignatureAsString: String = name + "(input :: LIST? OF ANY?) :: (LIST? OF ANY?)"
 
   override def getDescription: String = "Returns all but the first element in a list."
+
+  override def getCategory: String = "List"
 }

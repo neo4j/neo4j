@@ -23,4 +23,6 @@ case object Exists extends Function with FunctionWithInfo {
 
   override def getDescription: String =
     "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map."
+
+  override def getCategory: String = "Predicate"
 }

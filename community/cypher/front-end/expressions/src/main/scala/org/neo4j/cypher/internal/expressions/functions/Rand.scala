@@ -24,6 +24,6 @@ case object Rand extends Function with TypeSignatures {
   val name = "rand"
 
   override val signatures = Vector(
-    TypeSignature.noArg(name, CTFloat, "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1).")
+    TypeSignature.noArg(name, CTFloat, "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1).", "Numeric")
   )
 }

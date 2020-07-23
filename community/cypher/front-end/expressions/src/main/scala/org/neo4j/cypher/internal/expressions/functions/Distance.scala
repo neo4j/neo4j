@@ -22,4 +22,6 @@ case object Distance extends Function with FunctionWithInfo {
   override def getSignatureAsString: String = name + "(from :: POINT?, to :: POINT?) :: (FLOAT?)"
 
   override def getDescription: String = "Returns a floating point number representing the geodesic distance between any two points in the same CRS."
+
+  override def getCategory: String = "Spatial"
 }

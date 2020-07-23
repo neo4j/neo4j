@@ -25,7 +25,7 @@ case object Sign extends Function with TypeSignatures {
   def name = "sign"
 
   override val signatures = Vector(
-    TypeSignature(name, CTInteger, CTInteger, "Returns the signum of an integer number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number."),
-    TypeSignature(name, CTFloat, CTInteger, "Returns the signum of a floating point number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.")
+    TypeSignature(name, CTInteger, CTInteger, "Returns the signum of an integer number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.", "Numeric"),
+    TypeSignature(name, CTFloat, CTInteger, "Returns the signum of a floating point number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.", "Numeric")
   )
 }
