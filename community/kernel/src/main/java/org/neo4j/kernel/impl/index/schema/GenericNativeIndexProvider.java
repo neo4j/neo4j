@@ -216,8 +216,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
             for ( ValueCategory valueCategory : valueCategories )
             {
                 if ( valueCategory == ValueCategory.GEOMETRY ||
-                     valueCategory == ValueCategory.GEOMETRY_ARRAY ||
-                     valueCategory == ValueCategory.UNKNOWN )
+                     valueCategory == ValueCategory.GEOMETRY_ARRAY )
                 {
                     return false;
                 }
