@@ -47,12 +47,15 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 @Description( "Construct a Duration value." )
 class DurationFunction implements CallableUserFunction
 {
+    private static final String CATEGORY = "Temporal";
+
     private static final UserFunctionSignature DURATION =
             new UserFunctionSignature(
                     new QualifiedName( new String[0], "duration" ),
                     Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
                     Neo4jTypes.NTDuration, null, new String[0],
                     DurationFunction.class.getAnnotation( Description.class ).value(),
+                    CATEGORY,
                     true );
 
     static void register( GlobalProcedures globalProcedures ) throws ProcedureException
@@ -141,7 +144,7 @@ class DurationFunction implements CallableUserFunction
                     new QualifiedName( new String[] {"duration"}, unit ),
                     SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
                     String.format(
-                            DESCRIPTION, unitString ), true );
+                            DESCRIPTION, unitString ), CATEGORY, true );
         }
 
         @Override

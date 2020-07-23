@@ -40,6 +40,7 @@ public final class UserFunctionSignature
     private final String[] allowed;
     private final String deprecated;
     private final String description;
+    private final String category;
     private final boolean caseInsensitive;
 
     public UserFunctionSignature( QualifiedName name,
@@ -48,6 +49,7 @@ public final class UserFunctionSignature
             String deprecated,
             String[] allowed,
             String description,
+            String category,
             boolean caseInsensitive )
     {
         this.name = name;
@@ -55,6 +57,7 @@ public final class UserFunctionSignature
         this.type = type;
         this.deprecated = deprecated;
         this.description = description;
+        this.category = category;
         this.allowed = allowed;
         this.caseInsensitive = caseInsensitive;
     }
@@ -82,6 +85,11 @@ public final class UserFunctionSignature
     public Optional<String> description()
     {
         return Optional.ofNullable( description );
+    }
+
+    public Optional<String> category()
+    {
+        return Optional.ofNullable( category );
     }
 
     public String[] allowed()
@@ -132,6 +140,7 @@ public final class UserFunctionSignature
         private String[] allowed = new String[0];
         private String deprecated;
         private String description;
+        private String category;
 
         public Builder( String[] namespace, String name )
         {
@@ -141,6 +150,12 @@ public final class UserFunctionSignature
         public Builder description( String description )
         {
             this.description = description;
+            return this;
+        }
+
+        public Builder category( String category )
+        {
+            this.category = category;
             return this;
         }
 
@@ -176,7 +191,7 @@ public final class UserFunctionSignature
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, false );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, category, false );
         }
     }
 

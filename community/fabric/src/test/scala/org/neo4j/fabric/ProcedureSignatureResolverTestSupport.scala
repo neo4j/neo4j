@@ -46,9 +46,9 @@ trait ProcedureSignatureResolverTestSupport {
     mkProcedure(Seq("my", "ns", "write"), Seq(), Seq("a", "b"), Mode.WRITE)(Seq(Array(Values.intValue(1), Values.intValue(10)))),
   )
   val callableUseFunctions: Seq[procedure.CallableUserFunction] = Seq(
-    mkFunction(Seq("const0"), Seq())(Values.intValue(0)),
-    mkFunction(Seq("const1"), Seq())(Values.intValue(1)),
-    mkFunction(Seq("my", "ns", "const0"), Seq("x"))(Values.intValue(2)),
+    mkFunction(Seq("const0"), Seq(), "MyCategory")(Values.intValue(0)),
+    mkFunction(Seq("const1"), Seq(), "MyOtherCategory")(Values.intValue(1)),
+    mkFunction(Seq("my", "ns", "const0"), Seq("x"), "MyCategory")(Values.intValue(2)),
   )
 
   val signatures: ProcedureSignatureResolver = TestProcedureSignatureResolver(callableProcedures, callableUseFunctions)
@@ -76,7 +76,7 @@ trait ProcedureSignatureResolverTestSupport {
   }
 
   private def mkFunction(
-    name: Seq[String], args: Seq[String]
+    name: Seq[String], args: Seq[String], category: String
   )(
     body: => AnyValue
   ): procedure.CallableUserFunction =
@@ -85,7 +85,7 @@ trait ProcedureSignatureResolverTestSupport {
         new procs.QualifiedName(name.init.toArray, name.last),
         ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
         procs.Neo4jTypes.NTAny,
-        null, Array[String](), name.last, true
+        null, Array[String](), name.last, category, true
       )
     ) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue]): AnyValue = body

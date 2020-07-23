@@ -50,6 +50,8 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
 @Description( "Create a DateTime instant." )
 class DateTimeFunction extends TemporalFunction<DateTimeValue>
 {
+    private static final String CATEGORY = "Temporal";
+
     DateTimeFunction( Supplier<ZoneId> defaultZone )
     {
         super( NTDateTime, defaultZone );
@@ -106,7 +108,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"datetime"}, "fromepoch" ),
                     SIGNATURE, Neo4jTypes.NTDateTime, null, new String[0],
-                    DESCRIPTION, true );
+                    DESCRIPTION, CATEGORY, true );
         }
 
         @Override
@@ -150,7 +152,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"datetime"}, "fromepochmillis" ),
                     SIGNATURE, Neo4jTypes.NTDateTime, null, new String[0],
-                    DESCRIPTION, true );
+                    DESCRIPTION, CATEGORY, true );
         }
 
         @Override

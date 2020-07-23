@@ -59,6 +59,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
     private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.utf8Value( DEFAULT_TEMPORAL_ARGUMENT );
     private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
+    private static final String TEMPORAL_CATEGORY = "Temporal";
 
     public static void registerTemporalFunctions( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {
@@ -101,7 +102,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         this.signature = new UserFunctionSignature(
                 new QualifiedName( new String[0], basename.toLowerCase() ),
                 INPUT_SIGNATURE, result, null, ALLOWED,
-                description == null ? null : description.value(), true );
+                description == null ? null : description.value(),
+                TEMPORAL_CATEGORY, true );
         this.defaultZone = defaultZone;
     }
 
@@ -200,7 +202,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), null, ALLOWED,  description, true );
+                    input, base.signature.outputType(), null, ALLOWED,  description, TEMPORAL_CATEGORY, true );
         }
 
         @Override

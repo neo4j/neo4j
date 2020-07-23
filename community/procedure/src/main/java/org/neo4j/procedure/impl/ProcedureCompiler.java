@@ -321,14 +321,14 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                                config.rolesFor( procName.toString() ), description, false );
+                                config.rolesFor( procName.toString() ), description, null, false );
                 return new FailedLoadFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                        config.rolesFor( procName.toString() ), description, false );
+                        config.rolesFor( procName.toString() ), description, null, false );
 
         return ProcedureCompilation.compileFunction( signature, setters, method );
     }
@@ -424,7 +424,7 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( funcName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                                config.rolesFor( funcName.toString() ), description, false );
+                                config.rolesFor( funcName.toString() ), description, null, false );
 
                 return new FailedLoadAggregatedFunction( signature );
             }
@@ -432,7 +432,7 @@ class ProcedureCompiler
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                        config.rolesFor( funcName.toString() ), description, false );
+                        config.rolesFor( funcName.toString() ), description, null, false );
 
         return ProcedureCompilation.compileAggregation( signature, setters, create, update, result );
     }
