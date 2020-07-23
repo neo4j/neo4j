@@ -37,13 +37,17 @@ import java.util.stream.Stream;
 import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobType;
 import org.neo4j.scheduler.MonitoredJobInfo;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.SchedulerThreadFactory;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.FeatureToggles;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 final class ThreadPool
 {
@@ -93,7 +97,7 @@ final class ThreadPool
         AtomicBoolean running = new AtomicBoolean();
         Instant submitted = clock.instant();
         long jobId;
-        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
+        if ( NOT_MONITORED == jobMonitoringParams )
         {
             jobId = UNMONITORED_JOB_ID;
         }
@@ -121,7 +125,7 @@ final class ThreadPool
             }
         };
 
-        var placeHolder = new RegisteredJob( -1, null, null, null, null );
+        var placeHolder = new RegisteredJob( -1, completedFuture( Void.TYPE ), NOT_MONITORED, Instant.now(), new AtomicBoolean() );
         registry.put( registryKey, placeHolder );
         try
         {
@@ -194,7 +198,7 @@ final class ThreadPool
     List<MonitoredJobInfo> getMonitoredJobs()
     {
         return registry.values().stream()
-                       .filter( registeredJob -> registeredJob.monitoredJobParams != JobMonitoringParams.NOT_MONITORED )
+                       .filter( registeredJob -> registeredJob.monitoredJobParams != NOT_MONITORED )
                        .map( monitoredJob ->
                                new MonitoredJobInfo(
                                        monitoredJob.jobId,
@@ -219,7 +223,7 @@ final class ThreadPool
 
     private void recordFailedRun( long jobId, JobMonitoringParams jobMonitoringParams, Instant submitted, Instant executionStart, Throwable t )
     {
-        if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
+        if ( jobMonitoringParams == NOT_MONITORED )
         {
             return;
         }
@@ -248,10 +252,10 @@ final class ThreadPool
         RegisteredJob( long jobId, Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
         {
             this.jobId = jobId;
-            this.future = future;
-            this.monitoredJobParams = monitoredJobParams;
-            this.submitted = submitted;
-            this.running = running;
+            this.future = requireNonNull( future );
+            this.monitoredJobParams = requireNonNull( monitoredJobParams );
+            this.submitted = requireNonNull( submitted );
+            this.running = requireNonNull( running );
         }
     }
 }
