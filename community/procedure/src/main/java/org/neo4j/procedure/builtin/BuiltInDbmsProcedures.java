@@ -701,6 +701,7 @@ public class BuiltInDbmsProcedures
     {
         public final String name;
         public final String signature;
+        public final String category;
         public final String description;
         public final boolean aggregating;
         public final List<String> defaultBuiltInRoles = null; // this is just so that the community version has the same signature as in enterprise
@@ -709,6 +710,7 @@ public class BuiltInDbmsProcedures
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
+            this.category = signature.category().orElse( "" );
             this.description = signature.description().orElse( "" );
             this.aggregating = isAggregation;
         }
@@ -717,6 +719,7 @@ public class BuiltInDbmsProcedures
         {
             this.name = info.getFunctionName();
             this.signature = info.getSignature();
+            this.category = info.getCategory();
             this.description = info.getDescription();
             this.aggregating = info.isAggregationFunction();
         }
