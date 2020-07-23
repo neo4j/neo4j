@@ -1,3 +1,5 @@
+org.neo4j.procedure.Category public abstract annotation implements java.lang.annotation.Annotation
+org.neo4j.procedure.Category::value() java.lang.String public abstract
 org.neo4j.procedure.Context public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.Description public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.Description::value() java.lang.String public abstract
