@@ -332,6 +332,8 @@ case class FunctionWithInformation(f: FunctionInfo) extends FunctionInformation 
 
   override def getDescription: String = f.getDescription
 
+  override def getCategory: String = f.getCategory
+
   override def getSignature: String = f.getSignature
 
   override def isAggregationFunction: lang.Boolean = f.isAggregationFunction

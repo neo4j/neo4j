@@ -27,5 +27,7 @@ public interface FunctionInformation
 
     String getSignature();
 
+    String getCategory();
+
     java.lang.Boolean isAggregationFunction();
 }
