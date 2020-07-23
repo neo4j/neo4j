@@ -179,4 +179,56 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     // then
     runtimeResult should beColumns("x").withRows(nodes.map(_ => Array[Any](nodes.head)))
   }
+
+  test("should handle continuation from single undirectedRelationshipByIdSeek") {
+    // given
+    val nodesPerLabel = 10 //sizeHint / 4
+    val (r, nodes) = given {
+      val (_, _, rs, _) = bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+      val r = rs.head
+      val nodes = Seq(r.getStartNode, r.getEndNode)
+      (r, nodes)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = for {
+      Seq(x, y) <- nodes.permutations.toSeq
+      _ <- 0 until nodesPerLabel
+    } yield Array(r, x, y)
+
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
+  }
+
+    test("should handle continuation from multiple undirectedRelationshipByIdSeek") {
+    // given
+    val nodesPerLabel = 20
+    val (rs, nodes) = given {
+      val (_, _, rs, _) = bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+      val nodes = rs.map(r => r -> Seq(r.getStartNode, r.getEndNode)).toMap
+      (rs, nodes)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, rs.map(_.getId) :_*)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = for {
+      r <- rs
+      Seq(x, y) <- nodes(r).permutations.toSeq
+      _ <- 0 until nodesPerLabel
+    } yield Array(r, x, y)
+
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
+  }
 }
