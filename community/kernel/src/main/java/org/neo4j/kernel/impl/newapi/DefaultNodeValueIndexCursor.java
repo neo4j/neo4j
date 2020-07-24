@@ -21,15 +21,19 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+import org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -41,8 +45,12 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.PointArray;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
@@ -60,11 +68,16 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeValueIndexCursor, EntityIndexSeekClient, SortedMergeJoin.Sink
 {
+    private static final Comparator<LongObjectPair<Value[]>> ASCENDING_COMPARATOR = computeComparator( Values.COMPARATOR );
+    private static final Comparator<LongObjectPair<Value[]>> DESCENDING_COMPARATOR = computeComparator( ( o1, o2 ) -> - Values.COMPARATOR.compare( o1, o2 ) );
+
     private Read read;
     private long node;
     private float score;
     private IndexQuery[] query;
     private Value[] values;
+    private LongObjectPair<Value[]> cachedValues;
+    private Iterator<LongObjectPair<Value[]>> eagerPointIterator;
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<NodeWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private LongSet removed = LongSets.immutable.empty();
@@ -73,7 +86,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private final MemoryTracker memoryTracker;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private final DefaultNodeCursor nodeCursor;
-    private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
+    private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
     private AccessMode accessMode;
     private boolean shortcutSecurity;
     private int[] propertyIds;
@@ -329,7 +342,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             sortedMergeJoin.setA( nodeWithPropertyValues.getNodeId(), nodeWithPropertyValues.getValues() );
         }
 
-        if ( sortedMergeJoin.needsB() && innerNext() )
+        if ( sortedMergeJoin.needsB() && innerNextFromBuffer() )
         {
             sortedMergeJoin.setB( node, values );
         }
@@ -341,6 +354,123 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             tracer.onNode( node );
         }
         return next;
+    }
+
+    private boolean innerNextFromBuffer()
+    {
+        if ( eagerPointIterator != null )
+        {
+            return streamPointsFromIterator();
+        }
+
+        boolean innerNext = innerNext();
+        if ( values != null && innerNext && indexOrder != IndexOrder.NONE )
+        {
+            return eagerizingPoints();
+        }
+        else
+        {
+            return innerNext;
+        }
+    }
+
+    private boolean containsPoints()
+    {
+        for ( Value value : values )
+        {
+            if ( value instanceof PointValue || value instanceof PointArray )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean eagerizingPoints()
+    {
+        HeapTrackingArrayList<LongObjectPair<Value[]>> eagerPointBuffer = null;
+        boolean shouldContinue = true;
+
+        while ( shouldContinue && containsPoints() )
+        {
+            if ( eagerPointBuffer == null )
+            {
+                eagerPointBuffer = HeapTrackingArrayList.newArrayList( 256, memoryTracker );
+            }
+            eagerPointBuffer.add( PrimitiveTuples.pair( node , Arrays.copyOf( values, values.length ) ));
+            shouldContinue = innerNext();
+        }
+        if ( eagerPointBuffer != null )
+        {
+            if ( shouldContinue )
+            {
+                this.cachedValues = PrimitiveTuples.pair( node, Arrays.copyOf( values, values.length ) );
+            }
+
+            eagerPointBuffer.sort( comparator() );
+            //TODO: wrap this in a ClosingIterator and close it in `closeInternal`
+            eagerPointIterator = eagerPointBuffer.autoClosingIterator();
+            return streamPointsFromIterator();
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    private static Comparator<LongObjectPair<Value[]>> computeComparator( Comparator<Value> comparator )
+    {
+        return ( o1, o2 ) ->
+        {
+            Value[] v1 = o1.getTwo();
+            Value[] v2 = o2.getTwo();
+            for ( int i = 0; i < v1.length; i++ )
+            {
+                int compare = comparator.compare( v1[i], v2[i] );
+                if ( compare != 0 )
+                {
+                    return compare;
+                }
+            }
+
+            return 0;
+        };
+    }
+
+    private Comparator<LongObjectPair<Value[]>> comparator()
+    {
+        switch ( indexOrder )
+        {
+        case ASCENDING:
+          return ASCENDING_COMPARATOR;
+        case DESCENDING:
+           return DESCENDING_COMPARATOR;
+        default:
+            throw new IllegalStateException( "can't sort if no indexOrder defined" );
+        }
+    }
+
+    private boolean streamPointsFromIterator()
+    {
+        if ( eagerPointIterator.hasNext() )
+        {
+            LongObjectPair<Value[]> nextPair = eagerPointIterator.next();
+            node = nextPair.getOne();
+            values = nextPair.getTwo();
+            return true;
+        }
+        else if ( cachedValues != null )
+        {
+            values = cachedValues.getTwo();
+            node = cachedValues.getOne();
+            eagerPointIterator = null;
+            cachedValues = null;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override
