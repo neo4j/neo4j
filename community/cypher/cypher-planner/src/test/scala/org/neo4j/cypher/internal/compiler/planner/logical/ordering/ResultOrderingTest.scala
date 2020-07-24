@@ -68,9 +68,9 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](ascXFoo: Interesting
 
   // Index operator
 
-  test("IndexOperator: Empty order results in provided order of index order capability ascending") {
-    indexOrder(InterestingOrder.empty, indexPropertyXFoo, ASC) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
-    indexOrder(InterestingOrder.empty, indexPropertyXFooExact, ASC) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
+  test("IndexOperator: No interesting order results in no order") {
+    indexOrder(InterestingOrder.empty, indexPropertyXFoo, ASC) should be((ProvidedOrder.empty, IndexOrderNone))
+    indexOrder(InterestingOrder.empty, indexPropertyXFooExact, ASC) should be((ProvidedOrder.empty, IndexOrderNone))
   }
 
   test("IndexOperator: Single property DESC still results in provided ASC if index is not capable of DESC") {

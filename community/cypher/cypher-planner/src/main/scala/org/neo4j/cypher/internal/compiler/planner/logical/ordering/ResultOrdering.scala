@@ -63,6 +63,8 @@ object ResultOrdering {
                                     capabilityLookup: Seq[CypherType] => IndexOrderCapability): (ProvidedOrder, IndexOrder) = {
 
 
+
+
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
 
@@ -71,7 +73,7 @@ object ResultOrdering {
       case _: Desc => ProvidedOrder.Desc(prop)
     }
 
-    if (indexProperties.isEmpty) {
+    if (indexProperties.isEmpty || interestingOrder == InterestingOrder.empty) {
       (ProvidedOrder.empty, IndexOrderNone)
     } else {
       val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
@@ -160,16 +162,8 @@ object ResultOrdering {
           (ProvidedOrder(columns, ProvidedOrder.Self), indexOrder)
       }
 
-      // If the required order cannot be satisfied, return the index guaranteed order
-      maybeResult.getOrElse {
-        if (indexOrderCapability.asc) {
-          (ProvidedOrder(indexProperties.map { case PropertyAndPredicateType(prop, _) => ProvidedOrder.Asc(prop) }, ProvidedOrder.Self), IndexOrderAscending)
-        } else if (indexOrderCapability.desc) {
-          (ProvidedOrder(indexProperties.map { case PropertyAndPredicateType(prop, _) => ProvidedOrder.Desc(prop) }, ProvidedOrder.Self), IndexOrderDescending)
-        } else {
-          (ProvidedOrder.empty, IndexOrderNone)
-        }
-      }
+      // If the required order cannot be satisfied, return empty
+      maybeResult.getOrElse((ProvidedOrder.empty, IndexOrderNone))
     }
   }
 
