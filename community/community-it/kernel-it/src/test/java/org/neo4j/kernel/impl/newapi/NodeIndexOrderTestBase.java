@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -43,6 +44,8 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
@@ -188,6 +191,335 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         }
     }
 
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithPointsAndSingleNodeAfterwards( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            //NOTE: strings come after points in natural ascending sort order
+            expected.add( nodeWithProp( tx, "a" ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, "b" ) );
+
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = { "ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderPointsOnly( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
+
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithPointsAndNodesBefore( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            //NOTE: arrays come before points in natural ascending sort order
+            expected.add( nodeWithProp( tx, new String[]{"a"} ) );
+            expected.add( nodeWithProp( tx, new String[]{"b"} ) );
+            expected.add( nodeWithProp( tx, new String[]{"c"} ) );
+            //NOTE: strings come after points in natural ascending sort order
+            expected.add( nodeWithProp( tx, "a" ) );
+            expected.add( nodeWithProp( tx, "b" ) );
+            expected.add( nodeWithProp( tx, "c" ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, new String[] {"d"} ) );
+                expected.add( nodeWithProp( tx, "d" ) );
+
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithPointsAndNodesOnBothSides( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            //NOTE: arrays come before points in natural ascending sort order
+            expected.add( nodeWithProp( tx, new String[]{"a"} ) );
+            expected.add( nodeWithProp( tx, new String[]{"b"} ) );
+            expected.add( nodeWithProp( tx, new String[]{"c"} ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
+                expected.add( nodeWithProp( tx, new String[] {"d"} ) );
+
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsInBothValues( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ));
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "b" ));
+            expected.add( nodeWithTwoProps( tx, "a",  pointValue( Cartesian, -500000, -500000 ) ));
+            expected.add( nodeWithTwoProps( tx, "a",  pointValue( Cartesian, 500000, -500000 ) ));
+            expected.add( nodeWithTwoProps( tx, "a",  pointValue( Cartesian, -500000, 500000 ) ));
+            expected.add( nodeWithTwoProps( tx, "a",  pointValue( Cartesian, 500000, 500000 ) ));
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsInBothValuesWithOneGapBetween( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ));
+            expected.add( nodeWithTwoProps( tx, "b", new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "c", new String[]{"b"} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsInBothValuesWithTwoGapsBetween( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ));
+            expected.add( nodeWithTwoProps( tx, "b", new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, "b", new String[]{"c"} ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "c", new String[]{"b"} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithPointsAndSingleNodeAfterwardsCOmp( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( nodeWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ));
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "b" ) );
+            expected.add( nodeWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "b" ));
+            expected.add( nodeWithTwoProps( tx, "a",  pointValue( Cartesian, 500000, 500000 ) ));
+            expected.add( nodeWithTwoProps( tx, "b", new String[]{"b"} ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+            expected.add( nodeWithTwoProps( tx, "c", new String[]{"b"} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
     private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor, IndexOrder indexOrder )
     {
         Comparator<Pair<Long,Value>> comparator = indexOrder == IndexOrder.ASCENDING ? ( a, b ) -> Values.COMPARATOR.compare( a.other(), b.other() )
@@ -198,11 +530,56 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         while ( cursor.next() && expectedRows.hasNext() )
         {
             Pair<Long,Value> expectedRow = expectedRows.next();
-            assertThat( cursor.nodeReference() ).isEqualTo( expectedRow.first() );
+            assertThat( cursor.nodeReference() )
+                    .as( expectedRow.other() + " == " + cursor.propertyValue( 0 ) )
+                    .isEqualTo( expectedRow.first() );
             for ( int i = 0; i < cursor.numberOfProperties(); i++ )
             {
                 Value value = cursor.propertyValue( i );
                 assertThat( value ).isEqualTo( expectedRow.other() );
+            }
+        }
+
+        assertFalse( expectedRows.hasNext() );
+        assertFalse( cursor.next() );
+    }
+
+    private void assertCompositeResultsInOrder( List<Pair<Long,Value[]>> expected, NodeValueIndexCursor cursor, IndexOrder indexOrder )
+    {
+        Comparator<Pair<Long,Value[]>> comparator = indexOrder ==
+                                                    IndexOrder.ASCENDING ?
+                                                    ( a, b ) ->
+                                                    {
+                                                        int compare = Values.COMPARATOR.compare( a.other()[0], b.other()[0] );
+                                                        if ( compare == 0 )
+                                                        {
+                                                            return Values.COMPARATOR.compare( a.other()[1], b.other()[1] );
+                                                        }
+                                                        return compare;
+                                                    }
+                                                                         :
+                                                    ( a, b ) ->
+                                                    {
+                                                        int compare = -Values.COMPARATOR.compare( a.other()[0], b.other()[0] );
+                                                        if ( compare == 0 )
+                                                        {
+                                                            return -Values.COMPARATOR.compare( a.other()[1], b.other()[1] );
+                                                        }
+                                                        return compare;
+                                                    };
+
+        expected.sort( comparator );
+        Iterator<Pair<Long,Value[]>> expectedRows = expected.iterator();
+        while ( cursor.next() && expectedRows.hasNext() )
+        {
+            Pair<Long,Value[]> expectedRow = expectedRows.next();
+            assertThat( cursor.nodeReference() )
+                    .as( expectedRow.other()[0] + " == " + cursor.propertyValue( 0 ) + " && " + expectedRow.other()[1] + " == " + cursor.propertyValue( 1  ))
+                    .isEqualTo( expectedRow.first() );
+            for ( int i = 0; i < cursor.numberOfProperties(); i++ )
+            {
+                Value value = cursor.propertyValue( i );
+                assertThat( value ).isEqualTo( expectedRow.other()[i] );
             }
         }
 
@@ -240,6 +617,20 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         }
     }
 
+    private void createCompositeIndex()
+    {
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().indexFor( Label.label( "Node" ) ).on( "prop1" ).on( "prop2" ).withName( indexName ).create();
+            tx.commit();
+        }
+
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        }
+    }
+
     private long nodeWithLabel( KernelTransaction tx, String label ) throws Exception
     {
         Write write = tx.dataWrite();
@@ -256,5 +647,18 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         Value val = Values.of( value );
         write.nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ), val );
         return Pair.of( node, val );
+    }
+
+    private Pair<Long,Value[]> nodeWithTwoProps( KernelTransaction tx, Object value1, Object value2 ) throws Exception
+    {
+        Write write = tx.dataWrite();
+        long node = write.nodeCreate();
+        TokenWrite tokenWrite = tx.tokenWrite();
+        write.nodeAddLabel( node, tokenWrite.labelGetOrCreateForName( "Node" ) );
+        Value val1 = Values.of( value1 );
+        Value val2 = Values.of( value2 );
+        write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( "prop1" ), val1 );
+        write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( "prop2" ), val2 );
+        return Pair.of( node, new Value[]{val1, val2} );
     }
 }
