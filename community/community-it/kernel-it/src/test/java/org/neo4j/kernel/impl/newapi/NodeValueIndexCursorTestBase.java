@@ -838,6 +838,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             long nodeReference = node.nodeReference();
             Value storedValue = getPropertyValueFromStore( nodeReference );
+            //NOTE: Points are not stored in the natural order in the index.
+            //      Sort order for points is explicitly handled by the client, see DefaultNodeValueIndexCursor
+            if ( storedValue instanceof PointValue )
+            {
+                continue;
+            }
             if ( currentValue != null )
             {
                 switch ( indexOrder )
