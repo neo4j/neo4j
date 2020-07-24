@@ -1293,11 +1293,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
 
-      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
         Aggregation(
-          IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder, getValue = GetValue),
+          IndexSeek("n:Awesome(prop > 0)", indexOrder = IndexOrderNone, getValue = GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")),
             "count(n.prop)" -> count(cachedNodeProp("n", "prop")))
