@@ -195,22 +195,31 @@ object ClauseConverters {
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
 
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
-    val (requiredOrderColumns, interestingOrderColumns) = horizon match {
+    val (requiredOrderColumns, interestingOrderColumns: Seq[ColumnOrder]) = horizon match {
       case RegularQueryProjection(projections, _, _) =>
         (extractColumnOrderFromOrderBy(sortItems, projections), Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
-        val interestingColumnOrders: Seq[ColumnOrder] =
+        val requiredOrders = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val interestingColumnOrders =
           if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
             // just checked that there is only one key
             val value = aggregationExpressions(aggregationExpressions.keys.head)
             AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
+          } else if (requiredOrders.isEmpty) {
+            groupingExpressions.values.collect {
+              case e: Property => Asc(e)
+            }
           } else {
             Seq.empty
           }
-
-        (extractColumnOrderFromOrderBy(sortItems, groupingExpressions), interestingColumnOrders)
+        (requiredOrders, interestingColumnOrders)
       case DistinctQueryProjection(groupingExpressions, _, _) =>
-        (extractColumnOrderFromOrderBy(sortItems, groupingExpressions), Seq.empty)
+        val requiredColumns = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val interestingColumnOrders = if (requiredColumns.isEmpty) groupingExpressions.values.collect {
+          case e: Property => Asc(e)
+        } else Seq.empty
+
+        (requiredColumns, interestingColumnOrders)
       case _ => (Seq.empty, Seq.empty)
     }
 
