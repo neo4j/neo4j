@@ -34,6 +34,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -41,6 +44,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
@@ -77,7 +81,7 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private IndexQuery[] query;
     private Value[] values;
     private LongObjectPair<Value[]> cachedValues;
-    private Iterator<LongObjectPair<Value[]>> eagerPointIterator;
+    private ResourceIterator<LongObjectPair<Value[]>> eagerPointIterator;
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<NodeWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private LongSet removed = LongSets.immutable.empty();
@@ -408,14 +412,18 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             }
 
             eagerPointBuffer.sort( comparator() );
-            //TODO: wrap this in a ClosingIterator and close it in `closeInternal`
-            eagerPointIterator = eagerPointBuffer.autoClosingIterator();
+            eagerPointIterator = ResourceClosingIterator.newResourceIterator( eagerPointBuffer.autoClosingIterator(), asResource( eagerPointBuffer ) );
             return streamPointsFromIterator();
         }
         else
         {
             return true;
         }
+    }
+
+    private Resource asResource( AutoCloseable resource )
+    {
+        return () -> IOUtils.closeAllUnchecked( resource );
     }
 
     private static Comparator<LongObjectPair<Value[]>> computeComparator( Comparator<Value> comparator )
@@ -544,6 +552,10 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
 
+            if ( eagerPointIterator  != null )
+            {
+                eagerPointIterator.close();
+            }
             pool.accept( this );
         }
     }
