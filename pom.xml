@@ -112,14 +112,14 @@
     <jamm.version>0.3.3</jamm.version>
     <lucene.version>8.5.1</lucene.version>
     <bouncycastle.version>1.66</bouncycastle.version>
-    <jetty.version>9.4.26.v20200117</jetty.version>
+    <jetty.version>9.4.30.v20200611</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <scala-maven-plugin.version>4.3.0</scala-maven-plugin.version>
     <scala.version>2.12.10</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <asm.version>8.0.1</asm.version>
-    <metrics.version>4.1.10.1</metrics.version>
+    <metrics.version>4.1.11</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <jersey.version>2.30.1</jersey.version>
     <junit.version>5.6.2</junit.version>
@@ -708,7 +708,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.32</version>
+            <version>8.35</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -897,12 +897,12 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.11.2</version>
+        <version>2.13.3</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>2.11.2</version>
+        <version>2.13.3</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
@@ -912,7 +912,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.5.0</version>
+        <version>5.6.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.lucene</groupId>
@@ -992,14 +992,14 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.3.7.RELEASE</version>
+        <version>3.3.8.RELEASE</version>
       </dependency>
 
       <!-- testing -->
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>4.1.0</version>
+        <version>4.1.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1084,7 +1084,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.3.3</version>
+        <version>3.4.4</version>
         <scope>test</scope>
       </dependency>
 
@@ -1226,12 +1226,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.10</version>
+        <version>3.11</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
-        <version>1.8</version>
+        <version>1.9</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1241,7 +1241,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.4.5-5</version>
+        <version>1.4.5-6</version>
       </dependency>
 
       <dependency>
