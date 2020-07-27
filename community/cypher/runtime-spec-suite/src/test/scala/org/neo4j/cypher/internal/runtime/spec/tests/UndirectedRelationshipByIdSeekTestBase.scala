@@ -182,7 +182,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
   test("should handle continuation from single undirectedRelationshipByIdSeek") {
     // given
-    val nodesPerLabel = 10 //sizeHint / 4
+    val nodesPerLabel = sizeHint / 4
     val (r, nodes) = given {
       val (_, _, rs, _) = bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
       val r = rs.head
