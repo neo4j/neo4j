@@ -96,6 +96,7 @@ public enum Group
     CATCHUP_SERVER( "CatchupServer" ),
     THROUGHPUT_MONITOR( "ThroughputMonitor" ),
     PANIC_SERVICE( "PanicService" ),
+    CLUSTER_STATUS_CHECK_SERVICE( "ClusterStatusService" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
