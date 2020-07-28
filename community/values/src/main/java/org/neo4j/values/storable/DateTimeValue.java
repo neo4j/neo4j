@@ -579,7 +579,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         return value.toInstant().hashCode();
     }

@@ -72,7 +72,7 @@ public final class ErrorValue extends VirtualValue
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         throw e;
     }

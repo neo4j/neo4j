@@ -71,7 +71,7 @@ public final class BooleanArray extends ArrayValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         return NumberValues.hash( value );
     }

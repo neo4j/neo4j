@@ -106,7 +106,7 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
     }
 
     @Override
-    public final int computeHash()
+    protected int computeHashToMemoize()
     {
         return Arrays.hashCode( value() );
     }

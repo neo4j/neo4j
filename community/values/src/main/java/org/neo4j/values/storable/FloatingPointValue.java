@@ -37,7 +37,7 @@ public abstract class FloatingPointValue extends NumberValue
     }
 
     @Override
-    public final int computeHash()
+    protected final int computeHash()
     {
         return NumberValues.hash( doubleValue() );
     }

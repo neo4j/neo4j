@@ -312,59 +312,59 @@ class DurationValueTest
     @Test
     void shouldHaveSensibleHashCode()
     {
-        assertEquals( 0, duration( 0, 0, 0, 0 ).computeHash() );
+        assertEquals( 0, duration( 0, 0, 0, 0 ).hashCode() );
 
         assertNotEquals(
-                duration( 0, 0, 0, 1 ).computeHash(),
-                duration( 0, 0, 0, 2 ).computeHash() );
+                duration( 0, 0, 0, 1 ).hashCode(),
+                duration( 0, 0, 0, 2 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 0, 1 ).computeHash(),
-                duration( 0, 0, 1, 0 ).computeHash() );
+                duration( 0, 0, 0, 1 ).hashCode(),
+                duration( 0, 0, 1, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 0, 1 ).computeHash(),
-                duration( 0, 1, 0, 0 ).computeHash() );
+                duration( 0, 0, 0, 1 ).hashCode(),
+                duration( 0, 1, 0, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 0, 1 ).computeHash(),
-                duration( 1, 0, 0, 0 ).computeHash() );
+                duration( 0, 0, 0, 1 ).hashCode(),
+                duration( 1, 0, 0, 0 ).hashCode() );
 
         assertNotEquals(
-                duration( 0, 0, 1, 0 ).computeHash(),
-                duration( 0, 0, 2, 0 ).computeHash() );
+                duration( 0, 0, 1, 0 ).hashCode(),
+                duration( 0, 0, 2, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 1, 0 ).computeHash(),
-                duration( 0, 0, 0, 1 ).computeHash() );
+                duration( 0, 0, 1, 0 ).hashCode(),
+                duration( 0, 0, 0, 1 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 1, 0 ).computeHash(),
-                duration( 0, 1, 0, 0 ).computeHash() );
+                duration( 0, 0, 1, 0 ).hashCode(),
+                duration( 0, 1, 0, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 0, 1, 0 ).computeHash(),
-                duration( 1, 0, 0, 0 ).computeHash() );
+                duration( 0, 0, 1, 0 ).hashCode(),
+                duration( 1, 0, 0, 0 ).hashCode() );
 
         assertNotEquals(
-                duration( 0, 1, 0, 0 ).computeHash(),
-                duration( 0, 2, 0, 0 ).computeHash() );
+                duration( 0, 1, 0, 0 ).hashCode(),
+                duration( 0, 2, 0, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 1, 0, 0 ).computeHash(),
-                duration( 0, 0, 0, 1 ).computeHash() );
+                duration( 0, 1, 0, 0 ).hashCode(),
+                duration( 0, 0, 0, 1 ).hashCode() );
         assertNotEquals(
-                duration( 0, 1, 0, 0 ).computeHash(),
-                duration( 0, 0, 1, 0 ).computeHash() );
+                duration( 0, 1, 0, 0 ).hashCode(),
+                duration( 0, 0, 1, 0 ).hashCode() );
         assertNotEquals(
-                duration( 0, 1, 0, 0 ).computeHash(),
-                duration( 1, 0, 0, 0 ).computeHash() );
+                duration( 0, 1, 0, 0 ).hashCode(),
+                duration( 1, 0, 0, 0 ).hashCode() );
 
         assertNotEquals(
-                duration( 1, 0, 0, 0 ).computeHash(),
-                duration( 2, 0, 0, 0 ).computeHash() );
+                duration( 1, 0, 0, 0 ).hashCode(),
+                duration( 2, 0, 0, 0 ).hashCode() );
         assertNotEquals(
-                duration( 1, 0, 0, 0 ).computeHash(),
-                duration( 0, 0, 0, 1 ).computeHash() );
+                duration( 1, 0, 0, 0 ).hashCode(),
+                duration( 0, 0, 0, 1 ).hashCode() );
         assertNotEquals(
-                duration( 1, 0, 0, 0 ).computeHash(),
-                duration( 0, 0, 1, 0 ).computeHash() );
+                duration( 1, 0, 0, 0 ).hashCode(),
+                duration( 0, 0, 1, 0 ).hashCode() );
         assertNotEquals(
-                duration( 1, 0, 0, 0 ).computeHash(),
-                duration( 0, 1, 0, 0 ).computeHash() );
+                duration( 1, 0, 0, 0 ).hashCode(),
+                duration( 0, 1, 0, 0 ).hashCode() );
     }
 
     @Test

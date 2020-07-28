@@ -271,7 +271,7 @@ public abstract class StringValue extends TextValue
     static final TextValue EMPTY = new StringValue()
     {
         @Override
-        protected int computeHash()
+        protected int computeHashToMemoize()
         {
             return 0;
         }

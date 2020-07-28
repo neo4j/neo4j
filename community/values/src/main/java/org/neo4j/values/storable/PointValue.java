@@ -40,7 +40,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
-public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
+public class PointValue extends HashMemoizingScalarValue implements Point, Comparable<PointValue>
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( PointValue.class );
     static final long SIZE_2D = SHALLOW_SIZE + sizeOf( new double[2] );
@@ -275,7 +275,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         int result = 1;
         result = HASH_CONSTANT * result + NumberValues.hash( crs.getCode() );

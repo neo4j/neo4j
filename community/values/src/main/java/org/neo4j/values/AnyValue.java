@@ -25,8 +25,6 @@ import org.neo4j.values.storable.NumberValue;
 
 public abstract class AnyValue implements Measurable
 {
-    private int hash;
-
     // this should be final, but Mockito barfs if it is,
     // so we need to just manually ensure it isn't overridden
     @Override
@@ -38,14 +36,7 @@ public abstract class AnyValue implements Measurable
     @Override
     public final int hashCode()
     {
-        //We will always recompute hashcode for values
-        //where `hashCode == 0`, e.g. empty strings and empty lists
-        //however that shouldn't be shouldn't be too costly
-        if ( hash == 0 )
-        {
-            hash = computeHash();
-        }
-        return hash;
+      return computeHash();
     }
 
     protected abstract boolean equalTo( Object other );

@@ -68,7 +68,7 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         //The 31 is there to give it the same hash as the string equivalent
         return HASH_CONSTANT + value;

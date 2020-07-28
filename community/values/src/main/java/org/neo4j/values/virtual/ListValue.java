@@ -102,7 +102,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int computeHash()
+        protected int computeHashToMemoize()
         {
             return array.hashCode();
         }
@@ -154,7 +154,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int computeHash()
+        protected int computeHashToMemoize()
         {
             return Arrays.hashCode( values );
         }
@@ -206,7 +206,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int computeHash()
+        protected int computeHashToMemoize()
         {
             return values.hashCode();
         }
@@ -395,7 +395,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int computeHash()
+        protected int computeHashToMemoize()
         {
             int hashCode = 1;
             long current = start;
@@ -740,7 +740,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         switch ( iterationPreference() )
         {

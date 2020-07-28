@@ -29,7 +29,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
  * Value could be a NodeReference for example.
  */
-public abstract class VirtualValue extends AnyValue
+public abstract class VirtualValue extends HashMemoizingAnyValue
 {
     @Override
     public final boolean equalTo( Object other )

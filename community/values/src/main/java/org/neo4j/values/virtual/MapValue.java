@@ -501,7 +501,7 @@ public abstract class MapValue extends VirtualValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         int[] h = new int[1];
         foreach( ( key, value ) -> h[0] += key.hashCode() ^ value.hashCode() );

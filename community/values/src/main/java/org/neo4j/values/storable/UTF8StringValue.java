@@ -147,7 +147,7 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         if ( bytes.length == 0 || byteLength == 0 )
         {

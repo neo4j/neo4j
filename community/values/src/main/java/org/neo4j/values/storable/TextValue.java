@@ -29,7 +29,7 @@ import org.neo4j.values.virtual.ListValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
-public abstract class TextValue extends ScalarValue
+public abstract class TextValue extends HashMemoizingScalarValue
 {
     static final ListValue EMPTY_SPLIT = fromArray( stringArray( "", "" ) );
 

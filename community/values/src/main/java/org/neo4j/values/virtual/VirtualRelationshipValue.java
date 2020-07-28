@@ -46,7 +46,7 @@ public abstract class VirtualRelationshipValue extends VirtualValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         return Long.hashCode( id() );
     }

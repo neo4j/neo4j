@@ -52,7 +52,7 @@ public abstract class IntegralValue extends NumberValue
     }
 
     @Override
-    public final int computeHash()
+    protected final int computeHash()
     {
         return NumberValues.hash( longValue() );
     }

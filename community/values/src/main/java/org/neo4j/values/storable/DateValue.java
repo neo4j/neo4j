@@ -288,7 +288,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         return Long.hashCode( value.toEpochDay() );
     }

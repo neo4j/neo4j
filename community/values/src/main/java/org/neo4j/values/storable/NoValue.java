@@ -69,7 +69,7 @@ public final class NoValue extends Value
     }
 
     @Override
-    public int computeHash()
+    protected int computeHash()
     {
         return System.identityHashCode( this );
     }

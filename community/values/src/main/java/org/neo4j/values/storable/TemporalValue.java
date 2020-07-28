@@ -67,7 +67,7 @@ import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.TimeValue.time;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
-        extends ScalarValue implements Temporal
+        extends HashMemoizingScalarValue implements Temporal
 {
     TemporalValue()
     {

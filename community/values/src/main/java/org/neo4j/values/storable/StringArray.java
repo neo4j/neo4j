@@ -75,7 +75,7 @@ public class StringArray extends TextArray
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         int result = 1;
         for ( String element : value )

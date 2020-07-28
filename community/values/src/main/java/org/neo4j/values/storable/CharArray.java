@@ -60,7 +60,7 @@ public final class CharArray extends TextArray
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         return NumberValues.hash( value );
     }

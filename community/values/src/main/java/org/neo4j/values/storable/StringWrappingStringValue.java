@@ -26,7 +26,6 @@ import org.neo4j.hashing.HashFunction;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
-
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 /**
@@ -58,7 +57,7 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         //NOTE that we are basing the hash code on code points instead of char[] values.
         if ( value.isEmpty() )

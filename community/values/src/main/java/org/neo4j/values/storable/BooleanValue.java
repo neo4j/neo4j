@@ -90,7 +90,7 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        public int computeHash()
+        protected int computeHash()
         {
             return Boolean.hashCode( true );
         }
@@ -148,7 +148,7 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        public int computeHash()
+        protected int computeHash()
         {
             return Boolean.hashCode( false );
         }

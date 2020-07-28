@@ -53,7 +53,7 @@ public final class FloatArray extends FloatingPointArray
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         return NumberValues.hash( value );
     }

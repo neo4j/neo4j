@@ -53,7 +53,7 @@ public final class IntArray extends IntegralArray
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         return NumberValues.hash( value );
     }

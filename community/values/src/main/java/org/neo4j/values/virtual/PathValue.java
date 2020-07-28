@@ -30,7 +30,6 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 public abstract class PathValue extends VirtualValue
@@ -59,7 +58,7 @@ public abstract class PathValue extends VirtualValue
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         NodeValue[] nodes = nodes();
         RelationshipValue[] relationships = relationships();

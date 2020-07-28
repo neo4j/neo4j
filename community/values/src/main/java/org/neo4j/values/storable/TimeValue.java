@@ -361,7 +361,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         return Long.hashCode( value.toLocalTime().toNanoOfDay() - value.getOffset().getTotalSeconds() * 1000_000_000L );
     }

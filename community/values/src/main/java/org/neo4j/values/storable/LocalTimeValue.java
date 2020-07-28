@@ -280,7 +280,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         return value.hashCode();
     }

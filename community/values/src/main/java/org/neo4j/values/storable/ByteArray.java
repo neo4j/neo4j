@@ -65,7 +65,7 @@ public final class ByteArray extends IntegralArray
     }
 
     @Override
-    public int computeHash()
+    protected int computeHashToMemoize()
     {
         checkValid();
         return NumberValues.hash( value );

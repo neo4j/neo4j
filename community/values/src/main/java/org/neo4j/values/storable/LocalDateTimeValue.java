@@ -375,7 +375,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
-    protected int computeHash()
+    protected int computeHashToMemoize()
     {
         return value.toInstant( UTC ).hashCode();
     }
