@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
@@ -51,7 +52,15 @@ abstract class outerHashJoin extends OptionalSolver {
       val hintVariables = hint.variables.map(_.name).toSet
       hintVariables.subsetOf(joinNodes)
     }
-    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint])), interestingOrder, context)
+
+    // If side1 is just an Argument, any Apply above this will get written out so the incoming cardinality should be 1
+    // This will be the case as [AssumeIndependenceQueryGraphCardinalityModel] will always use a cardinality of 1 if there are no
+    // arguments and we delete the arguments below.
+    // If not, then we're probably under an apply that will stay, so we need to force the cardinality to be multiplied by the incoming
+    // cardinality.
+    val side2Context = if (!side1.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true)) else context
+
+    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint])), interestingOrder, side2Context)
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(side1.availableSymbols) &&

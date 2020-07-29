@@ -44,6 +44,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   self =>
 
   var knownLabels: Set[String] = Set.empty
+  var knownRelationships: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQueryPart, Cardinality] = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
