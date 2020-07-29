@@ -26,8 +26,8 @@ case object Range extends Function with TypeSignatures {
 
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("start", "end"), argumentTypes = Vector(CTInteger, CTInteger),
-      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range.", category = "List"),
+      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range.", category = Category.LIST),
     FunctionTypeSignature(functionName = name, names = Vector("start", "end", "step"), argumentTypes = Vector(CTInteger, CTInteger, CTInteger),
-      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range created with step length.", category = "List")
+      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range created with step length.", category = Category.LIST)
   )
 }

@@ -24,6 +24,6 @@ case object Haversin extends Function with TypeSignatures {
   def name = "haversin"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Returns half the versine of a number.", "Trigonometric")
+    TypeSignature(name, CTFloat, CTFloat, "Returns half the versine of a number.", Category.TRIGONOMETRIC)
   )
 }

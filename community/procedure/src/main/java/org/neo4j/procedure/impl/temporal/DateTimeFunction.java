@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.cypher.internal.expressions.functions.Category;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -50,7 +51,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
 @Description( "Create a DateTime instant." )
 class DateTimeFunction extends TemporalFunction<DateTimeValue>
 {
-    private static final String CATEGORY = "Temporal";
+    private static final String CATEGORY = Category.TEMPORAL();
 
     DateTimeFunction( Supplier<ZoneId> defaultZone )
     {

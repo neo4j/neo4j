@@ -24,6 +24,6 @@ case object ToLower extends Function with TypeSignatures {
   def name = "toLower"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTString, "Returns the original string in lowercase.", "String")
+    TypeSignature(name, CTString, CTString, "Returns the original string in lowercase.", Category.STRING)
   )
 }

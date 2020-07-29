@@ -26,6 +26,6 @@ case object Right extends Function with TypeSignatures {
 
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("original","length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString,
-      description = "Returns a string containing the specified number of rightmost characters of the original string.", category = "String")
+      description = "Returns a string containing the specified number of rightmost characters of the original string.", category = Category.STRING)
   )
 }

@@ -26,8 +26,8 @@ case object Properties extends Function with TypeSignatures {
   override def name = "properties"
 
   override val signatures = Vector(
-    TypeSignature(name, CTNode, CTMap, "Returns a map containing all the properties of a node.", "Scalar"),
-    TypeSignature(name, CTRelationship, CTMap, description = "Returns a map containing all the properties of a relationship.", "Scalar"),
-    TypeSignature(name, CTMap, CTMap, description = "Returns a map containing all the properties of a map.", "Scalar")
+    TypeSignature(name, CTNode, CTMap, "Returns a map containing all the properties of a node.", Category.SCALAR),
+    TypeSignature(name, CTRelationship, CTMap, description = "Returns a map containing all the properties of a relationship.", Category.SCALAR),
+    TypeSignature(name, CTMap, CTMap, description = "Returns a map containing all the properties of a map.", Category.SCALAR)
   )
 }

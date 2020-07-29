@@ -23,5 +23,5 @@ case object Tail extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Returns all but the first element in a list."
 
-  override def getCategory: String = "List"
+  override def getCategory: String = Category.LIST
 }

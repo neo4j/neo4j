@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.cypher.internal.expressions.functions.Category;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
@@ -59,7 +60,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
     private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.utf8Value( DEFAULT_TEMPORAL_ARGUMENT );
     private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
-    private static final String TEMPORAL_CATEGORY = "Temporal";
+    private static final String TEMPORAL_CATEGORY = Category.TEMPORAL();
 
     public static void registerTemporalFunctions( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {

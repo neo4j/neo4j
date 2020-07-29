@@ -23,5 +23,5 @@ case object Distance extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Returns a floating point number representing the geodesic distance between any two points in the same CRS."
 
-  override def getCategory: String = "Spatial"
+  override def getCategory: String = Category.SPATIAL
 }

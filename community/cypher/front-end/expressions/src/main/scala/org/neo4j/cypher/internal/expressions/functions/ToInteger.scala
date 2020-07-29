@@ -26,7 +26,7 @@ case object ToInteger extends Function with TypeSignatures {
   override def name = "toInteger"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTInteger, "Converts a string value to an integer value.", "Scalar"),
-    TypeSignature(name, CTNumber, CTInteger, "Converts a floating point value to an integer value.", "Scalar")
+    TypeSignature(name, CTString, CTInteger, "Converts a string value to an integer value.", Category.SCALAR),
+    TypeSignature(name, CTNumber, CTInteger, "Converts a floating point value to an integer value.", Category.SCALAR)
   )
 }

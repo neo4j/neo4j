@@ -26,6 +26,6 @@ case object Replace extends Function with TypeSignatures {
   override val signatures = Vector(
     FunctionTypeSignature(functionName = name, names = Vector("original", "search", "replace"), argumentTypes = Vector(CTString, CTString, CTString),
       outputType = CTString,
-      description = "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.", category = "String")
+      description = "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.", category = Category.STRING)
   )
 }

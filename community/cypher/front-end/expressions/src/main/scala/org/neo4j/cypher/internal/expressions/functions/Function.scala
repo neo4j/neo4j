@@ -23,6 +23,19 @@ import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.InputPosition
 
+object Category extends Enumeration {
+  val NUMERIC = "Numeric"
+  val TRIGONOMETRIC = "Trigonometric"
+  val PREDICATE = "Predicate"
+  val AGGREGATING = "Aggregating"
+  val SCALAR = "Scalar"
+  val TEMPORAL = "Temporal"
+  val LOGARITHMIC = "Logarithmic"
+  val LIST = "List"
+  val STRING = "String"
+  val SPATIAL = "Spatial"
+}
+
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
     Abs,

@@ -23,5 +23,5 @@ case object Head extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Returns the first element in a list."
 
-  override def getCategory: String = "Scalar"
+  override def getCategory: String = Category.SCALAR
 }

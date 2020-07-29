@@ -23,5 +23,5 @@ case object Last extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Returns the last element in a list."
 
-  override def getCategory: String = "Scalar"
+  override def getCategory: String = Category.SCALAR
 }

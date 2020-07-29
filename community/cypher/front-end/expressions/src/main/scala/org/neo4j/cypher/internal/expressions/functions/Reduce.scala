@@ -27,5 +27,5 @@ case object Reduce extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator."
 
-  override def getCategory: String = "List"
+  override def getCategory: String = Category.LIST
 }

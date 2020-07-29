@@ -24,6 +24,6 @@ case object Cos extends Function with TypeSignatures {
   def name = "cos"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Returns the cosine  of a number.", "Trigonometric")
+    TypeSignature(name, CTFloat, CTFloat, "Returns the cosine  of a number.", Category.TRIGONOMETRIC)
   )
 }

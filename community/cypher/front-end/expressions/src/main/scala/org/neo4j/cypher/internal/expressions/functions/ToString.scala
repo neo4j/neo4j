@@ -50,5 +50,5 @@ case object ToString extends Function with FunctionWithInfo {
   override def getDescription: String =
     "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string."
 
-  override def getCategory: String = "String"
+  override def getCategory: String = Category.STRING
 }

@@ -23,5 +23,5 @@ case object ToBoolean extends Function with FunctionWithInfo {
 
   override def getDescription: String = "Converts a string value to a boolean value."
 
-  override def getCategory: String = "Scalar"
+  override def getCategory: String = Category.SCALAR
 }
