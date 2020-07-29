@@ -55,6 +55,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
     // close is idempotent and can be called multiple times, but we want to get here only once.
     resource.setCloseListener(null)
     if (!resources.remove(resource)) {
+
       throw new IllegalStateException(s"$resource is not in the resource set $resources")
     }
   }
@@ -92,6 +93,7 @@ trait ResourcePool {
   def all(): Iterator[AutoCloseablePlus]
   def clear(): Unit
   def closeAll(): Unit
+  override def toString: String = all().toList.toString()
 }
 
 /**
