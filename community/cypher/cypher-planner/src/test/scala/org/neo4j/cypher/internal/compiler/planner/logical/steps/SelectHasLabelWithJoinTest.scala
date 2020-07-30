@@ -20,15 +20,25 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Inside.inside
 
 class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should solve labels with joins") {
 
-    implicit val plan = new given {
+    val plan = new given {
       cost = {
         case (_: Selection, _, _) => 1000.0
         case (_: NodeHashJoin, _, _) => 20.0
@@ -43,6 +53,32 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       NodeByLabelScan(_, _, _, _)),
       NodeByLabelScan(_, _, _, _)) => ()
       case _ => fail("Not what we expected!")
+    }
+  }
+
+  test("should not solve has-labels check on procedure result with joins") {
+    val signature = ProcedureSignature(
+      QualifiedName(Seq.empty, "getNode"),
+      IndexedSeq.empty,
+      Some(IndexedSeq(FieldSignature("node", CTNode))),
+      None,
+      ProcedureReadOnlyAccess(Array.empty),
+      id = 0)
+
+    val plan = new given {
+      procedure(signature)
+      cost = {
+        case (_: Selection, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _) => 20.0
+      }
+    } getLogicalPlanFor "CALL getNode() YIELD node WHERE node:Label RETURN node"
+
+    inside(plan._2) {
+      case Selection(Ands(exprs), ProcedureCall(Argument(_), _)) =>
+        exprs.toList should matchPattern {
+          case List(HasLabels(_, _)) => ()
+        }
     }
   }
 }

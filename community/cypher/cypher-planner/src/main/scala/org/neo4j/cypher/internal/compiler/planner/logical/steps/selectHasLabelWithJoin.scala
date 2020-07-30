@@ -33,7 +33,7 @@ case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 
   def apply(plan: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     unsolvedPreds(context.planningAttributes.solveds)(queryGraph.selections, plan).collect {
-      case s@HasLabels(variable: Variable, Seq(labelName)) =>
+      case s@HasLabels(variable: Variable, Seq(labelName)) if queryGraph.patternNodes.contains(variable.name) =>
         val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrder, variable)
         val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, Set.empty, providedOrder, context)
         context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), plan, labelScan, Set.empty, context)
