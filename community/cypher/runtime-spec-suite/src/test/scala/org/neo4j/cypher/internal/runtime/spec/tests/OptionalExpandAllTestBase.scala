@@ -897,4 +897,67 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
+
+  test("should be able to access property on null node without errors") {
+    // given
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("n.t AS res")
+      .optionalExpandAll("(n)-->(m)")
+      .optionalExpandAll("(x)--(n)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("res").withSingleRow(null)
+  }
+
+  test("should be able to check property existence on null node without errors") {
+    // given
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("exists(n.t) AS res")
+      .optionalExpandAll("(n)-->(m)")
+      .optionalExpandAll("(x)--(n)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("res").withSingleRow(null)
+  }
+
+  test("should be able to check label existence on null node without errors") {
+    // given
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("n:L AS res")
+      .optionalExpandAll("(n)-->(m)")
+      .optionalExpandAll("(x)--(n)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("res").withSingleRow(null)
+  }
 }
