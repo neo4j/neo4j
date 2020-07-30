@@ -112,8 +112,8 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
    */
   protected def estimateSize(data: ValueToEstimate): Long = {
     data match {
-      case E_INT => ValueUtils.of(0).estimatedHeapUsage()
-      case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_INT => ValueUtils.of(0L).estimatedHeapUsage()
+      case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0L)).estimatedHeapUsage() // We wrap the columns in a list
       case E_NODE_PRIMITIVE => VirtualValues.node(0).estimatedHeapUsage()
       case E_NODE_VALUE => VirtualValues.node(0).estimatedHeapUsage()
     }
@@ -313,8 +313,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT, Some(0))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(0)))
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT, Some(0L))
+    val input = infiniteInput(expectedRowSize, Some(_ => Array(0L)))
 
     // then
     a[MemoryLimitExceededException] should be thrownBy {
@@ -720,7 +720,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None): Long = {
     val nRows = 8
-    val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i)))
+    val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
     consume(result)
     result.runtimeResult.totalAllocatedMemory() / nRows
   }
@@ -760,7 +760,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
+    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
 
     // then
     a[MemoryLimitExceededException] should be thrownBy {
@@ -777,7 +777,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5)))
+    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
 
     // then
     a[MemoryLimitExceededException] should be thrownBy {
