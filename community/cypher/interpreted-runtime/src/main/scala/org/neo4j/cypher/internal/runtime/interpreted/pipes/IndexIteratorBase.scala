@@ -25,8 +25,6 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import scala.collection.Iterator
 
 abstract class IndexIteratorBase[T](state: QueryState, val cursor: NodeValueIndexCursor) extends ClosingIterator[T] {
-  state.query.resources.trace(cursor)
-
   private var _next: T = fetchNext()
 
   protected def fetchNext(): T
