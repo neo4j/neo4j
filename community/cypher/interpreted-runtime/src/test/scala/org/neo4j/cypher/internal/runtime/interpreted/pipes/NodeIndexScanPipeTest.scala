@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
+import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -42,7 +43,11 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenReturn(cursor)
+    when(state.query.indexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
 
     val pipe = NodeIndexScanPipe(
       "n",
@@ -61,7 +66,11 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenReturn(cursor)
+    when(state.query.indexScan(any[IndexReadSession], any[Boolean], any[IndexOrder])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
 
     val pipe = NodeIndexScanPipe(
       "n",

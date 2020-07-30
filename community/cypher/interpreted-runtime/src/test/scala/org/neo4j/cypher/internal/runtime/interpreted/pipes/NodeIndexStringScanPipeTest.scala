@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -107,7 +107,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenReturn(cursor)
+    when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
 
     val pipe = NodeIndexContainsScanPipe(
       "n",
@@ -127,8 +131,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenReturn(cursor)
-
+    when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
     val pipe = NodeIndexContainsScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
@@ -147,8 +154,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenReturn(cursor)
-
+    when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
     val pipe = NodeIndexEndsWithScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
@@ -167,8 +177,11 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    Mockito.when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenReturn(cursor)
-
+    when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+      //NOTE: this is what is done in TransactionBoundQueryContext
+      resourceManager.trace(cursor)
+      cursor
+    })
     val pipe = NodeIndexEndsWithScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
