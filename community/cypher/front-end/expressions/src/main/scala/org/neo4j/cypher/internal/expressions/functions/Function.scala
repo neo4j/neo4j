@@ -144,13 +144,13 @@ object Function {
   }
 }
 
-abstract case class FunctionInfo(f: Function){
+abstract case class FunctionInfo(f: FunctionWithName) {
   def getFunctionName: String = f.name
 
-  def isAggregationFunction: java.lang.Boolean = f match {
-      case _: AggregatingFunction => true
-      case _ => false
-    }
+  def isAggregationFunction: Boolean = f match {
+    case _: AggregatingFunction => true
+    case _ => false
+  }
 
   def getDescription: String
 
@@ -161,9 +161,7 @@ abstract case class FunctionInfo(f: Function){
   override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
-abstract class Function {
-  def name: String
-
+abstract class Function extends FunctionWithName {
   private val functionName = asFunctionName(InputPosition.NONE)
 
   def asFunctionName(implicit position: InputPosition): FunctionName = FunctionName(name)(position)
@@ -183,6 +181,10 @@ abstract class Function {
       case FunctionInvocation(_, `functionName`, _, args) => Some(args.head)
       case _ => None
     }
+}
+
+trait FunctionWithName {
+  def name: String
 }
 
 trait FunctionWithInfo {

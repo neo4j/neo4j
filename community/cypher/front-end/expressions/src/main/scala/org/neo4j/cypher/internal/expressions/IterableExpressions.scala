@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
+import org.neo4j.cypher.internal.expressions.functions.FunctionWithName
 import org.neo4j.cypher.internal.util.InputPosition
 
 trait FilteringExpression extends Expression {
@@ -99,8 +101,15 @@ case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: Rel
   }
 }
 
-sealed trait IterablePredicateExpression extends FilteringExpression {
+sealed trait IterableExpressionWithInfo extends FunctionWithName {
+  def description: String
+  def category = "Predicate"
+  // TODO: Get specification formalized by CLG
+  def signature: String = s"$name(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)"
+  def isAggregationFunction = false
+}
 
+sealed trait IterablePredicateExpression extends FilteringExpression {
   def scope: FilterScope
   def variable: LogicalVariable = scope.variable
   def innerPredicate: Option[Expression] = scope.innerPredicate
@@ -111,38 +120,67 @@ sealed trait IterablePredicateExpression extends FilteringExpression {
   }
 }
 
-case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
-  val name = "all"
+object IterablePredicateExpression {
+  private val knownPredicateFunctions: Seq[IterableExpressionWithInfo] = Vector(
+    AllIterablePredicate,
+    AnyIterablePredicate,
+    NoneIterablePredicate,
+    SingleIterablePredicate
+  )
+
+  def functionInfo: Seq[FunctionInfo] = knownPredicateFunctions.map(
+    p => new FunctionInfo(p) {
+      override def getDescription: String = p.description
+      override def getCategory: String = p.category
+      override def getSignature: String = p.signature
+    }
+  )
 }
 
-object AllIterablePredicate {
+case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
+  val name = AllIterablePredicate.name
+}
+
+object AllIterablePredicate extends IterableExpressionWithInfo {
+  val name = "all"
+  val description = "Returns true if the predicate holds for all elements in the given list."
+
   def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
     AllIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
 case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
-  val name = "any"
+  val name = AnyIterablePredicate.name
 }
 
-object AnyIterablePredicate {
+object AnyIterablePredicate extends IterableExpressionWithInfo {
+  val name = "any"
+  val description = "Returns true if the predicate holds for at least one element in the given list."
+
   def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
     AnyIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
 case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
-  val name = "none"
+  val name = NoneIterablePredicate.name
 }
 
-object NoneIterablePredicate {
+object NoneIterablePredicate extends IterableExpressionWithInfo {
+  val name = "none"
+  val description = "Returns true if the predicate holds for no element in the given list."
+
   def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
     NoneIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
 case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
-  val name = "single"
+  val name = SingleIterablePredicate.name
 }
 
-object SingleIterablePredicate {
+object SingleIterablePredicate extends IterableExpressionWithInfo {
+  val name = "single"
+  val description = "Returns true if the predicate holds for exactly one of the elements in the given list."
+
   def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
     SingleIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }

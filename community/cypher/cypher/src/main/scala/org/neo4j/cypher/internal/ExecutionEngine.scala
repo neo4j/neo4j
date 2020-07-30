@@ -307,7 +307,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def getCypherFunctions: java.util.List[FunctionInformation] = {
     val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
-    informations.asJava
+    val predicateInformations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation)
+    (informations ++ predicateInformations).asJava
   }
 
   // HELPERS
