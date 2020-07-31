@@ -321,4 +321,49 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         arguments should equal(Set("a", "x"))
     }
   }
+
+  test("Optional match in tail should have correct cardinality and therefore generate Argument leaf plan") {
+    val query = """MATCH (a:A)
+                  |WITH a
+                  |LIMIT 994
+                  |MATCH (:D) <- [:R1] - (a)
+                  |OPTIONAL MATCH (a)-[:R1]->(:D)-[:R2]->(:B)-[:R3 {bool: false}]->(:C {some: 'prop'})
+                  |RETURN count(a)""".stripMargin
+
+    val cfg = new given {
+      knownLabels = Set("A", "B", "C", "D", "E")
+      knownRelationships = Set("R1", "R2", "R3")
+      uniqueIndexOn("C", "prop")
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 1120169.0
+        override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
+          case Some(LabelId(0)) => 101.0      // C
+          case Some(LabelId(2)) => 225598.0   // A
+          case Some(LabelId(3)) => 41.0       // B
+          case Some(LabelId(4)) => 141936.0   // D
+          case _ => super.nodesWithLabelCardinality(labelId)
+        }
+        override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                            relTypeId: Option[RelTypeId],
+                                            toLabel: Option[LabelId]): Cardinality = (fromLabel, relTypeId, toLabel) match {
+          case(Some(LabelId(2)), Some(RelTypeId(0)), None) => 223600.0                  // A - [R1] -> *
+          case(Some(LabelId(2)), Some(RelTypeId(0)), Some(LabelId(4))) => 223600.0    // A - [R1] -> D
+          case(None, Some(RelTypeId(1)), Some(LabelId(3))) => 139911.0                  // * - [R2] -> B
+          case(Some(LabelId(4)), Some(RelTypeId(1)), Some(LabelId(3))) => 139911.0      // D - [R2] -> B
+          case(Some(LabelId(4)), Some(RelTypeId(1)), None) => 139911.0                  // D - [R2] -> *
+          case(Some(LabelId(3)), Some(RelTypeId(2)), Some(LabelId(0))) => 1477.0        // B - [R3] -> C
+          case(Some(LabelId(3)), Some(RelTypeId(2)), None) => 1477.0                    // B - [R3] -> *
+          case(None, Some(RelTypeId(2)), Some(LabelId(0))) => 113740.0                  // * - [R3] -> C
+          case _ => 0.0
+        }
+      }
+    }
+
+    val (_, plan, _, _, _) = cfg.getLogicalPlanFor(query)
+    inside(plan) {
+      case Aggregation(Apply(_, rhs), _, _) =>
+        rhs.leaves.foreach( leaf => leaf shouldBe an [Argument])
+    }
+
+  }
 }

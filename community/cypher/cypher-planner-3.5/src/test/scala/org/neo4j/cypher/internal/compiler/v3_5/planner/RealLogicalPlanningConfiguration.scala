@@ -48,6 +48,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   override def procedureSignatures: Set[ProcedureSignature] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
   override def knownLabels: Set[String] = Set.empty
+  override def knownRelationships: Set[String] = Set.empty
   override def labelsById: Map[Int, String] = Map.empty
 
   override def qg: QueryGraph = ???

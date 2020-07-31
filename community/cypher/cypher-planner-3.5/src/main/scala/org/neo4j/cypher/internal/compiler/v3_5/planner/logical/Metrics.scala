@@ -43,7 +43,7 @@ object Metrics {
   }
 
   case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality,
-                                   strictness: Option[StrictnessMode]) {
+                                   strictness: Option[StrictnessMode], alwaysMultiply: Boolean = false) {
 
     def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
       val newCardinalityInput = cardinalities.get(fromPlan.id)

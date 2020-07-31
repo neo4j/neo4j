@@ -77,13 +77,16 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
-    val c = if (qg.argumentIds.nonEmpty) {
-        input.inboundCardinality
+    // We can't always rely on arguments being present to indicate we need to multiply the cardinality
+    // For example, when planning to solve an OPTIONAL MATCH with a join, we remove all the arguments. We
+    // could still be beneath an Apply a this point though.
+    val multiplier = if (input.alwaysMultiply || qg.argumentIds.nonEmpty) {
+      input.inboundCardinality
     } else {
       Cardinality(1.0)
     }
 
-    c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
+    multiplier * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
   private def calculateSelectivity(qg: QueryGraph, labels: Map[String, Set[LabelName]])
