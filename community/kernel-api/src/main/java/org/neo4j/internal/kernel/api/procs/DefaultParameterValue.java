@@ -80,6 +80,11 @@ public class DefaultParameterValue
         return new DefaultParameterValue( value, Neo4jTypes.NTList( inner ) );
     }
 
+    public static DefaultParameterValue ntAny( Object value )
+    {
+        return new DefaultParameterValue( value, Neo4jTypes.NTAny );
+    }
+
     public static DefaultParameterValue nullValue( Neo4jTypes.AnyType type )
     {
         return new DefaultParameterValue( null, type );

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntAny
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
@@ -61,7 +62,6 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       }
     },
 
-
     new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntProc").mode(Mode.READ).out("i", Neo4jTypes.NTInteger).build()) {
       override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
@@ -69,11 +69,24 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       }
     },
 
-
     new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntIntProc").mode(Mode.READ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
       override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
         def twice(v: AnyValue): AnyValue = v.asInstanceOf[NumberValue].times(2L)
         RawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
+      }
+    },
+
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "cardinalityIncreasingProc").mode(Mode.READ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
+      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+
+        val nElemants = input.head.asInstanceOf[NumberValue].longValue().intValue()
+        RawIterator.of[Array[AnyValue], ProcedureException]((1 to nElemants).map(i => Array[AnyValue](Values.intValue(i))): _*)
+      }
+    },
+
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "echoProc").mode(Mode.READ).in("j", Neo4jTypes.NTAny, ntAny("default")).out("i", Neo4jTypes.NTAny).build()) {
+      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+        RawIterator.of[Array[AnyValue], ProcedureException](input)
       }
     }
   )
@@ -138,6 +151,68 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (0 to sizeHint).flatMap { j => Seq(Array(j, j * 2), Array(j, j * 2)) }
     runtimeResult should beColumns("j", "i").withRows(expected)
+  }
+
+  test("should call echo procedure") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "i")
+      .procedureCall("echoProc(x) YIELD i AS i")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n))
+    runtimeResult should beColumns("x", "i").withRows(expected)
+  }
+
+  test("should call echo procedure with default argument") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "i")
+      .procedureCall("echoProc() YIELD i AS i")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, "default"))
+    runtimeResult should beColumns("x", "i").withRows(expected)
+  }
+
+  test("should call cardinality increasing procedure") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "i")
+      .procedureCall("cardinalityIncreasingProc(5) YIELD i AS i")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {n <- nodes
+                        i <- 1 to 5} yield Array(n, i)
+
+    runtimeResult should beColumns("x", "i").withRows(expected)
   }
 }
 
