@@ -87,8 +87,12 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
      * The existence of any arguments means that the cardinality is dependent on the inbound cardinality.
      * Unless the current node pattern is already solved by the arguments, the cost for solving it is 1.0.
      * The cardinality factor c is the maximum of those two parts.
+     *
+     * We can't always rely on arguments being present to indicate we need to multiply the cardinality
+     * For example, when planning to solve an OPTIONAL MATCH with a join, we remove all the arguments. We
+     * could still be beneath an Apply a this point though.
      */
-    val c = if (qg.argumentIds.nonEmpty) {
+    val c = if (input.alwaysMultiply || qg.argumentIds.nonEmpty) {
       if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {
         Cardinality.max(Cardinality(1.0), input.inboundCardinality)
       } else {
