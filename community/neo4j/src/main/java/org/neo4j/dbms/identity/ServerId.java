@@ -20,57 +20,24 @@
 package org.neo4j.dbms.identity;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.marshal.SafeChannelMarshal;
-import org.neo4j.util.Id;
 
-import static java.lang.String.format;
-
-public class ServerId
+/**
+ * ServerId is used for identifying a Neo4J instance.
+ * It is persisted in the root of the data directory.
+ */
+public interface ServerId
 {
-    private final Id id;
-
-    public ServerId( UUID uuid )
+    static ServerId of( UUID id )
     {
-        id = new Id( uuid );
+        return new StandaloneServerId( id );
     }
 
-    public UUID getUuid()
-    {
-        return id.uuid();
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "ServerId{%s}", id );
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        ServerId that = (ServerId) o;
-        return Objects.equals( id, that.id );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hashCode( id );
-    }
+    UUID getUuid();
 
     /**
      * Format:
@@ -79,7 +46,7 @@ public class ServerId
      * │leastSignificantBits   8 bytes│
      * └──────────────────────────────┘
      */
-    public static class Marshal extends SafeChannelMarshal<ServerId>
+    class Marshal extends SafeChannelMarshal<ServerId>
     {
         public static final Marshal INSTANCE = new Marshal();
 
@@ -110,7 +77,7 @@ public class ServerId
             {
                 long mostSigBits = channel.getLong();
                 long leastSigBits = channel.getLong();
-                return new ServerId( new UUID( mostSigBits, leastSigBits ) );
+                return ServerId.of( new UUID( mostSigBits, leastSigBits ) );
             }
         }
     }
