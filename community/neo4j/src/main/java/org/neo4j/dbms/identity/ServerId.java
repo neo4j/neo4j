@@ -20,24 +20,57 @@
 package org.neo4j.dbms.identity;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.marshal.SafeChannelMarshal;
+import org.neo4j.util.Id;
 
-/**
- * ServerId is used for identifying a Neo4J instance.
- * It is persisted in the root of the data directory.
- */
-public interface ServerId
+import static java.lang.String.format;
+
+public class ServerId
 {
-    static ServerId of( UUID id )
+    private final Id id;
+
+    public ServerId( UUID uuid )
     {
-        return new StandaloneServerId( id );
+        id = new Id( uuid );
     }
 
-    UUID getUuid();
+    public UUID getUuid()
+    {
+        return id.uuid();
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "ServerId{%s}", id );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ServerId that = (ServerId) o;
+        return Objects.equals( id, that.id );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode( id );
+    }
 
     /**
      * Format:
@@ -46,7 +79,7 @@ public interface ServerId
      * │leastSignificantBits   8 bytes│
      * └──────────────────────────────┘
      */
-    class Marshal extends SafeChannelMarshal<ServerId>
+    public static class Marshal extends SafeChannelMarshal<ServerId>
     {
         public static final Marshal INSTANCE = new Marshal();
 
@@ -77,7 +110,7 @@ public interface ServerId
             {
                 long mostSigBits = channel.getLong();
                 long leastSigBits = channel.getLong();
-                return ServerId.of( new UUID( mostSigBits, leastSigBits ) );
+                return new ServerId( new UUID( mostSigBits, leastSigBits ) );
             }
         }
     }
