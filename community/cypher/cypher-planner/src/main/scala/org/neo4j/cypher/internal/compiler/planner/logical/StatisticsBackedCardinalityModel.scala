@@ -40,10 +40,11 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       case query: SinglePlannerQuery =>
         val output = query.fold(input0) {
           case (input, RegularSinglePlannerQuery(graph, _, horizon, _, _)) =>
-            val QueryGraphSolverInput(newLabels, graphCardinality, laziness) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
+            val newInput = calculateCardinalityForQueryGraph(graph, input, semanticTable)
 
-            val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon, semanticTable)
-            QueryGraphSolverInput(newLabels, horizonCardinality, laziness)
+            val horizonCardinality = calculateCardinalityForQueryHorizon(newInput.inboundCardinality, horizon, semanticTable)
+            newInput.copy( inboundCardinality = horizonCardinality)
+          case (input, v) => throw new IllegalStateException(s"cannot handle $input and $v")
         }
         output.inboundCardinality
       case UnionQuery(part, query, distinct, _) =>
@@ -138,8 +139,6 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphSolverInput,
                                                 semanticTable: SemanticTable) = {
-    val newLabels = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
-    val newCardinality = queryGraphCardinalityModel(graph, input, semanticTable)
-    QueryGraphSolverInput(newLabels, newCardinality, input.strictness)
+    input.copy(labelInfo = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _), inboundCardinality = queryGraphCardinalityModel(graph, input, semanticTable))
   }
 }

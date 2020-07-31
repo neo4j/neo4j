@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.RelTypeId
 import org.neo4j.cypher.internal.v4_0.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, LabelId, PropertyKeyId}
 
@@ -42,6 +43,7 @@ trait LogicalPlanningConfiguration {
   def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
+  def knownRelationships: Set[String]
   def labelsById: Map[Int, String]
   def qg: QueryGraph
 
@@ -63,6 +65,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def constraints: Set[(String, Set[String])] = parent.constraints
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
+  override def knownRelationships = parent.knownRelationships
   override def labelsById = parent.labelsById
   override def qg = parent.qg
   override def procedureSignatures: Set[ProcedureSignature] = parent.procedureSignatures
@@ -84,6 +87,9 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     def addPropertyKeyIfUnknown(property: String) =
       if (!table.resolvedPropertyKeyNames.contains(property))
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
+    def addRelationshipIfUnknown(relationType: String) =
+      if (!table.resolvedRelTypeNames.contains(relationType))
+        table.resolvedRelTypeNames.put(relationType, RelTypeId(table.resolvedRelTypeNames.size))
 
     indexes.keys.foreach { case IndexDef(label, properties) =>
       addLabelIfUnknown(label)
@@ -92,6 +98,7 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
 
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)
+    knownRelationships.foreach(addRelationshipIfUnknown)
 
     var theTable = table
     for((expr, typ) <- mappings) {
