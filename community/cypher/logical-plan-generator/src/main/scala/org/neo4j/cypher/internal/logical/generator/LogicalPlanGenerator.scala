@@ -587,7 +587,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       }
     }
 
-  private def genPlanWithSameAvailableSymbols(plan: LogicalPlan, state: State) = for {
+  private def genPlanWithSameAvailableSymbols(plan: LogicalPlan, state: State): Gen[WithState[LogicalPlan]] = for {
     // We need to create a new state in order to be able to get the same variables as `plan`
     rhsState <- Gen.delay(copyStateWithoutVariableInfo(state))
     WithState(newPlan, newState) <- innerLogicalPlan(rhsState)
@@ -595,7 +595,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
         case WithState(source, _) => (source.availableSymbols == plan.availableSymbols)
       }
   } yield {
-    WithState(newPlan, state)
+    WithState(newPlan, state.addParameters(newState.parameters))
   }
 
   /*
