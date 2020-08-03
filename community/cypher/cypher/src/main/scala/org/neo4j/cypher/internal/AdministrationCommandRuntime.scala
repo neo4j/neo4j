@@ -171,7 +171,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
                                   password: expressions.Expression,
                                   requirePasswordChange: Boolean,
-                                  suspended: Boolean)(
+                                  suspended: Boolean,
+                                  restrictedUsernames : Seq[String] = Seq.empty)(
                                    sourcePlan: Option[ExecutionPlan],
                                    normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
@@ -203,7 +204,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         }),
       sourcePlan,
       finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero(),
-      initFunction = (params, _) => NameValidator.assertValidUsername(runtimeValue(userName, params)),
+      initFunction = (params, _) => NameValidator.assertValidUsername(runtimeValue(userName, params), restrictedUsernames),
       parameterConverter = mapValueConverter
     )
   }

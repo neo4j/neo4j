@@ -51,6 +51,10 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
     {
     }
 
+    protected void assertSystemGraphIntegrity( GraphDatabaseService system ) throws Exception
+    {
+    }
+
     private void initializeSystemGraphConstraints( GraphDatabaseService system )
     {
         try ( Transaction tx = system.beginTx() )
@@ -83,42 +87,14 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
             Status status = detect( system );
             if ( status == Status.UNINITIALIZED )
             {
-                try
-                {
-                    initializeSystemGraphConstraints( system );
-                }
-                catch ( Exception e )
-                {
-                    return Optional.of( e );
-                }
-                try
-                {
-                    initializeSystemGraphModel( system );
-                }
-                catch ( Exception e )
-                {
-                    return Optional.of( e );
-                }
-                try
-                {
-                    postInitialization( system, true );
-                }
-                catch ( Exception e )
-                {
-                    return Optional.of( e );
-                }
+                initializeSystemGraphConstraints( system );
+                initializeSystemGraphModel( system );
+                postInitialization( system, true );
             }
             else if ( status == Status.CURRENT || (status == Status.REQUIRES_UPGRADE && !mayUpgrade) )
             {
-                try
-                {
-                    verifySystemGraph( system );
-                    postInitialization( system, false );
-                }
-                catch ( Exception e )
-                {
-                    return Optional.of( e );
-                }
+                verifySystemGraph( system );
+                postInitialization( system, false );
             }
             else if ( (mayUpgrade && status == Status.REQUIRES_UPGRADE) || status == Status.UNSUPPORTED_BUT_CAN_UPGRADE )
             {
@@ -129,6 +105,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
                 return Optional.of(
                         new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) ) );
             }
+            assertSystemGraphIntegrity( system );
             return Optional.empty();
         }
         catch ( Exception e )
