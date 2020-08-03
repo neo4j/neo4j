@@ -499,7 +499,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val queryProfile = result.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // procedure call (OperatorProfile.NO_DATA as long as we use slotted fallback)
+    queryProfile.operatorProfile(1).time() should be > 0L
     queryProfile.operatorProfile(2).time() should be > 0L // unwind
     queryProfile.operatorProfile(3).time() should be > 0L // argument
     // Should not attribute anything to the invalid id

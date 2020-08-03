@@ -59,11 +59,11 @@ class ProcedureCallPipeTest
   with ImplicitDummyPos
   with MockitoSugar {
 
-  val ID = 42
-  val procedureName = QualifiedName(List.empty, "foo")
-  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
+  private val ID = 42
+  private val procedureName: QualifiedName = QualifiedName(List.empty, "foo")
+  private val signature: ProcedureSignature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
     None, ProcedureReadOnlyAccess(Array.empty), id = ID)
-  val emptyStringArray = Array.empty[String]
+  private val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
@@ -143,7 +143,7 @@ class ProcedureCallPipeTest
                                result: Seq[AnyValue] => Iterator[Array[AnyValue]],
                                expectedAccessMode: ProcedureAccessMode): QueryContext = {
 
-    def doIt(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] = {
+    def doIt(id: Int, args: Array[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] = {
       id should equal(ID)
       args.length should be(1)
       result(args)
