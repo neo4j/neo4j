@@ -68,6 +68,7 @@ public class FreeListIdProviderTracersTest
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
+            listIdProvider.initializeAfterCreation( NULL );
             listIdProvider.acquireNewId( 1, 1, cursorContext );
         }
 
@@ -83,10 +84,15 @@ public class FreeListIdProviderTracersTest
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
-            listIdProvider.releaseId( 1, 1,42,  cursorContext );
+            listIdProvider.initializeAfterCreation( cursorContext );
+            listIdProvider.releaseId( 1, 1, 42, cursorContext );
+            listIdProvider.flush( 1, 1, cursorContext );
         }
 
-        assertOneCursor( cursorContext );
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+        assertThat( cursorTracer.faults() ).isOne();
     }
 
     @Test
@@ -99,8 +105,9 @@ public class FreeListIdProviderTracersTest
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 0, 1, 0, listIdProvider.entriesPerPage() - 1, 0 );
-            listIdProvider.releaseId( 1, 1,42,  cursorContext );
-            assertEquals( 0, listIdProvider.writePos() );
+            listIdProvider.releaseId( 1, 1, 42, cursorContext );
+            listIdProvider.flush( 1, 1, cursorContext );
+            assertEquals( 0, listIdProvider.metaData().writePos() );
         }
 
         var cursorTracer = cursorContext.getCursorTracer();
@@ -120,8 +127,9 @@ public class FreeListIdProviderTracersTest
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 100, 0, 1, listIdProvider.entriesPerPage() - 1, 0 );
-            listIdProvider.releaseId( 1, 1,42,  NULL );
-            assertEquals( 0, listIdProvider.writePos() );
+            listIdProvider.releaseId( 1, 1, 42, NULL );
+            listIdProvider.flush( 1, 1, NULL );
+            assertEquals( 0, listIdProvider.metaData().writePos() );
 
             listIdProvider.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor(), cursorContext );
         }

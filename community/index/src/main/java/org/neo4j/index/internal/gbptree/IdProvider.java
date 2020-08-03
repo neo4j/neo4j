@@ -66,6 +66,8 @@ interface IdProvider
 
         void freelistEntry( long pageId, long generation, int pos );
 
+        void freelistEntryFromReleaseCache( long pageId );
+
         class Adaptor implements IdProviderVisitor
         {
             @Override
@@ -80,6 +82,11 @@ interface IdProvider
 
             @Override
             public void freelistEntry( long pageId, long generation, int pos )
+            {
+            }
+
+            @Override
+            public void freelistEntryFromReleaseCache( long pageId )
             {
             }
         }

@@ -124,9 +124,9 @@ class GBPTreeSingleWriterTest
             treeWriter.merge( new MutableLong( 0 ), new MutableLong( 1 ), ValueMergers.overwrite() );
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
             assertThat( cursorTracer.faults() ).isEqualTo( 1 );
         }
     }
@@ -145,9 +145,9 @@ class GBPTreeSingleWriterTest
             treeWriter.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
             assertThat( cursorTracer.faults() ).isEqualTo( 1 );
         }
     }
@@ -164,9 +164,9 @@ class GBPTreeSingleWriterTest
             treeWriter.put( new MutableLong( 0 ), new MutableLong( 0 ) );
             var cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 4 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
             assertThat( cursorTracer.faults() ).isEqualTo( 1 );
 
             ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );

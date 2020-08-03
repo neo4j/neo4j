@@ -546,5 +546,11 @@ class GBPTreeConsistencyChecker<KEY>
         {
             addToSeenList( path, seenIds, pageId, lastId, visitor );
         }
+
+        @Override
+        public void freelistEntryFromReleaseCache( long pageId )
+        {
+            addToSeenList( path, seenIds, pageId, lastId, visitor );
+        }
     }
 }

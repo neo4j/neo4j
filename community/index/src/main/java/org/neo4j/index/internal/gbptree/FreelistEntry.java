@@ -19,13 +19,21 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-
-import java.util.List;
-import java.util.Map;
-
-public record GBPTreeInspection(ImmutableLongList internalNodes, ImmutableLongList leafNodes, ImmutableLongList allNodes, ImmutableLongList offloadNodes,
-                                Map<Long,Integer> keyCounts, List<ImmutableLongList> nodesPerLevel, List<FreelistEntry> allFreelistEntries,
-                                ImmutableLongList unreleasedFreelistEntries, long rootNode, int lastLevel, TreeState treeState)
+/**
+ * A read and cached free-list entry, i.e. a free page ID accompanied which pos it was read from and which generation it was freed in.
+ */
+class FreelistEntry
 {
+    final long freelistPageId;
+    final int pos;
+    final long id;
+    final long generation;
+
+    FreelistEntry( long freelistPageId, int pos, long id, long generation )
+    {
+        this.freelistPageId = freelistPageId;
+        this.pos = pos;
+        this.id = id;
+        this.generation = generation;
+    }
 }

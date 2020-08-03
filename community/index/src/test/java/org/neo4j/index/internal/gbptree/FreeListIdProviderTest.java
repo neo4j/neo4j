@@ -27,25 +27,37 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.Generation.generation;
+import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
+import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( RandomExtension.class )
 class FreeListIdProviderTest
@@ -87,6 +99,7 @@ class FreeListIdProviderTest
 
         // WHEN
         freelist.releaseId( GENERATION_ONE, GENERATION_TWO, releasedId, NULL );
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
         long acquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE, NULL );
 
         // THEN
@@ -105,6 +118,7 @@ class FreeListIdProviderTest
         {
             freelist.releaseId( GENERATION_ONE, GENERATION_TWO, baseId + i, NULL );
         }
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
 
         // WHEN/THEN
         for ( int i = 0; i < entries; i++ )
@@ -130,13 +144,15 @@ class FreeListIdProviderTest
             released.add( acquiredId );
         }
         while ( acquiredId - prevId == 1 );
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
 
         // WHEN
         while ( !released.isEmpty() )
         {
             long reAcquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE, NULL );
-            released.remove( reAcquiredId );
+            assertTrue( released.remove( reAcquiredId ) );
         }
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
 
         // THEN
         assertEquals( freelistPageId, freelist.acquireNewId( GENERATION_THREE, GENERATION_FOUR, NULL ) );
@@ -150,7 +166,7 @@ class FreeListIdProviderTest
         List<Long> acquiredList = new ArrayList<>(); // for quickly finding random to remove
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
-        int iterations = 100;
+        int iterations = 1000;
 
         // WHEN
         for ( int i = 0; i < iterations; i++ )
@@ -198,6 +214,178 @@ class FreeListIdProviderTest
     }
 
     @Test
+    void shouldStayBoundUnderMultiThreadedStress()
+    {
+        // given
+        AtomicInteger checkpoints = new AtomicInteger();
+        AtomicInteger numIdsAcquired = new AtomicInteger();
+        AtomicInteger numIdsAcquiredThisCheckpoint = new AtomicInteger();
+        AtomicInteger highestNumIdsAcquiredInCheckpoint = new AtomicInteger();
+        Race race = new Race().withEndCondition( () -> checkpoints.get() >= 100 && numIdsAcquired.get() >= 10_000 );
+        ReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+        AtomicLong generation = new AtomicLong( generation( GENERATION_ONE, GENERATION_TWO ) );
+        race.addContestants( 4, throwing( () ->
+        {
+            checkpointLock.readLock().lock();
+            try
+            {
+                long gen = generation.get();
+                long stableGeneration = stableGeneration( gen );
+                long unstableGeneration = unstableGeneration( gen );
+                int count = ThreadLocalRandom.current().nextInt( 1, 10 );
+                long[] ids = new long[count];
+                for ( int i = 0; i < count; i++ )
+                {
+                    ids[i] = freelist.acquireNewId( stableGeneration, unstableGeneration, NULL );
+                }
+                for ( long id : ids )
+                {
+                    freelist.releaseId( stableGeneration, unstableGeneration, id, NULL );
+                }
+                numIdsAcquiredThisCheckpoint.addAndGet( count );
+            }
+            finally
+            {
+                checkpointLock.readLock().unlock();
+            }
+        } ) );
+        race.addContestant( throwing( () ->
+        {
+            Thread.sleep( ThreadLocalRandom.current().nextInt( 10 ) );
+            checkpointLock.writeLock().lock();
+            try
+            {
+                long gen = generation.get();
+                long unstableGeneration = unstableGeneration( gen );
+                freelist.flush( stableGeneration( gen ), unstableGeneration, NULL );
+                generation.set( generation( unstableGeneration, unstableGeneration + 1 ) );
+                checkpoints.incrementAndGet();
+                int idsThisCheckpoint = numIdsAcquiredThisCheckpoint.getAndSet( 0 );
+                numIdsAcquired.addAndGet( idsThisCheckpoint );
+                highestNumIdsAcquiredInCheckpoint.set( Integer.max( highestNumIdsAcquiredInCheckpoint.get(), idsThisCheckpoint ) );
+            }
+            finally
+            {
+                checkpointLock.writeLock().unlock();
+            }
+        } ) );
+
+        // when
+        race.goUnchecked();
+
+        // then the last id of the freelist after all that should be >= 80% of the highest number of ids acquired in any single checkpoint.
+        // This accounts for actual freelist pages for storing the freelist entries (page size is small resulting in roughly one freelist page per 12 ids)
+        assertThat( (double) highestNumIdsAcquiredInCheckpoint.get() / freelist.lastId() ).isGreaterThanOrEqualTo( 0.8 );
+    }
+
+    @Test
+    void shouldAcquireAndReleaseUnderMultiThreadedStress()
+    {
+        // given
+        AtomicInteger checkpoints = new AtomicInteger();
+        AtomicInteger numIdsAcquired = new AtomicInteger();
+        Race race = new Race().withEndCondition( () -> checkpoints.get() >= 100 && numIdsAcquired.get() >= 10_000 );
+        ReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+        AtomicLong generation = new AtomicLong( generation( GENERATION_ONE, GENERATION_TWO ) );
+        List<long[]> acquisitions = new ArrayList<>();
+        BitSet acquiredIds = new BitSet();
+        race.addContestants( 4, throwing( () ->
+        {
+            checkpointLock.readLock().lock();
+            try
+            {
+                long gen = generation.get();
+                long stableGeneration = stableGeneration( gen );
+                long unstableGeneration = unstableGeneration( gen );
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                boolean acquire = rng.nextBoolean();
+                long[] idsToRelease = null;
+                if ( !acquire )
+                {
+                    synchronized ( acquisitions )
+                    {
+                        if ( acquisitions.isEmpty() )
+                        {
+                            acquire = true;
+                        }
+                        else
+                        {
+                            idsToRelease = acquisitions.remove( rng.nextInt( acquisitions.size() ) );
+                        }
+                    }
+                }
+
+                if ( acquire )
+                {
+                    // Acquire
+                    int count = rng.nextInt( 1, 10 );
+                    long[] ids = new long[count];
+                    for ( int i = 0; i < count; i++ )
+                    {
+                        ids[i] = freelist.acquireNewId( stableGeneration, unstableGeneration, NULL );
+                    }
+                    synchronized ( acquisitions )
+                    {
+                        acquisitions.add( ids );
+                        for ( long id : ids )
+                        {
+                            if ( acquiredIds.get( (int) id ) )
+                            {
+                                fail( id + " already acquired" );
+                            }
+                            acquiredIds.set( (int) id );
+                        }
+                    }
+                    numIdsAcquired.addAndGet( count );
+                }
+                else
+                {
+                    // Release
+                    synchronized ( acquisitions )
+                    {
+                        for ( long id : idsToRelease )
+                        {
+                            if ( !acquiredIds.get( (int) id ) )
+                            {
+                                fail( id + " not acquired" );
+                            }
+                            acquiredIds.clear( (int) id );
+                        }
+                    }
+                    for ( long id : idsToRelease )
+                    {
+                        freelist.releaseId( stableGeneration, unstableGeneration, id, NULL );
+                    }
+                }
+            }
+            finally
+            {
+                checkpointLock.readLock().unlock();
+            }
+        } ) );
+        race.addContestant( throwing( () ->
+        {
+            Thread.sleep( ThreadLocalRandom.current().nextInt( 10 ) );
+            checkpointLock.writeLock().lock();
+            try
+            {
+                long gen = generation.get();
+                long unstableGeneration = unstableGeneration( gen );
+                freelist.flush( stableGeneration( gen ), unstableGeneration, NULL );
+                generation.set( generation( unstableGeneration, unstableGeneration + 1 ) );
+                checkpoints.incrementAndGet();
+            }
+            finally
+            {
+                checkpointLock.writeLock().unlock();
+            }
+        } ) );
+
+        // when
+        race.goUnchecked();
+    }
+
+    @Test
     void shouldVisitUnacquiredIds() throws Exception
     {
         // GIVEN a couple of released ids
@@ -217,6 +405,7 @@ class FreeListIdProviderTest
                 throw new RuntimeException( e );
             }
         } );
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
         // and only a few acquired
         for ( int i = 0; i < 10; i++ )
         {
@@ -256,6 +445,7 @@ class FreeListIdProviderTest
             long id = freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO, NULL );
             freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id, NULL );
         }
+        freelist.flush( GENERATION_ONE, GENERATION_TWO, NULL );
         assertTrue( expected.size() > 0 );
 
         // WHEN/THEN
@@ -263,6 +453,30 @@ class FreeListIdProviderTest
         {
             @Override
             public void beginFreelistPage( long pageId )
+            {
+                assertTrue( expected.remove( pageId ) );
+            }
+        }, NULL );
+        assertTrue( expected.isEmpty() );
+    }
+
+    @Test
+    void shouldVisitUnreleasedFreelistPageIds() throws Exception
+    {
+        // GIVEN a couple of released ids
+        MutableLongSet expected = new LongHashSet();
+        for ( int i = 0; i < 10; i++ )
+        {
+            long id = freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO, NULL );
+            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id, NULL );
+            expected.add( id );
+        }
+
+        // WHEN/THEN
+        freelist.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor()
+        {
+            @Override
+            public void freelistEntryFromReleaseCache( long pageId )
             {
                 assertTrue( expected.remove( pageId ) );
             }

@@ -43,6 +43,7 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
     private final Map<Long,Integer> allKeyCounts = new HashMap<>();
     private final List<LongList> nodesPerLevel = new ArrayList<>();
     private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
+    private final MutableLongList unreleasedFreelistEntries = LongLists.mutable.empty();
     private long rootNode;
     private int lastLevel;
     private TreeState treeState;
@@ -54,12 +55,12 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
         clear();
     }
 
-    public GBPTreeInspection<KEY,VALUE> get()
+    public GBPTreeInspection get()
     {
         final List<ImmutableLongList> immutableNodesPerLevel = nodesPerLevel.stream()
                 .map( LongLists.immutable::ofAll )
                 .collect( Collectors.toList() );
-        return new GBPTreeInspection<>(
+        return new GBPTreeInspection(
                 LongLists.immutable.ofAll( internalNodes ),
                 LongLists.immutable.ofAll( leafNodes ),
                 LongLists.immutable.ofAll( allNodes ),
@@ -67,6 +68,7 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
                 unmodifiableMap( allKeyCounts ),
                 immutableNodesPerLevel,
                 unmodifiableList( allFreelistEntries ),
+                unreleasedFreelistEntries.toImmutable(),
                 rootNode,
                 lastLevel,
                 treeState );
@@ -136,21 +138,5 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
     {
         rootNode = -1;
         lastLevel = -1;
-    }
-
-    static class FreelistEntry
-    {
-        final long freelistPageId;
-        final int pos;
-        final long id;
-        final long generation;
-
-        private FreelistEntry( long freelistPageId, int pos, long id, long generation )
-        {
-            this.freelistPageId = freelistPageId;
-            this.pos = pos;
-            this.id = id;
-            this.generation = generation;
-        }
     }
 }

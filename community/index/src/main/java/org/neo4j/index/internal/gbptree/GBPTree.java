@@ -833,10 +833,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
+            FreeListIdProvider.FreelistMetaData freelistMetaData = freeList.metaData();
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
                     root.id(), root.generation(),
-                    freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
-                    freeList.writePos(), freeList.readPos(), clean );
+                    freelistMetaData.lastId(), freelistMetaData.writePageId(), freelistMetaData.readPageId(),
+                    freelistMetaData.writePos(), freelistMetaData.readPos(), clean );
 
             writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor, cursorContext );
 
@@ -1233,6 +1234,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try
         {
             assertRecoveryCleanSuccessful();
+
+            long generation = this.generation;
+            long stableGeneration = stableGeneration( generation );
+            long unstableGeneration = unstableGeneration( generation );
+            freeList.flush( stableGeneration, unstableGeneration, cursorContext );
+
             // Flush dirty pages since that last flush above. This should be a very small set of pages
             // and should be rather fast. In here writers are blocked and we want to minimize this
             // windows of time as much as possible, that's why there's an initial flush outside this lock.
@@ -1240,8 +1247,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
             // Increment generation, i.e. stable becomes current unstable and unstable increments by one
             // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
-            long unstableGeneration = unstableGeneration( generation );
-            generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
+            this.generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
             writeState( pagedFile, headerWriter, cursorContext );
 
             // Flush the state page.
@@ -1536,11 +1542,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty, CursorContext cursorContext ) throws IOException
     {
         CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
+        long gen = generation;
+        long stableGeneration = stableGeneration( gen );
+        long unstableGeneration = unstableGeneration( gen );
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext ) )
         {
-            long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
-                    stableGeneration( generation ), unstableGeneration, reportDirty );
+                    stableGeneration, unstableGeneration, reportDirty );
 
             if ( dirtyOnStartup && reportDirty )
             {

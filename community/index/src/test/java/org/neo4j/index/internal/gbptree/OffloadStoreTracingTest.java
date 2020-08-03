@@ -51,6 +51,7 @@ class OffloadStoreTracingTest
     private OffloadStoreImpl<RawBytes,RawBytes> offloadStore;
     private CursorContext cursorContext;
     private PagedFile pagedFile;
+    private FreeListIdProvider idProvider;
 
     @BeforeEach
     void setUp() throws IOException
@@ -58,7 +59,8 @@ class OffloadStoreTracingTest
         cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testCursorTracer" ) );
         pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize(), "neo4j" );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
-        var idProvider = new FreeListIdProvider( pagedFile, 10 );
+        idProvider = new FreeListIdProvider( pagedFile, 10 );
+        idProvider.initializeAfterCreation( CursorContext.NULL );
         offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize() );
     }
 
@@ -101,8 +103,9 @@ class OffloadStoreTracingTest
         assertZeroCursor();
 
         offloadStore.free( 1, 1, 1, cursorContext );
+        idProvider.flush( 1, 1, cursorContext );
 
-        assertThat( cursorTracer.faults() ).isEqualTo( 1 );
+        assertThat( cursorTracer.faults() ).isEqualTo( 0 );
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
     }

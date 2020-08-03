@@ -355,7 +355,11 @@ class PageAwareByteArrayCursor extends PageCursor
         {
             linkedCursor.close();
         }
-        current.close();
+        if ( current != null )
+        {
+            // e.g. if it never got pinned
+            current.close();
+        }
     }
 
     @Override

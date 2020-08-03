@@ -51,8 +51,8 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
                 writer.put( key, value );
             }
 
-            GBPTreeInspection<RawBytes,RawBytes> inspection = inspect( index );
-            ImmutableLongList offloadNodes = inspection.getOffloadNodes();
+            GBPTreeInspection inspection = inspect( index );
+            ImmutableLongList offloadNodes = inspection.offloadNodes();
             long offloadNode = offloadNodes.get( random.nextInt( offloadNodes.size() ) );
 
             index.unsafe( pageSpecificCorruption( offloadNode, notAnOffloadNode() ), NULL );

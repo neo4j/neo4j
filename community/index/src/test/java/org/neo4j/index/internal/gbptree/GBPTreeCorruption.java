@@ -294,12 +294,14 @@ public final class GBPTreeCorruption
         return ( pagedFile, layout, node, treeState ) -> {
             FreeListIdProvider freelist = getFreelist( pagedFile, treeState );
             freelist.releaseId( treeState.stableGeneration(), treeState.unstableGeneration(), releasedId, NULL );
+            freelist.flush( treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 goTo( cursor, "", treeState.pageId() );
-                TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
-                        treeState.rootGeneration(), freelist.lastId(), freelist.writePageId(), freelist.readPageId(), freelist.writePos(),
-                        freelist.readPos(), treeState.isClean() );
+                FreeListIdProvider.FreelistMetaData freelistMetaData = freelist.metaData();
+                TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(), treeState.rootGeneration(),
+                        freelistMetaData.lastId(), freelistMetaData.writePageId(), freelistMetaData.readPageId(), freelistMetaData.writePos(),
+                        freelistMetaData.readPos(), treeState.isClean() );
             }
         };
     }
@@ -379,8 +381,7 @@ public final class GBPTreeCorruption
     private static FreeListIdProvider getFreelist( PagedFile pagedFile, TreeState treeState )
     {
         FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, treeState.lastId() );
-        freelist.initialize( treeState.lastId(), treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(),
-                freelist.readPos() );
+        freelist.initialize( treeState.lastId(), treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(), 0 );
         return freelist;
     }
 
