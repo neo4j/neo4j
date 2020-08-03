@@ -20,76 +20,34 @@
 package org.neo4j.dbms.identity;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
-public class StandaloneIdentityModule implements IdentityModule
+public class StandaloneIdentityModule extends DefaultIdentityModule
 {
-    public static IdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
+    public static StandaloneIdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
     {
-        return new StandaloneIdentityModule( logProvider, createServerIdStorage( fs, dataDir, memoryTracker ), UUID::randomUUID );
+        var log = logProvider.getLog( StandaloneIdentityModule.class );
+        var storage = createServerIdStorage( fs, dataDir, memoryTracker );
+        var myself = readOrGenerate( storage, log, ServerId.class, ServerId::of, UUID::randomUUID );
+        return new StandaloneIdentityModule( myself );
     }
 
     private final ServerId myself;
 
-    protected StandaloneIdentityModule( LogProvider logProvider, SimpleStorage<ServerId> storage, Supplier<UUID> uuid )
+    protected StandaloneIdentityModule( ServerId myself )
     {
-        var log = logProvider.getLog( getClass() );
-        var idType = ServerId.class.getSimpleName();
-        myself = readOrGenerate( storage, log, idType, ServerId::new, ServerId::getUuid, uuid );
+        this.myself = myself;
     }
 
     @Override
     public ServerId myself()
     {
         return myself;
-    }
-
-    protected static <T> T readOrGenerate( SimpleStorage<T> storage, Log log, String idType, Function<UUID,T> creator, Function<T,UUID> query,
-            Supplier<UUID> uuid )
-    {
-        T myself;
-        try
-        {
-            if ( storage.exists() )
-            {
-                myself = storage.readState();
-                if ( myself == null )
-                {
-                    throw new IllegalStateException( String.format( "%s storage was found on disk, but it could not be read correctly", idType ) );
-                }
-                else
-                {
-                    log.info( String.format( "Found %s on disk: %s (%s)", idType, myself, query.apply( myself ) ) );
-                }
-            }
-            else
-            {
-                UUID newUuid = uuid.get();
-                myself = creator.apply( newUuid );
-                storage.writeState( myself );
-
-                log.info( String.format( "Generated new %s: %s (%s)", idType, myself, newUuid ) );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return myself;
-    }
-
-    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
-    {
-        return new SimpleFileStorage<>( fs, new File( dataDir, SERVER_ID_FILENAME ), ServerId.Marshal.INSTANCE, memoryTracker );
     }
 }
