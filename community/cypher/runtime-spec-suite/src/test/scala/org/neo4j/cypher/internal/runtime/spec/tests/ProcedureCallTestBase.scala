@@ -214,6 +214,83 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "i").withRows(expected)
   }
+
+  test("should work on rhs of apply") {
+    // given
+    val nodes = given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "i")
+      .apply()
+      .|.filter(s"i < 10")
+      .|.procedureCall(s"cardinalityIncreasingProc($sizeHint) YIELD i AS i")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {n <- nodes
+                        i <- 1 until 10} yield Array(n, i)
+    runtimeResult should beColumns("n", "i").withRows(expected)
+  }
+
+  test("should call cardinality increasing procedure twice") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "i1", "i2")
+      .procedureCall("cardinalityIncreasingProc(3) YIELD i AS i2")
+      .procedureCall("cardinalityIncreasingProc(7) YIELD i AS i1")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {n <- nodes
+                        i1 <- 1 to 7
+                        i2 <- 1 to 3} yield Array(n, i1, i2)
+
+    runtimeResult should beColumns("x", "i1", "i2").withRows(expected)
+  }
+
+  test("should profile rows with procedureCall and expand") {
+    // given
+    val nodesPerLabel = 20
+    val procedureCallCardinality = 7
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.nonFuseable()
+      .|.expandAll("(x)-->(y)")
+      .|.procedureCall(s"cardinalityIncreasingProc(${procedureCallCardinality}) YIELD i AS i")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // apply
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // non-fuseable
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel * procedureCallCardinality) // expand all
+    queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * 2L * procedureCallCardinality) // procedure call
+    queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // argument
+    queryProfile.operatorProfile(6).rows() shouldBe (nodesPerLabel * 2L) // all node scan
+  }
 }
 
 trait WriteProcedureCallTestBase[CONTEXT <: RuntimeContext] {
