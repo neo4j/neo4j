@@ -45,6 +45,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -79,7 +80,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.common.Subject;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -344,14 +344,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 switch ( state )
                 {
                 case ONLINE:
+                case FAILED:
                     proxy.start();
                     break;
                 case POPULATING:
                     // Remember for rebuilding right below in this method
                     rebuildingDescriptors.put( indexId, descriptor );
-                    break;
-                case FAILED:
-                    // Don't do anything, the user needs to drop the index and re-create
                     break;
                 default:
                     throw new IllegalStateException( "Unknown state: " + state );
