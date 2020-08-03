@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.Symbol
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 
 import scala.annotation.tailrec
 
@@ -169,7 +171,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     semanticCheckAbstract(
       clausesExceptLeadingFromAndImportWith,
       importVariables chain checkClauses(_)
-    )
+    ) chain
+    checkShadowedVariables(outer)
   }
 
   private def checkConcludesWithReturn(clauses: Seq[Clause]): SemanticCheck =
@@ -303,6 +306,26 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         }
       case _ => SemanticCheckResult.success(state)
     }
+  }
+
+  private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { state =>
+    val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
+    val subquerySymbolPositions: Map[String, Set[InputPosition]] = state.currentScope.scope.allSymbolDefinitions.mapValues(_.map(_.position))
+
+    def isShadowed(s: Symbol): Boolean =
+      subquerySymbolPositions.contains(s.name) &&
+        subquerySymbolPositions(s.name).intersect(s.positions).isEmpty
+
+    val shadowedSymbols = outerScopeSymbols.collect {
+      case (name, symbol) if isShadowed(symbol)  =>
+        name -> subquerySymbolPositions(name).min
+    }
+    val stateWithNotifications = shadowedSymbols.foldLeft(state) {
+      case (state, (varName, pos)) =>
+        state.addNotification(SubqueryVariableShadowing(pos, varName))
+    }
+
+    success(stateWithNotifications)
   }
 
   override def finalScope(scope: Scope): Scope =

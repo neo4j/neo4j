@@ -76,6 +76,11 @@ public interface NotificationDetail
             return createNotificationDetail( "the repeated relationship", name, true );
         }
 
+        public static NotificationDetail shadowingVariable( final String name )
+        {
+            return createNotificationDetail( "the shadowing variable", name, true );
+        }
+
         public static NotificationDetail joinKey( List<String> identifiers )
         {
             boolean singular = identifiers.size() == 1;

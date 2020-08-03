@@ -267,7 +267,10 @@ public interface Status
         UnknownRelationshipTypeWarning( ClientNotification,
                 "The provided relationship type is not in the database." ),
         UnknownPropertyKeyWarning( ClientNotification,
-                "The provided property key is not in the database" );
+                "The provided property key is not in the database" ),
+
+        SubqueryVariableShadowingWarning( ClientNotification,
+                "Variable in subquery is shadowing a variable with the same name from the outer scope." );
 
         private final Code code;
 

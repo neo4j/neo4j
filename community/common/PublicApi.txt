@@ -142,6 +142,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedError org.ne
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::SemanticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::SuboptimalIndexForWildcardQuery org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::SubqueryVariableShadowingWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::SyntaxError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::TypeError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::UnboundedVariableLengthPatternWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final

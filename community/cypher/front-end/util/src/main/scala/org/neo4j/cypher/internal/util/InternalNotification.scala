@@ -48,3 +48,5 @@ case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, 
 case class DeprecatedOctalLiteralSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedHexLiteralSyntax(position: InputPosition) extends InternalNotification
+
+case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification

@@ -203,6 +203,12 @@ public enum NotificationCode
             "because it does not follow Cyphers pattern matching relationship uniqueness rule. " +
             "It can lead to the optimizer choosing bad plans for that pattern expression/comprehension. " +
             "Please rewrite your query, using the start node and/or end node of the relationship in the pattern expression/comprehension instead."
+    ),
+    SUBQUERY_VARIABLE_SHADOWING(
+            SeverityLevel.WARNING,
+            Status.Statement.SubqueryVariableShadowingWarning,
+            "Variable in subquery is shadowing a variable with the same name from the outer scope. " +
+            "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause."
     );
 
     private final Status status;
