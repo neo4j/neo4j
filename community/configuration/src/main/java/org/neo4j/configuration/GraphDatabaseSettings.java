@@ -536,9 +536,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
     public static final Setting<Boolean> preallocate_logical_logs = newBuilder( "dbms.tx_log.preallocate", BOOL, true ).dynamic().build();
 
-    @Description( "If `true`, Neo4j will abort recovery if logical log files are missing. Setting " +
-            "this to `false` will allow Neo4j to create new empty missing files for already existing database, but, " +
-            "the integrity of the database might be compromised." )
+    @Description( "If `true`, Neo4j will abort recovery if transaction log files are missing. Setting " +
+            "this to `false` will allow Neo4j to create new empty missing files for the already existing database, " +
+            "but the integrity of the database might be compromised." )
     public static final Setting<Boolean> fail_on_missing_files = newBuilder( "dbms.recovery.fail_on_missing_files", BOOL, true ).build();
 
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
