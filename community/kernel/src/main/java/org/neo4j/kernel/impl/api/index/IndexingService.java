@@ -328,14 +328,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 switch ( state )
                 {
                 case ONLINE:
+                case FAILED:
                     proxy.start();
                     break;
                 case POPULATING:
                     // Remember for rebuilding right below in this method
                     rebuildingDescriptors.put( indexId, descriptor );
-                    break;
-                case FAILED:
-                    // Don't do anything, the user needs to drop the index and re-create
                     break;
                 default:
                     throw new IllegalStateException( "Unknown state: " + state );

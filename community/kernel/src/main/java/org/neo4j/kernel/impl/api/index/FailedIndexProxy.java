@@ -56,6 +56,12 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
+    public void start()
+    {
+        // nothing to start
+    }
+
+    @Override
     public void drop()
     {
         indexCountsRemover.remove();
