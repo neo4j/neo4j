@@ -43,8 +43,8 @@ import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.setAsJavaSetConverter
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.ArrayStack
 
 /**
  * Abstract description of an execution plan
@@ -72,7 +72,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def flatten: Seq[InternalPlanDescription] = {
     val flatten = new ArrayBuffer[InternalPlanDescription]
-    val stack = new ArrayStack[InternalPlanDescription]()
+    val stack = new mutable.ArrayStack[InternalPlanDescription]()
     stack.push(self)
     while (stack.nonEmpty) {
       val plan = stack.pop()
