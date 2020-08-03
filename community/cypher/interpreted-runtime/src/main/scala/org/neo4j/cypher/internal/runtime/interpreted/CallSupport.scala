@@ -42,7 +42,7 @@ object CallSupport {
       transactionalContext.kernelTransaction().procedures().functionCall(id, args)
   }
 
-  def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+  def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
@@ -53,7 +53,7 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+  def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                              allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
@@ -63,7 +63,7 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                                allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
@@ -73,7 +73,7 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                         allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
@@ -94,8 +94,8 @@ object CallSupport {
     userDefinedAggregator(aggregator)
   }
 
-  private def callProcedure(args: Seq[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {
-    val read = call(args.toArray)
+  private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {
+    val read = call(args)
     new scala.Iterator[Array[AnyValue]] {
       override def hasNext: Boolean = read.hasNext
 

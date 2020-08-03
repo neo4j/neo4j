@@ -282,16 +282,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                memoryTracker: MemoryTracker): ClosingIterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callReadOnlyProcedure(id, args, allowed, context))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callReadWriteProcedure(id, args, allowed, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callSchemaWriteProcedure(id, args, allowed, context))
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     unknownDbHits(inner.callDbmsProcedure(id, args, allowed, context))
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =

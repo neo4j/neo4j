@@ -843,19 +843,19 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     pathFinder.findAllPathsAutoCloseableIterator(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right))
   }
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
                                      context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
                                       context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
                                         context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String],
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
                                  context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed, context)
 

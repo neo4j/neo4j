@@ -70,7 +70,7 @@ case class ProcedureCallPipe(source: Pipe,
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
-      val argValues = argExprs.map(arg => arg(input, state))
+      val argValues = argExprs.map(arg => arg(input, state)).toArray
       val results: Iterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext(qtx)) // always returns all items from the procedure
       results map { resultValues =>
         resultIndices foreach { case (k, (v, _)) =>
@@ -84,13 +84,13 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  private def call(qtx: QueryContext, argValues: Seq[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  private def call(qtx: QueryContext, argValues: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callMode.callProcedure(qtx, signature.id, argValues, context)
 
   private def internalCreateResultsByPassingThrough(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => arg(input, state))
+      val argValues = argExprs.map(arg => arg(input, state)).toArray
       val results = call(qtx, argValues, createProcedureCallContext(qtx))
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()

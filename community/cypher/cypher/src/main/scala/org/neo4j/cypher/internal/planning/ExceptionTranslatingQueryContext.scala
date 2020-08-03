@@ -210,16 +210,16 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropNamedConstraint(name: String): Unit =
     translateException(tokenNameLookup, inner.dropNamedConstraint(name))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callReadOnlyProcedure(id, args, allowed, context))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callReadWriteProcedure(id, args, allowed, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callSchemaWriteProcedure(id, args, allowed, context))
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callDbmsProcedure(id, args, allowed, context))
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =

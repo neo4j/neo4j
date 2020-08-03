@@ -155,7 +155,7 @@ class ProcedureCallPipeTest
     Mockito.when(transactionalContext.databaseId).thenReturn(databaseID)
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Array[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
@@ -164,7 +164,7 @@ class ProcedureCallPipeTest
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Array[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
