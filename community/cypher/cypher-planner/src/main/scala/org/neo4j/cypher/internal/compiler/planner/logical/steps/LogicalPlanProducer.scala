@@ -92,6 +92,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     newPlan
   }
 
+  def solvePredicateInHorizon(plan: LogicalPlan, solvedExpression: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    // Keep other attributes but change solved
+    val keptAttributes = Attributes(idGen, cardinalities, providedOrders)
+    val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
+    val solvedPlannerQuery = solveds.get(plan.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon{
+      case horizon: QueryProjection => horizon.addPredicates(solvedExpression)
+      case horizon => horizon
+    })
+    solveds.set(newPlan.id, solvedPlannerQuery)
+    newPlan
+  }
+
+
   def planAllNodesScan(idName: String, argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
     // Is this ordered by node id?

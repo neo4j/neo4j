@@ -124,7 +124,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     context.forExpressionPlanning(namedNodes, namedRels)
   }
 
-  private def planPredicates(lhs: LogicalPlan,
+  def planPredicates(lhs: LogicalPlan,
                              patternExpressions: Set[Expression],
                              expressions: Set[Expression],
                              letExpression: Option[Expression],
@@ -219,7 +219,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     plan
   }
 
-  private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
+  def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
     expressions.head
   else
     Ors(expressions)(expressions.head.position)
