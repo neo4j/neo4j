@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.patternExpressionRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.planPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.onePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.EveryPath
@@ -30,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -373,6 +376,20 @@ object PatternExpressionSolver {
             val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
             val antiSemiApplyPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, subQueryPlan, not, context)
             (solvedExprs :+ not, antiSemiApplyPlan)
+          case ((solvedExprs, plan), ors@Ors(exprs)) =>
+            val (patternExpressions, expressions) = exprs.partition {
+              case ExistsSubClause(_, _) => true
+              case Not(ExistsSubClause(_, _)) => true
+              case Exists(_: PatternExpression) => true
+              case Not(Exists(_: PatternExpression)) => true
+              case _ => false
+            }
+            // Only plan if the OR contains an EXISTS.
+            if (patternExpressions.nonEmpty) {
+              val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions, expressions, None, interestingOrder, context)
+              val orsPlan = context.logicalPlanProducer.solvePredicateInHorizon(newPlan, onePredicate(solvedPredicates), context)
+              (solvedExprs :+ ors, orsPlan)
+            } else (solvedExprs, plan)
           case (acc, _) => acc
       }
     }
