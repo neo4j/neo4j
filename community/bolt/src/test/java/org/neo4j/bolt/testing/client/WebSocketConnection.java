@@ -89,7 +89,7 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
         }
         catch ( Exception e )
         {
-            throw new IOException( "Failed to connect to the server within 30 seconds", e );
+            throw new IOException( "Failed to connect to the server within 5 minutes", e );
         }
 
         server = session.getRemote();
@@ -138,9 +138,9 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
                 // no data received
                 throw new IOException( "Connection closed while waiting for data from the server." );
             }
-            if ( System.currentTimeMillis() - start > 30_000 )
+            if ( System.currentTimeMillis() - start > 60_000 )
             {
-                throw new IOException( "Waited 30 seconds for " + remaining + " bytes, " +
+                throw new IOException( "Waited 60 seconds for " + remaining + " bytes, " +
                                        "" + (length - remaining) + " was received: " +
                                        HexPrinter.hex( ByteBuffer.wrap( target ), 0, length - remaining ) );
             }

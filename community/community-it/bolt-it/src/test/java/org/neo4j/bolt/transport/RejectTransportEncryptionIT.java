@@ -65,7 +65,7 @@ public class RejectTransportEncryptionIT
     {
         return Stream.of(
                 Arguments.of( SecureWebSocketConnection.class,
-                        new IOException( "Failed to connect to the server within 30 seconds" ) ),
+                        new IOException( "Failed to connect to the server within 5 minutes" ) ),
                 Arguments.of( SecureSocketConnection.class,
                         new IOException( "Remote host terminated the handshake" )
                 ) );
