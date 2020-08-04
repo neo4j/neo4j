@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.exceptions.HintException
@@ -49,7 +50,14 @@ object verifyBestPlan {
         val b: PlannerQueryPart = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
-          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed\nPlan: $plan")
+          val moreDetails =
+            (a, b) match {
+              case (aSingle: RegularSinglePlannerQuery, bSingle: RegularSinglePlannerQuery) =>
+                aSingle.pointOutDifference(bSingle)
+              case _ => ""
+            }
+
+          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed\nPlan: $plan \n\n\n$moreDetails")
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints

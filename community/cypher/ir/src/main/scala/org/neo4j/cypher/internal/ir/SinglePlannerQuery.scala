@@ -258,6 +258,7 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularSinglePlannerQuery]
 
   override def equals(other: Any): Boolean = other match {
+    // Make sure it corresponds with pointOutDifference
     case that: RegularSinglePlannerQuery =>
       (that canEqual this) &&
         queryInput == that.queryInput &&
@@ -276,5 +277,38 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
       theHashCode = MurmurHash3.seqHash(state)
     }
     theHashCode
+  }
+
+  def pointOutDifference(other: RegularSinglePlannerQuery): String = {
+    // Make sure it corresponds with equals
+    val builder = StringBuilder.newBuilder
+    builder.append("Differences:\n")
+    if (queryInput != other.queryInput) {
+      builder.append(" - QueryInput\n")
+      builder.append(s"    A: $queryInput\n")
+      builder.append(s"    B: ${other.queryInput}\n")
+    }
+    if (queryGraph != other.queryGraph) {
+      builder.append(" - QueryGraph\n")
+      builder.append(s"    A: $queryGraph\n")
+      builder.append(s"    B: ${other.queryGraph}\n")
+
+    }
+    if (horizon != other.horizon) {
+      builder.append(" - Horizon\n")
+      builder.append(s"    A: $horizon\n")
+      builder.append(s"    B: ${other.horizon}\n")
+    }
+    if (tail != other.tail) {
+      builder.append(" - Tail\n")
+      builder.append(s"    A: $tail\n")
+      builder.append(s"    B: ${other.tail}\n")
+    }
+    if (interestingOrder.requiredOrderCandidate.order != other.interestingOrder.requiredOrderCandidate.order) {
+      builder.append(" - interestingOrder.requiredOrderCandidate.order\n")
+      builder.append(s"    A: ${interestingOrder.requiredOrderCandidate.order}\n")
+      builder.append(s"    B: ${other.interestingOrder.requiredOrderCandidate.order}\n")
+    }
+    builder.toString()
   }
 }
