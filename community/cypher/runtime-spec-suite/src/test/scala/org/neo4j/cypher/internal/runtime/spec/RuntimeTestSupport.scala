@@ -172,6 +172,13 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     NonRecordingRuntimeResult(result, subscriber)
   }
 
+  override def profileWithSubscriber(logicalQuery: LogicalQuery,
+                                     runtime: CypherRuntime[CONTEXT],
+                                     subscriber: QuerySubscriber,
+                                     inputDataStream: InputDataStream = NoInput): RuntimeResult = {
+    runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
+  }
+
   override def executeAndContext(logicalQuery: LogicalQuery,
                                  runtime: CypherRuntime[CONTEXT],
                                  input: InputValues

@@ -207,6 +207,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                    inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult =
     runtimeTestSupport.profileNonRecording(logicalQuery, runtime, inputDataStream)
 
+  override def profileWithSubscriber(logicalQuery: LogicalQuery,
+                                     runtime: CypherRuntime[CONTEXT],
+                                     subscriber: QuerySubscriber,
+                                     inputDataStream: InputDataStream = NoInput): RuntimeResult =
+    runtimeTestSupport.profileWithSubscriber(logicalQuery, runtime, subscriber, inputDataStream)
+
   override def executeAndContext(logicalQuery: LogicalQuery,
                                  runtime: CypherRuntime[CONTEXT],
                                  input: InputValues

@@ -1125,6 +1125,20 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>org.netbeans.modules</groupId>
+        <artifactId>org-netbeans-lib-profiler</artifactId>
+        <version>RELEASE120-1</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openjdk.jol</groupId>
+        <artifactId>jol-core</artifactId>
+        <version>0.11</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- scala -->
       <dependency>
         <groupId>org.scala-lang</groupId>

@@ -133,4 +133,10 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def profileNonRecording(logicalQuery: LogicalQuery,
                           runtime: CypherRuntime[CONTEXT],
                           inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult
+
+  def profileWithSubscriber(logicalQuery: LogicalQuery,
+                            runtime: CypherRuntime[CONTEXT],
+                            subscriber: QuerySubscriber,
+                            inputDataStream: InputDataStream = NoInput): RuntimeResult
+
 }
