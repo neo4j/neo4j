@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -270,12 +271,12 @@ public class BuiltInDbmsProcedures
         return Stream.of( new StringResult( result ) );
     }
 
-    @Admin
     @SystemProcedure
     @Description( "Report the current status of the system database sub-graph schema." )
     @Procedure( name = "dbms.upgradeStatus", mode = READ )
     public Stream<SystemGraphComponentStatusResult> systemSchemaVersion() throws ProcedureException
     {
+        assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
         {
             throw new ProcedureException( ProcedureCallFailed,
@@ -284,12 +285,12 @@ public class BuiltInDbmsProcedures
         return Stream.of( new SystemGraphComponentStatusResult( systemGraphComponents.detect( transaction ) ) );
     }
 
-    @Admin
     @SystemProcedure
     @Description( "Upgrade the system database schema if it is not the current schema." )
     @Procedure( name = "dbms.upgrade", mode = WRITE )
     public Stream<SystemGraphComponentUpgradeResult> upgradeSystemSchema() throws ProcedureException
     {
+        assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
         {
             throw new ProcedureException( ProcedureCallFailed,
@@ -315,6 +316,27 @@ public class BuiltInDbmsProcedures
         else
         {
             return Stream.of( new SystemGraphComponentUpgradeResult( status.name(), status.resolution() ) );
+        }
+    }
+
+    private void assertAllowedUpgradeProc()
+    {
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+        if ( config.get( GraphDatabaseInternalSettings.restrict_upgrade ) )
+        {
+            if ( !securityContext.subject().hasUsername( config.get( GraphDatabaseInternalSettings.upgrade_username ) ) )
+            {
+                throw new AuthorizationViolationException(
+                        String.format( "%s Execution of this procedure has been restricted by the system.", PERMISSION_DENIED ) );
+            }
+        }
+        else
+        {
+            securityContext.assertCredentialsNotExpired();
+            if ( !securityContext.allowExecuteAdminProcedure() )
+            {
+                throw new AuthorizationViolationException( PERMISSION_DENIED );
+            }
         }
     }
 

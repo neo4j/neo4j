@@ -500,4 +500,18 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Enables logging of leaked driver session" )
     public static final Setting<Boolean> routing_driver_log_leaked_sessions =
             newBuilder( "dbms.routing.driver.logging.leaked_sessions", BOOL, false ).build();
+
+    @Internal
+    @Description( "Setting this to true will limit who execute the `dbms.upgrade` procedure. " +
+                  "A user and role with the name specified by unsupported.dbms.upgrade_procedure_username will be created on startup/upgrade. " +
+                  "This user will only be able to execute the `dbms.upgrade` procedure and nothing else. " +
+                  "The only administration command that will be executable on this user is `ALTER CURRENT USER SET PASSWORD FROM old_password TO password`." +
+                  "No administration commands will be executable on the role." )
+    public static final Setting<Boolean> restrict_upgrade =
+            newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "The name of the user that should be allowed to call dbms.upgrade when `unsupported.dbms.upgrade_restriction_enabled` is enabled" )
+    public static final Setting<String> upgrade_username =
+            newBuilder( "unsupported.dbms.upgrade_procedure_username", STRING, "upgrade_user" ).build();
 }
