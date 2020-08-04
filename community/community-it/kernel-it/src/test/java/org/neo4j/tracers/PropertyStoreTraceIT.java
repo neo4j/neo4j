@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -62,13 +63,14 @@ class PropertyStoreTraceIT
         dependencies.satisfyDependency( new CentralJobScheduler( Clocks.nanoClock() )
         {
             @Override
-            public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
+            public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
             {
                 return JobHandle.EMPTY;
             }
 
             @Override
-            public JobHandle<?> scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit unit )
+            public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long initialDelay, long period,
+                    TimeUnit unit )
             {
                 return JobHandle.EMPTY;
             }
