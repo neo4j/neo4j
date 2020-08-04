@@ -61,10 +61,6 @@ object ResultOrdering {
                                     indexProperties: Seq[PropertyAndPredicateType],
                                     orderTypes: Seq[CypherType],
                                     capabilityLookup: Seq[CypherType] => IndexOrderCapability): (ProvidedOrder, IndexOrder) = {
-
-
-
-
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
 

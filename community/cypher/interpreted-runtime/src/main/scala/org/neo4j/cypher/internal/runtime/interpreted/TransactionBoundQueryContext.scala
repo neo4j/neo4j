@@ -913,7 +913,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   private def allocateAndTraceNodeValueIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.kernelTransaction.memoryTracker())
     resources.trace(cursor)
     cursor
   }
