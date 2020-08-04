@@ -335,7 +335,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Description( "Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is disabled." )
+    @Description( "Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is " +
+            "disabled." )
     public static final Setting<Long> store_user_log_rotation_threshold =
             newBuilder( "dbms.logs.user.rotation.size", BYTES, 0L ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
 
@@ -355,8 +356,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone = newBuilder( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC ).build();
 
-    @Description( "Minimum time interval after last rotation of the user log (_neo4j.log_) before it may be " +
-            "rotated again." )
+    @Description( "Minimum time interval after last rotation of the user log (_neo4j.log_) before it " +
+            "may be rotated again." )
     public static final Setting<Duration> store_user_log_rotation_delay =
             newBuilder( "dbms.logs.user.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
