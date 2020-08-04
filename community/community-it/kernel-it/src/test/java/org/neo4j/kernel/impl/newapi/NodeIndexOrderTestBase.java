@@ -284,7 +284,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndNodesBefore( IndexOrder indexOrder ) throws Exception
+    void shouldNodeIndexScanInOrderWithPointsAndNodesOnBothSides( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
@@ -331,7 +331,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndNodesOnBothSides( IndexOrder indexOrder ) throws Exception
+    void shouldNodeIndexScanInOrderWithPointsAndNodesBefore( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
