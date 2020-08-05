@@ -245,7 +245,7 @@ public class ExecutingQuery
         // guarded by barrier - unused if status is planning, stable otherwise
         long compilationCompletedNanos = this.compilationCompletedNanos;
         // guarded by barrier - like compilationCompletedNanos
-        CompilerInfo planner = status.isPlanning() ? null : this.compilerInfo;
+        CompilerInfo planner = status.isParsingOrPlanning() ? null : this.compilerInfo;
         List<ActiveLock> waitingOnLocks = status.isWaitingOnLocks() ? status.waitingOnLocks() : Collections.emptyList();
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long totalActiveLocks = transactionBinding.activeLockCount.getAsLong();
@@ -253,7 +253,7 @@ public class ExecutingQuery
         PageCounterValues pageCounters = new PageCounterValues( transactionBinding.hitsSupplier, transactionBinding.faultsSupplier );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
-        long compilationTimeNanos = (status.isPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
+        long compilationTimeNanos = (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
