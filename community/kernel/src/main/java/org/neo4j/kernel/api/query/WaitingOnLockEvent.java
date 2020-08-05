@@ -62,8 +62,8 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     }
 
     @Override
-    boolean isPlanning()
+    boolean isParsingOrPlanning()
     {
-        return previous.isPlanning();
+        return previous.isParsingOrPlanning();
     }
 }

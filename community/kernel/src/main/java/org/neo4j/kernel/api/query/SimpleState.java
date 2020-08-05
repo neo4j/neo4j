@@ -75,8 +75,8 @@ final class SimpleState extends ExecutingQueryStatus
     }
 
     @Override
-    boolean isPlanning()
+    boolean isParsingOrPlanning()
     {
-        return this == PLANNING;
+        return this == PLANNING || this == PARSING;
     }
 }

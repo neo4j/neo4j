@@ -53,7 +53,7 @@ abstract class ExecutingQueryStatus
 
     abstract String name();
 
-    boolean isPlanning()
+    boolean isParsingOrPlanning()
     {
         return false;
     }
