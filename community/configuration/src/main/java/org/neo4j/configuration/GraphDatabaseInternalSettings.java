@@ -278,6 +278,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.block_create_drop_database", BOOL, false ).build();
 
     @Internal
+    @Description( "Enable or disable the ability to start and stop databases." )
+    public static final Setting<Boolean> block_start_stop_database =
+            newBuilder( "unsupported.dbms.block_start_stop_database", BOOL, false ).build();
+
+    @Internal
     @Description( "The maximum amount of time to wait for the database to become available, when starting a new transaction." )
     public static final Setting<Duration> transaction_start_timeout =
             newBuilder( "unsupported.dbms.transaction_start_timeout", DURATION, ofSeconds( 1 ) ).build();
