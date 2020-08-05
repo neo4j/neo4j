@@ -50,6 +50,8 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 
 public class Neo4jWithSocket
 {
+    static final String NEO4J_WITH_SOCKET = "org.neo4j.bolt.transport.Neo4jWithSocket";
+
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private Consumer<Map<Setting<?>,Object>> configure;
     private final TestDirectory testDirectory;
