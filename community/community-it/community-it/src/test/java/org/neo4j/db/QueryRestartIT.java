@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,9 +44,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 
 @TestDirectoryExtension
 class QueryRestartIT
@@ -71,7 +73,6 @@ class QueryRestartIT
         checkpoint();
 
         testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
-        testCursorContext.onlyCareAboutCurrentThread();
         testContextSupplier.setCursorContext( testCursorContext );
     }
 
@@ -118,7 +119,7 @@ class QueryRestartIT
         try ( Transaction transaction = database.beginTx() )
         {
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
@@ -133,7 +134,7 @@ class QueryRestartIT
         try ( Transaction transaction = database.beginTx() )
         {
             Result result = transaction.execute( "MATCH (n:toRetry) RETURN count(n)" );
-            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( 1L, result.next().get( "count(n)" ) );
@@ -148,7 +149,7 @@ class QueryRestartIT
         try ( Transaction transaction = database.beginTx() )
         {
             Result result = transaction.execute( "MATCH (n:toRetry) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
@@ -176,7 +177,8 @@ class QueryRestartIT
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
-                .setConfig( GraphDatabaseInternalSettings.snapshot_query, true )
+                .setConfig( snapshot_query, true )
+                .setConfig( index_background_sampling_enabled, false )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
