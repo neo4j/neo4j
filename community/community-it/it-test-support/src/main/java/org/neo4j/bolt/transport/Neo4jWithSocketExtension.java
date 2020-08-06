@@ -20,6 +20,8 @@
 package org.neo4j.bolt.transport;
 
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceAccessMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -50,6 +52,7 @@ import java.lang.annotation.Target;
 @Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )
 @ExtendWith( Neo4jWithSocketSupportExtension.class )
+@ResourceLock( value = Neo4jWithSocket.NEO4J_WITH_SOCKET, mode = ResourceAccessMode.READ_WRITE )
 public @interface Neo4jWithSocketExtension
 {
 }
