@@ -437,6 +437,8 @@ class BuiltInProceduresTest
     @Test
     void shouldNotListSystemGraphComponentsIfNotSystemDb()
     {
+        Config config = Config.defaults();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
         when( callContext.isSystemDatabase() ).thenReturn( false );
 
         assertThatThrownBy( () -> call( "dbms.upgradeStatus" ) )
@@ -447,7 +449,9 @@ class BuiltInProceduresTest
     @Test
     void shouldListSystemGraphComponents() throws ProcedureException, IndexNotFoundKernelException
     {
+        Config config = Config.defaults();
         setupFakeSystemComponents();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
         when( callContext.isSystemDatabase() ).thenReturn( true );
 
         var r = call( "dbms.upgradeStatus" ).iterator();
@@ -465,6 +469,10 @@ class BuiltInProceduresTest
     @Test
     void shouldNotUpgradeSystemGraphIfNotSystemDb()
     {
+        // Given
+        Config config = Config.defaults();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
+
         when( callContext.isSystemDatabase() ).thenReturn( false );
 
         assertThatThrownBy( () -> call( "dbms.upgrade" ) )
@@ -475,7 +483,9 @@ class BuiltInProceduresTest
     @Test
     void shouldUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException
     {
+        Config config = Config.defaults();
         setupFakeSystemComponents();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
         when( callContext.isSystemDatabase() ).thenReturn( true );
 
         var r = call( "dbms.upgrade" ).iterator();
