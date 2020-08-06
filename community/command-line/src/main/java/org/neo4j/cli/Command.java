@@ -38,6 +38,7 @@ public interface Command extends Callable<Integer>
         PUSH_TO_CLOUD,
         SET_DEFAULT_ADMIN,
         SET_INITIAL_PASSWORD,
+        SET_OPERATOR_PASSWORD,
         DUMP
     }
 }
